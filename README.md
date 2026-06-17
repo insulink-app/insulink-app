@@ -1,6 +1,6 @@
-# insulink
+# Insulink
 
-InsuLink is an Android app that reads glucose data from the Dexcom G7 and status information from the OmniPod 5 directly via BLE, centralizing everything in a single interface.
+Insulink is an Android app that reads glucose data from the Dexcom G7 and status information from the OmniPod 5 directly via BLE, centralizing everything in a single interface.
 
 ## Getting Started
 

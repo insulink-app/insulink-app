@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-InsuLink is a Flutter (Android-first) app that reads glucose data from a Dexcom G7 transmitter directly over BLE — no Dexcom app/cloud in the loop. It also intends to surface OmniPod 5 status (not yet implemented). The whole app currently lives in three files under `lib/`.
+Insulink is a Flutter (Android-first) app that reads glucose data from a Dexcom G7 transmitter directly over BLE — no Dexcom app/cloud in the loop. It also intends to surface OmniPod 5 status (not yet implemented). The whole app currently lives in three files under `lib/`.
 
 ## Commands
 

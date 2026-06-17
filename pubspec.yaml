@@ -1,5 +1,5 @@
 name: insulink
-description: "InsuLink is an Android app that reads glucose data from the Dexcom G7 and status information from the OmniPod 5 directly via BLE, centralizing everything in a single interface."
+description: "Insulink is an Android app that reads glucose data from the Dexcom G7 and status information from the OmniPod 5 directly via BLE, centralizing everything in a single interface."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
