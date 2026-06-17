@@ -171,6 +171,11 @@ class DexcomG7Service extends ChangeNotifier {
         );
       } catch (_) {}
 
+      // HINWEIS: Manuelles createBond() funktioniert beim G7 NICHT — der Sensor
+      // terminiert die Verbindung sofort (status=19), wenn man vorab ein Standard-
+      // BLE-Pairing anstößt. Das Bonding eines neuen Peers läuft beim G7 sensor-
+      // getrieben über den Applikations-Handshake (Zertifikats-/keks-Pfad).
+
       // Services entdecken
       final services = await _device!.discoverServices();
       final cgmService = services.firstWhere(
@@ -207,7 +212,10 @@ class DexcomG7Service extends ChangeNotifier {
     // (frühes Notify auf der Control-Characteristic reicht schon zum Abbruch).
     // Daher: Control-Notify erst NACH erfolgreicher Auth aktivieren und die
     // erste keks-Nachricht parallel zum Auth-Notify schreiben (wie Legacy).
-    _authSubscription = _authChar!.lastValueStream
+    // onValueReceived (nicht lastValueStream): liefert nur echte Notifications/
+    // Reads, NICHT die eigenen geschriebenen Werte zurück — sonst tauchen unsere
+    // eigenen TX-Bytes als vermeintliche RX-Pakete im Auth-Parser auf.
+    _authSubscription = _authChar!.onValueReceived
         .listen((data) => _onAuthData(Uint8List.fromList(data)));
 
     _keks!.amConnected();
@@ -252,7 +260,7 @@ class DexcomG7Service extends ChangeNotifier {
     _setState(DexConnectionState.connected, 'Verbunden ✓');
     try {
       await _controlChar!.setNotifyValue(true);
-      _controlSubscription = _controlChar!.lastValueStream
+      _controlSubscription = _controlChar!.onValueReceived
           .listen((data) => _onControlData(Uint8List.fromList(data)));
     } catch (e) {
       _setError('Fehler beim Aktivieren der Glukose-Notifications: $e');
