@@ -68,18 +68,63 @@ Two BLE subtleties that are load-bearing (don't regress them):
    `_awaitAuth` futures are attached BEFORE the triggering write. Broadcast
    streams don't replay, so listen-after-write loses the reply.
 
+### Background operation (foreground service)
+
+Reading must continue while the app is backgrounded OR fully closed (swiped from
+recents). On Android the activity's Dart isolate — and the BLE link it owns —
+dies when the activity is destroyed, so the whole read pipeline runs in a
+**second Dart isolate hosted by an Android foreground service** via
+`flutter_foreground_task` (9.x).
+
+- `connection.dart` (`G7Connection`) is the UI-free read pipeline: scan →
+  connect → `runReconnect`/`run` → stream live EGV + backfill → parse →
+  persist. It only depends on the already widget-free layers (`BleTransport`,
+  `G7AuthSession`, codecs, `G7Store`) and reports out via callbacks
+  (`onLog`/`onReading`/`onUpdate`/`onConnectionState`). It used to live inline
+  in `_ReaderPageState`.
+- `ble_service.dart`: the `@pragma('vm:entry-point') startCallback` +
+  `G7TaskHandler` that runs `G7Connection` inside the service isolate. It
+  **must `await RustLib.init()` again** (fresh isolate ⇒ fresh Rust core),
+  updates the notification text with the latest mg/dL, pushes updates to the UI
+  with `sendDataToMain`, and reconnects from `onRepeatEvent` (a 30 s watchdog).
+- `main.dart` is now a thin viewer: `initCommunicationPort()` in `main()`,
+  start/stop the service (not the connection) from the Connect/Disconnect
+  buttons, receive live pushes via `addTaskDataCallback`, and re-`reload()` the
+  store on `AppLifecycleState.resumed` to catch up on what the service captured
+  while away. `flutter_blue_plus` works in the service isolate because FFT
+  registers plugins on its background engine.
+
+Load-bearing background gotchas (don't regress):
+1. **FGS type `connectedDevice` requires a held Bluetooth runtime permission**
+   on Android 14+ (target SDK 34+). The scan now runs in the background isolate
+   which can't show dialogs, so `main.dart` requests `BLUETOOTH_SCAN/CONNECT`
+   (via `permission_handler`) and aborts BEFORE `startService` if denied —
+   otherwise native `startForeground` throws `SecurityException` and the service
+   sticky-restarts in a loop.
+2. **Cross-isolate SharedPreferences**: each isolate caches prefs in memory, so
+   the UI must `G7Store.reload()` to see the service's writes (done on the
+   `update` ping and on resume).
+3. Manifest needs `FOREGROUND_SERVICE_CONNECTED_DEVICE` + `POST_NOTIFICATIONS` +
+   the `connectedDevice`-typed `com.pravera.flutter_foreground_task…ForegroundService`.
+4. *Scanning* (not maintaining a link) can be throttled while the screen is off
+   (FBP issue #924), so a cold reconnect may complete only on the next
+   screen-on; an already-open connection keeps streaming.
+
 ### Data + persistence
 
 - `glucose.dart`: EGV (`0x4E`) and backfill (`dexbackfill`) decoders. Packed
   little-endian; `mgdL` is a 12-bit field. Glucose/backfill are **plaintext**.
 - `device_info.dart`: parses `0x4A`/`0x52`/`0x22` (firmware, software #, serial,
   session/warmup length, hardware/algorithm version, battery) + algorithm-state
-  labels. Requested right after auth in `main.dart`.
+  labels. Requested right after auth in `connection.dart`.
 - `store.dart` (shared_preferences): per-**serial** keys for session key,
-  glucose history, device info, and sensor start. The serial is NOT used by the
-  protocol (the pairing code is the only auth secret) — it is purely the
+  glucose history, device info, sensor start, and the latest EGV
+  (`saveLatest`/`loadLatest` — value+trend+state, so the headline number is
+  restored on launch, not just the last history point). The serial is NOT used
+  by the protocol (the pairing code is the only auth secret) — it is purely the
   persistence key enabling reconnect, cached chart/info, and auto-connect.
-  `main.dart` loads the cache on launch so the UI is populated before connecting.
+  Writes happen in the **service isolate**; the UI loads the cache on launch and
+  `reload()`s it to observe later writes (see Background operation).
 
 ## Gotchas (already fixed — keep them)
 
