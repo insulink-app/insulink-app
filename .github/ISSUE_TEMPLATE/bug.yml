@@ -1,0 +1,86 @@
+name: Bug report
+description: Report something that is broken or behaving incorrectly
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report.
+        Please fill in as much detail as you can — especially logs from the in-app
+        log pane or `adb logcat | grep -i flutter`, which mirror each handshake step.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the bug.
+      placeholder: When I tried to pair a fresh sensor, the app …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the problem?
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the app is affected?
+      options:
+        - Pairing / J-PAKE handshake
+        - Reconnect (key confirmation)
+        - Live glucose / backfill reading
+        - Background / foreground service
+        - Persistence / storage
+        - UI
+        - Rust crypto core
+        - Build / tooling
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        Paste output from the in-app log pane or `adb logcat | grep -i flutter`.
+        This is automatically formatted as code, so no backticks needed.
+      render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Device, Android version, sensor model/firmware, app build.
+      value: |
+        - Phone / Android version:
+        - Sensor model + firmware:
+        - App build (commit / debug-apk):
+        - Fresh pair or reconnect:
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else that might help (screenshots, frequency, regressions).

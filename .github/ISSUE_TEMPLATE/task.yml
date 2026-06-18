@@ -1,0 +1,71 @@
+name: Task
+description: A unit of work — feature, refactor, chore, or investigation
+title: "[Task]: "
+labels: ["task"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What needs to be done, in one or two sentences.
+      placeholder: Add support for …
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / context
+      description: Why is this worth doing? What problem does it solve or enable?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type of work
+      options:
+        - Feature
+        - Refactor
+        - Chore / tooling
+        - Investigation / spike
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the codebase does this touch?
+      options:
+        - Pairing / J-PAKE handshake
+        - Reconnect (key confirmation)
+        - Live glucose / backfill reading
+        - Background / foreground service
+        - Persistence / storage
+        - UI
+        - Rust crypto core
+        - Build / tooling
+        - Docs
+        - Other / cross-cutting
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How do we know this task is done?
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Implementation notes
+      description: Relevant files, approaches, constraints, or open questions.
