@@ -1,6 +1,8 @@
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../rust/frb_generated.dart';
+import 'alarms.dart';
 import 'connection.dart';
 import 'store.dart';
 
@@ -18,11 +20,15 @@ void startCallback() {
 /// back to the UI over the foreground-task data channel.
 class G7TaskHandler extends TaskHandler {
   G7Connection? _conn;
+  late G7AlarmManager _alarms;
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     // Fresh isolate: the Rust J-PAKE core must be initialised here too.
     await RustLib.init();
+    final notifications = FlutterLocalNotificationsPlugin();
+    await G7AlarmManager.init(notifications);
+    _alarms = G7AlarmManager(notifications);
     final store = await G7Store.open();
     final serial = store.serial ?? '';
     final code = store.pairingCode ?? '';
@@ -37,6 +43,9 @@ class G7TaskHandler extends TaskHandler {
       }),
       onReading: (r) {
         _updateNotification(r.glucoseMgDl);
+        if (r.glucoseMgDl != null) {
+          _alarms.check(r.glucoseMgDl, r.trendMgDlPerMin);
+        }
         FlutterForegroundTask.sendDataToMain({
           't': 'reading',
           'mgdl': r.glucoseMgDl,
