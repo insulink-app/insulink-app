@@ -788,7 +788,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust_lib_g7_reader"
+name = "rust_lib_insulink"
 version = "0.1.0"
 dependencies = [
  "aes",

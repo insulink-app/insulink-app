@@ -93,7 +93,7 @@ service/characteristic (to confirm UUIDs) and each handshake step.
 2. **compileSdk** — flutter_blue_plus 2.x requires API 36. Bumped in BOTH
    `android/app/build.gradle.kts` (`compileSdk = 36`, `minSdk = 23`) **and**
    `rust_builder/android/build.gradle` (`compileSdkVersion 36`) — the AAR check
-   flagged the `:rust_lib_g7_reader` module specifically. If `flutter build`
+   flagged the `:rust_lib_insulink` module specifically. If `flutter build`
    reverts `minSdk` (its one-time "Upgrading build.gradle.kts" migration), reset it.
 
 > Only one app may own the sensor's auth session — uninstall/stop the official
