@@ -1,0 +1,54 @@
+version: 2
+updates:
+  # Flutter / Dart packages (pubspec.yaml)
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "flutter"
+    commit-message:
+      prefix: "deps(pub)"
+    # pub can execute code from dependencies while resolving; refuse to run it.
+    insecure-external-code-execution: deny
+
+  # Rust crypto core (rust/Cargo.toml)
+  - package-ecosystem: "cargo"
+    directory: "/rust"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "rust"
+    commit-message:
+      prefix: "deps(cargo)"
+    # The J-PAKE KATs are a byte-exact contract vs Juggluco — pin the crypto
+    # stack and review bumps manually rather than auto-tracking majors.
+    ignore:
+      - dependency-name: "flutter_rust_bridge"
+
+  # Android Gradle build (android/)
+  - package-ecosystem: "gradle"
+    directory: "/android"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "android"
+    commit-message:
+      prefix: "deps(gradle)"
+
+  # GitHub Actions used in workflows (.github/workflows/)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci(actions)"
