@@ -1,0 +1,20 @@
+[package]
+name = "rust_lib_g7_reader"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+flutter_rust_bridge = "=2.11.1"
+# EC-JPAKE is implemented by hand (Juggluco-faithful) on RustCrypto primitives,
+# NOT mbedTLS — the G7 uses a custom raw-point wire framing, not mbedTLS's
+# TLS/ASN.1 round encoding. secp256r1 = p256.
+p256 = { version = "0.13", features = ["arithmetic", "ecdsa"] }
+sha2 = "0.10"
+aes = "0.8"
+rand_core = { version = "0.6", features = ["getrandom"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

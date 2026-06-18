@@ -1,783 +1,631 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'service.dart';
+import 'dart:collection';
+import 'dart:typed_data';
 
-void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => DexcomG7Service(),
-      child: const DexcomApp(),
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+
+import 'src/g7/auth_session.dart';
+import 'src/g7/ble_transport.dart';
+import 'src/g7/device_info.dart';
+import 'src/g7/glucose.dart';
+import 'src/g7/store.dart';
+import 'src/rust/frb_generated.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await RustLib.init();
+  runApp(const G7ReaderApp());
+}
+
+class G7ReaderApp extends StatelessWidget {
+  const G7ReaderApp({super.key});
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    title: 'G7 Reader',
+    theme: ThemeData.dark(useMaterial3: true).copyWith(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.tealAccent,
+        brightness: Brightness.dark,
+      ),
     ),
+    home: const ReaderPage(),
   );
 }
 
-class DexcomApp extends StatelessWidget {
-  const DexcomApp({super.key});
-
+class ReaderPage extends StatefulWidget {
+  const ReaderPage({super.key});
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Dexcom G7',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1A73E8),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
-    );
-  }
+  State<ReaderPage> createState() => _ReaderPageState();
 }
 
-// ─── HOME SCREEN ─────────────────────────────────────────────────────────────
+class _ReaderPageState extends State<ReaderPage> {
+  final _code = TextEditingController();
+  final _serial = TextEditingController();
+  final _log = <String>[];
+  bool _busy = false;
+  BleTransport? _transport;
+  G7Store? _store;
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  /// glucose history keyed by seconds-since-session-start (dedupes EGV+backfill).
+  final SplayTreeMap<int, int> _byTime = SplayTreeMap();
+  G7GlucoseReading? _latest;
+  bool _backfillAsked = false;
+  G7DeviceInfo _info = G7DeviceInfo();
+  DateTime? _sensorStart;
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final _txIdController = TextEditingController();
-  final _sensorCodeController = TextEditingController();
-  bool _permissionsGranted = false;
+  bool get _connected => _transport != null;
 
   @override
   void initState() {
     super.initState();
-    _loadSavedTxId();
-    _requestPermissions();
-  }
-
-  Future<void> _loadSavedTxId() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('transmitter_id') ?? '';
-    final savedCode = prefs.getString('sensor_code') ?? '';
-    setState(() {
-      _txIdController.text = saved;
-      _sensorCodeController.text = savedCode;
+    G7Store.open().then((s) {
+      if (!mounted) return;
+      _store = s;
+      final serial = s.serial ?? '';
+      // Show cached history + device info immediately while we connect.
+      final cached = serial.isEmpty ? <int, int>{} : s.loadReadings(serial);
+      setState(() {
+        _serial.text = serial;
+        _code.text = s.pairingCode ?? '';
+        _byTime.addAll(cached);
+        if (serial.isNotEmpty) {
+          _info = s.loadInfo(serial) ?? _info;
+          _sensorStart = s.loadSensorStart(serial);
+        }
+      });
+      if (cached.isNotEmpty) {
+        _append('showing ${cached.length} cached readings');
+      }
+      // Auto-connect on launch when we already have a paired sensor.
+      if (serial.isNotEmpty && s.sessionKey(serial) != null) {
+        _append('auto-connecting to $serial…');
+        _start();
+      }
     });
   }
 
-  Future<void> _saveTxId(String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('transmitter_id', id);
+  void _append(String s) {
+    if (mounted) setState(() => _log.insert(0, s));
   }
 
-  Future<void> _saveSensorCode(String code) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('sensor_code', code);
+  void _addReading(int secs, int mgdl) {
+    // A new sensor session resets secsSinceStart toward 0 — drop stale history.
+    if (_byTime.isNotEmpty && secs + 3600 < _byTime.lastKey()!) {
+      _byTime.clear();
+    }
+    setState(() => _byTime[secs] = mgdl);
   }
 
-  Future<void> _requestPermissions() async {
-    final statuses = await [
-      Permission.bluetoothScan,
-      Permission.bluetoothConnect,
-      Permission.locationWhenInUse,
-    ].request();
+  Future<void> _persistReadings() async {
+    final serial = _serial.text.trim();
+    if (serial.isNotEmpty && _byTime.isNotEmpty) {
+      await _store?.saveReadings(serial, _byTime);
+    }
+  }
 
-    final granted = statuses.values.every(
-            (s) => s == PermissionStatus.granted);
-    setState(() => _permissionsGranted = granted);
+  Future<void> _persistInfo() async {
+    final serial = _serial.text.trim();
+    if (serial.isNotEmpty && (_info.hasAny || _sensorStart != null)) {
+      await _store?.saveInfo(serial, _info, _sensorStart);
+    }
+  }
 
-    if (!granted) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Bluetooth- und Standortberechtigung erforderlich'),
-            backgroundColor: Colors.red,
-          ),
-        );
+  Future<void> _start() async {
+    if (_busy) return;
+    final hadConnection = _transport != null;
+    await _transport?.dispose();
+    _transport = null;
+    _backfillAsked = false;
+    setState(() => _busy = true);
+    if (hadConnection) await Future<void>.delayed(const Duration(seconds: 2));
+
+    BleTransport? transport;
+    try {
+      _append('scanning for DXCM…');
+      final device = await BleTransport.scanForSensor();
+      if (device == null) {
+        _append('no sensor found');
+        return;
+      }
+      final serial = _serial.text.trim();
+      final code = _code.text.trim();
+      await _store?.saveIdentity(serial: serial, pairingCode: code);
+
+      transport = BleTransport(device);
+      await transport.connectAndBind(log: _append);
+
+      final session = G7AuthSession(
+        transport: transport,
+        pairingCode: code,
+        log: _append,
+      );
+      final stored = serial.isEmpty ? null : _store?.sessionKey(serial);
+      late final dynamic secret;
+      if (stored != null) {
+        try {
+          secret = await session.runReconnect(stored);
+          _append('RECONNECTED — no re-pairing needed');
+        } catch (e) {
+          _append('reconnect failed ($e) — full pairing');
+          secret = await session.run();
+          if (serial.isNotEmpty) await _store?.saveSessionKey(serial, secret);
+        }
+      } else {
+        secret = await session.run();
+        if (serial.isNotEmpty) await _store?.saveSessionKey(serial, secret);
+      }
+      _append('session established (${secret.length}-byte key)');
+
+      final t = transport;
+      t.controlStream.listen((b) => _onControl(t, Uint8List.fromList(b)));
+      t.backfillStream.listen((b) {
+        final recs = G7GlucoseCodec.parseBackfill(Uint8List.fromList(b));
+        for (final r in recs) {
+          _addReading(r.secsSinceStart, r.glucoseMgDl);
+        }
+        if (recs.isNotEmpty) _persistReadings();
+      });
+      await t.enableDataChannels(log: _append);
+      await t.writeControl([0x4E]); // current EGV
+      await t.writeControl([
+        0x4A,
+      ]); // transmitter version (firmware, sw#, serial)
+      await t.writeControl([
+        0x52,
+      ]); // extended version (session/warmup, hw, algo)
+      await t.writeControl([0x22]); // battery status
+
+      _transport = transport;
+      transport = null;
+      _append('connected — streaming');
+    } catch (e) {
+      _append('ERROR: $e');
+      await transport?.dispose();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _onControl(BleTransport t, Uint8List bytes) {
+    // Non-EGV control responses carry device metadata (version/battery).
+    if (bytes.isNotEmpty && bytes[0] != 0x4E) {
+      if (_info.applyControl(bytes)) {
+        setState(() {});
+        _persistInfo();
+      }
+      return;
+    }
+    final r = G7GlucoseCodec.parseEgv(bytes);
+    if (r == null) return;
+    _latest = r;
+    _sensorStart = DateTime.now().subtract(Duration(seconds: r.secsSinceStart));
+    if (r.glucoseMgDl != null) {
+      _addReading(r.secsSinceStart, r.glucoseMgDl!);
+      _persistReadings();
+    }
+    _persistInfo(); // keep cached sensorStart fresh
+    // Once we know the session clock, pull the last 24 h of history.
+    if (!_backfillAsked) {
+      _backfillAsked = true;
+      final end = r.secsSinceStart - 60;
+      var start = r.secsSinceStart - 24 * 3600;
+      if (start < 300) start = 300;
+      if (end > start) {
+        _append('requesting backfill ${start}s..${end}s');
+        t.requestBackfill(start, end);
       }
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D1117),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF161B22),
-        title: const Text(
-          'Dexcom G7',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history, color: Colors.white70),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const HistoryScreen()),
-            ),
-          ),
-        ],
-      ),
-      body: Consumer<DexcomG7Service>(
-        builder: (context, service, _) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Glukose-Anzeige
-                _GlucoseDisplay(service: service),
-                const SizedBox(height: 24),
-
-                // Verbindungsstatus
-                _ConnectionStatus(service: service),
-                const SizedBox(height: 24),
-
-                // Sensor-Code Eingabe
-                _SensorCodeInput(
-                  controller: _sensorCodeController,
-                  onChanged: (code) {
-                    setState(() {});
-                    _saveSensorCode(code);
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Seriennummer Eingabe
-                _PairingCodeInput(
-                  controller: _txIdController,
-                  onChanged: (id) {
-                    setState(() {});
-                    _saveTxId(id);
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Buttons
-                _ActionButtons(
-                  service: service,
-                  sensorCode: _sensorCodeController.text,
-                  txId: _txIdController.text,
-                  permissionsGranted: _permissionsGranted,
-                  onTxIdChanged: () => setState(() {}),
-                ),
-
-                // Fehleranzeige
-                if (service.errorMessage != null) ...[
-                  const SizedBox(height: 16),
-                  _ErrorCard(message: service.errorMessage!),
-                ],
-              ],
-            ),
-          );
-        },
-      ),
-    );
+  Future<void> _disconnect() async {
+    await _transport?.dispose();
+    _transport = null;
+    _append('disconnected');
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _txIdController.dispose();
-    _sensorCodeController.dispose();
+    _transport?.dispose();
     super.dispose();
-  }
-}
-
-// ─── WIDGETS ─────────────────────────────────────────────────────────────────
-
-class _GlucoseDisplay extends StatelessWidget {
-  final DexcomG7Service service;
-  const _GlucoseDisplay({required this.service});
-
-  Color _glucoseColor(int mgdl) {
-    if (mgdl < 70) return const Color(0xFFFF4444);
-    if (mgdl < 80) return const Color(0xFFFF8800);
-    if (mgdl <= 180) return const Color(0xFF44BB44);
-    if (mgdl <= 250) return const Color(0xFFFF8800);
-    return const Color(0xFFFF4444);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final reading = service.lastReading;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161B22),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: reading != null
-              ? _glucoseColor(reading.glucoseMgdl).withOpacity(0.4)
-              : Colors.white12,
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Hauptwert
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                reading != null ? '${reading.glucoseMgdl}' : '---',
-                style: TextStyle(
-                  fontSize: 80,
-                  fontWeight: FontWeight.w300,
-                  color: reading != null
-                      ? _glucoseColor(reading.glucoseMgdl)
-                      : Colors.white24,
-                  height: 1,
-                ),
-              ),
-              if (reading != null) ...[
-                const SizedBox(width: 8),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    reading.trendArrow,
-                    style: TextStyle(
-                      fontSize: 32,
-                      color: _glucoseColor(reading.glucoseMgdl),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-
-          const SizedBox(height: 8),
-          const Text(
-            'mg/dL',
-            style: TextStyle(
-              color: Colors.white38,
-              fontSize: 16,
-              letterSpacing: 2,
-            ),
-          ),
-
-          if (reading != null) ...[
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Zeitstempel
-                _InfoChip(
-                  label: _formatTime(reading.timestamp),
-                  icon: Icons.access_time,
-                ),
-                // Trend
-                if (reading.trendMgdlPerMin != null)
-                  _InfoChip(
-                    label: '${reading.trendMgdlPerMin! >= 0 ? '+' : ''}'
-                        '${reading.trendMgdlPerMin!.toStringAsFixed(1)} mg/min',
-                    icon: Icons.trending_flat,
-                  ),
-                // Prognose
-                if (reading.predictedGlucose != null)
-                  _InfoChip(
-                    label: 'Prog: ${reading.predictedGlucose}',
-                    icon: Icons.arrow_forward,
-                  ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  String _formatTime(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    return '$h:$m';
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-
-  const _InfoChip({required this.label, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: Colors.white54),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white60,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ConnectionStatus extends StatelessWidget {
-  final DexcomG7Service service;
-  const _ConnectionStatus({required this.service});
-
-  Color get _stateColor {
-    return switch (service.connectionState) {
-      DexConnectionState.connected => const Color(0xFF44BB44),
-      DexConnectionState.scanning ||
-      DexConnectionState.connecting ||
-      DexConnectionState.authenticating =>
-      const Color(0xFF1A73E8),
-      DexConnectionState.error => const Color(0xFFFF4444),
-      _ => Colors.white38,
-    };
-  }
-
-  IconData get _stateIcon {
-    return switch (service.connectionState) {
-      DexConnectionState.connected => Icons.bluetooth_connected,
-      DexConnectionState.scanning => Icons.bluetooth_searching,
-      DexConnectionState.connecting ||
-      DexConnectionState.authenticating =>
-      Icons.bluetooth,
-      DexConnectionState.error => Icons.bluetooth_disabled,
-      _ => Icons.bluetooth_disabled,
-    };
-  }
-
-  bool get _isLoading =>
-      service.connectionState == DexConnectionState.scanning ||
-          service.connectionState == DexConnectionState.connecting ||
-          service.connectionState == DexConnectionState.authenticating;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161B22),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Row(
-        children: [
-          if (_isLoading)
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: _stateColor,
-              ),
-            )
-          else
-            Icon(_stateIcon, color: _stateColor, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              service.statusMessage,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PairingCodeInput extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  const _PairingCodeInput({
-    required this.controller,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Seriennummer (SN)',
-          style: TextStyle(
-            color: Colors.white54,
-            fontSize: 12,
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          onChanged: onChanged,
-          keyboardType: TextInputType.number,
-          maxLength: 12,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            letterSpacing: 4,
-            fontWeight: FontWeight.w300,
-          ),
-          decoration: InputDecoration(
-            hintText: '698926479289',
-            hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.2),
-              letterSpacing: 4,
-            ),
-            counterText: '',
-            filled: true,
-            fillColor: const Color(0xFF161B22),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-              const BorderSide(color: Color(0xFF1A73E8), width: 2),
-            ),
-            prefixIcon:
-            const Icon(Icons.pin, color: Colors.white38),
-            helperText: '12-stellige SN vom Sensor-Applikator',
-            helperStyle:
-            const TextStyle(color: Colors.white38, fontSize: 11),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SensorCodeInput extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  const _SensorCodeInput({
-    required this.controller,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Sensor-Code',
-          style: TextStyle(
-            color: Colors.white54,
-            fontSize: 12,
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          onChanged: onChanged,
-          keyboardType: TextInputType.number,
-          maxLength: 4,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            letterSpacing: 8,
-            fontWeight: FontWeight.w300,
-          ),
-          decoration: InputDecoration(
-            hintText: '1234',
-            hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.2),
-              letterSpacing: 8,
-            ),
-            counterText: '',
-            filled: true,
-            fillColor: const Color(0xFF161B22),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-              const BorderSide(color: Color(0xFF1A73E8), width: 2),
-            ),
-            prefixIcon:
-            const Icon(Icons.pin, color: Colors.white38),
-            helperText: '4-stelliger Sensor-Code vom Sensor-Applikator',
-            helperStyle:
-            const TextStyle(color: Colors.white38, fontSize: 11),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ActionButtons extends StatelessWidget {
-  final DexcomG7Service service;
-  final String sensorCode;
-  final String txId;
-  final bool permissionsGranted;
-  final VoidCallback onTxIdChanged;
-
-  const _ActionButtons({
-    required this.service,
-    required this.sensorCode,
-    required this.txId,
-    required this.permissionsGranted,
-    required this.onTxIdChanged,
-  });
-
-  bool get _canConnect =>
-      permissionsGranted &&
-          sensorCode.length == 4 &&
-          txId.length == 12 &&
-          service.connectionState != DexConnectionState.scanning &&
-          service.connectionState != DexConnectionState.connecting &&
-          service.connectionState != DexConnectionState.authenticating &&
-          service.connectionState != DexConnectionState.connected;
-
-  bool get _canDisconnect =>
-      service.connectionState == DexConnectionState.connected ||
-          service.connectionState == DexConnectionState.scanning ||
-          service.connectionState == DexConnectionState.connecting ||
-          service.connectionState == DexConnectionState.authenticating;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: _canConnect
-                ? () => service.connect(sensorCode, txId)
-                : null,
-            icon: const Icon(Icons.bluetooth_searching),
-            label: const Text('Verbinden'),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF1A73E8),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        if (_canDisconnect) ...[
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            onPressed: service.disconnect,
-            icon: const Icon(Icons.bluetooth_disabled,
-                color: Colors.white54),
-            label: const Text('Trennen',
-                style: TextStyle(color: Colors.white54)),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                  vertical: 16, horizontal: 20),
-              side: const BorderSide(color: Colors.white24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
-        if (service.connectionState == DexConnectionState.connected) ...[
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            onPressed: service.requestReading,
-            icon: const Icon(Icons.refresh, color: Colors.white54),
-            label:
-            const Text('Lesen', style: TextStyle(color: Colors.white54)),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                  vertical: 16, horizontal: 20),
-              side: const BorderSide(color: Colors.white24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _ErrorCard extends StatelessWidget {
-  final String message;
-  const _ErrorCard({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3D0000),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFF4444).withOpacity(0.4)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline,
-              color: Color(0xFFFF4444), size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Color(0xFFFF8888),
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── HISTORY SCREEN ──────────────────────────────────────────────────────────
-
-class HistoryScreen extends StatelessWidget {
-  const HistoryScreen({super.key});
-
-  Color _glucoseColor(int mgdl) {
-    if (mgdl < 70) return const Color(0xFFFF4444);
-    if (mgdl < 80) return const Color(0xFFFF8800);
-    if (mgdl <= 180) return const Color(0xFF44BB44);
-    if (mgdl <= 250) return const Color(0xFFFF8800);
-    return const Color(0xFFFF4444);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1117),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF161B22),
-        title: const Text('Verlauf',
-            style: TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Dexcom G7'),
+        actions: [
+          if (_connected)
+            IconButton(
+              onPressed: _disconnect,
+              icon: const Icon(Icons.bluetooth_disabled),
+              tooltip: 'Disconnect',
+            ),
+        ],
       ),
-      body: Consumer<DexcomG7Service>(
-        builder: (context, service, _) {
-          final history = service.history;
-
-          if (history.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _CurrentValue(
+              mgdl:
+                  _latest?.glucoseMgDl ??
+                  (_byTime.isNotEmpty ? _byTime[_byTime.lastKey()] : null),
+              trendPerMin: _latest?.trendMgDlPerMin,
+              stale: _latest == null && _byTime.isNotEmpty,
+              busy: _busy,
+            ),
+            const SizedBox(height: 12),
+            Expanded(flex: 3, child: _GlucoseChart(byTime: _byTime)),
+            const SizedBox(height: 8),
+            _SensorInfo(
+              info: _info,
+              sensorStart: _sensorStart,
+              state: _latest?.state,
+              age: _latest?.secsSinceStart,
+            ),
+            const SizedBox(height: 8),
+            if (!_connected) ...[
+              Row(
                 children: [
-                  Icon(Icons.show_chart,
-                      size: 48, color: Colors.white24),
-                  SizedBox(height: 16),
-                  Text(
-                    'Noch keine Messungen',
-                    style: TextStyle(color: Colors.white38, fontSize: 16),
+                  Expanded(
+                    child: TextField(
+                      controller: _serial,
+                      decoration: const InputDecoration(
+                        labelText: 'Serial',
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _code,
+                      decoration: const InputDecoration(
+                        labelText: 'Pairing code',
+                        isDense: true,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            );
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: history.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, i) {
-              final r = history[i];
-              final h = r.timestamp.hour.toString().padLeft(2, '0');
-              final m = r.timestamp.minute.toString().padLeft(2, '0');
-              final color = _glucoseColor(r.glucoseMgdl);
-
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: _busy ? null : _start,
+                icon: const Icon(Icons.bluetooth_searching),
+                label: Text(_busy ? 'Connecting…' : 'Connect'),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Expanded(
+              flex: 1,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161B22),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white),
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
-                  children: [
-                    // Zeit
-                    SizedBox(
-                      width: 48,
-                      child: Text(
-                        '$h:$m',
-                        style: const TextStyle(
-                          color: Colors.white38,
-                          fontSize: 13,
-                        ),
-                      ),
+                child: ListView.builder(
+                  reverse: false,
+                  itemCount: _log.length,
+                  itemBuilder: (_, i) => Text(
+                    _log[i],
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
                     ),
-                    // Wert
-                    Text(
-                      '${r.glucoseMgdl}',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'mg/dL',
-                      style: const TextStyle(
-                          color: Colors.white38, fontSize: 11),
-                    ),
-                    const Spacer(),
-                    // Trend
-                    Text(
-                      r.trendArrow,
-                      style: TextStyle(fontSize: 18, color: color),
-                    ),
-                    if (r.trendMgdlPerMin != null) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        '${r.trendMgdlPerMin! >= 0 ? '+' : ''}'
-                            '${r.trendMgdlPerMin!.toStringAsFixed(1)}',
-                        style: const TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              );
-            },
-          );
-        },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Big current-glucose readout with a trend arrow. [stale] dims the value when
+/// it's the last cached reading shown before live data arrives.
+class _CurrentValue extends StatelessWidget {
+  const _CurrentValue({
+    required this.mgdl,
+    required this.trendPerMin,
+    required this.stale,
+    required this.busy,
+  });
+  final int? mgdl;
+  final double? trendPerMin;
+  final bool stale;
+  final bool busy;
+
+  String _arrow(double perMin) {
+    if (perMin >= 3) return '⇈';
+    if (perMin >= 2) return '↑';
+    if (perMin >= 1) return '↗';
+    if (perMin > -1) return '→';
+    if (perMin > -2) return '↘';
+    if (perMin > -3) return '↓';
+    return '⇊';
+  }
+
+  Color _color(int v) {
+    if (v < 70) return Colors.redAccent;
+    if (v > 180) return Colors.orangeAccent;
+    return Colors.tealAccent;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final v = mgdl;
+    if (v == null) {
+      return Text(
+        busy ? '…' : '--',
+        style: const TextStyle(fontSize: 56, fontWeight: FontWeight.bold),
+      );
+    }
+    final color = stale ? _color(v).withValues(alpha: 0.5) : _color(v);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          '$v',
+          style: TextStyle(
+            fontSize: 64,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 8),
+        if (trendPerMin != null)
+          Text(
+            _arrow(trendPerMin!),
+            style: TextStyle(fontSize: 40, color: color),
+          ),
+        const Spacer(),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              stale ? 'cached' : 'mg/dL',
+              style: TextStyle(color: Colors.grey[400]),
+            ),
+            if (trendPerMin != null)
+              Text(
+                '${trendPerMin! >= 0 ? '+' : ''}'
+                '${trendPerMin!.toStringAsFixed(1)}/min',
+                style: TextStyle(color: Colors.grey[400]),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact panel of everything the sensor reports: start/expiry, state,
+/// firmware/software/hardware versions, battery, serial, session lengths.
+class _SensorInfo extends StatelessWidget {
+  const _SensorInfo({
+    required this.info,
+    required this.sensorStart,
+    required this.state,
+    required this.age,
+  });
+  final G7DeviceInfo info;
+  final DateTime? sensorStart;
+  final int? state;
+  final int? age;
+
+  static String _dur(int? secs) {
+    if (secs == null) return '—';
+    final d = secs ~/ 86400,
+        h = (secs % 86400) ~/ 3600,
+        m = (secs % 3600) ~/ 60;
+    if (d > 0) return '${d}d ${h}h';
+    if (h > 0) return '${h}h ${m}m';
+    return '${m}m';
+  }
+
+  static String _dt(DateTime? t) {
+    if (t == null) return '—';
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(t.day)}.${two(t.month)} ${two(t.hour)}:${two(t.minute)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <MapEntry<String, String>>[];
+    void add(String k, String? v) {
+      if (v != null && v.isNotEmpty) items.add(MapEntry(k, v));
+    }
+
+    if (state != null) add('State', g7AlgorithmState(state!));
+    add('Started', _dt(sensorStart));
+    if (sensorStart != null && info.sessionLengthSec != null) {
+      final expiry = sensorStart!.add(
+        Duration(seconds: info.sessionLengthSec!),
+      );
+      final rem = expiry.difference(DateTime.now());
+      final remStr = rem.isNegative
+          ? 'expired'
+          : 'in ${rem.inDays}d ${rem.inHours % 24}h';
+      add('Expires (Ablauf)', '${_dt(expiry)}  ($remStr)');
+    }
+    final effAge =
+        age ??
+        (sensorStart != null
+            ? DateTime.now().difference(sensorStart!).inSeconds
+            : null);
+    add('Age', _dur(effAge));
+    add('Firmware', info.firmware);
+    add('Software #', info.softwareNumber?.toString());
+    add('Hardware', info.hardwareVersion?.toString());
+    add(
+      'Algorithm',
+      info.algorithmVersion != null
+          ? '0x${info.algorithmVersion!.toRadixString(16)}'
+          : null,
+    );
+    add(
+      'Silicon',
+      info.siliconVersion != null
+          ? '0x${info.siliconVersion!.toRadixString(16)}'
+          : null,
+    );
+    add('Serial', info.serialNumber);
+    add('Session', _dur(info.sessionLengthSec));
+    add('Warmup', _dur(info.warmupSec));
+    add('Max days', info.maxLifetimeDays?.toString());
+    if (info.batteryVoltageA != null) {
+      add(
+        'Battery',
+        '${info.batteryVoltageA}/${info.batteryVoltageB} mV · ${info.runtimeDays}d · ${info.temperatureC}°C',
+      );
+    }
+
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        children: [
+          for (final e in items)
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 11),
+                children: [
+                  TextSpan(
+                    text: '${e.key}: ',
+                    style: TextStyle(color: Colors.grey[500]),
+                  ),
+                  TextSpan(
+                    text: e.value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// fl_chart line graph of glucose vs. time (hours, 0 = latest reading).
+class _GlucoseChart extends StatelessWidget {
+  const _GlucoseChart({required this.byTime});
+  final SplayTreeMap<int, int> byTime;
+
+  @override
+  Widget build(BuildContext context) {
+    if (byTime.isEmpty) {
+      return const Center(child: Text('no readings yet'));
+    }
+    final entries = byTime.entries.toList();
+    final latestSecs = entries.last.key;
+    final spots = [
+      for (final e in entries)
+        FlSpot((e.key - latestSecs) / 3600.0, e.value.toDouble()),
+    ];
+    final maxY =
+        (entries.map((e) => e.value).reduce((a, b) => a > b ? a : b) + 30)
+            .clamp(200, 400)
+            .toDouble();
+    final minX = spots.first.x;
+
+    return LineChart(
+      LineChartData(
+        minY: 40,
+        maxY: maxY,
+        minX: minX,
+        maxX: 0,
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 50,
+        ),
+        borderData: FlBorderData(show: false),
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 36,
+              interval: 50,
+              getTitlesWidget: (v, _) => Text(
+                '${v.toInt()}',
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 24,
+              interval: 6,
+              getTitlesWidget: (v, _) => Text(
+                '${v.toInt()}h',
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+            ),
+          ),
+        ),
+        // Target range band 70–180 mg/dL.
+        extraLinesData: ExtraLinesData(
+          horizontalLines: [
+            HorizontalLine(
+              y: 70,
+              color: Colors.red.withValues(alpha: 0.4),
+              strokeWidth: 1,
+            ),
+            HorizontalLine(
+              y: 180,
+              color: Colors.orange.withValues(alpha: 0.4),
+              strokeWidth: 1,
+            ),
+          ],
+        ),
+        lineTouchData: const LineTouchData(enabled: true),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            curveSmoothness: 0.2,
+            barWidth: 3,
+            color: Colors.tealAccent,
+            dotData: FlDotData(show: spots.length < 60),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.tealAccent.withValues(alpha: 0.3),
+                  Colors.tealAccent.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
