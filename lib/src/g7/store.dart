@@ -18,6 +18,11 @@ class G7Store {
   static Future<G7Store> open() async =>
       G7Store(await SharedPreferences.getInstance());
 
+  /// Re-read values written by another isolate. Each isolate keeps its own
+  /// in-memory SharedPreferences cache, so the UI must reload to observe writes
+  /// made by the background foreground-service isolate (and vice-versa).
+  Future<void> reload() => _p.reload();
+
   String? get serial => _p.getString(_kSerial);
   String? get pairingCode => _p.getString(_kCode);
 
@@ -70,6 +75,35 @@ class G7Store {
       if (k != null && v != null) out[k] = v;
     }
     return out;
+  }
+
+  static String _kLatest(String serial) => 'g7.latest.$serial';
+
+  /// Cache the most recent live EGV (value + trend + state + session clock) so
+  /// the big headline reading is restored immediately on the next launch — not
+  /// just the last history point.
+  Future<void> saveLatest(
+    String serial, {
+    required int? mgdl,
+    required int trendTenths,
+    required int state,
+    required int secsSinceStart,
+  }) async {
+    await _p.setString(
+      _kLatest(serial),
+      jsonEncode({
+        'mgdl': mgdl,
+        'trend': trendTenths,
+        'state': state,
+        'secs': secsSinceStart,
+      }),
+    );
+  }
+
+  Map<String, dynamic>? loadLatest(String serial) {
+    final s = _p.getString(_kLatest(serial));
+    if (s == null) return null;
+    return jsonDecode(s) as Map<String, dynamic>;
   }
 
   static String _kInfo(String serial) => 'g7.info.$serial';

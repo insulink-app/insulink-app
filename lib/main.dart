@@ -1,19 +1,20 @@
 import 'dart:collection';
-import 'dart:typed_data';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-import 'src/g7/auth_session.dart';
-import 'src/g7/ble_transport.dart';
+import 'src/g7/ble_service.dart';
 import 'src/g7/device_info.dart';
 import 'src/g7/glucose.dart';
 import 'src/g7/store.dart';
-import 'src/rust/frb_generated.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await RustLib.init();
+  // Required so the UI isolate can exchange data with the foreground-service
+  // isolate that owns the BLE connection.
+  FlutterForegroundTask.initCommunicationPort();
   runApp(const G7ReaderApp());
 }
 
@@ -38,32 +39,42 @@ class ReaderPage extends StatefulWidget {
   State<ReaderPage> createState() => _ReaderPageState();
 }
 
-class _ReaderPageState extends State<ReaderPage> {
+class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   final _code = TextEditingController();
   final _serial = TextEditingController();
   final _log = <String>[];
   bool _busy = false;
-  BleTransport? _transport;
+
+  /// True while the foreground service (which owns the BLE link) is running.
+  bool _serviceRunning = false;
   G7Store? _store;
 
   /// glucose history keyed by seconds-since-session-start (dedupes EGV+backfill).
+  /// Mirrors what the background service persists to [G7Store].
   final SplayTreeMap<int, int> _byTime = SplayTreeMap();
   G7GlucoseReading? _latest;
-  bool _backfillAsked = false;
+
+  /// False when [_latest] was restored from cache (shown dimmed as "cached"),
+  /// true once a live reading arrives from the service.
+  bool _latestIsLive = false;
   G7DeviceInfo _info = G7DeviceInfo();
   DateTime? _sensorStart;
 
-  bool get _connected => _transport != null;
+  bool get _connected => _serviceRunning;
 
   @override
   void initState() {
     super.initState();
-    G7Store.open().then((s) {
+    WidgetsBinding.instance.addObserver(this);
+    // Receive live updates pushed from the foreground-service isolate.
+    FlutterForegroundTask.addTaskDataCallback(_onTaskData);
+    G7Store.open().then((s) async {
       if (!mounted) return;
       _store = s;
       final serial = s.serial ?? '';
-      // Show cached history + device info immediately while we connect.
+      // Show cached history, latest value + device info immediately.
       final cached = serial.isEmpty ? <int, int>{} : s.loadReadings(serial);
+      final latest = serial.isEmpty ? null : s.loadLatest(serial);
       setState(() {
         _serial.text = serial;
         _code.text = s.pairingCode ?? '';
@@ -72,12 +83,28 @@ class _ReaderPageState extends State<ReaderPage> {
           _info = s.loadInfo(serial) ?? _info;
           _sensorStart = s.loadSensorStart(serial);
         }
+        if (latest != null) {
+          _latest = G7GlucoseReading(
+            secsSinceStart: latest['secs'] as int? ?? 0,
+            age: 0,
+            sequence: 0,
+            glucoseMgDl: latest['mgdl'] as int?,
+            predictedMgDl: 0,
+            trendTenths: latest['trend'] as int? ?? 0,
+            state: latest['state'] as int? ?? 0,
+          );
+          _latestIsLive = false; // from cache until a live reading arrives
+        }
       });
       if (cached.isNotEmpty) {
         _append('showing ${cached.length} cached readings');
       }
-      // Auto-connect on launch when we already have a paired sensor.
-      if (serial.isNotEmpty && s.sessionKey(serial) != null) {
+      await _refreshServiceState();
+      // Auto-connect on launch when paired, unless the service is already up
+      // (it keeps running while the app is closed).
+      if (serial.isNotEmpty &&
+          s.sessionKey(serial) != null &&
+          !_serviceRunning) {
         _append('auto-connecting to $serial…');
         _start();
       }
@@ -88,145 +115,169 @@ class _ReaderPageState extends State<ReaderPage> {
     if (mounted) setState(() => _log.insert(0, s));
   }
 
-  void _addReading(int secs, int mgdl) {
-    // A new sensor session resets secsSinceStart toward 0 — drop stale history.
-    if (_byTime.isNotEmpty && secs + 3600 < _byTime.lastKey()!) {
-      _byTime.clear();
+  /// Messages from the background service: log lines, the latest live reading,
+  /// a "reload from store" ping, and connection-state transitions.
+  void _onTaskData(Object data) {
+    if (data is! Map) return;
+    switch (data['t']) {
+      case 'log':
+        _append(data['line'] as String? ?? '');
+      case 'reading':
+        if (!mounted) return;
+        setState(() {
+          _latest = G7GlucoseReading(
+            secsSinceStart: data['secs'] as int? ?? 0,
+            age: 0,
+            sequence: 0,
+            glucoseMgDl: data['mgdl'] as int?,
+            predictedMgDl: 0,
+            trendTenths: data['trendTenths'] as int? ?? 0,
+            state: data['state'] as int? ?? 0,
+          );
+          _latestIsLive = true;
+        });
+      case 'update':
+        _reloadFromStore();
     }
-    setState(() => _byTime[secs] = mgdl);
   }
 
-  Future<void> _persistReadings() async {
+  /// Re-read everything the service persisted (history, info, sensor start).
+  /// Requires reloading the SharedPreferences cache since the writes happened
+  /// in the service isolate.
+  Future<void> _reloadFromStore() async {
+    final s = _store;
+    if (s == null) return;
+    await s.reload();
     final serial = _serial.text.trim();
-    if (serial.isNotEmpty && _byTime.isNotEmpty) {
-      await _store?.saveReadings(serial, _byTime);
-    }
+    if (serial.isEmpty || !mounted) return;
+    final cached = s.loadReadings(serial);
+    setState(() {
+      _byTime
+        ..clear()
+        ..addAll(cached);
+      _info = s.loadInfo(serial) ?? _info;
+      _sensorStart = s.loadSensorStart(serial) ?? _sensorStart;
+    });
   }
 
-  Future<void> _persistInfo() async {
-    final serial = _serial.text.trim();
-    if (serial.isNotEmpty && (_info.hasAny || _sensorStart != null)) {
-      await _store?.saveInfo(serial, _info, _sensorStart);
-    }
+  Future<void> _refreshServiceState() async {
+    final running = await FlutterForegroundTask.isRunningService;
+    if (mounted) setState(() => _serviceRunning = running);
   }
 
+  /// Request the BLE permissions the background scan/connect needs. On
+  /// Android 12+ these are `BLUETOOTH_SCAN`/`BLUETOOTH_CONNECT`; on older
+  /// versions scanning needs location instead (auto-granted scan/connect).
+  Future<bool> _ensureBlePermissions() async {
+    final statuses = await [
+      Permission.bluetoothScan,
+      Permission.bluetoothConnect,
+      Permission.locationWhenInUse,
+    ].request();
+    final scanOk = statuses[Permission.bluetoothScan]?.isGranted ?? false;
+    final connectOk = statuses[Permission.bluetoothConnect]?.isGranted ?? false;
+    final locOk = statuses[Permission.locationWhenInUse]?.isGranted ?? false;
+    // Modern devices need scan+connect; pre-12 falls back to location.
+    return (scanOk && connectOk) || locOk;
+  }
+
+  void _initForegroundTask() {
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        channelId: 'insulink',
+        channelName: 'Dexcom G7 connection',
+        channelDescription:
+            'Keeps the glucose connection alive in the background.',
+        channelImportance: NotificationChannelImportance.LOW,
+        priority: NotificationPriority.LOW,
+        onlyAlertOnce: true,
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(),
+      foregroundTaskOptions: ForegroundTaskOptions(
+        // Watchdog tick that lets the handler reconnect after a drop.
+        eventAction: ForegroundTaskEventAction.repeat(30000),
+        autoRunOnBoot: false,
+        autoRunOnMyPackageReplaced: true,
+        allowWakeLock: true,
+        allowWifiLock: false,
+      ),
+    );
+  }
+
+  /// Start the foreground service that connects and streams glucose. The BLE
+  /// work now lives in that service isolate, so it survives the app being
+  /// backgrounded or closed.
   Future<void> _start() async {
     if (_busy) return;
-    final hadConnection = _transport != null;
-    await _transport?.dispose();
-    _transport = null;
-    _backfillAsked = false;
     setState(() => _busy = true);
-    if (hadConnection) await Future<void>.delayed(const Duration(seconds: 2));
-
-    BleTransport? transport;
     try {
-      _append('scanning for DXCM…');
-      final device = await BleTransport.scanForSensor();
-      if (device == null) {
-        _append('no sensor found');
+      // Bluetooth runtime permissions must be GRANTED before starting a
+      // `connectedDevice` foreground service (Android 14+ validates the app
+      // holds one), and because the scan now runs in the background isolate
+      // which cannot show permission dialogs. Request them here in the UI.
+      if (!await _ensureBlePermissions()) {
+        _append('Bluetooth permission denied — cannot start');
         return;
       }
+      if (await FlutterForegroundTask.checkNotificationPermission() !=
+          NotificationPermission.granted) {
+        await FlutterForegroundTask.requestNotificationPermission();
+      }
+      if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+        await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+      }
+
       final serial = _serial.text.trim();
       final code = _code.text.trim();
+      // The service isolate reads serial + code from the store on start.
       await _store?.saveIdentity(serial: serial, pairingCode: code);
 
-      transport = BleTransport(device);
-      await transport.connectAndBind(log: _append);
-
-      final session = G7AuthSession(
-        transport: transport,
-        pairingCode: code,
-        log: _append,
+      _initForegroundTask();
+      final result = await FlutterForegroundTask.startService(
+        serviceId: 256,
+        serviceTypes: const [ForegroundServiceTypes.connectedDevice],
+        notificationTitle: 'Dexcom G7',
+        notificationText: 'connecting…',
+        callback: startCallback,
       );
-      final stored = serial.isEmpty ? null : _store?.sessionKey(serial);
-      late final dynamic secret;
-      if (stored != null) {
-        try {
-          secret = await session.runReconnect(stored);
-          _append('RECONNECTED — no re-pairing needed');
-        } catch (e) {
-          _append('reconnect failed ($e) — full pairing');
-          secret = await session.run();
-          if (serial.isNotEmpty) await _store?.saveSessionKey(serial, secret);
-        }
-      } else {
-        secret = await session.run();
-        if (serial.isNotEmpty) await _store?.saveSessionKey(serial, secret);
+      if (result is ServiceRequestSuccess) {
+        _append('background service started');
+      } else if (result is ServiceRequestFailure) {
+        _append('service start failed: ${result.error}');
       }
-      _append('session established (${secret.length}-byte key)');
-
-      final t = transport;
-      t.controlStream.listen((b) => _onControl(t, Uint8List.fromList(b)));
-      t.backfillStream.listen((b) {
-        final recs = G7GlucoseCodec.parseBackfill(Uint8List.fromList(b));
-        for (final r in recs) {
-          _addReading(r.secsSinceStart, r.glucoseMgDl);
-        }
-        if (recs.isNotEmpty) _persistReadings();
-      });
-      await t.enableDataChannels(log: _append);
-      await t.writeControl([0x4E]); // current EGV
-      await t.writeControl([
-        0x4A,
-      ]); // transmitter version (firmware, sw#, serial)
-      await t.writeControl([
-        0x52,
-      ]); // extended version (session/warmup, hw, algo)
-      await t.writeControl([0x22]); // battery status
-
-      _transport = transport;
-      transport = null;
-      _append('connected — streaming');
+      await _refreshServiceState();
     } catch (e) {
       _append('ERROR: $e');
-      await transport?.dispose();
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  void _onControl(BleTransport t, Uint8List bytes) {
-    // Non-EGV control responses carry device metadata (version/battery).
-    if (bytes.isNotEmpty && bytes[0] != 0x4E) {
-      if (_info.applyControl(bytes)) {
-        setState(() {});
-        _persistInfo();
-      }
-      return;
-    }
-    final r = G7GlucoseCodec.parseEgv(bytes);
-    if (r == null) return;
-    _latest = r;
-    _sensorStart = DateTime.now().subtract(Duration(seconds: r.secsSinceStart));
-    if (r.glucoseMgDl != null) {
-      _addReading(r.secsSinceStart, r.glucoseMgDl!);
-      _persistReadings();
-    }
-    _persistInfo(); // keep cached sensorStart fresh
-    // Once we know the session clock, pull the last 24 h of history.
-    if (!_backfillAsked) {
-      _backfillAsked = true;
-      final end = r.secsSinceStart - 60;
-      var start = r.secsSinceStart - 24 * 3600;
-      if (start < 300) start = 300;
-      if (end > start) {
-        _append('requesting backfill ${start}s..${end}s');
-        t.requestBackfill(start, end);
-      }
+  Future<void> _disconnect() async {
+    await FlutterForegroundTask.stopService();
+    _append('disconnected');
+    if (mounted) {
+      setState(() {
+        _serviceRunning = false;
+        _latest = null;
+        _latestIsLive = false;
+      });
     }
   }
 
-  Future<void> _disconnect() async {
-    await _transport?.dispose();
-    _transport = null;
-    _append('disconnected');
-    if (mounted) setState(() {});
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Catch up on whatever the service captured while we were away.
+      _refreshServiceState();
+      _reloadFromStore();
+    }
   }
 
   @override
   void dispose() {
-    _transport?.dispose();
+    FlutterForegroundTask.removeTaskDataCallback(_onTaskData);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -254,7 +305,8 @@ class _ReaderPageState extends State<ReaderPage> {
                   _latest?.glucoseMgDl ??
                   (_byTime.isNotEmpty ? _byTime[_byTime.lastKey()] : null),
               trendPerMin: _latest?.trendMgDlPerMin,
-              stale: _latest == null && _byTime.isNotEmpty,
+              // Dimmed "cached" until a live reading arrives from the service.
+              stale: !_latestIsLive,
               busy: _busy,
             ),
             const SizedBox(height: 12),
