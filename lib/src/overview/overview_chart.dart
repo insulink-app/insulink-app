@@ -2,35 +2,59 @@ import 'dart:collection';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 
 /// fl_chart line graph of glucose vs. time (hours, 0 = latest reading).
-class OverviewChart extends StatelessWidget {
+class OverviewChart extends StatefulWidget {
   const OverviewChart({super.key, required this.byTime});
 
   final SplayTreeMap<int, int> byTime;
 
   @override
+  State<OverviewChart> createState() => _OverviewChartState();
+}
+
+class _OverviewChartState extends State<OverviewChart> {
+  /// Spot index under the finger on the last touch event, so we only buzz once
+  /// per data point as the finger moves across (and reset when it lifts off).
+  int? _lastTouchedIndex;
+
+  /// Light haptic tick when the highlighted point changes while scrubbing.
+  void _onChartTouch(FlTouchEvent event, LineTouchResponse? response) {
+    final spots = response?.lineBarSpots;
+    if (!event.isInterestedForInteractions || spots == null || spots.isEmpty) {
+      _lastTouchedIndex = null;
+      return;
+    }
+    final index = spots.first.spotIndex;
+    if (index != _lastTouchedIndex) {
+      _lastTouchedIndex = index;
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final byTime = widget.byTime;
     if (byTime.isEmpty) {
       return Center(child: LocaleText('overview.chart.empty'));
     }
     final entries = byTime.entries.toList();
     final latestSecs = entries.last.key;
+    // Only the last 24 h, even if more history is cached.
+    final cutoff = latestSecs - 24 * 3600;
     final spots = [
       for (final e in entries)
-        FlSpot((e.key - latestSecs) / 3600.0, e.value.toDouble()),
+        if (e.key >= cutoff)
+          FlSpot((e.key - latestSecs) / 3600.0, e.value.toDouble()),
     ];
-    final maxY =
-        (entries.map((e) => e.value).reduce((a, b) => a > b ? a : b) + 30)
-            .clamp(200, 400)
-            .toDouble();
     final minX = spots.first.x;
 
     return LineChart(
       LineChartData(
-        minY: 40,
-        maxY: maxY,
+        minY: 0,
+        maxY: 300,
         minX: minX,
         maxX: 0,
         gridData: FlGridData(
@@ -84,7 +108,7 @@ class OverviewChart extends StatelessWidget {
             ),
           ],
         ),
-        lineTouchData: const LineTouchData(enabled: true),
+        lineTouchData: LineTouchData(enabled: true, touchCallback: _onChartTouch),
         lineBarsData: [
           LineChartBarData(
             spots: spots,

@@ -41,53 +41,38 @@ class OverviewCurrentValue extends StatelessWidget {
     final base = v == null ? Colors.grey : _color(v);
     final color = stale ? base.withValues(alpha: 0.5) : base;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                v == null ? (busy ? '…' : '--') : '$v',
-                style: TextStyle(
-                  fontSize: 72,
-                  fontWeight: FontWeight.bold,
-                  height: 1,
-                  color: color,
-                ),
-              ),
-              if (v != null && trendPerMin != null) ...[
-                const SizedBox(width: 10),
-                Icon(_arrow(trendPerMin!), size: 40, color: color),
-              ],
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            stale ? Locales.string(context, 'overview.cached') : 'mg/dL',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-              color: color.withValues(alpha: 0.9),
-            ),
-          ),
-          if (trendPerMin != null)
+    final unit = stale ? Locales.string(context, 'overview.cached') : 'mg/dL';
+    final sub = trendPerMin != null
+        ? '$unit · ${trendPerMin! >= 0 ? '+' : ''}'
+              '${trendPerMin!.toStringAsFixed(1)}/min'
+        : unit;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
             Text(
-              '${trendPerMin! >= 0 ? '+' : ''}'
-              '${trendPerMin!.toStringAsFixed(1)} mg/dL/min',
-              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+              v == null ? (busy ? '…' : '--') : '$v',
+              style: TextStyle(
+                fontSize: 80,
+                fontWeight: FontWeight.bold,
+                height: 1,
+                color: color,
+              ),
             ),
+            if (v != null && trendPerMin != null) ...[
+              const SizedBox(width: 10),
+              Icon(_arrow(trendPerMin!), size: 56, color: color),
+            ],
+          ],
+        ),
+        if (v != null) ...[
+          const SizedBox(height: 2),
+          Text(sub, style: TextStyle(fontSize: 13, color: Colors.grey[400])),
         ],
-      ),
+      ],
     );
   }
 }
