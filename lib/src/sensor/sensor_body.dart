@@ -6,6 +6,7 @@ import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_developer_state.dart';
+import 'package:insulink/src/profile/profile_glucose_state.dart';
 import 'package:insulink/src/sensor/sensor_info.dart';
 import 'package:provider/provider.dart';
 
@@ -23,8 +24,70 @@ class SensorBody extends ProductPageBody {
   }
 }
 
-class SensorBodyContent extends StatelessWidget {
+class SensorBodyContent extends StatefulWidget {
   const SensorBodyContent({super.key});
+
+  @override
+  State<SensorBodyContent> createState() => _SensorBodyContentState();
+}
+
+class _SensorBodyContentState extends State<SensorBodyContent> {
+  /// Drives the gradual fade of the connection box as the attribute list is
+  /// scrolled. The box reaches full transparency after [_fadeDistance] px.
+  final ScrollController _scroll = ScrollController();
+  static const double _fadeDistance = 80;
+
+  /// Gap between the pinned box and the scrolling content. Kept larger than
+  /// [_fadeDistance] so the box has fully faded out before the content scrolls
+  /// up into its place (no overlap).
+  static const double _gap = 80;
+
+  /// The pinned box is overlaid on top of the scroll view; its measured height
+  /// is used to push the content below it so nothing starts hidden.
+  final GlobalKey _boxKey = GlobalKey();
+  double _boxHeight = 0;
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Read the box's rendered height after layout and reserve that much space
+  /// above the scrolling content. Runs each frame but only rebuilds on change.
+  void _measureBox() {
+    final h = _boxKey.currentContext?.size?.height;
+    if (h != null && h != _boxHeight) {
+      setState(() => _boxHeight = h);
+    }
+  }
+
+  /// Snap to one of two resting positions once the user lets go: fully showing
+  /// the box (offset 0) or fully scrolled past it (box gone, content at top).
+  /// Crossing [_fadeDistance] commits to the collapsed position for a snappy
+  /// feel instead of leaving the box half-faded.
+  bool _snapScroll() {
+    if (!_scroll.hasClients) return false;
+    final snapTarget = (_boxHeight + _gap).clamp(
+      0.0,
+      _scroll.position.maxScrollExtent,
+    );
+    if (snapTarget <= 0) return false;
+    final offset = _scroll.offset;
+    // Only act between the two anchors; never fight the user mid-list.
+    if (offset >= snapTarget) return false;
+    final target = offset >= _fadeDistance ? snapTarget : 0.0;
+    if ((offset - target).abs() < 1) return false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      _scroll.animateTo(
+        target,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
+    return false;
+  }
 
   /// Copy the whole log (chronological) to the clipboard and confirm via a
   /// snackbar.
@@ -46,23 +109,76 @@ class SensorBodyContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final g7 = context.watch<G7Controller>();
     final showLog = context.watch<ProfileDeveloperState>().enabled;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureBox());
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _ControlBox(g7: g7),
-            const SizedBox(height: 12),
+            // The connection box stays pinned at the top, the attribute list
+            // scrolls underneath it. As you scroll, the box fades out to free
+            // up the room it occupies.
             Expanded(
-              child: SingleChildScrollView(
-                child: SensorInfo(
-                  info: g7.info,
-                  sensorStart: g7.sensorStart,
-                  state: g7.latest?.state,
-                  age: g7.latest?.secsSinceStart,
-                  lastUpdate: g7.lastUpdate,
-                ),
+              child: Stack(
+                children: [
+                  // Scrolling content, pushed below the pinned box.
+                  Positioned.fill(
+                    child: NotificationListener<ScrollEndNotification>(
+                      onNotification: (_) => _snapScroll(),
+                      child: SingleChildScrollView(
+                        controller: _scroll,
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            top: _boxHeight > 0 ? _boxHeight + _gap : 0,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              LocaleText(
+                                'sensor.info.title',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SensorInfo(
+                                info: g7.info,
+                                sensorStart: g7.sensorStart,
+                                state: g7.latest?.state,
+                                age: g7.latest?.secsSinceStart,
+                                lastUpdate: g7.lastUpdate,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Pinned connection box that fades as you scroll.
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: AnimatedBuilder(
+                      animation: _scroll,
+                      builder: (context, child) {
+                        final offset = _scroll.hasClients ? _scroll.offset : 0.0;
+                        final opacity = (1 - offset / _fadeDistance).clamp(
+                          0.0,
+                          1.0,
+                        );
+                        // Once mostly faded, let touches reach the content below.
+                        return IgnorePointer(
+                          ignoring: opacity < 0.5,
+                          child: Opacity(opacity: opacity, child: child),
+                        );
+                      },
+                      child: _ControlBox(key: _boxKey, g7: g7),
+                    ),
+                  ),
+                ],
               ),
             ),
             // Connection log — developer mode only.
@@ -78,7 +194,7 @@ class SensorBodyContent extends StatelessWidget {
 /// sensor. Both are guarded by a confirmation dialog so they can't fire by
 /// accident.
 class _ControlBox extends StatelessWidget {
-  const _ControlBox({required this.g7});
+  const _ControlBox({super.key, required this.g7});
 
   final G7Controller g7;
 
@@ -116,17 +232,121 @@ class _ControlBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final connected = g7.connected;
-    final accent = connected ? Colors.tealAccent.shade700 : Colors.grey;
+    final busy = g7.busy;
+    final hasReading = g7.currentMgdl != null;
+    // Pairing code entered + service running, but no reading has arrived yet.
+    final searching = (connected || busy) && !hasReading;
+    // Never paired and nothing running yet → offer the pairing form.
+    final unpaired = !g7.hasSensor && !connected && !busy;
 
-    final String subtitle;
-    if (connected) {
-      subtitle = g7.currentMgdl != null ? '${g7.currentMgdl} mg/dL' : '…';
+    return unpaired
+        ? _pairingForm(context, scheme)
+        : _statusBox(context, scheme, searching: searching);
+  }
+
+  /// Box shown when no sensor is set up yet: enter the pairing code + connect.
+  Widget _pairingForm(BuildContext context, ColorScheme scheme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.primary.withValues(alpha: 0.15),
+                ),
+                child: Icon(CupertinoIcons.drop, size: 32, color: scheme.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LocaleText(
+                      'sensor.pair.title',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    LocaleText(
+                      'sensor.pair.hint',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: g7.code,
+            decoration: InputDecoration(
+              labelText: Locales.string(context, 'overview.pairing_code'),
+              isDense: true,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: g7.busy ? null : g7.start,
+            icon: const Icon(Icons.bluetooth_searching, size: 20),
+            label: LocaleText(
+              g7.busy ? 'overview.connecting' : 'overview.connect',
+            ),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(46),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Box shown once paired: connection status + session controls. While
+  /// [searching] (connected but no reading yet) the header shows a spinner.
+  Widget _statusBox(
+    BuildContext context,
+    ColorScheme scheme, {
+    required bool searching,
+  }) {
+    final connected = g7.connected;
+    final accent = (connected || searching) ? scheme.primary : Colors.grey;
+
+    final Widget subtitle;
+    if (searching) {
+      subtitle = LocaleText(
+        'sensor.searching.hint',
+        style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+      );
+    } else if (connected && g7.currentMgdl != null) {
+      subtitle = Text(
+        context.watch<ProfileGlucoseState>().formatWithUnit(g7.currentMgdl!),
+        style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+      );
     } else {
-      subtitle = Locales.string(
-        context,
+      subtitle = LocaleText(
         g7.hasSensor ? 'sensor.status.paired' : 'sensor.status.unpaired',
+        style: TextStyle(fontSize: 13, color: Colors.grey[500]),
       );
     }
+
+    final String titleKey = searching
+        ? 'sensor.status.searching'
+        : connected
+        ? 'sensor.status.connected'
+        : 'sensor.status.disconnected';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -140,7 +360,7 @@ class _ControlBox extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Larger status display icon.
+              // Larger status display icon (spinner while searching).
               Container(
                 width: 58,
                 height: 58,
@@ -148,13 +368,21 @@ class _ControlBox extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: accent.withValues(alpha: 0.15),
                 ),
-                child: Icon(
-                  connected
-                      ? CupertinoIcons.dot_radiowaves_left_right
-                      : CupertinoIcons.drop,
-                  size: 32,
-                  color: accent,
-                ),
+                child: searching
+                    ? Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: accent,
+                        ),
+                      )
+                    : Icon(
+                        connected
+                            ? CupertinoIcons.dot_radiowaves_left_right
+                            : CupertinoIcons.drop,
+                        size: 32,
+                        color: accent,
+                      ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -162,19 +390,14 @@ class _ControlBox extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     LocaleText(
-                      connected
-                          ? 'sensor.status.connected'
-                          : 'sensor.status.disconnected',
+                      titleKey,
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                    ),
+                    subtitle,
                   ],
                 ),
               ),
@@ -198,6 +421,8 @@ class _ControlBox extends StatelessWidget {
             label: LocaleText('sensor.control.end_session'),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(46),
+              backgroundColor: scheme.primary.withValues(alpha: 0.15),
+              foregroundColor: scheme.primary,
             ),
           ),
           const SizedBox(height: 10),
