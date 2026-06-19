@@ -49,13 +49,11 @@ class _OverviewNextUpdateState extends State<OverviewNextUpdate>
 
         double progress;
         Color color;
-        String caption;
         String value;
 
         if (last == null) {
           progress = 0;
           color = Colors.grey;
-          caption = Locales.string(context, 'overview.waiting');
           value = '—';
         } else {
           final elapsed = DateTime.now().difference(last);
@@ -64,11 +62,9 @@ class _OverviewNextUpdateState extends State<OverviewNextUpdate>
           if (remaining.isNegative) {
             // Past the expected slot — the reading is late (skipped/poor signal).
             color = Colors.orangeAccent;
-            caption = Locales.string(context, 'overview.overdue');
             value = '+${_mmss(remaining)}';
           } else {
-            color = scheme.primary;
-            caption = Locales.string(context, 'overview.next');
+            color = scheme.onSurface.withValues(alpha: 0.5);
             value = _mmss(remaining);
           }
         }
@@ -89,11 +85,6 @@ class _OverviewNextUpdateState extends State<OverviewNextUpdate>
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              caption,
-              style: TextStyle(fontSize: 13, color: Colors.grey[400]),
-            ),
-            const SizedBox(width: 6),
             Text(
               value,
               style: TextStyle(

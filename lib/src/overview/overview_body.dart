@@ -31,40 +31,51 @@ class OverviewBodyContent extends StatelessWidget {
     String t(String key) => Locales.string(context, key);
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Stack(
         children: [
-          OverviewCurrentValue(
-            mgdl: g7.currentMgdl,
-            trendPerMin: g7.latest?.trendMgDlPerMin,
-            // Dimmed "cached" until a live reading arrives from the service.
-            stale: !g7.latestIsLive,
-            busy: g7.busy,
+          Positioned(
+            top: 0.0,
+            right: 0.0,
+            child: Padding(
+              padding: const EdgeInsets.all(5.0),
+              child: OverviewNextUpdate(lastUpdate: g7.lastUpdate),
+            ),
           ),
-          const SizedBox(height: 12),
-          OverviewNextUpdate(lastUpdate: g7.lastUpdate),
-          const SizedBox(height: 12),
-          Expanded(child: OverviewChart(byTime: g7.byTime)),
-          const SizedBox(height: 8),
-          if (!g7.connected) ...[
-            TextField(
-              controller: g7.code,
-              decoration: InputDecoration(
-                labelText: t('overview.pairing_code'),
-                isDense: true,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 36),
+              OverviewCurrentValue(
+                mgdl: g7.currentMgdl,
+                trendPerMin: g7.latest?.trendMgDlPerMin,
+                // Dimmed "cached" until a live reading arrives from the service.
+                stale: !g7.latestIsLive,
+                busy: g7.busy,
               ),
-            ),
-            const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: g7.busy ? null : g7.start,
-              icon: const Icon(Icons.bluetooth_searching),
-              label: Text(
-                g7.busy ? t('overview.connecting') : t('overview.connect'),
-              ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Expanded(child: OverviewChart(byTime: g7.byTime)),
+              const SizedBox(height: 8),
+              if (!g7.connected) ...[
+                TextField(
+                  controller: g7.code,
+                  decoration: InputDecoration(
+                    labelText: t('overview.pairing_code'),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: g7.busy ? null : g7.start,
+                  icon: const Icon(Icons.bluetooth_searching),
+                  label: Text(
+                    g7.busy ? t('overview.connecting') : t('overview.connect'),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
-      ),
+      )
     );
   }
 }

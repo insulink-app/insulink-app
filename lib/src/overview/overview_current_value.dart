@@ -54,15 +54,15 @@ class OverviewCurrentValue extends StatelessWidget {
             Text(
               v == null ? (busy ? '…' : '--') : '$v',
               style: TextStyle(
-                fontSize: 60,
+                fontSize: 90,
                 fontWeight: FontWeight.bold,
                 height: 1,
                 color: color,
               ),
             ),
             if (v != null && trendPerMin != null) ...[
-              const SizedBox(width: 8),
-              Icon(_arrow(trendPerMin!), size: 44, color: color),
+              const SizedBox(width: 10),
+              Icon(_arrow(trendPerMin!), size: 64, color: color),
             ],
           ],
         ),
