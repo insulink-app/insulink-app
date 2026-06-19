@@ -50,12 +50,7 @@ class _InjectionButtonState extends State<InjectionButton>
             ],
           ),
           child: FloatingActionButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => InjectionPage()),
-              );
-            },
+            onPressed: () => showInjectionSheet(context),
             backgroundColor: Color.lerp(
               color.withValues(alpha: 0.9),
               color,

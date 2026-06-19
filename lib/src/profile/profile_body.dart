@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/profile/profile_bolus_selection.dart';
 import 'package:insulink/src/profile/profile_developer_toggle.dart';
 import 'package:insulink/src/profile/profile_glucose_selection.dart';
 import 'package:insulink/src/profile/profile_language_selection.dart';
@@ -84,6 +85,17 @@ class _ProfilePageContentState extends State<ProfilePageContent> {
                       ),
                       SizedBox(height: 10),
                       ProfileGlucoseSelection(),
+                      SizedBox(height: 30),
+                      LocaleText(
+                        "profile.bolus",
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
+                      SizedBox(height: 10),
+                      ProfileBolusSelection(),
                       SizedBox(height: 30),
                       LocaleText(
                         "profile.notification",
