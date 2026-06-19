@@ -1,45 +1,70 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'device_info.dart';
 
 /// Persists the sensor serial, pairing code, and the per-sensor EC-JPAKE
 /// session key so the reader can reconnect without re-pairing.
+///
+/// Backed by [FlutterSecureStorage] (platform keystore / EncryptedSharedPrefs).
+/// Reads are served synchronously from an in-memory [_cache] loaded on [open]
+/// and refreshed by [reload]; writes go to secure storage and update the cache.
+/// This keeps the synchronous getter API the read pipeline relies on while the
+/// data lives encrypted at rest.
 class G7Store {
   static const _kSerial = 'g7.serial';
   static const _kCode = 'g7.pairing_code';
 
   static String _kKey(String serial) => 'g7.session_key.$serial';
 
-  final SharedPreferences _p;
+  final FlutterSecureStorage _storage;
+  final Map<String, String> _cache;
 
-  G7Store(this._p);
+  G7Store(this._storage, this._cache);
 
-  static Future<G7Store> open() async =>
-      G7Store(await SharedPreferences.getInstance());
+  static Future<G7Store> open() async {
+    const storage = FlutterSecureStorage();
+    final cache = await storage.readAll();
+    return G7Store(storage, cache);
+  }
 
-  /// Re-read values written by another isolate. Each isolate keeps its own
-  /// in-memory SharedPreferences cache, so the UI must reload to observe writes
-  /// made by the background foreground-service isolate (and vice-versa).
-  Future<void> reload() => _p.reload();
+  /// Re-read values written by another isolate. The in-memory cache is local to
+  /// this isolate, so the UI must reload to observe writes made by the
+  /// background foreground-service isolate (and vice-versa).
+  Future<void> reload() async {
+    final all = await _storage.readAll();
+    _cache
+      ..clear()
+      ..addAll(all);
+  }
 
-  String? get serial => _p.getString(_kSerial);
+  Future<void> _set(String key, String value) async {
+    await _storage.write(key: key, value: value);
+    _cache[key] = value;
+  }
 
-  String? get pairingCode => _p.getString(_kCode);
+  Future<void> _remove(String key) async {
+    await _storage.delete(key: key);
+    _cache.remove(key);
+  }
+
+  String? get serial => _cache[_kSerial];
+
+  String? get pairingCode => _cache[_kCode];
 
   Future<void> saveIdentity({
     required String serial,
     required String pairingCode,
   }) async {
-    await _p.setString(_kSerial, serial);
-    await _p.setString(_kCode, pairingCode);
+    await _set(_kSerial, serial);
+    await _set(_kCode, pairingCode);
   }
 
   /// The stored session key for [serial], or null if never paired.
   Uint8List? sessionKey(String serial) {
-    final hex = _p.getString(_kKey(serial));
+    final hex = _cache[_kKey(serial)];
     if (hex == null || hex.length < 32) return null;
     return Uint8List.fromList([
       for (var i = 0; i < hex.length; i += 2)
@@ -49,10 +74,10 @@ class G7Store {
 
   Future<void> saveSessionKey(String serial, Uint8List key) async {
     final hex = key.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    await _p.setString(_kKey(serial), hex);
+    await _set(_kKey(serial), hex);
   }
 
-  Future<void> clearSessionKey(String serial) => _p.remove(_kKey(serial));
+  Future<void> clearSessionKey(String serial) => _remove(_kKey(serial));
 
   // The BLE remoteId of the physical sensor paired for this serial. Lets the
   // background service reconnect by id with autoConnect (no scan) — Android
@@ -61,10 +86,10 @@ class G7Store {
   // several G7s are in range.
   static String _kDeviceId(String serial) => 'g7.device_id.$serial';
 
-  String? deviceId(String serial) => _p.getString(_kDeviceId(serial));
+  String? deviceId(String serial) => _cache[_kDeviceId(serial)];
 
   Future<void> saveDeviceId(String serial, String id) =>
-      _p.setString(_kDeviceId(serial), id);
+      _set(_kDeviceId(serial), id);
 
   static String _kReadings(String serial) => 'g7.readings.$serial';
 
@@ -75,12 +100,12 @@ class G7Store {
     final keys = byTime.keys.toList()..sort();
     final recent = keys.length > 300 ? keys.sublist(keys.length - 300) : keys;
     final s = recent.map((k) => '$k:${byTime[k]}').join(',');
-    await _p.setString(_kReadings(serial), s);
+    await _set(_kReadings(serial), s);
   }
 
   Map<int, int> loadReadings(String serial) {
     final out = <int, int>{};
-    final s = _p.getString(_kReadings(serial));
+    final s = _cache[_kReadings(serial)];
     if (s == null || s.isEmpty) return out;
     for (final part in s.split(',')) {
       final i = part.indexOf(':');
@@ -104,7 +129,7 @@ class G7Store {
     required int state,
     required int secsSinceStart,
   }) async {
-    await _p.setString(
+    await _set(
       _kLatest(serial),
       jsonEncode({
         'mgdl': mgdl,
@@ -116,7 +141,7 @@ class G7Store {
   }
 
   Map<String, dynamic>? loadLatest(String serial) {
-    final s = _p.getString(_kLatest(serial));
+    final s = _cache[_kLatest(serial)];
     if (s == null) return null;
     return jsonDecode(s) as Map<String, dynamic>;
   }
@@ -132,20 +157,20 @@ class G7Store {
     G7DeviceInfo info,
     DateTime? start,
   ) async {
-    await _p.setString(_kInfo(serial), jsonEncode(info.toJson()));
+    await _set(_kInfo(serial), jsonEncode(info.toJson()));
     if (start != null) {
-      await _p.setInt(_kStart(serial), start.millisecondsSinceEpoch);
+      await _set(_kStart(serial), start.millisecondsSinceEpoch.toString());
     }
   }
 
   G7DeviceInfo? loadInfo(String serial) {
-    final s = _p.getString(_kInfo(serial));
+    final s = _cache[_kInfo(serial)];
     if (s == null) return null;
     return G7DeviceInfo.fromJson(jsonDecode(s) as Map<String, dynamic>);
   }
 
   DateTime? loadSensorStart(String serial) {
-    final ms = _p.getInt(_kStart(serial));
+    final ms = int.tryParse(_cache[_kStart(serial)] ?? '');
     return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
   }
 }

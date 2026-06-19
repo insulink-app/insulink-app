@@ -30,8 +30,21 @@ flutter analyze                          # lint
 The Rust core is **pure Rust** (RustCrypto `p256`) — no cmake/ninja/NDK env
 vars needed anymore. `flutter build` runs `pub get` automatically.
 
+**flutter_rust_bridge version must be IDENTICAL in three places**, or
+`RustLib.init()` fails its version check at runtime — and because that init runs
+in the foreground-**service** isolate before `connect()`, the whole app looks
+dead (no `scanning for DXCM…`, no updates) while the UI still launches. The three:
+`pubspec.yaml` (`flutter_rust_bridge:`), `rust/Cargo.toml` (`flutter_rust_bridge = "=…"`),
+and the generated code (`rust/src/frb_generated.rs` `FLUTTER_RUST_BRIDGE_CODEGEN_VERSION`).
+To bump: change both manifests, install the matching codegen CLI
+(`cargo install flutter_rust_bridge_codegen --version X`), rerun `generate`,
+then `cargo test` to confirm the KATs still pass. Never bump pubspec alone.
+
 Note: on-device build/install/run is typically driven by the developer (watch
-`adb logcat | grep -i flutter`); the in-app log pane mirrors each handshake step.
+`adb logcat | grep -i flutter`); the in-app log pane mirrors each handshake step
+and is copyable via the "Kopieren" button. **Test on-device with profile/release,
+not debug** — a debug build (JIT + Dart VM service) often hangs on the splash
+screen when run standalone/unplugged; release/profile (AOT) run fine.
 
 ## Architecture
 
@@ -68,6 +81,22 @@ Two BLE subtleties that are load-bearing (don't regress them):
    `_awaitAuth` futures are attached BEFORE the triggering write. Broadcast
    streams don't replay, so listen-after-write loses the reply.
 
+Handshake gotchas (learned the hard way):
+3. **`key-confirmation mismatch` is a downstream symptom, not the bug.** It means
+   the derived session key is wrong → the AES key-confirmation fails. The real
+   cause is almost always **connecting to the WRONG sensor** (a neighbour's G7,
+   or an old one, that advertised first) — the stored key / pairing code don't
+   match it. Fixed by **device pinning**: `G7Store.deviceId(serial)` stores the
+   paired sensor's BLE remoteId and `scanForSensor(wantedId:)` matches ONLY that
+   device. (A corrupted/misaligned J-PAKE round can cause it too — hence
+   `clearJpakeBuffer()` before each `run()`.) `G7HandshakeException` marks it as
+   transient/retryable.
+4. **The round ZKP routinely does NOT verify** under our raw-point wire framing,
+   yet the handshake still completes — so `setSensorRound1/2` returning false is
+   logged and IGNORED, exactly as Juggluco does. Do NOT turn it into a hard
+   error: aborting drops the link before we send our payload, and the G7 then
+   rejects the immediate reconnect.
+
 ### Background operation (foreground service)
 
 Reading must continue while the app is backgrounded OR fully closed (swiped from
@@ -101,23 +130,55 @@ Load-bearing background gotchas (don't regress):
    (via `permission_handler`) and aborts BEFORE `startService` if denied —
    otherwise native `startForeground` throws `SecurityException` and the service
    sticky-restarts in a loop.
-2. **Cross-isolate SharedPreferences**: each isolate caches prefs in memory, so
-   the UI must `G7Store.reload()` to see the service's writes (done on the
-   `update` ping and on resume).
+2. **Cross-isolate store cache**: `G7Store` is backed by `flutter_secure_storage`
+   but serves synchronous getters from an in-memory cache loaded via `readAll()`.
+   That cache is per-isolate, so the UI must `G7Store.reload()` (a fresh
+   `readAll()`) to see the service's writes (done on the `update` ping and on
+   resume).
 3. Manifest needs `FOREGROUND_SERVICE_CONNECTED_DEVICE` + `POST_NOTIFICATIONS` +
    the `connectedDevice`-typed `com.pravera.flutter_foreground_task…ForegroundService`.
 4. *Scanning* (not maintaining a link) can be throttled while the screen is off
    (FBP issue #924), so a cold reconnect may complete only on the next
    screen-on; an already-open connection keeps streaming.
+   - Android delivers **no results for an UNfiltered scan while the screen is
+     off** — `scanForSensor` passes the stored remoteId as a native
+     `withRemoteIds` filter so background results come through. Even so,
+     screen-off scanning stays unreliable on some devices (open issue: scenario
+     where the watchdog fires + scans but never reconnects until screen-on).
+   - **`autoConnect` (connect by `BluetoothDevice.fromId` + `autoConnect: true`)
+     did NOT work here** — it broke connecting entirely (likely the G7 reconnect
+     path doesn't reliably OS-bond). Reverted; the scan path is the known-good one.
+5. **The G7 connect→deliver→disconnect is NORMAL.** It connects briefly (~every
+   5 min), pushes the current EGV + backfill, then drops the link itself — so
+   `link dropped` right after `connected — streaming` is expected, and the 30 s
+   watchdog reconnecting is correct, not a bug.
+6. **The G7 rejects rapid in-process reconnects** (`REMOTE_USER_TERMINATED`
+   status 19 / `GATT_CONNECTION_TIMEOUT` 147). Do exactly ONE clean attempt per
+   `connect()` and let the watchdog retry on the sensor's own advertising
+   schedule — do NOT tight-loop retry within a single connect.
 
 ### Data + persistence
 
 - `glucose.dart`: EGV (`0x4E`) and backfill (`dexbackfill`) decoders. Packed
   little-endian; `mgdL` is a 12-bit field. Glucose/backfill are **plaintext**.
 - `device_info.dart`: parses `0x4A`/`0x52`/`0x22` (firmware, software #, serial,
-  session/warmup length, hardware/algorithm version, battery) + algorithm-state
-  labels. Requested right after auth in `connection.dart`.
-- `store.dart` (shared_preferences): per-**serial** keys for session key,
+  session/warmup length, hardware/algorithm version, battery) + `0x32`
+  calibrationBounds (read-only: permitted?, last cal BG/time) + algorithm-state
+  labels. Requested right after auth in `connection.dart`. These metadata replies
+  are **best-effort** in the brief reconnect window — version is static so it's
+  only re-requested while unknown, to leave room for battery/cal.
+- **Backfill** (`requestBackfill`, control `0x59`): requested once per connect
+  after the first EGV. Gap-based — full last 24 h until ~a continuous day is
+  cached, then only the gap since the newest stored point. Request it
+  **immediately** (the link drops within ~1 s; deferring loses it).
+- **Calibration is read-only.** The `0x32` status is parsed/shown; the `0x34`
+  calibrate WRITE is NOT implemented — its payload isn't verified in any open
+  source (opcode confirmed via DiaBLE; the G6 frame is `34 ‖ glucose(LE16) ‖
+  dexTime(LE32) ‖ CRC16`, unverified for G7). The G7 is factory-calibrated and
+  works fully without it; a verified BLE-HCI capture is needed before sending it.
+- `store.dart` (flutter_secure_storage, synchronous getters served from an
+  in-memory cache loaded via `readAll()` on `open()`/`reload()`): per-**serial**
+  keys for session key,
   glucose history, device info, sensor start, and the latest EGV
   (`saveLatest`/`loadLatest` — value+trend+state, so the headline number is
   restored on launch, not just the last history point). The serial is NOT used
