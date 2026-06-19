@@ -76,6 +76,9 @@ class G7Connection {
       _latest?.glucoseMgDl ??
       (_byTime.isNotEmpty ? _byTime[_byTime.lastKey()] : null);
 
+  /// Total session length reported by the sensor (for the expiry warning).
+  int? get sessionLengthSec => _info.sessionLengthSec;
+
   void _log(String s) => onLog?.call(s);
 
   void _addReading(int secs, int mgdl) {

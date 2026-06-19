@@ -403,6 +403,20 @@ class _ControlBox extends StatelessWidget {
               ),
             ],
           ),
+          if (g7.sensorStart != null) ...[
+            const SizedBox(height: 18),
+            _SensorLifeBar(
+              start: g7.sensorStart!,
+              // The sensor's reported session length is best-effort metadata that
+              // often hasn't arrived yet — fall back to maxLifetime, then to the
+              // standard G7 lifetime (10 days + 12 h grace) so the bar still shows.
+              sessionLengthSec:
+                  g7.info.sessionLengthSec ??
+                  (g7.info.maxLifetimeDays != null
+                      ? g7.info.maxLifetimeDays! * 86400
+                      : 907200),
+            ),
+          ],
           const SizedBox(height: 16),
           FilledButton.tonalIcon(
             onPressed: connected
@@ -450,6 +464,77 @@ class _ControlBox extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Sensor durability shown as one rectangle per day: the remaining days are
+/// filled with the accent colour, elapsed days are greyed out.
+class _SensorLifeBar extends StatelessWidget {
+  const _SensorLifeBar({required this.start, required this.sessionLengthSec});
+
+  final DateTime start;
+  final int sessionLengthSec;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final totalDays = (sessionLengthSec / 86400).round().clamp(1, 30);
+    final remainingSecs =
+        sessionLengthSec - DateTime.now().difference(start).inSeconds;
+    final expired = remainingSecs <= 0;
+    // Round a partial remaining day UP so the current day still counts as left.
+    final filled = (remainingSecs / 86400).ceil().clamp(0, totalDays);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            LocaleText(
+              'sensor.life.title',
+              style: TextStyle(
+                fontSize: 12,
+                color: scheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              expired
+                  ? Locales.string(context, 'sensor.value.expired')
+                  : Locales.string(
+                      context,
+                      'sensor.life.remaining',
+                      params: ['$filled'],
+                    ),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: expired ? Colors.redAccent : scheme.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            for (var i = 0; i < totalDays; i++) ...[
+              if (i > 0) const SizedBox(width: 4),
+              Expanded(
+                child: Container(
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: i < filled
+                        ? scheme.primary
+                        : scheme.onSurface.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
     );
   }
 }

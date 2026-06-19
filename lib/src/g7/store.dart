@@ -99,6 +99,7 @@ class G7Store {
       _kLatest(key),
       _kInfo(key),
       _kStart(key),
+      _kExpiryNotified(key),
     ]) {
       await _remove(k);
     }
@@ -201,4 +202,14 @@ class G7Store {
     final ms = int.tryParse(_cache[_kStart(serial)] ?? '');
     return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
   }
+
+  static String _kExpiryNotified(String serial) => 'g7.expiry_notified.$serial';
+
+  /// Whether the "sensor expires soon" notification already fired for this
+  /// sensor — so it only fires once per sensor (cleared by [clearSensor]).
+  bool expiryNotified(String serial) =>
+      _cache[_kExpiryNotified(serial)] == 'true';
+
+  Future<void> setExpiryNotified(String serial) =>
+      _set(_kExpiryNotified(serial), 'true');
 }

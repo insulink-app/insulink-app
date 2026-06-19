@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../profile/profile_glucose_state.dart';
+import 'store.dart';
 
 /// Glucose alarm severity. Ordered so a transition between two non-`none`
 /// levels (e.g. urgent low → warning low) still re-fires the notification.
@@ -100,6 +101,35 @@ class G7AlarmManager {
       title: title,
       body: body,
       notificationDetails: NotificationDetails(android: details),
+    );
+  }
+
+  /// Notification id for the sensor-expiry warning (kept clear of the glucose
+  /// alarm ids, which use [G7AlarmLevel.index] 0–4).
+  static const _expiryId = 100;
+
+  /// Fire a one-shot "sensor expires soon" warning once less than 24 h of the
+  /// session remains. Persisted per-sensor in [store] so it fires only once per
+  /// sensor, even across service/app restarts.
+  Future<void> checkExpiry({
+    required G7Store store,
+    required String key,
+    required int? sessionLengthSec,
+    required int secsSinceStart,
+  }) async {
+    if (key.isEmpty || sessionLengthSec == null) return;
+    final remaining = sessionLengthSec - secsSinceStart;
+    // Only within the final 24 h, and not after it has already expired.
+    if (remaining <= 0 || remaining > 86400) return;
+    if (store.expiryNotified(key)) return;
+    await store.setExpiryNotified(key);
+
+    final hours = (remaining / 3600).ceil();
+    await _plugin.show(
+      id: _expiryId,
+      title: 'Sensor läuft bald ab',
+      body: 'Dein Sensor läuft in etwa $hours h ab. Bereite einen neuen vor.',
+      notificationDetails: const NotificationDetails(android: _channelWarning),
     );
   }
 }

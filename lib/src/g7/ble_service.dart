@@ -44,6 +44,15 @@ class G7TaskHandler extends TaskHandler {
         if (r.glucoseMgDl != null) {
           _alarms.check(r.glucoseMgDl, r.trendMgDlPerMin);
         }
+        // One-shot warning when the sensor has < 24 h of session left. The
+        // sensor's reported session length is best-effort; fall back to the
+        // standard G7 lifetime (10 days + 12 h grace) when it's unknown.
+        _alarms.checkExpiry(
+          store: store,
+          key: store.resolvedKey ?? serial,
+          sessionLengthSec: _conn?.sessionLengthSec ?? 907200,
+          secsSinceStart: r.secsSinceStart,
+        );
         FlutterForegroundTask.sendDataToMain({
           't': 'reading',
           'mgdl': r.glucoseMgDl,
