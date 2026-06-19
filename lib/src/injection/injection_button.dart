@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/injection/injection_page.dart';
 
 class InjectionButton extends StatefulWidget {
   const InjectionButton({super.key});
@@ -50,19 +51,22 @@ class _InjectionButtonState extends State<InjectionButton>
           ),
           child: FloatingActionButton(
             onPressed: () {
-              /*Navigator.push(
+              Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => InjectionCreatePage(
-                    recipients: [],
-                  ),
-                ),
-              );*/
+                MaterialPageRoute(builder: (context) => InjectionPage()),
+              );
             },
-            backgroundColor:
-                Color.lerp(color.withValues(alpha: 0.9), color, glowValue),
+            backgroundColor: Color.lerp(
+              color.withValues(alpha: 0.9),
+              color,
+              glowValue,
+            ),
             shape: CircleBorder(),
-            child: Icon(CupertinoIcons.eyedropper, size: 35, color: Colors.white),
+            child: Icon(
+              CupertinoIcons.eyedropper,
+              size: 35,
+              color: Colors.white,
+            ),
           ),
         );
       },
