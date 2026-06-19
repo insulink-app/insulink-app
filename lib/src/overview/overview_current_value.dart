@@ -40,7 +40,7 @@ class OverviewCurrentValue extends StatelessWidget {
     final color = stale ? base.withValues(alpha: 0.5) : base;
 
     final sub = trendPerMin != null
-        ? 'mg/dL · ${trendPerMin! >= 0 ? '+' : ''}'
+        ? 'mg/dL  ·  ${trendPerMin! >= 0 ? '+' : ''}'
               '${trendPerMin!.toStringAsFixed(1)}/min'
         : 'mg/dL';
 
