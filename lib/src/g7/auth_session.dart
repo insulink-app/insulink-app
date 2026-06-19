@@ -6,6 +6,18 @@ import 'ble_transport.dart';
 import 'display_certs.dart';
 import 'opcodes.dart';
 
+/// Thrown when the handshake fails in a way that is typically transient — a lost
+/// or misaligned BLE notification on the J-PAKE channel (3538 uses unacknowledged
+/// notifications) corrupts a round payload, so the derived session key is wrong
+/// and key-confirmation mismatches. The caller should retry on a fresh GATT link
+/// rather than surface it to the user.
+class G7HandshakeException implements Exception {
+  G7HandshakeException(this.message);
+  final String message;
+  @override
+  String toString() => 'G7HandshakeException: $message';
+}
+
 /// Drives the full G7 authentication handshake, faithful to Juggluco's
 /// DexGattCallback flow. The EC-JPAKE crypto is the Rust [G7Jpake] core
 /// (byte-validated against Juggluco's reference vectors).
@@ -66,9 +78,18 @@ class G7AuthSession {
 
   /// Execute the handshake. Returns the 16-byte session key on success.
   Future<Uint8List> run() async {
+    // Start from a clean J-PAKE buffer so stray bytes from a previous (failed)
+    // attempt can't misalign the 160-byte round payloads.
+    transport.clearJpakeBuffer();
+
     // --- EC-JPAKE rounds ---------------------------------------------------
     // Per the real trace, each phase is: write {0x0A,n}; the SENSOR sends its
     // 160-byte cert first; THEN we send ours. (Sending early made it disconnect.)
+    // NOTE: the G7's round ZKP routinely does NOT verify under our raw-point wire
+    // framing, yet the handshake still completes — so we log and continue, exactly
+    // as Juggluco does. Do NOT turn this into a hard error: aborting here drops the
+    // link before we send our payload, and the G7 then rejects the immediate
+    // reconnect (REMOTE_USER_TERMINATED / CONNECTION_TIMEOUT).
     final g3 = await _recvRound(0);
     if (!_jpake.setSensorRound1(payload: g3)) {
       log('note: sensor round-0 ZKP unverified (continuing, as Juggluco does)');
@@ -128,7 +149,7 @@ class G7AuthSession {
     final expect = aes8(Uint8List.fromList(nonce));
     final got = reply.sublist(1, 9);
     if (!_listEq(expect, got)) {
-      throw StateError(
+      throw G7HandshakeException(
         'sensor key-confirmation mismatch: expected ${_hex(expect)}, got ${_hex(got)}',
       );
     }

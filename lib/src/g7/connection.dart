@@ -117,28 +117,13 @@ class G7Connection {
         return;
       }
 
+      // One clean attempt per connect(): the G7 rejects rapid in-process
+      // reconnects (REMOTE_USER_TERMINATED / CONNECTION_TIMEOUT), so on a
+      // handshake failure we tear down and let the 30s watchdog re-scan and retry
+      // on the sensor's own advertising schedule (see G7TaskHandler.onRepeatEvent).
       transport = BleTransport(device);
       await transport.connectAndBind(log: _log);
-
-      final session = G7AuthSession(
-        transport: transport,
-        pairingCode: pairingCode,
-        log: _log,
-      );
-      final stored = serial.isEmpty ? null : store.sessionKey(serial);
-      if (stored != null) {
-        try {
-          await session.runReconnect(stored);
-          _log('RECONNECTED — no re-pairing needed');
-        } catch (e) {
-          _log('reconnect failed ($e) — full pairing');
-          final secret = await session.run();
-          if (serial.isNotEmpty) await store.saveSessionKey(serial, secret);
-        }
-      } else {
-        final secret = await session.run();
-        if (serial.isNotEmpty) await store.saveSessionKey(serial, secret);
-      }
+      await _authenticate(transport);
       _log('session established');
 
       final t = transport;
@@ -177,6 +162,29 @@ class G7Connection {
     } finally {
       _connecting = false;
     }
+  }
+
+  /// Reconnect with the stored session key if we have one, else do a full
+  /// pairing; on reconnect rejection fall back to a full pairing. The new key is
+  /// persisted. Throws on handshake failure so the caller can retry on a fresh link.
+  Future<void> _authenticate(BleTransport t) async {
+    final session = G7AuthSession(
+      transport: t,
+      pairingCode: pairingCode,
+      log: _log,
+    );
+    final stored = serial.isEmpty ? null : store.sessionKey(serial);
+    if (stored != null) {
+      try {
+        await session.runReconnect(stored);
+        _log('RECONNECTED — no re-pairing needed');
+        return;
+      } catch (e) {
+        _log('reconnect failed ($e) — full pairing');
+      }
+    }
+    final secret = await session.run();
+    if (serial.isNotEmpty) await store.saveSessionKey(serial, secret);
   }
 
   void _onControl(BleTransport t, Uint8List bytes) {

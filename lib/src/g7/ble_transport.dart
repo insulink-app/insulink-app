@@ -192,6 +192,19 @@ class BleTransport {
     }
   }
 
+  /// Drop any buffered 3538 bytes and pending waiters. Call before (re)starting a
+  /// handshake so leftover/misaligned data from a previous attempt can't shift
+  /// the byte alignment of the round payloads (which would corrupt J-PAKE).
+  void clearJpakeBuffer() {
+    _jpakeBuf.clear();
+    for (final w in _jpakeWaiters) {
+      if (!w.value.isCompleted) {
+        w.value.completeError(StateError('jpake buffer cleared'));
+      }
+    }
+    _jpakeWaiters.clear();
+  }
+
   /// Take [total] bytes from the continuously-buffered 3538 stream (e.g. 160 for
   /// a round payload, or the cert size). Completes as soon as enough bytes have
   /// accumulated, even if they arrived before this call.
