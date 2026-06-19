@@ -59,6 +59,10 @@ class G7Connection {
   bool _backfillAsked = false;
   bool _connecting = false;
 
+  /// Persisted history is pulled into [_byTime] once so backfill can request
+  /// only the gap since our newest known reading (not a fixed 24 h every cycle).
+  bool _historyLoaded = false;
+
   bool get isConnected => _transport?.device.isConnected ?? false;
   bool get isConnecting => _connecting;
 
@@ -107,11 +111,20 @@ class G7Connection {
     _connecting = true;
     await _teardownTransport();
     _backfillAsked = false;
+    // Seed in-memory history from the store so backfill only fetches the gap.
+    if (!_historyLoaded && serial.isNotEmpty) {
+      _historyLoaded = true;
+      _byTime.addAll(store.loadReadings(serial));
+    }
 
     BleTransport? transport;
     try {
-      _log('scanning for DXCM…');
-      final device = await BleTransport.scanForSensor();
+      // Pin to the known sensor once we've paired: with a stored device id we
+      // scan for THAT sensor only, so a different nearby G7 can't be picked up
+      // and fail key-confirmation against our stored key.
+      final wantedId = serial.isEmpty ? null : store.deviceId(serial);
+      _log(wantedId == null ? 'scanning for DXCM…' : 'scanning for $wantedId…');
+      final device = await BleTransport.scanForSensor(wantedId: wantedId);
       if (device == null) {
         _log('no sensor found');
         return;
@@ -124,6 +137,10 @@ class G7Connection {
       transport = BleTransport(device);
       await transport.connectAndBind(log: _log);
       await _authenticate(transport);
+      // Remember which physical sensor this was, so future reconnects pin to it.
+      if (serial.isNotEmpty) {
+        await store.saveDeviceId(serial, device.remoteId.str);
+      }
       _log('session established');
 
       final t = transport;
@@ -148,9 +165,14 @@ class G7Connection {
 
       await t.enableDataChannels(log: _log);
       await t.writeControl([0x4E]); // current EGV
-      await t.writeControl([0x4A]); // transmitter version (fw, sw#, serial)
-      await t.writeControl([0x52]); // extended version (session/warmup, hw, algo)
+      // Version is static — only fetch it until we have it, to leave room in the
+      // G7's brief reconnect window for the battery/calibration replies below.
+      if (_info.firmware == null) {
+        await t.writeControl([0x4A]); // transmitter version (fw, sw#, serial)
+        await t.writeControl([0x52]); // extended version (session/warmup, hw, algo)
+      }
       await t.writeControl([0x22]); // battery status
+      await t.writeControl([0x32]); // calibration bounds (read-only status)
 
       _transport = transport;
       transport = null;
@@ -198,6 +220,9 @@ class G7Connection {
     }
     final r = G7GlucoseCodec.parseEgv(bytes);
     if (r == null) return;
+    // The newest reading we already hold, BEFORE adding this EGV — the backfill
+    // start point (so we only pull what we missed, not a fixed 24 h).
+    final priorMax = _byTime.isEmpty ? null : _byTime.lastKey();
     _latest = r;
     _sensorStart = DateTime.now().subtract(Duration(seconds: r.secsSinceStart));
     if (r.glucoseMgDl != null) {
@@ -208,12 +233,24 @@ class G7Connection {
     _persistInfo(); // keep cached sensorStart fresh
     onReading?.call(r);
     onUpdate?.call();
-    // Once we know the session clock, pull the last 24 h of history.
+    // Once we know the session clock, pull history. Default to the full last
+    // 24 h; only shrink to the gap-since-newest once we ALREADY hold a roughly
+    // continuous day of history — otherwise a single cached point would wrongly
+    // suppress the full backfill (leaving the chart and headline empty).
     if (!_backfillAsked) {
       _backfillAsked = true;
       final end = r.secsSinceStart - 60;
       var start = r.secsSinceStart - 24 * 3600;
+      final haveFullDay = priorMax != null &&
+          _byTime.isNotEmpty &&
+          priorMax - _byTime.firstKey()! >= 23 * 3600;
+      if (haveFullDay && priorMax > start) {
+        start = priorMax + 1; // continuous history already cached → just the gap
+      }
       if (start < 300) start = 300;
+      // Request immediately: the G7 drops the link within a second of connecting,
+      // so deferring the backfill would push it past the window and it'd never be
+      // sent. (Metadata replies are best-effort within the same short window.)
       if (end > start) {
         _log('requesting backfill ${start}s..${end}s');
         t.requestBackfill(start, end);
