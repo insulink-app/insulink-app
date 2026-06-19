@@ -229,14 +229,20 @@ class G7Connection {
     _persistInfo(); // keep cached sensorStart fresh
     onReading?.call(r);
     onUpdate?.call();
-    // Once we know the session clock, pull the last 24 h of history.
+    // Once we know the session clock, pull history. Default to the full last
+    // 24 h; only shrink to the gap-since-newest once we ALREADY hold a roughly
+    // continuous day of history — otherwise a single cached point would wrongly
+    // suppress the full backfill (leaving the chart and headline empty).
     if (!_backfillAsked) {
       _backfillAsked = true;
       final end = r.secsSinceStart - 60;
-      // Start just after our newest known reading; cap the gap at 24 h so a
-      // first connect (or a long absence) still bounds the request.
-      final dayAgo = r.secsSinceStart - 24 * 3600;
-      var start = (priorMax != null && priorMax > dayAgo) ? priorMax + 1 : dayAgo;
+      var start = r.secsSinceStart - 24 * 3600;
+      final haveFullDay = priorMax != null &&
+          _byTime.isNotEmpty &&
+          priorMax - _byTime.firstKey()! >= 23 * 3600;
+      if (haveFullDay && priorMax > start) {
+        start = priorMax + 1; // continuous history already cached → just the gap
+      }
       if (start < 300) start = 300;
       if (end > start) {
         _log('requesting backfill ${start}s..${end}s');
