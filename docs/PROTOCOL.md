@@ -22,7 +22,7 @@ two-party handshake also confirms both sides derive the same key.
 
 | Short | Role |
 |---|---|
-| `3534` | **Control** — glucose `0x4E`, backfill cmd `0x59`, version `0x4A`/`0x52` |
+| `3534` | **Control** — glucose `0x4E`, backfill cmd `0x59`, version `0x4A`/`0x52`, calibration bounds `0x32` |
 | `3535` | **Authentication** — short opcode commands (our target `f8083535-…`) |
 | `3536` | **Backfill** (notify) |
 | `3538` | **J-PAKE / cert bulk data** — large payloads, `WRITE_NO_RESPONSE` |
@@ -98,6 +98,27 @@ notify 3535  08 01            ; RequestBondResponse -> OS createBond
   `fbc971b837e9491e45a4179ed33865c508a1e0a1d350f5af0f96370695fdc393`.
 - **Session key** = `SHA256( X(shared_point) )[0:16]` (AES-128). Used ONLY for the
   `0x04` challenge. **Glucose/backfill are PLAINTEXT** — no per-packet encryption.
+
+## Calibration (G7 = G6 opcodes `0x32` / `0x34`)
+
+Optional BG calibration reuses the G6 opcodes (confirmed in DiaBLE's `DexcomG7`
+opcode enum):
+
+- **`0x32` calibrationBounds** — READ. Phone writes `{0x32}`; sensor notifies a
+  20-byte status. Layout (verified vs DiaBLE): `32 ‖ status ‖ sessionNumber ‖
+  sessionSignature(LE32) ‖ lastBGValue(LE16) ‖ lastCalibrationTime(LE32) ‖
+  processingStatus ‖ calibrationsPermitted(bool) ‖ lastBGDisplay ‖
+  lastProcessingUpdateTime(LE32)`. Implemented (read-only) in
+  `device_info.dart` / requested in `connection.dart`. Example "no calibration"
+  reply: `32 00 01 4E000000 0000 00000000 01 01 00 E4000000`.
+- **`0x34` calibrate** — WRITE (NOT IMPLEMENTED). The opcode is confirmed, but no
+  open client actually constructs/sends it: DiaBLE stubs it, G7SensorKit omits
+  it, Juggluco refuses on purpose (app-side calibration instead), xDrip delegates
+  G7 to a closed plugin. The G6 analogy is `34 ‖ glucose(LE16) ‖ timestamp(LE32)
+  ‖ CRC16` (9 B), but this is UNVERIFIED for G7 — and the `0x32` reply shows G7
+  commands carry `sessionNumber`/`sessionSignature`, so the write may need more.
+  **Do not send a guessed `0x34`** — verify the exact frame from a real BLE HCI
+  snoop capture of the official app calibrating first.
 
 ## Still not fully open
 

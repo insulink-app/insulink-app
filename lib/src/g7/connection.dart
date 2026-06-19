@@ -59,6 +59,10 @@ class G7Connection {
   bool _backfillAsked = false;
   bool _connecting = false;
 
+  /// Persisted history is pulled into [_byTime] once so backfill can request
+  /// only the gap since our newest known reading (not a fixed 24 h every cycle).
+  bool _historyLoaded = false;
+
   bool get isConnected => _transport?.device.isConnected ?? false;
   bool get isConnecting => _connecting;
 
@@ -107,11 +111,20 @@ class G7Connection {
     _connecting = true;
     await _teardownTransport();
     _backfillAsked = false;
+    // Seed in-memory history from the store so backfill only fetches the gap.
+    if (!_historyLoaded && serial.isNotEmpty) {
+      _historyLoaded = true;
+      _byTime.addAll(store.loadReadings(serial));
+    }
 
     BleTransport? transport;
     try {
-      _log('scanning for DXCM…');
-      final device = await BleTransport.scanForSensor();
+      // Pin to the known sensor once we've paired: with a stored device id we
+      // scan for THAT sensor only, so a different nearby G7 can't be picked up
+      // and fail key-confirmation against our stored key.
+      final wantedId = serial.isEmpty ? null : store.deviceId(serial);
+      _log(wantedId == null ? 'scanning for DXCM…' : 'scanning for $wantedId…');
+      final device = await BleTransport.scanForSensor(wantedId: wantedId);
       if (device == null) {
         _log('no sensor found');
         return;
@@ -124,6 +137,10 @@ class G7Connection {
       transport = BleTransport(device);
       await transport.connectAndBind(log: _log);
       await _authenticate(transport);
+      // Remember which physical sensor this was, so future reconnects pin to it.
+      if (serial.isNotEmpty) {
+        await store.saveDeviceId(serial, device.remoteId.str);
+      }
       _log('session established');
 
       final t = transport;
@@ -151,6 +168,7 @@ class G7Connection {
       await t.writeControl([0x4A]); // transmitter version (fw, sw#, serial)
       await t.writeControl([0x52]); // extended version (session/warmup, hw, algo)
       await t.writeControl([0x22]); // battery status
+      await t.writeControl([0x32]); // calibration bounds (read-only status)
 
       _transport = transport;
       transport = null;
@@ -198,6 +216,9 @@ class G7Connection {
     }
     final r = G7GlucoseCodec.parseEgv(bytes);
     if (r == null) return;
+    // The newest reading we already hold, BEFORE adding this EGV — the backfill
+    // start point (so we only pull what we missed, not a fixed 24 h).
+    final priorMax = _byTime.isEmpty ? null : _byTime.lastKey();
     _latest = r;
     _sensorStart = DateTime.now().subtract(Duration(seconds: r.secsSinceStart));
     if (r.glucoseMgDl != null) {
@@ -212,7 +233,10 @@ class G7Connection {
     if (!_backfillAsked) {
       _backfillAsked = true;
       final end = r.secsSinceStart - 60;
-      var start = r.secsSinceStart - 24 * 3600;
+      // Start just after our newest known reading; cap the gap at 24 h so a
+      // first connect (or a long absence) still bounds the request.
+      final dayAgo = r.secsSinceStart - 24 * 3600;
+      var start = (priorMax != null && priorMax > dayAgo) ? priorMax + 1 : dayAgo;
       if (start < 300) start = 300;
       if (end > start) {
         _log('requesting backfill ${start}s..${end}s');

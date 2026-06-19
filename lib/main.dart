@@ -651,6 +651,12 @@ class _SensorInfo extends StatelessWidget {
             ? DateTime.now().difference(sensorStart!).inSeconds
             : null);
     add('Age', _dur(effAge));
+    if (info.hasCalibrationBounds) {
+      add('Calibration', info.calibrationsPermitted! ? 'allowed' : 'not allowed');
+      if ((info.lastCalBgValue ?? 0) > 0) {
+        add('Last cal BG', '${info.lastCalBgValue} mg/dL');
+      }
+    }
     add('Firmware', info.firmware);
     add('Software #', info.softwareNumber?.toString());
     add('Hardware', info.hardwareVersion?.toString());
