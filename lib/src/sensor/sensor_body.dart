@@ -70,6 +70,7 @@ class SensorBodyContent extends StatelessWidget {
                   sensorStart: g7.sensorStart,
                   state: g7.latest?.state,
                   age: g7.latest?.secsSinceStart,
+                  lastUpdate: g7.lastUpdate,
                 ),
               ),
             ),

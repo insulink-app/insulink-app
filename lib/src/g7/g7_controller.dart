@@ -18,9 +18,9 @@ import 'package:permission_handler/permission_handler.dart';
 /// foreground-service isolate (see [ble_service.dart]); this class is the UI
 /// isolate's viewer + remote control.
 class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
-  /// Serial + pairing-code inputs. Owned here so the connect form (overview)
-  /// and the start logic stay in sync and survive page switches.
-  final serial = TextEditingController();
+  /// Pairing-code input. Owned here so the connect form (overview) and the start
+  /// logic stay in sync and survive page switches. (No serial input: the serial
+  /// is only a cache key and is resolved automatically from the sensor's BLE id.)
   final code = TextEditingController();
 
   final List<String> _log = <String>[];
@@ -88,16 +88,16 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     final s = await G7Store.open();
     if (_disposed) return;
     _store = s;
-    final serialStr = s.serial ?? '';
-    // Show cached history, latest value + device info immediately.
-    final cached = serialStr.isEmpty ? <int, int>{} : s.loadReadings(serialStr);
-    final latest = serialStr.isEmpty ? null : s.loadLatest(serialStr);
-    serial.text = serialStr;
     code.text = s.pairingCode ?? '';
+    // Cached data is keyed by the resolved key (the sensor BLE id).
+    final key = _key;
+    // Show cached history, latest value + device info immediately.
+    final cached = key.isEmpty ? <int, int>{} : s.loadReadings(key);
+    final latest = key.isEmpty ? null : s.loadLatest(key);
     _byTime.addAll(cached);
-    if (serialStr.isNotEmpty) {
-      _info = s.loadInfo(serialStr) ?? _info;
-      _sensorStart = s.loadSensorStart(serialStr);
+    if (key.isNotEmpty) {
+      _info = s.loadInfo(key) ?? _info;
+      _sensorStart = s.loadSensorStart(key);
     }
     if (latest != null) {
       _latest = G7GlucoseReading(
@@ -118,13 +118,16 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     await _refreshServiceState();
     // Auto-connect on launch when paired, unless the service is already up
     // (it keeps running while the app is closed).
-    if (serialStr.isNotEmpty &&
-        s.sessionKey(serialStr) != null &&
-        !_serviceRunning) {
-      _append('auto-connecting to $serialStr…');
+    if (key.isNotEmpty && s.sessionKey(key) != null && !_serviceRunning) {
+      _append('auto-connecting…');
       start();
     }
   }
+
+  /// The key cached data is stored under: the resolved key set by the read
+  /// pipeline, falling back to the user serial (covers the brief window before
+  /// the pipeline has resolved one).
+  String get _key => _store?.resolvedKey ?? _store?.serial ?? '';
 
   void _append(String s) {
     if (_disposed) return;
@@ -165,14 +168,16 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     final s = _store;
     if (s == null) return;
     await s.reload();
-    final serialStr = serial.text.trim();
-    if (serialStr.isEmpty || _disposed) return;
-    final cached = s.loadReadings(serialStr);
+    // Use the resolved key (the service may have just set it after pairing with
+    // a blank serial), not the text field.
+    final key = _key;
+    if (key.isEmpty || _disposed) return;
+    final cached = s.loadReadings(key);
     _byTime
       ..clear()
       ..addAll(cached);
-    _info = s.loadInfo(serialStr) ?? _info;
-    _sensorStart = s.loadSensorStart(serialStr) ?? _sensorStart;
+    _info = s.loadInfo(key) ?? _info;
+    _sensorStart = s.loadSensorStart(key) ?? _sensorStart;
     notifyListeners();
   }
 
@@ -246,10 +251,9 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
         await FlutterForegroundTask.requestIgnoreBatteryOptimization();
       }
 
-      final serialStr = serial.text.trim();
-      final codeStr = code.text.trim();
-      // The service isolate reads serial + code from the store on start.
-      await _store?.saveIdentity(serial: serialStr, pairingCode: codeStr);
+      // The service isolate reads the pairing code from the store on start; the
+      // serial stays blank and is resolved to the sensor BLE id by the pipeline.
+      await _store?.saveIdentity(serial: '', pairingCode: code.text.trim());
 
       _initForegroundTask();
       final result = await FlutterForegroundTask.startService(
@@ -299,7 +303,6 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     _disposed = true;
     FlutterForegroundTask.removeTaskDataCallback(_onTaskData);
     WidgetsBinding.instance.removeObserver(this);
-    serial.dispose();
     code.dispose();
     super.dispose();
   }

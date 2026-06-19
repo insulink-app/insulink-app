@@ -12,12 +12,17 @@ class SensorInfo extends StatelessWidget {
     required this.sensorStart,
     required this.state,
     required this.age,
+    required this.lastUpdate,
   });
 
   final G7DeviceInfo info;
   final DateTime? sensorStart;
   final int? state;
   final int? age;
+
+  /// Wall-clock time the latest reading was received (shown on this page now
+  /// that the overview only counts down to the next one).
+  final DateTime? lastUpdate;
 
   static String _dur(int? secs) {
     if (secs == null) return '—';
@@ -33,6 +38,13 @@ class SensorInfo extends StatelessWidget {
     if (t == null) return '—';
     String two(int n) => n.toString().padLeft(2, '0');
     return '${two(t.day)}.${two(t.month)} ${two(t.hour)}:${two(t.minute)}';
+  }
+
+  /// Like [_dt] but with seconds, for the precise last-reception time.
+  static String _dts(DateTime? t) {
+    if (t == null) return '—';
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${_dt(t)}:${two(t.second)}';
   }
 
   @override
@@ -58,6 +70,9 @@ class SensorInfo extends StatelessWidget {
         'sensor.field.state',
         key != null ? t(key) : '0x${state!.toRadixString(16)}',
       );
+    }
+    if (lastUpdate != null) {
+      add(status, 'sensor.field.last_reading', _dts(lastUpdate));
     }
     add(status, 'sensor.field.started', _dt(sensorStart));
     if (sensorStart != null && info.sessionLengthSec != null) {

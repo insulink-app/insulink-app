@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
 
-/// Big current-glucose readout with a trend arrow. [stale] dims the value when
-/// it's the last cached reading shown before live data arrives.
+/// Big current-glucose readout with a Cupertino trend arrow, in a soft card
+/// tinted by the glucose range. [stale] dims it while showing the last cached
+/// reading before live data arrives.
 class OverviewCurrentValue extends StatelessWidget {
   const OverviewCurrentValue({
     super.key,
@@ -17,14 +19,14 @@ class OverviewCurrentValue extends StatelessWidget {
   final bool stale;
   final bool busy;
 
-  String _arrow(double perMin) {
-    if (perMin >= 3) return '⇈';
-    if (perMin >= 2) return '↑';
-    if (perMin >= 1) return '↗';
-    if (perMin > -1) return '→';
-    if (perMin > -2) return '↘';
-    if (perMin > -3) return '↓';
-    return '⇊';
+  /// Cupertino arrow for the per-minute trend (5 directional buckets; the exact
+  /// rate is shown as text alongside).
+  IconData _arrow(double perMin) {
+    if (perMin >= 2) return CupertinoIcons.arrow_up;
+    if (perMin >= 1) return CupertinoIcons.arrow_up_right;
+    if (perMin > -1) return CupertinoIcons.arrow_right;
+    if (perMin > -2) return CupertinoIcons.arrow_down_right;
+    return CupertinoIcons.arrow_down;
   }
 
   Color _color(int v) {
@@ -36,48 +38,56 @@ class OverviewCurrentValue extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = mgdl;
-    if (v == null) {
-      return Text(
-        busy ? '…' : '--',
-        style: const TextStyle(fontSize: 56, fontWeight: FontWeight.bold),
-      );
-    }
-    final color = stale ? _color(v).withValues(alpha: 0.5) : _color(v);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          '$v',
-          style: TextStyle(
-            fontSize: 64,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        const SizedBox(width: 8),
-        if (trendPerMin != null)
-          Text(
-            _arrow(trendPerMin!),
-            style: TextStyle(fontSize: 40, color: color),
-          ),
-        const Spacer(),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              stale ? Locales.string(context, 'overview.cached') : 'mg/dL',
-              style: TextStyle(color: Colors.grey[400]),
-            ),
-            if (trendPerMin != null)
+    final base = v == null ? Colors.grey : _color(v);
+    final color = stale ? base.withValues(alpha: 0.5) : base;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
               Text(
-                '${trendPerMin! >= 0 ? '+' : ''}'
-                '${trendPerMin!.toStringAsFixed(1)}/min',
-                style: TextStyle(color: Colors.grey[400]),
+                v == null ? (busy ? '…' : '--') : '$v',
+                style: TextStyle(
+                  fontSize: 72,
+                  fontWeight: FontWeight.bold,
+                  height: 1,
+                  color: color,
+                ),
               ),
-          ],
-        ),
-      ],
+              if (v != null && trendPerMin != null) ...[
+                const SizedBox(width: 10),
+                Icon(_arrow(trendPerMin!), size: 40, color: color),
+              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            stale ? Locales.string(context, 'overview.cached') : 'mg/dL',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+              color: color.withValues(alpha: 0.9),
+            ),
+          ),
+          if (trendPerMin != null)
+            Text(
+              '${trendPerMin! >= 0 ? '+' : ''}'
+              '${trendPerMin!.toStringAsFixed(1)} mg/dL/min',
+              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+            ),
+        ],
+      ),
     );
   }
 }

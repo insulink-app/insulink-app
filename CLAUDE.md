@@ -184,8 +184,27 @@ Load-bearing background gotchas (don't regress):
   restored on launch, not just the last history point). The serial is NOT used
   by the protocol (the pairing code is the only auth secret) — it is purely the
   persistence key enabling reconnect, cached chart/info, and auto-connect.
-  Writes happen in the **service isolate**; the UI loads the cache on launch and
-  `reload()`s it to observe later writes (see Background operation).
+  **There is no serial input field** (removed): the only user input is the
+  pairing code. `G7Connection` resolves the key to the sensor's BLE id
+  (`device.remoteId.str`) once a device is found and stores it as `resolvedKey`;
+  the pipeline persists under `_persistKey`, the UI reads cache under
+  `resolvedKey`, and pinning falls back to `deviceId(resolvedKey)`. Writes happen
+  in the **service isolate**; the UI loads the cache on launch and `reload()`s it
+  to observe later writes (see Background operation).
+
+  **iOS caveat (for if/when iOS is supported — see also Background operation, which
+  is currently Android-only):** keying the cache by `device.remoteId.str` is safe
+  on Android because there `remoteId` is the stable Bluetooth MAC (the pinning code
+  already relied on this). On iOS, Core Bluetooth does not expose the MAC —
+  `remoteId` is a per-(device,peripheral) CBPeripheral UUID that is stable across
+  app launches but **can change on app reinstall**. If it changes, the resolved key
+  changes → the app treats it as a new sensor → orphaned cache (history +
+  session key) and a forced re-pair (re-enter pairing code; chart rebuilds from
+  backfill). No corruption, just inconvenience + minor storage bloat from the
+  orphaned bucket. The robust cross-platform fix is to key by the **real Dexcom
+  serial** the sensor reports in `device_info` (`0x4A`), but that only arrives
+  AFTER auth, so it needs a re-keying step (pair under the BLE id, then migrate the
+  bucket to the real serial once known). Not worth it for Android-only.
 
 ## Gotchas (already fixed — keep them)
 

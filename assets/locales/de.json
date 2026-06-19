@@ -28,14 +28,11 @@
   "overview.chart.empty": "Noch keine Messwerte",
   "overview.connect": "Verbinden",
   "overview.connecting": "Verbinde…",
-  "overview.serial": "Seriennummer",
   "overview.pairing_code": "Kopplungscode",
   "overview.cached": "zwischengespeichert",
-
-  "update.none": "Noch keine Aktualisierung empfangen",
-  "update.last": "Zuletzt aktualisiert: # (vor ##)",
-  "update.next_overdue": "Nächste überfällig (seit #)",
-  "update.next_in": "Nächste in noch #…",
+  "overview.next": "Nächste",
+  "overview.overdue": "überfällig",
+  "overview.waiting": "warte…",
 
   "sensor.disconnect": "Trennen",
   "sensor.log": "Log",
@@ -44,6 +41,7 @@
   "sensor.info.empty": "Noch keine Sensordaten",
 
   "sensor.field.state": "Status",
+  "sensor.field.last_reading": "Letzter Messwert",
   "sensor.field.started": "Gestartet",
   "sensor.field.expires": "Läuft ab",
   "sensor.field.age": "Alter",

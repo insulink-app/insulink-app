@@ -28,14 +28,11 @@
   "overview.chart.empty": "no readings yet",
   "overview.connect": "Connect",
   "overview.connecting": "Connecting…",
-  "overview.serial": "Serial",
   "overview.pairing_code": "Pairing code",
   "overview.cached": "cached",
-
-  "update.none": "No update received yet",
-  "update.last": "Last updated: # (## ago)",
-  "update.next_overdue": "Next overdue (for #)",
-  "update.next_in": "Next in #…",
+  "overview.next": "Next",
+  "overview.overdue": "overdue",
+  "overview.waiting": "waiting…",
 
   "sensor.disconnect": "Disconnect",
   "sensor.log": "Log",
@@ -44,6 +41,7 @@
   "sensor.info.empty": "no sensor info yet",
 
   "sensor.field.state": "State",
+  "sensor.field.last_reading": "Last reading",
   "sensor.field.started": "Started",
   "sensor.field.expires": "Expires",
   "sensor.field.age": "Age",

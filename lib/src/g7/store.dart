@@ -54,6 +54,16 @@ class G7Store {
 
   String? get pairingCode => _cache[_kCode];
 
+  static const _kResolved = 'g7.resolved_key';
+
+  /// The effective key all cached data is stored under: the user-entered serial,
+  /// or the sensor's stable BLE id when no serial was entered. Decided by the
+  /// read pipeline once a device is found; the UI reads cache under this key so
+  /// caching works even when the serial field is left blank.
+  String? get resolvedKey => _cache[_kResolved];
+
+  Future<void> saveResolvedKey(String key) => _set(_kResolved, key);
+
   Future<void> saveIdentity({
     required String serial,
     required String pairingCode,

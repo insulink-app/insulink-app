@@ -5,7 +5,7 @@ import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/overview_chart.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
-import 'package:insulink/src/overview/overview_update_status.dart';
+import 'package:insulink/src/overview/overview_next_update.dart';
 import 'package:provider/provider.dart';
 
 class OverviewBody extends ProductPageBody {
@@ -41,33 +41,18 @@ class OverviewBodyContent extends StatelessWidget {
             stale: !g7.latestIsLive,
             busy: g7.busy,
           ),
-          OverviewUpdateStatus(lastUpdate: g7.lastUpdate),
+          const SizedBox(height: 12),
+          OverviewNextUpdate(lastUpdate: g7.lastUpdate),
           const SizedBox(height: 12),
           Expanded(child: OverviewChart(byTime: g7.byTime)),
           const SizedBox(height: 8),
           if (!g7.connected) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: g7.serial,
-                    decoration: InputDecoration(
-                      labelText: t('overview.serial'),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: g7.code,
-                    decoration: InputDecoration(
-                      labelText: t('overview.pairing_code'),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-              ],
+            TextField(
+              controller: g7.code,
+              decoration: InputDecoration(
+                labelText: t('overview.pairing_code'),
+                isDense: true,
+              ),
             ),
             const SizedBox(height: 8),
             FilledButton.icon(
