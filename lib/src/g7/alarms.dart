@@ -1,5 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../profile/profile_glucose_state.dart';
+
 /// Glucose alarm severity. Ordered so a transition between two non-`none`
 /// levels (e.g. urgent low → warning low) still re-fires the notification.
 enum G7AlarmLevel { none, lowWarning, lowUrgent, highWarning, highUrgent }
@@ -39,11 +41,14 @@ class G7AlarmManager {
     );
   }
 
-  static G7AlarmLevel _levelFor(int mgdl, double trendPerMin) {
-    if (mgdl < 70) return G7AlarmLevel.lowUrgent;
-    if (mgdl > 250) return G7AlarmLevel.highUrgent;
-    if (mgdl < 80 && trendPerMin < 0) return G7AlarmLevel.lowWarning;
-    if (mgdl > 200) return G7AlarmLevel.highWarning;
+  static G7AlarmLevel _levelFor(
+    int mgdl,
+    ({GlucoseUnit unit, int urgentLow, int low, int high, int urgentHigh}) t,
+  ) {
+    if (mgdl <= t.urgentLow) return G7AlarmLevel.lowUrgent;
+    if (mgdl >= t.urgentHigh) return G7AlarmLevel.highUrgent;
+    if (mgdl <= t.low) return G7AlarmLevel.lowWarning;
+    if (mgdl >= t.high) return G7AlarmLevel.highWarning;
     return G7AlarmLevel.none;
   }
 
@@ -51,12 +56,21 @@ class G7AlarmManager {
   /// Re-evaluating the same zone repeatedly (e.g. every 5 min EGV) does not
   /// re-notify, so the alarm only fires again once the value has recovered
   /// and crossed back in, or escalated/de-escalated to a different zone.
+  ///
+  /// Thresholds + display unit are read fresh from storage each call so the
+  /// user's profile changes take effect without restarting the service isolate.
   Future<void> check(int? mgdl, double trendPerMin) async {
     if (mgdl == null) return;
-    final level = _levelFor(mgdl, trendPerMin);
+    final t = await ProfileGlucoseState.loadThresholds();
+    final level = _levelFor(mgdl, t);
     if (level == _last) return;
     _last = level;
     if (level == G7AlarmLevel.none) return;
+
+    // Format the value in the user's chosen unit for the notification text.
+    final value = t.unit == GlucoseUnit.mmol
+        ? '${(mgdl / 18.0182).toStringAsFixed(1)} ${t.unit.label}'
+        : '$mgdl ${t.unit.label}';
 
     final String title;
     final String body;
@@ -64,19 +78,19 @@ class G7AlarmManager {
     switch (level) {
       case G7AlarmLevel.lowWarning:
         title = 'Zucker niedrig';
-        body = '$mgdl mg/dL und fallend';
+        body = value;
         details = _channelWarning;
       case G7AlarmLevel.lowUrgent:
         title = '⚠️ Zucker SEHR niedrig';
-        body = '$mgdl mg/dL';
+        body = value;
         details = _channelUrgent;
       case G7AlarmLevel.highWarning:
         title = 'Zucker hoch';
-        body = '$mgdl mg/dL';
+        body = value;
         details = _channelWarning;
       case G7AlarmLevel.highUrgent:
         title = '⚠️ Zucker SEHR hoch';
-        body = '$mgdl mg/dL';
+        body = value;
         details = _channelUrgent;
       case G7AlarmLevel.none:
         return;

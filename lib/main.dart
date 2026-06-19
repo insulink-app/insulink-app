@@ -9,6 +9,7 @@ import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_developer_state.dart';
+import 'package:insulink/src/profile/profile_glucose_state.dart';
 import 'package:insulink/src/profile/profile_language_state.dart';
 import 'package:insulink/src/profile/profile_theme_state.dart';
 import 'package:provider/provider.dart';
@@ -48,12 +49,26 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    return FutureBuilder<({String language, String theme, bool developer})>(
+    return FutureBuilder<
+      ({
+        String language,
+        String theme,
+        bool developer,
+        ProfileGlucoseState glucose,
+      })
+    >(
       future: _loadPreferences(),
       builder:
           (
             context,
-            AsyncSnapshot<({String language, String theme, bool developer})>
+            AsyncSnapshot<
+              ({
+                String language,
+                String theme,
+                bool developer,
+                ProfileGlucoseState glucose,
+              })
+            >
             snapshot,
           ) {
             if (snapshot.connectionState != ConnectionState.done) {
@@ -62,6 +77,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
             final language = snapshot.data?.language ?? "de";
             final theme = snapshot.data?.theme ?? "light";
             final developer = snapshot.data?.developer ?? false;
+            final glucose = snapshot.data!.glucose;
             return MultiProvider(
               providers: [
                 ChangeNotifierProvider(
@@ -71,6 +87,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
                 ChangeNotifierProvider(
                   create: (_) => ProfileDeveloperState(developer),
                 ),
+                ChangeNotifierProvider(create: (_) => glucose),
                 // Shared G7 read pipeline + service control, observed by the
                 // overview and sensor pages.
                 ChangeNotifierProvider(create: (_) => G7Controller()..init()),
@@ -126,7 +143,14 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
     );
   }
 
-  Future<({String language, String theme, bool developer})>
+  Future<
+    ({
+      String language,
+      String theme,
+      bool developer,
+      ProfileGlucoseState glucose,
+    })
+  >
   _loadPreferences() async {
     const storage = FlutterSecureStorage();
     final language =
@@ -138,6 +162,12 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
             ? "dark"
             : "light");
     final developer = await ProfileDeveloperState.load();
-    return (language: language, theme: theme, developer: developer);
+    final glucose = await ProfileGlucoseState.load();
+    return (
+      language: language,
+      theme: theme,
+      developer: developer,
+      glucose: glucose,
+    );
   }
 }

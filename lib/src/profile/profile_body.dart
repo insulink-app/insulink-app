@@ -4,6 +4,7 @@ import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_developer_toggle.dart';
+import 'package:insulink/src/profile/profile_glucose_selection.dart';
 import 'package:insulink/src/profile/profile_language_selection.dart';
 import 'package:insulink/src/profile/profile_notification_toggle.dart';
 import 'package:insulink/src/profile/profile_theme_selection.dart';
@@ -72,6 +73,17 @@ class _ProfilePageContentState extends State<ProfilePageContent> {
                       ),
                       SizedBox(height: 10),
                       ProfileThemeSelection(),
+                      SizedBox(height: 30),
+                      LocaleText(
+                        "profile.glucose",
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
+                      SizedBox(height: 10),
+                      ProfileGlucoseSelection(),
                       SizedBox(height: 30),
                       LocaleText(
                         "profile.notification",
