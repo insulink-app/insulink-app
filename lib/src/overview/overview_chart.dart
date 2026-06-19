@@ -4,6 +4,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/profile/profile_glucose_state.dart';
+import 'package:provider/provider.dart';
 
 /// fl_chart line graph of glucose vs. time (hours, 0 = latest reading).
 class OverviewChart extends StatefulWidget {
@@ -36,6 +38,7 @@ class _OverviewChartState extends State<OverviewChart> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.watch<ProfileGlucoseState>();
     final byTime = widget.byTime;
     if (byTime.isEmpty) {
       return Center(child: LocaleText('overview.chart.empty'));
@@ -44,23 +47,27 @@ class _OverviewChartState extends State<OverviewChart> {
     final latestSecs = entries.last.key;
     // Only the last 24 h, even if more history is cached.
     final cutoff = latestSecs - 24 * 3600;
+    // Y values are converted to the chosen display unit; X stays hours-ago.
     final spots = [
       for (final e in entries)
         if (e.key >= cutoff)
-          FlSpot((e.key - latestSecs) / 3600.0, e.value.toDouble()),
+          FlSpot((e.key - latestSecs) / 3600.0, s.toDisplay(e.value)),
     ];
     final minX = spots.first.x;
+    final maxY = s.toDisplay(300);
+    // Whole-unit gridlines that read cleanly in either unit.
+    final yInterval = s.unit == GlucoseUnit.mmol ? 3.0 : 50.0;
 
     return LineChart(
       LineChartData(
         minY: 0,
-        maxY: 300,
+        maxY: maxY,
         minX: minX,
         maxX: 0,
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: 50,
+          horizontalInterval: yInterval,
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
@@ -74,9 +81,11 @@ class _OverviewChartState extends State<OverviewChart> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 36,
-              interval: 50,
+              interval: yInterval,
               getTitlesWidget: (v, _) => Text(
-                '${v.toInt()}',
+                s.unit == GlucoseUnit.mmol
+                    ? v.toStringAsFixed(0)
+                    : '${v.toInt()}',
                 style: const TextStyle(fontSize: 10, color: Colors.grey),
               ),
             ),
@@ -93,16 +102,16 @@ class _OverviewChartState extends State<OverviewChart> {
             ),
           ),
         ),
-        // Target range band 70–180 mg/dL.
+        // User-configurable target range band.
         extraLinesData: ExtraLinesData(
           horizontalLines: [
             HorizontalLine(
-              y: 70,
+              y: s.toDisplay(s.targetLow),
               color: Colors.red.withValues(alpha: 0.4),
               strokeWidth: 1,
             ),
             HorizontalLine(
-              y: 180,
+              y: s.toDisplay(s.targetHigh),
               color: Colors.orange.withValues(alpha: 0.4),
               strokeWidth: 1,
             ),

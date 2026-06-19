@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/profile/profile_glucose_state.dart';
+import 'package:provider/provider.dart';
 
 /// Compact current-glucose readout with a Cupertino trend arrow. [stale] dims it
 /// while showing the last cached reading before live data arrives.
@@ -27,22 +29,22 @@ class OverviewCurrentValue extends StatelessWidget {
     return CupertinoIcons.arrow_down;
   }
 
-  Color _color(int v) {
-    if (v < 70) return Colors.redAccent;
-    if (v > 180) return Colors.orangeAccent;
+  Color _color(int v, ProfileGlucoseState s) {
+    if (v < s.targetLow) return Colors.redAccent;
+    if (v > s.targetHigh) return Colors.orangeAccent;
     return Colors.tealAccent;
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = context.watch<ProfileGlucoseState>();
     final v = mgdl;
-    final base = v == null ? Colors.grey : _color(v);
+    final base = v == null ? Colors.grey : _color(v, s);
     final color = stale ? base.withValues(alpha: 0.5) : base;
 
     final sub = trendPerMin != null
-        ? 'mg/dL  ·  ${trendPerMin! >= 0 ? '+' : ''}'
-              '${trendPerMin!.toStringAsFixed(1)}/min'
-        : 'mg/dL';
+        ? '${s.unit.label}  ·  ${s.formatTrend(trendPerMin!)}/min'
+        : s.unit.label;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -52,7 +54,7 @@ class OverviewCurrentValue extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              v == null ? (busy ? '…' : '--') : '$v',
+              v == null ? (busy ? '…' : '--') : s.format(v),
               style: TextStyle(
                 fontSize: 90,
                 fontWeight: FontWeight.bold,

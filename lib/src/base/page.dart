@@ -7,6 +7,13 @@ import 'package:insulink/src/profile/profile_body.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
 
+/// Lets any page request a tab switch (e.g. the overview's empty state linking
+/// to the sensor page). The value is the index into [ProductPageState.pageBodies].
+final ValueNotifier<int> appTab = ValueNotifier<int>(0);
+
+/// Tab index of the sensor page within [ProductPageState.pageBodies].
+const int kSensorTabIndex = 1;
+
 class ProductPage extends StatefulWidget {
   final int? initialPageIndex;
 
@@ -29,12 +36,26 @@ class ProductPageState extends State<ProductPage> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialPageIndex ?? 0;
+    appTab.value = _selectedIndex;
+    appTab.addListener(_onExternalTab);
+  }
+
+  @override
+  void dispose() {
+    appTab.removeListener(_onExternalTab);
+    super.dispose();
+  }
+
+  /// React to tab-switch requests coming from a page (via [appTab]).
+  void _onExternalTab() {
+    if (appTab.value != _selectedIndex) {
+      setState(() => _selectedIndex = appTab.value);
+    }
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    // Route through [appTab] so external requests and taps share one path.
+    appTab.value = index;
   }
 
   @override
