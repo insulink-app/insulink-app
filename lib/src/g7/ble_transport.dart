@@ -54,6 +54,11 @@ class BleTransport {
   /// on reconnect so we never grab a different G7 (a neighbour's, or an old
   /// sensor) that happens to advertise first, which would fail key-confirmation
   /// against our stored key. Without it, the first `DXCM…` device matches.
+  ///
+  /// [wantedId] is ALSO passed as a native `withRemoteIds` scan filter: Android
+  /// delivers no results for an UNfiltered scan while the screen is off, so a
+  /// background reconnect would otherwise stall for minutes until the app/screen
+  /// is opened. A native address filter makes the scan return results screen-off.
   static Future<BluetoothDevice?> scanForSensor({
     String namePrefix = 'DXCM',
     String? wantedId,
@@ -71,7 +76,10 @@ class BleTransport {
         }
       }
     });
-    await FlutterBluePlus.startScan(timeout: timeout);
+    await FlutterBluePlus.startScan(
+      timeout: timeout,
+      withRemoteIds: wantedId != null ? [wantedId] : const [],
+    );
     final device = await completer.future
         .timeout(timeout, onTimeout: () => null)
         .whenComplete(() async {

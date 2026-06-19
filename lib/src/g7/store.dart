@@ -51,13 +51,13 @@ class G7Store {
 
   Future<void> clearSessionKey(String serial) => _p.remove(_kKey(serial));
 
-  // The BLE remoteId of the physical sensor we paired with for this serial.
-  // Multiple G7s (e.g. a neighbour's) can advertise as "DXCM…" simultaneously;
-  // pinning to the known device stops reconnects from grabbing the wrong sensor
-  // (which fails key-confirmation with our stored key — see G7Connection).
+  // The BLE remoteId of the physical sensor paired for this serial. Lets the
+  // background service reconnect by id with autoConnect (no scan) — Android
+  // throttles BLE scanning while the screen is off, but an OS-level autoConnect
+  // fires as soon as the sensor advertises. Also pins to the right sensor when
+  // several G7s are in range.
   static String _kDeviceId(String serial) => 'g7.device_id.$serial';
 
-  /// The BLE id of the sensor last successfully authenticated for [serial].
   String? deviceId(String serial) => _p.getString(_kDeviceId(serial));
 
   Future<void> saveDeviceId(String serial, String id) =>
