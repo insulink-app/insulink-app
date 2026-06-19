@@ -41,6 +41,7 @@ class G7GlucoseReading {
   final Uint8List? raw;
 
   double get trendMgDlPerMin => trendTenths / 10.0;
+
   bool get isValid => glucoseMgDl != null;
 
   /// Wall-clock time of this reading, given the sensor session start.

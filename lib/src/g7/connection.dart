@@ -64,11 +64,13 @@ class G7Connection {
   bool _historyLoaded = false;
 
   bool get isConnected => _transport?.device.isConnected ?? false;
+
   bool get isConnecting => _connecting;
 
   /// The latest known glucose value (live EGV, else newest history point).
   int? get latestMgDl =>
-      _latest?.glucoseMgDl ?? (_byTime.isNotEmpty ? _byTime[_byTime.lastKey()] : null);
+      _latest?.glucoseMgDl ??
+      (_byTime.isNotEmpty ? _byTime[_byTime.lastKey()] : null);
 
   void _log(String s) => onLog?.call(s);
 
@@ -144,8 +146,9 @@ class G7Connection {
       _log('session established');
 
       final t = transport;
-      _controlSub = t.controlStream
-          .listen((b) => _onControl(t, Uint8List.fromList(b)));
+      _controlSub = t.controlStream.listen(
+        (b) => _onControl(t, Uint8List.fromList(b)),
+      );
       _backfillSub = t.backfillStream.listen((b) {
         final recs = G7GlucoseCodec.parseBackfill(Uint8List.fromList(b));
         for (final r in recs) {
@@ -169,7 +172,9 @@ class G7Connection {
       // G7's brief reconnect window for the battery/calibration replies below.
       if (_info.firmware == null) {
         await t.writeControl([0x4A]); // transmitter version (fw, sw#, serial)
-        await t.writeControl([0x52]); // extended version (session/warmup, hw, algo)
+        await t.writeControl([
+          0x52,
+        ]); // extended version (session/warmup, hw, algo)
       }
       await t.writeControl([0x22]); // battery status
       await t.writeControl([0x32]); // calibration bounds (read-only status)
@@ -241,11 +246,13 @@ class G7Connection {
       _backfillAsked = true;
       final end = r.secsSinceStart - 60;
       var start = r.secsSinceStart - 24 * 3600;
-      final haveFullDay = priorMax != null &&
+      final haveFullDay =
+          priorMax != null &&
           _byTime.isNotEmpty &&
           priorMax - _byTime.firstKey()! >= 23 * 3600;
       if (haveFullDay && priorMax > start) {
-        start = priorMax + 1; // continuous history already cached → just the gap
+        start =
+            priorMax + 1; // continuous history already cached → just the gap
       }
       if (start < 300) start = 300;
       // Request immediately: the G7 drops the link within a second of connecting,

@@ -37,10 +37,8 @@ class G7TaskHandler extends TaskHandler {
       store: store,
       serial: serial,
       pairingCode: code,
-      onLog: (line) => FlutterForegroundTask.sendDataToMain({
-        't': 'log',
-        'line': line,
-      }),
+      onLog: (line) =>
+          FlutterForegroundTask.sendDataToMain({'t': 'log', 'line': line}),
       onReading: (r) {
         _updateNotification(r.glucoseMgDl);
         if (r.glucoseMgDl != null) {

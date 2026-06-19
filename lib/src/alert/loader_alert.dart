@@ -16,7 +16,8 @@ class _LoaderAlertState extends State<LoaderAlert> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(15.0))),
+        borderRadius: BorderRadius.all(Radius.circular(15.0)),
+      ),
       content: SizedBox(
         height: 100,
         child: Center(

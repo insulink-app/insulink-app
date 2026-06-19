@@ -13,7 +13,9 @@ import 'opcodes.dart';
 /// rather than surface it to the user.
 class G7HandshakeException implements Exception {
   G7HandshakeException(this.message);
+
   final String message;
+
   @override
   String toString() => 'G7HandshakeException: $message';
 }

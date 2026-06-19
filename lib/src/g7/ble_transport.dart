@@ -24,7 +24,9 @@ class BleTransport {
   final _backfillRx = StreamController<List<int>>.broadcast();
 
   Stream<List<int>> get authStream => _authRx.stream;
+
   Stream<List<int>> get controlStream => _controlRx.stream;
+
   Stream<List<int>> get backfillStream => _backfillRx.stream;
 
   // 3538 (J-PAKE/cert) bytes are buffered continuously from connect so callers

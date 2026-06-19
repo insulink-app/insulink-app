@@ -28,7 +28,8 @@ class Locales {
 
   static bool isDirectionRTL(BuildContext context) {
     return intl.Bidi.isRtlLanguage(
-        Localizations.localeOf(context).languageCode);
+      Localizations.localeOf(context).languageCode,
+    );
   }
 
   static late List<Locale> supportedLocales;
@@ -93,13 +94,16 @@ class Locales {
     return s;
   }
 
-  static String string(BuildContext context, String key,
-      {List<String>? params, List<String>? localeParams}) {
-    return Localizations.of<Locales>(context, Locales)!.get(
-      key,
-      params,
-      localeParams,
-    );
+  static String string(
+    BuildContext context,
+    String key, {
+    List<String>? params,
+    List<String>? localeParams,
+  }) {
+    return Localizations.of<Locales>(
+      context,
+      Locales,
+    )!.get(key, params, localeParams);
   }
 }
 

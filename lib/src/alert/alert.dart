@@ -54,7 +54,8 @@ class AlertState extends State<Alert> {
     var theme = Theme.of(context);
     return AlertDialog(
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(15.0))),
+        borderRadius: BorderRadius.all(Radius.circular(15.0)),
+      ),
       contentPadding: const EdgeInsets.only(top: 10),
       title: Center(
         child: CircleAvatar(
@@ -89,21 +90,26 @@ class AlertState extends State<Alert> {
                         },
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.all(
-                              widget.cancelButtonColor ?? Colors.grey),
+                            widget.cancelButtonColor ?? Colors.grey,
+                          ),
                           shape: WidgetStateProperty.all(
-                              const RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(5.0)))),
-                          padding: WidgetStateProperty.all(EdgeInsets.symmetric(
-                              horizontal: 15, vertical: 10)),
+                            const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(5.0),
+                              ),
+                            ),
+                          ),
+                          padding: WidgetStateProperty.all(
+                            EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                          ),
                           minimumSize: WidgetStateProperty.all(Size(0, 0)),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           visualDensity: VisualDensity.compact,
                         ),
                         child: LocaleText(
-                            widget.cancelButtonText ?? "alert.cancel",
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 15)),
+                          widget.cancelButtonText ?? "alert.cancel",
+                          style: TextStyle(color: Colors.white, fontSize: 15),
+                        ),
                       ),
                     )
                   : SizedBox.shrink(),
@@ -119,21 +125,28 @@ class AlertState extends State<Alert> {
                   },
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.all(
-                        confirmationDisabled
-                            ? widget.confirmButtonColor ??
+                      confirmationDisabled
+                          ? widget.confirmButtonColor ??
                                 theme.colorScheme.primary.withValues(alpha: 0.5)
-                            : widget.confirmButtonColor ??
-                                theme.colorScheme.primary),
-                    shape: WidgetStateProperty.all(const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(5.0)))),
+                          : widget.confirmButtonColor ??
+                                theme.colorScheme.primary,
+                    ),
+                    shape: WidgetStateProperty.all(
+                      const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(5.0)),
+                      ),
+                    ),
                     padding: WidgetStateProperty.all(
-                        EdgeInsets.symmetric(horizontal: 15, vertical: 10)),
+                      EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                    ),
                     minimumSize: WidgetStateProperty.all(Size(0, 0)),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: VisualDensity.compact,
                   ),
-                  child: LocaleText(widget.confirmButtonText ?? "alert.ok",
-                      style: TextStyle(color: Colors.white, fontSize: 15)),
+                  child: LocaleText(
+                    widget.confirmButtonText ?? "alert.ok",
+                    style: TextStyle(color: Colors.white, fontSize: 15),
+                  ),
                 ),
               ),
             ],

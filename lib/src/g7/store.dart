@@ -10,9 +10,11 @@ import 'device_info.dart';
 class G7Store {
   static const _kSerial = 'g7.serial';
   static const _kCode = 'g7.pairing_code';
+
   static String _kKey(String serial) => 'g7.session_key.$serial';
 
   final SharedPreferences _p;
+
   G7Store(this._p);
 
   static Future<G7Store> open() async =>
@@ -24,6 +26,7 @@ class G7Store {
   Future<void> reload() => _p.reload();
 
   String? get serial => _p.getString(_kSerial);
+
   String? get pairingCode => _p.getString(_kCode);
 
   Future<void> saveIdentity({
@@ -119,6 +122,7 @@ class G7Store {
   }
 
   static String _kInfo(String serial) => 'g7.info.$serial';
+
   static String _kStart(String serial) => 'g7.start.$serial';
 
   /// Cache device metadata + sensor session start so the info panel renders
