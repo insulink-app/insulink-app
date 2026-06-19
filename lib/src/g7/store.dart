@@ -89,6 +89,24 @@ class G7Store {
 
   Future<void> clearSessionKey(String serial) => _remove(_kKey(serial));
 
+  /// Forget a sensor entirely: drop its session key + all cached data, plus the
+  /// resolved key and identity, so the app no longer auto-reconnects to it.
+  Future<void> clearSensor(String key) async {
+    for (final k in [
+      _kKey(key),
+      _kDeviceId(key),
+      _kReadings(key),
+      _kLatest(key),
+      _kInfo(key),
+      _kStart(key),
+    ]) {
+      await _remove(k);
+    }
+    await _remove(_kResolved);
+    await _remove(_kSerial);
+    await _remove(_kCode);
+  }
+
   // The BLE remoteId of the physical sensor paired for this serial. Lets the
   // background service reconnect by id with autoConnect (no scan) — Android
   // throttles BLE scanning while the screen is off, but an OS-level autoConnect

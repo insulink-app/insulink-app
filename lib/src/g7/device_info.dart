@@ -92,8 +92,19 @@ class G7DeviceInfo {
   /// Explicit default constructor (required once a factory ctor is declared).
   G7DeviceInfo();
 
+  /// True once ANY metadata field has been parsed, so partial info (e.g. a
+  /// battery or session reply that arrives before the version reply) is still
+  /// persisted and shown rather than being dropped until firmware/serial land.
   bool get hasAny =>
-      firmware != null || serialNumber != null || sessionLengthSec != null;
+      firmware != null ||
+      serialNumber != null ||
+      sessionLengthSec != null ||
+      warmupSec != null ||
+      algorithmVersion != null ||
+      hardwareVersion != null ||
+      maxLifetimeDays != null ||
+      batteryVoltageA != null ||
+      calibrationsPermitted != null;
 
   /// True once a 0x32 calibrationBounds response has been parsed.
   bool get hasCalibrationBounds => calibrationsPermitted != null;

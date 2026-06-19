@@ -47,22 +47,13 @@ class SensorBodyContent extends StatelessWidget {
     final g7 = context.watch<G7Controller>();
     final showLog = context.watch<ProfileDeveloperState>().enabled;
     return Scaffold(
-      appBar: AppBar(
-        title: LocaleText('sensor.label'),
-        actions: [
-          if (g7.connected)
-            IconButton(
-              onPressed: g7.disconnect,
-              icon: const Icon(Icons.bluetooth_disabled),
-              tooltip: Locales.string(context, 'sensor.disconnect'),
-            ),
-        ],
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _ControlBox(g7: g7),
+            const SizedBox(height: 12),
             Expanded(
               child: SingleChildScrollView(
                 child: SensorInfo(
@@ -78,6 +69,161 @@ class SensorBodyContent extends StatelessWidget {
             if (showLog) _LogPanel(g7: g7, onCopy: () => _copyLog(context, g7)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Top-of-page controls: end the current reading session, or fully forget the
+/// sensor. Both are guarded by a confirmation dialog so they can't fire by
+/// accident.
+class _ControlBox extends StatelessWidget {
+  const _ControlBox({required this.g7});
+
+  final G7Controller g7;
+
+  Future<bool> _confirm(
+    BuildContext context, {
+    required String titleKey,
+    required String bodyKey,
+    required String confirmKey,
+    bool destructive = false,
+  }) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(Locales.string(ctx, titleKey)),
+        content: Text(Locales.string(ctx, bodyKey)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(Locales.string(ctx, 'alert.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: destructive
+                ? TextButton.styleFrom(foregroundColor: Colors.redAccent)
+                : null,
+            child: Text(Locales.string(ctx, confirmKey)),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final connected = g7.connected;
+    final accent = connected ? Colors.tealAccent.shade700 : Colors.grey;
+
+    final String subtitle;
+    if (connected) {
+      subtitle = g7.currentMgdl != null ? '${g7.currentMgdl} mg/dL' : '…';
+    } else {
+      subtitle = Locales.string(
+        context,
+        g7.hasSensor ? 'sensor.status.paired' : 'sensor.status.unpaired',
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              // Larger status display icon.
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: 0.15),
+                ),
+                child: Icon(
+                  connected
+                      ? CupertinoIcons.dot_radiowaves_left_right
+                      : CupertinoIcons.drop,
+                  size: 32,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LocaleText(
+                      connected
+                          ? 'sensor.status.connected'
+                          : 'sensor.status.disconnected',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          FilledButton.tonalIcon(
+            onPressed: connected
+                ? () async {
+                    if (await _confirm(
+                      context,
+                      titleKey: 'sensor.control.end_session_title',
+                      bodyKey: 'sensor.control.end_session_body',
+                      confirmKey: 'sensor.control.end_session',
+                    )) {
+                      await g7.disconnect();
+                    }
+                  }
+                : null,
+            icon: const Icon(Icons.stop_circle_outlined, size: 20),
+            label: LocaleText('sensor.control.end_session'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(46),
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: (connected || g7.hasSensor)
+                ? () async {
+                    if (await _confirm(
+                      context,
+                      titleKey: 'sensor.control.stop_sensor_title',
+                      bodyKey: 'sensor.control.stop_sensor_body',
+                      confirmKey: 'sensor.control.stop_sensor',
+                      destructive: true,
+                    )) {
+                      await g7.forgetSensor();
+                    }
+                  }
+                : null,
+            icon: const Icon(Icons.link_off, size: 20),
+            label: LocaleText('sensor.control.stop_sensor'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.redAccent,
+              minimumSize: const Size.fromHeight(46),
+              side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.4)),
+            ),
+          ),
+        ],
       ),
     );
   }

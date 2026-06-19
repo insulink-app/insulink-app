@@ -33,6 +33,10 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   bool _serviceRunning = false;
   bool get connected => _serviceRunning;
 
+  /// Whether a sensor has been paired (cache key resolved), so it can be
+  /// forgotten/stopped.
+  bool get hasSensor => (_store?.resolvedKey ?? '').isNotEmpty;
+
   G7Store? _store;
 
   /// glucose history keyed by seconds-since-session-start (dedupes EGV+backfill).
@@ -286,6 +290,25 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     _serviceRunning = false;
     _latest = null;
     _latestIsLive = false;
+    notifyListeners();
+  }
+
+  /// Forget the sensor: stop reading and wipe the stored session key + cache so
+  /// the app no longer auto-reconnects. The physical sensor keeps running — this
+  /// is an app-side unpair, not a sensor stop command.
+  Future<void> forgetSensor() async {
+    final key = _key;
+    await FlutterForegroundTask.stopService();
+    await _store?.clearSensor(key);
+    _append('sensor forgotten');
+    if (_disposed) return;
+    _serviceRunning = false;
+    _latest = null;
+    _latestIsLive = false;
+    _byTime.clear();
+    _info = G7DeviceInfo();
+    _sensorStart = null;
+    code.text = '';
     notifyListeners();
   }
 
