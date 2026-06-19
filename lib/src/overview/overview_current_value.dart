@@ -1,10 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:insulink/src/localization/locales.dart';
 
-/// Big current-glucose readout with a Cupertino trend arrow, in a soft card
-/// tinted by the glucose range. [stale] dims it while showing the last cached
-/// reading before live data arrives.
+/// Compact current-glucose readout with a Cupertino trend arrow. [stale] dims it
+/// while showing the last cached reading before live data arrives.
 class OverviewCurrentValue extends StatelessWidget {
   const OverviewCurrentValue({
     super.key,
@@ -41,13 +39,13 @@ class OverviewCurrentValue extends StatelessWidget {
     final base = v == null ? Colors.grey : _color(v);
     final color = stale ? base.withValues(alpha: 0.5) : base;
 
-    final unit = stale ? Locales.string(context, 'overview.cached') : 'mg/dL';
     final sub = trendPerMin != null
-        ? '$unit · ${trendPerMin! >= 0 ? '+' : ''}'
+        ? 'mg/dL · ${trendPerMin! >= 0 ? '+' : ''}'
               '${trendPerMin!.toStringAsFixed(1)}/min'
-        : unit;
+        : 'mg/dL';
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -56,22 +54,19 @@ class OverviewCurrentValue extends StatelessWidget {
             Text(
               v == null ? (busy ? '…' : '--') : '$v',
               style: TextStyle(
-                fontSize: 80,
+                fontSize: 60,
                 fontWeight: FontWeight.bold,
                 height: 1,
                 color: color,
               ),
             ),
             if (v != null && trendPerMin != null) ...[
-              const SizedBox(width: 10),
-              Icon(_arrow(trendPerMin!), size: 56, color: color),
+              const SizedBox(width: 8),
+              Icon(_arrow(trendPerMin!), size: 44, color: color),
             ],
           ],
         ),
-        if (v != null) ...[
-          const SizedBox(height: 2),
-          Text(sub, style: TextStyle(fontSize: 13, color: Colors.grey[400])),
-        ],
+        Text(sub, style: TextStyle(fontSize: 12, color: Colors.grey[400])),
       ],
     );
   }
