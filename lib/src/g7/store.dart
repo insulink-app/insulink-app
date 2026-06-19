@@ -51,6 +51,18 @@ class G7Store {
 
   Future<void> clearSessionKey(String serial) => _p.remove(_kKey(serial));
 
+  // The BLE remoteId of the physical sensor we paired with for this serial.
+  // Multiple G7s (e.g. a neighbour's) can advertise as "DXCM…" simultaneously;
+  // pinning to the known device stops reconnects from grabbing the wrong sensor
+  // (which fails key-confirmation with our stored key — see G7Connection).
+  static String _kDeviceId(String serial) => 'g7.device_id.$serial';
+
+  /// The BLE id of the sensor last successfully authenticated for [serial].
+  String? deviceId(String serial) => _p.getString(_kDeviceId(serial));
+
+  Future<void> saveDeviceId(String serial, String id) =>
+      _p.setString(_kDeviceId(serial), id);
+
   static String _kReadings(String serial) => 'g7.readings.$serial';
 
   /// Cache recent glucose history (keyed by seconds-since-session-start) so the

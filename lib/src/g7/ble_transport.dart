@@ -49,16 +49,24 @@ class BleTransport {
   /// Scan for a G7 sensor. The G7 advertises a device name like `DXCMxx`
   /// (the two trailing chars relate to the pairing identity). Returns the first
   /// match, or null on timeout.
+  ///
+  /// If [wantedId] is given, ONLY a device with that BLE remoteId matches — used
+  /// on reconnect so we never grab a different G7 (a neighbour's, or an old
+  /// sensor) that happens to advertise first, which would fail key-confirmation
+  /// against our stored key. Without it, the first `DXCM…` device matches.
   static Future<BluetoothDevice?> scanForSensor({
     String namePrefix = 'DXCM',
+    String? wantedId,
     Duration timeout = const Duration(seconds: 600),
   }) async {
     final completer = Completer<BluetoothDevice?>();
     late StreamSubscription sub;
     sub = FlutterBluePlus.scanResults.listen((results) {
       for (final r in results) {
-        final name = r.device.platformName;
-        if (name.startsWith(namePrefix)) {
+        final matches = wantedId != null
+            ? r.device.remoteId.str == wantedId
+            : r.device.platformName.startsWith(namePrefix);
+        if (matches) {
           if (!completer.isCompleted) completer.complete(r.device);
         }
       }
