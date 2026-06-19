@@ -165,8 +165,12 @@ class G7Connection {
 
       await t.enableDataChannels(log: _log);
       await t.writeControl([0x4E]); // current EGV
-      await t.writeControl([0x4A]); // transmitter version (fw, sw#, serial)
-      await t.writeControl([0x52]); // extended version (session/warmup, hw, algo)
+      // Version is static — only fetch it until we have it, to leave room in the
+      // G7's brief reconnect window for the battery/calibration replies below.
+      if (_info.firmware == null) {
+        await t.writeControl([0x4A]); // transmitter version (fw, sw#, serial)
+        await t.writeControl([0x52]); // extended version (session/warmup, hw, algo)
+      }
       await t.writeControl([0x22]); // battery status
       await t.writeControl([0x32]); // calibration bounds (read-only status)
 
@@ -244,6 +248,9 @@ class G7Connection {
         start = priorMax + 1; // continuous history already cached → just the gap
       }
       if (start < 300) start = 300;
+      // Request immediately: the G7 drops the link within a second of connecting,
+      // so deferring the backfill would push it past the window and it'd never be
+      // sent. (Metadata replies are best-effort within the same short window.)
       if (end > start) {
         _log('requesting backfill ${start}s..${end}s');
         t.requestBackfill(start, end);
