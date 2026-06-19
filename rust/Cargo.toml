@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-flutter_rust_bridge = "=2.11.1"
+flutter_rust_bridge = "=2.12.0"
 # EC-JPAKE is implemented by hand (Juggluco-faithful) on RustCrypto primitives,
 # NOT mbedTLS — the G7 uses a custom raw-point wire framing, not mbedTLS's
 # TLS/ASN.1 round encoding. secp256r1 = p256.
