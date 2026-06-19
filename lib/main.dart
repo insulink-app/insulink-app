@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -57,6 +59,10 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
   /// False when [_latest] was restored from cache (shown dimmed as "cached"),
   /// true once a live reading arrives from the service.
   bool _latestIsLive = false;
+
+  /// Wall-clock time a live reading last arrived from the service. Fallback for
+  /// the "last update" time when the sensor session start isn't known.
+  DateTime? _latestAt;
   G7DeviceInfo _info = G7DeviceInfo();
   DateTime? _sensorStart;
 
@@ -115,6 +121,17 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     if (mounted) setState(() => _log.insert(0, s));
   }
 
+  /// Copy the whole log (oldest line first, chronological) to the clipboard so it
+  /// can be shared. [_log] is stored newest-first, so reverse it for sharing.
+  Future<void> _copyLog() async {
+    await Clipboard.setData(ClipboardData(text: _log.reversed.join('\n')));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${_log.length} Log-Zeilen kopiert')),
+      );
+    }
+  }
+
   /// Messages from the background service: log lines, the latest live reading,
   /// a "reload from store" ping, and connection-state transitions.
   void _onTaskData(Object data) {
@@ -135,6 +152,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
             state: data['state'] as int? ?? 0,
           );
           _latestIsLive = true;
+          _latestAt = DateTime.now();
         });
       case 'update':
         _reloadFromStore();
@@ -281,6 +299,17 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  /// Wall-clock time of the latest glucose reading. Derived from the sensor's own
+  /// session clock (`sensorStart + secsSinceStart`) so it's correct even for the
+  /// value restored from cache on launch; falls back to the live arrival time.
+  DateTime? get _lastUpdate {
+    final l = _latest;
+    if (l == null) return null;
+    final start = _sensorStart;
+    if (start != null) return start.add(Duration(seconds: l.secsSinceStart));
+    return _latestAt;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -309,6 +338,7 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
               stale: !_latestIsLive,
               busy: _busy,
             ),
+            _UpdateStatus(lastUpdate: _lastUpdate),
             const SizedBox(height: 12),
             Expanded(flex: 3, child: _GlucoseChart(byTime: _byTime)),
             const SizedBox(height: 8),
@@ -351,6 +381,23 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
               ),
             ],
             const SizedBox(height: 8),
+            Row(
+              children: [
+                Text('Log', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                const Spacer(),
+                if (_log.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: _copyLog,
+                    icon: const Icon(Icons.copy, size: 16),
+                    label: const Text('Kopieren'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+              ],
+            ),
             Expanded(
               flex: 1,
               child: Container(
@@ -360,11 +407,12 @@ class _ReaderPageState extends State<ReaderPage> with WidgetsBindingObserver {
                   color: Colors.black26,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: ListView.builder(
-                  reverse: false,
-                  itemCount: _log.length,
-                  itemBuilder: (_, i) => Text(
-                    _log[i],
+                // SelectableText so individual lines can also be selected by hand;
+                // the Kopieren button grabs the whole log at once. Scrollable
+                // because SelectableText won't scroll on its own inside Expanded.
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    _log.join('\n'),
                     style: const TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 11,
@@ -455,6 +503,95 @@ class _CurrentValue extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Live "last / next update" line. The G7 reports a new glucose value every
+/// ~5 minutes, so this shows when the last one arrived and counts down to the
+/// next expected one, ticking once a second on its own (without rebuilding the
+/// chart). [lastUpdate] is the wall-clock time of the latest reading.
+class _UpdateStatus extends StatefulWidget {
+  const _UpdateStatus({required this.lastUpdate});
+  final DateTime? lastUpdate;
+
+  @override
+  State<_UpdateStatus> createState() => _UpdateStatusState();
+}
+
+class _UpdateStatusState extends State<_UpdateStatus> {
+  /// G7 EGV cadence — a new value roughly every 5 minutes.
+  static const _intervalSec = 300;
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  static String _hms(DateTime t) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(t.hour)}:${two(t.minute)}:${two(t.second)}';
+  }
+
+  /// "3 min 21 s" / "45 s" for a non-negative duration.
+  static String _span(Duration d) {
+    final s = d.inSeconds;
+    if (s < 60) return '$s s';
+    return '${s ~/ 60} min ${s % 60} s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final last = widget.lastUpdate;
+    final grey = TextStyle(fontSize: 12, color: Colors.grey[400]);
+    if (last == null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text('Noch keine Aktualisierung empfangen', style: grey),
+      );
+    }
+
+    final now = DateTime.now();
+    final ago = now.difference(last);
+    final next = last.add(const Duration(seconds: _intervalSec));
+    final rem = next.difference(now);
+
+    final String nextLabel;
+    final Color nextColor;
+    if (rem.isNegative) {
+      // Past the expected slot — the reading is late (skipped/poor signal).
+      nextLabel = 'Nächste überfällig (seit ${_span(-rem)})';
+      nextColor = Colors.orangeAccent;
+    } else {
+      nextLabel = 'Nächste in noch ${_span(rem)}…';
+      nextColor = Colors.grey[300]!;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Zuletzt aktualisiert: ${_hms(last)} (vor ${_span(ago)})',
+            style: grey,
+          ),
+          Text(
+            nextLabel,
+            style: TextStyle(fontSize: 12, color: nextColor),
+          ),
+        ],
+      ),
     );
   }
 }
