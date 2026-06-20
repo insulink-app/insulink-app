@@ -37,6 +37,11 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// forgotten/stopped.
   bool get hasSensor => (_store?.resolvedKey ?? '').isNotEmpty;
 
+  /// True once [init] has loaded the store. Until then we don't yet know whether
+  /// a sensor is paired, so the UI should show a loader rather than the "no
+  /// sensor" view (which briefly flashed on launch).
+  bool get initialized => _store != null;
+
   G7Store? _store;
 
   /// glucose history keyed by seconds-since-session-start (dedupes EGV+backfill).

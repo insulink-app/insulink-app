@@ -32,12 +32,16 @@ class OverviewBodyContent extends StatelessWidget {
     final g7 = context.watch<G7Controller>();
     final silent = context.watch<ProfileSilentState>().silent;
     final hasData = g7.currentMgdl != null;
-    // Pairing code entered + service running, but no reading has arrived yet.
-    final searching = !hasData && (g7.connected || g7.busy);
+    // Show the loader while we don't yet know there's NO sensor: during initial
+    // store load, or when a sensor is paired / connecting but no reading has
+    // arrived yet. Only fall through to the "no sensor" view once we're sure.
+    final loading =
+        !hasData &&
+        (!g7.initialized || g7.hasSensor || g7.connected || g7.busy);
 
     final Widget view = hasData
         ? _DataView(g7: g7)
-        : searching
+        : loading
         ? const _SearchingView()
         : const _EmptyView();
 
