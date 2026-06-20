@@ -120,11 +120,55 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
       _append('showing ${cached.length} cached readings');
     }
     await _refreshServiceState();
-    // Auto-connect on launch when paired, unless the service is already up
-    // (it keeps running while the app is closed).
-    if (key.isNotEmpty && s.sessionKey(key) != null && !_serviceRunning) {
+    // Start the read pipeline if it's down, or revive a frozen one that claims
+    // to run but produced no data (see _recoverIfStale).
+    await _recoverIfStale();
+  }
+
+  /// Staleness threshold. The G7 delivers roughly every 5 min, so no fresh
+  /// reading for well over two cycles means the background link is dead — Doze,
+  /// a killed/frozen service isolate, or a stuck scan — and the service must be
+  /// revived. `isRunningService` alone can read "running" while the hosting
+  /// isolate is frozen, which is why time-since-data is the real signal.
+  static const _staleAfter = Duration(minutes: 12);
+
+  /// Wall-clock time of the newest data we know about — the live/cached headline
+  /// reading OR the newest history point, whichever is later. Used to decide
+  /// whether the background service has actually stalled.
+  DateTime? get _lastDataAt {
+    final byLatest = lastUpdate;
+    final start = _sensorStart;
+    final byHistory = (start != null && _byTime.isNotEmpty)
+        ? start.add(Duration(seconds: _byTime.lastKey()!))
+        : null;
+    if (byLatest == null) return byHistory;
+    if (byHistory == null) return byLatest;
+    return byLatest.isAfter(byHistory) ? byLatest : byHistory;
+  }
+
+  /// Revive reading when the app comes back (launch or resume): start the
+  /// service if it isn't running, or restart it — fresh isolate + Rust core +
+  /// BLE scan — if it claims to run but hasn't produced a reading within
+  /// [_staleAfter]. Without this the UI trusts `isRunningService` and never
+  /// recovers a frozen service: you'd reopen the app and still get nothing
+  /// (the symptom behind this method; see CLAUDE.md background gotchas).
+  Future<void> _recoverIfStale() async {
+    final key = _key;
+    if (key.isEmpty || _store?.sessionKey(key) == null) return;
+    final running = await FlutterForegroundTask.isRunningService;
+    if (_disposed) return;
+    if (!running) {
       _append('auto-connecting…');
-      start();
+      await start();
+      return;
+    }
+    final last = _lastDataAt;
+    final stale = last == null || DateTime.now().difference(last) > _staleAfter;
+    if (stale) {
+      _append('no fresh data — restarting background service');
+      await FlutterForegroundTask.restartService();
+      if (_disposed) return;
+      await _refreshServiceState();
     }
   }
 
@@ -315,10 +359,16 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Catch up on whatever the service captured while we were away.
-      _refreshServiceState();
-      _reloadFromStore();
+      _onResumed();
     }
+  }
+
+  /// On resume: catch up on whatever the service persisted while we were away,
+  /// then revive the service if it died or stalled in the background.
+  Future<void> _onResumed() async {
+    await _refreshServiceState();
+    await _reloadFromStore();
+    await _recoverIfStale();
   }
 
   @override

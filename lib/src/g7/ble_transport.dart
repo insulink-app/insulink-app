@@ -64,7 +64,7 @@ class BleTransport {
   static Future<BluetoothDevice?> scanForSensor({
     String namePrefix = 'DXCM',
     String? wantedId,
-    Duration timeout = const Duration(seconds: 600),
+    Duration timeout = const Duration(seconds: 120),
   }) async {
     final completer = Completer<BluetoothDevice?>();
     late StreamSubscription sub;
@@ -99,11 +99,17 @@ class BleTransport {
     // your distribution (nonprofit/open-source here — see the FBP License enum).
     await device.connect(
       license: License.nonprofit,
-      timeout: const Duration(seconds: 300),
+      timeout: const Duration(seconds: 35),
     );
     log('connected to ${device.platformName} (${device.remoteId})');
 
-    final services = await device.discoverServices();
+    // discoverServices has no internal timeout: if the link wedges right after
+    // connect (seen in Doze), an un-bounded await here would pin `_connecting`
+    // true forever and silence the watchdog. Bound it so connect() always
+    // resolves and the watchdog can retry.
+    final services = await device
+        .discoverServices()
+        .timeout(const Duration(seconds: 30));
     for (final s in services) {
       log('service ${s.uuid}');
       for (final c in s.characteristics) {
@@ -194,7 +200,9 @@ class BleTransport {
   /// Trigger Android BLE bonding (the final pairing step the G7 expects).
   Future<void> createBond() async {
     try {
-      await device.createBond();
+      // Some stacks never resolve createBond (bond dialog dismissed / silent
+      // OS bond); bound it so it can't hang the handshake indefinitely.
+      await device.createBond().timeout(const Duration(seconds: 30));
     } catch (e) {
       // Some stacks bond implicitly; surface but don't abort.
     }
