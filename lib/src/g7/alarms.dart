@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../profile/profile_glucose_state.dart';
+import '../profile/profile_silent_state.dart';
 import 'store.dart';
 
 /// Glucose alarm severity. Ordered so a transition between two non-`none`
@@ -64,9 +65,14 @@ class G7AlarmManager {
     if (mgdl == null) return;
     final t = await ProfileGlucoseState.loadThresholds();
     final level = _levelFor(mgdl, t);
+    // Track the zone even while silent, so the alarm doesn't fire on the FIRST
+    // reading after silent mode is switched off if glucose is still in-zone —
+    // only on a fresh crossing. Read the flag fresh so a toggle takes effect
+    // without restarting the service isolate.
     if (level == _last) return;
     _last = level;
     if (level == G7AlarmLevel.none) return;
+    if (await ProfileSilentState.load()) return;
 
     // Format the value in the user's chosen unit for the notification text.
     final value = t.unit == GlucoseUnit.mmol
@@ -121,6 +127,9 @@ class G7AlarmManager {
     final remaining = sessionLengthSec - secsSinceStart;
     // Only within the final 24 h, and not after it has already expired.
     if (remaining <= 0 || remaining > 86400) return;
+    // Suppress while silent WITHOUT marking it notified, so the one-shot warning
+    // still fires once silent mode is turned off (if there's time left).
+    if (await ProfileSilentState.load()) return;
     if (store.expiryNotified(key)) return;
     await store.setExpiryNotified(key);
 

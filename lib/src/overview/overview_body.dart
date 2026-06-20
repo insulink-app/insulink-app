@@ -7,6 +7,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/overview_chart.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
 import 'package:insulink/src/overview/overview_next_update.dart';
+import 'package:insulink/src/profile/profile_silent_state.dart';
 import 'package:provider/provider.dart';
 
 class OverviewBody extends ProductPageBody {
@@ -29,17 +30,87 @@ class OverviewBodyContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g7 = context.watch<G7Controller>();
+    final silent = context.watch<ProfileSilentState>().silent;
     final hasData = g7.currentMgdl != null;
     // Pairing code entered + service running, but no reading has arrived yet.
     final searching = !hasData && (g7.connected || g7.busy);
 
+    final Widget view = hasData
+        ? _DataView(g7: g7)
+        : searching
+        ? const _SearchingView()
+        : const _EmptyView();
+
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: hasData
-          ? _DataView(g7: g7)
-          : searching
-          ? const _SearchingView()
-          : const _EmptyView(),
+      child: Column(
+        children: [
+          if (silent) ...[
+            const _SilentBanner(),
+            const SizedBox(height: 12),
+          ],
+          Expanded(child: view),
+        ],
+      ),
+    );
+  }
+}
+
+/// Prominent, tappable indicator shown on the overview while silent mode mutes
+/// all alarms. Tapping it turns silent mode back off — alarms are safety
+/// relevant, so it's deliberately easy to clear from the main screen.
+class _SilentBanner extends StatelessWidget {
+  const _SilentBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const accent = Color(0xFFE8A13A);
+    return Material(
+      color: accent.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.read<ProfileSilentState>().setSilent(false),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.notifications_off_rounded,
+                color: accent,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LocaleText(
+                      'overview.silent.title',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    LocaleText(
+                      'overview.silent.hint',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

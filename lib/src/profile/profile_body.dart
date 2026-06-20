@@ -8,6 +8,7 @@ import 'package:insulink/src/profile/profile_developer_toggle.dart';
 import 'package:insulink/src/profile/profile_glucose_selection.dart';
 import 'package:insulink/src/profile/profile_language_selection.dart';
 import 'package:insulink/src/profile/profile_notification_toggle.dart';
+import 'package:insulink/src/profile/profile_silent_toggle.dart';
 import 'package:insulink/src/profile/profile_theme_selection.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -109,6 +110,17 @@ class _ProfilePageContentState extends State<ProfilePageContent> {
                       ProfileNotificationToggle(),
                       SizedBox(height: 30),
                       LocaleText(
+                        "profile.silent",
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
+                      SizedBox(height: 10),
+                      ProfileSilentToggle(),
+                      SizedBox(height: 30),
+                      LocaleText(
                         "profile.developer",
                         style: TextStyle(
                           fontSize: 25,
@@ -141,7 +153,7 @@ class _ProfilePageContentState extends State<ProfilePageContent> {
                           },
                         ),
                       ),
-                      SizedBox(height: 30),
+                      SizedBox(height: 75),
                     ],
                   ),
                 ],

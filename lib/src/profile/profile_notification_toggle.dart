@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/profile/profile_toggle_row.dart';
 
 class ProfileNotificationToggle extends StatefulWidget {
   const ProfileNotificationToggle({super.key});
@@ -30,12 +30,10 @@ class ProfileNotificationToggleState extends State<ProfileNotificationToggle> {
         if (notifications.connectionState == ConnectionState.done) {
           _notificationsEnabled = notifications.data != "false";
         }
-        return SwitchListTile(
-          title: LocaleText("profile.notification.description"),
+        return ProfileToggleRow(
+          labelKey: "profile.notification.description",
           value: _notificationsEnabled,
           onChanged: _toggleNotifications,
-          activeThumbColor: Theme.of(context).colorScheme.primary,
-          inactiveThumbColor: Colors.grey,
         );
       },
     );
