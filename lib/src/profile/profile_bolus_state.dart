@@ -62,10 +62,9 @@ class ProfileBolusState extends ChangeNotifier {
     required int targetMgdl,
   }) {
     final meal = carbs / _carbFactor;
-    final correction = glucoseMgdl > targetMgdl
-        ? (glucoseMgdl - targetMgdl) / _correctionFactor
-        : 0.0;
-    return meal + correction;
+    final correction = (glucoseMgdl - targetMgdl) / _correctionFactor;
+    final suggestion = meal + correction;
+    return suggestion > 0 ? suggestion : 0;
   }
 
   // ---- Persistence ----
