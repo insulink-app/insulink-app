@@ -62,7 +62,7 @@
   "sensor.searching.hint": "Halte den Sensor in der Nähe.",
   "sensor.pair.title": "Sensor koppeln",
   "sensor.pair.hint": "Kopplungscode eingeben zum Verbinden",
-  "sensor.life.title": "HALTBARKEIT",
+  "sensor.life.title": "Haltbarkeit",
   "sensor.life.remaining": "noch # Tage",
   "sensor.control.end_session": "Sitzung beenden",
   "sensor.control.stop_sensor": "Sensor stoppen",

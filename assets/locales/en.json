@@ -62,7 +62,7 @@
   "sensor.searching.hint": "Keep the sensor nearby.",
   "sensor.pair.title": "Pair sensor",
   "sensor.pair.hint": "Enter the pairing code to connect",
-  "sensor.life.title": "DURABILITY",
+  "sensor.life.title": "Durability",
   "sensor.life.remaining": "# days left",
   "sensor.control.end_session": "End session",
   "sensor.control.stop_sensor": "Stop sensor",
