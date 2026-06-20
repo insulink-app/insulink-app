@@ -5,15 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 
 /// fl_chart line graph of glucose vs. time (hours, 0 = latest reading).
 class OverviewChart extends StatefulWidget {
-  const OverviewChart({super.key, required this.byTime});
+  const OverviewChart({super.key, required this.byTime, this.sensorStart});
 
   final SplayTreeMap<int, int> byTime;
+
+  /// Wall-clock time the session started (`secsSinceStart == 0`). Lets the X
+  /// axis show real clock times instead of hours-ago offsets.
+  final DateTime? sensorStart;
 
   @override
   State<OverviewChart> createState() => _OverviewChartState();
@@ -86,6 +91,14 @@ class _OverviewChartState extends State<OverviewChart> {
     }
     final entries = byTime.entries.toList();
     final latestSecs = entries.last.key;
+    // Wall-clock time at x == 0 (the latest reading), to label the X axis with
+    // real times. x is hours relative to this, so wall(x) = anchor + x hours.
+    final anchor = widget.sensorStart?.add(Duration(seconds: latestSecs));
+    // Phase-shift X so full wall-clock hours land on integer x values (the axis
+    // ticks): shift = the fractional-hour part of the latest reading's time.
+    // x == shift is the latest reading; x == 0, -1, -2 … are full clock hours.
+    final shift =
+        anchor == null ? 0.0 : (anchor.minute * 60 + anchor.second) / 3600.0;
     // Selected time window (last N hours), even if more history is cached.
     final rangeHours = _rangeHours;
     final cutoff = latestSecs - rangeHours * 3600;
@@ -106,7 +119,7 @@ class _OverviewChartState extends State<OverviewChart> {
     double? prevX;
     for (final e in entries) {
       if (e.key < cutoff) continue;
-      final x = (e.key - latestSecs) / 3600.0;
+      final x = (e.key - latestSecs) / 3600.0 + shift;
       final v = e.value;
       if (prevVal != null) {
         final pv = prevVal;
@@ -134,7 +147,7 @@ class _OverviewChartState extends State<OverviewChart> {
       prevVal = v;
       prevX = x;
     }
-    final minX = -rangeHours.toDouble();
+    final minX = shift - rangeHours;
     final showDots = spots.length < 60;
     // Split the line into solid-colour segments by zone instead of blending a
     // gradient across it: on steep parts the blend showed green and red running
@@ -190,7 +203,7 @@ class _OverviewChartState extends State<OverviewChart> {
         minY: 0,
         maxY: maxY,
         minX: minX,
-        maxX: 0,
+        maxX: shift,
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
@@ -222,10 +235,30 @@ class _OverviewChartState extends State<OverviewChart> {
               showTitles: true,
               reservedSize: 24,
               interval: xInterval,
-              getTitlesWidget: (v, _) => Text(
-                '${v.toInt()}h',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
+              // Drop the fractional min/max edge ticks so only full hours show.
+              minIncluded: false,
+              maxIncluded: false,
+              getTitlesWidget: (v, _) {
+                if (anchor == null) {
+                  return Text(
+                    '${v.toInt()}h',
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  );
+                }
+                // v is in shifted hours; (v - shift) hours back from the anchor
+                // lands on a full clock hour.
+                final t = anchor.add(
+                  Duration(seconds: ((v - shift) * 3600).round()),
+                );
+                return Text(
+                  Locales.string(
+                    context,
+                    'overview.chart.hour',
+                    params: ['${t.hour}'],
+                  ),
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                );
+              },
             ),
           ),
         ),
@@ -299,6 +332,10 @@ class _OverviewChartState extends State<OverviewChart> {
         ),
         lineBarsData: bars,
       ),
+      // No implicit morph animation: the number of zone bars changes between
+      // states, so fl_chart would interpolate between mismatched structures —
+      // which looked broken on load/update. Render each state directly.
+      duration: Duration.zero,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

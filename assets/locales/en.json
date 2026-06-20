@@ -40,6 +40,7 @@
   "sensor.info.session": "SESSION",
   "sensor.info.battery": "BATTERY",
   "overview.chart.empty": "no readings yet",
+  "overview.chart.hour": "#:00",
   "overview.connect": "Connect",
   "overview.connecting": "Connecting…",
   "overview.pairing_code": "Pairing code",

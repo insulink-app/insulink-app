@@ -64,8 +64,6 @@ class OverviewCurrentValue extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Nudge down so the arrow aligns with the top of the digits, not
-            // the (taller) line box of the 90pt number.
             if (hasTrend) ...[
               Icon(_arrow(trendPerMin!), size: 52, color: color),
             ],
@@ -81,6 +79,7 @@ class OverviewCurrentValue extends StatelessWidget {
                 color: Colors.grey[400],
               ),
             ),
+            const SizedBox(height: 12),
           ],
         ),
       ],

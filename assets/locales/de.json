@@ -40,6 +40,7 @@
   "sensor.info.session": "SITZUNG",
   "sensor.info.battery": "BATTERIE",
   "overview.chart.empty": "Noch keine Messwerte",
+  "overview.chart.hour": "# Uhr",
   "overview.connect": "Verbinden",
   "overview.connecting": "Verbinde…",
   "overview.pairing_code": "Kopplungscode",

@@ -147,7 +147,12 @@ class _DataView extends StatelessWidget {
               busy: g7.busy,
             ),
             const SizedBox(height: 56),
-            Expanded(child: OverviewChart(byTime: g7.byTime)),
+            Expanded(
+              child: OverviewChart(
+                byTime: g7.byTime,
+                sensorStart: g7.sensorStart,
+              ),
+            ),
             const SizedBox(height: 32),
           ],
         ),
