@@ -89,7 +89,7 @@ class _ProductNavigatorState extends State<ProductNavigator> {
     );
   }
 
-  void loadNotifications(context) {
+  void loadNotifications(BuildContext context) {
     for (var i = 0; i < widget.pageBodies.length; i++) {
       widget.pageBodies[i].notifications(context).then((count) {
         setState(() {

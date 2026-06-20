@@ -45,10 +45,11 @@ class Locales {
     }
   }
 
-  static change(BuildContext context, String lang) =>
+  static dynamic change(BuildContext context, String lang) =>
       LocaleNotifier.of(context)!.change(lang);
 
-  static Locale? currentLocale(context) => LocaleNotifier.of(context)!.locale;
+  static Locale? currentLocale(BuildContext context) =>
+      LocaleNotifier.of(context)!.locale;
 
   static const LocalizationsDelegate<Locales> delegate = _LocalesDelegate();
 

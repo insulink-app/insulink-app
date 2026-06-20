@@ -48,20 +48,14 @@ class ProfileGlucoseState extends ChangeNotifier {
   int _urgentLow, _low, _high, _urgentHigh;
 
   ProfileGlucoseState({
-    required GlucoseUnit unit,
-    required int targetLow,
-    required int targetHigh,
-    required int urgentLow,
-    required int low,
-    required int high,
-    required int urgentHigh,
-  }) : _unit = unit,
-       _targetLow = targetLow,
-       _targetHigh = targetHigh,
-       _urgentLow = urgentLow,
-       _low = low,
-       _high = high,
-       _urgentHigh = urgentHigh;
+    required this._unit,
+    required this._targetLow,
+    required this._targetHigh,
+    required this._urgentLow,
+    required this._low,
+    required this._high,
+    required this._urgentHigh,
+  });
 
   GlucoseUnit get unit => _unit;
   int get targetLow => _targetLow;

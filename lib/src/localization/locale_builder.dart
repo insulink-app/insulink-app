@@ -29,7 +29,7 @@ class LocaleBuilderState extends State<LocaleBuilder> {
     );
   }
 
-  changeLocale(String lng) {
+  void changeLocale(String lng) {
     setState(() {
       LocalePreference.instance.setLocale(lng);
       locale = LocalePreference.instance.locale;

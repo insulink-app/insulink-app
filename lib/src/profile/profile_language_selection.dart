@@ -35,7 +35,13 @@ class ProfileLanguageSelection extends StatelessWidget {
     );
   }
 
-  createLanguageButton(languageState, flag, language, selected, context) {
+  Container createLanguageButton(
+    ProfileLanguageState languageState,
+    String flag,
+    String language,
+    bool selected,
+    BuildContext context,
+  ) {
     var theme = Theme.of(context);
     return Container(
       margin: EdgeInsets.all(10),
@@ -57,7 +63,7 @@ class ProfileLanguageSelection extends StatelessWidget {
         ),
         onPressed: () async {
           await changeLanguage(languageState, language, context);
-          await Locales.change(context, language);
+          if (context.mounted) await Locales.change(context, language);
         },
         child: Container(
           width: 120,
@@ -71,7 +77,11 @@ class ProfileLanguageSelection extends StatelessWidget {
     );
   }
 
-  changeLanguage(languageState, language, context) async {
+  Future<void> changeLanguage(
+    ProfileLanguageState languageState,
+    String language,
+    BuildContext context,
+  ) async {
     languageState.setLanguage(language);
     const storage = FlutterSecureStorage();
     await storage.write(key: "language", value: language);

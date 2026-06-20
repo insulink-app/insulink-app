@@ -6,7 +6,7 @@ class LoaderAlert extends StatefulWidget {
   @override
   State<LoaderAlert> createState() => _LoaderAlertState();
 
-  show(context) {
+  void show(BuildContext context) {
     showDialog(context: context, builder: (BuildContext context) => this);
   }
 }

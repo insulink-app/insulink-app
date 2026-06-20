@@ -5,9 +5,9 @@ class ProfileLanguageState extends ChangeNotifier {
 
   ProfileLanguageState(this.language);
 
-  get getLanguage => language;
+  String get getLanguage => language;
 
-  void setLanguage(language) {
+  void setLanguage(String language) {
     this.language = language;
     notifyListeners();
   }

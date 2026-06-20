@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:insulink/src/localization/locales.dart';
 
 /// Compact "next reading" indicator: an animated clock whose ring fills as the
 /// next ~5-minute G7 reading approaches, with a short m:ss countdown. Replaces
