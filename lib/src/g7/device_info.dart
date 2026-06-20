@@ -2,47 +2,48 @@ import 'dart:typed_data';
 
 // (de)serialization for caching lives in this file; see toJson/fromJson below.
 
-/// G7 algorithm/calibration state (Dexcom `AlgorithmState`).
-String g7AlgorithmState(int v) {
+/// Locale key for a G7 algorithm/calibration state (Dexcom `AlgorithmState`),
+/// or null for an unknown state (the caller formats the raw hex value).
+String? g7AlgorithmStateKey(int v) {
   switch (v) {
     case 0x00:
-      return 'none';
+      return 'sensor.state.none';
     case 0x01:
-      return 'session stopped';
+      return 'sensor.state.session_stopped';
     case 0x02:
-      return 'warmup';
+      return 'sensor.state.warmup';
     case 0x03:
-      return 'excess noise';
+      return 'sensor.state.excess_noise';
     case 0x04:
-      return '1st of 2 BGs needed';
+      return 'sensor.state.bg1_needed';
     case 0x05:
-      return '2nd of 2 BGs needed';
+      return 'sensor.state.bg2_needed';
     case 0x06:
-      return 'OK';
+      return 'sensor.state.ok';
     case 0x07:
-      return 'needs calibration';
+      return 'sensor.state.needs_calibration';
     case 0x08:
     case 0x09:
     case 0x0A:
-      return 'calibration error';
+      return 'sensor.state.calibration_error';
     case 0x0B:
     case 0x0C:
-      return 'sensor failed';
+      return 'sensor.state.sensor_failed';
     case 0x0D:
-      return 'out of calibration';
+      return 'sensor.state.out_of_calibration';
     case 0x0E:
-      return 'calibration requested';
+      return 'sensor.state.calibration_requested';
     case 0x0F:
-      return 'session expired';
+      return 'sensor.state.session_expired';
     case 0x10:
     case 0x11:
-      return 'session failed';
+      return 'sensor.state.session_failed';
     case 0x12:
-      return 'temporary issue';
+      return 'sensor.state.temporary_issue';
     case 0x13:
-      return 'sensor declining';
+      return 'sensor.state.sensor_declining';
     default:
-      return 'state 0x${v.toRadixString(16)}';
+      return null;
   }
 }
 
@@ -91,8 +92,19 @@ class G7DeviceInfo {
   /// Explicit default constructor (required once a factory ctor is declared).
   G7DeviceInfo();
 
+  /// True once ANY metadata field has been parsed, so partial info (e.g. a
+  /// battery or session reply that arrives before the version reply) is still
+  /// persisted and shown rather than being dropped until firmware/serial land.
   bool get hasAny =>
-      firmware != null || serialNumber != null || sessionLengthSec != null;
+      firmware != null ||
+      serialNumber != null ||
+      sessionLengthSec != null ||
+      warmupSec != null ||
+      algorithmVersion != null ||
+      hardwareVersion != null ||
+      maxLifetimeDays != null ||
+      batteryVoltageA != null ||
+      calibrationsPermitted != null;
 
   /// True once a 0x32 calibrationBounds response has been parsed.
   bool get hasCalibrationBounds => calibrationsPermitted != null;

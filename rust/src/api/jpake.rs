@@ -14,7 +14,7 @@
 //! Reference (Juggluco, branch `primary`):
 //!   Common/src/main/cpp/dexcom/ecJPake.cpp, java.cpp, DexGattCallback.java
 
-use aes::cipher::{BlockEncrypt, KeyInit};
+use aes::cipher::{BlockCipherEncrypt, KeyInit};
 use aes::Aes128;
 use p256::elliptic_curve::ops::Reduce;
 use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};

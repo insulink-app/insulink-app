@@ -1,42 +1,80 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'device_info.dart';
 
 /// Persists the sensor serial, pairing code, and the per-sensor EC-JPAKE
 /// session key so the reader can reconnect without re-pairing.
+///
+/// Backed by [FlutterSecureStorage] (platform keystore / EncryptedSharedPrefs).
+/// Reads are served synchronously from an in-memory [_cache] loaded on [open]
+/// and refreshed by [reload]; writes go to secure storage and update the cache.
+/// This keeps the synchronous getter API the read pipeline relies on while the
+/// data lives encrypted at rest.
 class G7Store {
   static const _kSerial = 'g7.serial';
   static const _kCode = 'g7.pairing_code';
+
   static String _kKey(String serial) => 'g7.session_key.$serial';
 
-  final SharedPreferences _p;
-  G7Store(this._p);
+  final FlutterSecureStorage _storage;
+  final Map<String, String> _cache;
 
-  static Future<G7Store> open() async =>
-      G7Store(await SharedPreferences.getInstance());
+  G7Store(this._storage, this._cache);
 
-  /// Re-read values written by another isolate. Each isolate keeps its own
-  /// in-memory SharedPreferences cache, so the UI must reload to observe writes
-  /// made by the background foreground-service isolate (and vice-versa).
-  Future<void> reload() => _p.reload();
+  static Future<G7Store> open() async {
+    const storage = FlutterSecureStorage();
+    final cache = await storage.readAll();
+    return G7Store(storage, cache);
+  }
 
-  String? get serial => _p.getString(_kSerial);
-  String? get pairingCode => _p.getString(_kCode);
+  /// Re-read values written by another isolate. The in-memory cache is local to
+  /// this isolate, so the UI must reload to observe writes made by the
+  /// background foreground-service isolate (and vice-versa).
+  Future<void> reload() async {
+    final all = await _storage.readAll();
+    _cache
+      ..clear()
+      ..addAll(all);
+  }
+
+  Future<void> _set(String key, String value) async {
+    await _storage.write(key: key, value: value);
+    _cache[key] = value;
+  }
+
+  Future<void> _remove(String key) async {
+    await _storage.delete(key: key);
+    _cache.remove(key);
+  }
+
+  String? get serial => _cache[_kSerial];
+
+  String? get pairingCode => _cache[_kCode];
+
+  static const _kResolved = 'g7.resolved_key';
+
+  /// The effective key all cached data is stored under: the user-entered serial,
+  /// or the sensor's stable BLE id when no serial was entered. Decided by the
+  /// read pipeline once a device is found; the UI reads cache under this key so
+  /// caching works even when the serial field is left blank.
+  String? get resolvedKey => _cache[_kResolved];
+
+  Future<void> saveResolvedKey(String key) => _set(_kResolved, key);
 
   Future<void> saveIdentity({
     required String serial,
     required String pairingCode,
   }) async {
-    await _p.setString(_kSerial, serial);
-    await _p.setString(_kCode, pairingCode);
+    await _set(_kSerial, serial);
+    await _set(_kCode, pairingCode);
   }
 
   /// The stored session key for [serial], or null if never paired.
   Uint8List? sessionKey(String serial) {
-    final hex = _p.getString(_kKey(serial));
+    final hex = _cache[_kKey(serial)];
     if (hex == null || hex.length < 32) return null;
     return Uint8List.fromList([
       for (var i = 0; i < hex.length; i += 2)
@@ -46,22 +84,41 @@ class G7Store {
 
   Future<void> saveSessionKey(String serial, Uint8List key) async {
     final hex = key.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    await _p.setString(_kKey(serial), hex);
+    await _set(_kKey(serial), hex);
   }
 
-  Future<void> clearSessionKey(String serial) => _p.remove(_kKey(serial));
+  Future<void> clearSessionKey(String serial) => _remove(_kKey(serial));
 
-  // The BLE remoteId of the physical sensor we paired with for this serial.
-  // Multiple G7s (e.g. a neighbour's) can advertise as "DXCM…" simultaneously;
-  // pinning to the known device stops reconnects from grabbing the wrong sensor
-  // (which fails key-confirmation with our stored key — see G7Connection).
+  /// Forget a sensor entirely: drop its session key + all cached data, plus the
+  /// resolved key and identity, so the app no longer auto-reconnects to it.
+  Future<void> clearSensor(String key) async {
+    for (final k in [
+      _kKey(key),
+      _kDeviceId(key),
+      _kReadings(key),
+      _kLatest(key),
+      _kInfo(key),
+      _kStart(key),
+      _kExpiryNotified(key),
+    ]) {
+      await _remove(k);
+    }
+    await _remove(_kResolved);
+    await _remove(_kSerial);
+    await _remove(_kCode);
+  }
+
+  // The BLE remoteId of the physical sensor paired for this serial. Lets the
+  // background service reconnect by id with autoConnect (no scan) — Android
+  // throttles BLE scanning while the screen is off, but an OS-level autoConnect
+  // fires as soon as the sensor advertises. Also pins to the right sensor when
+  // several G7s are in range.
   static String _kDeviceId(String serial) => 'g7.device_id.$serial';
 
-  /// The BLE id of the sensor last successfully authenticated for [serial].
-  String? deviceId(String serial) => _p.getString(_kDeviceId(serial));
+  String? deviceId(String serial) => _cache[_kDeviceId(serial)];
 
   Future<void> saveDeviceId(String serial, String id) =>
-      _p.setString(_kDeviceId(serial), id);
+      _set(_kDeviceId(serial), id);
 
   static String _kReadings(String serial) => 'g7.readings.$serial';
 
@@ -72,12 +129,12 @@ class G7Store {
     final keys = byTime.keys.toList()..sort();
     final recent = keys.length > 300 ? keys.sublist(keys.length - 300) : keys;
     final s = recent.map((k) => '$k:${byTime[k]}').join(',');
-    await _p.setString(_kReadings(serial), s);
+    await _set(_kReadings(serial), s);
   }
 
   Map<int, int> loadReadings(String serial) {
     final out = <int, int>{};
-    final s = _p.getString(_kReadings(serial));
+    final s = _cache[_kReadings(serial)];
     if (s == null || s.isEmpty) return out;
     for (final part in s.split(',')) {
       final i = part.indexOf(':');
@@ -101,7 +158,7 @@ class G7Store {
     required int state,
     required int secsSinceStart,
   }) async {
-    await _p.setString(
+    await _set(
       _kLatest(serial),
       jsonEncode({
         'mgdl': mgdl,
@@ -113,12 +170,13 @@ class G7Store {
   }
 
   Map<String, dynamic>? loadLatest(String serial) {
-    final s = _p.getString(_kLatest(serial));
+    final s = _cache[_kLatest(serial)];
     if (s == null) return null;
     return jsonDecode(s) as Map<String, dynamic>;
   }
 
   static String _kInfo(String serial) => 'g7.info.$serial';
+
   static String _kStart(String serial) => 'g7.start.$serial';
 
   /// Cache device metadata + sensor session start so the info panel renders
@@ -128,20 +186,30 @@ class G7Store {
     G7DeviceInfo info,
     DateTime? start,
   ) async {
-    await _p.setString(_kInfo(serial), jsonEncode(info.toJson()));
+    await _set(_kInfo(serial), jsonEncode(info.toJson()));
     if (start != null) {
-      await _p.setInt(_kStart(serial), start.millisecondsSinceEpoch);
+      await _set(_kStart(serial), start.millisecondsSinceEpoch.toString());
     }
   }
 
   G7DeviceInfo? loadInfo(String serial) {
-    final s = _p.getString(_kInfo(serial));
+    final s = _cache[_kInfo(serial)];
     if (s == null) return null;
     return G7DeviceInfo.fromJson(jsonDecode(s) as Map<String, dynamic>);
   }
 
   DateTime? loadSensorStart(String serial) {
-    final ms = _p.getInt(_kStart(serial));
+    final ms = int.tryParse(_cache[_kStart(serial)] ?? '');
     return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
   }
+
+  static String _kExpiryNotified(String serial) => 'g7.expiry_notified.$serial';
+
+  /// Whether the "sensor expires soon" notification already fired for this
+  /// sensor — so it only fires once per sensor (cleared by [clearSensor]).
+  bool expiryNotified(String serial) =>
+      _cache[_kExpiryNotified(serial)] == 'true';
+
+  Future<void> setExpiryNotified(String serial) =>
+      _set(_kExpiryNotified(serial), 'true');
 }

@@ -59,16 +59,25 @@ class G7Connection {
   bool _backfillAsked = false;
   bool _connecting = false;
 
+  /// Key all cached data is stored under: the user serial, or the sensor's BLE
+  /// id when none was entered. Set in [connect] once a device is found.
+  String _persistKey = '';
+
   /// Persisted history is pulled into [_byTime] once so backfill can request
   /// only the gap since our newest known reading (not a fixed 24 h every cycle).
   bool _historyLoaded = false;
 
   bool get isConnected => _transport?.device.isConnected ?? false;
+
   bool get isConnecting => _connecting;
 
   /// The latest known glucose value (live EGV, else newest history point).
   int? get latestMgDl =>
-      _latest?.glucoseMgDl ?? (_byTime.isNotEmpty ? _byTime[_byTime.lastKey()] : null);
+      _latest?.glucoseMgDl ??
+      (_byTime.isNotEmpty ? _byTime[_byTime.lastKey()] : null);
+
+  /// Total session length reported by the sensor (for the expiry warning).
+  int? get sessionLengthSec => _info.sessionLengthSec;
 
   void _log(String s) => onLog?.call(s);
 
@@ -81,21 +90,21 @@ class G7Connection {
   }
 
   Future<void> _persistReadings() async {
-    if (serial.isNotEmpty && _byTime.isNotEmpty) {
-      await store.saveReadings(serial, _byTime);
+    if (_persistKey.isNotEmpty && _byTime.isNotEmpty) {
+      await store.saveReadings(_persistKey, _byTime);
     }
   }
 
   Future<void> _persistInfo() async {
-    if (serial.isNotEmpty && (_info.hasAny || _sensorStart != null)) {
-      await store.saveInfo(serial, _info, _sensorStart);
+    if (_persistKey.isNotEmpty && (_info.hasAny || _sensorStart != null)) {
+      await store.saveInfo(_persistKey, _info, _sensorStart);
     }
   }
 
   Future<void> _persistLatest(G7GlucoseReading r) async {
-    if (serial.isEmpty) return;
+    if (_persistKey.isEmpty) return;
     await store.saveLatest(
-      serial,
+      _persistKey,
       mgdl: r.glucoseMgDl,
       trendTenths: r.trendTenths,
       state: r.state,
@@ -111,23 +120,32 @@ class G7Connection {
     _connecting = true;
     await _teardownTransport();
     _backfillAsked = false;
-    // Seed in-memory history from the store so backfill only fetches the gap.
-    if (!_historyLoaded && serial.isNotEmpty) {
-      _historyLoaded = true;
-      _byTime.addAll(store.loadReadings(serial));
-    }
 
     BleTransport? transport;
     try {
       // Pin to the known sensor once we've paired: with a stored device id we
       // scan for THAT sensor only, so a different nearby G7 can't be picked up
-      // and fail key-confirmation against our stored key.
-      final wantedId = serial.isEmpty ? null : store.deviceId(serial);
+      // and fail key-confirmation against our stored key. The pin is keyed by the
+      // serial when given, else by the previously resolved BLE id, so pinning
+      // works even when no serial was entered.
+      final pinKey = serial.isNotEmpty ? serial : (store.resolvedKey ?? '');
+      final wantedId = pinKey.isEmpty ? null : store.deviceId(pinKey);
       _log(wantedId == null ? 'scanning for DXCM…' : 'scanning for $wantedId…');
       final device = await BleTransport.scanForSensor(wantedId: wantedId);
       if (device == null) {
         _log('no sensor found');
         return;
+      }
+
+      // The serial is only a cache key, not an auth secret — when none was
+      // entered, key everything by the sensor's BLE id so caching still works.
+      // Persist it so the UI and future service starts resolve to the same key.
+      _persistKey = serial.isNotEmpty ? serial : device.remoteId.str;
+      await store.saveResolvedKey(_persistKey);
+      // Seed in-memory history from the store so backfill only fetches the gap.
+      if (!_historyLoaded && _persistKey.isNotEmpty) {
+        _historyLoaded = true;
+        _byTime.addAll(store.loadReadings(_persistKey));
       }
 
       // One clean attempt per connect(): the G7 rejects rapid in-process
@@ -138,14 +156,15 @@ class G7Connection {
       await transport.connectAndBind(log: _log);
       await _authenticate(transport);
       // Remember which physical sensor this was, so future reconnects pin to it.
-      if (serial.isNotEmpty) {
-        await store.saveDeviceId(serial, device.remoteId.str);
+      if (_persistKey.isNotEmpty) {
+        await store.saveDeviceId(_persistKey, device.remoteId.str);
       }
       _log('session established');
 
       final t = transport;
-      _controlSub = t.controlStream
-          .listen((b) => _onControl(t, Uint8List.fromList(b)));
+      _controlSub = t.controlStream.listen(
+        (b) => _onControl(t, Uint8List.fromList(b)),
+      );
       _backfillSub = t.backfillStream.listen((b) {
         final recs = G7GlucoseCodec.parseBackfill(Uint8List.fromList(b));
         for (final r in recs) {
@@ -169,7 +188,9 @@ class G7Connection {
       // G7's brief reconnect window for the battery/calibration replies below.
       if (_info.firmware == null) {
         await t.writeControl([0x4A]); // transmitter version (fw, sw#, serial)
-        await t.writeControl([0x52]); // extended version (session/warmup, hw, algo)
+        await t.writeControl([
+          0x52,
+        ]); // extended version (session/warmup, hw, algo)
       }
       await t.writeControl([0x22]); // battery status
       await t.writeControl([0x32]); // calibration bounds (read-only status)
@@ -195,7 +216,7 @@ class G7Connection {
       pairingCode: pairingCode,
       log: _log,
     );
-    final stored = serial.isEmpty ? null : store.sessionKey(serial);
+    final stored = _persistKey.isEmpty ? null : store.sessionKey(_persistKey);
     if (stored != null) {
       try {
         await session.runReconnect(stored);
@@ -206,7 +227,7 @@ class G7Connection {
       }
     }
     final secret = await session.run();
-    if (serial.isNotEmpty) await store.saveSessionKey(serial, secret);
+    if (_persistKey.isNotEmpty) await store.saveSessionKey(_persistKey, secret);
   }
 
   void _onControl(BleTransport t, Uint8List bytes) {
@@ -241,11 +262,13 @@ class G7Connection {
       _backfillAsked = true;
       final end = r.secsSinceStart - 60;
       var start = r.secsSinceStart - 24 * 3600;
-      final haveFullDay = priorMax != null &&
+      final haveFullDay =
+          priorMax != null &&
           _byTime.isNotEmpty &&
           priorMax - _byTime.firstKey()! >= 23 * 3600;
       if (haveFullDay && priorMax > start) {
-        start = priorMax + 1; // continuous history already cached → just the gap
+        start =
+            priorMax + 1; // continuous history already cached → just the gap
       }
       if (start < 300) start = 300;
       // Request immediately: the G7 drops the link within a second of connecting,

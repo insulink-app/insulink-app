@@ -24,7 +24,9 @@ class BleTransport {
   final _backfillRx = StreamController<List<int>>.broadcast();
 
   Stream<List<int>> get authStream => _authRx.stream;
+
   Stream<List<int>> get controlStream => _controlRx.stream;
+
   Stream<List<int>> get backfillStream => _backfillRx.stream;
 
   // 3538 (J-PAKE/cert) bytes are buffered continuously from connect so callers
@@ -54,10 +56,15 @@ class BleTransport {
   /// on reconnect so we never grab a different G7 (a neighbour's, or an old
   /// sensor) that happens to advertise first, which would fail key-confirmation
   /// against our stored key. Without it, the first `DXCM…` device matches.
+  ///
+  /// [wantedId] is ALSO passed as a native `withRemoteIds` scan filter: Android
+  /// delivers no results for an UNfiltered scan while the screen is off, so a
+  /// background reconnect would otherwise stall for minutes until the app/screen
+  /// is opened. A native address filter makes the scan return results screen-off.
   static Future<BluetoothDevice?> scanForSensor({
     String namePrefix = 'DXCM',
     String? wantedId,
-    Duration timeout = const Duration(seconds: 600),
+    Duration timeout = const Duration(seconds: 120),
   }) async {
     final completer = Completer<BluetoothDevice?>();
     late StreamSubscription sub;
@@ -71,7 +78,10 @@ class BleTransport {
         }
       }
     });
-    await FlutterBluePlus.startScan(timeout: timeout);
+    await FlutterBluePlus.startScan(
+      timeout: timeout,
+      withRemoteIds: wantedId != null ? [wantedId] : const [],
+    );
     final device = await completer.future
         .timeout(timeout, onTimeout: () => null)
         .whenComplete(() async {
@@ -89,11 +99,17 @@ class BleTransport {
     // your distribution (nonprofit/open-source here — see the FBP License enum).
     await device.connect(
       license: License.nonprofit,
-      timeout: const Duration(seconds: 300),
+      timeout: const Duration(seconds: 35),
     );
     log('connected to ${device.platformName} (${device.remoteId})');
 
-    final services = await device.discoverServices();
+    // discoverServices has no internal timeout: if the link wedges right after
+    // connect (seen in Doze), an un-bounded await here would pin `_connecting`
+    // true forever and silence the watchdog. Bound it so connect() always
+    // resolves and the watchdog can retry.
+    final services = await device
+        .discoverServices()
+        .timeout(const Duration(seconds: 30));
     for (final s in services) {
       log('service ${s.uuid}');
       for (final c in s.characteristics) {
@@ -184,7 +200,9 @@ class BleTransport {
   /// Trigger Android BLE bonding (the final pairing step the G7 expects).
   Future<void> createBond() async {
     try {
-      await device.createBond();
+      // Some stacks never resolve createBond (bond dialog dismissed / silent
+      // OS bond); bound it so it can't hang the handshake indefinitely.
+      await device.createBond().timeout(const Duration(seconds: 30));
     } catch (e) {
       // Some stacks bond implicitly; surface but don't abort.
     }
