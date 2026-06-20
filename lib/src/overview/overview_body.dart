@@ -140,8 +140,6 @@ class _DataView extends StatelessWidget {
             OverviewCurrentValue(
               mgdl: g7.currentMgdl,
               trendPerMin: g7.latest?.trendMgDlPerMin,
-              // Dimmed "cached" until a live reading arrives from the service.
-              stale: !g7.latestIsLive,
               busy: g7.busy,
             ),
             const SizedBox(height: 12),

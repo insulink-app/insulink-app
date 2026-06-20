@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/profile_glucose_state.dart';
+import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
-
-/// Accent per range, conveying severity at a glance: target = healthy green,
-/// low alarms = hypo red, high alarms = hyper amber.
-const _targetColor = Color(0xFF2E9E5B);
-const _lowColor = Color(0xFFE0533D);
-const _highColor = Color(0xFFE8A13A);
 
 /// Unit picker + target-range and alarm-threshold editors. All values are kept
 /// in mg/dL internally; labels are rendered in the chosen unit.
@@ -22,6 +18,7 @@ class ProfileGlucoseSelection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<ProfileGlucoseState>();
+    final gc = Theme.of(context).extension<GlucoseColors>()!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -34,7 +31,7 @@ class ProfileGlucoseSelection extends StatelessWidget {
         const SizedBox(height: 24),
         _RangeCard(
           state: s,
-          accent: _targetColor,
+          accent: gc.inRange,
           labelKey: 'profile.glucose.target',
           lowLabelKey: 'profile.glucose.target_low',
           highLabelKey: 'profile.glucose.target_high',
@@ -45,7 +42,7 @@ class ProfileGlucoseSelection extends StatelessWidget {
         const SizedBox(height: 12),
         _RangeCard(
           state: s,
-          accent: _lowColor,
+          accent: gc.low,
           labelKey: 'profile.glucose.alarms_low',
           lowLabelKey: 'profile.glucose.urgent_low',
           highLabelKey: 'profile.glucose.low',
@@ -56,7 +53,7 @@ class ProfileGlucoseSelection extends StatelessWidget {
         const SizedBox(height: 12),
         _RangeCard(
           state: s,
-          accent: _highColor,
+          accent: gc.high,
           labelKey: 'profile.glucose.alarms_high',
           lowLabelKey: 'profile.glucose.high',
           highLabelKey: 'profile.glucose.urgent_high',
@@ -389,7 +386,15 @@ class _RangeEditorSheetState extends State<_RangeEditorSheet> {
               ),
               activeColor: widget.accent,
               inactiveColor: widget.accent.withValues(alpha: 0.18),
-              onChanged: (v) => _apply(v.start.round(), v.end.round()),
+              onChanged: (v) {
+                final low = v.start.round();
+                final high = v.end.round();
+                // Haptic tick per stepped change while dragging (like the chart).
+                if (low != _low || high != _high) {
+                  HapticFeedback.selectionClick();
+                }
+                _apply(low, high);
+              },
             ),
             const SizedBox(height: 12),
             _StepperRow(

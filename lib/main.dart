@@ -14,6 +14,7 @@ import 'package:insulink/src/profile/profile_glucose_state.dart';
 import 'package:insulink/src/profile/profile_language_state.dart';
 import 'package:insulink/src/profile/profile_silent_state.dart';
 import 'package:insulink/src/profile/profile_theme_state.dart';
+import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
@@ -122,6 +123,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
                       ),
                       scaffoldBackgroundColor: Color(0xFFFAFAFA),
                       dividerColor: Colors.black12,
+                      extensions: const [GlucoseColors.standard],
                     ),
                     darkTheme: ThemeData(
                       useMaterial3: true,
@@ -139,6 +141,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
                       ),
                       scaffoldBackgroundColor: Color(0xFF1B1B1B),
                       dividerColor: Color(0xFF3B3B3B),
+                      extensions: const [GlucoseColors.standard],
                     ),
                     home: ProductPage(),
                     debugShowCheckedModeBanner: false,

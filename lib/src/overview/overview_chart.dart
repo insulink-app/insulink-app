@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/profile_glucose_state.dart';
+import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 
 /// fl_chart line graph of glucose vs. time (hours, 0 = latest reading).
@@ -39,6 +40,7 @@ class _OverviewChartState extends State<OverviewChart> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<ProfileGlucoseState>();
+    final gc = Theme.of(context).extension<GlucoseColors>()!;
     final byTime = widget.byTime;
     if (byTime.isEmpty) {
       return Center(child: LocaleText('overview.chart.empty'));
@@ -107,12 +109,12 @@ class _OverviewChartState extends State<OverviewChart> {
           horizontalLines: [
             HorizontalLine(
               y: s.toDisplay(s.targetLow),
-              color: Colors.red.withValues(alpha: 0.4),
+              color: gc.low.withValues(alpha: 0.4),
               strokeWidth: 1,
             ),
             HorizontalLine(
               y: s.toDisplay(s.targetHigh),
-              color: Colors.orange.withValues(alpha: 0.4),
+              color: gc.high.withValues(alpha: 0.4),
               strokeWidth: 1,
             ),
           ],
@@ -124,7 +126,7 @@ class _OverviewChartState extends State<OverviewChart> {
             isCurved: true,
             curveSmoothness: 0.2,
             barWidth: 3,
-            color: Colors.tealAccent,
+            color: gc.inRange,
             dotData: FlDotData(show: spots.length < 60),
             belowBarData: BarAreaData(
               show: true,
@@ -132,8 +134,8 @@ class _OverviewChartState extends State<OverviewChart> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.tealAccent.withValues(alpha: 0.3),
-                  Colors.tealAccent.withValues(alpha: 0.0),
+                  gc.inRange.withValues(alpha: 0.3),
+                  gc.inRange.withValues(alpha: 0.0),
                 ],
               ),
             ),

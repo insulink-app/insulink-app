@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_bolus_state.dart';
@@ -296,7 +297,12 @@ class _FactorEditorSheetState extends State<_FactorEditorSheet> {
               ),
               activeColor: accent,
               inactiveColor: accent.withValues(alpha: 0.18),
-              onChanged: (v) => _apply(v.round()),
+              onChanged: (v) {
+                final nv = v.round();
+                // Haptic tick per stepped change while dragging (like the chart).
+                if (nv != _value) HapticFeedback.selectionClick();
+                _apply(nv);
+              },
             ),
             const SizedBox(height: 12),
             Row(
