@@ -140,14 +140,15 @@ class _DataView extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 36),
+            const SizedBox(height: 56),
             OverviewCurrentValue(
               mgdl: g7.currentMgdl,
               trendPerMin: g7.latest?.trendMgDlPerMin,
               busy: g7.busy,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 56),
             Expanded(child: OverviewChart(byTime: g7.byTime)),
+            const SizedBox(height: 32),
           ],
         ),
       ],

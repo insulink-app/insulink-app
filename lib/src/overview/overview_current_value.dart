@@ -43,34 +43,46 @@ class OverviewCurrentValue extends StatelessWidget {
         : GlucoseColors.headlineLight;
     final v = mgdl;
     final color = v == null ? Colors.grey : _color(v, s, gc);
+    final hasTrend = v != null && trendPerMin != null;
 
-    final sub = trendPerMin != null
-        ? '${s.unit.label}  ·  ${s.formatTrend(trendPerMin!)}/min'
-        : s.unit.label;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
+        Text(
+          v == null ? (busy ? '…' : '--') : s.format(v),
+          style: TextStyle(
+            fontSize: 100,
+            fontWeight: FontWeight.bold,
+            height: 1,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Arrow sits up near the top of the number; unit + trend stack beneath.
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Nudge down so the arrow aligns with the top of the digits, not
+            // the (taller) line box of the 90pt number.
+            if (hasTrend) ...[
+              Icon(_arrow(trendPerMin!), size: 52, color: color),
+            ],
+            if (hasTrend)
+              Text(
+                '${s.formatTrend(trendPerMin!)}/min',
+                style: TextStyle(fontSize: 10, color: Colors.grey[400]),
+              ),
             Text(
-              v == null ? (busy ? '…' : '--') : s.format(v),
+              s.unit.label,
               style: TextStyle(
-                fontSize: 90,
-                fontWeight: FontWeight.bold,
-                height: 1,
-                color: color,
+                fontSize: 10,
+                color: Colors.grey[400],
               ),
             ),
-            if (v != null && trendPerMin != null) ...[
-              const SizedBox(width: 10),
-              Icon(_arrow(trendPerMin!), size: 64, color: color),
-            ],
           ],
         ),
-        Text(sub, style: TextStyle(fontSize: 12, color: Colors.grey[400])),
       ],
     );
   }
