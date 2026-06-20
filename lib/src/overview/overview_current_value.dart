@@ -33,33 +33,16 @@ class OverviewCurrentValue extends StatelessWidget {
     return gc.inRange;
   }
 
-  /// The shared glucose colours are mid-tones tuned for the small profile cards;
-  /// on the large 90pt headline they read too dark. Shift per theme: a brighter,
-  /// MORE saturated tone on dark backgrounds, a deeper one on light backgrounds.
-  /// Saturation is boosted too — raising lightness alone washes the colour out
-  /// toward grey, which is exactly the "graucher" effect we want to avoid.
-  Color _forHeadline(Color c, Brightness brightness) {
-    final hsl = HSLColor.fromColor(c);
-    if (brightness == Brightness.dark) {
-      return hsl
-          .withLightness((hsl.lightness + 0.18).clamp(0.0, 1.0))
-          .withSaturation((hsl.saturation + 0.30).clamp(0.0, 1.0))
-          .toColor();
-    }
-    return hsl
-        .withLightness((hsl.lightness - 0.16).clamp(0.0, 1.0))
-        .withSaturation((hsl.saturation + 0.20).clamp(0.0, 1.0))
-        .toColor();
-  }
-
   @override
   Widget build(BuildContext context) {
     final s = context.watch<ProfileGlucoseState>();
-    final gc = Theme.of(context).extension<GlucoseColors>()!;
+    // The big headline uses its own per-theme palette (defined explicitly in
+    // GlucoseColors): deeper on the light background, brighter on the dark one.
+    final gc = Theme.of(context).brightness == Brightness.dark
+        ? GlucoseColors.headlineDark
+        : GlucoseColors.headlineLight;
     final v = mgdl;
-    final color = v == null
-        ? Colors.grey
-        : _forHeadline(_color(v, s, gc), Theme.of(context).brightness);
+    final color = v == null ? Colors.grey : _color(v, s, gc);
 
     final sub = trendPerMin != null
         ? '${s.unit.label}  ·  ${s.formatTrend(trendPerMin!)}/min'
