@@ -273,12 +273,12 @@ class _ControlBox extends StatelessWidget {
                 height: 58,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: scheme.primary.withValues(alpha: 0.15),
+                  color: scheme.onSurface.withValues(alpha: 0.08),
                 ),
                 child: Icon(
                   CupertinoIcons.drop,
                   size: 32,
-                  color: scheme.primary,
+                  color: scheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(width: 14),
@@ -336,7 +336,11 @@ class _ControlBox extends StatelessWidget {
     required bool searching,
   }) {
     final connected = g7.connected;
-    final accent = (connected || searching) ? scheme.primary : Colors.grey;
+    // Neutral status accent (no theme primary) — strong onSurface when live,
+    // dimmed when disconnected.
+    final accent = (connected || searching)
+        ? scheme.onSurface.withValues(alpha: 0.8)
+        : scheme.onSurface.withValues(alpha: 0.35);
 
     final Widget subtitle;
     if (searching) {
@@ -449,8 +453,8 @@ class _ControlBox extends StatelessWidget {
             label: LocaleText('sensor.control.end_session'),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(46),
-              backgroundColor: scheme.primary.withValues(alpha: 0.15),
-              foregroundColor: scheme.primary,
+              backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
+              foregroundColor: scheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 10),
@@ -539,7 +543,7 @@ class _SensorLifeBar extends StatelessWidget {
                   height: 9,
                   decoration: BoxDecoration(
                     color: i < filled
-                        ? scheme.primary
+                        ? scheme.onSurface.withValues(alpha: 0.55)
                         : scheme.onSurface.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(3),
                   ),

@@ -49,15 +49,15 @@ class ProfileThemeSelection extends StatelessWidget {
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: selected
-              ? theme.colorScheme.primary.withValues(alpha: 0.2)
+              ? theme.colorScheme.onSurface.withValues(alpha: 0.08)
               : theme.scaffoldBackgroundColor,
           padding: const EdgeInsets.all(10),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(6.0),
             side: BorderSide(
               color: selected
-                  ? theme.colorScheme.primary.withValues(alpha: 0.2)
-                  : theme.colorScheme.primary.withValues(alpha: 0.4),
+                  ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.2),
               width: selected ? 2 : 1,
             ),
           ),
@@ -72,11 +72,11 @@ class ProfileThemeSelection extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: theme.colorScheme.primary, size: 28),
+              Icon(icon, color: theme.colorScheme.onSurface, size: 28),
               const SizedBox(height: 6),
               LocaleText(
                 label,
-                style: TextStyle(color: theme.colorScheme.primary),
+                style: TextStyle(color: theme.colorScheme.onSurface),
               ),
             ],
           ),

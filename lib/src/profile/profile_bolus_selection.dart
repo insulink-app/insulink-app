@@ -81,7 +81,7 @@ class _FactorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = theme.colorScheme.primary;
+    final accent = theme.colorScheme.onSurface.withValues(alpha: 0.7);
     final valueLabel = Locales.string(context, valueKey, params: ['$value']);
     return Material(
       color: theme.colorScheme.surface,
@@ -228,7 +228,7 @@ class _FactorEditorSheetState extends State<_FactorEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = theme.colorScheme.primary;
+    final accent = theme.colorScheme.onSurface.withValues(alpha: 0.7);
     final divisions = (widget.max - widget.min) ~/ widget.step;
     final valueLabel = Locales.string(
       context,
@@ -336,7 +336,8 @@ class _FactorEditorSheetState extends State<_FactorEditorSheet> {
               width: double.infinity,
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: accent,
+                  backgroundColor: theme.colorScheme.onSurface,
+                  foregroundColor: theme.colorScheme.surface,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

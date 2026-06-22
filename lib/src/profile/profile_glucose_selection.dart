@@ -105,14 +105,14 @@ class _SegmentedUnit extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 11),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? theme.colorScheme.primary : Colors.transparent,
+          color: selected ? theme.colorScheme.onSurface : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
         ),
         child: LocaleText(
           labelKey,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : theme.colorScheme.onSurface,
+            color: selected ? theme.colorScheme.surface : theme.colorScheme.onSurface,
           ),
         ),
       ),
