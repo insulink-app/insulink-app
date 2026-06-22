@@ -65,11 +65,56 @@ class BleTransport {
     String namePrefix = 'DXCM',
     String? wantedId,
     Duration timeout = const Duration(seconds: 120),
+    void Function(String) log = print,
   }) async {
+    // A stale/half-open link from a previous session can leave the sensor
+    // CONNECTED at the OS level — and a connected device advertises nothing, so
+    // a scan would never find it and we'd loop "no sensor found" until the user
+    // manually unpairs in the OS Bluetooth settings (the reported symptom).
+    // FBP keeps such devices in `systemDevices`; reuse the device directly
+    // instead of scanning (connectAndBind's device.connect() just (re)attaches
+    // our GATT client). If that link is dead, the handshake fails, the catch
+    // path disconnects it — clearing it from systemDevices — and the next
+    // watchdog tick scans cleanly, so this self-heals without user action.
+    // --- DIAGNOSTIC: temporary, remove once the root cause is confirmed. ---
+    // Scan UNFILTERED and log every advertisement so we can see (a) whether the
+    // sensor advertises at all, and (b) whether its remoteId matches the stored
+    // wantedId (a MAC-rotation would make the filtered scan never match).
+    final t0 = DateTime.now();
+    // Timestamp + adapter/scan state. If these scan-start lines come faster than
+    // ~5 per 30 s, Android silently throttles the scanner and returns NOTHING —
+    // a prime suspect for the "0 results" loop (watchdog + service restarts can
+    // trigger scans back-to-back).
+    log('SCAN diag: ${t0.toIso8601String()} '
+        'adapter=${FlutterBluePlus.adapterStateNow}, '
+        'isScanning=${FlutterBluePlus.isScanningNow}, '
+        'looking for wantedId=$wantedId');
+    try {
+      final sys = await FlutterBluePlus.systemDevices(const []);
+      log('SCAN diag: systemDevices=${sys.length} '
+          '[${sys.map((d) => d.remoteId.str).join(", ")}]');
+      final bonded = await FlutterBluePlus.bondedDevices;
+      log('SCAN diag: bondedDevices=${bonded.length} '
+          '[${bonded.map((d) => "${d.platformName}/${d.remoteId.str}").join(", ")}]');
+    } catch (e) {
+      log('SCAN diag: system/bonded query failed: $e');
+    }
+    final seen = <String>{};
+    var resultCount = 0;
+    // --- END DIAGNOSTIC ---
+
     final completer = Completer<BluetoothDevice?>();
     late StreamSubscription sub;
     sub = FlutterBluePlus.scanResults.listen((results) {
+      // DIAGNOSTIC: how many results per callback, and each distinct device.
+      resultCount += results.length;
       for (final r in results) {
+        if (seen.add(r.device.remoteId.str)) {
+          log('SCAN diag: saw "${r.device.platformName}"'
+              '/"${r.advertisementData.advName}" '
+              '${r.device.remoteId.str} rssi=${r.rssi} '
+              'conn=${r.advertisementData.connectable}');
+        }
         final matches = wantedId != null
             ? r.device.remoteId.str == wantedId
             : r.device.platformName.startsWith(namePrefix);
@@ -80,7 +125,10 @@ class BleTransport {
     });
     await FlutterBluePlus.startScan(
       timeout: timeout,
-      withRemoteIds: wantedId != null ? [wantedId] : const [],
+      // DIAGNOSTIC: force unfiltered so we observe ALL devices (incl. a rotated
+      // sensor address). Restore `wantedId != null ? [wantedId] : const []`
+      // afterwards (screen-off scans need the native filter).
+      withRemoteIds: const [],
     );
     final device = await completer.future
         .timeout(timeout, onTimeout: () => null)
@@ -88,6 +136,14 @@ class BleTransport {
           await sub.cancel();
           await FlutterBluePlus.stopScan();
         });
+    // DIAGNOSTIC: summary — how many distinct devices the scan saw and the
+    // outcome. "0 distinct" ⇒ the scan delivered nothing (sensor not
+    // advertising / scan throttled). Devices listed but no match ⇒ the sensor's
+    // address differs from wantedId (rotation) or it isn't advertising.
+    log('SCAN diag: done after ${DateTime.now().difference(t0).inSeconds}s — '
+        '${seen.length} distinct device(s), '
+        '$resultCount total results, '
+        'match=${device?.remoteId.str ?? "none"}');
     return device;
   }
 

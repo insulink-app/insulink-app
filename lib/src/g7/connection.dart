@@ -131,7 +131,10 @@ class G7Connection {
       final pinKey = serial.isNotEmpty ? serial : (store.resolvedKey ?? '');
       final wantedId = pinKey.isEmpty ? null : store.deviceId(pinKey);
       _log(wantedId == null ? 'scanning for DXCM…' : 'scanning for $wantedId…');
-      final device = await BleTransport.scanForSensor(wantedId: wantedId);
+      final device = await BleTransport.scanForSensor(
+        wantedId: wantedId,
+        log: _log,
+      );
       if (device == null) {
         _log('no sensor found');
         return;
@@ -202,7 +205,11 @@ class G7Connection {
       });
       _connSub = t.device.connectionState.listen((s) {
         if (s == BluetoothConnectionState.disconnected) {
-          _log('link dropped');
+          // DIAGNOSTIC: include the disconnect reason/code. A NORMAL G7 drop
+          // looks different from an abnormal one (e.g. 19 REMOTE_USER_TERMINATED,
+          // 147/8 CONNECTION_TIMEOUT) that may leave the sensor not advertising.
+          final r = t.device.disconnectReason;
+          _log('link dropped (reason code=${r?.code} "${r?.description}")');
           onConnectionState?.call(false);
         }
       });
