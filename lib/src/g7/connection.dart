@@ -208,8 +208,18 @@ class G7Connection {
   }
 
   /// Reconnect with the stored session key if we have one, else do a full
-  /// pairing; on reconnect rejection fall back to a full pairing. The new key is
-  /// persisted. Throws on handshake failure so the caller can retry on a fresh link.
+  /// pairing. The new key is persisted. Throws on handshake failure so the caller
+  /// can retry on a fresh link.
+  ///
+  /// On a DEFINITIVE reconnect rejection (the sensor reset/expired its session so
+  /// our stored key no longer matches) the stale key is dropped and we throw —
+  /// the watchdog then re-pairs from scratch on the next clean link using the
+  /// stored pairing code, with NO user action needed. We deliberately do NOT fall
+  /// back to a full pairing on THIS link: a full J-PAKE right after a failed
+  /// reconnect is exactly the rapid in-process reconnect the G7 rejects
+  /// (REMOTE_USER_TERMINATED / CONNECTION_TIMEOUT), which used to wedge recovery —
+  /// every cycle retried the doomed reconnect against the stale key and never
+  /// cleared it, so the app never self-healed (only a manual sensor-delete did).
   Future<void> _authenticate(BleTransport t) async {
     final session = G7AuthSession(
       transport: t,
@@ -222,8 +232,24 @@ class G7Connection {
         await session.runReconnect(stored);
         _log('RECONNECTED — no re-pairing needed');
         return;
+      } on G7HandshakeException catch (e) {
+        // Definitive rejection: key-confirmation mismatched or the sensor is not
+        // in reconnect state. Our stored key no longer matches this sensor (its
+        // session was reset/expired), so retrying reconnect is futile. Drop the
+        // stale key so the next clean connect goes straight to a full pairing
+        // (using the stored pairing code, no user action), then tear down and let
+        // the watchdog re-pair. We do NOT re-pair on THIS link: a full J-PAKE
+        // right after a failed reconnect is the rapid in-process reconnect the G7
+        // rejects (REMOTE_USER_TERMINATED / CONNECTION_TIMEOUT).
+        _log('reconnect rejected ($e) — clearing stale key, will re-pair');
+        if (_persistKey.isNotEmpty) await store.clearSessionKey(_persistKey);
+        rethrow;
       } catch (e) {
-        _log('reconnect failed ($e) — full pairing');
+        // Transient (timeout, dropped link, GATT write error): the key is likely
+        // still valid. Keep it and let the watchdog retry reconnect on a fresh
+        // link, rather than churning an unnecessary full re-pair.
+        _log('reconnect failed ($e) — retrying on next link');
+        rethrow;
       }
     }
     final secret = await session.run();

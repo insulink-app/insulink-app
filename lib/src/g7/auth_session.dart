@@ -131,8 +131,13 @@ class G7AuthSession {
       (d) => aes8WithKey(sessionKey: sessionKey, data8: d),
     );
     if (!reconnect) {
-      // Sensor wants a fresh pair despite our stored key.
-      throw StateError('sensor requires re-pairing (not in reconnect state)');
+      // Sensor wants a fresh pair despite our stored key. Surface it as a
+      // handshake exception (not a generic StateError) so the caller can tell
+      // this definitive "stored key is stale" outcome apart from transient
+      // failures (timeout / dropped link) and drop the key only in this case.
+      throw G7HandshakeException(
+        'sensor requires re-pairing (not in reconnect state)',
+      );
     }
     return sessionKey;
   }
