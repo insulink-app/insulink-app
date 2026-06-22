@@ -103,6 +103,17 @@ class BleTransport {
     );
     log('connected to ${device.platformName} (${device.remoteId})');
 
+    // The G7 keeps the link up only briefly (~1 s) and closes it itself after a
+    // delivery, so a slow default connection interval can make the first control
+    // write miss the window — surfacing as GATT_ERROR (133) + an immediate drop.
+    // Ask for a fast interval so the post-auth writes land inside the window.
+    // Android-only and best-effort: never let it abort the handshake.
+    try {
+      await device.requestConnectionPriority(
+        connectionPriorityRequest: ConnectionPriority.high,
+      );
+    } catch (_) {}
+
     // discoverServices has no internal timeout: if the link wedges right after
     // connect (seen in Doze), an un-bounded await here would pin `_connecting`
     // true forever and silence the watchdog. Bound it so connect() always
@@ -157,8 +168,16 @@ class BleTransport {
     log('subscribed to ${c.uuid}${forceIndications ? " (indicate)" : ""}');
   }
 
-  /// Write with a small retry on the transient Android GATT "write request
-  /// busy" (201) error, which happens when a prior write hasn't drained yet.
+  /// Write with a small retry on transient Android GATT faults:
+  ///  - 201 / WRITE_REQUEST_BUSY: a prior write hasn't drained yet.
+  ///  - 133 / GATT_ERROR on the FIRST write right after connect+subscribe: the
+  ///    connection parameters / stack haven't settled yet. This is the classic
+  ///    Android "133" flake; a short backoff + retry usually clears it.
+  ///
+  /// 133 is only retried while the link is actually up — if the sensor has
+  /// dropped the connection (the G7 closes its own link after each delivery), the
+  /// write fails fast to the caller so the watchdog can reconnect on the next
+  /// advertisement, instead of looping here against a dead link.
   Future<void> _write(
     BluetoothCharacteristic c,
     List<int> bytes, {
@@ -169,11 +188,15 @@ class BleTransport {
         await c.write(bytes, withoutResponse: withoutResponse);
         return;
       } catch (e) {
-        final busy =
-            e.toString().contains('201') ||
-            e.toString().toUpperCase().contains('WRITE_REQUEST_BUSY');
-        if (!busy || attempt >= 4) rethrow;
-        await Future<void>.delayed(const Duration(milliseconds: 60));
+        final s = e.toString().toUpperCase();
+        final busy = s.contains('201') || s.contains('WRITE_REQUEST_BUSY');
+        final gattFlake =
+            (s.contains('133') || s.contains('GATT_ERROR')) &&
+            device.isConnected;
+        if (!(busy || gattFlake) || attempt >= 4) rethrow;
+        await Future<void>.delayed(
+          Duration(milliseconds: gattFlake ? 150 : 60),
+        );
       }
     }
   }
