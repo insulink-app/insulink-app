@@ -308,7 +308,11 @@ class _FactorEditorSheetState extends State<_FactorEditorSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _circleButton(accent, Icons.remove, () => _apply(_value - widget.step)),
+                _circleButton(
+                  accent,
+                  Icons.remove,
+                  () => _apply(_value - widget.step),
+                ),
                 SizedBox(
                   width: 96,
                   child: Text(
@@ -320,7 +324,11 @@ class _FactorEditorSheetState extends State<_FactorEditorSheet> {
                     ),
                   ),
                 ),
-                _circleButton(accent, Icons.add, () => _apply(_value + widget.step)),
+                _circleButton(
+                  accent,
+                  Icons.add,
+                  () => _apply(_value + widget.step),
+                ),
               ],
             ),
             const SizedBox(height: 24),

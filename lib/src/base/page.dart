@@ -1,34 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/header.dart';
 import 'package:insulink/src/base/navigator.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/injection/injection_button.dart';
 import 'package:insulink/src/overview/overview_body.dart';
-import 'package:insulink/src/profile/profile_body.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
+import 'package:insulink/src/statistics/statistics_body.dart';
 
 /// Lets any page request a tab switch (e.g. the overview's empty state linking
-/// to the sensor page). The value is the index into [ProductPageState.pageBodies].
+/// to the sensor page). The value is the index into [AppPageState.pageBodies].
 final ValueNotifier<int> appTab = ValueNotifier<int>(0);
 
-/// Tab index of the sensor page within [ProductPageState.pageBodies].
-const int kSensorTabIndex = 1;
+/// Tab index of the sensor page within [AppPageState.pageBodies].
+const int kSensorTabIndex = 2;
 
-class ProductPage extends StatefulWidget {
+class AppPage extends StatefulWidget {
   final int? initialPageIndex;
 
-  const ProductPage({super.key, this.initialPageIndex = 0});
+  const AppPage({super.key, this.initialPageIndex = 0});
 
   @override
-  State<ProductPage> createState() => ProductPageState();
+  State<AppPage> createState() => AppPageState();
 }
 
-class ProductPageState extends State<ProductPage> {
-  final List<ProductPageBody> pageBodies = [
+class AppPageState extends State<AppPage> {
+  final List<AppPageBody> pageBodies = [
     OverviewBody(),
+    StatisticsBody(),
     SensorBody(),
     PumpBody(),
-    ProfileBody(),
   ];
   int _selectedIndex = 0;
 
@@ -63,10 +64,8 @@ class ProductPageState extends State<ProductPage> {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        // Zero-height toolbar: the AppBar still paints behind the status bar
-        // (notch/camera) via the safe-area inset, but adds no extra height.
-        appBar: AppBar(toolbarHeight: 0),
-        bottomNavigationBar: ProductNavigator(
+        appBar: Header(title: pageBodies[_selectedIndex].title(context)),
+        bottomNavigationBar: AppNavigator(
           selectedIndex: _selectedIndex,
           updateIndex: _onItemTapped,
           pageBodies: pageBodies,

@@ -143,7 +143,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
                       dividerColor: Color(0xFF3B3B3B),
                       extensions: const [GlucoseColors.standard],
                     ),
-                    home: ProductPage(),
+                    home: AppPage(),
                     debugShowCheckedModeBanner: false,
                     localizationsDelegates: Locales.delegates,
                     supportedLocales: Locales.supportedLocales,

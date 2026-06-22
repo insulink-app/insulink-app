@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page_body.dart';
+import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:provider/provider.dart';
 
-class ProductNavigator extends StatefulWidget implements PreferredSizeWidget {
+class AppNavigator extends StatefulWidget implements PreferredSizeWidget {
   final int selectedIndex;
   final Function(int) updateIndex;
-  final List<ProductPageBody> pageBodies;
+  final List<AppPageBody> pageBodies;
 
-  const ProductNavigator({
+  const AppNavigator({
     super.key,
     required this.selectedIndex,
     required this.updateIndex,
@@ -15,14 +17,32 @@ class ProductNavigator extends StatefulWidget implements PreferredSizeWidget {
   });
 
   @override
-  State<ProductNavigator> createState() => _ProductNavigatorState();
+  State<AppNavigator> createState() => _AppNavigatorState();
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
 
-class _ProductNavigatorState extends State<ProductNavigator> {
+class _AppNavigatorState extends State<AppNavigator> {
   Map<int, int> notificationCounts = {};
+
+  /// The badges (e.g. the sensor "no sensor" dot) depend on app state, so the
+  /// navigator listens to the controller and reloads them whenever it changes.
+  G7Controller? _g7;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final g7 = context.read<G7Controller>();
+    if (!identical(g7, _g7)) {
+      _g7?.removeListener(_refreshNotifications);
+      _g7 = g7..addListener(_refreshNotifications);
+    }
+  }
+
+  void _refreshNotifications() {
+    if (mounted) loadNotifications(context);
+  }
 
   /// Display position of the empty slot that leaves room for the centre-docked
   /// floating button. The real [widget.pageBodies] indices are mapped around it
@@ -45,6 +65,12 @@ class _ProductNavigatorState extends State<ProductNavigator> {
         };
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _g7?.removeListener(_refreshNotifications);
+    super.dispose();
   }
 
   @override
@@ -159,11 +185,11 @@ class _ProductNavigatorState extends State<ProductNavigator> {
     var theme = Theme.of(context);
     if (count == -1) {
       return Positioned(
-        right: 0,
+        right: 10,
         top: 0,
         child: Container(
-          width: 8,
-          height: 8,
+          width: 15,
+          height: 15,
           decoration: BoxDecoration(
             color: Colors.red,
             shape: BoxShape.circle,

@@ -10,7 +10,7 @@ import 'package:insulink/src/profile/profile_glucose_state.dart';
 import 'package:insulink/src/sensor/sensor_info.dart';
 import 'package:provider/provider.dart';
 
-class SensorBody extends ProductPageBody {
+class SensorBody extends AppPageBody {
   SensorBody({super.key})
     : super(
         name: "sensor.label",
@@ -21,6 +21,14 @@ class SensorBody extends ProductPageBody {
   @override
   Widget content(BuildContext context) {
     return const SensorBodyContent();
+  }
+
+  @override
+  Future<int> notifications(BuildContext context) async {
+    final g7 = Provider.of<G7Controller>(context, listen: false);
+    // -1 renders as a small red dot in the navigator (see
+    // AppNavigator.createNotificationBadge) — shown while no sensor is set up.
+    return g7.hasSensor ? 0 : -1;
   }
 }
 
@@ -112,7 +120,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureBox());
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -164,7 +172,9 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
                     child: AnimatedBuilder(
                       animation: _scroll,
                       builder: (context, child) {
-                        final offset = _scroll.hasClients ? _scroll.offset : 0.0;
+                        final offset = _scroll.hasClients
+                            ? _scroll.offset
+                            : 0.0;
                         final opacity = (1 - offset / _fadeDistance).clamp(
                           0.0,
                           1.0,
@@ -265,7 +275,11 @@ class _ControlBox extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: scheme.primary.withValues(alpha: 0.15),
                 ),
-                child: Icon(CupertinoIcons.drop, size: 32, color: scheme.primary),
+                child: Icon(
+                  CupertinoIcons.drop,
+                  size: 32,
+                  color: scheme.primary,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -510,7 +524,7 @@ class _SensorLifeBar extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: expired ? Colors.redAccent : scheme.primary,
+                color: expired ? Colors.redAccent : scheme.onSurface,
               ),
             ),
           ],

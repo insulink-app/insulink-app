@@ -4,8 +4,8 @@ class PageBodyController {
   void Function()? navigatorCallback;
 }
 
-abstract class ProductPageBody extends StatelessWidget {
-  ProductPageBody({
+abstract class AppPageBody extends StatelessWidget {
+  AppPageBody({
     super.key,
     required this.name,
     required this.unselectedIcon,
@@ -21,6 +21,10 @@ abstract class ProductPageBody extends StatelessWidget {
   Widget build(BuildContext context) => content(context);
 
   Widget content(BuildContext context);
+
+  /// Optional widget shown as the title in the app [Header] for this page.
+  /// Returns null (the default) when the page wants no header title.
+  Widget? title(BuildContext context) => null;
 
   Future<int> notifications(BuildContext context) async => 0;
 }
