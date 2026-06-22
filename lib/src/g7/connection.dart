@@ -148,6 +148,31 @@ class G7Connection {
         _byTime.addAll(store.loadReadings(_persistKey));
       }
 
+      // Fresh pairing needed (no stored session key)? A leftover OS bond from a
+      // previous pairing is poison here: the sensor sees an already-bonded phone,
+      // reports reconnect-state (statusReply 05 01 01) for our fresh J-PAKE, so
+      // run() skips the cert-exchange/PoP/bond — and WITHOUT those the sensor
+      // never commits the freshly derived key as its reconnect key. Every later
+      // reconnect then key-confirmation-mismatches → re-pair → mismatch → loop.
+      // Remove the stale bond first so the sensor does a TRUE fresh pair
+      // (statusReply 05 01 02) and commits the new key. Best-effort + Android-only.
+      if (store.sessionKey(_persistKey) == null) {
+        try {
+          final bond = await device.bondState
+              .firstWhere((s) => s != BluetoothBondState.bonding)
+              .timeout(
+                const Duration(seconds: 3),
+                onTimeout: () => BluetoothBondState.none,
+              );
+          if (bond == BluetoothBondState.bonded) {
+            _log('removing stale OS bond for a clean fresh pair…');
+            await device.removeBond();
+          }
+        } catch (e) {
+          _log('bond removal skipped: $e');
+        }
+      }
+
       // One clean attempt per connect(): the G7 rejects rapid in-process
       // reconnects (REMOTE_USER_TERMINATED / CONNECTION_TIMEOUT), so on a
       // handshake failure we tear down and let the 30s watchdog re-scan and retry
