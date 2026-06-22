@@ -30,10 +30,7 @@ class ProfileToggleRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: LocaleText(
-              labelKey,
-              style: const TextStyle(fontSize: 15),
-            ),
+            child: LocaleText(labelKey, style: const TextStyle(fontSize: 15)),
           ),
           const SizedBox(width: 16),
           Switch(

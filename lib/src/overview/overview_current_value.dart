@@ -74,10 +74,7 @@ class OverviewCurrentValue extends StatelessWidget {
               ),
             Text(
               s.unit.label,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey[400],
-              ),
+              style: TextStyle(fontSize: 10, color: Colors.grey[400]),
             ),
             const SizedBox(height: 12),
           ],

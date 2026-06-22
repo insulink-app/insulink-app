@@ -97,8 +97,9 @@ class _OverviewChartState extends State<OverviewChart> {
     // Phase-shift X so full wall-clock hours land on integer x values (the axis
     // ticks): shift = the fractional-hour part of the latest reading's time.
     // x == shift is the latest reading; x == 0, -1, -2 … are full clock hours.
-    final shift =
-        anchor == null ? 0.0 : (anchor.minute * 60 + anchor.second) / 3600.0;
+    final shift = anchor == null
+        ? 0.0
+        : (anchor.minute * 60 + anchor.second) / 3600.0;
     // Selected time window (last N hours), even if more history is cached.
     final rangeHours = _rangeHours;
     final cutoff = latestSecs - rangeHours * 3600;
@@ -340,10 +341,7 @@ class _OverviewChartState extends State<OverviewChart> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: _rangeSelector(context),
-        ),
+        Align(alignment: Alignment.centerLeft, child: _rangeSelector(context)),
         const SizedBox(height: 20),
         Expanded(child: chart),
       ],
@@ -362,7 +360,9 @@ class _OverviewChartState extends State<OverviewChart> {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [for (final h in const [24, 12, 6]) _rangeChip(theme, h)],
+        children: [
+          for (final h in const [24, 12, 6]) _rangeChip(theme, h),
+        ],
       ),
     );
   }

@@ -84,8 +84,12 @@ class _SegmentedUnit extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(child: _segment(theme, GlucoseUnit.mgdl, 'profile.unit.mgdl')),
-          Expanded(child: _segment(theme, GlucoseUnit.mmol, 'profile.unit.mmol')),
+          Expanded(
+            child: _segment(theme, GlucoseUnit.mgdl, 'profile.unit.mgdl'),
+          ),
+          Expanded(
+            child: _segment(theme, GlucoseUnit.mmol, 'profile.unit.mmol'),
+          ),
         ],
       ),
     );
@@ -311,15 +315,9 @@ class _RangeEditorSheetState extends State<_RangeEditorSheet> {
 
   void _bump(bool upper, int delta) {
     if (upper) {
-      _apply(
-        _low,
-        (_high + delta).clamp(_low, ProfileGlucoseState.maxMgdl),
-      );
+      _apply(_low, (_high + delta).clamp(_low, ProfileGlucoseState.maxMgdl));
     } else {
-      _apply(
-        (_low + delta).clamp(ProfileGlucoseState.minMgdl, _high),
-        _high,
-      );
+      _apply((_low + delta).clamp(ProfileGlucoseState.minMgdl, _high), _high);
     }
   }
 

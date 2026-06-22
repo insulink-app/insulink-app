@@ -30,7 +30,10 @@ class ProfileBolusState extends ChangeNotifier {
   int _correctionFactor;
   int _carbFactor;
 
-  ProfileBolusState({required this._correctionFactor, required this._carbFactor});
+  ProfileBolusState({
+    required this._correctionFactor,
+    required this._carbFactor,
+  });
 
   int get correctionFactor => _correctionFactor;
   int get carbFactor => _carbFactor;

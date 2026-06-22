@@ -118,9 +118,9 @@ class BleTransport {
     // connect (seen in Doze), an un-bounded await here would pin `_connecting`
     // true forever and silence the watchdog. Bound it so connect() always
     // resolves and the watchdog can retry.
-    final services = await device
-        .discoverServices()
-        .timeout(const Duration(seconds: 30));
+    final services = await device.discoverServices().timeout(
+      const Duration(seconds: 30),
+    );
     for (final s in services) {
       log('service ${s.uuid}');
       for (final c in s.characteristics) {
