@@ -25,9 +25,9 @@
         android:required="true" />
 
     <application
-        android:label="insulink"
+        android:label="Insulink"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"

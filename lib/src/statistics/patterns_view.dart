@@ -4,7 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/profile/profile_developer_state.dart';
 import 'package:insulink/src/profile/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
@@ -118,17 +117,6 @@ class PatternsView extends StatelessWidget {
               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
-          // Developer-only: how much real data backs the curve. A near-empty
-          // archive (few readings / few covered hours) is why the line looks
-          // linear — the rest is interpolated between the few real points.
-          if (context.watch<ProfileDeveloperState>().enabled)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                '${byTime.length} readings · ${stats.length}/24 hours covered',
-                style: const TextStyle(fontSize: 11, color: Colors.orange),
-              ),
-            ),
           const SizedBox(height: 20),
           Expanded(
             child: LineChart(
