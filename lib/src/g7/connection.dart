@@ -89,6 +89,24 @@ class G7Connection {
     _byTime[secs] = mgdl;
   }
 
+  /// Mirror the ENTIRE in-memory session history into the permanent, absolute-
+  /// time archive (the stats source) — not just freshly-received records. Maps
+  /// each session-relative key to wall-clock via [_sensorStart]; the archive
+  /// dedups per minute, so re-publishing the whole day each time is idempotent
+  /// and cheap. Without this the archive only ever saw the increments (one live
+  /// EGV + any backfill that completed THIS connect), so the seeded/persisted
+  /// history and earlier days never reached it — starving the stats to a few
+  /// points whenever a fresh backfill didn't get through.
+  void _archiveKnown() {
+    final start = _sensorStart;
+    if (start == null || _byTime.isEmpty) return;
+    final out = <DateTime, int>{};
+    _byTime.forEach((secs, mgdl) {
+      out[start.add(Duration(seconds: secs))] = mgdl;
+    });
+    store.archiveAddAll(out);
+  }
+
   Future<void> _persistReadings() async {
     if (_persistKey.isNotEmpty && _byTime.isNotEmpty) {
       await store.saveReadings(_persistKey, _byTime);
@@ -204,20 +222,12 @@ class G7Connection {
       );
       _backfillSub = t.backfillStream.listen((b) {
         final recs = G7GlucoseCodec.parseBackfill(Uint8List.fromList(b));
-        final start = _sensorStart;
-        final archived = <DateTime, int>{};
         for (final r in recs) {
           _addReading(r.secsSinceStart, r.glucoseMgDl);
-          // Also feed the long-term archive at the reading's true wall-clock
-          // time, so backfill fills gaps in the permanent record too.
-          if (start != null) {
-            archived[start.add(Duration(seconds: r.secsSinceStart))] =
-                r.glucoseMgDl;
-          }
         }
         if (recs.isNotEmpty) {
           _persistReadings();
-          if (archived.isNotEmpty) store.archiveAddAll(archived);
+          _archiveKnown(); // publish the whole day to the stats archive
           onUpdate?.call();
         }
       });
@@ -329,11 +339,9 @@ class G7Connection {
       _addReading(r.secsSinceStart, r.glucoseMgDl!);
       _persistReadings();
       _persistLatest(r); // restore the exact headline value on next launch
-      // Append to the permanent absolute-time archive (survives sensor swaps).
-      store.archiveAdd(
-        _sensorStart!.add(Duration(seconds: r.secsSinceStart)),
-        r.glucoseMgDl!,
-      );
+      // Publish the whole known session history to the permanent archive (stats
+      // source) — not just this point — so seeded/persisted history lands too.
+      _archiveKnown();
     }
     _persistInfo(); // keep cached sensorStart fresh
     onReading?.call(r);

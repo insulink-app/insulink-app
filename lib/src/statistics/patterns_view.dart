@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/profile/profile_developer_state.dart';
 import 'package:insulink/src/profile/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
@@ -51,30 +52,31 @@ class PatternsView extends StatelessWidget {
       return Center(child: LocaleText('statistics.empty'));
     }
 
-    // Bridge internal gaps (hours without readings) by linearly interpolating
-    // between the surrounding known hours, so the line and band stay continuous
-    // instead of jumping/cutting across missing hours.
-    final hours = stats.keys.toList()..sort();
-    final firstH = hours.first;
-    final lastH = hours.last;
+    // Fill hours without readings by interpolating between the nearest known
+    // hours. Hour-of-day is CIRCULAR (23:00 borders 00:00), so search both
+    // directions WITH wraparound — this keeps the line continuous AND always
+    // spanning the full 0..23, instead of dangling in mid-air when the archive
+    // happens to lack the earliest/latest hours. (Dart's `%` is non-negative for
+    // a positive divisor, so `(h - n) % 24` wraps correctly.)
     double interp(int h, double Function(({double mean, double sd}) v) sel) {
       final known = stats[h];
       if (known != null) return sel(known);
-      var lo = h, hi = h;
-      while (!stats.containsKey(lo)) {
-        lo--;
+      var down = 1, up = 1;
+      while (!stats.containsKey((h - down) % 24)) {
+        down++;
       }
-      while (!stats.containsKey(hi)) {
-        hi++;
+      while (!stats.containsKey((h + up) % 24)) {
+        up++;
       }
-      final t = (h - lo) / (hi - lo);
-      return sel(stats[lo]!) * (1 - t) + sel(stats[hi]!) * t;
+      final t = down / (down + up);
+      return sel(stats[(h - down) % 24]!) * (1 - t) +
+          sel(stats[(h + up) % 24]!) * t;
     }
 
     final meanSpots = <FlSpot>[];
     final upperSpots = <FlSpot>[];
     final lowerSpots = <FlSpot>[];
-    for (var h = firstH; h <= lastH; h++) {
+    for (var h = 0; h <= 23; h++) {
       final mean = interp(h, (v) => v.mean);
       final sd = interp(h, (v) => v.sd);
       final x = h.toDouble();
@@ -116,6 +118,17 @@ class PatternsView extends StatelessWidget {
               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
+          // Developer-only: how much real data backs the curve. A near-empty
+          // archive (few readings / few covered hours) is why the line looks
+          // linear — the rest is interpolated between the few real points.
+          if (context.watch<ProfileDeveloperState>().enabled)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                '${byTime.length} readings · ${stats.length}/24 hours covered',
+                style: const TextStyle(fontSize: 11, color: Colors.orange),
+              ),
+            ),
           const SizedBox(height: 20),
           Expanded(
             child: LineChart(

@@ -254,14 +254,25 @@ class G7Store {
     return keys.map((k) => '$k:${day[k]}').join(',');
   }
 
+  // Serializes archive read-modify-writes. Callers fire archive appends WITHOUT
+  // awaiting (from BLE stream listeners), so a live-EGV append racing a backfill
+  // batch on the same day-chunk would otherwise clobber it — the big 24h backfill
+  // gets wiped by a 1-point EGV write, leaving the archive sparse. Chaining every
+  // append onto this gate makes each load→merge→store atomic w.r.t. the others.
+  Future<void> _archiveGate = Future.value();
+
   /// Append one reading at its true wall-clock time [t] (deduped to the minute).
   Future<void> archiveAdd(DateTime t, int mgdl) => archiveAddAll({t: mgdl});
 
   /// Append a batch (e.g. a whole backfill block) in one pass, rewriting each
   /// affected day-chunk only once. Readings on the same minute dedupe (a live
   /// EGV and the backfill copy of it map to the same absolute minute).
-  Future<void> archiveAddAll(Map<DateTime, int> readings) async {
-    if (readings.isEmpty) return;
+  Future<void> archiveAddAll(Map<DateTime, int> readings) {
+    if (readings.isEmpty) return Future.value();
+    return _archiveGate = _archiveGate.then((_) => _archiveAddAll(readings));
+  }
+
+  Future<void> _archiveAddAll(Map<DateTime, int> readings) async {
     final byDay = <int, Map<int, int>>{};
     readings.forEach((t, mgdl) {
       final min = _epochMin(t);
