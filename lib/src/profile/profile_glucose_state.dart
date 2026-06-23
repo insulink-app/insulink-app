@@ -68,7 +68,9 @@ class ProfileGlucoseState extends ChangeNotifier {
   static const _storage = FlutterSecureStorage();
 
   Future<void> setUnit(GlucoseUnit unit) async {
-    if (unit == _unit) return;
+    if (unit == _unit) {
+      return;
+    }
     _unit = unit;
     notifyListeners();
     await _storage.write(key: _kUnit, value: unit.name);

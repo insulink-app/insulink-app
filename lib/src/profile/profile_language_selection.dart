@@ -63,7 +63,9 @@ class ProfileLanguageSelection extends StatelessWidget {
         ),
         onPressed: () async {
           await changeLanguage(languageState, language, context);
-          if (context.mounted) await Locales.change(context, language);
+          if (context.mounted) {
+            await Locales.change(context, language);
+          }
         },
         child: Container(
           width: 120,

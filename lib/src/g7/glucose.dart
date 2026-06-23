@@ -85,7 +85,9 @@ class G7GlucoseCodec {
 
   /// Parse a live EGV packet (Control characteristic, opcode 0x4E).
   static G7GlucoseReading? parseEgv(Uint8List p) {
-    if (p.length < 19 || p[0] != 0x4E) return null;
+    if (p.length < 19 || p[0] != 0x4E) {
+      return null;
+    }
     final bd = ByteData.sublistView(p);
     final secs = bd.getInt32(2, Endian.little);
     final sequence = bd.getUint16(6, Endian.little);
@@ -118,7 +120,9 @@ class G7GlucoseCodec {
         type: bd.getUint8(6),
         trendTenths: bd.getInt8(8),
       );
-      if (rec.isValid && _validMgdl(rec.glucoseMgDl)) out.add(rec);
+      if (rec.isValid && _validMgdl(rec.glucoseMgDl)) {
+        out.add(rec);
+      }
     }
     return out;
   }

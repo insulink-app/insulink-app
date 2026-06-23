@@ -112,7 +112,9 @@ class _SegmentedUnit extends StatelessWidget {
           labelKey,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: selected ? theme.colorScheme.surface : theme.colorScheme.onSurface,
+            color: selected
+                ? theme.colorScheme.surface
+                : theme.colorScheme.onSurface,
           ),
         ),
       ),

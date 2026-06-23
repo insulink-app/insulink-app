@@ -12,12 +12,13 @@ class ProfileConnectionToggle extends StatefulWidget {
 }
 
 class _ProfileConnectionToggleState extends State<ProfileConnectionToggle> {
+  final ProfileConnectionState _state = ProfileConnectionState();
   bool _enabled = true;
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
-      future: ProfileConnectionState.load(),
+      future: _state.load(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
           _enabled = snapshot.data ?? true;
@@ -26,7 +27,7 @@ class _ProfileConnectionToggleState extends State<ProfileConnectionToggle> {
           labelKey: "profile.connection.description",
           value: _enabled,
           onChanged: (value) async {
-            await ProfileConnectionState.save(value);
+            await _state.save(value);
             setState(() => _enabled = value);
           },
         );

@@ -75,19 +75,29 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
   /// Crossing [_fadeDistance] commits to the collapsed position for a snappy
   /// feel instead of leaving the box half-faded.
   bool _snapScroll() {
-    if (!_scroll.hasClients) return false;
+    if (!_scroll.hasClients) {
+      return false;
+    }
     final snapTarget = (_boxHeight + _gap).clamp(
       0.0,
       _scroll.position.maxScrollExtent,
     );
-    if (snapTarget <= 0) return false;
+    if (snapTarget <= 0) {
+      return false;
+    }
     final offset = _scroll.offset;
     // Only act between the two anchors; never fight the user mid-list.
-    if (offset >= snapTarget) return false;
+    if (offset >= snapTarget) {
+      return false;
+    }
     final target = offset >= _fadeDistance ? snapTarget : 0.0;
-    if ((offset - target).abs() < 1) return false;
+    if ((offset - target).abs() < 1) {
+      return false;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scroll.hasClients) return;
+      if (!_scroll.hasClients) {
+        return;
+      }
       _scroll.animateTo(
         target,
         duration: const Duration(milliseconds: 220),

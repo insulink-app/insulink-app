@@ -103,7 +103,9 @@ class G7Connection {
   /// points whenever a fresh backfill didn't get through.
   void _archiveKnown() {
     final start = _sensorStart;
-    if (start == null || _byTime.isEmpty) return;
+    if (start == null || _byTime.isEmpty) {
+      return;
+    }
     final out = <DateTime, int>{};
     _byTime.forEach((secs, mgdl) {
       out[start.add(Duration(seconds: secs))] = mgdl;
@@ -124,7 +126,9 @@ class G7Connection {
   }
 
   Future<void> _persistLatest(G7GlucoseReading r) async {
-    if (_persistKey.isEmpty) return;
+    if (_persistKey.isEmpty) {
+      return;
+    }
     await store.saveLatest(
       _persistKey,
       mgdl: r.glucoseMgDl,
@@ -138,7 +142,9 @@ class G7Connection {
   /// key for a fast reconnect, falling back to a full pairing if the sensor
   /// rejects it. Safe to call again after a drop (the watchdog does this).
   Future<void> connect() async {
-    if (_connecting) return;
+    if (_connecting) {
+      return;
+    }
     _connecting = true;
     await _teardownTransport();
     _backfillAsked = false;
@@ -309,7 +315,9 @@ class G7Connection {
         // right after a failed reconnect is the rapid in-process reconnect the G7
         // rejects (REMOTE_USER_TERMINATED / CONNECTION_TIMEOUT).
         _log('reconnect rejected ($e) — clearing stale key, will re-pair');
-        if (_persistKey.isNotEmpty) await store.clearSessionKey(_persistKey);
+        if (_persistKey.isNotEmpty) {
+          await store.clearSessionKey(_persistKey);
+        }
         rethrow;
       } catch (e) {
         // Transient (timeout, dropped link, GATT write error): the key is likely
@@ -320,7 +328,9 @@ class G7Connection {
       }
     }
     final secret = await session.run();
-    if (_persistKey.isNotEmpty) await store.saveSessionKey(_persistKey, secret);
+    if (_persistKey.isNotEmpty) {
+      await store.saveSessionKey(_persistKey, secret);
+    }
   }
 
   void _onControl(BleTransport t, Uint8List bytes) {
@@ -333,7 +343,9 @@ class G7Connection {
       return;
     }
     final r = G7GlucoseCodec.parseEgv(bytes);
-    if (r == null) return;
+    if (r == null) {
+      return;
+    }
     // The newest reading we already hold, BEFORE adding this EGV — the backfill
     // start point (so we only pull what we missed, not a fixed 24 h).
     final priorMax = _byTime.isEmpty ? null : _byTime.lastKey();
@@ -381,10 +393,13 @@ class G7Connection {
           tailStart = k;
         }
         if (priorMax - tailStart >= 23 * 3600) {
-          start = priorMax + 1; // contiguous day cached → fetch only the new gap
+          start =
+              priorMax + 1; // contiguous day cached → fetch only the new gap
         }
       }
-      if (start < 300) start = 300;
+      if (start < 300) {
+        start = 300;
+      }
       // Request immediately: the G7 drops the link within a second of connecting,
       // so deferring the backfill would push it past the window and it'd never be
       // sent. (Metadata replies are best-effort within the same short window.)

@@ -42,7 +42,9 @@ class PatternsView extends StatelessWidget {
     // Mean + spread for the hours that actually have data.
     final stats = <int, ({double mean, double sd})>{};
     for (var h = 0; h < 24; h++) {
-      if (counts[h] == 0) continue;
+      if (counts[h] == 0) {
+        continue;
+      }
       final mean = sums[h] / counts[h];
       final variance = (sumSq[h] / counts[h] - mean * mean).clamp(0.0, 1e9);
       stats[h] = (mean: mean, sd: math.sqrt(variance));
@@ -59,7 +61,9 @@ class PatternsView extends StatelessWidget {
     // a positive divisor, so `(h - n) % 24` wraps correctly.)
     double interp(int h, double Function(({double mean, double sd}) v) sel) {
       final known = stats[h];
-      if (known != null) return sel(known);
+      if (known != null) {
+        return sel(known);
+      }
       var down = 1, up = 1;
       while (!stats.containsKey((h - down) % 24)) {
         down++;
@@ -147,7 +151,10 @@ class PatternsView extends StatelessWidget {
                         s.unit == GlucoseUnit.mmol
                             ? v.toStringAsFixed(0)
                             : '${v.toInt()}',
-                        style: const TextStyle(fontSize: 10, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                   ),
@@ -158,7 +165,10 @@ class PatternsView extends StatelessWidget {
                       interval: 6,
                       getTitlesWidget: (v, _) => Text(
                         '${v.toInt()}',
-                        style: const TextStyle(fontSize: 10, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                   ),
@@ -195,11 +205,7 @@ class PatternsView extends StatelessWidget {
                   ),
                 ],
                 betweenBarsData: [
-                  BetweenBarsData(
-                    fromIndex: 0,
-                    toIndex: 1,
-                    color: bandColor,
-                  ),
+                  BetweenBarsData(fromIndex: 0, toIndex: 1, color: bandColor),
                 ],
               ),
               duration: Duration.zero,

@@ -76,7 +76,9 @@ class G7Store {
   /// The stored session key for [serial], or null if never paired.
   Uint8List? sessionKey(String serial) {
     final hex = _cache[_kKey(serial)];
-    if (hex == null || hex.length < 32) return null;
+    if (hex == null || hex.length < 32) {
+      return null;
+    }
     return Uint8List.fromList([
       for (var i = 0; i < hex.length; i += 2)
         int.parse(hex.substring(i, i + 2), radix: 16),
@@ -136,13 +138,19 @@ class G7Store {
   Map<int, int> loadReadings(String serial) {
     final out = <int, int>{};
     final s = _cache[_kReadings(serial)];
-    if (s == null || s.isEmpty) return out;
+    if (s == null || s.isEmpty) {
+      return out;
+    }
     for (final part in s.split(',')) {
       final i = part.indexOf(':');
-      if (i <= 0) continue;
+      if (i <= 0) {
+        continue;
+      }
       final k = int.tryParse(part.substring(0, i));
       final v = int.tryParse(part.substring(i + 1));
-      if (k != null && v != null) out[k] = v;
+      if (k != null && v != null) {
+        out[k] = v;
+      }
     }
     return out;
   }
@@ -172,7 +180,9 @@ class G7Store {
 
   Map<String, dynamic>? loadLatest(String serial) {
     final s = _cache[_kLatest(serial)];
-    if (s == null) return null;
+    if (s == null) {
+      return null;
+    }
     return jsonDecode(s) as Map<String, dynamic>;
   }
 
@@ -195,7 +205,9 @@ class G7Store {
 
   G7DeviceInfo? loadInfo(String serial) {
     final s = _cache[_kInfo(serial)];
-    if (s == null) return null;
+    if (s == null) {
+      return null;
+    }
     return G7DeviceInfo.fromJson(jsonDecode(s) as Map<String, dynamic>);
   }
 
@@ -238,13 +250,19 @@ class G7Store {
   Map<int, int> _loadHistDay(int dayIndex) {
     final out = <int, int>{};
     final s = _cache[_kHist(dayIndex)];
-    if (s == null || s.isEmpty) return out;
+    if (s == null || s.isEmpty) {
+      return out;
+    }
     for (final part in s.split(',')) {
       final i = part.indexOf(':');
-      if (i <= 0) continue;
+      if (i <= 0) {
+        continue;
+      }
       final k = int.tryParse(part.substring(0, i));
       final v = int.tryParse(part.substring(i + 1));
-      if (k != null && v != null) out[k] = v;
+      if (k != null && v != null) {
+        out[k] = v;
+      }
     }
     return out;
   }
@@ -268,7 +286,9 @@ class G7Store {
   /// affected day-chunk only once. Readings on the same minute dedupe (a live
   /// EGV and the backfill copy of it map to the same absolute minute).
   Future<void> archiveAddAll(Map<DateTime, int> readings) {
-    if (readings.isEmpty) return Future.value();
+    if (readings.isEmpty) {
+      return Future.value();
+    }
     return _archiveGate = _archiveGate.then((_) => _archiveAddAll(readings));
   }
 
@@ -293,7 +313,9 @@ class G7Store {
     final toMin = _epochMin(to);
     for (var d = fromMin ~/ _minsPerDay; d <= toMin ~/ _minsPerDay; d++) {
       _loadHistDay(d).forEach((k, v) {
-        if (k >= fromMin && k <= toMin) out[k] = v;
+        if (k >= fromMin && k <= toMin) {
+          out[k] = v;
+        }
       });
     }
     return out;
@@ -304,13 +326,12 @@ class G7Store {
   Future<void> archivePrune(Duration keep) async {
     final cutoffDay =
         (_epochMin(DateTime.now()) - keep.inMinutes) ~/ _minsPerDay;
-    final stale = _cache.keys
-        .where((k) => k.startsWith(_kHistPrefix))
-        .where((k) {
-          final d = int.tryParse(k.substring(_kHistPrefix.length));
-          return d != null && d < cutoffDay;
-        })
-        .toList();
+    final stale = _cache.keys.where((k) => k.startsWith(_kHistPrefix)).where((
+      k,
+    ) {
+      final d = int.tryParse(k.substring(_kHistPrefix.length));
+      return d != null && d < cutoffDay;
+    }).toList();
     for (final k in stale) {
       await _remove(k);
     }

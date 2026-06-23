@@ -20,7 +20,9 @@ class ProfileSilentState extends ChangeNotifier {
   bool get silent => _silent;
 
   Future<void> setSilent(bool v) async {
-    if (v == _silent) return;
+    if (v == _silent) {
+      return;
+    }
     _silent = v;
     notifyListeners();
     await _storage.write(key: _kSilent, value: '$v');

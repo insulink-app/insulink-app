@@ -300,7 +300,9 @@ class _FactorEditorSheetState extends State<_FactorEditorSheet> {
               onChanged: (v) {
                 final nv = v.round();
                 // Haptic tick per stepped change while dragging (like the chart).
-                if (nv != _value) HapticFeedback.selectionClick();
+                if (nv != _value) {
+                  HapticFeedback.selectionClick();
+                }
                 _apply(nv);
               },
             ),

@@ -76,7 +76,9 @@ class G7TaskHandler extends TaskHandler {
   /// without this, a single failure in `onStart` left a dead service that the
   /// watchdog could never revive (it bails on a null `_conn`).
   Future<bool> _ensureReady() async {
-    if (_conn != null) return true;
+    if (_conn != null) {
+      return true;
+    }
     try {
       if (!_coreReady) {
         // Fresh isolate: the Rust J-PAKE core must be initialised here too.
@@ -84,9 +86,9 @@ class G7TaskHandler extends TaskHandler {
         _coreReady = true;
       }
       if (_store == null) {
-        final notifications = FlutterLocalNotificationsPlugin();
-        await G7AlarmManager.init(notifications);
-        _alarms = G7AlarmManager(notifications);
+        final alarms = G7AlarmManager(FlutterLocalNotificationsPlugin());
+        await alarms.init();
+        _alarms = alarms;
         final store = await G7Store.open();
         _store = store;
         _serial = store.serial ?? '';
@@ -250,10 +252,12 @@ class G7TaskHandler extends TaskHandler {
     _conn = null;
   }
 
+  /// Update the ongoing service notification with the latest value + trend.
+  /// The user can hide the live value (Android still requires the ongoing
+  /// notification, so it stays unchanged then). The toggle is read fresh so it
+  /// takes effect without a service restart.
   Future<void> _updateNotification(int? mgdl, double? trendPerMin) async {
-    // The user can hide the live value (Android still requires the ongoing
-    // notification, so fall back to neutral text). Read fresh — no restart.
-    final showValue = await ProfileLiveNotificationState.load();
+    final showValue = await ProfileLiveNotificationState().load();
     if (!showValue) {
       return;
     }
@@ -262,7 +266,7 @@ class G7TaskHandler extends TaskHandler {
     }
     final profile = await ProfileGlucoseState.load();
     final arrow = trendPerMin != null
-        ? ' ${G7AlarmManager.trendArrow(trendPerMin)}'
+        ? ' ${_alarms?.trendArrow(trendPerMin) ?? ''}'
         : '';
     final String text = '${profile.formatWithUnit(mgdl)}$arrow';
     FlutterForegroundTask.updateService(

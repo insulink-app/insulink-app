@@ -7,11 +7,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// takes effect without restarting the service.
 class ProfileAlarmSoundState {
   static const _key = 'alarm_sound';
-  static const _storage = FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   /// Default ON — an unheard low alarm is safety-relevant.
-  static Future<bool> load() async =>
-      (await _storage.read(key: _key)) != 'false';
+  Future<bool> load() async => (await _storage.read(key: _key)) != 'false';
 
-  static Future<void> save(bool v) => _storage.write(key: _key, value: '$v');
+  Future<void> save(bool v) => _storage.write(key: _key, value: '$v');
 }

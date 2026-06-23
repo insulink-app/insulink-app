@@ -19,7 +19,9 @@ class Locales {
   final Locale locale;
 
   Locales(this.locale, {bool initialize = true}) {
-    if (initialize) selectedLocale = locale;
+    if (initialize) {
+      selectedLocale = locale;
+    }
   }
 
   static Locales? of(BuildContext context) {
@@ -88,7 +90,9 @@ class Locales {
         final ps = localizeParams
             ? _localizedStings[p.replaceAll(' ', '_').toLowerCase()]
             : p;
-        if (ps != null) s = s.replaceFirst(hash, ps);
+        if (ps != null) {
+          s = s.replaceFirst(hash, ps);
+        }
       }
       s = s.replaceAll("#", "");
     }

@@ -12,12 +12,13 @@ class ProfileAlarmSoundToggle extends StatefulWidget {
 }
 
 class _ProfileAlarmSoundToggleState extends State<ProfileAlarmSoundToggle> {
+  final ProfileAlarmSoundState _state = ProfileAlarmSoundState();
   bool _enabled = true;
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
-      future: ProfileAlarmSoundState.load(),
+      future: _state.load(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
           _enabled = snapshot.data ?? true;
@@ -26,7 +27,7 @@ class _ProfileAlarmSoundToggleState extends State<ProfileAlarmSoundToggle> {
           labelKey: "profile.alarmsound.description",
           value: _enabled,
           onChanged: (value) async {
-            await ProfileAlarmSoundState.save(value);
+            await _state.save(value);
             setState(() => _enabled = value);
           },
         );

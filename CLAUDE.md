@@ -46,6 +46,30 @@ and is copyable via the "Kopieren" button. **Test on-device with profile/release
 not debug** — a debug build (JIT + Dart VM service) often hangs on the splash
 screen when run standalone/unplugged; release/profile (AOT) run fine.
 
+## Code style (follow these — they override default habits)
+
+- **Object-oriented.** Model behaviour as classes with state + instance methods.
+- **Avoid static functions** — they work against OO. Prefer an instance on the
+  object that owns the data. Legitimate exceptions kept on purpose: `static const`
+  values, `@pragma('vm:entry-point')` top-level callbacks (`startCallback`), and
+  async **factory readers** that construct the object they return
+  (`ProfileGlucoseState.load()`/`.loadThresholds()`, `ProfileSilentState.load()`)
+  — these are the documented cross-isolate bridge for `ChangeNotifier` state the
+  service isolate can't observe.
+- **No one-line `if`s.** Always use braces, even for a single statement.
+- **No comments inside function bodies.** Keep functions short enough that they
+  read on their own; put the explanation in a doc comment ABOVE the function.
+- **Short functions and classes.** Split them when they grow; one job each.
+- **Descriptive, unique names** for classes and functions — no generic or
+  duplicated names.
+- **2-space indentation.**
+- **Localize everything.** No hard-coded user-facing strings — every displayed
+  string goes through the localization layer (`assets/locales/*.json`).
+- **JSON uses `snake_case` keys.** In the locale files, keys are namespaced by
+  section, dot-separated (e.g. `service.connecting`, `alarm.low_urgent`).
+- **Document accumulated knowledge as individual markdown files under `docs/`** —
+  one focused topic per file, rather than letting it pile up only in code.
+
 ## Architecture
 
 Two layers, bridged by flutter_rust_bridge (FRB):
@@ -114,14 +138,22 @@ dies when the activity is destroyed, so the whole read pipeline runs in a
 - `ble_service.dart`: the `@pragma('vm:entry-point') startCallback` +
   `G7TaskHandler` that runs `G7Connection` inside the service isolate. It
   **must `await RustLib.init()` again** (fresh isolate ⇒ fresh Rust core),
-  updates the notification text with the latest mg/dL, pushes updates to the UI
-  with `sendDataToMain`, and reconnects from `onRepeatEvent` (a 30 s watchdog).
-- `main.dart` is now a thin viewer: `initCommunicationPort()` in `main()`,
-  start/stop the service (not the connection) from the Connect/Disconnect
-  buttons, receive live pushes via `addTaskDataCallback`, and re-`reload()` the
-  store on `AppLifecycleState.resumed` to catch up on what the service captured
-  while away. `flutter_blue_plus` works in the service isolate because FFT
-  registers plugins on its background engine.
+  also re-inits the alarm manager + store (fresh isolate), updates the
+  notification text with the latest value, pushes updates to the UI with
+  `sendDataToMain`, fires glucose/expiry/connection-lost alarms, and drives
+  every recovery path from `onRepeatEvent` (a 30 s watchdog). `_ensureReady()`
+  is idempotent so the watchdog can rebuild a startup that *threw* (otherwise a
+  single `onStart` failure left a dead service with a null `_conn` that nothing
+  revived). The watchdog escalation ladder: not-connected → reconnect (the
+  normal resting state); `isConnecting` past `_connectStuckAfter` (3 min) →
+  force-reset; connected-but-silent past `_staleAfter` (12 min) → drop the
+  half-open link; no data at all past `_restartAfter` (25 min) → restart the
+  whole service (fresh isolate + Rust core + BLE stack). Health is measured by
+  **time-since-last-reading, not BLE connection state** (which is normally
+  "disconnected" between the G7's 5-min deliveries).
+- The UI layer is in `g7_controller.dart` (`G7Controller`), not `main.dart`
+  — see "App / UI layer" below. `flutter_blue_plus` works in the service
+  isolate because FFT registers plugins on its background engine.
 
 Load-bearing background gotchas (don't regress):
 1. **FGS type `connectedDevice` requires a held Bluetooth runtime permission**
@@ -157,6 +189,88 @@ Load-bearing background gotchas (don't regress):
    `connect()` and let the watchdog retry on the sensor's own advertising
    schedule — do NOT tight-loop retry within a single connect.
 
+### App / UI layer
+
+The UI is a multi-page app (overview, sensor, statistics, profile, plus
+injection/pump stubs) under `base/navigator.dart`, NOT the old single reader
+page. `main.dart` is a thin shell: it sets up `MultiProvider` (theme, locale,
+glucose/bolus/silent profile state, and `G7Controller`) and `MaterialApp`
+(`home: AppPage`).
+
+- **`g7_controller.dart` (`G7Controller`)** is the UI isolate's viewer + remote
+  control for the read pipeline — a `ChangeNotifier` provided above the page
+  tree so overview/sensor/statistics all observe the same data. It owns the
+  pairing-code field, the live/cached reading, the current-session chart data
+  (`byTime`), device info, the log, and service start/stop. The BLE work itself
+  runs in the service isolate (`ble_service.dart`); this class just mirrors it.
+  - **Stale-recovery on launch/resume** (`_recoverIfStale`): `isRunningService`
+    can read "running" while the hosting isolate is frozen, so the real signal
+    is time-since-last-data. No fresh data within `_staleAfter` (12 min) ⇒
+    `restartService()`. Gated by `_restartCooldown` (3 min): a fresh service
+    needs up to ~2 min to scan+connect, and restarting back-to-back aborts the
+    in-flight scan and trips **Android's "scanning too frequently" throttle**
+    (which then returns NO scan results for ~30 min — the multi-hour "0 devices
+    found" stall).
+  - The DnD-access request (`G7AlarmManager.ensureDndAccess`) and BLE/notification
+    permission requests happen HERE in `start()`, before `startService` — the
+    service isolate has no activity to show dialogs (see Alarms below).
+
+- **Profile settings** follow one pattern: each setting is a tiny
+  `ProfileXState` class (static `load()`/`save()` straight to
+  `flutter_secure_storage`) paired with a `ProfileXToggle`/`ProfileXSelection`
+  widget. **The service isolate reads these with `load()` fresh on each check**
+  (it can't observe a `ChangeNotifier` across isolates), so a toggle takes
+  effect WITHOUT restarting the service. Safety-relevant settings default ON
+  (alarm sound, connection-lost). `ProfileSilentState` suppresses all alarms;
+  `ProfileGlucoseState` holds the unit + the four thresholds
+  (urgentLow/low/high/urgentHigh) used by both alarms and formatting.
+
+- **Localization** (`localization/`): `assets/locales/{de,en}.json`, selected
+  via `locales.dart`. UI uses the `flutter_localization` widgets, but the
+  service isolate / controller has **no `BuildContext`** (and a fresh isolate has
+  no `Locales` state), so notification text is resolved via `ServiceStrings`
+  (`service_strings.dart`): it reads the persisted `language` key from secure
+  storage and loads that locale's JSON from the bundle. Keys are `snake_case`,
+  namespaced by section (`alarm.low.title`), `#` is the placeholder. Details in
+  `docs/LOCALIZATION.md`.
+
+- **Statistics** (`statistics/`) read the long-term archive, not the current
+  session — see `archiveSince` / `archiveRange` under Data + persistence. Default
+  window is 14 d (`G7Controller.statsWindow`, clinical AGP).
+
+### Alarms & notifications (`g7/alarms.dart`)
+
+`G7AlarmManager` runs in the **service isolate** (alongside `G7TaskHandler`) so
+alarms fire with the app closed. `init()` must be called once per isolate
+(mirrors `RustLib.init()`).
+
+- **Glucose alarms are edge-triggered**: `check()` maps the reading to a
+  `G7AlarmLevel` (none/low|high × warning|urgent) and only notifies when the
+  zone CHANGES. The zone is tracked even while silent, so turning silent mode
+  off doesn't re-fire an alarm for a value still in-zone — only a fresh
+  crossing fires. Thresholds + unit are re-read each call (no restart needed).
+- **The alarm TONE is NOT played by the notification channel** — the channels
+  are `playSound: false`. The sound is played manually via `audioplayers` on the
+  **ALARM audio stream** (`usageType: alarm`) so it obeys the alarm-volume
+  slider (not the notification slider, which can be 0) and sounds through a
+  silenced ringer / DnD / screen-off, like Dexcom. Distinct
+  `alarm_low.wav`/`alarm_high.wav` (`assets/sounds/`). Audio is best-effort; the
+  visual notification fires regardless.
+- **DnD bypass is load-bearing and order-sensitive**: the channels set
+  `channelBypassDnd: true`, but that's silently ignored unless "Do Not Disturb
+  access" was granted **BEFORE the channels are created**. So `ensureDndAccess()`
+  runs from the UI isolate in `G7Controller.start()`, before the service isolate
+  posts its first alarm.
+- Urgent levels add `fullScreenIntent` + `category: alarm`. Non-glucose warnings
+  (connection-lost after 15 min, sensor-expiry within final 24 h) use a plain
+  default-sound channel; expiry is one-shot **persisted per-sensor** in the store
+  so it fires once even across restarts.
+- The ongoing FGS notification shows the current value + trend arrow
+  (`trendArrow`, same 5 buckets as the overview readout), gated by
+  `ProfileLiveNotificationState`.
+- Full design (audio stream, DnD ordering, channel/notification ids) in
+  `docs/ALARMS.md`.
+
 ### Data + persistence
 
 - `glucose.dart`: EGV (`0x4E`) and backfill (`dexbackfill`) decoders. Packed
@@ -176,10 +290,20 @@ Load-bearing background gotchas (don't regress):
   source (opcode confirmed via DiaBLE; the G6 frame is `34 ‖ glucose(LE16) ‖
   dexTime(LE32) ‖ CRC16`, unverified for G7). The G7 is factory-calibrated and
   works fully without it; a verified BLE-HCI capture is needed before sending it.
+- **Two glucose stores, different time bases.** The per-sensor `loadReadings`
+  history (`G7Controller.byTime`) is keyed by **seconds-since-session-start**,
+  capped, and reset on a new sensor — it's the current-session overview chart.
+  Separately, `archiveAddAll`/`archiveRange` keep a **long-term archive keyed by
+  absolute epoch-minute** (`millisecondsSinceEpoch ~/ 60000`, bucketed per day)
+  that spans sensor swaps, stops and reconnects — the basis for the statistics
+  page (`archiveSince(window)`). Writes are serialized through `_archiveGate`.
+  `forgetSensor` clears the current session but KEEPS the archive, so statistics
+  survive a sensor change.
 - `store.dart` (flutter_secure_storage, synchronous getters served from an
   in-memory cache loaded via `readAll()` on `open()`/`reload()`): per-**serial**
   keys for session key,
-  glucose history, device info, sensor start, and the latest EGV
+  glucose history, device info, sensor start, the expiry-notified flag, and the
+  latest EGV
   (`saveLatest`/`loadLatest` — value+trend+state, so the headline number is
   restored on launch, not just the last history point). The serial is NOT used
   by the protocol (the pairing code is the only auth secret) — it is purely the
@@ -219,6 +343,11 @@ Load-bearing background gotchas (don't regress):
 
 ## Reference
 
-`docs/PROTOCOL.md` has the full byte-level protocol spec and source citations
-(Juggluco, DiaBLE, G7SensorKit, xDrip). `lib/src/rust/` is generated — never
-hand-edit; change `rust/src/api/` and rerun codegen.
+`docs/` holds the per-topic knowledge files (one focused subject each):
+- `docs/PROTOCOL.md` — full byte-level protocol spec + source citations
+  (Juggluco, DiaBLE, G7SensorKit, xDrip).
+- `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
+- `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
+
+`lib/src/rust/` is generated — never hand-edit; change `rust/src/api/` and rerun
+codegen.

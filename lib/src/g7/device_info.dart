@@ -153,11 +153,15 @@ class G7DeviceInfo {
 
   /// Returns true if [data] was a recognized metadata message.
   bool applyControl(Uint8List d) {
-    if (d.length < 2) return false;
+    if (d.length < 2) {
+      return false;
+    }
     final bd = ByteData.sublistView(d);
     switch (d[0]) {
       case 0x4A: // transmitterVersion (20 bytes)
-        if (d.length < 20) return false;
+        if (d.length < 20) {
+          return false;
+        }
         firmware = '${d[2]}.${d[3]}.${d[4]}.${d[5]}';
         softwareNumber = bd.getUint32(6, Endian.little);
         siliconVersion = bd.getUint32(10, Endian.little);
@@ -168,7 +172,9 @@ class G7DeviceInfo {
         serialNumber = serial.toString();
         return true;
       case 0x52: // transmitterVersionExtended (15 bytes)
-        if (d.length < 15) return false;
+        if (d.length < 15) {
+          return false;
+        }
         sessionLengthSec = bd.getUint32(2, Endian.little);
         warmupSec = bd.getUint16(6, Endian.little);
         algorithmVersion = bd.getUint32(8, Endian.little);
@@ -176,7 +182,9 @@ class G7DeviceInfo {
         maxLifetimeDays = bd.getUint16(13, Endian.little);
         return true;
       case 0x22: // batteryStatus
-        if (d.length < 8) return false;
+        if (d.length < 8) {
+          return false;
+        }
         batteryVoltageA = bd.getUint16(2, Endian.little);
         batteryVoltageB = bd.getUint16(4, Endian.little);
         runtimeDays = d[6];
@@ -187,7 +195,9 @@ class G7DeviceInfo {
         // d[7..8]=lastBGValue, d[9..12]=lastCalibrationTime,
         // d[13]=processingStatus, d[14]=calibrationsPermitted,
         // d[15]=lastBGDisplay, d[16..19]=lastProcessingUpdateTime.
-        if (d.length < 20) return false;
+        if (d.length < 20) {
+          return false;
+        }
         lastCalBgValue = bd.getUint16(7, Endian.little);
         lastCalTimeSec = bd.getUint32(9, Endian.little);
         calProcessingStatus = d[13];

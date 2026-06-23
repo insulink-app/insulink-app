@@ -27,7 +27,9 @@ class LocalePreference {
 
   Locale? get locale {
     final lng = _language;
-    if (lng == null || lng.isEmpty) return Locales.supportedLocales.first;
+    if (lng == null || lng.isEmpty) {
+      return Locales.supportedLocales.first;
+    }
     return Locale(lng);
   }
 }

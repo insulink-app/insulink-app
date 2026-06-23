@@ -20,16 +20,28 @@ class OverviewCurrentValue extends StatelessWidget {
   /// Cupertino arrow for the per-minute trend (5 directional buckets; the exact
   /// rate is shown as text alongside).
   IconData _arrow(double perMin) {
-    if (perMin >= 2) return CupertinoIcons.arrow_up;
-    if (perMin >= 1) return CupertinoIcons.arrow_up_right;
-    if (perMin > -1) return CupertinoIcons.arrow_right;
-    if (perMin > -2) return CupertinoIcons.arrow_down_right;
+    if (perMin >= 2) {
+      return CupertinoIcons.arrow_up;
+    }
+    if (perMin >= 1) {
+      return CupertinoIcons.arrow_up_right;
+    }
+    if (perMin > -1) {
+      return CupertinoIcons.arrow_right;
+    }
+    if (perMin > -2) {
+      return CupertinoIcons.arrow_down_right;
+    }
     return CupertinoIcons.arrow_down;
   }
 
   Color _color(int v, ProfileGlucoseState s, GlucoseColors gc) {
-    if (v < s.targetLow) return gc.low;
-    if (v > s.targetHigh) return gc.high;
+    if (v < s.targetLow) {
+      return gc.low;
+    }
+    if (v > s.targetHigh) {
+      return gc.high;
+    }
     return gc.inRange;
   }
 

@@ -41,7 +41,9 @@ class _AppNavigatorState extends State<AppNavigator> {
   }
 
   void _refreshNotifications() {
-    if (mounted) loadNotifications(context);
+    if (mounted) {
+      loadNotifications(context);
+    }
   }
 
   /// Display position of the empty slot that leaves room for the centre-docked
@@ -95,7 +97,9 @@ class _AppNavigatorState extends State<AppNavigator> {
                 : widget.selectedIndex,
             onTap: (displayIndex) {
               // The centre spacer slot carries no page — ignore taps on it.
-              if (displayIndex == _spacerIndex) return;
+              if (displayIndex == _spacerIndex) {
+                return;
+              }
               final bodyIndex = displayIndex > _spacerIndex
                   ? displayIndex - 1
                   : displayIndex;

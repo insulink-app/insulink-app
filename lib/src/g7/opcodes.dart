@@ -27,7 +27,9 @@ enum G7AuthOpCode {
 
   static G7AuthOpCode? fromByte(int b) {
     for (final op in G7AuthOpCode.values) {
-      if (op.value == b) return op;
+      if (op.value == b) {
+        return op;
+      }
     }
     return null;
   }

@@ -119,7 +119,9 @@ class _OverviewChartState extends State<OverviewChart> {
     int? prevVal;
     double? prevX;
     for (final e in entries) {
-      if (e.key < cutoff) continue;
+      if (e.key < cutoff) {
+        continue;
+      }
       final x = (e.key - latestSecs) / 3600.0 + shift;
       final v = e.value;
       if (prevVal != null) {
@@ -393,16 +395,24 @@ class _OverviewChartState extends State<OverviewChart> {
 
   /// Zone colour for a display-unit Y value (used for the touch dot).
   Color _zoneForDisplay(double y, ProfileGlucoseState s, GlucoseColors gc) {
-    if (y < s.toDisplay(s.targetLow)) return gc.low;
-    if (y > s.toDisplay(s.targetHigh)) return gc.high;
+    if (y < s.toDisplay(s.targetLow)) {
+      return gc.low;
+    }
+    if (y > s.toDisplay(s.targetHigh)) {
+      return gc.high;
+    }
     return gc.inRange;
   }
 
   /// Colour for the segment between two points: red if either end is below
   /// target, amber if either is above, else in-range green.
   Color _segColor(Color a, Color b, GlucoseColors gc) {
-    if (a == gc.low || b == gc.low) return gc.low;
-    if (a == gc.high || b == gc.high) return gc.high;
+    if (a == gc.low || b == gc.low) {
+      return gc.low;
+    }
+    if (a == gc.high || b == gc.high) {
+      return gc.high;
+    }
     return gc.inRange;
   }
 

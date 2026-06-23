@@ -14,12 +14,13 @@ class ProfileLiveNotificationToggle extends StatefulWidget {
 
 class _ProfileLiveNotificationToggleState
     extends State<ProfileLiveNotificationToggle> {
+  final ProfileLiveNotificationState _state = ProfileLiveNotificationState();
   bool _enabled = true;
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
-      future: ProfileLiveNotificationState.load(),
+      future: _state.load(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
           _enabled = snapshot.data ?? true;
@@ -28,7 +29,7 @@ class _ProfileLiveNotificationToggleState
           labelKey: "profile.live.description",
           value: _enabled,
           onChanged: (value) async {
-            await ProfileLiveNotificationState.save(value);
+            await _state.save(value);
             setState(() => _enabled = value);
           },
         );

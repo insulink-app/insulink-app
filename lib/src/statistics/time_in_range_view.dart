@@ -90,8 +90,12 @@ class TimeInRangeView extends StatelessWidget {
     final fractions = [for (final c in counts) c / total];
     final percents = _largestRemainderPercents(fractions);
     String pctLabel(int i) {
-      if (counts[i] == 0) return '0%';
-      if (percents[i] == 0) return '<1%';
+      if (counts[i] == 0) {
+        return '0%';
+      }
+      if (percents[i] == 0) {
+        return '<1%';
+      }
       return '${percents[i]}%';
     }
 
@@ -147,7 +151,9 @@ class TimeInRangeView extends StatelessWidget {
               children: [
                 _StackedBar(bands: bands),
                 const SizedBox(width: 24),
-                Expanded(child: _Legend(bands: bands, unitLabel: s.unit.label)),
+                Expanded(
+                  child: _Legend(bands: bands, unitLabel: s.unit.label),
+                ),
               ],
             ),
           ),

@@ -78,10 +78,7 @@ class StatisticsBodyContent extends StatelessWidget {
                 ),
                 tabs: [
                   for (final t in _tabs)
-                    Tab(
-                      height: 38,
-                      text: Locales.string(context, t.labelKey),
-                    ),
+                    Tab(height: 38, text: Locales.string(context, t.labelKey)),
                 ],
               ),
             ),

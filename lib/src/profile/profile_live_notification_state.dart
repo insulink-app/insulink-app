@@ -8,11 +8,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// toggle takes effect without restarting the service.
 class ProfileLiveNotificationState {
   static const _key = 'live_glucose_notification';
-  static const _storage = FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   /// Default ON.
-  static Future<bool> load() async =>
-      (await _storage.read(key: _key)) != 'false';
+  Future<bool> load() async => (await _storage.read(key: _key)) != 'false';
 
-  static Future<void> save(bool v) => _storage.write(key: _key, value: '$v');
+  Future<void> save(bool v) => _storage.write(key: _key, value: '$v');
 }

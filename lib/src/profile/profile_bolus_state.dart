@@ -42,7 +42,9 @@ class ProfileBolusState extends ChangeNotifier {
 
   Future<void> setCorrectionFactor(int v) async {
     v = v.clamp(minCorrection, maxCorrection);
-    if (v == _correctionFactor) return;
+    if (v == _correctionFactor) {
+      return;
+    }
     _correctionFactor = v;
     notifyListeners();
     await _storage.write(key: _kCorrection, value: '$v');
@@ -50,7 +52,9 @@ class ProfileBolusState extends ChangeNotifier {
 
   Future<void> setCarbFactor(int v) async {
     v = v.clamp(minCarb, maxCarb);
-    if (v == _carbFactor) return;
+    if (v == _carbFactor) {
+      return;
+    }
     _carbFactor = v;
     notifyListeners();
     await _storage.write(key: _kCarb, value: '$v');

@@ -25,24 +25,34 @@ class SensorInfo extends StatelessWidget {
   final DateTime? lastUpdate;
 
   static String _dur(int? secs) {
-    if (secs == null) return '—';
+    if (secs == null) {
+      return '—';
+    }
     final d = secs ~/ 86400,
         h = (secs % 86400) ~/ 3600,
         m = (secs % 3600) ~/ 60;
-    if (d > 0) return '${d}d ${h}h';
-    if (h > 0) return '${h}h ${m}m';
+    if (d > 0) {
+      return '${d}d ${h}h';
+    }
+    if (h > 0) {
+      return '${h}h ${m}m';
+    }
     return '${m}m';
   }
 
   static String _dt(DateTime? t) {
-    if (t == null) return '—';
+    if (t == null) {
+      return '—';
+    }
     String two(int n) => n.toString().padLeft(2, '0');
     return '${two(t.day)}.${two(t.month)} ${two(t.hour)}:${two(t.minute)}';
   }
 
   /// Like [_dt] but with seconds, for the precise last-reception time.
   static String _dts(DateTime? t) {
-    if (t == null) return '—';
+    if (t == null) {
+      return '—';
+    }
     String two(int n) => n.toString().padLeft(2, '0');
     return '${_dt(t)}:${two(t.second)}';
   }
@@ -59,7 +69,9 @@ class SensorInfo extends StatelessWidget {
     // [labelKey] is a locale key resolved here; [v] is the (already formatted)
     // value to show.
     void add(List<MapEntry<String, String>> into, String labelKey, String? v) {
-      if (v != null && v.isNotEmpty) into.add(MapEntry(t(labelKey), v));
+      if (v != null && v.isNotEmpty) {
+        into.add(MapEntry(t(labelKey), v));
+      }
     }
 
     // Status

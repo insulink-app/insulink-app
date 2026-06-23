@@ -57,7 +57,9 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// Suggested bolus in units, or null while the glucose input is empty/invalid.
   double? get _bolus {
     final glucose = int.tryParse(_glucoseController.text);
-    if (glucose == null) return null;
+    if (glucose == null) {
+      return null;
+    }
     final carbs =
         double.tryParse(_carbsController.text.replaceAll(',', '.')) ?? 0;
     final bolus = context.read<ProfileBolusState>();

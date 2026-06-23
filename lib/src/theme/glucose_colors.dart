@@ -56,7 +56,9 @@ class GlucoseColors extends ThemeExtension<GlucoseColors> {
 
   @override
   GlucoseColors lerp(ThemeExtension<GlucoseColors>? other, double t) {
-    if (other is! GlucoseColors) return this;
+    if (other is! GlucoseColors) {
+      return this;
+    }
     return GlucoseColors(
       inRange: Color.lerp(inRange, other.inRange, t)!,
       low: Color.lerp(low, other.low, t)!,

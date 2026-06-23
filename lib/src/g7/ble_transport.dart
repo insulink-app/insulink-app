@@ -85,10 +85,12 @@ class BleTransport {
     // ~5 per 30 s, Android silently throttles the scanner and returns NOTHING —
     // a prime suspect for the "0 results" loop (watchdog + service restarts can
     // trigger scans back-to-back).
-    log('SCAN diag: ${t0.toIso8601String()} '
-        'adapter=${FlutterBluePlus.adapterStateNow}, '
-        'isScanning=${FlutterBluePlus.isScanningNow}, '
-        'looking for wantedId=$wantedId');
+    log(
+      'SCAN diag: ${t0.toIso8601String()} '
+      'adapter=${FlutterBluePlus.adapterStateNow}, '
+      'isScanning=${FlutterBluePlus.isScanningNow}, '
+      'looking for wantedId=$wantedId',
+    );
     // Android reports BluetoothAdapterState.unknown in a freshly-spawned isolate
     // (the foreground-service isolate hosting this scan) until the adapter-state
     // stream first emits — and startScan against an `unknown` adapter delivers NO
@@ -107,11 +109,15 @@ class BleTransport {
     }
     try {
       final sys = await FlutterBluePlus.systemDevices(const []);
-      log('SCAN diag: systemDevices=${sys.length} '
-          '[${sys.map((d) => d.remoteId.str).join(", ")}]');
+      log(
+        'SCAN diag: systemDevices=${sys.length} '
+        '[${sys.map((d) => d.remoteId.str).join(", ")}]',
+      );
       final bonded = await FlutterBluePlus.bondedDevices;
-      log('SCAN diag: bondedDevices=${bonded.length} '
-          '[${bonded.map((d) => "${d.platformName}/${d.remoteId.str}").join(", ")}]');
+      log(
+        'SCAN diag: bondedDevices=${bonded.length} '
+        '[${bonded.map((d) => "${d.platformName}/${d.remoteId.str}").join(", ")}]',
+      );
     } catch (e) {
       log('SCAN diag: system/bonded query failed: $e');
     }
@@ -126,16 +132,20 @@ class BleTransport {
       resultCount += results.length;
       for (final r in results) {
         if (seen.add(r.device.remoteId.str)) {
-          log('SCAN diag: saw "${r.device.platformName}"'
-              '/"${r.advertisementData.advName}" '
-              '${r.device.remoteId.str} rssi=${r.rssi} '
-              'conn=${r.advertisementData.connectable}');
+          log(
+            'SCAN diag: saw "${r.device.platformName}"'
+            '/"${r.advertisementData.advName}" '
+            '${r.device.remoteId.str} rssi=${r.rssi} '
+            'conn=${r.advertisementData.connectable}',
+          );
         }
         final matches = wantedId != null
             ? r.device.remoteId.str == wantedId
             : r.device.platformName.startsWith(namePrefix);
         if (matches) {
-          if (!completer.isCompleted) completer.complete(r.device);
+          if (!completer.isCompleted) {
+            completer.complete(r.device);
+          }
         }
       }
     });
@@ -160,10 +170,12 @@ class BleTransport {
     // outcome. "0 distinct" ⇒ the scan delivered nothing (sensor not
     // advertising / scan throttled). Devices listed but no match ⇒ the sensor's
     // address differs from wantedId (rotation) or it isn't advertising.
-    log('SCAN diag: done after ${DateTime.now().difference(t0).inSeconds}s — '
-        '${seen.length} distinct device(s), '
-        '$resultCount total results, '
-        'match=${device?.remoteId.str ?? "none"}');
+    log(
+      'SCAN diag: done after ${DateTime.now().difference(t0).inSeconds}s — '
+      '${seen.length} distinct device(s), '
+      '$resultCount total results, '
+      'match=${device?.remoteId.str ?? "none"}',
+    );
     return device;
   }
 
@@ -202,10 +214,18 @@ class BleTransport {
       for (final c in s.characteristics) {
         log('  char ${c.uuid}  props=${_props(c)}');
         final u = c.uuid.str128.toLowerCase();
-        if (u == G7Uuids.authentication) _auth = c;
-        if (u == G7Uuids.control) _control = c;
-        if (u == G7Uuids.backfill) _backfill = c;
-        if (u == G7Uuids.jpake) _jpake = c;
+        if (u == G7Uuids.authentication) {
+          _auth = c;
+        }
+        if (u == G7Uuids.control) {
+          _control = c;
+        }
+        if (u == G7Uuids.backfill) {
+          _backfill = c;
+        }
+        if (u == G7Uuids.jpake) {
+          _jpake = c;
+        }
       }
     }
     if (_auth == null || _jpake == null) {
@@ -229,7 +249,9 @@ class BleTransport {
     if (_control != null) {
       await _subscribe(_control!, _controlRx, log, forceIndications: true);
     }
-    if (_backfill != null) await _subscribe(_backfill!, _backfillRx, log);
+    if (_backfill != null) {
+      await _subscribe(_backfill!, _backfillRx, log);
+    }
   }
 
   Future<void> _subscribe(
@@ -269,7 +291,9 @@ class BleTransport {
         final gattFlake =
             (s.contains('133') || s.contains('GATT_ERROR')) &&
             device.isConnected;
-        if (!(busy || gattFlake) || attempt >= 4) rethrow;
+        if (!(busy || gattFlake) || attempt >= 4) {
+          rethrow;
+        }
         await Future<void>.delayed(
           Duration(milliseconds: gattFlake ? 150 : 60),
         );
