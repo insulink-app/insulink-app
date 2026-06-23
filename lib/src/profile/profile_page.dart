@@ -125,6 +125,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ProfileDeveloperToggle(),
                       ],
                     ),
+                    Image.asset('assets/images/cute.png', width: 50),
                     Column(
                       children: [
                         SizedBox(height: 50),

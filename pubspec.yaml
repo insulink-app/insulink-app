@@ -49,6 +49,7 @@ dependencies:
   camera: ^0.12.0
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
 
@@ -104,3 +105,25 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  min_sdk_android: 26
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/images/icon.png"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/images/icon.png"
+
+flutter_native_splash:
+  color: "#ffffff"
+  color_dark: "#1e1e1e"
+  image: assets/images/splash-black.png
+  image_dark: assets/images/splash-white.png
+  fullscreen: true
+  android_gravity: center
+  android_12:
+    color: "#ffffff"
+    color_dark: "#1e1e1e"
+    image: assets/images/splash-black.png
+    image_dark: assets/images/splash-white.png
