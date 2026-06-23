@@ -4,7 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/profile/profile_developer_state.dart';
 import 'package:insulink/src/profile/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
