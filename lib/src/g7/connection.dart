@@ -76,6 +76,10 @@ class G7Connection {
       _latest?.glucoseMgDl ??
       (_byTime.isNotEmpty ? _byTime[_byTime.lastKey()] : null);
 
+  /// Trend of the latest live EGV in mg/dL per minute (null if none yet — the
+  /// history archive doesn't carry a trend).
+  double? get latestTrendPerMin => _latest?.trendMgDlPerMin;
+
   /// Total session length reported by the sensor (for the expiry warning).
   int? get sessionLengthSec => _info.sessionLengthSec;
 

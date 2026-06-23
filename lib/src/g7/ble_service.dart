@@ -1,6 +1,8 @@
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../profile/profile_glucose_state.dart';
+import '../profile/profile_live_notification_state.dart';
 import '../rust/frb_generated.dart';
 import 'alarms.dart';
 import 'connection.dart';
@@ -115,9 +117,11 @@ class G7TaskHandler extends TaskHandler {
       onLog: (line) =>
           FlutterForegroundTask.sendDataToMain({'t': 'log', 'line': line}),
       onReading: (r) {
-        // A reading means the link is healthy — reset the health clock.
+        // A reading means the link is healthy — reset the health clock and
+        // clear any pending "connection lost" warning.
         _lastReadingAt = DateTime.now();
-        _updateNotification(r.glucoseMgDl);
+        alarms.onReading();
+        _updateNotification(r.glucoseMgDl, r.trendMgDlPerMin);
         if (r.glucoseMgDl != null) {
           alarms.check(r.glucoseMgDl, r.trendMgDlPerMin);
         }
@@ -139,7 +143,7 @@ class G7TaskHandler extends TaskHandler {
         });
       },
       onUpdate: () {
-        _updateNotification(_conn?.latestMgDl);
+        _updateNotification(_conn?.latestMgDl, _conn?.latestTrendPerMin);
         FlutterForegroundTask.sendDataToMain({'t': 'update'});
       },
       onConnectionState: (connected) => FlutterForegroundTask.sendDataToMain({
@@ -170,10 +174,19 @@ class G7TaskHandler extends TaskHandler {
       }
       final c = _conn!;
 
+      // Warn the user once the link has been silent for 15 min while a sensor
+      // is linked (best-effort; toggleable in profile notification settings).
+      final last = _lastReadingAt;
+      if (last != null) {
+        _alarms?.checkConnectionLost(
+          sensorLinked: _pairingCode.isNotEmpty,
+          sinceLastReading: DateTime.now().difference(last),
+        );
+      }
+
       // Last resort: no data for far too long ⇒ the in-process BLE stack is
       // likely wedged (reconnect attempts can't clear it). Restart the whole
       // service for a clean isolate + Rust core + BLE stack.
-      final last = _lastReadingAt;
       if (!_restarting &&
           last != null &&
           DateTime.now().difference(last) > _restartAfter) {
@@ -237,10 +250,24 @@ class G7TaskHandler extends TaskHandler {
     _conn = null;
   }
 
-  void _updateNotification(int? mgdl) {
+  Future<void> _updateNotification(int? mgdl, double? trendPerMin) async {
+    // The user can hide the live value (Android still requires the ongoing
+    // notification, so fall back to neutral text). Read fresh — no restart.
+    final showValue = await ProfileLiveNotificationState.load();
+    if (!showValue) {
+      return;
+    }
+    if (mgdl == null) {
+      return;
+    }
+    final profile = await ProfileGlucoseState.load();
+    final arrow = trendPerMin != null
+        ? ' ${G7AlarmManager.trendArrow(trendPerMin)}'
+        : '';
+    final String text = '${profile.formatWithUnit(mgdl)}$arrow';
     FlutterForegroundTask.updateService(
       notificationTitle: 'Insulink',
-      notificationText: mgdl != null ? '$mgdl mg/dL' : 'connecting…',
+      notificationText: text,
     );
   }
 }

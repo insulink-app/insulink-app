@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:insulink/src/g7/alarms.dart';
 import 'package:insulink/src/g7/ble_service.dart';
 import 'package:insulink/src/g7/device_info.dart';
 import 'package:insulink/src/g7/glucose.dart';
 import 'package:insulink/src/g7/store.dart';
+import 'package:insulink/src/localization/locales.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Shared, UI-free state + control for the Dexcom G7 read pipeline.
@@ -337,6 +341,9 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
           NotificationPermission.granted) {
         await FlutterForegroundTask.requestNotificationPermission();
       }
+      // Let glucose alarms sound through Do-Not-Disturb. Must be granted in the
+      // UI BEFORE the service isolate creates the bypassDnd alarm channels.
+      await G7AlarmManager.ensureDndAccess();
       if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
         await FlutterForegroundTask.requestIgnoreBatteryOptimization();
       }
@@ -349,8 +356,8 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
       final result = await FlutterForegroundTask.startService(
         serviceId: 256,
         serviceTypes: const [ForegroundServiceTypes.connectedDevice],
-        notificationTitle: 'Dexcom G7',
-        notificationText: 'connecting…',
+        notificationTitle: 'Insulink',
+        notificationText: await _l10n('service.connecting'),
         callback: startCallback,
       );
       if (result is ServiceRequestSuccess) {
@@ -366,6 +373,19 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
         _busy = false;
         notifyListeners();
       }
+    }
+  }
+
+  /// Context-free lookup of a localized string for the service notification —
+  /// the controller has no [BuildContext], so it reads the selected locale's
+  /// JSON directly. Falls back to the key on any failure.
+  Future<String> _l10n(String key) async {
+    try {
+      final lng = Locales.selectedLocale.languageCode;
+      final raw = await rootBundle.loadString('assets/locales/$lng.json');
+      return (json.decode(raw) as Map<String, dynamic>)[key]?.toString() ?? key;
+    } catch (_) {
+      return key;
     }
   }
 

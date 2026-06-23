@@ -45,6 +45,9 @@
   "alert.done": "Done",
   "profile.notification": "Notifications",
   "profile.notification.description": "Receive notifications",
+  "profile.live.description": "Show glucose value in the ongoing notification",
+  "profile.connection.description": "Warn when no reading for 15 min",
+  "profile.alarmsound.description": "Play alarm sound for high/low glucose",
   "profile.silent": "Silent mode",
   "profile.silent.description": "Mute all notifications and alarms",
   "profile.silent.warning.title": "Enable silent mode?",
@@ -142,5 +145,6 @@
   "injection.glucose": "Current glucose",
   "injection.bolus": "Suggested bolus",
   "injection.bolus.value": "# U",
-  "injection.next": "Next"
+  "injection.next": "Next",
+  "service.connecting": "Connecting…"
 }
