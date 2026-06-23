@@ -1,6 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../profile/profile_alarm_sound_state.dart';
 import '../profile/profile_connection_state.dart';
 import '../profile/profile_glucose_state.dart';
 import '../profile/profile_silent_state.dart';
@@ -78,6 +79,7 @@ class G7AlarmManager {
   /// regardless of ringer/notification volume, DnD, or screen state. Best-effort:
   /// the notification still shows if audio fails.
   static Future<void> _playSound({required bool high}) async {
+    if (!await ProfileAlarmSoundState.load()) return;
     try {
       await _player.play(
         AssetSource(high ? 'sounds/alarm_high.wav' : 'sounds/alarm_low.wav'),

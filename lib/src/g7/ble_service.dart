@@ -1,6 +1,7 @@
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../profile/profile_glucose_state.dart';
 import '../profile/profile_live_notification_state.dart';
 import '../rust/frb_generated.dart';
 import 'alarms.dart';
@@ -253,17 +254,17 @@ class G7TaskHandler extends TaskHandler {
     // The user can hide the live value (Android still requires the ongoing
     // notification, so fall back to neutral text). Read fresh — no restart.
     final showValue = await ProfileLiveNotificationState.load();
-    final String text;
     if (!showValue) {
-      text = 'Sensor wird überwacht';
-    } else if (mgdl != null) {
-      final arrow = trendPerMin != null
-          ? ' ${G7AlarmManager.trendArrow(trendPerMin)}'
-          : '';
-      text = '$mgdl mg/dL$arrow';
-    } else {
-      text = 'Verbinden…';
+      return;
     }
+    if (mgdl == null) {
+      return;
+    }
+    final profile = await ProfileGlucoseState.load();
+    final arrow = trendPerMin != null
+        ? ' ${G7AlarmManager.trendArrow(trendPerMin)}'
+        : '';
+    final String text = '${profile.formatWithUnit(mgdl)}$arrow';
     FlutterForegroundTask.updateService(
       notificationTitle: 'Insulink',
       notificationText: text,

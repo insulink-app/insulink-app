@@ -47,6 +47,7 @@
   "profile.notification.description": "Benachrichtigungen erhalten",
   "profile.live.description": "Zuckerwert in der laufenden Benachrichtigung anzeigen",
   "profile.connection.description": "Warnen, wenn 15 min kein Wert kommt",
+  "profile.alarmsound.description": "Alarmton bei hohem/niedrigem Zucker abspielen",
   "profile.silent": "Stummschaltung",
   "profile.silent.description": "Alle Benachrichtigungen und Alarme stummschalten",
   "profile.silent.warning.title": "Stummschaltung aktivieren?",
@@ -144,5 +145,6 @@
   "injection.glucose": "Aktueller Glukosewert",
   "injection.bolus": "Empfohlener Bolus",
   "injection.bolus.value": "# E",
-  "injection.next": "Weiter"
+  "injection.next": "Weiter",
+  "service.connecting": "Verbinde…"
 }

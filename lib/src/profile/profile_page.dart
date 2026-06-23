@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/profile/profile_alarm_sound_toggle.dart';
 import 'package:insulink/src/profile/profile_bolus_selection.dart';
 import 'package:insulink/src/profile/profile_connection_toggle.dart';
 import 'package:insulink/src/profile/profile_developer_toggle.dart';
@@ -107,6 +108,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         ProfileLiveNotificationToggle(),
                         SizedBox(height: 10),
                         ProfileConnectionToggle(),
+                        SizedBox(height: 10),
+                        ProfileAlarmSoundToggle(),
                         SizedBox(height: 30),
                         LocaleText(
                           "profile.silent",
