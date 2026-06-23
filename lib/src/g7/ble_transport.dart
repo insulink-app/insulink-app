@@ -89,6 +89,22 @@ class BleTransport {
         'adapter=${FlutterBluePlus.adapterStateNow}, '
         'isScanning=${FlutterBluePlus.isScanningNow}, '
         'looking for wantedId=$wantedId');
+    // Android reports BluetoothAdapterState.unknown in a freshly-spawned isolate
+    // (the foreground-service isolate hosting this scan) until the adapter-state
+    // stream first emits — and startScan against an `unknown` adapter delivers NO
+    // results, which is the multi-hour "0 devices found" stall. Subscribing to
+    // adapterState forces a native read; wait for `on` before scanning. If BT is
+    // genuinely off this times out and we proceed as before (no regression).
+    if (FlutterBluePlus.adapterStateNow != BluetoothAdapterState.on) {
+      try {
+        await FlutterBluePlus.adapterState
+            .firstWhere((s) => s == BluetoothAdapterState.on)
+            .timeout(const Duration(seconds: 15));
+        log('SCAN diag: adapter resolved to on before scanning');
+      } catch (e) {
+        log('SCAN diag: adapter not on after wait ($e) — scanning anyway');
+      }
+    }
     try {
       final sys = await FlutterBluePlus.systemDevices(const []);
       log('SCAN diag: systemDevices=${sys.length} '
@@ -125,10 +141,14 @@ class BleTransport {
     });
     await FlutterBluePlus.startScan(
       timeout: timeout,
-      // DIAGNOSTIC: force unfiltered so we observe ALL devices (incl. a rotated
-      // sensor address). Restore `wantedId != null ? [wantedId] : const []`
-      // afterwards (screen-off scans need the native filter).
-      withRemoteIds: const [],
+      // Pass the stored remoteId as a NATIVE address filter. This is load-bearing
+      // for background reads: Android returns NO results for an unfiltered scan
+      // while the screen is off, so without this filter a screen-off reconnect
+      // goes blind for the whole screen-off stretch (the multi-hour overnight
+      // outage) and only recovers when the screen comes back on. The earlier
+      // unfiltered DIAGNOSTIC confirmed the sensor's address does NOT rotate
+      // (DXCM… stays at the same remoteId), so the filter is safe to restore.
+      withRemoteIds: wantedId != null ? [wantedId] : const [],
     );
     final device = await completer.future
         .timeout(timeout, onTimeout: () => null)

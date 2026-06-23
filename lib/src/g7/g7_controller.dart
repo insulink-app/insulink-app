@@ -155,6 +155,17 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// isolate is frozen, which is why time-since-data is the real signal.
   static const _staleAfter = Duration(minutes: 12);
 
+  /// Minimum spacing between service restarts. `restartService()` tears down the
+  /// isolate and starts a FRESH BLE scan; a scan+connect cycle can take up to
+  /// ~2 min (the 120 s scan timeout). Without a cooldown, repeated resumes while
+  /// data is stale fire `restartService()` back-to-back, each aborting the
+  /// in-flight scan and starting another — which trips Android's "scanning too
+  /// frequently" throttle and then returns NO results for ~30 min (the multi-hour
+  /// "0 devices found" stall). So skip a restart if we restarted recently and let
+  /// the running scan finish.
+  static const _restartCooldown = Duration(minutes: 3);
+  DateTime? _lastRestartAt;
+
   /// Wall-clock time of the newest data we know about — the live/cached headline
   /// reading OR the newest history point, whichever is later. Used to decide
   /// whether the background service has actually stalled.
@@ -187,12 +198,20 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     }
     final last = _lastDataAt;
     final stale = last == null || DateTime.now().difference(last) > _staleAfter;
-    if (stale) {
-      _append('no fresh data — restarting background service');
-      await FlutterForegroundTask.restartService();
-      if (_disposed) return;
-      await _refreshServiceState();
+    if (!stale) return;
+    // Throttle restarts: a fresh service needs up to ~2 min to scan+connect, so
+    // restarting again before then just aborts its in-flight scan and churns
+    // startScan calls into Android's scan throttle (see _restartCooldown).
+    final lastRestart = _lastRestartAt;
+    if (lastRestart != null &&
+        DateTime.now().difference(lastRestart) < _restartCooldown) {
+      return;
     }
+    _lastRestartAt = DateTime.now();
+    _append('no fresh data — restarting background service');
+    await FlutterForegroundTask.restartService();
+    if (_disposed) return;
+    await _refreshServiceState();
   }
 
   /// The key cached data is stored under: the resolved key set by the read

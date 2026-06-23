@@ -346,13 +346,31 @@ class G7Connection {
       _backfillAsked = true;
       final end = r.secsSinceStart - 60;
       var start = r.secsSinceStart - 24 * 3600;
-      final haveFullDay =
-          priorMax != null &&
-          _byTime.isNotEmpty &&
-          priorMax - _byTime.firstKey()! >= 23 * 3600;
-      if (haveFullDay && priorMax > start) {
-        start =
-            priorMax + 1; // continuous history already cached → just the gap
+      // Shrink to just the gap-since-newest, but ONLY when the history we already
+      // hold is CONTIGUOUS up to `priorMax`. Subtle failure this guards against:
+      // after an outage the first live EGV lands at the current time, far ahead of
+      // the last reading we actually backfilled. If that backfill never completed
+      // (the G7 drops the link within ~1 s, so one failed request loses the whole
+      // batch), the newest stored key jumps PAST a real multi-hour hole. Keying the
+      // next request off the newest point alone — which the old `priorMax -
+      // firstKey` total-span check effectively did — would then request only
+      // `newest+1..now` and PERMANENTLY orphan that hole (the reported data gap).
+      // So measure the unbroken tail ending at `priorMax`: trust it as the frontier
+      // only when it already spans ~a day; otherwise fall through to the full 24 h
+      // re-request, which refills the hole (duplicates are deduped by _byTime).
+      if (priorMax != null && priorMax > start) {
+        const maxStep = 600; // EGVs arrive ~every 300 s; a bigger jump = a hole
+        var tailStart = priorMax;
+        for (
+          int? k = _byTime.lastKeyBefore(priorMax);
+          k != null && tailStart - k <= maxStep;
+          k = _byTime.lastKeyBefore(k)
+        ) {
+          tailStart = k;
+        }
+        if (priorMax - tailStart >= 23 * 3600) {
+          start = priorMax + 1; // contiguous day cached → fetch only the new gap
+        }
       }
       if (start < 300) start = 300;
       // Request immediately: the G7 drops the link within a second of connecting,
