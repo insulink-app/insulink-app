@@ -60,8 +60,13 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
 - **No comments inside function bodies.** Keep functions short enough that they
   read on their own; put the explanation in a doc comment ABOVE the function.
 - **Short functions and classes.** Split them when they grow; one job each.
+  Rule of thumb: **no Dart file over 150 lines**, and methods ideally **5–10
+  lines** (split anything longer). Treat these as hard smells, not hard limits.
 - **Descriptive, unique names** for classes and functions — no generic or
-  duplicated names.
+  duplicated names. **No one-letter variable names** (loop counters included);
+  the name says what it holds.
+- **Avoid boilerplate.** No scaffolding "for later", no repeated patterns that a
+  shared helper/widget removes — extract the repetition instead of copying it.
 - **2-space indentation.**
 - **Localize everything.** No hard-coded user-facing strings — every displayed
   string goes through the localization layer (`assets/locales/*.json`).
