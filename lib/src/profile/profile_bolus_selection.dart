@@ -308,7 +308,11 @@ class _FactorEditorSheetState extends State<_FactorEditorSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _circleButton(accent, Icons.remove, () => _apply(_value - widget.step)),
+                _circleButton(
+                  accent,
+                  Icons.remove,
+                  () => _apply(_value - widget.step),
+                ),
                 SizedBox(
                   width: 96,
                   child: Text(
@@ -320,7 +324,11 @@ class _FactorEditorSheetState extends State<_FactorEditorSheet> {
                     ),
                   ),
                 ),
-                _circleButton(accent, Icons.add, () => _apply(_value + widget.step)),
+                _circleButton(
+                  accent,
+                  Icons.add,
+                  () => _apply(_value + widget.step),
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -328,7 +336,8 @@ class _FactorEditorSheetState extends State<_FactorEditorSheet> {
               width: double.infinity,
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: accent,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -337,7 +346,7 @@ class _FactorEditorSheetState extends State<_FactorEditorSheet> {
                 onPressed: () => Navigator.of(context).pop(),
                 child: LocaleText(
                   'alert.done',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                     fontSize: 15,

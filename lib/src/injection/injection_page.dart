@@ -62,8 +62,8 @@ class _InjectionSheetState extends State<InjectionSheet> {
         double.tryParse(_carbsController.text.replaceAll(',', '.')) ?? 0;
     final bolus = context.read<ProfileBolusState>();
     final glucoseState = context.read<ProfileGlucoseState>();
-    final target =
-        ((glucoseState.targetLow + glucoseState.targetHigh) / 2).round();
+    final target = ((glucoseState.targetLow + glucoseState.targetHigh) / 2)
+        .round();
     return bolus.suggestedBolus(
       carbs: carbs,
       glucoseMgdl: glucose,

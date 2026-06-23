@@ -25,21 +25,20 @@ class ProfileToggleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final active = activeColor ?? theme.colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           Expanded(
-            child: LocaleText(
-              labelKey,
-              style: const TextStyle(fontSize: 15),
-            ),
+            child: LocaleText(labelKey, style: const TextStyle(fontSize: 15)),
           ),
           const SizedBox(width: 16),
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: activeColor ?? theme.colorScheme.primary,
+            activeThumbColor: active,
+            activeTrackColor: active.withValues(alpha: 0.45),
             inactiveThumbColor: Colors.grey,
           ),
         ],

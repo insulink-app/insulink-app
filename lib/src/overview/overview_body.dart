@@ -10,17 +10,33 @@ import 'package:insulink/src/overview/overview_next_update.dart';
 import 'package:insulink/src/profile/profile_silent_state.dart';
 import 'package:provider/provider.dart';
 
-class OverviewBody extends ProductPageBody {
+class OverviewBody extends AppPageBody {
   OverviewBody({super.key})
     : super(
         name: "overview.label",
-        unselectedIcon: CupertinoIcons.chart_bar,
-        selectedIcon: CupertinoIcons.chart_bar_fill,
+        unselectedIcon: CupertinoIcons.square_grid_2x2,
+        selectedIcon: CupertinoIcons.square_grid_2x2_fill,
       );
 
   @override
   Widget content(BuildContext context) {
     return const OverviewBodyContent();
+  }
+
+  @override
+  Widget? title(BuildContext context) => const _OverviewTitle();
+}
+
+/// Header title for the overview: the "next reading" clock, which used to sit
+/// in the top-right corner of the chart view. Watches the controller itself so
+/// only this widget rebuilds when a new reading arrives.
+class _OverviewTitle extends StatelessWidget {
+  const _OverviewTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    final lastUpdate = context.watch<G7Controller>().lastUpdate;
+    return OverviewNextUpdate(lastUpdate: lastUpdate);
   }
 }
 
@@ -49,10 +65,7 @@ class OverviewBodyContent extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          if (silent) ...[
-            const _SilentBanner(),
-            const SizedBox(height: 12),
-          ],
+          if (silent) ...[const _SilentBanner(), const SizedBox(height: 12)],
           Expanded(child: view),
         ],
       ),
@@ -127,35 +140,20 @@ class _DataView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Positioned(
-          top: 0.0,
-          right: 0.0,
-          child: Padding(
-            padding: const EdgeInsets.all(5.0),
-            child: OverviewNextUpdate(lastUpdate: g7.lastUpdate),
-          ),
+        const SizedBox(height: 16),
+        OverviewCurrentValue(
+          mgdl: g7.currentMgdl,
+          trendPerMin: g7.latest?.trendMgDlPerMin,
+          busy: g7.busy,
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 56),
-            OverviewCurrentValue(
-              mgdl: g7.currentMgdl,
-              trendPerMin: g7.latest?.trendMgDlPerMin,
-              busy: g7.busy,
-            ),
-            const SizedBox(height: 56),
-            Expanded(
-              child: OverviewChart(
-                byTime: g7.byTime,
-                sensorStart: g7.sensorStart,
-              ),
-            ),
-            const SizedBox(height: 32),
-          ],
+        const SizedBox(height: 56),
+        Expanded(
+          child: OverviewChart(byTime: g7.byTime, sensorStart: g7.sensorStart),
         ),
+        const SizedBox(height: 32),
       ],
     );
   }

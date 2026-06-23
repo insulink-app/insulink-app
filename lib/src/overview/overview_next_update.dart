@@ -69,7 +69,6 @@ class _OverviewNextUpdateState extends State<OverviewNextUpdate>
         }
 
         return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
               width: 30,

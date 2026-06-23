@@ -45,9 +45,27 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   G7Store? _store;
 
   /// glucose history keyed by seconds-since-session-start (dedupes EGV+backfill).
-  /// Mirrors what the background service persists to [G7Store].
+  /// Mirrors what the background service persists to [G7Store]. This is the
+  /// CURRENT session only (capped, reset on a new sensor) — the overview chart's
+  /// data. For long-term / cross-sensor history use [archiveSince].
   final SplayTreeMap<int, int> _byTime = SplayTreeMap();
   SplayTreeMap<int, int> get byTime => _byTime;
+
+  /// Default analysis window for the statistics page (clinical AGP uses 14 d).
+  static const statsWindow = Duration(days: 14);
+
+  /// Long-term glucose history over the last [window], keyed by epoch-minute
+  /// (recover wall-clock time via `DateTime.fromMillisecondsSinceEpoch(min *
+  /// 60000)`). Unlike [byTime] this spans sensor swaps, stops and reconnects —
+  /// it's the absolute-time archive the background service appends to, and the
+  /// basis for the statistics views. Reads the store cache the controller keeps
+  /// fresh via [reload] on every `update` ping and on resume.
+  SplayTreeMap<int, int> archiveSince(Duration window) {
+    final s = _store;
+    if (s == null) return SplayTreeMap<int, int>();
+    final now = DateTime.now();
+    return s.archiveRange(now.subtract(window), now);
+  }
 
   G7GlucoseReading? _latest;
   G7GlucoseReading? get latest => _latest;
@@ -137,6 +155,17 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// isolate is frozen, which is why time-since-data is the real signal.
   static const _staleAfter = Duration(minutes: 12);
 
+  /// Minimum spacing between service restarts. `restartService()` tears down the
+  /// isolate and starts a FRESH BLE scan; a scan+connect cycle can take up to
+  /// ~2 min (the 120 s scan timeout). Without a cooldown, repeated resumes while
+  /// data is stale fire `restartService()` back-to-back, each aborting the
+  /// in-flight scan and starting another — which trips Android's "scanning too
+  /// frequently" throttle and then returns NO results for ~30 min (the multi-hour
+  /// "0 devices found" stall). So skip a restart if we restarted recently and let
+  /// the running scan finish.
+  static const _restartCooldown = Duration(minutes: 3);
+  DateTime? _lastRestartAt;
+
   /// Wall-clock time of the newest data we know about — the live/cached headline
   /// reading OR the newest history point, whichever is later. Used to decide
   /// whether the background service has actually stalled.
@@ -169,12 +198,20 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     }
     final last = _lastDataAt;
     final stale = last == null || DateTime.now().difference(last) > _staleAfter;
-    if (stale) {
-      _append('no fresh data — restarting background service');
-      await FlutterForegroundTask.restartService();
-      if (_disposed) return;
-      await _refreshServiceState();
+    if (!stale) return;
+    // Throttle restarts: a fresh service needs up to ~2 min to scan+connect, so
+    // restarting again before then just aborts its in-flight scan and churns
+    // startScan calls into Android's scan throttle (see _restartCooldown).
+    final lastRestart = _lastRestartAt;
+    if (lastRestart != null &&
+        DateTime.now().difference(lastRestart) < _restartCooldown) {
+      return;
     }
+    _lastRestartAt = DateTime.now();
+    _append('no fresh data — restarting background service');
+    await FlutterForegroundTask.restartService();
+    if (_disposed) return;
+    await _refreshServiceState();
   }
 
   /// The key cached data is stored under: the resolved key set by the read
@@ -342,9 +379,13 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  /// Forget the sensor: stop reading and wipe the stored session key + cache so
-  /// the app no longer auto-reconnects. The physical sensor keeps running — this
-  /// is an app-side unpair, not a sensor stop command.
+  /// Forget the sensor: stop reading and wipe the stored session key + this
+  /// sensor's session cache so the app no longer auto-reconnects. The physical
+  /// sensor keeps running — this is an app-side unpair, not a sensor stop
+  /// command. The long-term glucose archive ([archiveSince]) is KEPT, so the
+  /// statistics survive switching to a new sensor; only the current-session
+  /// chart resets. With the session key cleared, the next connect scans broadly
+  /// and pairs whatever new sensor is presented (see G7Connection.connect).
   Future<void> forgetSensor() async {
     final key = _key;
     await FlutterForegroundTask.stopService();

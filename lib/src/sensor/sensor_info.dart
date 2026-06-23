@@ -186,10 +186,10 @@ class _Section extends StatelessWidget {
           LocaleText(
             titleKey,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
-              color: scheme.primary,
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 6),

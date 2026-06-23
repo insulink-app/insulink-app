@@ -89,6 +89,24 @@ class G7Connection {
     _byTime[secs] = mgdl;
   }
 
+  /// Mirror the ENTIRE in-memory session history into the permanent, absolute-
+  /// time archive (the stats source) — not just freshly-received records. Maps
+  /// each session-relative key to wall-clock via [_sensorStart]; the archive
+  /// dedups per minute, so re-publishing the whole day each time is idempotent
+  /// and cheap. Without this the archive only ever saw the increments (one live
+  /// EGV + any backfill that completed THIS connect), so the seeded/persisted
+  /// history and earlier days never reached it — starving the stats to a few
+  /// points whenever a fresh backfill didn't get through.
+  void _archiveKnown() {
+    final start = _sensorStart;
+    if (start == null || _byTime.isEmpty) return;
+    final out = <DateTime, int>{};
+    _byTime.forEach((secs, mgdl) {
+      out[start.add(Duration(seconds: secs))] = mgdl;
+    });
+    store.archiveAddAll(out);
+  }
+
   Future<void> _persistReadings() async {
     if (_persistKey.isNotEmpty && _byTime.isNotEmpty) {
       await store.saveReadings(_persistKey, _byTime);
@@ -129,9 +147,21 @@ class G7Connection {
       // serial when given, else by the previously resolved BLE id, so pinning
       // works even when no serial was entered.
       final pinKey = serial.isNotEmpty ? serial : (store.resolvedKey ?? '');
-      final wantedId = pinKey.isEmpty ? null : store.deviceId(pinKey);
+      // Only pin to a stored sensor when we actually hold its session key — i.e.
+      // we're RECONNECTING to a known-paired sensor (pinning then guards against
+      // grabbing a neighbour's G7 and failing key-confirmation, see CLAUDE.md).
+      // For a FRESH pair (no session key, e.g. right after the old sensor was
+      // forgotten/swapped out) we must NOT pin to the previous sensor's BLE id,
+      // or we'd hunt forever for a sensor that's gone instead of discovering the
+      // new one. So a fresh pair scans broadly; reconnect stays pinned.
+      final wantedId = (pinKey.isEmpty || store.sessionKey(pinKey) == null)
+          ? null
+          : store.deviceId(pinKey);
       _log(wantedId == null ? 'scanning for DXCM…' : 'scanning for $wantedId…');
-      final device = await BleTransport.scanForSensor(wantedId: wantedId);
+      final device = await BleTransport.scanForSensor(
+        wantedId: wantedId,
+        log: _log,
+      );
       if (device == null) {
         _log('no sensor found');
         return;
@@ -197,12 +227,17 @@ class G7Connection {
         }
         if (recs.isNotEmpty) {
           _persistReadings();
+          _archiveKnown(); // publish the whole day to the stats archive
           onUpdate?.call();
         }
       });
       _connSub = t.device.connectionState.listen((s) {
         if (s == BluetoothConnectionState.disconnected) {
-          _log('link dropped');
+          // DIAGNOSTIC: include the disconnect reason/code. A NORMAL G7 drop
+          // looks different from an abnormal one (e.g. 19 REMOTE_USER_TERMINATED,
+          // 147/8 CONNECTION_TIMEOUT) that may leave the sensor not advertising.
+          final r = t.device.disconnectReason;
+          _log('link dropped (reason code=${r?.code} "${r?.description}")');
           onConnectionState?.call(false);
         }
       });
@@ -224,6 +259,9 @@ class G7Connection {
       transport = null;
       onConnectionState?.call(true);
       _log('connected — streaming');
+      // Bound the permanent archive's size (kept across sensors). Cheap and
+      // usually a no-op; off the critical reconnect path so it can't delay it.
+      store.archivePrune(const Duration(days: 90));
     } catch (e) {
       _log('ERROR: $e');
       await transport?.dispose();
@@ -301,6 +339,9 @@ class G7Connection {
       _addReading(r.secsSinceStart, r.glucoseMgDl!);
       _persistReadings();
       _persistLatest(r); // restore the exact headline value on next launch
+      // Publish the whole known session history to the permanent archive (stats
+      // source) — not just this point — so seeded/persisted history lands too.
+      _archiveKnown();
     }
     _persistInfo(); // keep cached sensorStart fresh
     onReading?.call(r);
@@ -313,13 +354,31 @@ class G7Connection {
       _backfillAsked = true;
       final end = r.secsSinceStart - 60;
       var start = r.secsSinceStart - 24 * 3600;
-      final haveFullDay =
-          priorMax != null &&
-          _byTime.isNotEmpty &&
-          priorMax - _byTime.firstKey()! >= 23 * 3600;
-      if (haveFullDay && priorMax > start) {
-        start =
-            priorMax + 1; // continuous history already cached → just the gap
+      // Shrink to just the gap-since-newest, but ONLY when the history we already
+      // hold is CONTIGUOUS up to `priorMax`. Subtle failure this guards against:
+      // after an outage the first live EGV lands at the current time, far ahead of
+      // the last reading we actually backfilled. If that backfill never completed
+      // (the G7 drops the link within ~1 s, so one failed request loses the whole
+      // batch), the newest stored key jumps PAST a real multi-hour hole. Keying the
+      // next request off the newest point alone — which the old `priorMax -
+      // firstKey` total-span check effectively did — would then request only
+      // `newest+1..now` and PERMANENTLY orphan that hole (the reported data gap).
+      // So measure the unbroken tail ending at `priorMax`: trust it as the frontier
+      // only when it already spans ~a day; otherwise fall through to the full 24 h
+      // re-request, which refills the hole (duplicates are deduped by _byTime).
+      if (priorMax != null && priorMax > start) {
+        const maxStep = 600; // EGVs arrive ~every 300 s; a bigger jump = a hole
+        var tailStart = priorMax;
+        for (
+          int? k = _byTime.lastKeyBefore(priorMax);
+          k != null && tailStart - k <= maxStep;
+          k = _byTime.lastKeyBefore(k)
+        ) {
+          tailStart = k;
+        }
+        if (priorMax - tailStart >= 23 * 3600) {
+          start = priorMax + 1; // contiguous day cached → fetch only the new gap
+        }
       }
       if (start < 300) start = 300;
       // Request immediately: the G7 drops the link within a second of connecting,
