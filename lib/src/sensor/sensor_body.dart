@@ -543,7 +543,7 @@ class _SensorLifeBar extends StatelessWidget {
                   height: 9,
                   decoration: BoxDecoration(
                     color: i < filled
-                        ? scheme.onSurface.withValues(alpha: 0.55)
+                        ? scheme.primary
                         : scheme.onSurface.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(3),
                   ),

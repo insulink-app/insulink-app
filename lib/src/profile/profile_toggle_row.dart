@@ -19,13 +19,13 @@ class ProfileToggleRow extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
-  /// Thumb colour when on (defaults to a neutral onSurface tone).
+  /// Thumb colour when on (defaults to the theme primary).
   final Color? activeColor;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final active = activeColor ?? theme.colorScheme.onSurface;
+    final active = activeColor ?? theme.colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
