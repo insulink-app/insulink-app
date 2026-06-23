@@ -37,7 +37,7 @@ class G7AlarmManager {
 
   /// Must be called once per isolate before [check] (mirrors `RustLib.init()`).
   static Future<void> init(FlutterLocalNotificationsPlugin plugin) async {
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings('@mipmap/notification');
     await plugin.initialize(
       settings: const InitializationSettings(android: android),
     );
