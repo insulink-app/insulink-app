@@ -129,7 +129,16 @@ class G7Connection {
       // serial when given, else by the previously resolved BLE id, so pinning
       // works even when no serial was entered.
       final pinKey = serial.isNotEmpty ? serial : (store.resolvedKey ?? '');
-      final wantedId = pinKey.isEmpty ? null : store.deviceId(pinKey);
+      // Only pin to a stored sensor when we actually hold its session key — i.e.
+      // we're RECONNECTING to a known-paired sensor (pinning then guards against
+      // grabbing a neighbour's G7 and failing key-confirmation, see CLAUDE.md).
+      // For a FRESH pair (no session key, e.g. right after the old sensor was
+      // forgotten/swapped out) we must NOT pin to the previous sensor's BLE id,
+      // or we'd hunt forever for a sensor that's gone instead of discovering the
+      // new one. So a fresh pair scans broadly; reconnect stays pinned.
+      final wantedId = (pinKey.isEmpty || store.sessionKey(pinKey) == null)
+          ? null
+          : store.deviceId(pinKey);
       _log(wantedId == null ? 'scanning for DXCM…' : 'scanning for $wantedId…');
       final device = await BleTransport.scanForSensor(
         wantedId: wantedId,
@@ -195,11 +204,20 @@ class G7Connection {
       );
       _backfillSub = t.backfillStream.listen((b) {
         final recs = G7GlucoseCodec.parseBackfill(Uint8List.fromList(b));
+        final start = _sensorStart;
+        final archived = <DateTime, int>{};
         for (final r in recs) {
           _addReading(r.secsSinceStart, r.glucoseMgDl);
+          // Also feed the long-term archive at the reading's true wall-clock
+          // time, so backfill fills gaps in the permanent record too.
+          if (start != null) {
+            archived[start.add(Duration(seconds: r.secsSinceStart))] =
+                r.glucoseMgDl;
+          }
         }
         if (recs.isNotEmpty) {
           _persistReadings();
+          if (archived.isNotEmpty) store.archiveAddAll(archived);
           onUpdate?.call();
         }
       });
@@ -231,6 +249,9 @@ class G7Connection {
       transport = null;
       onConnectionState?.call(true);
       _log('connected — streaming');
+      // Bound the permanent archive's size (kept across sensors). Cheap and
+      // usually a no-op; off the critical reconnect path so it can't delay it.
+      store.archivePrune(const Duration(days: 90));
     } catch (e) {
       _log('ERROR: $e');
       await transport?.dispose();
@@ -308,6 +329,11 @@ class G7Connection {
       _addReading(r.secsSinceStart, r.glucoseMgDl!);
       _persistReadings();
       _persistLatest(r); // restore the exact headline value on next launch
+      // Append to the permanent absolute-time archive (survives sensor swaps).
+      store.archiveAdd(
+        _sensorStart!.add(Duration(seconds: r.secsSinceStart)),
+        r.glucoseMgDl!,
+      );
     }
     _persistInfo(); // keep cached sensorStart fresh
     onReading?.call(r);

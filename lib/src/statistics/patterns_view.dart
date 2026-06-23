@@ -21,10 +21,10 @@ class PatternsView extends StatelessWidget {
     final theme = Theme.of(context);
     final gc = theme.extension<GlucoseColors>()!;
 
-    final start = g7.sensorStart;
-    final byTime = g7.byTime;
-    // Needs wall-clock time per reading, which requires the session start.
-    if (start == null || byTime.isEmpty) {
+    // Long-term archive (spans sensor swaps): keyed by absolute epoch-minute, so
+    // hour-of-day comes straight from the timestamp — no session start needed.
+    final byTime = g7.archiveSince(G7Controller.statsWindow);
+    if (byTime.isEmpty) {
       return Center(child: LocaleText('statistics.empty'));
     }
 
@@ -33,7 +33,7 @@ class PatternsView extends StatelessWidget {
     final sumSq = List<double>.filled(24, 0);
     final counts = List<int>.filled(24, 0);
     for (final e in byTime.entries) {
-      final h = start.add(Duration(seconds: e.key)).hour;
+      final h = DateTime.fromMillisecondsSinceEpoch(e.key * 60000).hour;
       sums[h] += e.value;
       sumSq[h] += e.value * e.value.toDouble();
       counts[h] += 1;

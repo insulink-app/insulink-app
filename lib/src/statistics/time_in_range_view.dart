@@ -58,7 +58,8 @@ class TimeInRangeView extends StatelessWidget {
     final s = context.watch<ProfileGlucoseState>();
     final gc = Theme.of(context).extension<GlucoseColors>()!;
 
-    final values = g7.byTime.values;
+    // Long-term archive (spans sensor swaps), not the current-session cache.
+    final values = g7.archiveSince(G7Controller.statsWindow).values;
     if (values.isEmpty) {
       return Center(child: LocaleText('statistics.empty'));
     }

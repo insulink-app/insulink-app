@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -212,4 +213,95 @@ class G7Store {
 
   Future<void> setExpiryNotified(String serial) =>
       _set(_kExpiryNotified(serial), 'true');
+
+  // ---- Long-term glucose archive -------------------------------------------
+  // An append-only, absolute-time glucose record that SURVIVES sensor swap,
+  // sensor stop, connection loss and even "forget sensor". The per-sensor
+  // [saveReadings] cache above is session-relative (keyed by seconds-since-
+  // session-start), capped at ~300 points and wiped when a new session resets
+  // the clock — fine for restoring the current chart, useless as history.
+  //
+  // This archive instead keys readings by absolute epoch-minute, bucketed into
+  // day-sized chunks (`g7.hist.<dayIndex>`) so each new reading rewrites only
+  // the current day's chunk, not the whole record. It is deliberately NOT keyed
+  // by serial and NOT removed by [clearSensor], so the chart/statistics retain a
+  // continuous record across every sensor the user has worn.
+
+  static const _kHistPrefix = 'g7.hist.';
+  static const _minsPerDay = 1440;
+
+  /// Epoch minutes (timezone-independent — `millisecondsSinceEpoch` is UTC).
+  static int _epochMin(DateTime t) => t.millisecondsSinceEpoch ~/ 60000;
+
+  static String _kHist(int dayIndex) => '$_kHistPrefix$dayIndex';
+
+  Map<int, int> _loadHistDay(int dayIndex) {
+    final out = <int, int>{};
+    final s = _cache[_kHist(dayIndex)];
+    if (s == null || s.isEmpty) return out;
+    for (final part in s.split(',')) {
+      final i = part.indexOf(':');
+      if (i <= 0) continue;
+      final k = int.tryParse(part.substring(0, i));
+      final v = int.tryParse(part.substring(i + 1));
+      if (k != null && v != null) out[k] = v;
+    }
+    return out;
+  }
+
+  String _encodeHistDay(Map<int, int> day) {
+    final keys = day.keys.toList()..sort();
+    return keys.map((k) => '$k:${day[k]}').join(',');
+  }
+
+  /// Append one reading at its true wall-clock time [t] (deduped to the minute).
+  Future<void> archiveAdd(DateTime t, int mgdl) => archiveAddAll({t: mgdl});
+
+  /// Append a batch (e.g. a whole backfill block) in one pass, rewriting each
+  /// affected day-chunk only once. Readings on the same minute dedupe (a live
+  /// EGV and the backfill copy of it map to the same absolute minute).
+  Future<void> archiveAddAll(Map<DateTime, int> readings) async {
+    if (readings.isEmpty) return;
+    final byDay = <int, Map<int, int>>{};
+    readings.forEach((t, mgdl) {
+      final min = _epochMin(t);
+      (byDay[min ~/ _minsPerDay] ??= {})[min] = mgdl;
+    });
+    for (final entry in byDay.entries) {
+      final merged = _loadHistDay(entry.key)..addAll(entry.value);
+      await _set(_kHist(entry.key), _encodeHistDay(merged));
+    }
+  }
+
+  /// All archived readings in [from]..[to] inclusive, keyed by epoch-minute.
+  /// Recover a point's wall-clock time with
+  /// `DateTime.fromMillisecondsSinceEpoch(min * 60000)`.
+  SplayTreeMap<int, int> archiveRange(DateTime from, DateTime to) {
+    final out = SplayTreeMap<int, int>();
+    final fromMin = _epochMin(from);
+    final toMin = _epochMin(to);
+    for (var d = fromMin ~/ _minsPerDay; d <= toMin ~/ _minsPerDay; d++) {
+      _loadHistDay(d).forEach((k, v) {
+        if (k >= fromMin && k <= toMin) out[k] = v;
+      });
+    }
+    return out;
+  }
+
+  /// Drop archive day-chunks older than [keep] so storage stays bounded.
+  /// Best-effort; only writes when there is actually something stale to remove.
+  Future<void> archivePrune(Duration keep) async {
+    final cutoffDay =
+        (_epochMin(DateTime.now()) - keep.inMinutes) ~/ _minsPerDay;
+    final stale = _cache.keys
+        .where((k) => k.startsWith(_kHistPrefix))
+        .where((k) {
+          final d = int.tryParse(k.substring(_kHistPrefix.length));
+          return d != null && d < cutoffDay;
+        })
+        .toList();
+    for (final k in stale) {
+      await _remove(k);
+    }
+  }
 }
