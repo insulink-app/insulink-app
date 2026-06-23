@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_bolus_selection.dart';
+import 'package:insulink/src/profile/profile_connection_toggle.dart';
 import 'package:insulink/src/profile/profile_developer_toggle.dart';
 import 'package:insulink/src/profile/profile_glucose_selection.dart';
 import 'package:insulink/src/profile/profile_language_selection.dart';
+import 'package:insulink/src/profile/profile_live_notification_toggle.dart';
 import 'package:insulink/src/profile/profile_notification_toggle.dart';
 import 'package:insulink/src/profile/profile_silent_toggle.dart';
 import 'package:insulink/src/profile/profile_theme_selection.dart';
@@ -101,6 +103,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         SizedBox(height: 10),
                         ProfileNotificationToggle(),
+                        SizedBox(height: 10),
+                        ProfileLiveNotificationToggle(),
+                        SizedBox(height: 10),
+                        ProfileConnectionToggle(),
                         SizedBox(height: 30),
                         LocaleText(
                           "profile.silent",

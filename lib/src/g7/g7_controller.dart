@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:insulink/src/g7/alarms.dart';
 import 'package:insulink/src/g7/ble_service.dart';
 import 'package:insulink/src/g7/device_info.dart';
 import 'package:insulink/src/g7/glucose.dart';
@@ -337,6 +338,9 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
           NotificationPermission.granted) {
         await FlutterForegroundTask.requestNotificationPermission();
       }
+      // Let glucose alarms sound through Do-Not-Disturb. Must be granted in the
+      // UI BEFORE the service isolate creates the bypassDnd alarm channels.
+      await G7AlarmManager.ensureDndAccess();
       if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
         await FlutterForegroundTask.requestIgnoreBatteryOptimization();
       }
@@ -350,7 +354,7 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
         serviceId: 256,
         serviceTypes: const [ForegroundServiceTypes.connectedDevice],
         notificationTitle: 'Dexcom G7',
-        notificationText: 'connecting…',
+        notificationText: 'Verbinden…',
         callback: startCallback,
       );
       if (result is ServiceRequestSuccess) {

@@ -20,6 +20,10 @@
     <!-- Persistent notification (Android 13+) + battery-optimisation exemption -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Let the urgent glucose alarm wake the screen (full-screen intent), Android 14+ -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Let glucose alarms sound through "Do Not Disturb" (user grants DnD access) -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <uses-feature android:name="android.hardware.bluetooth_le"
         android:required="true" />

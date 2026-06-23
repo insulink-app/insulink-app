@@ -45,6 +45,8 @@
   "alert.done": "Done",
   "profile.notification": "Notifications",
   "profile.notification.description": "Receive notifications",
+  "profile.live.description": "Show glucose value in the ongoing notification",
+  "profile.connection.description": "Warn when no reading for 15 min",
   "profile.silent": "Silent mode",
   "profile.silent.description": "Mute all notifications and alarms",
   "profile.silent.warning.title": "Enable silent mode?",

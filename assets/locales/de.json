@@ -45,6 +45,8 @@
   "alert.done": "Fertig",
   "profile.notification": "Benachrichtigungen",
   "profile.notification.description": "Benachrichtigungen erhalten",
+  "profile.live.description": "Zuckerwert in der laufenden Benachrichtigung anzeigen",
+  "profile.connection.description": "Warnen, wenn 15 min kein Wert kommt",
   "profile.silent": "Stummschaltung",
   "profile.silent.description": "Alle Benachrichtigungen und Alarme stummschalten",
   "profile.silent.warning.title": "Stummschaltung aktivieren?",
