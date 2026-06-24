@@ -1,169 +1,274 @@
 {
-  "alert.ok": "OK",
-  "alert.continue": "Weiter",
-  "alert.cancel": "Abbrechen",
-  "overview.label": "Übersicht",
-  "statistics.label": "Statistik",
-  "statistics.tab.ranges": "Bereiche",
-  "statistics.tab.averages": "Kennwerte",
-  "statistics.tab.patterns": "Muster",
-  "statistics.empty": "Noch keine Glukosedaten",
-  "statistics.avg.mean": "Ø Glukose",
-  "statistics.avg.gmi": "GMI",
-  "statistics.avg.cv": "Variabilität",
-  "statistics.avg.sd": "Std.-Abw.",
-  "statistics.avg.max": "Höchster",
-  "statistics.avg.min": "Niedrigster",
-  "statistics.patterns.title": "Ø nach Tageszeit",
-  "statistics.patterns.hint": "Durchschnittliche Glukose je Stunde des Tages",
-  "statistics.range.very_high": "Sehr hoch",
-  "statistics.range.high": "Hoch",
-  "statistics.range.in_range": "Im Zielbereich",
-  "statistics.range.low": "Niedrig",
-  "statistics.range.very_low": "Sehr niedrig",
-  "sensor.label": "Sensor",
-  "pump.label": "Pumpe",
-  "profile.label": "Profil",
-  "profile.language": "Sprache",
-  "profile.theme": "Darstellung",
-  "profile.theme.light": "Hell",
-  "profile.theme.dark": "Dunkel",
-  "profile.glucose": "Glukose",
-  "profile.unit": "Einheit",
-  "profile.unit.mgdl": "mg/dL",
-  "profile.unit.mmol": "mmol/L",
-  "profile.glucose.target": "Zielbereich",
-  "profile.glucose.alarms_low": "Niedrige Alarme",
-  "profile.glucose.alarms_high": "Hohe Alarme",
-  "profile.glucose.target_low": "Unteres Ziel",
-  "profile.glucose.target_high": "Oberes Ziel",
-  "profile.glucose.urgent_low": "Dringend niedrig",
-  "profile.glucose.low": "Niedrig",
-  "profile.glucose.high": "Hoch",
-  "profile.glucose.urgent_high": "Dringend hoch",
-  "profile.glucose.edit_hint": "Zum Anpassen tippen",
-  "profile.glucose.test_alarm": "Alarm testen",
-  "alert.done": "Fertig",
-  "profile.notification": "Benachrichtigungen",
-  "profile.notification.description": "Benachrichtigungen erhalten",
-  "profile.live.description": "Zuckerwert in der laufenden Benachrichtigung anzeigen",
-  "profile.connection.description": "Warnen, wenn 15 min kein Wert kommt",
-  "profile.alarmsound.description": "Alarmton bei hohem/niedrigem Zucker abspielen",
-  "profile.silent": "Stummschaltung",
-  "profile.silent.description": "Alle Benachrichtigungen und Alarme stummschalten",
-  "profile.silent.warning.title": "Stummschaltung aktivieren?",
-  "profile.silent.warning.body": "Bei aktiver Stummschaltung erhältst du KEINE Alarme – auch nicht bei gefährlich niedrigem oder hohem Blutzucker. Eine Unterzuckerung kann unbemerkt bleiben und lebensbedrohlich werden. Aktiviere sie nur, wenn du deine Werte anderweitig im Blick behältst.",
-  "profile.silent.warning.confirm": "Trotzdem aktivieren",
-  "profile.developer": "Entwickler",
-  "profile.developer.description": "Entwicklermodus aktivieren",
-  "profile.version": "Version #",
-  "sensor.info.status": "STATUS",
-  "sensor.info.device": "GERÄT",
-  "sensor.info.session": "SITZUNG",
-  "sensor.info.battery": "BATTERIE",
-  "overview.chart.empty": "Noch keine Messwerte",
-  "overview.chart.hour": "# Uhr",
-  "overview.connect": "Verbinden",
-  "overview.connecting": "Verbinde…",
-  "overview.pairing_code": "Kopplungscode",
-  "overview.next": "Nächste",
-  "overview.overdue": "überfällig",
-  "overview.waiting": "warte…",
-  "overview.searching": "Suche Sensor…",
-  "overview.searching.hint": "Verbindung wird hergestellt. Halte den Sensor in der Nähe.",
-  "overview.empty.title": "Kein Sensor verbunden",
-  "overview.empty.body": "Richte deinen Dexcom G7 auf der Sensor-Seite ein, um deine Glukosewerte zu sehen.",
-  "overview.empty.action": "Zur Sensor-Seite",
-  "overview.silent.title": "Stummschaltung aktiv",
-  "overview.silent.hint": "Alarme sind stummgeschaltet · zum Deaktivieren tippen",
-  "sensor.disconnect": "Trennen",
-  "sensor.status.connected": "Verbunden",
-  "sensor.status.disconnected": "Getrennt",
-  "sensor.status.paired": "Gekoppelt",
-  "sensor.status.unpaired": "Nicht gekoppelt",
-  "sensor.status.searching": "Suche Sensor…",
-  "sensor.searching.hint": "Halte den Sensor in der Nähe.",
-  "sensor.pair.title": "Sensor koppeln",
-  "sensor.pair.hint": "Kopplungscode eingeben zum Verbinden",
-  "sensor.life.title": "Haltbarkeit",
-  "sensor.life.remaining": "noch # Tage",
-  "sensor.control.end_session": "Sitzung beenden",
-  "sensor.control.stop_sensor": "Sensor stoppen",
-  "sensor.control.end_session_title": "Sitzung beenden?",
-  "sensor.control.end_session_body": "Das Auslesen wird gestoppt. Die Kopplung bleibt erhalten – du kannst dich später wieder verbinden.",
-  "sensor.control.stop_sensor_title": "Sensor stoppen?",
-  "sensor.control.stop_sensor_body": "Der Sensor wird entkoppelt: gespeicherter Schlüssel und Verlauf werden gelöscht. Der physische Sensor läuft weiter.",
-  "sensor.log": "Log",
-  "sensor.copy": "Kopieren",
-  "sensor.log_copied": "# Log-Zeilen kopiert",
-  "sensor.info.empty": "Noch keine Sensordaten",
-  "sensor.info.title": "Sensordaten",
-  "sensor.field.state": "Status",
-  "sensor.field.last_reading": "Letzter Messwert",
-  "sensor.field.started": "Gestartet",
-  "sensor.field.expires": "Läuft ab",
-  "sensor.field.age": "Alter",
-  "sensor.field.calibration": "Kalibrierung",
-  "sensor.field.last_cal_bg": "Letzter Kal.-BZ",
-  "sensor.field.firmware": "Firmware",
-  "sensor.field.software": "Software-Nr.",
-  "sensor.field.hardware": "Hardware",
-  "sensor.field.algorithm": "Algorithmus",
-  "sensor.field.silicon": "Silicon",
-  "sensor.field.serial": "Seriennummer",
-  "sensor.field.session": "Sitzung",
-  "sensor.field.warmup": "Aufwärmen",
-  "sensor.field.max_days": "Max. Tage",
-  "sensor.field.voltage": "Spannung",
-  "sensor.field.runtime": "Laufzeit",
-  "sensor.field.temperature": "Temperatur",
-  "sensor.value.expired": "abgelaufen",
-  "sensor.value.cal_allowed": "erlaubt",
-  "sensor.value.cal_not_allowed": "nicht erlaubt",
-  "sensor.state.none": "keiner",
-  "sensor.state.session_stopped": "Sitzung gestoppt",
-  "sensor.state.warmup": "Aufwärmen",
-  "sensor.state.excess_noise": "zu viel Rauschen",
-  "sensor.state.bg1_needed": "1. von 2 BZ benötigt",
-  "sensor.state.bg2_needed": "2. von 2 BZ benötigt",
-  "sensor.state.ok": "OK",
-  "sensor.state.needs_calibration": "Kalibrierung nötig",
-  "sensor.state.calibration_error": "Kalibrierungsfehler",
-  "sensor.state.sensor_failed": "Sensor fehlgeschlagen",
-  "sensor.state.out_of_calibration": "außerhalb der Kalibrierung",
-  "sensor.state.calibration_requested": "Kalibrierung angefordert",
-  "sensor.state.session_expired": "Sitzung abgelaufen",
-  "sensor.state.session_failed": "Sitzung fehlgeschlagen",
-  "sensor.state.temporary_issue": "vorübergehendes Problem",
-  "sensor.state.sensor_declining": "Sensor lässt nach",
-  "profile.bolus": "Bolus",
-  "profile.bolus.correction": "Korrekturfaktor",
-  "profile.bolus.correction.value": "1 E / # mg/dL",
-  "profile.bolus.carb": "Mahlzeitenfaktor",
-  "profile.bolus.carb.value": "1 E / # g",
-  "injection.title": "Bolusrechner",
-  "injection.carbs": "Kohlenhydrate",
-  "injection.glucose": "Aktueller Glukosewert",
-  "injection.bolus": "Empfohlener Bolus",
-  "injection.bolus.value": "# E",
-  "injection.next": "Weiter",
-  "service.connecting": "Verbinde…",
-  "alarm.channel.low_warning.name": "Zucker niedrig — Warnung",
-  "alarm.channel.low_warning.desc": "Warnung bei niedrigem Zuckerwert.",
-  "alarm.channel.low_urgent.name": "Zucker niedrig — Alarm",
-  "alarm.channel.low_urgent.desc": "Starker Alarm bei kritisch niedrigem Zuckerwert.",
-  "alarm.channel.high_warning.name": "Zucker hoch — Warnung",
-  "alarm.channel.high_warning.desc": "Warnung bei hohem Zuckerwert.",
-  "alarm.channel.high_urgent.name": "Zucker hoch — Alarm",
-  "alarm.channel.high_urgent.desc": "Starker Alarm bei kritisch hohem Zuckerwert.",
-  "alarm.channel.warning.name": "Zucker-Warnung",
-  "alarm.channel.warning.desc": "Leichte Warnung bei grenzwertigem Zuckerwert.",
-  "alarm.low.title": "Zucker niedrig",
-  "alarm.low_urgent.title": "⚠️ Zucker SEHR niedrig",
-  "alarm.high.title": "Zucker hoch",
-  "alarm.high_urgent.title": "⚠️ Zucker SEHR hoch",
-  "alarm.connection_lost.title": "Verbindung verloren",
-  "alarm.connection_lost.body": "Seit über 15 min kein Wert vom Sensor. Bring dein Handy näher.",
-  "alarm.expiry.title": "Sensor läuft bald ab",
-  "alarm.expiry.body": "Dein Sensor läuft in etwa # h ab. Bereite einen neuen vor."
+  "alert": {
+    "ok": "OK",
+    "continue": "Weiter",
+    "cancel": "Abbrechen",
+    "done": "Fertig"
+  },
+  "overview": {
+    "label": "Übersicht",
+    "chart": {
+      "empty": "Noch keine Messwerte",
+      "hour": "# Uhr"
+    },
+    "connect": "Verbinden",
+    "connecting": "Verbinde…",
+    "pairing_code": "Kopplungscode",
+    "next": "Nächste",
+    "overdue": "überfällig",
+    "waiting": "warte…",
+    "searching": {
+      "_": "Suche Sensor…",
+      "hint": "Verbindung wird hergestellt. Halte den Sensor in der Nähe."
+    },
+    "empty": {
+      "title": "Kein Sensor verbunden",
+      "body": "Richte deinen Dexcom G7 auf der Sensor-Seite ein, um deine Glukosewerte zu sehen.",
+      "action": "Zur Sensor-Seite"
+    },
+    "silent": {
+      "title": "Stummschaltung aktiv",
+      "hint": "Alarme sind stummgeschaltet · zum Deaktivieren tippen"
+    }
+  },
+  "statistics": {
+    "label": "Statistik",
+    "tab": {
+      "ranges": "Bereiche",
+      "averages": "Kennwerte",
+      "patterns": "Muster"
+    },
+    "empty": "Noch keine Glukosedaten",
+    "avg": {
+      "mean": "Ø Glukose",
+      "gmi": "GMI",
+      "cv": "Variabilität",
+      "sd": "Std.-Abw.",
+      "max": "Höchster",
+      "min": "Niedrigster"
+    },
+    "patterns": {
+      "title": "Ø nach Tageszeit",
+      "hint": "Durchschnittliche Glukose je Stunde des Tages"
+    },
+    "range": {
+      "very_high": "Sehr hoch",
+      "high": "Hoch",
+      "in_range": "Im Zielbereich",
+      "low": "Niedrig",
+      "very_low": "Sehr niedrig"
+    }
+  },
+  "sensor": {
+    "label": "Sensor",
+    "info": {
+      "status": "STATUS",
+      "device": "GERÄT",
+      "session": "SITZUNG",
+      "battery": "BATTERIE",
+      "empty": "Noch keine Sensordaten",
+      "title": "Sensordaten"
+    },
+    "disconnect": "Trennen",
+    "status": {
+      "connected": "Verbunden",
+      "disconnected": "Getrennt",
+      "paired": "Gekoppelt",
+      "unpaired": "Nicht gekoppelt",
+      "searching": "Suche Sensor…"
+    },
+    "searching": {
+      "hint": "Halte den Sensor in der Nähe."
+    },
+    "pair": {
+      "title": "Sensor koppeln",
+      "hint": "Kopplungscode eingeben zum Verbinden"
+    },
+    "life": {
+      "title": "Haltbarkeit",
+      "remaining": "noch # Tage",
+      "remaining_hours": "noch # Stunden"
+    },
+    "control": {
+      "end_session": "Sitzung beenden",
+      "stop_sensor": "Sensor stoppen",
+      "end_session_title": "Sitzung beenden?",
+      "end_session_body": "Das Auslesen wird gestoppt. Die Kopplung bleibt erhalten – du kannst dich später wieder verbinden.",
+      "stop_sensor_title": "Sensor stoppen?",
+      "stop_sensor_body": "Der Sensor wird entkoppelt: gespeicherter Schlüssel und Verlauf werden gelöscht. Der physische Sensor läuft weiter."
+    },
+    "log": "Log",
+    "copy": "Kopieren",
+    "log_copied": "# Log-Zeilen kopiert",
+    "field": {
+      "state": "Status",
+      "last_reading": "Letzter Messwert",
+      "started": "Gestartet",
+      "expires": "Läuft ab",
+      "age": "Alter",
+      "calibration": "Kalibrierung",
+      "last_cal_bg": "Letzter Kal.-BZ",
+      "firmware": "Firmware",
+      "software": "Software-Nr.",
+      "hardware": "Hardware",
+      "algorithm": "Algorithmus",
+      "silicon": "Silicon",
+      "serial": "Seriennummer",
+      "session": "Sitzung",
+      "warmup": "Aufwärmen",
+      "max_days": "Max. Tage",
+      "voltage": "Spannung",
+      "runtime": "Laufzeit",
+      "temperature": "Temperatur"
+    },
+    "value": {
+      "expired": "abgelaufen",
+      "cal_allowed": "erlaubt",
+      "cal_not_allowed": "nicht erlaubt"
+    },
+    "state": {
+      "none": "keiner",
+      "session_stopped": "Sitzung gestoppt",
+      "warmup": "Aufwärmen",
+      "excess_noise": "zu viel Rauschen",
+      "bg1_needed": "1. von 2 BZ benötigt",
+      "bg2_needed": "2. von 2 BZ benötigt",
+      "ok": "OK",
+      "needs_calibration": "Kalibrierung nötig",
+      "calibration_error": "Kalibrierungsfehler",
+      "sensor_failed": "Sensor fehlgeschlagen",
+      "out_of_calibration": "außerhalb der Kalibrierung",
+      "calibration_requested": "Kalibrierung angefordert",
+      "session_expired": "Sitzung abgelaufen",
+      "session_failed": "Sitzung fehlgeschlagen",
+      "temporary_issue": "vorübergehendes Problem",
+      "sensor_declining": "Sensor lässt nach"
+    }
+  },
+  "pump": {
+    "label": "Pumpe"
+  },
+  "profile": {
+    "label": "Profil",
+    "language": "Sprache",
+    "theme": {
+      "_": "Darstellung",
+      "light": "Hell",
+      "dark": "Dunkel"
+    },
+    "glucose": {
+      "_": "Glukose",
+      "target": "Zielbereich",
+      "alarms_low": "Niedrige Alarme",
+      "alarms_high": "Hohe Alarme",
+      "target_low": "Unteres Ziel",
+      "target_high": "Oberes Ziel",
+      "urgent_low": "Dringend niedrig",
+      "low": "Niedrig",
+      "high": "Hoch",
+      "urgent_high": "Dringend hoch",
+      "edit_hint": "Zum Anpassen tippen",
+      "test_alarm": "Alarm testen"
+    },
+    "unit": {
+      "_": "Einheit",
+      "mgdl": "mg/dL",
+      "mmol": "mmol/L"
+    },
+    "notification": {
+      "_": "Benachrichtigungen",
+      "description": "Benachrichtigungen erhalten"
+    },
+    "live": {
+      "description": "Zuckerwert in der laufenden Benachrichtigung anzeigen"
+    },
+    "connection": {
+      "description": "Warnen, wenn 15 min kein Wert kommt"
+    },
+    "alarmsound": {
+      "description": "Alarmton bei hohem/niedrigem Zucker abspielen"
+    },
+    "silent": {
+      "_": "Stummschaltung",
+      "description": "Alle Benachrichtigungen und Alarme stummschalten",
+      "warning": {
+        "title": "Stummschaltung aktivieren?",
+        "body": "Bei aktiver Stummschaltung erhältst du KEINE Alarme – auch nicht bei gefährlich niedrigem oder hohem Blutzucker. Eine Unterzuckerung kann unbemerkt bleiben und lebensbedrohlich werden. Aktiviere sie nur, wenn du deine Werte anderweitig im Blick behältst.",
+        "confirm": "Trotzdem aktivieren"
+      }
+    },
+    "developer": {
+      "_": "Entwickler",
+      "description": "Entwicklermodus aktivieren"
+    },
+    "version": "Version #",
+    "bolus": {
+      "_": "Bolus",
+      "correction": {
+        "_": "Korrekturfaktor",
+        "value": "1 E / # mg/dL"
+      },
+      "carb": {
+        "_": "Mahlzeitenfaktor",
+        "value": "1 E / # g"
+      }
+    }
+  },
+  "injection": {
+    "title": "Bolusrechner",
+    "carbs": "Kohlenhydrate",
+    "glucose": "Aktueller Glukosewert",
+    "bolus": {
+      "_": "Empfohlener Bolus",
+      "value": "# E"
+    },
+    "next": "Weiter"
+  },
+  "service": {
+    "connecting": "Verbinde…"
+  },
+  "alarm": {
+    "channel": {
+      "low_warning": {
+        "name": "Zucker niedrig — Warnung",
+        "desc": "Warnung bei niedrigem Zuckerwert."
+      },
+      "low_urgent": {
+        "name": "Zucker niedrig — Alarm",
+        "desc": "Starker Alarm bei kritisch niedrigem Zuckerwert."
+      },
+      "high_warning": {
+        "name": "Zucker hoch — Warnung",
+        "desc": "Warnung bei hohem Zuckerwert."
+      },
+      "high_urgent": {
+        "name": "Zucker hoch — Alarm",
+        "desc": "Starker Alarm bei kritisch hohem Zuckerwert."
+      },
+      "warning": {
+        "name": "Zucker-Warnung",
+        "desc": "Leichte Warnung bei grenzwertigem Zuckerwert."
+      }
+    },
+    "low": {
+      "title": "Zucker niedrig"
+    },
+    "low_urgent": {
+      "title": "⚠️ Zucker SEHR niedrig"
+    },
+    "high": {
+      "title": "Zucker hoch"
+    },
+    "high_urgent": {
+      "title": "⚠️ Zucker SEHR hoch"
+    },
+    "connection_lost": {
+      "title": "Verbindung verloren",
+      "body": "Seit über 15 min kein Wert vom Sensor. Bring dein Handy näher."
+    },
+    "expiry": {
+      "title": "Sensor läuft bald ab",
+      "body": "Dein Sensor läuft in etwa # h ab. Bereite einen neuen vor."
+    }
+  }
 }

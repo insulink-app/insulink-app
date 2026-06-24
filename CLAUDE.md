@@ -70,8 +70,12 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
 - **2-space indentation.**
 - **Localize everything.** No hard-coded user-facing strings — every displayed
   string goes through the localization layer (`assets/locales/*.json`).
-- **JSON uses `snake_case` keys.** In the locale files, keys are namespaced by
-  section, dot-separated (e.g. `service.connecting`, `alarm.low_urgent`).
+- **JSON uses `snake_case` keys.** The locale files are **nested objects** per
+  section (`{"profile": {"glucose": {"target": …}}}`); both loaders flatten them
+  on load to the dot-separated keys the app looks up (`profile.glucose.target`)
+  — so call sites are unchanged (`LocaleText('profile.glucose.target')`). A node
+  that is BOTH a label and a prefix carries its own value under a `_` key (e.g.
+  `profile.glucose._` = "Glucose" alongside `profile.glucose.target`).
 - **Document accumulated knowledge as individual markdown files under `docs/`** —
   one focused topic per file, rather than letting it pile up only in code.
 
@@ -235,8 +239,10 @@ glucose/bolus/silent profile state, and `G7Controller`) and `MaterialApp`
   service isolate / controller has **no `BuildContext`** (and a fresh isolate has
   no `Locales` state), so notification text is resolved via `ServiceStrings`
   (`service_strings.dart`): it reads the persisted `language` key from secure
-  storage and loads that locale's JSON from the bundle. Keys are `snake_case`,
-  namespaced by section (`alarm.low.title`), `#` is the placeholder. Details in
+  storage and loads that locale's JSON from the bundle. The JSON is nested by
+  section; `locales.dart` flattens it to dotted keys, while `ServiceStrings`
+  walks the path directly (both honour the `_` self-value convention). Keys are
+  `snake_case` (`alarm.low.title`), `#` is the placeholder. Details in
   `docs/LOCALIZATION.md`.
 
 - **Statistics** (`statistics/`) read the long-term archive, not the current

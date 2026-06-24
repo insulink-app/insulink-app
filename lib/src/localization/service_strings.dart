@@ -27,10 +27,27 @@ class ServiceStrings {
         'assets/locales/${await _language()}.json',
       );
       final map = json.decode(raw) as Map<String, dynamic>;
-      return map[key]?.toString() ?? key;
+      return _resolve(map, key) ?? key;
     } catch (_) {
       return key;
     }
+  }
+
+  /// Walk the nested locale JSON along the dot-separated [key]. When the path
+  /// lands on a node that also has children, its own value lives under `_`
+  /// (e.g. `profile.glucose` is both a label and a prefix).
+  String? _resolve(Map<String, dynamic> map, String key) {
+    dynamic node = map;
+    for (final part in key.split('.')) {
+      if (node is! Map<String, dynamic>) {
+        return null;
+      }
+      node = node[part];
+    }
+    if (node is Map<String, dynamic>) {
+      node = node['_'];
+    }
+    return node?.toString();
   }
 
   /// Like [get] but substitutes the first `#` placeholder with [value] — the

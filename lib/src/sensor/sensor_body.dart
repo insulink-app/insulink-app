@@ -42,14 +42,19 @@ class SensorBodyContent extends StatefulWidget {
 
 class _SensorBodyContentState extends State<SensorBodyContent> {
   /// Drives the gradual fade of the connection box as the attribute list is
-  /// scrolled. The box reaches full transparency after [_fadeDistance] px.
+  /// scrolled. The box reaches full transparency after [_fadeDistance] px — a
+  /// longer distance than the scroll it tracks, so the fade feels gentle.
   final ScrollController _scroll = ScrollController();
-  static const double _fadeDistance = 80;
+  static const double _fadeDistance = 160;
 
-  /// Gap between the pinned box and the scrolling content. Kept larger than
+  /// How far the box drifts upward as it fades, so it doesn't just dissolve in
+  /// place but slides out of the way.
+  static const double _riseDistance = 40;
+
+  /// Gap between the pinned box and the scrolling content. Kept at least
   /// [_fadeDistance] so the box has fully faded out before the content scrolls
   /// up into its place (no overlap).
-  static const double _gap = 80;
+  static const double _gap = 120;
 
   /// The pinned box is overlaid on top of the scroll view; its measured height
   /// is used to push the content below it so nothing starts hidden.
@@ -203,11 +208,18 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
 
   Widget _fade(Widget child) {
     final offset = _scroll.hasClients ? _scroll.offset : 0.0;
-    final opacity = (1 - offset / _fadeDistance).clamp(0.0, 1.0);
+    final progress = (offset / _fadeDistance).clamp(0.0, 1.0);
+    final opacity = 1 - progress;
     // Once mostly faded, let touches reach the content below.
     return IgnorePointer(
       ignoring: opacity < 0.5,
-      child: Opacity(opacity: opacity, child: child),
+      child: Opacity(
+        opacity: opacity,
+        child: Transform.translate(
+          offset: Offset(0, -progress * _riseDistance),
+          child: child,
+        ),
+      ),
     );
   }
 }

@@ -1,169 +1,274 @@
 {
-  "alert.ok": "OK",
-  "alert.continue": "Continue",
-  "alert.cancel": "Cancel",
-  "overview.label": "Overview",
-  "statistics.label": "Statistics",
-  "statistics.tab.ranges": "Ranges",
-  "statistics.tab.averages": "Metrics",
-  "statistics.tab.patterns": "Patterns",
-  "statistics.empty": "No glucose data yet",
-  "statistics.avg.mean": "Avg. Glucose",
-  "statistics.avg.gmi": "GMI",
-  "statistics.avg.cv": "Variability",
-  "statistics.avg.sd": "Std. Dev.",
-  "statistics.avg.max": "Highest",
-  "statistics.avg.min": "Lowest",
-  "statistics.patterns.title": "Average by time of day",
-  "statistics.patterns.hint": "Mean glucose for each hour of the day",
-  "statistics.range.very_high": "Very High",
-  "statistics.range.high": "High",
-  "statistics.range.in_range": "In Range",
-  "statistics.range.low": "Low",
-  "statistics.range.very_low": "Very Low",
-  "sensor.label": "Sensor",
-  "pump.label": "Pump",
-  "profile.label": "Profile",
-  "profile.language": "Language",
-  "profile.theme": "Theme",
-  "profile.theme.light": "Light",
-  "profile.theme.dark": "Dark",
-  "profile.glucose": "Glucose",
-  "profile.unit": "Unit",
-  "profile.unit.mgdl": "mg/dL",
-  "profile.unit.mmol": "mmol/L",
-  "profile.glucose.target": "Target range",
-  "profile.glucose.alarms_low": "Low alarms",
-  "profile.glucose.alarms_high": "High alarms",
-  "profile.glucose.target_low": "Lower target",
-  "profile.glucose.target_high": "Upper target",
-  "profile.glucose.urgent_low": "Urgent low",
-  "profile.glucose.low": "Low",
-  "profile.glucose.high": "High",
-  "profile.glucose.urgent_high": "Urgent high",
-  "profile.glucose.edit_hint": "Tap to adjust",
-  "profile.glucose.test_alarm": "Test alarm",
-  "alert.done": "Done",
-  "profile.notification": "Notifications",
-  "profile.notification.description": "Receive notifications",
-  "profile.live.description": "Show glucose value in the ongoing notification",
-  "profile.connection.description": "Warn when no reading for 15 min",
-  "profile.alarmsound.description": "Play alarm sound for high/low glucose",
-  "profile.silent": "Silent mode",
-  "profile.silent.description": "Mute all notifications and alarms",
-  "profile.silent.warning.title": "Enable silent mode?",
-  "profile.silent.warning.body": "While silent mode is on you will receive NO alarms — not even for dangerously low or high glucose. A hypo can go unnoticed and become life-threatening. Only enable it if you keep an eye on your levels another way.",
-  "profile.silent.warning.confirm": "Enable anyway",
-  "profile.developer": "Developer",
-  "profile.developer.description": "Enable developer mode",
-  "profile.version": "Version #",
-  "sensor.info.status": "STATUS",
-  "sensor.info.device": "DEVICE",
-  "sensor.info.session": "SESSION",
-  "sensor.info.battery": "BATTERY",
-  "overview.chart.empty": "no readings yet",
-  "overview.chart.hour": "#:00",
-  "overview.connect": "Connect",
-  "overview.connecting": "Connecting…",
-  "overview.pairing_code": "Pairing code",
-  "overview.next": "Next",
-  "overview.overdue": "overdue",
-  "overview.waiting": "waiting…",
-  "overview.searching": "Searching for sensor…",
-  "overview.searching.hint": "Establishing the connection. Keep the sensor nearby.",
-  "overview.empty.title": "No sensor connected",
-  "overview.empty.body": "Set up your Dexcom G7 on the sensor page to see your glucose readings.",
-  "overview.empty.action": "Go to sensor page",
-  "overview.silent.title": "Silent mode on",
-  "overview.silent.hint": "Alarms are muted · tap to turn off",
-  "sensor.disconnect": "Disconnect",
-  "sensor.status.connected": "Connected",
-  "sensor.status.disconnected": "Disconnected",
-  "sensor.status.paired": "Paired",
-  "sensor.status.unpaired": "Not paired",
-  "sensor.status.searching": "Searching for sensor…",
-  "sensor.searching.hint": "Keep the sensor nearby.",
-  "sensor.pair.title": "Pair sensor",
-  "sensor.pair.hint": "Enter the pairing code to connect",
-  "sensor.life.title": "Durability",
-  "sensor.life.remaining": "# days left",
-  "sensor.control.end_session": "End session",
-  "sensor.control.stop_sensor": "Stop sensor",
-  "sensor.control.end_session_title": "End session?",
-  "sensor.control.end_session_body": "Reading will stop. The pairing is kept — you can reconnect later.",
-  "sensor.control.stop_sensor_title": "Stop sensor?",
-  "sensor.control.stop_sensor_body": "The sensor will be unpaired: the stored key and history are deleted. The physical sensor keeps running.",
-  "sensor.log": "Log",
-  "sensor.copy": "Copy",
-  "sensor.log_copied": "# log lines copied",
-  "sensor.info.empty": "no sensor info yet",
-  "sensor.info.title": "Sensor data",
-  "sensor.field.state": "State",
-  "sensor.field.last_reading": "Last reading",
-  "sensor.field.started": "Started",
-  "sensor.field.expires": "Expires",
-  "sensor.field.age": "Age",
-  "sensor.field.calibration": "Calibration",
-  "sensor.field.last_cal_bg": "Last cal BG",
-  "sensor.field.firmware": "Firmware",
-  "sensor.field.software": "Software #",
-  "sensor.field.hardware": "Hardware",
-  "sensor.field.algorithm": "Algorithm",
-  "sensor.field.silicon": "Silicon",
-  "sensor.field.serial": "Serial",
-  "sensor.field.session": "Session",
-  "sensor.field.warmup": "Warmup",
-  "sensor.field.max_days": "Max days",
-  "sensor.field.voltage": "Voltage",
-  "sensor.field.runtime": "Runtime",
-  "sensor.field.temperature": "Temperature",
-  "sensor.value.expired": "expired",
-  "sensor.value.cal_allowed": "allowed",
-  "sensor.value.cal_not_allowed": "not allowed",
-  "sensor.state.none": "none",
-  "sensor.state.session_stopped": "session stopped",
-  "sensor.state.warmup": "warmup",
-  "sensor.state.excess_noise": "excess noise",
-  "sensor.state.bg1_needed": "1st of 2 BGs needed",
-  "sensor.state.bg2_needed": "2nd of 2 BGs needed",
-  "sensor.state.ok": "OK",
-  "sensor.state.needs_calibration": "needs calibration",
-  "sensor.state.calibration_error": "calibration error",
-  "sensor.state.sensor_failed": "sensor failed",
-  "sensor.state.out_of_calibration": "out of calibration",
-  "sensor.state.calibration_requested": "calibration requested",
-  "sensor.state.session_expired": "session expired",
-  "sensor.state.session_failed": "session failed",
-  "sensor.state.temporary_issue": "temporary issue",
-  "sensor.state.sensor_declining": "sensor declining",
-  "profile.bolus": "Bolus",
-  "profile.bolus.correction": "Correction factor",
-  "profile.bolus.correction.value": "1 U / # mg/dL",
-  "profile.bolus.carb": "Carb ratio",
-  "profile.bolus.carb.value": "1 U / # g",
-  "injection.title": "Bolus calculator",
-  "injection.carbs": "Carbohydrates",
-  "injection.glucose": "Current glucose",
-  "injection.bolus": "Suggested bolus",
-  "injection.bolus.value": "# U",
-  "injection.next": "Next",
-  "service.connecting": "Connecting…",
-  "alarm.channel.low_warning.name": "Glucose low — warning",
-  "alarm.channel.low_warning.desc": "Warning when glucose is low.",
-  "alarm.channel.low_urgent.name": "Glucose low — alarm",
-  "alarm.channel.low_urgent.desc": "Strong alarm when glucose is critically low.",
-  "alarm.channel.high_warning.name": "Glucose high — warning",
-  "alarm.channel.high_warning.desc": "Warning when glucose is high.",
-  "alarm.channel.high_urgent.name": "Glucose high — alarm",
-  "alarm.channel.high_urgent.desc": "Strong alarm when glucose is critically high.",
-  "alarm.channel.warning.name": "Glucose warning",
-  "alarm.channel.warning.desc": "Mild warning for a borderline glucose value.",
-  "alarm.low.title": "Glucose low",
-  "alarm.low_urgent.title": "⚠️ Glucose VERY low",
-  "alarm.high.title": "Glucose high",
-  "alarm.high_urgent.title": "⚠️ Glucose VERY high",
-  "alarm.connection_lost.title": "Connection lost",
-  "alarm.connection_lost.body": "No reading from the sensor for over 15 min. Move your phone closer.",
-  "alarm.expiry.title": "Sensor expiring soon",
-  "alarm.expiry.body": "Your sensor expires in about # h. Prepare a new one."
+  "alert": {
+    "ok": "OK",
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "done": "Done"
+  },
+  "overview": {
+    "label": "Overview",
+    "chart": {
+      "empty": "no readings yet",
+      "hour": "#:00"
+    },
+    "connect": "Connect",
+    "connecting": "Connecting…",
+    "pairing_code": "Pairing code",
+    "next": "Next",
+    "overdue": "overdue",
+    "waiting": "waiting…",
+    "searching": {
+      "_": "Searching for sensor…",
+      "hint": "Establishing the connection. Keep the sensor nearby."
+    },
+    "empty": {
+      "title": "No sensor connected",
+      "body": "Set up your Dexcom G7 on the sensor page to see your glucose readings.",
+      "action": "Go to sensor page"
+    },
+    "silent": {
+      "title": "Silent mode on",
+      "hint": "Alarms are muted · tap to turn off"
+    }
+  },
+  "statistics": {
+    "label": "Statistics",
+    "tab": {
+      "ranges": "Ranges",
+      "averages": "Metrics",
+      "patterns": "Patterns"
+    },
+    "empty": "No glucose data yet",
+    "avg": {
+      "mean": "Avg. Glucose",
+      "gmi": "GMI",
+      "cv": "Variability",
+      "sd": "Std. Dev.",
+      "max": "Highest",
+      "min": "Lowest"
+    },
+    "patterns": {
+      "title": "Average by time of day",
+      "hint": "Mean glucose for each hour of the day"
+    },
+    "range": {
+      "very_high": "Very High",
+      "high": "High",
+      "in_range": "In Range",
+      "low": "Low",
+      "very_low": "Very Low"
+    }
+  },
+  "sensor": {
+    "label": "Sensor",
+    "info": {
+      "status": "STATUS",
+      "device": "DEVICE",
+      "session": "SESSION",
+      "battery": "BATTERY",
+      "empty": "no sensor info yet",
+      "title": "Sensor data"
+    },
+    "disconnect": "Disconnect",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "paired": "Paired",
+      "unpaired": "Not paired",
+      "searching": "Searching for sensor…"
+    },
+    "searching": {
+      "hint": "Keep the sensor nearby."
+    },
+    "pair": {
+      "title": "Pair sensor",
+      "hint": "Enter the pairing code to connect"
+    },
+    "life": {
+      "title": "Durability",
+      "remaining": "# days left",
+      "remaining_hours": "# hours left"
+    },
+    "control": {
+      "end_session": "End session",
+      "stop_sensor": "Stop sensor",
+      "end_session_title": "End session?",
+      "end_session_body": "Reading will stop. The pairing is kept — you can reconnect later.",
+      "stop_sensor_title": "Stop sensor?",
+      "stop_sensor_body": "The sensor will be unpaired: the stored key and history are deleted. The physical sensor keeps running."
+    },
+    "log": "Log",
+    "copy": "Copy",
+    "log_copied": "# log lines copied",
+    "field": {
+      "state": "State",
+      "last_reading": "Last reading",
+      "started": "Started",
+      "expires": "Expires",
+      "age": "Age",
+      "calibration": "Calibration",
+      "last_cal_bg": "Last cal BG",
+      "firmware": "Firmware",
+      "software": "Software #",
+      "hardware": "Hardware",
+      "algorithm": "Algorithm",
+      "silicon": "Silicon",
+      "serial": "Serial",
+      "session": "Session",
+      "warmup": "Warmup",
+      "max_days": "Max days",
+      "voltage": "Voltage",
+      "runtime": "Runtime",
+      "temperature": "Temperature"
+    },
+    "value": {
+      "expired": "expired",
+      "cal_allowed": "allowed",
+      "cal_not_allowed": "not allowed"
+    },
+    "state": {
+      "none": "none",
+      "session_stopped": "session stopped",
+      "warmup": "warmup",
+      "excess_noise": "excess noise",
+      "bg1_needed": "1st of 2 BGs needed",
+      "bg2_needed": "2nd of 2 BGs needed",
+      "ok": "OK",
+      "needs_calibration": "needs calibration",
+      "calibration_error": "calibration error",
+      "sensor_failed": "sensor failed",
+      "out_of_calibration": "out of calibration",
+      "calibration_requested": "calibration requested",
+      "session_expired": "session expired",
+      "session_failed": "session failed",
+      "temporary_issue": "temporary issue",
+      "sensor_declining": "sensor declining"
+    }
+  },
+  "pump": {
+    "label": "Pump"
+  },
+  "profile": {
+    "label": "Profile",
+    "language": "Language",
+    "theme": {
+      "_": "Theme",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "glucose": {
+      "_": "Glucose",
+      "target": "Target range",
+      "alarms_low": "Low alarms",
+      "alarms_high": "High alarms",
+      "target_low": "Lower target",
+      "target_high": "Upper target",
+      "urgent_low": "Urgent low",
+      "low": "Low",
+      "high": "High",
+      "urgent_high": "Urgent high",
+      "edit_hint": "Tap to adjust",
+      "test_alarm": "Test alarm"
+    },
+    "unit": {
+      "_": "Unit",
+      "mgdl": "mg/dL",
+      "mmol": "mmol/L"
+    },
+    "notification": {
+      "_": "Notifications",
+      "description": "Receive notifications"
+    },
+    "live": {
+      "description": "Show glucose value in the ongoing notification"
+    },
+    "connection": {
+      "description": "Warn when no reading for 15 min"
+    },
+    "alarmsound": {
+      "description": "Play alarm sound for high/low glucose"
+    },
+    "silent": {
+      "_": "Silent mode",
+      "description": "Mute all notifications and alarms",
+      "warning": {
+        "title": "Enable silent mode?",
+        "body": "While silent mode is on you will receive NO alarms — not even for dangerously low or high glucose. A hypo can go unnoticed and become life-threatening. Only enable it if you keep an eye on your levels another way.",
+        "confirm": "Enable anyway"
+      }
+    },
+    "developer": {
+      "_": "Developer",
+      "description": "Enable developer mode"
+    },
+    "version": "Version #",
+    "bolus": {
+      "_": "Bolus",
+      "correction": {
+        "_": "Correction factor",
+        "value": "1 U / # mg/dL"
+      },
+      "carb": {
+        "_": "Carb ratio",
+        "value": "1 U / # g"
+      }
+    }
+  },
+  "injection": {
+    "title": "Bolus calculator",
+    "carbs": "Carbohydrates",
+    "glucose": "Current glucose",
+    "bolus": {
+      "_": "Suggested bolus",
+      "value": "# U"
+    },
+    "next": "Next"
+  },
+  "service": {
+    "connecting": "Connecting…"
+  },
+  "alarm": {
+    "channel": {
+      "low_warning": {
+        "name": "Glucose low — warning",
+        "desc": "Warning when glucose is low."
+      },
+      "low_urgent": {
+        "name": "Glucose low — alarm",
+        "desc": "Strong alarm when glucose is critically low."
+      },
+      "high_warning": {
+        "name": "Glucose high — warning",
+        "desc": "Warning when glucose is high."
+      },
+      "high_urgent": {
+        "name": "Glucose high — alarm",
+        "desc": "Strong alarm when glucose is critically high."
+      },
+      "warning": {
+        "name": "Glucose warning",
+        "desc": "Mild warning for a borderline glucose value."
+      }
+    },
+    "low": {
+      "title": "Glucose low"
+    },
+    "low_urgent": {
+      "title": "⚠️ Glucose VERY low"
+    },
+    "high": {
+      "title": "Glucose high"
+    },
+    "high_urgent": {
+      "title": "⚠️ Glucose VERY high"
+    },
+    "connection_lost": {
+      "title": "Connection lost",
+      "body": "No reading from the sensor for over 15 min. Move your phone closer."
+    },
+    "expiry": {
+      "title": "Sensor expiring soon",
+      "body": "Your sensor expires in about # h. Prepare a new one."
+    }
+  }
 }

@@ -67,12 +67,27 @@ class Locales {
   Future load() async {
     String lng = locale.languageCode;
     String jsonString = await rootBundle.loadString("assets/locales/$lng.json");
+    final Map<String, dynamic> jsonMap = json.decode(jsonString);
+    _localizedStings = _flatten(jsonMap);
+  }
 
-    Map<String, dynamic> jsonMap = json.decode(jsonString);
-
-    _localizedStings = jsonMap.map((key, value) {
-      return MapEntry(key, value.toString());
+  /// Flatten the nested locale JSON to the dot-separated keys the app looks up.
+  /// A `_` key carries a node's own value when it ALSO has children (e.g.
+  /// `profile.glucose` is both a section label and a prefix), so it maps to the
+  /// parent path rather than `parent._`.
+  Map<String, String> _flatten(Map<String, dynamic> map, [String prefix = '']) {
+    final flat = <String, String>{};
+    map.forEach((key, value) {
+      final path = key == '_'
+          ? prefix
+          : (prefix.isEmpty ? key : '$prefix.$key');
+      if (value is Map<String, dynamic>) {
+        flat.addAll(_flatten(value, path));
+      } else {
+        flat[path] = value.toString();
+      }
     });
+    return flat;
   }
 
   String get(String key, [List<String>? params, List<String>? localeParams]) {
