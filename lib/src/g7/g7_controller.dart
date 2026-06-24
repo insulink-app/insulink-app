@@ -1,16 +1,15 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:convert';
 
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:insulink/src/g7/alarms.dart';
-import 'package:insulink/src/g7/ble_service.dart';
-import 'package:insulink/src/g7/device_info.dart';
-import 'package:insulink/src/g7/glucose.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:insulink/src/g7/service/alarms.dart';
+import 'package:insulink/src/g7/service/ble_service.dart';
+import 'package:insulink/src/g7/protocol/device_info.dart';
+import 'package:insulink/src/g7/protocol/glucose.dart';
 import 'package:insulink/src/g7/store.dart';
-import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/localization/service_strings.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Shared, UI-free state + control for the Dexcom G7 read pipeline.
@@ -26,6 +25,9 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// logic stay in sync and survive page switches. (No serial input: the serial
   /// is only a cache key and is resolved automatically from the sensor's BLE id.)
   final code = TextEditingController();
+
+  /// Localized strings for the service notification (no [BuildContext] here).
+  final ServiceStrings _strings = ServiceStrings();
 
   final List<String> _log = <String>[];
   List<String> get log => List.unmodifiable(_log);
@@ -65,10 +67,27 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// basis for the statistics views. Reads the store cache the controller keeps
   /// fresh via [reload] on every `update` ping and on resume.
   SplayTreeMap<int, int> archiveSince(Duration window) {
-    final s = _store;
-    if (s == null) return SplayTreeMap<int, int>();
+    final store = _store;
+    if (store == null) {
+      return SplayTreeMap<int, int>();
+    }
     final now = DateTime.now();
-    return s.archiveRange(now.subtract(window), now);
+    return store.archiveRange(now.subtract(window), now);
+  }
+
+  /// Builds a reading from a persisted/IPC map. The trend field is keyed
+  /// differently by the cached headline ('trend') and the live service payload
+  /// ('trendTenths'); the other fixed fields aren't carried across.
+  G7GlucoseReading _reading(Map map, String trendKey) {
+    return G7GlucoseReading(
+      secsSinceStart: map['secs'] as int? ?? 0,
+      age: 0,
+      sequence: 0,
+      glucoseMgDl: map['mgdl'] as int?,
+      predictedMgDl: 0,
+      trendTenths: map[trendKey] as int? ?? 0,
+      state: map['state'] as int? ?? 0,
+    );
   }
 
   G7GlucoseReading? _latest;
@@ -95,10 +114,14 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// session clock (`sensorStart + secsSinceStart`) so it's correct even for the
   /// value restored from cache on launch; falls back to the live arrival time.
   DateTime? get lastUpdate {
-    final l = _latest;
-    if (l == null) return null;
+    final reading = _latest;
+    if (reading == null) {
+      return null;
+    }
     final start = _sensorStart;
-    if (start != null) return start.add(Duration(seconds: l.secsSinceStart));
+    if (start != null) {
+      return start.add(Duration(seconds: reading.secsSinceStart));
+    }
     return _latestAt;
   }
 
@@ -116,40 +139,40 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // Receive live updates pushed from the foreground-service isolate.
     FlutterForegroundTask.addTaskDataCallback(_onTaskData);
-    final s = await G7Store.open();
-    if (_disposed) return;
-    _store = s;
-    code.text = s.pairingCode ?? '';
-    // Cached data is keyed by the resolved key (the sensor BLE id).
-    final key = _key;
-    // Show cached history, latest value + device info immediately.
-    final cached = key.isEmpty ? <int, int>{} : s.loadReadings(key);
-    final latest = key.isEmpty ? null : s.loadLatest(key);
-    _byTime.addAll(cached);
-    if (key.isNotEmpty) {
-      _info = s.loadInfo(key) ?? _info;
-      _sensorStart = s.loadSensorStart(key);
+    final store = await G7Store.open();
+    if (_disposed) {
+      return;
     }
-    if (latest != null) {
-      _latest = G7GlucoseReading(
-        secsSinceStart: latest['secs'] as int? ?? 0,
-        age: 0,
-        sequence: 0,
-        glucoseMgDl: latest['mgdl'] as int?,
-        predictedMgDl: 0,
-        trendTenths: latest['trend'] as int? ?? 0,
-        state: latest['state'] as int? ?? 0,
-      );
-      _latestIsLive = false; // from cache until a live reading arrives
-    }
+    _store = store;
+    code.text = store.pairingCode ?? '';
+    _restoreFromCache(store);
     notifyListeners();
-    if (cached.isNotEmpty) {
-      _append('showing ${cached.length} cached readings');
+    if (_byTime.isNotEmpty) {
+      _append('showing ${_byTime.length} cached readings');
     }
     await _refreshServiceState();
     // Start the read pipeline if it's down, or revive a frozen one that claims
     // to run but produced no data (see _recoverIfStale).
     await _recoverIfStale();
+  }
+
+  /// Populates the live reading, history, device info and sensor start from the
+  /// store cache so the UI shows something immediately, before the service
+  /// produces a fresh reading. The headline value stays marked non-live until
+  /// one arrives. Data is keyed by the resolved key (the sensor BLE id).
+  void _restoreFromCache(G7Store store) {
+    final key = _key;
+    if (key.isEmpty) {
+      return;
+    }
+    _byTime.addAll(store.loadReadings(key));
+    _info = store.loadInfo(key) ?? _info;
+    _sensorStart = store.loadSensorStart(key);
+    final latest = store.loadLatest(key);
+    if (latest != null) {
+      _latest = _reading(latest, 'trend');
+      _latestIsLive = false;
+    }
   }
 
   /// Staleness threshold. The G7 delivers roughly every 5 min, so no fresh
@@ -179,8 +202,12 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     final byHistory = (start != null && _byTime.isNotEmpty)
         ? start.add(Duration(seconds: _byTime.lastKey()!))
         : null;
-    if (byLatest == null) return byHistory;
-    if (byHistory == null) return byLatest;
+    if (byLatest == null) {
+      return byHistory;
+    }
+    if (byHistory == null) {
+      return byLatest;
+    }
     return byLatest.isAfter(byHistory) ? byLatest : byHistory;
   }
 
@@ -192,9 +219,13 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// (the symptom behind this method; see CLAUDE.md background gotchas).
   Future<void> _recoverIfStale() async {
     final key = _key;
-    if (key.isEmpty || _store?.sessionKey(key) == null) return;
+    if (key.isEmpty || _store?.sessionKey(key) == null) {
+      return;
+    }
     final running = await FlutterForegroundTask.isRunningService;
-    if (_disposed) return;
+    if (_disposed) {
+      return;
+    }
     if (!running) {
       _append('auto-connecting…');
       await start();
@@ -202,7 +233,9 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     }
     final last = _lastDataAt;
     final stale = last == null || DateTime.now().difference(last) > _staleAfter;
-    if (!stale) return;
+    if (!stale) {
+      return;
+    }
     // Throttle restarts: a fresh service needs up to ~2 min to scan+connect, so
     // restarting again before then just aborts its in-flight scan and churns
     // startScan calls into Android's scan throttle (see _restartCooldown).
@@ -214,7 +247,9 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     _lastRestartAt = DateTime.now();
     _append('no fresh data — restarting background service');
     await FlutterForegroundTask.restartService();
-    if (_disposed) return;
+    if (_disposed) {
+      return;
+    }
     await _refreshServiceState();
   }
 
@@ -223,30 +258,28 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// the pipeline has resolved one).
   String get _key => _store?.resolvedKey ?? _store?.serial ?? '';
 
-  void _append(String s) {
-    if (_disposed) return;
-    _log.insert(0, s);
+  void _append(String line) {
+    if (_disposed) {
+      return;
+    }
+    _log.insert(0, line);
     notifyListeners();
   }
 
   /// Messages from the background service: log lines, the latest live reading,
   /// a "reload from store" ping, and connection-state transitions.
   void _onTaskData(Object data) {
-    if (data is! Map) return;
+    if (data is! Map) {
+      return;
+    }
     switch (data['t']) {
       case 'log':
         _append(data['line'] as String? ?? '');
       case 'reading':
-        if (_disposed) return;
-        _latest = G7GlucoseReading(
-          secsSinceStart: data['secs'] as int? ?? 0,
-          age: 0,
-          sequence: 0,
-          glucoseMgDl: data['mgdl'] as int?,
-          predictedMgDl: 0,
-          trendTenths: data['trendTenths'] as int? ?? 0,
-          state: data['state'] as int? ?? 0,
-        );
+        if (_disposed) {
+          return;
+        }
+        _latest = _reading(data, 'trendTenths');
         _latestIsLive = true;
         _latestAt = DateTime.now();
         notifyListeners();
@@ -259,25 +292,30 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// Requires reloading the store's in-memory cache since the writes happened
   /// in the service isolate.
   Future<void> _reloadFromStore() async {
-    final s = _store;
-    if (s == null) return;
-    await s.reload();
+    final store = _store;
+    if (store == null) {
+      return;
+    }
+    await store.reload();
     // Use the resolved key (the service may have just set it after pairing with
     // a blank serial), not the text field.
     final key = _key;
-    if (key.isEmpty || _disposed) return;
-    final cached = s.loadReadings(key);
+    if (key.isEmpty || _disposed) {
+      return;
+    }
     _byTime
       ..clear()
-      ..addAll(cached);
-    _info = s.loadInfo(key) ?? _info;
-    _sensorStart = s.loadSensorStart(key) ?? _sensorStart;
+      ..addAll(store.loadReadings(key));
+    _info = store.loadInfo(key) ?? _info;
+    _sensorStart = store.loadSensorStart(key) ?? _sensorStart;
     notifyListeners();
   }
 
   Future<void> _refreshServiceState() async {
     final running = await FlutterForegroundTask.isRunningService;
-    if (_disposed) return;
+    if (_disposed) {
+      return;
+    }
     _serviceRunning = running;
     notifyListeners();
   }
@@ -325,46 +363,21 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// work lives in that service isolate, so it survives the app being
   /// backgrounded or closed.
   Future<void> start() async {
-    if (_busy) return;
+    if (_busy) {
+      return;
+    }
     _busy = true;
     notifyListeners();
     try {
-      // Bluetooth runtime permissions must be GRANTED before starting a
-      // `connectedDevice` foreground service (Android 14+ validates the app
-      // holds one), and because the scan now runs in the background isolate
-      // which cannot show permission dialogs. Request them here in the UI.
-      if (!await _ensureBlePermissions()) {
+      if (!await _requestPermissions()) {
         _append('Bluetooth permission denied — cannot start');
         return;
       }
-      if (await FlutterForegroundTask.checkNotificationPermission() !=
-          NotificationPermission.granted) {
-        await FlutterForegroundTask.requestNotificationPermission();
-      }
-      // Let glucose alarms sound through Do-Not-Disturb. Must be granted in the
-      // UI BEFORE the service isolate creates the bypassDnd alarm channels.
-      await G7AlarmManager.ensureDndAccess();
-      if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
-        await FlutterForegroundTask.requestIgnoreBatteryOptimization();
-      }
-
       // The service isolate reads the pairing code from the store on start; the
       // serial stays blank and is resolved to the sensor BLE id by the pipeline.
       await _store?.saveIdentity(serial: '', pairingCode: code.text.trim());
-
       _initForegroundTask();
-      final result = await FlutterForegroundTask.startService(
-        serviceId: 256,
-        serviceTypes: const [ForegroundServiceTypes.connectedDevice],
-        notificationTitle: 'Insulink',
-        notificationText: await _l10n('service.connecting'),
-        callback: startCallback,
-      );
-      if (result is ServiceRequestSuccess) {
-        _append('background service started');
-      } else if (result is ServiceRequestFailure) {
-        _append('service start failed: ${result.error}');
-      }
+      await _startService();
       await _refreshServiceState();
     } catch (e) {
       _append('ERROR: $e');
@@ -376,23 +389,64 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// Context-free lookup of a localized string for the service notification —
-  /// the controller has no [BuildContext], so it reads the selected locale's
-  /// JSON directly. Falls back to the key on any failure.
-  Future<String> _l10n(String key) async {
-    try {
-      final lng = Locales.selectedLocale.languageCode;
-      final raw = await rootBundle.loadString('assets/locales/$lng.json');
-      return (json.decode(raw) as Map<String, dynamic>)[key]?.toString() ?? key;
-    } catch (_) {
-      return key;
+  /// Acquires everything the background service needs before it starts: BLE
+  /// runtime permissions (a `connectedDevice` FGS on Android 14+ validates the
+  /// app holds one, and the scan runs in the dialog-less service isolate),
+  /// notification permission, DnD bypass for alarms (must be granted in the UI
+  /// BEFORE the service isolate creates the bypassDnd channels) and a
+  /// battery-optimization exemption. Returns false only when BLE is denied — the
+  /// hard blocker.
+  Future<bool> _requestPermissions() async {
+    if (!await _ensureBlePermissions()) {
+      return false;
     }
+    if (await FlutterForegroundTask.checkNotificationPermission() !=
+        NotificationPermission.granted) {
+      await FlutterForegroundTask.requestNotificationPermission();
+    }
+    await G7AlarmManager(FlutterLocalNotificationsPlugin()).ensureDndAccess();
+    if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+      await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+    }
+    return true;
+  }
+
+  Future<void> _startService() async {
+    final result = await FlutterForegroundTask.startService(
+      serviceId: 256,
+      serviceTypes: const [ForegroundServiceTypes.connectedDevice],
+      notificationTitle: 'Insulink',
+      notificationText: await _strings.get('service.connecting'),
+      callback: startCallback,
+    );
+    if (result is ServiceRequestSuccess) {
+      _append('background service started');
+    } else if (result is ServiceRequestFailure) {
+      _append('service start failed: ${result.error}');
+    }
+  }
+
+  /// Fire a test alarm (low or high) so the user can preview the notification +
+  /// tone from the settings UI. Runs in this UI isolate (its own alarm manager),
+  /// ensuring notification + DnD access first, since the service isolate can't
+  /// show those dialogs.
+  Future<void> testAlarm({required bool high}) async {
+    if (await FlutterForegroundTask.checkNotificationPermission() !=
+        NotificationPermission.granted) {
+      await FlutterForegroundTask.requestNotificationPermission();
+    }
+    final alarms = G7AlarmManager(FlutterLocalNotificationsPlugin());
+    await alarms.init();
+    await alarms.ensureDndAccess();
+    await alarms.fireTest(high: high);
   }
 
   Future<void> disconnect() async {
     await FlutterForegroundTask.stopService();
     _append('disconnected');
-    if (_disposed) return;
+    if (_disposed) {
+      return;
+    }
     _serviceRunning = false;
     _latest = null;
     _latestIsLive = false;
@@ -411,7 +465,9 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     await FlutterForegroundTask.stopService();
     await _store?.clearSensor(key);
     _append('sensor forgotten');
-    if (_disposed) return;
+    if (_disposed) {
+      return;
+    }
     _serviceRunning = false;
     _latest = null;
     _latestIsLive = false;

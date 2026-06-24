@@ -19,7 +19,9 @@ class Locales {
   final Locale locale;
 
   Locales(this.locale, {bool initialize = true}) {
-    if (initialize) selectedLocale = locale;
+    if (initialize) {
+      selectedLocale = locale;
+    }
   }
 
   static Locales? of(BuildContext context) {
@@ -36,7 +38,7 @@ class Locales {
 
   static Future init(List<String> localeNames) async {
     try {
-      supportedLocales = localeNames.map((n) => Locale(n)).toList();
+      supportedLocales = localeNames.map((name) => Locale(name)).toList();
       final pref = await LocalePreference.init();
       log('prefLocale: ${pref.locale}');
       Locales.selectedLocale = pref.locale ?? supportedLocales.first;
@@ -65,34 +67,51 @@ class Locales {
   Future load() async {
     String lng = locale.languageCode;
     String jsonString = await rootBundle.loadString("assets/locales/$lng.json");
+    final Map<String, dynamic> jsonMap = json.decode(jsonString);
+    _localizedStings = _flatten(jsonMap);
+  }
 
-    Map<String, dynamic> jsonMap = json.decode(jsonString);
-
-    _localizedStings = jsonMap.map((key, value) {
-      return MapEntry(key, value.toString());
+  /// Flatten the nested locale JSON to the dot-separated keys the app looks up.
+  /// A `_` key carries a node's own value when it ALSO has children (e.g.
+  /// `profile.glucose` is both a section label and a prefix), so it maps to the
+  /// parent path rather than `parent._`.
+  Map<String, String> _flatten(Map<String, dynamic> map, [String prefix = '']) {
+    final flat = <String, String>{};
+    map.forEach((key, value) {
+      final path = key == '_'
+          ? prefix
+          : (prefix.isEmpty ? key : '$prefix.$key');
+      if (value is Map<String, dynamic>) {
+        flat.addAll(_flatten(value, path));
+      } else {
+        flat[path] = value.toString();
+      }
     });
+    return flat;
   }
 
   String get(String key, [List<String>? params, List<String>? localeParams]) {
     key = key.replaceAll(" ", "_").toLowerCase();
-    String s = _localizedStings[key] ?? "\$$key";
+    String result = _localizedStings[key] ?? "\$$key";
     bool localizeParams = localeParams != null;
     if (localeParams != null) {
       params = localeParams;
     }
 
     if (params != null && params.isNotEmpty) {
-      for (int i = 0; i < params.length; i++) {
-        String hash = "#" * (i + 1);
-        final p = params[i];
-        final ps = localizeParams
-            ? _localizedStings[p.replaceAll(' ', '_').toLowerCase()]
-            : p;
-        if (ps != null) s = s.replaceFirst(hash, ps);
+      for (int index = 0; index < params.length; index++) {
+        String hash = "#" * (index + 1);
+        final param = params[index];
+        final resolved = localizeParams
+            ? _localizedStings[param.replaceAll(' ', '_').toLowerCase()]
+            : param;
+        if (resolved != null) {
+          result = result.replaceFirst(hash, resolved);
+        }
       }
-      s = s.replaceAll("#", "");
+      result = result.replaceAll("#", "");
     }
-    return s;
+    return result;
   }
 
   static String string(

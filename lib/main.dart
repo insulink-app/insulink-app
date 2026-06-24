@@ -8,14 +8,24 @@ import 'package:insulink/src/base/page.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/profile/profile_bolus_state.dart';
-import 'package:insulink/src/profile/profile_developer_state.dart';
-import 'package:insulink/src/profile/profile_glucose_state.dart';
-import 'package:insulink/src/profile/profile_language_state.dart';
-import 'package:insulink/src/profile/profile_silent_state.dart';
-import 'package:insulink/src/profile/profile_theme_state.dart';
-import 'package:insulink/src/theme/glucose_colors.dart';
+import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
+import 'package:insulink/src/profile/developer/profile_developer_state.dart';
+import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
+import 'package:insulink/src/profile/language/profile_language_state.dart';
+import 'package:insulink/src/profile/silent/profile_silent_state.dart';
+import 'package:insulink/src/profile/theme/profile_theme_state.dart';
+import 'package:insulink/src/theme/app_theme.dart';
 import 'package:provider/provider.dart';
+
+/// The persisted settings the app needs before its first frame can render.
+typedef AppPreferences = ({
+  String language,
+  String theme,
+  bool developer,
+  ProfileGlucoseState glucose,
+  ProfileBolusState bolus,
+  ProfileSilentState silent,
+});
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,10 +44,21 @@ class InsulinkApp extends StatefulWidget {
 }
 
 class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
+  /// Loaded ONCE here, never in `build()`. Recreating the future on every root
+  /// rebuild would reset the [FutureBuilder] to "waiting" (a blank frame =
+  /// flicker) and tear down + rebuild the whole provider tree — re-running
+  /// `G7Controller.init()` → `start()` → the foreground service/scan in a loop.
+  late final Future<AppPreferences> _preferences;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    _preferences = _loadPreferences();
   }
 
   @override
@@ -48,125 +69,57 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-    return FutureBuilder<
-      ({
-        String language,
-        String theme,
-        bool developer,
-        ProfileGlucoseState glucose,
-        ProfileBolusState bolus,
-        ProfileSilentState silent,
-      })
-    >(
-      future: _loadPreferences(),
-      builder:
-          (
-            context,
-            AsyncSnapshot<
-              ({
-                String language,
-                String theme,
-                bool developer,
-                ProfileGlucoseState glucose,
-                ProfileBolusState bolus,
-                ProfileSilentState silent,
-              })
-            >
-            snapshot,
-          ) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const SizedBox.shrink();
-            }
-            final language = snapshot.data?.language ?? "de";
-            final theme = snapshot.data?.theme ?? "light";
-            final developer = snapshot.data?.developer ?? false;
-            final glucose = snapshot.data!.glucose;
-            final bolus = snapshot.data!.bolus;
-            final silent = snapshot.data!.silent;
-            return MultiProvider(
-              providers: [
-                ChangeNotifierProvider(
-                  create: (_) => ProfileLanguageState(language),
-                ),
-                ChangeNotifierProvider(create: (_) => ProfileThemeState(theme)),
-                ChangeNotifierProvider(
-                  create: (_) => ProfileDeveloperState(developer),
-                ),
-                ChangeNotifierProvider(create: (_) => glucose),
-                ChangeNotifierProvider(create: (_) => bolus),
-                ChangeNotifierProvider(create: (_) => silent),
-                // Shared G7 read pipeline + service control, observed by the
-                // overview and sensor pages.
-                ChangeNotifierProvider(create: (_) => G7Controller()..init()),
-              ],
-              child: Consumer<ProfileThemeState>(
-                builder: (context, themeState, _) => LocaleBuilder(
-                  builder: (locale) => MaterialApp(
-                    title: 'Insulink',
-                    themeMode: themeState.themeMode,
-                    theme: ThemeData(
-                      useMaterial3: true,
-                      primaryColor: Colors.black,
-                      colorScheme: ColorScheme.light(
-                        primary: Colors.indigo,
-                        surface: Color(0xFFE8E8E8),
-                      ),
-                      appBarTheme: AppBarTheme(
-                        backgroundColor: Color(0xFFFAFAFA),
-                      ),
-                      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-                        backgroundColor: Colors.white,
-                      ),
-                      scaffoldBackgroundColor: Color(0xFFFAFAFA),
-                      dividerColor: Colors.black12,
-                      extensions: const [GlucoseColors.standard],
-                    ),
-                    darkTheme: ThemeData(
-                      useMaterial3: true,
-                      primaryColor: Colors.white,
-                      colorScheme: ColorScheme.dark(
-                        primary: Colors.indigoAccent,
-                        surface: Color(0xFF1E1E1E),
-                        surfaceContainerHighest: Color(0xFF2A2A2A),
-                      ),
-                      appBarTheme: AppBarTheme(
-                        backgroundColor: Color(0xFF1B1B1B),
-                      ),
-                      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-                        backgroundColor: Color(0xFF2A2A2A),
-                      ),
-                      scaffoldBackgroundColor: Color(0xFF1B1B1B),
-                      dividerColor: Color(0xFF3B3B3B),
-                      extensions: const [GlucoseColors.standard],
-                    ),
-                    home: AppPage(),
-                    debugShowCheckedModeBanner: false,
-                    localizationsDelegates: Locales.delegates,
-                    supportedLocales: Locales.supportedLocales,
-                    locale: locale,
-                  ),
-                ),
-              ),
-            );
-          },
+    return FutureBuilder<AppPreferences>(
+      future: _preferences,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox.shrink();
+        }
+        return _providers(snapshot.data!);
+      },
     );
   }
 
-  Future<
-    ({
-      String language,
-      String theme,
-      bool developer,
-      ProfileGlucoseState glucose,
-      ProfileBolusState bolus,
-      ProfileSilentState silent,
-    })
-  >
-  _loadPreferences() async {
+  /// Wraps the app in the shared state providers built from the loaded prefs.
+  Widget _providers(AppPreferences prefs) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => ProfileLanguageState(prefs.language),
+        ),
+        ChangeNotifierProvider(create: (_) => ProfileThemeState(prefs.theme)),
+        ChangeNotifierProvider(
+          create: (_) => ProfileDeveloperState(prefs.developer),
+        ),
+        ChangeNotifierProvider(create: (_) => prefs.glucose),
+        ChangeNotifierProvider(create: (_) => prefs.bolus),
+        ChangeNotifierProvider(create: (_) => prefs.silent),
+        // Shared G7 read pipeline + service control, observed by the overview
+        // and sensor pages.
+        ChangeNotifierProvider(create: (_) => G7Controller()..init()),
+      ],
+      child: Consumer<ProfileThemeState>(
+        builder: (context, themeState, _) =>
+            LocaleBuilder(builder: (locale) => _app(themeState, locale)),
+      ),
+    );
+  }
+
+  Widget _app(ProfileThemeState themeState, Locale? locale) {
+    return MaterialApp(
+      title: 'Insulink',
+      themeMode: themeState.themeMode,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      home: AppPage(),
+      debugShowCheckedModeBanner: false,
+      localizationsDelegates: Locales.delegates,
+      supportedLocales: Locales.supportedLocales,
+      locale: locale,
+    );
+  }
+
+  Future<AppPreferences> _loadPreferences() async {
     const storage = FlutterSecureStorage();
     final language =
         await storage.read(key: "language") ??
@@ -176,17 +129,13 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         (PlatformDispatcher.instance.platformBrightness == Brightness.dark
             ? "dark"
             : "light");
-    final developer = await ProfileDeveloperState.load();
-    final glucose = await ProfileGlucoseState.load();
-    final bolus = await ProfileBolusState.load();
-    final silent = ProfileSilentState(await ProfileSilentState.load());
     return (
       language: language,
       theme: theme,
-      developer: developer,
-      glucose: glucose,
-      bolus: bolus,
-      silent: silent,
+      developer: await ProfileDeveloperState.load(),
+      glucose: await ProfileGlucoseState.load(),
+      bolus: await ProfileBolusState.load(),
+      silent: ProfileSilentState(await ProfileSilentState.load()),
     );
   }
 }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/profile/profile_bolus_state.dart';
-import 'package:insulink/src/profile/profile_glucose_state.dart';
+import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
+import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:provider/provider.dart';
 
 /// Opens the bolus-calculator as a modal bottom sheet. The glucose field is
@@ -57,7 +58,9 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// Suggested bolus in units, or null while the glucose input is empty/invalid.
   double? get _bolus {
     final glucose = int.tryParse(_glucoseController.text);
-    if (glucose == null) return null;
+    if (glucose == null) {
+      return null;
+    }
     final carbs =
         double.tryParse(_carbsController.text.replaceAll(',', '.')) ?? 0;
     final bolus = context.read<ProfileBolusState>();
@@ -86,16 +89,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+          const GrabHandle(),
           const SizedBox(height: 20),
           LocaleText(
             'injection.title',

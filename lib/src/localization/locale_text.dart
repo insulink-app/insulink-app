@@ -4,7 +4,7 @@ import 'locales.dart';
 
 class LocaleText extends Text {
   const LocaleText(
-    this.k, {
+    this.localeKey, {
     super.style,
     this.upperCase = false,
     super.key,
@@ -15,27 +15,27 @@ class LocaleText extends Text {
     super.textDirection,
     this.localeParams,
     super.maxLines,
-  }) : super(k);
+  }) : super(localeKey);
 
-  final String k;
+  final String localeKey;
   final bool upperCase, localize;
   final List<String>? params, localeParams;
 
   @override
   Widget build(BuildContext context) {
-    String s = !localize
-        ? k
+    String text = !localize
+        ? localeKey
         : Locales.string(
             context,
-            k,
+            localeKey,
             params: params,
             localeParams: localeParams,
           );
     if (upperCase) {
-      s = s.toUpperCase();
+      text = text.toUpperCase();
     }
     return Text(
-      s,
+      text,
       style: style,
       overflow: overflow,
       textAlign: textAlign,
