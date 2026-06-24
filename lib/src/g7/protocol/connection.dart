@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import 'auth_session.dart';
@@ -86,12 +86,33 @@ class G7Connection {
   void _log(String line) => onLog?.call(line);
 
   void _addReading(int secs, int mgdl) {
-    // A new sensor session resets secsSinceStart toward 0 — drop stale history.
-    if (_byTime.isNotEmpty && secs + 3600 < _byTime.lastKey()!) {
-      _byTime.clear();
-    }
     _byTime[secs] = mgdl;
   }
+
+  /// A new sensor session resets secsSinceStart toward 0 — drop stale history.
+  /// Only a LIVE EGV (always the newest reading) can signal this; backfill
+  /// records are intentionally in the past, so a >1h-old backfill point after a
+  /// long outage must NOT be mistaken for a session reset (it used to wipe the
+  /// whole history and leave only the freshly-backfilled gap).
+  void _resetIfNewSession(int liveSecs) {
+    if (_byTime.isNotEmpty && liveSecs + 3600 < _byTime.lastKey()!) {
+      _byTime.clear();
+    }
+  }
+
+  /// History merge as a live EGV does it (session-reset check, then insert).
+  @visibleForTesting
+  void ingestLive(int secs, int mgdl) {
+    _resetIfNewSession(secs);
+    _addReading(secs, mgdl);
+  }
+
+  /// History merge as a backfill record does it (insert only, never resets).
+  @visibleForTesting
+  void ingestBackfill(int secs, int mgdl) => _addReading(secs, mgdl);
+
+  @visibleForTesting
+  Map<int, int> get history => _byTime;
 
   /// Mirror the ENTIRE in-memory session history into the permanent, absolute-
   /// time archive (the stats source) — not just freshly-received records. Maps
@@ -358,6 +379,7 @@ class G7Connection {
       Duration(seconds: reading.secsSinceStart),
     );
     if (reading.glucoseMgDl != null) {
+      _resetIfNewSession(reading.secsSinceStart);
       _addReading(reading.secsSinceStart, reading.glucoseMgDl!);
       _persistReadings();
       _persistLatest(
