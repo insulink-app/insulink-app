@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
-import 'package:insulink/src/overview/overview_chart.dart';
+import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
-import 'package:insulink/src/overview/overview_next_update.dart';
+import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_states.dart';
-import 'package:insulink/src/profile/profile_silent_state.dart';
+import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:provider/provider.dart';
 
 class OverviewBody extends AppPageBody {
@@ -34,7 +34,7 @@ class _OverviewTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lastUpdate = context.watch<G7Controller>().lastUpdate;
-    return OverviewNextUpdate(lastUpdate: lastUpdate);
+    return OverviewUpdate(lastUpdate: lastUpdate);
   }
 }
 

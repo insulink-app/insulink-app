@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/profile/profile_silent_state.dart';
+import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:provider/provider.dart';
 
 /// Prominent, tappable indicator shown on the overview while silent mode mutes

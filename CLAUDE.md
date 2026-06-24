@@ -76,6 +76,16 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
   — so call sites are unchanged (`LocaleText('profile.glucose.target')`). A node
   that is BOTH a label and a prefix carries its own value under a `_` key (e.g.
   `profile.glucose._` = "Glucose" alongside `profile.glucose.target`).
+- **Package by feature, NOT by layer.** Group folders by what the code is ABOUT
+  (the feature/domain), never by technical type. Each feature folder holds its
+  state, widgets and logic TOGETHER (e.g. `profile/glucose/` has the glucose
+  state class AND its editor widgets). **Do NOT create type-layer folders** like
+  `state/`, `widgets/`, `models/`, `services/` or `controllers/`. The top level
+  is already feature-based (`overview/`, `sensor/`, `statistics/`, `profile/`,
+  `injection/`, `g7/` = the Dexcom device); cross-cutting shared code lives in
+  `base/` (shared widgets/primitives), `localization/`, `theme/`. Within a large
+  feature, subfolders are themselves features/sub-domains (e.g. `g7/protocol/`,
+  `profile/notifications/`), never technical layers.
 - **Document accumulated knowledge as individual markdown files under `docs/`** —
   one focused topic per file, rather than letting it pile up only in code.
 
@@ -93,7 +103,15 @@ Two layers, bridged by flutter_rust_bridge (FRB):
   against vectors captured from Juggluco's compiled reference; treat them as the
   contract — if you touch `jpake.rs`, keep them green.
 
-### The handshake (`lib/src/g7/auth_session.dart`)
+The `lib/src/g7/` module is grouped into subfolders by concern:
+`protocol/` (the wire/codec/handshake/pipeline core — `uuids`, `opcodes`,
+`display_certs`, `ble_transport`, `auth_session`, `device_info`, `glucose`,
+`connection`), `service/` (the background foreground-service host + alarms —
+`ble_service`, `alarms`), and at the root the persistence (`store.dart`) and the
+UI controller (`g7_controller.dart`). The `protocol/` files are the fragile,
+byte-exact core — relocate them if needed, but don't restructure their logic.
+
+### The handshake (`lib/src/g7/protocol/auth_session.dart`)
 
 GATT (service `f8083532-…`): control `…3534`, auth `…3535`, backfill `…3536`,
 J-PAKE/cert bulk `…3538` (see `uuids.dart`). Two paths:
@@ -227,7 +245,11 @@ glucose/bolus/silent profile state, and `G7Controller`) and `MaterialApp`
 - **Profile settings** follow one pattern: each setting is a tiny
   `ProfileXState` class (static `load()`/`save()` straight to
   `flutter_secure_storage`) paired with a `ProfileXToggle`/`ProfileXSelection`
-  widget. **The service isolate reads these with `load()` fresh on each check**
+  widget. The `profile/` folder is **packaged by feature** — one subfolder per
+  setting (`language/`, `theme/`, `glucose/`, `bolus/`, `notifications/`,
+  `silent/`, `developer/`), each holding that setting's state AND its widgets
+  together; `profile_page.dart` + the shared `profile_toggle_row.dart` sit at the
+  root. **The service isolate reads these with `load()` fresh on each check**
   (it can't observe a `ChangeNotifier` across isolates), so a toggle takes
   effect WITHOUT restarting the service. Safety-relevant settings default ON
   (alarm sound, connection-lost). `ProfileSilentState` suppresses all alarms;
@@ -249,7 +271,7 @@ glucose/bolus/silent profile state, and `G7Controller`) and `MaterialApp`
   session — see `archiveSince` / `archiveRange` under Data + persistence. Default
   window is 14 d (`G7Controller.statsWindow`, clinical AGP).
 
-### Alarms & notifications (`g7/alarms.dart`)
+### Alarms & notifications (`g7/service/alarms.dart`)
 
 `G7AlarmManager` runs in the **service isolate** (alongside `G7TaskHandler`) so
 alarms fire with the app closed. `init()` must be called once per isolate

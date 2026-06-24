@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'device_info.dart';
+import 'protocol/device_info.dart';
 
 /// Persists the sensor serial, pairing code, and the per-sensor EC-JPAKE
 /// session key so the reader can reconnect without re-pairing.

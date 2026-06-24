@@ -5,9 +5,9 @@ import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/profile/profile_developer_state.dart';
-import 'package:insulink/src/sensor/sensor_control_box.dart';
-import 'package:insulink/src/sensor/sensor_info.dart';
+import 'package:insulink/src/profile/developer/profile_developer_state.dart';
+import 'package:insulink/src/sensor/control/sensor_control_box.dart';
+import 'package:insulink/src/sensor/info/sensor_info.dart';
 import 'package:insulink/src/sensor/sensor_log_panel.dart';
 import 'package:provider/provider.dart';
 

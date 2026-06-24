@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/statistics/average_view.dart';
-import 'package:insulink/src/statistics/patterns_view.dart';
-import 'package:insulink/src/statistics/time_in_range_view.dart';
+import 'package:insulink/src/statistics/averages/average_view.dart';
+import 'package:insulink/src/statistics/patterns/patterns_view.dart';
+import 'package:insulink/src/statistics/ranges/time_in_range_view.dart';
 
 class StatisticsBody extends AppPageBody {
   StatisticsBody({super.key})

@@ -8,12 +8,12 @@ import 'package:insulink/src/base/page.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/profile/profile_bolus_state.dart';
-import 'package:insulink/src/profile/profile_developer_state.dart';
-import 'package:insulink/src/profile/profile_glucose_state.dart';
-import 'package:insulink/src/profile/profile_language_state.dart';
-import 'package:insulink/src/profile/profile_silent_state.dart';
-import 'package:insulink/src/profile/profile_theme_state.dart';
+import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
+import 'package:insulink/src/profile/developer/profile_developer_state.dart';
+import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
+import 'package:insulink/src/profile/language/profile_language_state.dart';
+import 'package:insulink/src/profile/silent/profile_silent_state.dart';
+import 'package:insulink/src/profile/theme/profile_theme_state.dart';
 import 'package:insulink/src/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -44,10 +44,21 @@ class InsulinkApp extends StatefulWidget {
 }
 
 class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
+  /// Loaded ONCE here, never in `build()`. Recreating the future on every root
+  /// rebuild would reset the [FutureBuilder] to "waiting" (a blank frame =
+  /// flicker) and tear down + rebuild the whole provider tree — re-running
+  /// `G7Controller.init()` → `start()` → the foreground service/scan in a loop.
+  late final Future<AppPreferences> _preferences;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    _preferences = _loadPreferences();
   }
 
   @override
@@ -58,12 +69,8 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
     return FutureBuilder<AppPreferences>(
-      future: _loadPreferences(),
+      future: _preferences,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const SizedBox.shrink();

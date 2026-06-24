@@ -4,8 +4,8 @@ import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/profile/profile_bolus_state.dart';
-import 'package:insulink/src/profile/profile_glucose_state.dart';
+import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
+import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:provider/provider.dart';
 
 /// Opens the bolus-calculator as a modal bottom sheet. The glucose field is
