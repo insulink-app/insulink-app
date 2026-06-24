@@ -41,8 +41,17 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Test
-        run: flutter test
+      - name: Test (with coverage)
+        run: flutter test --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+          # Public repos upload tokenless; add a CODECOV_TOKEN repo secret for
+          # private repos or more reliable uploads, then uncomment:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # ---------------------------------------------------------------------------
   # Rust crypto core: the J-PAKE KATs are the byte-exact contract vs Juggluco.
