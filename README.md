@@ -13,13 +13,15 @@ trend and alarms, without the official app. Android-first.
 > dosing or treatment decisions. Parts of the protocol are reverse-engineered.
 > Not affiliated with or endorsed by Dexcom.
 
-## Build & run (Android)
+## Build & run
 
 ```bash
 # regenerate the Dart<->Rust bridge after editing rust/src/api/*
 flutter_rust_bridge_codegen generate
 
-flutter run                                   # on a connected device
+# on a connected device
+flutter run
+
 # or a smaller/faster single-ABI debug build:
 flutter build apk --debug --target-platform android-arm64
 ```
