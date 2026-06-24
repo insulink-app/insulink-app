@@ -125,6 +125,10 @@ class _OverviewChartState extends State<OverviewChart> {
     _touchBarIndex = bars.length;
     bars.add(_touchBar(series.realSpots));
     return GlucoseLineChart(
+      // Remount on each data change so fl_chart renders the new data statically
+      // instead of tweening between structurally-different bar lists — that lerp
+      // flashes a malformed frame even with a zero-duration animation.
+      key: ValueKey('$latestSecs-${entries.length}-$_rangeHours'),
       bars: bars,
       touchBarIndex: _touchBarIndex,
       shift: shift,

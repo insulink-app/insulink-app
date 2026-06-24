@@ -282,6 +282,14 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
         _latest = _reading(data, 'trendTenths');
         _latestIsLive = true;
         _latestAt = DateTime.now();
+        // Plot the live point immediately. The chart otherwise waits for the
+        // 'update' store reload, which races the unawaited persist in the
+        // service isolate and drops the newest point for a cycle.
+        final mgdl = data['mgdl'] as int?;
+        final secs = data['secs'] as int?;
+        if (mgdl != null && secs != null) {
+          _byTime[secs] = mgdl;
+        }
         notifyListeners();
       case 'update':
         _reloadFromStore();
@@ -306,6 +314,13 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     _byTime
       ..clear()
       ..addAll(store.loadReadings(key));
+    // Keep the live point the 'reading' ping already plotted: the store write
+    // in the service isolate may not have flushed yet, so reloading from it
+    // would briefly drop the newest point and make the chart flicker.
+    final live = _latest;
+    if (_latestIsLive && live?.glucoseMgDl != null) {
+      _byTime[live!.secsSinceStart] = live.glucoseMgDl!;
+    }
     _info = store.loadInfo(key) ?? _info;
     _sensorStart = store.loadSensorStart(key) ?? _sensorStart;
     notifyListeners();
