@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose_range_card.dart';
 import 'package:insulink/src/profile/glucose_unit_selector.dart';
@@ -50,6 +51,7 @@ class ProfileGlucoseSelection extends StatelessWidget {
           low: state.urgentLow,
           high: state.low,
           onChanged: state.setLowAlarms,
+          onTest: () => context.read<G7Controller>().testAlarm(high: false),
         ),
         const SizedBox(height: 12),
         GlucoseRangeCard(
@@ -61,6 +63,7 @@ class ProfileGlucoseSelection extends StatelessWidget {
           low: state.high,
           high: state.urgentHigh,
           onChanged: state.setHighAlarms,
+          onTest: () => context.read<G7Controller>().testAlarm(high: true),
         ),
       ],
     );

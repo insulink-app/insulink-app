@@ -426,6 +426,21 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Fire a test alarm (low or high) so the user can preview the notification +
+  /// tone from the settings UI. Runs in this UI isolate (its own alarm manager),
+  /// ensuring notification + DnD access first, since the service isolate can't
+  /// show those dialogs.
+  Future<void> testAlarm({required bool high}) async {
+    if (await FlutterForegroundTask.checkNotificationPermission() !=
+        NotificationPermission.granted) {
+      await FlutterForegroundTask.requestNotificationPermission();
+    }
+    final alarms = G7AlarmManager(FlutterLocalNotificationsPlugin());
+    await alarms.init();
+    await alarms.ensureDndAccess();
+    await alarms.fireTest(high: high);
+  }
+
   Future<void> disconnect() async {
     await FlutterForegroundTask.stopService();
     _append('disconnected');

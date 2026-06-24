@@ -117,6 +117,19 @@ class G7AlarmManager {
     await _playSound(high: _isHigh(level));
   }
 
+  /// Fire a test alarm on demand from the settings UI: the low/high glucose
+  /// notification plus its tone, with a sample value. Bypasses the edge-trigger
+  /// and the silent gating so the user can preview exactly what an alarm looks
+  /// and sounds like; the tone still respects the alarm-sound toggle.
+  Future<void> fireTest({required bool high}) async {
+    final unit = (await ProfileGlucoseState.loadThresholds()).unit;
+    final level = high ? G7AlarmLevel.highWarning : G7AlarmLevel.lowWarning;
+    final sampleMgdl = high ? 260 : 60;
+    final trendPerMin = high ? 1.5 : -1.5;
+    await _show(level, _formatValue(sampleMgdl, unit, trendPerMin));
+    await _playSound(high: high);
+  }
+
   /// Clear any pending "connection lost" warning — call on each fresh reading.
   Future<void> onReading() async {
     if (!_connectionLostShown) {

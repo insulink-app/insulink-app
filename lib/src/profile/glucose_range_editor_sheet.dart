@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
+import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose_range_bar.dart';
 import 'package:insulink/src/profile/glucose_stepper_row.dart';
 import 'package:insulink/src/profile/profile_glucose_state.dart';
@@ -19,6 +20,7 @@ class GlucoseRangeEditorSheet extends StatefulWidget {
     required this.low,
     required this.high,
     required this.onChanged,
+    this.onTest,
   });
 
   final ProfileGlucoseState state;
@@ -26,6 +28,10 @@ class GlucoseRangeEditorSheet extends StatefulWidget {
   final String titleKey, lowLabelKey, highLabelKey;
   final int low, high;
   final void Function(int low, int high) onChanged;
+
+  /// When set, an "Alarm testen" button is shown that previews this alarm's
+  /// notification + tone. Null for the target range (which isn't an alarm).
+  final VoidCallback? onTest;
 
   @override
   State<GlucoseRangeEditorSheet> createState() =>
@@ -74,7 +80,25 @@ class _GlucoseRangeEditorSheetState extends State<GlucoseRangeEditorSheet> {
         _slider(),
         const SizedBox(height: 12),
         _steppers(),
+        if (widget.onTest != null) ...[
+          const SizedBox(height: 32),
+          _testButton(),
+        ],
       ],
+    );
+  }
+
+  Widget _testButton() {
+    return OutlinedButton.icon(
+      onPressed: widget.onTest,
+      icon: const Icon(Icons.notifications_active_outlined, size: 18),
+      label: LocaleText('profile.glucose.test_alarm'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: widget.accent,
+        side: BorderSide(color: widget.accent),
+        minimumSize: const Size.fromHeight(44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 

@@ -42,6 +42,7 @@
   "profile.glucose.high": "High",
   "profile.glucose.urgent_high": "Urgent high",
   "profile.glucose.edit_hint": "Tap to adjust",
+  "profile.glucose.test_alarm": "Test alarm",
   "alert.done": "Done",
   "profile.notification": "Notifications",
   "profile.notification.description": "Receive notifications",

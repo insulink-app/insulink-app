@@ -42,6 +42,7 @@
   "profile.glucose.high": "Hoch",
   "profile.glucose.urgent_high": "Dringend hoch",
   "profile.glucose.edit_hint": "Zum Anpassen tippen",
+  "profile.glucose.test_alarm": "Alarm testen",
   "alert.done": "Fertig",
   "profile.notification": "Benachrichtigungen",
   "profile.notification.description": "Benachrichtigungen erhalten",

@@ -17,6 +17,7 @@ class GlucoseRangeCard extends StatelessWidget {
     required this.low,
     required this.high,
     required this.onChanged,
+    this.onTest,
   });
 
   final ProfileGlucoseState state;
@@ -24,6 +25,10 @@ class GlucoseRangeCard extends StatelessWidget {
   final String labelKey, lowLabelKey, highLabelKey;
   final int low, high;
   final void Function(int low, int high) onChanged;
+
+  /// Optional alarm-preview callback, forwarded to the editor sheet's test
+  /// button. Null for the (non-alarm) target range.
+  final VoidCallback? onTest;
 
   void _openEditor(BuildContext context) {
     showModalBottomSheet<void>(
@@ -39,6 +44,7 @@ class GlucoseRangeCard extends StatelessWidget {
         low: low,
         high: high,
         onChanged: onChanged,
+        onTest: onTest,
       ),
     );
   }
