@@ -4,9 +4,9 @@ A from-scratch **Dexcom G7 glucose reader** built in Flutter. It connects to the
 sensor over Bluetooth and shows live and historical glucose, including a chart,
 trend and alarms, without the official app. Android-first.
 
-|      | Build Status                                                                                                                                                                      | Test Code Coverage                                                                                                               |
-|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| main | [![Build Status](https://github.com/breuerlukas/insulink/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/breuerlukas/insulink/actions/workflows/build.yml) | [![codecov](https://codecov.io/gh/breuerlukas/insulink/branch/main/graph/badge.svg)](https://codecov.io/gh/breuerlukas/insulink) |
+|      | Build Status                                                                                                                                                                      | Test Code Coverage                                                                                                                    |
+|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| main | [![Build Status](https://github.com/breuerlukas/insulink/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/breuerlukas/insulink/actions/workflows/build.yml) | [![codecov](https://codecov.io/gh/breuerlukas/insulink/graph/badge.svg?token=QU5RWJ6XWB)](https://codecov.io/gh/breuerlukas/insulink) |
 
 > ⚠️ **Use at your own risk.** This is an interoperability and research project,
 > **not a medical device**. Use it only with sensors you own and **never** for
