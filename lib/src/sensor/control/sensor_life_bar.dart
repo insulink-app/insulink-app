@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
+import 'sensor_lifespan.dart';
 
 /// Sensor durability shown as one rectangle per remaining unit: one per day
 /// normally, switching to one per HOUR over the final 24 h so the last day
@@ -17,41 +18,28 @@ class SensorLifeBar extends StatelessWidget {
   final DateTime start;
   final int sessionLengthSec;
 
-  int get _remainingSecs =>
-      sessionLengthSec - DateTime.now().difference(start).inSeconds;
-
-  /// Switch to hour-granularity once a single day or less remains (and the
-  /// sensor hasn't expired) — the final day matters most, so show it in hours.
-  bool get _hoursMode => _remainingSecs > 0 && _remainingSecs <= 86400;
-
-  /// Whole rated days. The reported session length includes a ~12 h grace
-  /// period past the rated lifetime (10 d → 907200 s = 10.5 d), so floor — not
-  /// round — to avoid showing an extra day (a 10-day sensor as "11").
-  int get _totalDays => (sessionLengthSec / 86400).floor().clamp(1, 30);
-
-  /// Total bars to draw: 24 (one per hour) in the final day, else one per day.
-  int get _totalSegments => _hoursMode ? 24 : _totalDays;
-
-  /// Filled bars, rounding a partial unit UP so the current hour/day still
-  /// counts as remaining.
-  int get _filledSegments => _hoursMode
-      ? (_remainingSecs / 3600).ceil().clamp(0, 24)
-      : (_remainingSecs / 86400).ceil().clamp(0, _totalDays);
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final life = SensorLifespan(
+      start: start,
+      sessionLengthSec: sessionLengthSec,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _header(context, scheme),
+        _header(context, scheme, life),
         const SizedBox(height: 6),
-        _segmentBar(scheme),
+        _segmentBar(scheme, life),
       ],
     );
   }
 
-  Widget _header(BuildContext context, ColorScheme scheme) {
+  Widget _header(
+    BuildContext context,
+    ColorScheme scheme,
+    SensorLifespan life,
+  ) {
     return Row(
       children: [
         LocaleText(
@@ -62,40 +50,45 @@ class SensorLifeBar extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        _remainingLabel(context, scheme),
+        _remainingLabel(context, scheme, life),
       ],
     );
   }
 
-  Widget _remainingLabel(BuildContext context, ColorScheme scheme) {
-    final expired = _remainingSecs <= 0;
+  Widget _remainingLabel(
+    BuildContext context,
+    ColorScheme scheme,
+    SensorLifespan life,
+  ) {
     return Text(
-      _remainingText(context, expired),
+      _remainingText(context, life),
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
-        color: expired ? Colors.redAccent : scheme.onSurface,
+        color: life.expired ? Colors.redAccent : scheme.onSurface,
       ),
     );
   }
 
-  String _remainingText(BuildContext context, bool expired) {
-    if (expired) {
+  String _remainingText(BuildContext context, SensorLifespan life) {
+    if (life.expired) {
       return Locales.string(context, 'sensor.value.expired');
     }
-    final key = _hoursMode
+    final key = life.hoursMode
         ? 'sensor.life.remaining_hours'
         : 'sensor.life.remaining';
-    return Locales.string(context, key, params: ['$_filledSegments']);
+    return Locales.string(context, key, params: ['${life.filledSegments}']);
   }
 
-  Widget _segmentBar(ColorScheme scheme) {
-    final gap = _hoursMode ? 2.0 : 4.0;
+  Widget _segmentBar(ColorScheme scheme, SensorLifespan life) {
+    final gap = life.hoursMode ? 2.0 : 4.0;
     return Row(
       children: [
-        for (var index = 0; index < _totalSegments; index++) ...[
+        for (var index = 0; index < life.totalSegments; index++) ...[
           if (index > 0) SizedBox(width: gap),
-          Expanded(child: _segment(scheme, filled: index < _filledSegments)),
+          Expanded(
+            child: _segment(scheme, filled: index < life.filledSegments),
+          ),
         ],
       ],
     );
