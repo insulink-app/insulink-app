@@ -119,11 +119,11 @@ class ProfileGlucoseState extends ChangeNotifier {
 
   /// Signed per-minute trend in the chosen unit (`"+1.0"` / `"-0.1"`).
   String formatTrend(double mgdlPerMin) {
-    final v = _unit == GlucoseUnit.mgdl
+    final value = _unit == GlucoseUnit.mgdl
         ? mgdlPerMin
         : mgdlPerMin * _mmolPerMgdl;
     final digits = _unit == GlucoseUnit.mgdl ? 1 : 2;
-    return '${v >= 0 ? '+' : ''}${v.toStringAsFixed(digits)}';
+    return '${value >= 0 ? '+' : ''}${value.toStringAsFixed(digits)}';
   }
 
   // ---- Persistence ----

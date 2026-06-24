@@ -67,12 +67,27 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// basis for the statistics views. Reads the store cache the controller keeps
   /// fresh via [reload] on every `update` ping and on resume.
   SplayTreeMap<int, int> archiveSince(Duration window) {
-    final s = _store;
-    if (s == null) {
+    final store = _store;
+    if (store == null) {
       return SplayTreeMap<int, int>();
     }
     final now = DateTime.now();
-    return s.archiveRange(now.subtract(window), now);
+    return store.archiveRange(now.subtract(window), now);
+  }
+
+  /// Builds a reading from a persisted/IPC map. The trend field is keyed
+  /// differently by the cached headline ('trend') and the live service payload
+  /// ('trendTenths'); the other fixed fields aren't carried across.
+  G7GlucoseReading _reading(Map map, String trendKey) {
+    return G7GlucoseReading(
+      secsSinceStart: map['secs'] as int? ?? 0,
+      age: 0,
+      sequence: 0,
+      glucoseMgDl: map['mgdl'] as int?,
+      predictedMgDl: 0,
+      trendTenths: map[trendKey] as int? ?? 0,
+      state: map['state'] as int? ?? 0,
+    );
   }
 
   G7GlucoseReading? _latest;
@@ -99,13 +114,13 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// session clock (`sensorStart + secsSinceStart`) so it's correct even for the
   /// value restored from cache on launch; falls back to the live arrival time.
   DateTime? get lastUpdate {
-    final l = _latest;
-    if (l == null) {
+    final reading = _latest;
+    if (reading == null) {
       return null;
     }
     final start = _sensorStart;
     if (start != null) {
-      return start.add(Duration(seconds: l.secsSinceStart));
+      return start.add(Duration(seconds: reading.secsSinceStart));
     }
     return _latestAt;
   }
@@ -124,42 +139,40 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // Receive live updates pushed from the foreground-service isolate.
     FlutterForegroundTask.addTaskDataCallback(_onTaskData);
-    final s = await G7Store.open();
+    final store = await G7Store.open();
     if (_disposed) {
       return;
     }
-    _store = s;
-    code.text = s.pairingCode ?? '';
-    // Cached data is keyed by the resolved key (the sensor BLE id).
-    final key = _key;
-    // Show cached history, latest value + device info immediately.
-    final cached = key.isEmpty ? <int, int>{} : s.loadReadings(key);
-    final latest = key.isEmpty ? null : s.loadLatest(key);
-    _byTime.addAll(cached);
-    if (key.isNotEmpty) {
-      _info = s.loadInfo(key) ?? _info;
-      _sensorStart = s.loadSensorStart(key);
-    }
-    if (latest != null) {
-      _latest = G7GlucoseReading(
-        secsSinceStart: latest['secs'] as int? ?? 0,
-        age: 0,
-        sequence: 0,
-        glucoseMgDl: latest['mgdl'] as int?,
-        predictedMgDl: 0,
-        trendTenths: latest['trend'] as int? ?? 0,
-        state: latest['state'] as int? ?? 0,
-      );
-      _latestIsLive = false; // from cache until a live reading arrives
-    }
+    _store = store;
+    code.text = store.pairingCode ?? '';
+    _restoreFromCache(store);
     notifyListeners();
-    if (cached.isNotEmpty) {
-      _append('showing ${cached.length} cached readings');
+    if (_byTime.isNotEmpty) {
+      _append('showing ${_byTime.length} cached readings');
     }
     await _refreshServiceState();
     // Start the read pipeline if it's down, or revive a frozen one that claims
     // to run but produced no data (see _recoverIfStale).
     await _recoverIfStale();
+  }
+
+  /// Populates the live reading, history, device info and sensor start from the
+  /// store cache so the UI shows something immediately, before the service
+  /// produces a fresh reading. The headline value stays marked non-live until
+  /// one arrives. Data is keyed by the resolved key (the sensor BLE id).
+  void _restoreFromCache(G7Store store) {
+    final key = _key;
+    if (key.isEmpty) {
+      return;
+    }
+    _byTime.addAll(store.loadReadings(key));
+    _info = store.loadInfo(key) ?? _info;
+    _sensorStart = store.loadSensorStart(key);
+    final latest = store.loadLatest(key);
+    if (latest != null) {
+      _latest = _reading(latest, 'trend');
+      _latestIsLive = false;
+    }
   }
 
   /// Staleness threshold. The G7 delivers roughly every 5 min, so no fresh
@@ -245,11 +258,11 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// the pipeline has resolved one).
   String get _key => _store?.resolvedKey ?? _store?.serial ?? '';
 
-  void _append(String s) {
+  void _append(String line) {
     if (_disposed) {
       return;
     }
-    _log.insert(0, s);
+    _log.insert(0, line);
     notifyListeners();
   }
 
@@ -266,15 +279,7 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
         if (_disposed) {
           return;
         }
-        _latest = G7GlucoseReading(
-          secsSinceStart: data['secs'] as int? ?? 0,
-          age: 0,
-          sequence: 0,
-          glucoseMgDl: data['mgdl'] as int?,
-          predictedMgDl: 0,
-          trendTenths: data['trendTenths'] as int? ?? 0,
-          state: data['state'] as int? ?? 0,
-        );
+        _latest = _reading(data, 'trendTenths');
         _latestIsLive = true;
         _latestAt = DateTime.now();
         notifyListeners();
@@ -287,23 +292,22 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// Requires reloading the store's in-memory cache since the writes happened
   /// in the service isolate.
   Future<void> _reloadFromStore() async {
-    final s = _store;
-    if (s == null) {
+    final store = _store;
+    if (store == null) {
       return;
     }
-    await s.reload();
+    await store.reload();
     // Use the resolved key (the service may have just set it after pairing with
     // a blank serial), not the text field.
     final key = _key;
     if (key.isEmpty || _disposed) {
       return;
     }
-    final cached = s.loadReadings(key);
     _byTime
       ..clear()
-      ..addAll(cached);
-    _info = s.loadInfo(key) ?? _info;
-    _sensorStart = s.loadSensorStart(key) ?? _sensorStart;
+      ..addAll(store.loadReadings(key));
+    _info = store.loadInfo(key) ?? _info;
+    _sensorStart = store.loadSensorStart(key) ?? _sensorStart;
     notifyListeners();
   }
 
@@ -365,42 +369,15 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     _busy = true;
     notifyListeners();
     try {
-      // Bluetooth runtime permissions must be GRANTED before starting a
-      // `connectedDevice` foreground service (Android 14+ validates the app
-      // holds one), and because the scan now runs in the background isolate
-      // which cannot show permission dialogs. Request them here in the UI.
-      if (!await _ensureBlePermissions()) {
+      if (!await _requestPermissions()) {
         _append('Bluetooth permission denied — cannot start');
         return;
       }
-      if (await FlutterForegroundTask.checkNotificationPermission() !=
-          NotificationPermission.granted) {
-        await FlutterForegroundTask.requestNotificationPermission();
-      }
-      // Let glucose alarms sound through Do-Not-Disturb. Must be granted in the
-      // UI BEFORE the service isolate creates the bypassDnd alarm channels.
-      await G7AlarmManager(FlutterLocalNotificationsPlugin()).ensureDndAccess();
-      if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
-        await FlutterForegroundTask.requestIgnoreBatteryOptimization();
-      }
-
       // The service isolate reads the pairing code from the store on start; the
       // serial stays blank and is resolved to the sensor BLE id by the pipeline.
       await _store?.saveIdentity(serial: '', pairingCode: code.text.trim());
-
       _initForegroundTask();
-      final result = await FlutterForegroundTask.startService(
-        serviceId: 256,
-        serviceTypes: const [ForegroundServiceTypes.connectedDevice],
-        notificationTitle: 'Insulink',
-        notificationText: await _strings.get('service.connecting'),
-        callback: startCallback,
-      );
-      if (result is ServiceRequestSuccess) {
-        _append('background service started');
-      } else if (result is ServiceRequestFailure) {
-        _append('service start failed: ${result.error}');
-      }
+      await _startService();
       await _refreshServiceState();
     } catch (e) {
       _append('ERROR: $e');
@@ -409,6 +386,43 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
         _busy = false;
         notifyListeners();
       }
+    }
+  }
+
+  /// Acquires everything the background service needs before it starts: BLE
+  /// runtime permissions (a `connectedDevice` FGS on Android 14+ validates the
+  /// app holds one, and the scan runs in the dialog-less service isolate),
+  /// notification permission, DnD bypass for alarms (must be granted in the UI
+  /// BEFORE the service isolate creates the bypassDnd channels) and a
+  /// battery-optimization exemption. Returns false only when BLE is denied — the
+  /// hard blocker.
+  Future<bool> _requestPermissions() async {
+    if (!await _ensureBlePermissions()) {
+      return false;
+    }
+    if (await FlutterForegroundTask.checkNotificationPermission() !=
+        NotificationPermission.granted) {
+      await FlutterForegroundTask.requestNotificationPermission();
+    }
+    await G7AlarmManager(FlutterLocalNotificationsPlugin()).ensureDndAccess();
+    if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+      await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+    }
+    return true;
+  }
+
+  Future<void> _startService() async {
+    final result = await FlutterForegroundTask.startService(
+      serviceId: 256,
+      serviceTypes: const [ForegroundServiceTypes.connectedDevice],
+      notificationTitle: 'Insulink',
+      notificationText: await _strings.get('service.connecting'),
+      callback: startCallback,
+    );
+    if (result is ServiceRequestSuccess) {
+      _append('background service started');
+    } else if (result is ServiceRequestFailure) {
+      _append('service start failed: ${result.error}');
     }
   }
 

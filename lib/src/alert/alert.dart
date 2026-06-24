@@ -49,9 +49,7 @@ class AlertState extends State<Alert> {
 
   @override
   Widget build(BuildContext context) {
-    var confirmationDisabled =
-        widget.confirmButtonEnabled != null && !widget.confirmButtonEnabled!();
-    var theme = Theme.of(context);
+    final theme = Theme.of(context);
     return AlertDialog(
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(15.0)),
@@ -67,91 +65,91 @@ class AlertState extends State<Alert> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          widget.description != null
-              ? Container(
-                  padding: const EdgeInsets.only(left: 30, right: 30, top: 10),
-                  child: LocaleText(
-                    widget.description ?? "",
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              : widget.content ?? SizedBox.shrink(),
-          Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              widget.cancelButton == true
-                  ? Container(
-                      margin: EdgeInsets.only(top: 15, bottom: 15, right: 10),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        style: ButtonStyle(
-                          backgroundColor: WidgetStateProperty.all(
-                            widget.cancelButtonColor ?? Colors.grey,
-                          ),
-                          shape: WidgetStateProperty.all(
-                            const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(5.0),
-                              ),
-                            ),
-                          ),
-                          padding: WidgetStateProperty.all(
-                            EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                          ),
-                          minimumSize: WidgetStateProperty.all(Size(0, 0)),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        child: LocaleText(
-                          widget.cancelButtonText ?? "alert.cancel",
-                          style: TextStyle(color: Colors.white, fontSize: 15),
-                        ),
-                      ),
-                    )
-                  : SizedBox.shrink(),
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 15),
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (confirmationDisabled) {
-                      return;
-                    }
-                    Navigator.pop(context);
-                    widget.callback?.call();
-                  },
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.all(
-                      confirmationDisabled
-                          ? widget.confirmButtonColor ??
-                                theme.colorScheme.primary.withValues(alpha: 0.5)
-                          : widget.confirmButtonColor ??
-                                theme.colorScheme.primary,
-                    ),
-                    shape: WidgetStateProperty.all(
-                      const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(5.0)),
-                      ),
-                    ),
-                    padding: WidgetStateProperty.all(
-                      EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                    ),
-                    minimumSize: WidgetStateProperty.all(Size(0, 0)),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  child: LocaleText(
-                    widget.confirmButtonText ?? "alert.ok",
-                    style: TextStyle(color: Colors.white, fontSize: 15),
-                  ),
-                ),
-              ),
-            ],
+        children: [_message(), _actions(theme)],
+      ),
+    );
+  }
+
+  /// The dialog body: a localized description, or a custom [content] widget.
+  Widget _message() {
+    if (widget.description == null) {
+      return widget.content ?? const SizedBox.shrink();
+    }
+    return Container(
+      padding: const EdgeInsets.only(left: 30, right: 30, top: 10),
+      child: LocaleText(widget.description ?? "", textAlign: TextAlign.center),
+    );
+  }
+
+  /// The (optional) cancel button next to the confirm button.
+  Widget _actions(ThemeData theme) {
+    final disabled =
+        widget.confirmButtonEnabled != null && !widget.confirmButtonEnabled!();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (widget.cancelButton == true)
+          Container(
+            margin: const EdgeInsets.only(top: 15, bottom: 15, right: 10),
+            child: _button(
+              color: widget.cancelButtonColor ?? Colors.grey,
+              textKey: widget.cancelButtonText ?? "alert.cancel",
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-        ],
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 15),
+          child: _button(
+            color: _confirmColor(theme, disabled),
+            textKey: widget.confirmButtonText ?? "alert.ok",
+            onPressed: () => _onConfirm(disabled),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _confirmColor(ThemeData theme, bool disabled) {
+    if (widget.confirmButtonColor != null) {
+      return widget.confirmButtonColor!;
+    }
+    final primary = theme.colorScheme.primary;
+    return disabled ? primary.withValues(alpha: 0.5) : primary;
+  }
+
+  void _onConfirm(bool disabled) {
+    if (disabled) {
+      return;
+    }
+    Navigator.pop(context);
+    widget.callback?.call();
+  }
+
+  /// The shared compact, rounded action button used for both cancel and confirm.
+  Widget _button({
+    required Color color,
+    required String textKey,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.all(color),
+        shape: WidgetStateProperty.all(
+          const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(5.0)),
+          ),
+        ),
+        padding: WidgetStateProperty.all(
+          const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        ),
+        minimumSize: WidgetStateProperty.all(Size.zero),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ),
+      child: LocaleText(
+        textKey,
+        style: const TextStyle(color: Colors.white, fontSize: 15),
       ),
     );
   }

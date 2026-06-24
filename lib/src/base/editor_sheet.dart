@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../localization/locale_text.dart';
+import 'grab_handle.dart';
 
 /// Shared chrome for the focused settings bottom-sheet editors (glucose ranges,
 /// bolus factors): the rounded container, grab handle, title + current-value
@@ -35,7 +36,7 @@ class EditorSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _grabHandle(theme),
+            const GrabHandle(),
             const SizedBox(height: 18),
             _header(),
             const SizedBox(height: 22),
@@ -43,19 +44,6 @@ class EditorSheet extends StatelessWidget {
             const SizedBox(height: 24),
             _doneButton(context),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _grabHandle(ThemeData theme) {
-    return Center(
-      child: Container(
-        width: 40,
-        height: 4,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(2),
         ),
       ),
     );

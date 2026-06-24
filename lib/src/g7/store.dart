@@ -80,13 +80,15 @@ class G7Store {
       return null;
     }
     return Uint8List.fromList([
-      for (var i = 0; i < hex.length; i += 2)
-        int.parse(hex.substring(i, i + 2), radix: 16),
+      for (var offset = 0; offset < hex.length; offset += 2)
+        int.parse(hex.substring(offset, offset + 2), radix: 16),
     ]);
   }
 
   Future<void> saveSessionKey(String serial, Uint8List key) async {
-    final hex = key.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final hex = key
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
     await _set(_kKey(serial), hex);
   }
 
@@ -95,7 +97,7 @@ class G7Store {
   /// Forget a sensor entirely: drop its session key + all cached data, plus the
   /// resolved key and identity, so the app no longer auto-reconnects to it.
   Future<void> clearSensor(String key) async {
-    for (final k in [
+    for (final sensorKey in [
       _kKey(key),
       _kDeviceId(key),
       _kReadings(key),
@@ -104,7 +106,7 @@ class G7Store {
       _kStart(key),
       _kExpiryNotified(key),
     ]) {
-      await _remove(k);
+      await _remove(sensorKey);
     }
     await _remove(_kResolved);
     await _remove(_kSerial);
@@ -123,6 +125,33 @@ class G7Store {
   Future<void> saveDeviceId(String serial, String id) =>
       _set(_kDeviceId(serial), id);
 
+  /// Decodes the `"k:v,k:v"` int-map wire format shared by the per-session
+  /// readings cache and the long-term archive day-chunks.
+  Map<int, int> _decodeIntMap(String? raw) {
+    final out = <int, int>{};
+    if (raw == null || raw.isEmpty) {
+      return out;
+    }
+    for (final part in raw.split(',')) {
+      final colon = part.indexOf(':');
+      if (colon <= 0) {
+        continue;
+      }
+      final key = int.tryParse(part.substring(0, colon));
+      final value = int.tryParse(part.substring(colon + 1));
+      if (key != null && value != null) {
+        out[key] = value;
+      }
+    }
+    return out;
+  }
+
+  /// Encodes an int-map to the `"k:v,k:v"` wire format, key-sorted.
+  String _encodeIntMap(Map<int, int> map) {
+    final keys = map.keys.toList()..sort();
+    return keys.map((key) => '$key:${map[key]}').join(',');
+  }
+
   static String _kReadings(String serial) => 'g7.readings.$serial';
 
   /// Cache recent glucose history (keyed by seconds-since-session-start) so the
@@ -131,29 +160,12 @@ class G7Store {
   Future<void> saveReadings(String serial, Map<int, int> byTime) async {
     final keys = byTime.keys.toList()..sort();
     final recent = keys.length > 300 ? keys.sublist(keys.length - 300) : keys;
-    final s = recent.map((k) => '$k:${byTime[k]}').join(',');
-    await _set(_kReadings(serial), s);
+    final capped = {for (final key in recent) key: byTime[key]!};
+    await _set(_kReadings(serial), _encodeIntMap(capped));
   }
 
-  Map<int, int> loadReadings(String serial) {
-    final out = <int, int>{};
-    final s = _cache[_kReadings(serial)];
-    if (s == null || s.isEmpty) {
-      return out;
-    }
-    for (final part in s.split(',')) {
-      final i = part.indexOf(':');
-      if (i <= 0) {
-        continue;
-      }
-      final k = int.tryParse(part.substring(0, i));
-      final v = int.tryParse(part.substring(i + 1));
-      if (k != null && v != null) {
-        out[k] = v;
-      }
-    }
-    return out;
-  }
+  Map<int, int> loadReadings(String serial) =>
+      _decodeIntMap(_cache[_kReadings(serial)]);
 
   static String _kLatest(String serial) => 'g7.latest.$serial';
 
@@ -179,11 +191,11 @@ class G7Store {
   }
 
   Map<String, dynamic>? loadLatest(String serial) {
-    final s = _cache[_kLatest(serial)];
-    if (s == null) {
+    final raw = _cache[_kLatest(serial)];
+    if (raw == null) {
       return null;
     }
-    return jsonDecode(s) as Map<String, dynamic>;
+    return jsonDecode(raw) as Map<String, dynamic>;
   }
 
   static String _kInfo(String serial) => 'g7.info.$serial';
@@ -204,11 +216,11 @@ class G7Store {
   }
 
   G7DeviceInfo? loadInfo(String serial) {
-    final s = _cache[_kInfo(serial)];
-    if (s == null) {
+    final raw = _cache[_kInfo(serial)];
+    if (raw == null) {
       return null;
     }
-    return G7DeviceInfo.fromJson(jsonDecode(s) as Map<String, dynamic>);
+    return G7DeviceInfo.fromJson(jsonDecode(raw) as Map<String, dynamic>);
   }
 
   DateTime? loadSensorStart(String serial) {
@@ -243,34 +255,12 @@ class G7Store {
   static const _minsPerDay = 1440;
 
   /// Epoch minutes (timezone-independent — `millisecondsSinceEpoch` is UTC).
-  static int _epochMin(DateTime t) => t.millisecondsSinceEpoch ~/ 60000;
+  static int _epochMin(DateTime time) => time.millisecondsSinceEpoch ~/ 60000;
 
   static String _kHist(int dayIndex) => '$_kHistPrefix$dayIndex';
 
-  Map<int, int> _loadHistDay(int dayIndex) {
-    final out = <int, int>{};
-    final s = _cache[_kHist(dayIndex)];
-    if (s == null || s.isEmpty) {
-      return out;
-    }
-    for (final part in s.split(',')) {
-      final i = part.indexOf(':');
-      if (i <= 0) {
-        continue;
-      }
-      final k = int.tryParse(part.substring(0, i));
-      final v = int.tryParse(part.substring(i + 1));
-      if (k != null && v != null) {
-        out[k] = v;
-      }
-    }
-    return out;
-  }
-
-  String _encodeHistDay(Map<int, int> day) {
-    final keys = day.keys.toList()..sort();
-    return keys.map((k) => '$k:${day[k]}').join(',');
-  }
+  Map<int, int> _loadHistDay(int dayIndex) =>
+      _decodeIntMap(_cache[_kHist(dayIndex)]);
 
   // Serializes archive read-modify-writes. Callers fire archive appends WITHOUT
   // awaiting (from BLE stream listeners), so a live-EGV append racing a backfill
@@ -279,8 +269,9 @@ class G7Store {
   // append onto this gate makes each load→merge→store atomic w.r.t. the others.
   Future<void> _archiveGate = Future.value();
 
-  /// Append one reading at its true wall-clock time [t] (deduped to the minute).
-  Future<void> archiveAdd(DateTime t, int mgdl) => archiveAddAll({t: mgdl});
+  /// Append one reading at its true wall-clock [time] (deduped to the minute).
+  Future<void> archiveAdd(DateTime time, int mgdl) =>
+      archiveAddAll({time: mgdl});
 
   /// Append a batch (e.g. a whole backfill block) in one pass, rewriting each
   /// affected day-chunk only once. Readings on the same minute dedupe (a live
@@ -294,13 +285,13 @@ class G7Store {
 
   Future<void> _archiveAddAll(Map<DateTime, int> readings) async {
     final byDay = <int, Map<int, int>>{};
-    readings.forEach((t, mgdl) {
-      final min = _epochMin(t);
-      (byDay[min ~/ _minsPerDay] ??= {})[min] = mgdl;
+    readings.forEach((time, mgdl) {
+      final minute = _epochMin(time);
+      (byDay[minute ~/ _minsPerDay] ??= {})[minute] = mgdl;
     });
     for (final entry in byDay.entries) {
       final merged = _loadHistDay(entry.key)..addAll(entry.value);
-      await _set(_kHist(entry.key), _encodeHistDay(merged));
+      await _set(_kHist(entry.key), _encodeIntMap(merged));
     }
   }
 
@@ -311,10 +302,10 @@ class G7Store {
     final out = SplayTreeMap<int, int>();
     final fromMin = _epochMin(from);
     final toMin = _epochMin(to);
-    for (var d = fromMin ~/ _minsPerDay; d <= toMin ~/ _minsPerDay; d++) {
-      _loadHistDay(d).forEach((k, v) {
-        if (k >= fromMin && k <= toMin) {
-          out[k] = v;
+    for (var day = fromMin ~/ _minsPerDay; day <= toMin ~/ _minsPerDay; day++) {
+      _loadHistDay(day).forEach((minute, mgdl) {
+        if (minute >= fromMin && minute <= toMin) {
+          out[minute] = mgdl;
         }
       });
     }
@@ -326,14 +317,15 @@ class G7Store {
   Future<void> archivePrune(Duration keep) async {
     final cutoffDay =
         (_epochMin(DateTime.now()) - keep.inMinutes) ~/ _minsPerDay;
-    final stale = _cache.keys.where((k) => k.startsWith(_kHistPrefix)).where((
-      k,
-    ) {
-      final d = int.tryParse(k.substring(_kHistPrefix.length));
-      return d != null && d < cutoffDay;
-    }).toList();
-    for (final k in stale) {
-      await _remove(k);
+    final stale = _cache.keys
+        .where((key) => key.startsWith(_kHistPrefix))
+        .where((key) {
+          final day = int.tryParse(key.substring(_kHistPrefix.length));
+          return day != null && day < cutoffDay;
+        })
+        .toList();
+    for (final key in stale) {
+      await _remove(key);
     }
   }
 }

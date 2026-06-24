@@ -100,10 +100,7 @@ class G7TaskHandler extends TaskHandler {
       _lastReadingAt ??= DateTime.now();
       return true;
     } catch (e) {
-      FlutterForegroundTask.sendDataToMain({
-        't': 'log',
-        'line': 'service init error: $e',
-      });
+      _log('service init error: $e');
       return false;
     }
   }
@@ -116,16 +113,15 @@ class G7TaskHandler extends TaskHandler {
       store: store,
       serial: serial,
       pairingCode: _pairingCode,
-      onLog: (line) =>
-          FlutterForegroundTask.sendDataToMain({'t': 'log', 'line': line}),
-      onReading: (r) {
+      onLog: _log,
+      onReading: (reading) {
         // A reading means the link is healthy — reset the health clock and
         // clear any pending "connection lost" warning.
         _lastReadingAt = DateTime.now();
         alarms.onReading();
-        _updateNotification(r.glucoseMgDl, r.trendMgDlPerMin);
-        if (r.glucoseMgDl != null) {
-          alarms.check(r.glucoseMgDl, r.trendMgDlPerMin);
+        _updateNotification(reading.glucoseMgDl, reading.trendMgDlPerMin);
+        if (reading.glucoseMgDl != null) {
+          alarms.check(reading.glucoseMgDl, reading.trendMgDlPerMin);
         }
         // One-shot warning when the sensor has < 24 h of session left. The
         // sensor's reported session length is best-effort; fall back to the
@@ -134,14 +130,14 @@ class G7TaskHandler extends TaskHandler {
           store: store,
           key: store.resolvedKey ?? serial,
           sessionLengthSec: _conn?.sessionLengthSec ?? 907200,
-          secsSinceStart: r.secsSinceStart,
+          secsSinceStart: reading.secsSinceStart,
         );
         FlutterForegroundTask.sendDataToMain({
           't': 'reading',
-          'mgdl': r.glucoseMgDl,
-          'trendTenths': r.trendTenths,
-          'state': r.state,
-          'secs': r.secsSinceStart,
+          'mgdl': reading.glucoseMgDl,
+          'trendTenths': reading.trendTenths,
+          'state': reading.state,
+          'secs': reading.secsSinceStart,
         });
       },
       onUpdate: () {
@@ -174,7 +170,7 @@ class G7TaskHandler extends TaskHandler {
         }
         return;
       }
-      final c = _conn!;
+      final connection = _conn!;
 
       // Warn the user once the link has been silent for 15 min while a sensor
       // is linked (best-effort; toggleable in profile notification settings).
@@ -200,19 +196,19 @@ class G7TaskHandler extends TaskHandler {
 
       // A wedged connect: the transport bounds each step, but force-reset if the
       // attempt still exceeds the cap so it can't pin the watchdog forever.
-      if (c.isConnecting) {
+      if (connection.isConnecting) {
         final since = _connectStartedAt;
         if (since != null &&
             DateTime.now().difference(since) > _connectStuckAfter) {
           _log('watchdog: connect wedged — resetting');
-          await c.dispose();
+          await connection.dispose();
         }
         return;
       }
 
       // The G7 drops the link after each ~5-min delivery, so "not connected" is
       // the NORMAL resting state — scan + reconnect to catch the next delivery.
-      if (!c.isConnected) {
+      if (!connection.isConnected) {
         _log('watchdog: reconnecting…');
         _startConnect();
         return;
@@ -222,7 +218,7 @@ class G7TaskHandler extends TaskHandler {
       // never deliver — drop it so the next tick reconnects cleanly.
       if (last != null && DateTime.now().difference(last) > _staleAfter) {
         _log('watchdog: link stale — forcing reconnect');
-        await c.dispose();
+        await connection.dispose();
       }
     } catch (e) {
       _log('watchdog error: $e');

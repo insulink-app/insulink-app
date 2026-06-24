@@ -28,143 +28,97 @@ class _ProfilePageState extends State<ProfilePage> {
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(CupertinoIcons.arrow_left),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(CupertinoIcons.arrow_left),
+          onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
       ),
       body: Container(
-        margin: EdgeInsets.symmetric(horizontal: 30),
+        margin: const EdgeInsets.symmetric(horizontal: 30),
         child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(height: 50),
-                        LocaleText(
-                          "profile.language",
-                          style: TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.left,
-                        ),
-                        SizedBox(height: 10),
-                        ProfileLanguageSelection(),
-                        SizedBox(height: 30),
-                        LocaleText(
-                          "profile.theme",
-                          style: TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.left,
-                        ),
-                        SizedBox(height: 10),
-                        ProfileThemeSelection(),
-                        SizedBox(height: 30),
-                        LocaleText(
-                          "profile.glucose",
-                          style: TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.left,
-                        ),
-                        SizedBox(height: 10),
-                        ProfileGlucoseSelection(),
-                        SizedBox(height: 30),
-                        LocaleText(
-                          "profile.bolus",
-                          style: TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.left,
-                        ),
-                        SizedBox(height: 10),
-                        ProfileBolusSelection(),
-                        SizedBox(height: 30),
-                        LocaleText(
-                          "profile.notification",
-                          style: TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.left,
-                        ),
-                        SizedBox(height: 10),
-                        ProfileNotificationToggle(),
-                        SizedBox(height: 10),
-                        ProfileLiveNotificationToggle(),
-                        SizedBox(height: 10),
-                        ProfileConnectionToggle(),
-                        SizedBox(height: 10),
-                        ProfileAlarmSoundToggle(),
-                        SizedBox(height: 30),
-                        LocaleText(
-                          "profile.silent",
-                          style: TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.left,
-                        ),
-                        SizedBox(height: 10),
-                        ProfileSilentToggle(),
-                        SizedBox(height: 30),
-                        LocaleText(
-                          "profile.developer",
-                          style: TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.left,
-                        ),
-                        SizedBox(height: 10),
-                        ProfileDeveloperToggle(),
-                      ],
-                    ),
-                    Image.asset('assets/images/cute.png', width: 50),
-                    Column(
-                      children: [
-                        SizedBox(height: 50),
-                        Divider(color: Colors.grey[300], height: 2),
-                        SizedBox(height: 20),
-                        Align(
-                          alignment: Alignment.center,
-                          child: FutureBuilder<PackageInfo>(
-                            future: PackageInfo.fromPlatform(),
-                            builder: (context, snapshot) {
-                              return Text(
-                                Locales.string(
-                                  context,
-                                  "profile.version",
-                                  params: [snapshot.data?.version ?? ""],
-                                ),
-                                style: TextStyle(fontSize: 12),
-                              );
-                            },
-                          ),
-                        ),
-                        SizedBox(height: 75),
-                      ],
-                    ),
-                  ],
-                ),
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _settings(),
+                  Image.asset('assets/images/cute.png', width: 50),
+                  _footer(),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _settings() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 20),
+        _section("profile.language", [const ProfileLanguageSelection()]),
+        _section("profile.theme", [const ProfileThemeSelection()]),
+        _section("profile.glucose", [const ProfileGlucoseSelection()]),
+        _section("profile.bolus", [const ProfileBolusSelection()]),
+        _section("profile.notification", [
+          const ProfileNotificationToggle(),
+          const SizedBox(height: 10),
+          const ProfileLiveNotificationToggle(),
+          const SizedBox(height: 10),
+          const ProfileConnectionToggle(),
+          const SizedBox(height: 10),
+          const ProfileAlarmSoundToggle(),
+        ]),
+        _section("profile.silent", [const ProfileSilentToggle()]),
+        _section("profile.developer", [const ProfileDeveloperToggle()]),
+      ],
+    );
+  }
+
+  /// A titled settings group: the bold heading followed by its controls. The
+  /// leading gap separates it from the section above.
+  Widget _section(String titleKey, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 30),
+        LocaleText(
+          titleKey,
+          style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.left,
+        ),
+        const SizedBox(height: 10),
+        ...children,
+      ],
+    );
+  }
+
+  Widget _footer() {
+    return Column(
+      children: [
+        const SizedBox(height: 50),
+        Divider(color: Colors.grey[300], height: 2),
+        const SizedBox(height: 20),
+        Align(alignment: Alignment.center, child: _version()),
+        const SizedBox(height: 75),
+      ],
+    );
+  }
+
+  Widget _version() {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) => Text(
+        Locales.string(
+          context,
+          "profile.version",
+          params: [snapshot.data?.version ?? ""],
+        ),
+        style: const TextStyle(fontSize: 12),
       ),
     );
   }
