@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../localization/service_strings.dart';
@@ -107,7 +106,7 @@ class G7AlarmManager {
       return;
     }
     final thresholds = await ProfileGlucoseState.loadThresholds();
-    final level = _levelFor(mgdl, thresholds);
+    final level = levelFor(mgdl, thresholds);
     if (level == _last) {
       return;
     }
@@ -217,8 +216,10 @@ class G7AlarmManager {
   bool _isHigh(G7AlarmLevel level) =>
       level == G7AlarmLevel.highWarning || level == G7AlarmLevel.highUrgent;
 
-  /// Map a reading to its alarm zone using the user's thresholds.
-  G7AlarmLevel _levelFor(
+  /// Map a reading to its alarm zone using the user's thresholds. Pure and
+  /// static so it can be unit-tested without the notification plugin.
+  @visibleForTesting
+  static G7AlarmLevel levelFor(
     int mgdl,
     ({GlucoseUnit unit, int urgentLow, int low, int high, int urgentHigh}) t,
   ) {

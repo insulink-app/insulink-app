@@ -17,6 +17,34 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
+  # Fast checks: static analysis + Dart unit/widget tests. No Android toolchain
+  # (no JDK/Gradle/Android-Rust target), so this finishes in ~1-2 min and gives
+  # every PR quick feedback. It's the primary gate on PRs — the slow APK build
+  # below runs only on main / manual.
+  # ---------------------------------------------------------------------------
+  verify:
+    name: Analyze + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+  # ---------------------------------------------------------------------------
   # Rust crypto core: the J-PAKE KATs are the byte-exact contract vs Juggluco.
   # Fast, no Android toolchain needed (pure Rust / RustCrypto).
   # ---------------------------------------------------------------------------
@@ -45,10 +73,13 @@ jobs:
   # ---------------------------------------------------------------------------
   # Android app: cargokit compiles the Rust core for the Android target as part
   # of `flutter build apk`. arm64 single-ABI debug build is the fastest path
-  # (see CLAUDE.md). Also runs `flutter analyze`.
+  # (see CLAUDE.md). This is the slow job, so it runs ONLY on pushes to main and
+  # manual dispatch — PRs rely on `verify` + `rust` for fast feedback. To also
+  # gate PRs on the APK build, drop the `if:` below.
   # ---------------------------------------------------------------------------
   android:
-    name: Android (analyze + debug APK)
+    name: Android (debug APK)
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -87,9 +118,6 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Analyze
-        run: flutter analyze
 
       - name: Build debug APK (arm64)
         run: flutter build apk --debug --target-platform android-arm64
