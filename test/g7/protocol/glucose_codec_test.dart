@@ -150,5 +150,34 @@ void main() {
         start.add(const Duration(seconds: 3570)),
       );
     });
+
+    test('toString summarises a valid reading with a signed trend', () {
+      final reading = G7GlucoseCodec.parseEgv(egvPacket(trend: 2, state: 6))!;
+      final text = reading.toString();
+      expect(text, contains('120 mg/dL'));
+      expect(text, contains('+0.2/min'));
+      expect(text, contains('state 0x6'));
+    });
+
+    test('toString marks an out-of-range reading invalid', () {
+      final reading = G7GlucoseCodec.parseEgv(egvPacket(mgdlField: 600))!;
+      expect(reading.toString(), startsWith('invalid'));
+    });
+  });
+
+  group('G7BackfillRecord.toString', () {
+    test('renders time, value and hex type', () {
+      final record = G7GlucoseCodec.parseBackfill(
+        backfillRecord(secs: 1200, mgdl: 100, type: 0xe),
+      ).single;
+      expect(record.toString(), 'backfill t=1200s 100 mg/dL (type 0xe)');
+    });
+  });
+
+  group('G7GlucoseCodec.debugDump', () {
+    test('hex-dumps each byte zero-padded', () {
+      final dump = G7GlucoseCodec.debugDump(Uint8List.fromList([0x0a, 0xff, 0]));
+      expect(dump, '0a ff 00');
+    });
   });
 }
