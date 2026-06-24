@@ -54,7 +54,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
   /// Gap between the pinned box and the scrolling content. Kept at least
   /// [_fadeDistance] so the box has fully faded out before the content scrolls
   /// up into its place (no overlap).
-  static const double _gap = 120;
+  static const double _gap = 80;
 
   /// The pinned box is overlaid on top of the scroll view; its measured height
   /// is used to push the content below it so nothing starts hidden.
