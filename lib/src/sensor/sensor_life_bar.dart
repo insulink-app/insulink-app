@@ -15,7 +15,10 @@ class SensorLifeBar extends StatelessWidget {
   final DateTime start;
   final int sessionLengthSec;
 
-  int get _totalDays => (sessionLengthSec / 86400).round().clamp(1, 30);
+  /// Whole rated days. The reported session length includes a ~12 h grace
+  /// period past the rated lifetime (10 d → 907200 s = 10.5 d), so floor — not
+  /// round — to avoid showing an extra day (a 10-day sensor as "11").
+  int get _totalDays => (sessionLengthSec / 86400).floor().clamp(1, 30);
 
   int get _remainingSecs =>
       sessionLengthSec - DateTime.now().difference(start).inSeconds;

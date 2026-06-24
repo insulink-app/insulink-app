@@ -14,9 +14,9 @@ import 'package:provider/provider.dart';
 class ProfileSilentToggle extends StatelessWidget {
   const ProfileSilentToggle({super.key});
 
-  void _onChanged(BuildContext context, ProfileSilentState s, bool value) {
+  void _onChanged(BuildContext context, ProfileSilentState state, bool value) {
     if (!value) {
-      s.setSilent(false);
+      state.setSilent(false);
       return;
     }
     // Switching ON: confirm via a danger-styled alert before muting alarms.
@@ -45,17 +45,17 @@ class ProfileSilentToggle extends StatelessWidget {
       cancelButton: true,
       confirmButtonText: "profile.silent.warning.confirm",
       confirmButtonColor: Colors.red,
-      callback: () => s.setSilent(true),
+      callback: () => state.setSilent(true),
     ).show(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final s = context.watch<ProfileSilentState>();
+    final state = context.watch<ProfileSilentState>();
     return ProfileToggleRow(
       labelKey: "profile.silent.description",
-      value: s.silent,
-      onChanged: (value) => _onChanged(context, s, value),
+      value: state.silent,
+      onChanged: (value) => _onChanged(context, state, value),
       activeColor: Colors.red,
     );
   }

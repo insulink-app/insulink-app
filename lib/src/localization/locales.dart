@@ -38,7 +38,7 @@ class Locales {
 
   static Future init(List<String> localeNames) async {
     try {
-      supportedLocales = localeNames.map((n) => Locale(n)).toList();
+      supportedLocales = localeNames.map((name) => Locale(name)).toList();
       final pref = await LocalePreference.init();
       log('prefLocale: ${pref.locale}');
       Locales.selectedLocale = pref.locale ?? supportedLocales.first;
@@ -77,26 +77,26 @@ class Locales {
 
   String get(String key, [List<String>? params, List<String>? localeParams]) {
     key = key.replaceAll(" ", "_").toLowerCase();
-    String s = _localizedStings[key] ?? "\$$key";
+    String result = _localizedStings[key] ?? "\$$key";
     bool localizeParams = localeParams != null;
     if (localeParams != null) {
       params = localeParams;
     }
 
     if (params != null && params.isNotEmpty) {
-      for (int i = 0; i < params.length; i++) {
-        String hash = "#" * (i + 1);
-        final p = params[i];
-        final ps = localizeParams
-            ? _localizedStings[p.replaceAll(' ', '_').toLowerCase()]
-            : p;
-        if (ps != null) {
-          s = s.replaceFirst(hash, ps);
+      for (int index = 0; index < params.length; index++) {
+        String hash = "#" * (index + 1);
+        final param = params[index];
+        final resolved = localizeParams
+            ? _localizedStings[param.replaceAll(' ', '_').toLowerCase()]
+            : param;
+        if (resolved != null) {
+          result = result.replaceFirst(hash, resolved);
         }
       }
-      s = s.replaceAll("#", "");
+      result = result.replaceAll("#", "");
     }
-    return s;
+    return result;
   }
 
   static String string(

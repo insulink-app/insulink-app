@@ -1,18 +1,9 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/profile_glucose_state.dart';
+import 'package:insulink/src/statistics/glucose_summary.dart';
 import 'package:provider/provider.dart';
-
-/// A single computed statistic shown as a tile.
-class _Stat {
-  const _Stat(this.labelKey, this.value, this.unit);
-  final String labelKey;
-  final String value;
-  final String unit;
-}
 
 /// Summary glucose statistics over the cached history: average, GMI (estimated
 /// HbA1c), variability (CV), standard deviation and the extremes.
@@ -21,35 +12,18 @@ class AverageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final g7 = context.watch<G7Controller>();
-    final s = context.watch<ProfileGlucoseState>();
+    final controller = context.watch<G7Controller>();
+    final glucose = context.watch<ProfileGlucoseState>();
 
     // Long-term archive (spans sensor swaps), not the current-session cache.
-    final values = g7.archiveSince(G7Controller.statsWindow).values.toList();
+    final values = controller
+        .archiveSince(G7Controller.statsWindow)
+        .values
+        .toList();
     if (values.isEmpty) {
       return Center(child: LocaleText('statistics.empty'));
     }
-
-    final n = values.length;
-    final mean = values.reduce((a, b) => a + b) / n;
-    final variance =
-        values.fold<double>(0, (acc, v) => acc + math.pow(v - mean, 2)) / n;
-    final sd = math.sqrt(variance);
-    final cv = mean == 0 ? 0.0 : sd / mean * 100;
-    // Standard CGM GMI formula (estimated A1c) — always a percentage.
-    final gmi = 3.31 + 0.02392 * mean;
-    final maxV = values.reduce(math.max);
-    final minV = values.reduce(math.min);
-
-    final unit = s.unit.label;
-    final stats = <_Stat>[
-      _Stat('statistics.avg.mean', s.format(mean.round()), unit),
-      _Stat('statistics.avg.gmi', gmi.toStringAsFixed(1), '%'),
-      _Stat('statistics.avg.cv', cv.toStringAsFixed(1), '%'),
-      _Stat('statistics.avg.sd', s.format(sd.round()), unit),
-      _Stat('statistics.avg.max', s.format(maxV), unit),
-      _Stat('statistics.avg.min', s.format(minV), unit),
-    ];
+    final stats = GlucoseSummary(values, glucose).build();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -58,25 +32,37 @@ class AverageView extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 520),
           child: Column(
             children: [
-              for (var i = 0; i < stats.length; i += 2)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  // IntrinsicHeight gives the row a finite height (the taller
-                  // tile) so the two tiles can stretch to match — without it,
-                  // `stretch` inside the scroll view's unbounded height throws.
-                  child: IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(child: _StatTile(stat: stats[i])),
-                        const SizedBox(width: 12),
-                        Expanded(child: _StatTile(stat: stats[i + 1])),
-                      ],
-                    ),
-                  ),
-                ),
+              for (var index = 0; index < stats.length; index += 2)
+                _StatRow(left: stats[index], right: stats[index + 1]),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A pair of stat tiles side by side. IntrinsicHeight gives the row a finite
+/// height (the taller tile) so the two tiles can stretch to match — without it,
+/// `stretch` inside the scroll view's unbounded height throws.
+class _StatRow extends StatelessWidget {
+  const _StatRow({required this.left, required this.right});
+
+  final GlucoseStat left;
+  final GlucoseStat right;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: _StatTile(stat: left)),
+            const SizedBox(width: 12),
+            Expanded(child: _StatTile(stat: right)),
+          ],
         ),
       ),
     );
@@ -86,7 +72,7 @@ class AverageView extends StatelessWidget {
 class _StatTile extends StatelessWidget {
   const _StatTile({required this.stat});
 
-  final _Stat stat;
+  final GlucoseStat stat;
 
   @override
   Widget build(BuildContext context) {
