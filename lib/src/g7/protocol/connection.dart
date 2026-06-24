@@ -114,6 +114,17 @@ class G7Connection {
   @visibleForTesting
   Map<int, int> get history => _byTime;
 
+  /// Drives the real live control/EGV handler end-to-end (covers the EGV-merge
+  /// path the [ingestLive]/[ingestBackfill] shims bypass).
+  // ponytail: a low secsSinceStart keeps `end > start` false so no backfill
+  // request fires → the throwaway transport is never dereferenced. If backfill
+  // gating changes, pass a real transport instead.
+  @visibleForTesting
+  void handleControlBytes(Uint8List bytes) => _onControl(
+    BleTransport(BluetoothDevice.fromId('00:00:00:00:00:00')),
+    bytes,
+  );
+
   /// Mirror the ENTIRE in-memory session history into the permanent, absolute-
   /// time archive (the stats source) — not just freshly-received records. Maps
   /// each session-relative key to wall-clock via [_sensorStart]; the archive

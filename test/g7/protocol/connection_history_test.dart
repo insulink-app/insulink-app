@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/g7/protocol/connection.dart';
 import 'package:insulink/src/g7/store.dart';
@@ -38,5 +40,16 @@ void main() {
     conn.ingestLive(120, 95); // new sensor: clock back near zero
     expect(conn.history.containsKey(691200), isFalse);
     expect(conn.history, {120: 95});
+  });
+
+  test('a live EGV packet flows through the control handler into history', () async {
+    final conn = await connection();
+    final packet = Uint8List(19);
+    packet[0] = 0x4E; // EGV opcode
+    final fields = ByteData.sublistView(packet);
+    fields.setInt32(2, 300, Endian.little); // secsSinceStart (low → no backfill)
+    fields.setUint16(12, 100, Endian.little); // mgdl
+    conn.handleControlBytes(packet);
+    expect(conn.history, {300: 100});
   });
 }
