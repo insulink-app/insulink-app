@@ -87,7 +87,8 @@
     "life": {
       "title": "Haltbarkeit",
       "remaining": "noch # Tage",
-      "remaining_hours": "noch # Stunden"
+      "remaining_hours": "noch # Stunden",
+      "grace": "Kulanzzeit · noch # Std."
     },
     "control": {
       "end_session": "Sitzung beenden",

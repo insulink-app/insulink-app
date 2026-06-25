@@ -87,7 +87,8 @@
     "life": {
       "title": "Durability",
       "remaining": "# days left",
-      "remaining_hours": "# hours left"
+      "remaining_hours": "# hours left",
+      "grace": "Grace period · # h left"
     },
     "control": {
       "end_session": "End session",

@@ -57,6 +57,28 @@ void main() {
     });
   });
 
+  group('grace period (rated lifetime up, sensor still reading)', () {
+    test('not in grace while rated days remain', () {
+      expect(after(const Duration(days: 9, hours: 18)).inGrace, isFalse);
+    });
+
+    test('enters grace once past the rated 10 days', () {
+      // 10 d 3 h elapsed → 9 h of the 12 h grace remain.
+      final life = after(const Duration(days: 10, hours: 3));
+      expect(life.inGrace, isTrue);
+      expect(life.expired, isFalse);
+      expect(life.graceHoursLeft, 9);
+    });
+
+    test('grace window is ~12 h', () {
+      expect(after(Duration.zero).graceSecs, 43200);
+    });
+
+    test('no longer in grace once expired', () {
+      expect(after(const Duration(days: 11)).inGrace, isFalse);
+    });
+  });
+
   group('expired', () {
     test('past the session end the sensor is expired', () {
       final life = after(const Duration(days: 11));
