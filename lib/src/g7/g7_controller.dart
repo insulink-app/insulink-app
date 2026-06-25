@@ -51,11 +51,61 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   G7Store? _store;
 
   /// glucose history keyed by seconds-since-session-start (dedupes EGV+backfill).
-  /// Mirrors what the background service persists to [G7Store]. This is the
-  /// CURRENT session only (capped, reset on a new sensor) — the overview chart's
-  /// data. For long-term / cross-sensor history use [archiveSince].
+  /// Mirrors what the background service persists to [G7Store]'s per-session
+  /// cache. Kept only as the cold-launch fallback (before [_sensorStart] is
+  /// known) and the source for [currentMgdl]/[_lastDataAt]; the overview chart
+  /// reads [byTime] below, which is sourced from the durable archive instead.
   final SplayTreeMap<int, int> _byTime = SplayTreeMap();
-  SplayTreeMap<int, int> get byTime => _byTime;
+
+  /// Glucose history for the overview chart, keyed by seconds-since-session-
+  /// start. Sourced from the DURABLE long-term archive (epoch-minute keyed,
+  /// append-only, never capped or wiped within the 90-day retention), converted
+  /// back to session-relative seconds via [_sensorStart].
+  ///
+  /// Deliberately NOT the per-session [G7Store.loadReadings] cache: that cache
+  /// is capped (~300 pts), cleared on a new session, and reload-clobbered — which
+  /// is exactly how points that were once on the chart disappeared. The archive
+  /// keeps every point ever seen, so a value plotted once stays plotted until it
+  /// slides out of the chart's own time window. Bounded to the last 24 h (the
+  /// widest window the chart offers) so we never build more than a day of points;
+  /// before a session start is known, falls back to the cached [_byTime].
+  SplayTreeMap<int, int> get byTime {
+    final store = _store;
+    final start = _sensorStart;
+    if (store == null || start == null) {
+      return _byTime;
+    }
+    final startSecs = start.millisecondsSinceEpoch ~/ 1000;
+    final now = DateTime.now();
+    final dayAgo = now.subtract(const Duration(hours: 24));
+    final out = SplayTreeMap<int, int>();
+    store.archiveRange(start.isAfter(dayAgo) ? start : dayAgo, now).forEach((
+      epochMin,
+      mgdl,
+    ) {
+      final secs = epochMin * 60 - startSecs;
+      if (secs >= 0) {
+        out[secs] = mgdl;
+      }
+    });
+    // Migration / cold-start safety: if the archive hasn't been populated yet
+    // (e.g. right after this build, before the first EGV republishes the session
+    // into it), fall back to the cached session points so the chart isn't empty.
+    if (out.isEmpty) {
+      return _byTime;
+    }
+    // Overlay the freshest live reading: the service archives it slightly after
+    // the 'reading' ping, so the archive snapshot can briefly lag the newest
+    // point. Minute-aligned to match (and dedupe against) the archived copy.
+    final live = _latest;
+    if (_latestIsLive && live?.glucoseMgDl != null) {
+      final liveMin =
+          start.add(Duration(seconds: live!.secsSinceStart)).millisecondsSinceEpoch ~/
+          60000;
+      out[liveMin * 60 - startSecs] = live.glucoseMgDl!;
+    }
+    return out;
+  }
 
   /// Default analysis window for the statistics page (clinical AGP uses 14 d).
   static const statsWindow = Duration(days: 14);
