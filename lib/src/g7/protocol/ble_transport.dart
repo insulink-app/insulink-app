@@ -151,6 +151,15 @@ class BleTransport {
     });
     await FlutterBluePlus.startScan(
       timeout: timeout,
+      // Don't use the FBP default ScanMode.lowLatency: this scan runs nearly
+      // continuously (120s windows back-to-back, 24/7) on the reconnect path, and
+      // continuous lowLatency scanning WEDGES the BLE controller on Android
+      // (esp. Samsung) — the scanner silently returns 0 results until the user
+      // toggles Bluetooth off/on. turnOff() is a no-op on Android 13+, so we
+      // can't recover programmatically; the only fix is to scan gently. Balanced
+      // (~25% radio duty vs lowLatency's 100%) still catches the G7's periodic
+      // advertisement via the offloaded withRemoteIds filter below.
+      androidScanMode: AndroidScanMode.balanced,
       // Pass the stored remoteId as a NATIVE address filter. This is load-bearing
       // for background reads: Android returns NO results for an unfiltered scan
       // while the screen is off, so without this filter a screen-off reconnect
