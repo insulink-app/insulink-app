@@ -75,6 +75,21 @@ class G7TaskHandler extends TaskHandler {
   /// every step); if it doesn't, force-reset so it can't pin the watchdog.
   static const _connectStuckAfter = Duration(minutes: 3);
 
+  /// After a successful reading the G7 won't advertise again for ~5 min, so
+  /// scanning in the minutes right after one is pure wasted radio — and that
+  /// near-continuous scanning ran THIS app's Android BLE scan "Score" to ~40×
+  /// any other app on the device (dumpsys). Hold the watchdog's reconnect off
+  /// this long after a delivery. Kept well under the ~5-min delivery interval so
+  /// clock drift can't make us miss the next advertisement; a MISSED delivery
+  /// leaves [_lastDeliveryAt] old, so we resume scanning normally.
+  static const _reconnectBackoff = Duration(minutes: 3);
+
+  /// Wall-clock of the last actual EGV delivery (null until the first), used
+  /// only for [_reconnectBackoff]. Distinct from [_lastReadingAt], which is
+  /// SEEDED at startup for the restart escalation — seeding this one would
+  /// wrongly suppress the very first connect.
+  DateTime? _lastDeliveryAt;
+
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     if (await _ensureReady()) {
@@ -130,6 +145,7 @@ class G7TaskHandler extends TaskHandler {
         // A reading means the link is healthy — reset the health clock and
         // clear any pending "connection lost" warning.
         _lastReadingAt = DateTime.now();
+        _lastDeliveryAt = _lastReadingAt;
         alarms.onReading();
         _updateNotification(reading.glucoseMgDl, reading.trendMgDlPerMin);
         if (reading.glucoseMgDl != null) {
@@ -241,7 +257,15 @@ class G7TaskHandler extends TaskHandler {
 
       // The G7 drops the link after each ~5-min delivery, so "not connected" is
       // the NORMAL resting state — scan + reconnect to catch the next delivery.
+      // But don't scan in the first few minutes after a fresh reading: the
+      // sensor won't be back yet, and that wasted scanning is what ran the scan
+      // Score sky-high. A missed delivery keeps _lastDeliveryAt old → we scan.
       if (!connection.isConnected) {
+        final delivered = _lastDeliveryAt;
+        if (delivered != null &&
+            DateTime.now().difference(delivered) < _reconnectBackoff) {
+          return;
+        }
         _log('watchdog: reconnecting…');
         _startConnect();
         return;
