@@ -238,6 +238,22 @@ class G7Store {
   Future<void> setExpiryNotified(String serial) =>
       _set(_kExpiryNotified(serial), 'true');
 
+  static const _kLastRestart = 'g7.last_service_restart';
+
+  /// Wall-clock (epoch ms) of the last in-process `restartService()` the
+  /// watchdog fired. Persisted in secure storage (process-wide, unlike the
+  /// per-isolate cache) so the FRESH isolate that restart spawned can tell a
+  /// restart was JUST attempted. If data is still absent after one, the native
+  /// BLE stack — not the isolate — is wedged, and only a full PROCESS restart
+  /// clears it (`restartService()` reuses the same process). See [G7TaskHandler].
+  DateTime? get lastServiceRestartAt {
+    final ms = int.tryParse(_cache[_kLastRestart] ?? '');
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  Future<void> markServiceRestart() =>
+      _set(_kLastRestart, DateTime.now().millisecondsSinceEpoch.toString());
+
   // ---- Long-term glucose archive -------------------------------------------
   // An append-only, absolute-time glucose record that SURVIVES sensor swap,
   // sensor stop, connection loss and even "forget sensor". The per-sensor
