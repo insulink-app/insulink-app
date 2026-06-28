@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:insulink/src/base/page.dart';
+import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -111,7 +111,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       themeMode: themeState.themeMode,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      home: AppPage(),
+      home: const AuthGate(),
       debugShowCheckedModeBanner: false,
       localizationsDelegates: Locales.delegates,
       supportedLocales: Locales.supportedLocales,

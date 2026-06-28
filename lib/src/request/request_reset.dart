@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/alert/alert.dart';
-import 'package:insulink/src/base/page.dart';
+import 'package:insulink/src/auth/auth_gate.dart';
 
 class RequestReset {
   reset(context) async {
@@ -17,7 +17,8 @@ class RequestReset {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => AppPage(),
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const AuthGate(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),

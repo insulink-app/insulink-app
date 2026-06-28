@@ -5,6 +5,53 @@
     "cancel": "Abbrechen",
     "done": "Fertig"
   },
+  "permission": {
+    "next": "Erlauben",
+    "continue": "Weiter",
+    "bluetooth": {
+      "title": "Bluetooth",
+      "body": "Insulink verbindet sich über Bluetooth mit deinem Dexcom G7, um deine Glukose zu lesen. Ohne Bluetooth findet die App deinen Sensor nicht."
+    },
+    "notification": {
+      "title": "Benachrichtigungen",
+      "body": "Glukose-Alarme warnen dich bei hohen und niedrigen Werten — auch wenn die App geschlossen ist. Erlaube Benachrichtigungen, damit du sie nicht verpasst."
+    },
+    "dnd": {
+      "title": "Kritische Alarme",
+      "body": "Erlaube Insulink, „Nicht stören\" und den Lautlos-Modus zu umgehen, damit ein dringender Tief- oder Hochwert auch dann ertönt, wenn dein Handy stummgeschaltet ist."
+    },
+    "battery": {
+      "title": "Im Hintergrund laufen",
+      "body": "Nimm Insulink von der Akku-Optimierung aus, damit dein Sensor weiter gelesen wird, wenn die App geschlossen ist. Ohne das kann Android die Verbindung beenden."
+    }
+  },
+  "legal": {
+    "title": "Willkommen bei Insulink",
+    "subtitle": "Bevor du startest, lies und akzeptiere bitte unsere Bedingungen.",
+    "continue": "Los geht's",
+    "checkbox": {
+      "prefix": "Ich akzeptiere die ",
+      "terms": "AGB",
+      "and": " und ",
+      "privacy": "Datenschutzerklärung"
+    }
+  },
+  "auth": {
+    "title": "Willkommen",
+    "subtitle_signin": "Melde dich an",
+    "subtitle_signup": "Erstelle dein Konto",
+    "name": "Name",
+    "password": "Passwort",
+    "signin": "Anmelden",
+    "signup": "Konto erstellen",
+    "to_signup": "Noch kein Konto? Registrieren",
+    "to_signin": "Bereits ein Konto? Anmelden",
+    "error": {
+      "invalid": "Name oder Passwort ist falsch.",
+      "signup_failed": "Konto konnte nicht erstellt werden. Bitte überprüfe deine Angaben.",
+      "network": "Verbindung fehlgeschlagen. Bitte versuche es erneut."
+    }
+  },
   "overview": {
     "label": "Übersicht",
     "chart": {

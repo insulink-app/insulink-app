@@ -1,12 +1,13 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../../base/confirm_dialog.dart';
+import '../../alert/alert.dart';
 import '../../g7/g7_controller.dart';
 import '../../localization/locale_text.dart';
 
 /// The two session buttons under the status header: end the current reading
 /// session, or fully forget the sensor. Both are guarded by a confirmation
-/// dialog so they can't fire by accident.
+/// alert so they can't fire by accident.
 class SensorSessionControls extends StatelessWidget {
   const SensorSessionControls({super.key, required this.controller});
 
@@ -55,47 +56,65 @@ class SensorSessionControls extends StatelessWidget {
     );
   }
 
-  Future<void> _endSession(BuildContext context) async {
-    final confirmed = await _confirm(
+  void _endSession(BuildContext context) {
+    _confirm(
       context,
       titleKey: 'sensor.control.end_session_title',
       bodyKey: 'sensor.control.end_session_body',
       confirmKey: 'sensor.control.end_session',
+      onConfirm: () => controller.disconnect(),
     );
-    if (confirmed) {
-      await controller.disconnect();
-    }
   }
 
-  Future<void> _stopSensor(BuildContext context) async {
-    final confirmed = await _confirm(
+  void _stopSensor(BuildContext context) {
+    _confirm(
       context,
       titleKey: 'sensor.control.stop_sensor_title',
       bodyKey: 'sensor.control.stop_sensor_body',
       confirmKey: 'sensor.control.stop_sensor',
       destructive: true,
+      onConfirm: () => controller.forgetSensor(),
     );
-    if (confirmed) {
-      await controller.forgetSensor();
-    }
   }
 
-  Future<bool> _confirm(
+  void _confirm(
     BuildContext context, {
     required String titleKey,
     required String bodyKey,
     required String confirmKey,
+    required VoidCallback onConfirm,
     bool destructive = false,
-  }) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => ConfirmDialog(
-        titleKey: titleKey,
-        bodyKey: bodyKey,
-        confirmKey: confirmKey,
-        destructive: destructive,
+  }) {
+    Alert(
+      icon: CupertinoIcons.exclamationmark_triangle,
+      iconColor: destructive ? Colors.redAccent : null,
+      content: _confirmContent(titleKey, bodyKey),
+      cancelButton: true,
+      confirmButtonText: confirmKey,
+      confirmButtonColor: destructive ? Colors.redAccent : null,
+      callback: onConfirm,
+    ).show(context);
+  }
+
+  Widget _confirmContent(String titleKey, String bodyKey) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LocaleText(
+            titleKey,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          LocaleText(
+            bodyKey,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, height: 1.35),
+          ),
+        ],
       ),
     );
-    return confirmed ?? false;
   }
 }
