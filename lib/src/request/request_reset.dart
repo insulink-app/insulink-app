@@ -10,6 +10,9 @@ class RequestReset {
     await storage.delete(key: "name");
     await storage.delete(key: "authentication_token");
     await storage.delete(key: "refresh_token");
+    if (context == null) {
+      return;
+    }
     Alert(
       description: "connection.logout",
       icon: CupertinoIcons.exclamationmark_triangle,
