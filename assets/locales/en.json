@@ -83,9 +83,22 @@
     "tab": {
       "ranges": "Ranges",
       "averages": "Metrics",
-      "patterns": "Patterns"
+      "patterns": "Patterns",
+      "events": "Events"
     },
     "empty": "No glucose data yet",
+    "events": {
+      "empty": "No events yet",
+      "type": {
+        "glucose_low": "Low glucose",
+        "glucose_low_urgent": "Urgent low glucose",
+        "glucose_high": "High glucose",
+        "glucose_high_urgent": "Urgent high glucose",
+        "signal_loss": "Signal loss",
+        "new_sensor": "New sensor",
+        "sensor_stopped": "Sensor stopped"
+      }
+    },
     "window": {
       "d1": "1 d",
       "d3": "3 d",

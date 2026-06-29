@@ -254,6 +254,54 @@ class G7Store {
   Future<void> markServiceRestart() =>
       _set(_kLastRestart, DateTime.now().millisecondsSinceEpoch.toString());
 
+  // ---- Event log -----------------------------------------------------------
+  // A small append-only log of notable events (glucose lows/highs, signal loss,
+  // sensor swap/stop) for the statistics "events" page. Kept in one JSON array
+  // (events are rare — zone crossings and sensor lifecycle), capped, and — like
+  // the archive — NOT wiped by clearSensor, so it spans sensors.
+
+  static const _kEvents = 'g7.events';
+  static const _eventCap = 200;
+
+  List<Map<String, dynamic>> _rawEvents() {
+    final raw = _cache[_kEvents];
+    if (raw == null || raw.isEmpty) {
+      return [];
+    }
+    return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+  }
+
+  /// Append an event of [type] (a stable slug the UI maps to a label/icon).
+  // ponytail: single-key read-modify-write without a cross-isolate lock —
+  // events are infrequent, so a lost append under a rare two-isolate race is
+  // acceptable; switch to per-day chunks like the archive if volume grows.
+  Future<void> addEvent(String type, {DateTime? at}) async {
+    final list = _rawEvents()
+      ..add({'ts': (at ?? DateTime.now()).millisecondsSinceEpoch, 'type': type});
+    if (list.length > _eventCap) {
+      list.removeRange(0, list.length - _eventCap);
+    }
+    await _set(_kEvents, jsonEncode(list));
+  }
+
+  /// Logged events within [from]..[to] inclusive, newest first.
+  List<({DateTime time, String type})> eventsBetween(DateTime from, DateTime to) {
+    final fromMs = from.millisecondsSinceEpoch;
+    final toMs = to.millisecondsSinceEpoch;
+    final out = <({DateTime time, String type})>[];
+    for (final event in _rawEvents()) {
+      final ts = event['ts'] as int;
+      if (ts >= fromMs && ts <= toMs) {
+        out.add((
+          time: DateTime.fromMillisecondsSinceEpoch(ts),
+          type: event['type'] as String,
+        ));
+      }
+    }
+    out.sort((first, second) => second.time.compareTo(first.time));
+    return out;
+  }
+
   // ---- Long-term glucose archive -------------------------------------------
   // An append-only, absolute-time glucose record that SURVIVES sensor swap,
   // sensor stop, connection loss and even "forget sensor". The per-sensor

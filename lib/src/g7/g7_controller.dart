@@ -155,6 +155,22 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     return archiveSince(_statsPreset);
   }
 
+  /// Logged events (lows/highs, signal loss, sensor swap/stop) over the currently
+  /// selected statistics window, newest first — drives the events page.
+  List<({DateTime time, String type})> get statsEvents {
+    final store = _store;
+    if (store == null) {
+      return [];
+    }
+    final from = _statsCustomFrom;
+    final to = _statsCustomTo;
+    if (from != null && to != null) {
+      return store.eventsBetween(from, to);
+    }
+    final now = DateTime.now();
+    return store.eventsBetween(now.subtract(_statsPreset), now);
+  }
+
   /// Long-term glucose history over the last [window], keyed by epoch-minute
   /// (recover wall-clock time via `DateTime.fromMillisecondsSinceEpoch(min *
   /// 60000)`). Unlike [byTime] this spans sensor swaps, stops and reconnects —
@@ -584,6 +600,7 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> forgetSensor() async {
     final key = _key;
     await FlutterForegroundTask.stopService();
+    await _store?.addEvent('sensor_stopped');
     await _store?.clearSensor(key);
     _append('sensor forgotten');
     if (_disposed) {

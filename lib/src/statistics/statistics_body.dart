@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/statistics/averages/average_view.dart';
+import 'package:insulink/src/statistics/events/event_log_view.dart';
 import 'package:insulink/src/statistics/patterns/patterns_view.dart';
 import 'package:insulink/src/statistics/range_selector.dart';
 import 'package:insulink/src/statistics/ranges/time_in_range_view.dart';
@@ -37,6 +38,7 @@ class StatisticsBodyContent extends StatelessWidget {
     _StatisticTab('statistics.tab.ranges', TimeInRangeView()),
     _StatisticTab('statistics.tab.averages', AverageView()),
     _StatisticTab('statistics.tab.patterns', PatternsView()),
+    _StatisticTab('statistics.tab.events', EventLogView()),
   ];
 
   @override
@@ -48,7 +50,7 @@ class StatisticsBodyContent extends StatelessWidget {
         children: [
           // App-style segmented pill selector (mirrors the overview chart's
           // range selector): rounded track + a filled primary pill behind the
-          // active tab.
+          // active tab. Two rows so four tabs fit without overflowing.
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Container(
@@ -58,28 +60,9 @@ class StatisticsBodyContent extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: theme.dividerColor),
               ),
-              child: TabBar(
-                isScrollable: false,
-                dividerColor: Colors.transparent,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                splashBorderRadius: BorderRadius.circular(8),
-                labelColor: Colors.white,
-                unselectedLabelColor: theme.colorScheme.onSurface,
-                labelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-                tabs: [
-                  for (final t in _tabs)
-                    Tab(height: 38, text: Locales.string(context, t.labelKey)),
+              child: _TwoRowTabs(
+                labels: [
+                  for (final t in _tabs) Locales.string(context, t.labelKey),
                 ],
               ),
             ),
@@ -92,6 +75,73 @@ class StatisticsBodyContent extends StatelessWidget {
             child: TabBarView(children: [for (final t in _tabs) t.view]),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The tab selector as two rows of pill segments (chunks of 2) driving the
+/// surrounding [TabController] — so four tabs fit without a scrolling/overflowing
+/// single row. The active segment gets the filled primary pill.
+class _TwoRowTabs extends StatelessWidget {
+  const _TwoRowTabs({required this.labels});
+
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = DefaultTabController.of(context);
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final rows = <Widget>[];
+        for (var start = 0; start < labels.length; start += 2) {
+          if (rows.isNotEmpty) {
+            rows.add(const SizedBox(height: 4));
+          }
+          final end = (start + 2).clamp(0, labels.length);
+          rows.add(_row(context, controller, start, end));
+        }
+        return Column(mainAxisSize: MainAxisSize.min, children: rows);
+      },
+    );
+  }
+
+  Widget _row(BuildContext context, TabController controller, int start, int end) {
+    return Row(
+      children: [
+        for (var index = start; index < end; index++)
+          Expanded(
+            child: _segment(context, controller, index),
+          ),
+      ],
+    );
+  }
+
+  Widget _segment(BuildContext context, TabController controller, int index) {
+    final theme = Theme.of(context);
+    final selected = controller.index == index;
+    return Padding(
+      padding: const EdgeInsets.all(2),
+      child: GestureDetector(
+        onTap: () => controller.animateTo(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? theme.colorScheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            labels[index],
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+              color: selected ? Colors.white : theme.colorScheme.onSurface,
+            ),
+          ),
+        ),
       ),
     );
   }
