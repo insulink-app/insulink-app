@@ -92,7 +92,40 @@ class G7Store {
     await _set(_kKey(serial), hex);
   }
 
+  /// The raw hex session key (the wire form persisted under [serial]) — used by
+  /// the backend sync to ship/restore the key without re-deriving bytes.
+  String? sessionKeyHex(String serial) => _cache[_kKey(serial)];
+
+  Future<void> saveSessionKeyHex(String serial, String hex) =>
+      _set(_kKey(serial), hex);
+
   Future<void> clearSessionKey(String serial) => _remove(_kKey(serial));
+
+  // ---- Backend sensor sync -------------------------------------------------
+  // Bookkeeping for mirroring the paired sensor to the account: the backend's
+  // sensor UUID and the last identity blob we shipped, BOTH keyed by the
+  // resolved sensor key so a NEW sensor registers a fresh row instead of
+  // overwriting the previous one. Plus a one-shot "the user dismissed the
+  // restore offer for this backend sensor" flag.
+
+  static String _kBackendId(String key) => 'g7.backend_id.$key';
+  static String _kBackendData(String key) => 'g7.backend_data.$key';
+  static const _kRestoreDismissed = 'g7.restore_dismissed';
+
+  String? backendSensorId(String key) => _cache[_kBackendId(key)];
+
+  Future<void> saveBackendSensorId(String key, String id) =>
+      _set(_kBackendId(key), id);
+
+  String? backendSyncedData(String key) => _cache[_kBackendData(key)];
+
+  Future<void> saveBackendSyncedData(String key, String data) =>
+      _set(_kBackendData(key), data);
+
+  String? get restoreDismissedId => _cache[_kRestoreDismissed];
+
+  Future<void> setRestoreDismissed(String backendSensorId) =>
+      _set(_kRestoreDismissed, backendSensorId);
 
   /// Forget a sensor entirely: drop its session key + all cached data, plus the
   /// resolved key and identity, so the app no longer auto-reconnects to it.

@@ -5,6 +5,7 @@ import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
 import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_states.dart';
+import 'package:insulink/src/overview/sensor_restore_offer.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:provider/provider.dart';
 
@@ -69,7 +70,15 @@ class OverviewBodyContent extends StatelessWidget {
         controller.hasSensor ||
         controller.connected ||
         controller.busy;
-    return loading ? const SearchingView() : const EmptyView();
+    if (loading) {
+      return const SearchingView();
+    }
+    // No sensor set up: below the empty prompt, offer the account's stored
+    // sensor (renders nothing unless the backend has one).
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [SensorRestoreOffer(), Expanded(child: EmptyView())],
+    );
   }
 }
 

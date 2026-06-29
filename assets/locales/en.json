@@ -101,6 +101,12 @@
     "silent": {
       "title": "Silent mode on",
       "hint": "Alarms are muted · tap to turn off"
+    },
+    "restore": {
+      "title": "Use your previous sensor?",
+      "body": "Your account has a sensor on file. Adopt it to keep reading without re-pairing.",
+      "use": "Use it",
+      "dismiss": "Not now"
     }
   },
   "statistics": {
