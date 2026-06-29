@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -13,6 +14,7 @@ class EventLogView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final events = context.watch<G7Controller>().statsEvents;
+    final glucose = context.watch<ProfileGlucoseState>();
     if (events.isEmpty) {
       return Center(child: LocaleText('statistics.events.empty'));
     }
@@ -20,23 +22,32 @@ class EventLogView extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       itemCount: events.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) => _EventRow(event: events[index]),
+      itemBuilder: (context, index) =>
+          _EventRow(event: events[index], glucose: glucose),
     );
   }
 }
 
 class _EventRow extends StatelessWidget {
-  const _EventRow({required this.event});
+  const _EventRow({required this.event, required this.glucose});
 
-  final ({DateTime time, String type}) event;
+  final ({DateTime time, String type, int? value}) event;
+  final ProfileGlucoseState glucose;
 
   @override
   Widget build(BuildContext context) {
     final style = _EventStyle.of(event.type, context);
+    final value = event.value;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(style.icon, color: style.color),
       title: LocaleText('statistics.events.type.${event.type}'),
+      subtitle: value == null
+          ? null
+          : Text(
+              _formatGlucose(value),
+              style: TextStyle(fontWeight: FontWeight.w600, color: style.color),
+            ),
       trailing: Text(
         _formatWhen(context, event.time),
         style: TextStyle(
@@ -45,6 +56,14 @@ class _EventRow extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// The triggering glucose value in the user's display unit (e.g. "62 mg/dL").
+  String _formatGlucose(int mgdl) {
+    final shown = glucose.unit == GlucoseUnit.mmol
+        ? glucose.toDisplay(mgdl).toStringAsFixed(1)
+        : '$mgdl';
+    return '$shown ${glucose.unit.label}';
   }
 
   /// "DD.MM.  HH:MM" in the platform locale's formats.
