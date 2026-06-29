@@ -58,7 +58,7 @@ class AlertState extends State<Alert> {
       title: Center(
         child: CircleAvatar(
           radius: 30,
-          backgroundColor: theme.appBarTheme.backgroundColor,
+          backgroundColor: theme.bottomNavigationBarTheme.backgroundColor,
           child: createAlertIcon(),
         ),
       ),

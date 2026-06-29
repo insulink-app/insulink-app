@@ -39,6 +39,12 @@ Future<void> main() async {
 class InsulinkApp extends StatefulWidget {
   const InsulinkApp({super.key});
 
+  /// Reloads the persisted preferences and rebuilds the provider tree. Used
+  /// after sign-in so the settings just pulled from the backend take effect.
+  static void reload(BuildContext context) {
+    context.findAncestorStateOfType<_InsulinkAppState>()?._reload();
+  }
+
   @override
   State<InsulinkApp> createState() => _InsulinkAppState();
 }
@@ -59,6 +65,10 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       DeviceOrientation.portraitDown,
     ]);
     _preferences = _loadPreferences();
+  }
+
+  void _reload() {
+    setState(() => _preferences = _loadPreferences());
   }
 
   @override

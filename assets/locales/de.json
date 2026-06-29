@@ -198,6 +198,13 @@
   },
   "profile": {
     "label": "Profil",
+    "account": {
+      "_": "Konto",
+      "name": "Name",
+      "save": "Speichern",
+      "logout": "Abmelden",
+      "logout_confirm": "Möchtest du dich wirklich abmelden?"
+    },
     "language": "Sprache",
     "theme": {
       "_": "Darstellung",

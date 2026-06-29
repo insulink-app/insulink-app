@@ -7,6 +7,7 @@ import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
 import 'alarms.dart';
+import 'service_log.dart';
 import '../protocol/connection.dart';
 import '../store.dart';
 
@@ -39,6 +40,10 @@ class G7TaskHandler extends TaskHandler {
   /// so the watchdog's recovery re-init doesn't re-call `RustLib.init()` (which
   /// throws if already initialised).
   bool _coreReady = false;
+
+  /// Durable log so the watchdog's overnight recovery activity survives a
+  /// process/isolate restart and is readable in the UI afterwards.
+  final ServiceLog _serviceLog = ServiceLog();
 
   /// Wall-clock of the last live reading (seeded at startup so a service that
   /// never produces anything still escalates). The G7 delivers ~every 5 min, so
@@ -289,8 +294,10 @@ class G7TaskHandler extends TaskHandler {
     _conn?.connect();
   }
 
-  void _log(String line) =>
-      FlutterForegroundTask.sendDataToMain({'t': 'log', 'line': line});
+  void _log(String line) {
+    FlutterForegroundTask.sendDataToMain({'t': 'log', 'line': line});
+    _serviceLog.append(line);
+  }
 
   @override
   void onReceiveData(Object data) {

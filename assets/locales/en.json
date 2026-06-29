@@ -198,6 +198,13 @@
   },
   "profile": {
     "label": "Profile",
+    "account": {
+      "_": "Account",
+      "name": "Name",
+      "save": "Save",
+      "logout": "Log out",
+      "logout_confirm": "Are you sure you want to log out?"
+    },
     "language": "Language",
     "theme": {
       "_": "Theme",

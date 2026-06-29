@@ -4,6 +4,7 @@ import 'package:insulink/src/auth/auth_page.dart';
 import 'package:insulink/src/auth/legal_page.dart';
 import 'package:insulink/src/auth/permissions/permission_onboarding.dart';
 import 'package:insulink/src/base/page.dart';
+import 'package:insulink/main.dart';
 
 /// App entry point: shows the permission onboarding on first run, then the
 /// sign-in / sign-up page until authenticated, then the main app. Each step
@@ -69,7 +70,7 @@ class _AuthGateState extends State<AuthGate> {
       return PermissionOnboarding(onDone: _finishOnboarding);
     }
     if (!_authenticated) {
-      return AuthPage(onAuthenticated: () => setState(() => _authenticated = true));
+      return AuthPage(onAuthenticated: () => InsulinkApp.reload(context));
     }
     return const AppPage();
   }

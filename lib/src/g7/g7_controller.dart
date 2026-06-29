@@ -6,6 +6,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:insulink/src/g7/service/alarms.dart';
 import 'package:insulink/src/g7/service/ble_service.dart';
+import 'package:insulink/src/g7/service/service_log.dart';
 import 'package:insulink/src/g7/protocol/device_info.dart';
 import 'package:insulink/src/g7/protocol/glucose.dart';
 import 'package:insulink/src/g7/store.dart';
@@ -31,6 +32,10 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
 
   final List<String> _log = <String>[];
   List<String> get log => List.unmodifiable(_log);
+
+  /// The same durable file the service isolate writes; read on launch so the
+  /// log pane shows what the watchdog did while the app was closed.
+  final ServiceLog _serviceLog = ServiceLog();
 
   bool _busy = false;
   bool get busy => _busy;
@@ -195,6 +200,7 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     }
     _store = store;
     code.text = store.pairingCode ?? '';
+    await _seedLogFromFile();
     _restoreFromCache(store);
     notifyListeners();
     if (_byTime.isNotEmpty) {
@@ -314,6 +320,16 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     }
     _log.insert(0, line);
     notifyListeners();
+  }
+
+  /// Load the durable service log (oldest-first on disk) into [_log] (newest-
+  /// first in memory) so the pane shows overnight watchdog activity on launch.
+  Future<void> _seedLogFromFile() async {
+    final history = await _serviceLog.readAll();
+    if (history.trim().isEmpty || _disposed) {
+      return;
+    }
+    _log.addAll(history.trimRight().split('\n').reversed);
   }
 
   /// Messages from the background service: log lines, the latest live reading,

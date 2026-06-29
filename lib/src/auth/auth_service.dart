@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:android_id/android_id.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
 
 /// Talks to the backend `/signin/` and `/signup/` endpoints and persists the
@@ -12,12 +14,16 @@ import 'package:insulink/src/request/request.dart';
 class AuthService {
   static const _storage = FlutterSecureStorage();
 
-  Future<String?> signIn(context, String name, String password) async {
+  Future<String?> signIn(BuildContext context, String name, String password) async {
     final response = await Request.post(
       url: "/signin/",
       body: {"name": name, "password": password},
     ).send(context);
-    return _handle(response, "auth.error.invalid");
+    final error = await _handle(response, "auth.error.invalid");
+    if (error == null && context.mounted) {
+      await ProfileSettings().pull(context);
+    }
+    return error;
   }
 
   Future<String?> signUp(context, String name, String password) async {
@@ -53,11 +59,11 @@ class AuthService {
   }
 
   /// Device metadata the backend stores against the new account, plus the
-  /// language and (empty) settings the signup endpoint expects.
+  /// language and any already-chosen settings the signup endpoint expects.
   Future<Map<String, Object>> _deviceFields() async {
     return {
       "language": await _storage.read(key: "language") ?? "en",
-      "settings": "{}",
+      "settings": jsonEncode(await ProfileSettings.collect()),
       ...await _findDeviceInfo(),
     };
   }
