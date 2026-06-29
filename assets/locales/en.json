@@ -5,6 +5,53 @@
     "cancel": "Cancel",
     "done": "Done"
   },
+  "permission": {
+    "next": "Allow",
+    "continue": "Continue",
+    "bluetooth": {
+      "title": "Bluetooth",
+      "body": "Insulink connects to your Dexcom G7 over Bluetooth to read your glucose. Without it the app can't find your sensor."
+    },
+    "notification": {
+      "title": "Notifications",
+      "body": "Glucose alarms warn you about highs and lows — even when the app is closed. Allow notifications so you don't miss them."
+    },
+    "dnd": {
+      "title": "Critical alarms",
+      "body": "Allow Insulink to bypass Do Not Disturb and silent mode, so an urgent low or high still sounds — even when your phone is muted."
+    },
+    "battery": {
+      "title": "Run in background",
+      "body": "Exempt Insulink from battery optimization so it keeps reading your sensor when the app is closed. Without it Android may stop the connection."
+    }
+  },
+  "legal": {
+    "title": "Welcome to Insulink",
+    "subtitle": "Before you start, please review and accept our terms.",
+    "continue": "Get started",
+    "checkbox": {
+      "prefix": "I accept the ",
+      "terms": "Terms of Service",
+      "and": " and ",
+      "privacy": "Privacy Policy"
+    }
+  },
+  "auth": {
+    "title": "Welcome",
+    "subtitle_signin": "Sign in to your account",
+    "subtitle_signup": "Create your account",
+    "name": "Name",
+    "password": "Password",
+    "signin": "Sign in",
+    "signup": "Create account",
+    "to_signup": "No account yet? Sign up",
+    "to_signin": "Already have an account? Sign in",
+    "error": {
+      "invalid": "Name or password is incorrect.",
+      "signup_failed": "Could not create the account. Please check your details.",
+      "network": "Connection failed. Please try again."
+    }
+  },
   "overview": {
     "label": "Overview",
     "chart": {
@@ -87,7 +134,8 @@
     "life": {
       "title": "Durability",
       "remaining": "# days left",
-      "remaining_hours": "# hours left"
+      "remaining_hours": "# hours left",
+      "grace": "Grace period · # h left"
     },
     "control": {
       "end_session": "End session",
@@ -150,6 +198,13 @@
   },
   "profile": {
     "label": "Profile",
+    "account": {
+      "_": "Account",
+      "name": "Name",
+      "save": "Save",
+      "logout": "Log out",
+      "logout_confirm": "Are you sure you want to log out?"
+    },
     "language": "Language",
     "theme": {
       "_": "Theme",

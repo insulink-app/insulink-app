@@ -26,6 +26,17 @@ class SensorLifespan {
   /// round — to avoid showing an extra day (a 10-day sensor as "11").
   int get totalDays => (sessionLengthSec / 86400).floor().clamp(1, 30);
 
+  /// Seconds of grace tacked onto the rated lifetime (~12 h for a G7): the
+  /// difference between the reported session length and the whole rated days.
+  int get graceSecs => sessionLengthSec - totalDays * 86400;
+
+  /// The rated lifetime is up but the sensor still reads during its grace
+  /// window — replace it soon. All remaining time is grace.
+  bool get inGrace => remainingSecs > 0 && remainingSecs <= graceSecs;
+
+  /// Whole grace hours left, rounded up so the current hour still counts.
+  int get graceHoursLeft => (remainingSecs / 3600).ceil();
+
   /// Total bars to draw: 24 (one per hour) in the final day, else one per day.
   int get totalSegments => hoursMode ? 24 : totalDays;
 

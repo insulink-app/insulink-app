@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:insulink/src/base/page.dart';
+import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -39,6 +39,12 @@ Future<void> main() async {
 class InsulinkApp extends StatefulWidget {
   const InsulinkApp({super.key});
 
+  /// Reloads the persisted preferences and rebuilds the provider tree. Used
+  /// after sign-in so the settings just pulled from the backend take effect.
+  static void reload(BuildContext context) {
+    context.findAncestorStateOfType<_InsulinkAppState>()?._reload();
+  }
+
   @override
   State<InsulinkApp> createState() => _InsulinkAppState();
 }
@@ -48,7 +54,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   /// rebuild would reset the [FutureBuilder] to "waiting" (a blank frame =
   /// flicker) and tear down + rebuild the whole provider tree — re-running
   /// `G7Controller.init()` → `start()` → the foreground service/scan in a loop.
-  late final Future<AppPreferences> _preferences;
+  late Future<AppPreferences> _preferences;
 
   @override
   void initState() {
@@ -59,6 +65,12 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       DeviceOrientation.portraitDown,
     ]);
     _preferences = _loadPreferences();
+  }
+
+  void _reload() {
+    setState(() {
+      _preferences = _loadPreferences();
+    });
   }
 
   @override
@@ -111,7 +123,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       themeMode: themeState.themeMode,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      home: AppPage(),
+      home: const AuthGate(),
       debugShowCheckedModeBanner: false,
       localizationsDelegates: Locales.delegates,
       supportedLocales: Locales.supportedLocales,

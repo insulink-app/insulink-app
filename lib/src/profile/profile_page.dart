@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/profile/account/profile_account_box.dart';
+import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/profile/notifications/profile_alarm_sound_toggle.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_selection.dart';
 import 'package:insulink/src/profile/notifications/profile_connection_toggle.dart';
@@ -22,31 +24,47 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  /// Pushes the latest settings to the backend, then leaves the page. Funnels
+  /// both the app-bar arrow and the system back gesture so a change always
+  /// syncs. The push is fire-and-forget — leaving must never wait on the network.
+  void _leave() {
+    ProfileSettings().push(Navigator.of(context, rootNavigator: true).context);
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(CupertinoIcons.arrow_left),
-          onPressed: () => Navigator.pop(context),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _leave();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: const Icon(CupertinoIcons.arrow_left),
+            onPressed: _leave,
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 30),
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _settings(),
-                  Image.asset('assets/images/cute.png', width: 50),
-                  _footer(),
-                ],
+        body: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 30),
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _settings(),
+                    Image.asset('assets/images/cute.png', width: 50),
+                    _footer(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -59,7 +77,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 20),
+        _section("profile.account", [const ProfileAccountBox()]),
         _section("profile.language", [const ProfileLanguageSelection()]),
         _section("profile.theme", [const ProfileThemeSelection()]),
         _section("profile.glucose", [const ProfileGlucoseSelection()]),

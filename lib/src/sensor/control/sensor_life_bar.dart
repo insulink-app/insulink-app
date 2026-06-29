@@ -65,7 +65,11 @@ class SensorLifeBar extends StatelessWidget {
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
-        color: life.expired ? Colors.redAccent : scheme.onSurface,
+        color: life.expired
+            ? Colors.redAccent
+            : life.inGrace
+                ? Colors.orangeAccent
+                : scheme.onSurface,
       ),
     );
   }
@@ -73,6 +77,13 @@ class SensorLifeBar extends StatelessWidget {
   String _remainingText(BuildContext context, SensorLifespan life) {
     if (life.expired) {
       return Locales.string(context, 'sensor.value.expired');
+    }
+    if (life.inGrace) {
+      return Locales.string(
+        context,
+        'sensor.life.grace',
+        params: ['${life.graceHoursLeft}'],
+      );
     }
     final key = life.hoursMode
         ? 'sensor.life.remaining_hours'

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -5,6 +7,8 @@ import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
 import 'alarms.dart';
+import 'service_log.dart';
+import '../glucose_sync.dart';
 import '../protocol/connection.dart';
 import '../store.dart';
 
@@ -38,6 +42,10 @@ class G7TaskHandler extends TaskHandler {
   /// throws if already initialised).
   bool _coreReady = false;
 
+  /// Durable log so the watchdog's overnight recovery activity survives a
+  /// process/isolate restart and is readable in the UI afterwards.
+  final ServiceLog _serviceLog = ServiceLog();
+
   /// Wall-clock of the last live reading (seeded at startup so a service that
   /// never produces anything still escalates). The G7 delivers ~every 5 min, so
   /// "time since last reading" — not BLE connection state, which is normally
@@ -56,12 +64,42 @@ class G7TaskHandler extends TaskHandler {
   static const _staleAfter = Duration(minutes: 12);
 
   /// No reading for this long at all ⇒ the in-process BLE stack is likely wedged
-  /// ⇒ restart the whole service (fresh isolate + Rust core + BLE stack).
+  /// ⇒ restart the service (fresh isolate + Rust core), and if THAT already
+  /// failed, the whole process (the only thing that resets a wedged native BLE
+  /// scanner on Android 13+).
   static const _restartAfter = Duration(minutes: 25);
 
-  /// A single `connect()` should resolve well within this (the transport bounds
-  /// every step); if it doesn't, force-reset so it can't pin the watchdog.
-  static const _connectStuckAfter = Duration(minutes: 3);
+  /// If a `restartService()` happened within this window and data is STILL
+  /// absent, the isolate wasn't the problem — the native BLE scanner is wedged
+  /// (the Pixel/Android-13+ "scanner silently stops returning results" failure;
+  /// a Bluetooth toggle would clear it but `turnOff()` is a no-op on 13+). Only
+  /// a full process restart resets it. Generous enough to span the ~25-min gap a
+  /// fresh isolate runs before it would re-trip [_restartAfter].
+  static const _processRestartAfter = Duration(minutes: 35);
+
+  /// A single `connect()` should resolve well within this; if it doesn't,
+  /// force-reset so it can't pin the watchdog. Sized for the autoConnect
+  /// reconnect path: after we arm autoConnect, the OS reconnects only when the
+  /// G7 next advertises — up to one ~5-min delivery cycle away — so a wait that
+  /// long is NORMAL, not a wedge. `connectAndBind` self-bounds the wait at 6 min;
+  /// this backstop sits just past that so it only fires on a genuinely pinned
+  /// attempt. (The scan path resolves far quicker, so the looser bound is free.)
+  static const _connectStuckAfter = Duration(minutes: 7);
+
+  /// After a successful reading the G7 won't advertise again for ~5 min, so
+  /// scanning in the minutes right after one is pure wasted radio — and that
+  /// near-continuous scanning ran THIS app's Android BLE scan "Score" to ~40×
+  /// any other app on the device (dumpsys). Hold the watchdog's reconnect off
+  /// this long after a delivery. Kept well under the ~5-min delivery interval so
+  /// clock drift can't make us miss the next advertisement; a MISSED delivery
+  /// leaves [_lastDeliveryAt] old, so we resume scanning normally.
+  static const _reconnectBackoff = Duration(minutes: 3);
+
+  /// Wall-clock of the last actual EGV delivery (null until the first), used
+  /// only for [_reconnectBackoff]. Distinct from [_lastReadingAt], which is
+  /// SEEDED at startup for the restart escalation — seeding this one would
+  /// wrongly suppress the very first connect.
+  DateTime? _lastDeliveryAt;
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
@@ -118,6 +156,7 @@ class G7TaskHandler extends TaskHandler {
         // A reading means the link is healthy — reset the health clock and
         // clear any pending "connection lost" warning.
         _lastReadingAt = DateTime.now();
+        _lastDeliveryAt = _lastReadingAt;
         alarms.onReading();
         _updateNotification(reading.glucoseMgDl, reading.trendMgDlPerMin);
         if (reading.glucoseMgDl != null) {
@@ -148,6 +187,7 @@ class G7TaskHandler extends TaskHandler {
         't': 'conn',
         'connected': connected,
       }),
+      onArchive: (readings) => GlucoseSync().queue(readings, _log),
     );
   }
 
@@ -183,13 +223,34 @@ class G7TaskHandler extends TaskHandler {
       }
 
       // Last resort: no data for far too long ⇒ the in-process BLE stack is
-      // likely wedged (reconnect attempts can't clear it). Restart the whole
-      // service for a clean isolate + Rust core + BLE stack.
+      // likely wedged (reconnect attempts can't clear it). Two escalation steps:
+      //  1. restartService() — cheap: a fresh isolate + Rust core, same process.
+      //     Clears an isolate-level deadlock but NOT a wedged native BLE scanner,
+      //     because the scanner state lives in the (unchanged) OS process.
+      //  2. If we ALREADY did (1) recently and data is still absent, the native
+      //     scanner is wedged — the Android-13+ failure where startScan silently
+      //     returns nothing and only a Bluetooth toggle (turnOff() is a no-op on
+      //     13+) or an app restart recovers it. Kill the process so Android's
+      //     sticky foreground-service restart brings up a fresh process WITH a
+      //     fresh BLE stack — what the user was doing by hand.
       if (!_restarting &&
           last != null &&
           DateTime.now().difference(last) > _restartAfter) {
-        _log('watchdog: no data for too long — restarting service');
         _restarting = true;
+        final lastRestart = _store?.lastServiceRestartAt;
+        final restartedRecently = lastRestart != null &&
+            DateTime.now().difference(lastRestart) < _processRestartAfter;
+        if (restartedRecently) {
+          _log('watchdog: still no data after a service restart — native BLE '
+              'stack wedged, restarting the whole process');
+          await _conn?.dispose();
+          // ponytail: exit(0) relies on the sticky FGS being recreated by
+          // Android (reliable on Pixel/AOSP). If an OEM doesn't restart it, the
+          // app is dead until reopened — i.e. no worse than today's manual fix.
+          exit(0);
+        }
+        _log('watchdog: no data for too long — restarting service');
+        await _store?.markServiceRestart();
         await FlutterForegroundTask.restartService();
         return;
       }
@@ -207,8 +268,21 @@ class G7TaskHandler extends TaskHandler {
       }
 
       // The G7 drops the link after each ~5-min delivery, so "not connected" is
-      // the NORMAL resting state — scan + reconnect to catch the next delivery.
+      // the NORMAL resting state — reconnect to catch the next delivery. Hold off
+      // for [_reconnectBackoff] after a delivery on BOTH paths: the sensor won't
+      // advertise again for ~5 min, and arming early just makes the radio hunt a
+      // device that isn't there yet. This backoff applies to autoConnect too —
+      // autoConnect finds the device via the OS's internal background scan, which
+      // is subject to the SAME Android "scanning too frequently" throttle, so
+      // arming immediately after every drop trips it and the reconnect then never
+      // completes (observed: repeated arms → 6-min timeout). A MISSED delivery
+      // leaves [_lastDeliveryAt] old, so we reconnect normally when it counts.
       if (!connection.isConnected) {
+        final delivered = _lastDeliveryAt;
+        if (delivered != null &&
+            DateTime.now().difference(delivered) < _reconnectBackoff) {
+          return;
+        }
         _log('watchdog: reconnecting…');
         _startConnect();
         return;
@@ -232,8 +306,10 @@ class G7TaskHandler extends TaskHandler {
     _conn?.connect();
   }
 
-  void _log(String line) =>
-      FlutterForegroundTask.sendDataToMain({'t': 'log', 'line': line});
+  void _log(String line) {
+    FlutterForegroundTask.sendDataToMain({'t': 'log', 'line': line});
+    _serviceLog.append(line);
+  }
 
   @override
   void onReceiveData(Object data) {
