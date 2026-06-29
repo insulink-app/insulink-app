@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/statistics/averages/average_view.dart';
+import 'package:insulink/src/statistics/calendar/calendar_heatmap_view.dart';
 import 'package:insulink/src/statistics/events/event_log_view.dart';
 import 'package:insulink/src/statistics/history/glucose_history_view.dart';
 import 'package:insulink/src/statistics/patterns/patterns_view.dart';
@@ -37,10 +38,11 @@ class StatisticsBodyContent extends StatelessWidget {
   /// is the main time-in-range breakdown; the rest are placeholders for now.
   static const List<_StatisticTab> _tabs = [
     _StatisticTab('statistics.tab.ranges', TimeInRangeView()),
-    _StatisticTab('statistics.tab.history', GlucoseHistoryView()),
-    _StatisticTab('statistics.tab.averages', AverageView()),
     _StatisticTab('statistics.tab.patterns', PatternsView()),
+    _StatisticTab('statistics.tab.averages', AverageView()),
+    _StatisticTab('statistics.tab.history', GlucoseHistoryView()),
     _StatisticTab('statistics.tab.events', EventLogView()),
+    _StatisticTab('statistics.tab.calendar', CalendarHeatmapView()),
   ];
 
   @override
@@ -54,7 +56,7 @@ class StatisticsBodyContent extends StatelessWidget {
           // range selector): rounded track + a filled primary pill behind the
           // active tab. Two rows so four tabs fit without overflowing.
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(

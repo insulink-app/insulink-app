@@ -108,9 +108,16 @@
     "tab": {
       "ranges": "Bereiche",
       "history": "Verlauf",
+      "calendar": "Kalender",
       "averages": "Kennwerte",
       "patterns": "Muster",
       "events": "Ereignisse"
+    },
+    "calendar": {
+      "good": "Gut",
+      "ok": "OK",
+      "fair": "Mäßig",
+      "poor": "Schlecht"
     },
     "empty": "Noch keine Glukosedaten",
     "events": {

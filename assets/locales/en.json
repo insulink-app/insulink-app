@@ -108,9 +108,16 @@
     "tab": {
       "ranges": "Ranges",
       "history": "History",
+      "calendar": "Calendar",
       "averages": "Metrics",
       "patterns": "Patterns",
       "events": "Events"
+    },
+    "calendar": {
+      "good": "Good",
+      "ok": "OK",
+      "fair": "Fair",
+      "poor": "Poor"
     },
     "empty": "No glucose data yet",
     "events": {
