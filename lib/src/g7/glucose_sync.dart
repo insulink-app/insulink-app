@@ -32,6 +32,19 @@ class GlucoseSync {
   static final Set<int> _reported = {};
   static const int _reportedCap = 5000;
 
+  /// Entries per POST. A 24 h backfill (~282 points) goes out as a handful of
+  /// small requests instead of one large one, so a flaky background radio can
+  /// land partial progress and one failing request can't wedge the whole sweep.
+  static const int _chunkSize = 60;
+
+  /// Retry delay after a failed flush, doubled each consecutive failure up to
+  /// [_backoffCap] (so a backgrounded radio stops hammering every 30 s) and
+  /// reset to [_backoffFloor] on any success — the running service isolate then
+  /// drains within one cap-interval once the app is foreground again.
+  static const Duration _backoffFloor = Duration(seconds: 30);
+  static const Duration _backoffCap = Duration(seconds: 300);
+  static Duration _backoff = _backoffFloor;
+
   /// Buffer the readings the backend hasn't accepted yet and (re)arm a short
   /// flush. Each new packet pushes the flush out, so a backfill burst settles
   /// into a single report once it goes quiet.
@@ -56,13 +69,54 @@ class GlucoseSync {
     }
     final batch = Map<int, int>.from(_pending);
     _pending.clear();
-    final status = await report(batch);
-    onLog('glucose report: ${batch.length} value(s) → status $status');
-    if (status == null) {
-      _retryLater(batch, onLog);
-    } else if (status >= 200 && status < 300) {
-      _markReported(batch.keys);
+    final failed = <int, int>{};
+    int sent = 0;
+    int? lastStatus;
+    String? lastError;
+    for (final part in chunk(batch, _chunkSize)) {
+      final (status, error) = await report(part);
+      lastStatus = status;
+      lastError = error;
+      if (status != null && status >= 200 && status < 300) {
+        _markReported(part.keys);
+        sent += part.length;
+      } else {
+        failed.addAll(part);
+      }
     }
+    onLog(
+      'glucose report: $sent/${batch.length} value(s) sent → status $lastStatus'
+      '${lastError != null ? ' ($lastError)' : ''}',
+    );
+    if (sent > 0) {
+      _backoff = _backoffFloor;
+    }
+    if (failed.isNotEmpty) {
+      _retryLater(failed, onLog);
+    }
+  }
+
+  /// Split readings into POST-sized maps, preserving every key/value.
+  static List<Map<int, int>> chunk(Map<int, int> values, int size) {
+    final chunks = <Map<int, int>>[];
+    var current = <int, int>{};
+    for (final entry in values.entries) {
+      current[entry.key] = entry.value;
+      if (current.length >= size) {
+        chunks.add(current);
+        current = <int, int>{};
+      }
+    }
+    if (current.isNotEmpty) {
+      chunks.add(current);
+    }
+    return chunks;
+  }
+
+  /// The backoff after a failure: double, capped at [_backoffCap].
+  static Duration nextBackoff(Duration current) {
+    final doubled = current * 2;
+    return doubled > _backoffCap ? _backoffCap : doubled;
   }
 
   /// Remember accepted minutes so they're never re-POSTed, trimming the oldest
@@ -77,17 +131,19 @@ class GlucoseSync {
     }
   }
 
-  /// A null status means the POST never reached the server (radio asleep in the
-  /// background). Each minute-reading is only queued once, so without this the
-  /// batch would be lost. Put it back (without clobbering newer values for the
-  /// same minute) and re-arm a slower flush so it retries on the next wake.
+  /// A non-2xx (often null — the POST never reached the server, radio asleep in
+  /// the background) means these minutes weren't accepted. Each minute is only
+  /// queued once, so without this the batch would be lost. Put it back (without
+  /// clobbering newer values for the same minute) and re-arm a [_backoff]-spaced
+  /// flush — backing off each consecutive failure so it stops hammering.
   void _retryLater(Map<int, int> batch, void Function(String) onLog) {
     batch.forEach((minute, value) => _pending.putIfAbsent(minute, () => value));
     while (_pending.length > _retryCap) {
       _pending.remove(_pending.keys.first);
     }
     _flush?.cancel();
-    _flush = Timer(const Duration(seconds: 30), () => _send(onLog));
+    _flush = Timer(_backoff, () => _send(onLog));
+    _backoff = nextBackoff(_backoff);
   }
 
   /// Caps the retry buffer during a long backend outage. The archive stays the
@@ -97,20 +153,22 @@ class GlucoseSync {
   /// Report readings (epoch-minute → mg/dL) to the backend. Runs in the service
   /// isolate, so it passes a null context: [Request] still attaches the stored
   /// bearer token but skips its UI-only 403/417 recovery. Returns the HTTP status
-  /// (null on network failure) so the caller can log the outcome. Best-effort —
+  /// (null on network failure) plus [Request.lastError] (the transport exception
+  /// when null) so the caller can log WHY, not just "status null". Best-effort —
   /// the next reading/backfill re-sends.
-  Future<int?> report(Map<int, int> byEpochMinute) async {
+  Future<(int?, String?)> report(Map<int, int> byEpochMinute) async {
     if (byEpochMinute.isEmpty) {
-      return null;
+      return (null, null);
     }
     final entries = byEpochMinute.entries
         .map((entry) => {"glucose": entry.value, "time": _time(entry.key)})
         .toList();
-    final response = await Request.post(
+    final request = Request.post(
       url: "/glucose/report/",
       body: {"entries": entries},
-    ).send(null);
-    return response?.statusCode;
+    );
+    final response = await request.send(null);
+    return (response?.statusCode, request.lastError);
   }
 
   /// Pull the account's stored readings into the local archive (on sign-in).
