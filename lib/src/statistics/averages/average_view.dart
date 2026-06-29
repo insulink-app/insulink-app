@@ -16,10 +16,7 @@ class AverageView extends StatelessWidget {
     final glucose = context.watch<ProfileGlucoseState>();
 
     // Long-term archive (spans sensor swaps), not the current-session cache.
-    final values = controller
-        .archiveSince(G7Controller.statsWindow)
-        .values
-        .toList();
+    final values = controller.statsArchive.values.toList();
     if (values.isEmpty) {
       return Center(child: LocaleText('statistics.empty'));
     }

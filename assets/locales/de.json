@@ -86,6 +86,13 @@
       "patterns": "Muster"
     },
     "empty": "Noch keine Glukosedaten",
+    "window": {
+      "d1": "1 T",
+      "d3": "3 T",
+      "d7": "7 T",
+      "d30": "30 T",
+      "d90": "90 T"
+    },
     "avg": {
       "mean": "Ø Glukose",
       "gmi": "GMI",

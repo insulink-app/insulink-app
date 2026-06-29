@@ -86,6 +86,13 @@
       "patterns": "Patterns"
     },
     "empty": "No glucose data yet",
+    "window": {
+      "d1": "1 d",
+      "d3": "3 d",
+      "d7": "7 d",
+      "d30": "30 d",
+      "d90": "90 d"
+    },
     "avg": {
       "mean": "Avg. Glucose",
       "gmi": "GMI",

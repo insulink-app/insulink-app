@@ -112,8 +112,48 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     return out;
   }
 
-  /// Default analysis window for the statistics page (clinical AGP uses 14 d).
-  static const statsWindow = Duration(days: 14);
+  /// Default analysis window for the statistics page.
+  static const statsWindow = Duration(days: 7);
+
+  /// Currently selected statistics window. A preset duration ([statsPreset],
+  /// relative to now so it stays fresh) OR an explicit custom range
+  /// ([statsCustomFrom]/[statsCustomTo]); the custom range wins when set.
+  Duration _statsPreset = statsWindow;
+  DateTime? _statsCustomFrom;
+  DateTime? _statsCustomTo;
+
+  Duration get statsPreset => _statsPreset;
+  DateTime? get statsCustomFrom => _statsCustomFrom;
+  DateTime? get statsCustomTo => _statsCustomTo;
+  bool get statsIsCustom => _statsCustomFrom != null;
+
+  set statsPreset(Duration window) {
+    _statsPreset = window;
+    _statsCustomFrom = null;
+    _statsCustomTo = null;
+    notifyListeners();
+  }
+
+  void setStatsCustomRange(DateTime from, DateTime to) {
+    _statsCustomFrom = from;
+    _statsCustomTo = to;
+    notifyListeners();
+  }
+
+  /// The archive over the currently selected statistics window — the single
+  /// source the statistics views read so the range selector drives them all.
+  SplayTreeMap<int, int> get statsArchive {
+    final from = _statsCustomFrom;
+    final to = _statsCustomTo;
+    if (from != null && to != null) {
+      final store = _store;
+      if (store == null) {
+        return SplayTreeMap<int, int>();
+      }
+      return store.archiveRange(from, to);
+    }
+    return archiveSince(_statsPreset);
+  }
 
   /// Long-term glucose history over the last [window], keyed by epoch-minute
   /// (recover wall-clock time via `DateTime.fromMillisecondsSinceEpoch(min *

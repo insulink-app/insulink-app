@@ -22,9 +22,7 @@ class PatternsView extends StatelessWidget {
 
     // Long-term archive (spans sensor swaps): keyed by absolute epoch-minute, so
     // hour-of-day comes straight from the timestamp — no session start needed.
-    final pattern = HourlyGlucosePattern(
-      controller.archiveSince(G7Controller.statsWindow),
-    ).build();
+    final pattern = HourlyGlucosePattern(controller.statsArchive).build();
     if (pattern.isEmpty) {
       return Center(child: LocaleText('statistics.empty'));
     }
