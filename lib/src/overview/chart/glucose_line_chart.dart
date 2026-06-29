@@ -154,7 +154,7 @@ class GlucoseLineChart extends StatelessWidget {
         getTooltipItems: (touchedSpots) => [
           for (final spot in touchedSpots)
             if (spot.barIndex == touchBarIndex)
-              _tooltipItem(theme, spot)
+              _tooltipItem(context, spot)
             else
               null,
         ],
@@ -167,7 +167,8 @@ class GlucoseLineChart extends StatelessWidget {
     );
   }
 
-  LineTooltipItem _tooltipItem(ThemeData theme, LineBarSpot spot) {
+  LineTooltipItem _tooltipItem(BuildContext context, LineBarSpot spot) {
+    final theme = Theme.of(context);
     final digits = glucose.unit == GlucoseUnit.mmol ? 1 : 0;
     return LineTooltipItem(
       '${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
@@ -176,7 +177,27 @@ class GlucoseLineChart extends StatelessWidget {
         fontWeight: FontWeight.bold,
         fontSize: 13,
       ),
+      children: [
+        if (anchor != null)
+          TextSpan(
+            text: '\n${_spotTime(context, spot.x)}',
+            style: TextStyle(
+              color: theme.colorScheme.onInverseSurface.withValues(alpha: 0.7),
+              fontWeight: FontWeight.normal,
+              fontSize: 11,
+            ),
+          ),
+      ],
     );
+  }
+
+  /// Wall-clock time of a touched spot — `(x - shift)` hours back from [anchor],
+  /// the same mapping the X-axis labels use.
+  String _spotTime(BuildContext context, double x) {
+    final time = anchor!.add(Duration(seconds: ((x - shift) * 3600).round()));
+    return MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(TimeOfDay.fromDateTime(time));
   }
 
   /// fl_chart passes a copyWith of the bar (with showingIndicators set), so
