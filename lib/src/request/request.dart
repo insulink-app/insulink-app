@@ -19,7 +19,9 @@ class Request {
   final Map<String, String> headers;
   final Map<String, Object> body;
   static final RequestRefresh _refresh = RequestRefresh();
-  static const int _timeout = 5;
+  // 10s, not 5: a backgrounded device's radio is asleep, so a cold DNS+TLS
+  // handshake on the first request after idle often needs more than 5s.
+  static const int _timeout = 10;
   static const int _maxRetries = 3;
   int _retries = 0;
 

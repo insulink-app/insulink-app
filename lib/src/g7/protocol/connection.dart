@@ -465,51 +465,43 @@ class G7Connection {
     _persistInfo(); // keep cached sensorStart fresh
     onReading?.call(reading);
     onUpdate?.call();
-    // Once we know the session clock, pull history. Default to the full last
-    // 24 h; only shrink to the gap-since-newest once we ALREADY hold a roughly
-    // continuous day of history — otherwise a single cached point would wrongly
-    // suppress the full backfill (leaving the chart and headline empty).
     if (!_backfillAsked) {
       _backfillAsked = true;
-      final end = reading.secsSinceStart - 60;
-      var start = reading.secsSinceStart - 24 * 3600;
-      // Shrink to just the gap-since-newest, but ONLY when the history we already
-      // hold is CONTIGUOUS up to `priorMax`. Subtle failure this guards against:
-      // after an outage the first live EGV lands at the current time, far ahead of
-      // the last reading we actually backfilled. If that backfill never completed
-      // (the G7 drops the link within ~1 s, so one failed request loses the whole
-      // batch), the newest stored key jumps PAST a real multi-hour hole. Keying the
-      // next request off the newest point alone — which the old `priorMax -
-      // firstKey` total-span check effectively did — would then request only
-      // `newest+1..now` and PERMANENTLY orphan that hole (the reported data gap).
-      // So measure the unbroken tail ending at `priorMax`: trust it as the frontier
-      // only when it already spans ~a day; otherwise fall through to the full 24 h
-      // re-request, which refills the hole (duplicates are deduped by _byTime).
-      if (priorMax != null && priorMax > start) {
-        const maxStep = 600; // EGVs arrive ~every 300 s; a bigger jump = a hole
-        var tailStart = priorMax;
-        for (
-          int? key = _byTime.lastKeyBefore(priorMax);
-          key != null && tailStart - key <= maxStep;
-          key = _byTime.lastKeyBefore(key)
-        ) {
-          tailStart = key;
-        }
-        if (priorMax - tailStart >= 23 * 3600) {
-          start =
-              priorMax + 1; // contiguous day cached → fetch only the new gap
-        }
-      }
-      if (start < 300) {
-        start = 300;
-      }
-      // Request immediately: the G7 drops the link within a second of connecting,
-      // so deferring the backfill would push it past the window and it'd never be
-      // sent. (Metadata replies are best-effort within the same short window.)
-      if (end > start) {
-        _log('requesting backfill ${start}s..${end}s');
-        transport.requestBackfill(start, end);
-      }
+      _requestBackfill(transport, reading.secsSinceStart, priorMax);
+    }
+  }
+
+  /// How often to sweep the full last 24 h instead of only the gap-since-newest.
+  static const _fullBackfillEvery = Duration(hours: 1);
+  DateTime? _lastFullBackfill;
+
+  /// Ask the sensor only for what we're missing. Almost every connect that's
+  /// just the gap since [priorMax] (our newest stored reading) — a few points,
+  /// and after an outage [priorMax] lags by the outage so the gap covers it.
+  /// At most once an hour (and whenever we hold no history yet) we sweep the
+  /// full 24 h instead, to repair any interior hole a partial backfill left
+  /// behind — otherwise that hole could be orphaned permanently. Duplicates are
+  /// deduped by [_byTime], so the overlap is harmless.
+  ///
+  /// Request immediately: the G7 drops the link within a second of connecting,
+  /// so deferring would push the request past the window and it'd never be sent.
+  void _requestBackfill(BleTransport transport, int liveSecs, int? priorMax) {
+    final end = liveSecs - 60;
+    final now = DateTime.now();
+    final dueFull = _lastFullBackfill == null ||
+        now.difference(_lastFullBackfill!) >= _fullBackfillEvery;
+    var start = liveSecs - 24 * 3600;
+    if (priorMax != null && !dueFull) {
+      start = priorMax + 1;
+    } else {
+      _lastFullBackfill = now;
+    }
+    if (start < 300) {
+      start = 300;
+    }
+    if (end > start) {
+      _log('requesting backfill ${start}s..${end}s');
+      transport.requestBackfill(start, end);
     }
   }
 
