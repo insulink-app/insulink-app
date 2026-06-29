@@ -119,7 +119,7 @@ class G7AlarmManager {
     if (level == G7AlarmLevel.none) {
       return;
     }
-    await _store?.addEvent(eventTypeFor(level));
+    await _store?.addEvent(eventTypeFor(level), value: mgdl);
     if (await ProfileSilentState.load()) {
       return;
     }
