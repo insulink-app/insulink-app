@@ -5,6 +5,7 @@ import 'package:android_id/android_id.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/g7/glucose_sync.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
 
@@ -22,6 +23,9 @@ class AuthService {
     final error = await _handle(response, "auth.error.invalid");
     if (error == null && context.mounted) {
       await ProfileSettings().pull(context);
+    }
+    if (error == null && context.mounted) {
+      await GlucoseSync().pullHistory(context);
     }
     return error;
   }

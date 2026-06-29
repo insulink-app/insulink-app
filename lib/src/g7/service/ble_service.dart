@@ -8,6 +8,7 @@ import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
 import 'alarms.dart';
 import 'service_log.dart';
+import '../glucose_sync.dart';
 import '../protocol/connection.dart';
 import '../store.dart';
 
@@ -76,9 +77,14 @@ class G7TaskHandler extends TaskHandler {
   /// fresh isolate runs before it would re-trip [_restartAfter].
   static const _processRestartAfter = Duration(minutes: 35);
 
-  /// A single `connect()` should resolve well within this (the transport bounds
-  /// every step); if it doesn't, force-reset so it can't pin the watchdog.
-  static const _connectStuckAfter = Duration(minutes: 3);
+  /// A single `connect()` should resolve well within this; if it doesn't,
+  /// force-reset so it can't pin the watchdog. Sized for the autoConnect
+  /// reconnect path: after we arm autoConnect, the OS reconnects only when the
+  /// G7 next advertises — up to one ~5-min delivery cycle away — so a wait that
+  /// long is NORMAL, not a wedge. `connectAndBind` self-bounds the wait at 6 min;
+  /// this backstop sits just past that so it only fires on a genuinely pinned
+  /// attempt. (The scan path resolves far quicker, so the looser bound is free.)
+  static const _connectStuckAfter = Duration(minutes: 7);
 
   /// After a successful reading the G7 won't advertise again for ~5 min, so
   /// scanning in the minutes right after one is pure wasted radio — and that
@@ -181,6 +187,7 @@ class G7TaskHandler extends TaskHandler {
         't': 'conn',
         'connected': connected,
       }),
+      onArchive: (readings) => GlucoseSync().queue(readings, _log),
     );
   }
 
@@ -261,10 +268,15 @@ class G7TaskHandler extends TaskHandler {
       }
 
       // The G7 drops the link after each ~5-min delivery, so "not connected" is
-      // the NORMAL resting state — scan + reconnect to catch the next delivery.
-      // But don't scan in the first few minutes after a fresh reading: the
-      // sensor won't be back yet, and that wasted scanning is what ran the scan
-      // Score sky-high. A missed delivery keeps _lastDeliveryAt old → we scan.
+      // the NORMAL resting state — reconnect to catch the next delivery. Hold off
+      // for [_reconnectBackoff] after a delivery on BOTH paths: the sensor won't
+      // advertise again for ~5 min, and arming early just makes the radio hunt a
+      // device that isn't there yet. This backoff applies to autoConnect too —
+      // autoConnect finds the device via the OS's internal background scan, which
+      // is subject to the SAME Android "scanning too frequently" throttle, so
+      // arming immediately after every drop trips it and the reconnect then never
+      // completes (observed: repeated arms → 6-min timeout). A MISSED delivery
+      // leaves [_lastDeliveryAt] old, so we reconnect normally when it counts.
       if (!connection.isConnected) {
         final delivered = _lastDeliveryAt;
         if (delivered != null &&

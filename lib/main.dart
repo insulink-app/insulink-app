@@ -54,7 +54,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   /// rebuild would reset the [FutureBuilder] to "waiting" (a blank frame =
   /// flicker) and tear down + rebuild the whole provider tree — re-running
   /// `G7Controller.init()` → `start()` → the foreground service/scan in a loop.
-  late final Future<AppPreferences> _preferences;
+  late Future<AppPreferences> _preferences;
 
   @override
   void initState() {
@@ -68,7 +68,9 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   }
 
   void _reload() {
-    setState(() => _preferences = _loadPreferences());
+    setState(() {
+      _preferences = _loadPreferences();
+    });
   }
 
   @override

@@ -191,13 +191,27 @@ class BleTransport {
   /// Connect, discover services, and bind the three characteristics. Logs every
   /// service/characteristic so you can CONFIRM the UUIDs in [G7Uuids] against
   /// your sensor (run this once and compare).
-  Future<void> connectAndBind({void Function(String) log = print}) async {
+  ///
+  /// [autoConnect] picks the reconnect strategy (Juggluco's Android-13+ path):
+  /// register the device on the BLE controller's allowlist and let the OS
+  /// reconnect when the sensor next advertises — NO app-level scanning, so the
+  /// native scanner can't wedge (the cause of the "toggle Bluetooth by hand"
+  /// outages). Used only when we already know the device id and hold a session
+  /// key; the fresh-pair / fallback path scans and uses a direct connect.
+  Future<void> connectAndBind({
+    bool autoConnect = false,
+    void Function(String) log = print,
+  }) async {
     // FBP 2.x requires a license declaration; use the appropriate value for
     // your distribution (nonprofit/open-source here — see the FBP License enum).
-    await device.connect(
-      license: License.nonprofit,
-      timeout: const Duration(seconds: 35),
-    );
+    if (autoConnect) {
+      await _armAutoConnect(log);
+    } else {
+      await device.connect(
+        license: License.nonprofit,
+        timeout: const Duration(seconds: 35),
+      );
+    }
     log('connected to ${device.platformName} (${device.remoteId})');
 
     // The G7 keeps the link up only briefly (~1 s) and closes it itself after a
@@ -251,6 +265,29 @@ class BleTransport {
     await _jpake!.setNotifyValue(true);
     log('subscribed to ${_jpake!.uuid} (buffered)');
     await _subscribe(_auth!, _authRx, log, forceIndications: true);
+  }
+
+  /// Arm the OS allowlist reconnect and wait for the link to come up. FBP's
+  /// `connect(autoConnect:true)` returns IMMEDIATELY (it never waits for the
+  /// connection) and forbids an `mtu` argument, so we (1) wait for the
+  /// `connected` state ourselves before [connectAndBind] discovers services, and
+  /// (2) raise the MTU by hand afterwards — without it EGV/control frames split
+  /// across 20-byte notifications and parse to nothing. The wait is bounded to a
+  /// single ~5-min G7 delivery cycle (+margin); on timeout it throws so the
+  /// caller retries and, after repeated misses, falls back to a scan.
+  Future<void> _armAutoConnect(void Function(String) log) async {
+    await device.connect(
+      license: License.nonprofit,
+      autoConnect: true,
+      mtu: null,
+    );
+    if (!device.isConnected) {
+      log('autoConnect armed — waiting for ${device.remoteId} to advertise…');
+      await device.connectionState
+          .firstWhere((state) => state == BluetoothConnectionState.connected)
+          .timeout(const Duration(minutes: 6));
+    }
+    await device.requestMtu(512);
   }
 
   /// Subscribe to control + backfill AFTER authentication succeeds.

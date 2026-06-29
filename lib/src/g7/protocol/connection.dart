@@ -27,6 +27,7 @@ class G7Connection {
     this.onReading,
     this.onUpdate,
     this.onConnectionState,
+    this.onArchive,
   });
 
   final G7Store store;
@@ -45,6 +46,10 @@ class G7Connection {
 
   /// Connection up/down transitions.
   final void Function(bool connected)? onConnectionState;
+
+  /// Newly-known readings (epoch-minute → mg/dL), fired alongside every archive
+  /// write so a listener can mirror them to the backend.
+  final void Function(Map<int, int> byEpochMinute)? onArchive;
 
   BleTransport? _transport;
   StreamSubscription? _controlSub;
@@ -67,9 +72,36 @@ class G7Connection {
   /// only the gap since our newest known reading (not a fixed 24 h every cycle).
   bool _historyLoaded = false;
 
+  /// Consecutive reconnect cycles that armed autoConnect but never reached
+  /// streaming. After [_maxAutoConnectFailures] we scan once to re-discover the
+  /// sensor's address (it may have changed), then resume the direct autoConnect
+  /// path. Reset to 0 the moment a cycle reaches streaming.
+  int _autoConnectFailures = 0;
+  static const _maxAutoConnectFailures = 2;
+
+  /// autoConnect to a cold `BluetoothDevice.fromId` only fires once the OS has
+  /// SEEN the sensor in THIS process; otherwise it silently never connects — the
+  /// "after an app update / service restart, autoConnect is dead" failure. So
+  /// the first connect of every process scans (which teaches the OS the
+  /// address), and only then do in-process reconnects use autoConnect. A fresh
+  /// service isolate resets this, forcing a re-scan before we trust autoConnect.
+  bool _scannedThisProcess = false;
+
   bool get isConnected => _transport?.device.isConnected ?? false;
 
   bool get isConnecting => _connecting;
+
+  /// The cached BLE device id to reconnect to, or null when we must scan first.
+  /// Non-null only once we hold BOTH the sensor's session key and its device id
+  /// (a known-paired sensor); a fresh pair / swapped sensor returns null so we
+  /// discover the new device instead of chasing one that's gone.
+  String? get _knownDeviceId {
+    final pinKey = serial.isNotEmpty ? serial : (store.resolvedKey ?? '');
+    if (pinKey.isEmpty || store.sessionKey(pinKey) == null) {
+      return null;
+    }
+    return store.deviceId(pinKey);
+  }
 
   /// The latest known glucose value (live EGV, else newest history point).
   int? get latestMgDl =>
@@ -145,6 +177,16 @@ class G7Connection {
     store.archiveAddAll(out);
   }
 
+  /// Absolute epoch-minute for a session-relative [secs] (the archive/backend
+  /// key). Null until the first live EGV has pinned [_sensorStart].
+  int? _epochMinute(int secs) {
+    final start = _sensorStart;
+    if (start == null) {
+      return null;
+    }
+    return start.add(Duration(seconds: secs)).millisecondsSinceEpoch ~/ 60000;
+  }
+
   Future<void> _persistReadings() async {
     if (_persistKey.isNotEmpty && _byTime.isNotEmpty) {
       await store.saveReadings(_persistKey, _byTime);
@@ -188,25 +230,34 @@ class G7Connection {
       // and fail key-confirmation against our stored key. The pin is keyed by the
       // serial when given, else by the previously resolved BLE id, so pinning
       // works even when no serial was entered.
-      final pinKey = serial.isNotEmpty ? serial : (store.resolvedKey ?? '');
-      // Only pin to a stored sensor when we actually hold its session key — i.e.
-      // we're RECONNECTING to a known-paired sensor (pinning then guards against
-      // grabbing a neighbour's G7 and failing key-confirmation, see CLAUDE.md).
-      // For a FRESH pair (no session key, e.g. right after the old sensor was
-      // forgotten/swapped out) we must NOT pin to the previous sensor's BLE id,
-      // or we'd hunt forever for a sensor that's gone instead of discovering the
-      // new one. So a fresh pair scans broadly; reconnect stays pinned.
-      final wantedId = (pinKey.isEmpty || store.sessionKey(pinKey) == null)
-          ? null
-          : store.deviceId(pinKey);
-      _log(wantedId == null ? 'scanning for DXCM…' : 'scanning for $wantedId…');
-      final device = await BleTransport.scanForSensor(
-        wantedId: wantedId,
-        log: _log,
-      );
-      if (device == null) {
-        _log('no sensor found');
-        return;
+      // Steady-state reconnect: arm autoConnect straight to the cached device —
+      // NO scan, so the native Android-13+ scanner can't wedge (the cause of the
+      // "toggle Bluetooth by hand" outages). Scan only for a fresh pair, or as a
+      // fallback to re-discover the address after autoConnect keeps missing (the
+      // remoteId may have changed). Mirrors Juggluco's Android-13+ reconnect.
+      final knownId = _knownDeviceId;
+      // Only autoConnect once we've scanned this process (so the OS has seen the
+      // device) and haven't exhausted the failure budget — see [_scannedThisProcess].
+      final useAutoConnect = knownId != null &&
+          _scannedThisProcess &&
+          _autoConnectFailures < _maxAutoConnectFailures;
+      final BluetoothDevice device;
+      if (useAutoConnect) {
+        _autoConnectFailures++;
+        _log('reconnecting directly to $knownId (autoConnect)…');
+        device = BluetoothDevice.fromId(knownId);
+      } else {
+        _log(knownId == null ? 'scanning for DXCM…' : 'scanning for $knownId…');
+        final found = await BleTransport.scanForSensor(
+          wantedId: knownId,
+          log: _log,
+        );
+        if (found == null) {
+          _log('no sensor found');
+          return;
+        }
+        device = found;
+        _scannedThisProcess = true; // OS has now seen the device → autoConnect ok
       }
 
       // The serial is only a cache key, not an auth secret — when none was
@@ -250,7 +301,7 @@ class G7Connection {
       // handshake failure we tear down and let the 30s watchdog re-scan and retry
       // on the sensor's own advertising schedule (see G7TaskHandler.onRepeatEvent).
       transport = BleTransport(device);
-      await transport.connectAndBind(log: _log);
+      await transport.connectAndBind(autoConnect: useAutoConnect, log: _log);
       await _authenticate(transport);
       // Remember which physical sensor this was, so future reconnects pin to it.
       if (_persistKey.isNotEmpty) {
@@ -264,12 +315,18 @@ class G7Connection {
       );
       _backfillSub = boundTransport.backfillStream.listen((bytes) {
         final records = G7GlucoseCodec.parseBackfill(Uint8List.fromList(bytes));
+        final synced = <int, int>{};
         for (final record in records) {
           _addReading(record.secsSinceStart, record.glucoseMgDl);
+          final minute = _epochMinute(record.secsSinceStart);
+          if (minute != null) {
+            synced[minute] = record.glucoseMgDl;
+          }
         }
         if (records.isNotEmpty) {
           _persistReadings();
           _archiveKnown(); // publish the whole day to the stats archive
+          onArchive?.call(synced);
           onUpdate?.call();
         }
       });
@@ -303,6 +360,7 @@ class G7Connection {
 
       _transport = transport;
       transport = null;
+      _autoConnectFailures = 0; // this cycle reached streaming — clear fallback
       onConnectionState?.call(true);
       _log('connected — streaming');
       // Bound the permanent archive's size (kept across sensors). Cheap and
@@ -399,6 +457,10 @@ class G7Connection {
       // Publish the whole known session history to the permanent archive (stats
       // source) — not just this point — so seeded/persisted history lands too.
       _archiveKnown();
+      final minute = _epochMinute(reading.secsSinceStart);
+      if (minute != null) {
+        onArchive?.call({minute: reading.glucoseMgDl!});
+      }
     }
     _persistInfo(); // keep cached sensorStart fresh
     onReading?.call(reading);
