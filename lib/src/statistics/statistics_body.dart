@@ -4,6 +4,7 @@ import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/statistics/averages/average_view.dart';
 import 'package:insulink/src/statistics/events/event_log_view.dart';
+import 'package:insulink/src/statistics/history/glucose_history_view.dart';
 import 'package:insulink/src/statistics/patterns/patterns_view.dart';
 import 'package:insulink/src/statistics/range_selector.dart';
 import 'package:insulink/src/statistics/ranges/time_in_range_view.dart';
@@ -36,6 +37,7 @@ class StatisticsBodyContent extends StatelessWidget {
   /// is the main time-in-range breakdown; the rest are placeholders for now.
   static const List<_StatisticTab> _tabs = [
     _StatisticTab('statistics.tab.ranges', TimeInRangeView()),
+    _StatisticTab('statistics.tab.history', GlucoseHistoryView()),
     _StatisticTab('statistics.tab.averages', AverageView()),
     _StatisticTab('statistics.tab.patterns', PatternsView()),
     _StatisticTab('statistics.tab.events', EventLogView()),
@@ -91,18 +93,18 @@ class _TwoRowTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = DefaultTabController.of(context);
+    final split = (labels.length / 2).ceil();
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
-        final rows = <Widget>[];
-        for (var start = 0; start < labels.length; start += 2) {
-          if (rows.isNotEmpty) {
-            rows.add(const SizedBox(height: 4));
-          }
-          final end = (start + 2).clamp(0, labels.length);
-          rows.add(_row(context, controller, start, end));
-        }
-        return Column(mainAxisSize: MainAxisSize.min, children: rows);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _row(context, controller, 0, split),
+            const SizedBox(height: 4),
+            _row(context, controller, split, labels.length),
+          ],
+        );
       },
     );
   }

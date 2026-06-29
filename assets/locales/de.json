@@ -1,4 +1,29 @@
 {
+  "date": {
+    "weekday": {
+      "1": "Mo",
+      "2": "Di",
+      "3": "Mi",
+      "4": "Do",
+      "5": "Fr",
+      "6": "Sa",
+      "7": "So"
+    },
+    "month": {
+      "1": "Jan",
+      "2": "Feb",
+      "3": "Mär",
+      "4": "Apr",
+      "5": "Mai",
+      "6": "Jun",
+      "7": "Jul",
+      "8": "Aug",
+      "9": "Sep",
+      "10": "Okt",
+      "11": "Nov",
+      "12": "Dez"
+    }
+  },
   "alert": {
     "ok": "OK",
     "continue": "Weiter",
@@ -82,6 +107,7 @@
     "label": "Statistik",
     "tab": {
       "ranges": "Bereiche",
+      "history": "Verlauf",
       "averages": "Kennwerte",
       "patterns": "Muster",
       "events": "Ereignisse"

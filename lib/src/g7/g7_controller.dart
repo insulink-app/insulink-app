@@ -155,9 +155,21 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     return archiveSince(_statsPreset);
   }
 
+  /// The effective length of the currently selected statistics window — the
+  /// custom range's span when set, else the preset duration. Drives the history
+  /// page's adaptive X-axis (hours vs days vs months).
+  Duration get statsSpan {
+    final from = _statsCustomFrom;
+    final to = _statsCustomTo;
+    if (from != null && to != null) {
+      return to.difference(from);
+    }
+    return _statsPreset;
+  }
+
   /// Logged events (lows/highs, signal loss, sensor swap/stop) over the currently
   /// selected statistics window, newest first — drives the events page.
-  List<({DateTime time, String type})> get statsEvents {
+  List<({DateTime time, String type, int? value})> get statsEvents {
     final store = _store;
     if (store == null) {
       return [];

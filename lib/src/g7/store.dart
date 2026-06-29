@@ -271,30 +271,40 @@ class G7Store {
     return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
   }
 
-  /// Append an event of [type] (a stable slug the UI maps to a label/icon).
+  /// Append an event of [type] (a stable slug the UI maps to a label/icon),
+  /// optionally with the glucose [value] in mg/dL that triggered it.
   // ponytail: single-key read-modify-write without a cross-isolate lock —
   // events are infrequent, so a lost append under a rare two-isolate race is
   // acceptable; switch to per-day chunks like the archive if volume grows.
-  Future<void> addEvent(String type, {DateTime? at}) async {
+  Future<void> addEvent(String type, {DateTime? at, int? value}) async {
     final list = _rawEvents()
-      ..add({'ts': (at ?? DateTime.now()).millisecondsSinceEpoch, 'type': type});
+      ..add({
+        'ts': (at ?? DateTime.now()).millisecondsSinceEpoch,
+        'type': type,
+        'value': ?value,
+      });
     if (list.length > _eventCap) {
       list.removeRange(0, list.length - _eventCap);
     }
     await _set(_kEvents, jsonEncode(list));
   }
 
-  /// Logged events within [from]..[to] inclusive, newest first.
-  List<({DateTime time, String type})> eventsBetween(DateTime from, DateTime to) {
+  /// Logged events within [from]..[to] inclusive, newest first. [value] is the
+  /// mg/dL reading for glucose events, null otherwise.
+  List<({DateTime time, String type, int? value})> eventsBetween(
+    DateTime from,
+    DateTime to,
+  ) {
     final fromMs = from.millisecondsSinceEpoch;
     final toMs = to.millisecondsSinceEpoch;
-    final out = <({DateTime time, String type})>[];
+    final out = <({DateTime time, String type, int? value})>[];
     for (final event in _rawEvents()) {
       final ts = event['ts'] as int;
       if (ts >= fromMs && ts <= toMs) {
         out.add((
           time: DateTime.fromMillisecondsSinceEpoch(ts),
           type: event['type'] as String,
+          value: event['value'] as int?,
         ));
       }
     }
