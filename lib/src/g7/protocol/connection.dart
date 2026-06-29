@@ -129,6 +129,7 @@ class G7Connection {
   void _resetIfNewSession(int liveSecs) {
     if (_byTime.isNotEmpty && liveSecs + 3600 < _byTime.lastKey()!) {
       _byTime.clear();
+      store.addEvent('new_sensor');
     }
   }
 

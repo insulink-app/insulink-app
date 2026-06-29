@@ -27,9 +27,13 @@ enum G7AlarmLevel { none, lowWarning, lowUrgent, highWarning, highUrgent }
 /// heads-up and the urgent full-screen intent. `channelBypassDnd` still lets the
 /// visual alert through DnD.
 class G7AlarmManager {
-  G7AlarmManager(this._plugin);
+  G7AlarmManager(this._plugin, [this._store]);
 
   final FlutterLocalNotificationsPlugin _plugin;
+  // The event log sink. Null for the UI-isolate managers that only run
+  // ensureDndAccess()/fireTest() (which log nothing); the service isolate passes
+  // its store so glucose/signal events are recorded.
+  final G7Store? _store;
   final AudioPlayer _player = AudioPlayer(playerId: 'insulink_alarm');
   final ServiceStrings _strings = ServiceStrings();
   G7AlarmLevel _last = G7AlarmLevel.none;
@@ -48,6 +52,7 @@ class G7AlarmManager {
   static const _vibrationPattern = [0, 150, 80, 150, 80, 300];
 
   bool _connectionLostShown = false;
+  bool _signalLossLogged = false;
 
   /// Initialise the notification plugin. Must run once per isolate before
   /// [check] (mirrors `RustLib.init()`).
@@ -114,6 +119,7 @@ class G7AlarmManager {
     if (level == G7AlarmLevel.none) {
       return;
     }
+    await _store?.addEvent(eventTypeFor(level));
     if (await ProfileSilentState.load()) {
       return;
     }
@@ -136,6 +142,7 @@ class G7AlarmManager {
 
   /// Clear any pending "connection lost" warning — call on each fresh reading.
   Future<void> onReading() async {
+    _signalLossLogged = false;
     if (!_connectionLostShown) {
       return;
     }
@@ -155,6 +162,10 @@ class G7AlarmManager {
   }) async {
     if (!sensorLinked || sinceLastReading < _connectionLostAfter) {
       return;
+    }
+    if (!_signalLossLogged) {
+      _signalLossLogged = true;
+      await _store?.addEvent('signal_loss');
     }
     if (_connectionLostShown) {
       return;
@@ -210,6 +221,24 @@ class G7AlarmManager {
         android: await _warningChannel(),
       ),
     );
+  }
+
+  /// Stable event-log slug for a glucose alarm level (the statistics events page
+  /// maps it to a localized label + icon).
+  @visibleForTesting
+  static String eventTypeFor(G7AlarmLevel level) {
+    switch (level) {
+      case G7AlarmLevel.lowWarning:
+        return 'glucose_low';
+      case G7AlarmLevel.lowUrgent:
+        return 'glucose_low_urgent';
+      case G7AlarmLevel.highWarning:
+        return 'glucose_high';
+      case G7AlarmLevel.highUrgent:
+        return 'glucose_high_urgent';
+      case G7AlarmLevel.none:
+        return '';
+    }
   }
 
   /// Whether a level is a high (vs low) glucose alarm.

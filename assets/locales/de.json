@@ -83,9 +83,22 @@
     "tab": {
       "ranges": "Bereiche",
       "averages": "Kennwerte",
-      "patterns": "Muster"
+      "patterns": "Muster",
+      "events": "Ereignisse"
     },
     "empty": "Noch keine Glukosedaten",
+    "events": {
+      "empty": "Noch keine Ereignisse",
+      "type": {
+        "glucose_low": "Unterzucker",
+        "glucose_low_urgent": "Akuter Unterzucker",
+        "glucose_high": "Überzucker",
+        "glucose_high_urgent": "Akuter Überzucker",
+        "signal_loss": "Signalverlust",
+        "new_sensor": "Neuer Sensor",
+        "sensor_stopped": "Sensor gestoppt"
+      }
+    },
     "window": {
       "d1": "1 T",
       "d3": "3 T",

@@ -151,6 +151,22 @@ void main() {
     });
   });
 
+  group('event log', () {
+    test('filters by window, newest first, and is kept by clearSensor', () async {
+      final store = await G7Store.open();
+      final now = DateTime.now();
+      await store.addEvent('new_sensor', at: now.subtract(const Duration(days: 10)));
+      await store.addEvent('glucose_low', at: now.subtract(const Duration(days: 1)));
+      await store.addEvent('signal_loss', at: now.subtract(const Duration(hours: 1)));
+
+      final recent = store.eventsBetween(now.subtract(const Duration(days: 7)), now);
+      expect(recent.map((event) => event.type), ['signal_loss', 'glucose_low']);
+
+      await store.clearSensor('serialA');
+      expect(store.eventsBetween(now.subtract(const Duration(days: 30)), now), hasLength(3));
+    });
+  });
+
   test('reload observes writes made through another isolate', () async {
     final backing = installSecureStorageMock();
     final store = await G7Store.open();

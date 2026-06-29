@@ -59,7 +59,10 @@ void main() {
     // Register the Android impl so resolvePlatformSpecificImplementation works;
     // its channel is the one mocked above.
     AndroidFlutterLocalNotificationsPlugin.registerWith();
-    alarms = G7AlarmManager(FlutterLocalNotificationsPlugin());
+    alarms = G7AlarmManager(
+      FlutterLocalNotificationsPlugin(),
+      await G7Store.open(),
+    );
     await alarms.init();
   });
 

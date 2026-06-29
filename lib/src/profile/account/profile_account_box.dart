@@ -25,15 +25,20 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
     final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.appBarTheme.backgroundColor,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: theme.dividerColor),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [_nameRow(theme), const SizedBox(height: 20), _logoutButton()],
+        children: [
+          _nameRow(theme),
+          const SizedBox(height: 16),
+          _logoutButton(theme),
+        ],
       ),
     );
   }
@@ -41,37 +46,82 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
   Widget _nameRow(ThemeData theme) {
     return FutureBuilder<String?>(
       future: _storage.read(key: "name"),
-      builder: (context, snapshot) => Row(
-        children: [
-          const LocaleText("profile.account.name"),
-          const Text(": "),
-          Expanded(
-            child: Text(
-              snapshot.data ?? "-",
-              style: const TextStyle(fontWeight: FontWeight.bold),
+      builder: (context, snapshot) {
+        final name = snapshot.data;
+        return Row(
+          children: [
+            _avatar(theme, name),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LocaleText(
+                    "profile.account.name",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    name ?? "-",
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          GestureDetector(
-            onTap: () => _editName(snapshot.data),
-            child: Icon(Icons.edit, size: 18),
-          ),
-        ],
-      ),
+            IconButton(
+              onPressed: () => _editName(name),
+              icon: const Icon(Icons.edit, size: 18),
+              tooltip: Locales.string(context, "profile.account.save"),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _logoutButton() {
-    return ElevatedButton.icon(
-      onPressed: _confirmLogout,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.redAccent,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      icon: const Icon(Icons.logout, size: 20),
-      label: const LocaleText(
-        "profile.account.logout",
-        style: TextStyle(color: Colors.white, fontSize: 15),
+  /// Circular badge showing the first letter of the stored name (or a person
+  /// glyph when it is empty), tinted with the theme primary.
+  Widget _avatar(ThemeData theme, String? name) {
+    final initial = (name ?? "").trim();
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+      child: initial.isEmpty
+          ? Icon(Icons.person, color: theme.colorScheme.primary)
+          : Text(
+              initial[0].toUpperCase(),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+    );
+  }
+
+  Widget _logoutButton(ThemeData theme) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _confirmLogout,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.redAccent,
+          side: const BorderSide(color: Colors.redAccent),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        ),
+        icon: const Icon(Icons.logout, size: 20),
+        label: const LocaleText(
+          "profile.account.logout",
+          style: TextStyle(fontSize: 15),
+        ),
       ),
     );
   }

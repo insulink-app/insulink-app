@@ -124,11 +124,11 @@ class G7TaskHandler extends TaskHandler {
         _coreReady = true;
       }
       if (_store == null) {
-        final alarms = G7AlarmManager(FlutterLocalNotificationsPlugin());
-        await alarms.init();
-        _alarms = alarms;
         final store = await G7Store.open();
         _store = store;
+        final alarms = G7AlarmManager(FlutterLocalNotificationsPlugin(), store);
+        await alarms.init();
+        _alarms = alarms;
         _serial = store.serial ?? '';
         _pairingCode = store.pairingCode ?? '';
       }
