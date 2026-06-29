@@ -4,6 +4,7 @@ import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/statistics/averages/average_view.dart';
 import 'package:insulink/src/statistics/patterns/patterns_view.dart';
+import 'package:insulink/src/statistics/range_selector.dart';
 import 'package:insulink/src/statistics/ranges/time_in_range_view.dart';
 
 class StatisticsBody extends AppPageBody {
@@ -82,6 +83,10 @@ class StatisticsBodyContent extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 4),
+            child: StatisticsRangeSelector(),
           ),
           Expanded(
             child: TabBarView(children: [for (final t in _tabs) t.view]),

@@ -11,6 +11,9 @@ class AppTheme {
     primaryColor: Colors.black,
     colorScheme: const ColorScheme.light(
       primary: Colors.indigo,
+      // ponytail: default secondary is teal — align it to the indigo brand so
+      // chips/date-pickers stop tinting turquoise.
+      secondary: Colors.indigo,
       surface: Color(0xFFE8E8E8),
     ),
     appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFFAFAFA)),
@@ -27,6 +30,7 @@ class AppTheme {
     primaryColor: Colors.white,
     colorScheme: const ColorScheme.dark(
       primary: Colors.indigoAccent,
+      secondary: Colors.indigoAccent,
       surface: Color(0xFF1E1E1E),
       surfaceContainerHighest: Color(0xFF2A2A2A),
     ),
