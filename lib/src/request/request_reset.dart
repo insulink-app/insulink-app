@@ -4,13 +4,13 @@ import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
 
 class RequestReset {
-  reset(context) async {
+  Future<void> reset(BuildContext? context) async {
     const storage = FlutterSecureStorage();
     await storage.delete(key: "user");
     await storage.delete(key: "name");
     await storage.delete(key: "authentication_token");
     await storage.delete(key: "refresh_token");
-    if (context == null) {
+    if (context == null || !context.mounted) {
       return;
     }
     Alert(

@@ -5,6 +5,7 @@ import 'package:android_id/android_id.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' show Response;
 import 'package:insulink/src/g7/glucose_sync.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
@@ -30,21 +31,25 @@ class AuthService {
     return error;
   }
 
-  Future<String?> signUp(context, String name, String password) async {
+  Future<String?> signUp(BuildContext context, String name, String password) async {
+    final deviceFields = await _deviceFields();
+    if (!context.mounted) {
+      return "auth.error.network";
+    }
     final response = await Request.post(
       url: "/signup/",
       body: {
         "name": name,
         "password": password,
         "legal_accepted": true,
-        ...await _deviceFields(),
+        ...deviceFields,
       },
     ).send(context);
     return _handle(response, "auth.error.signup_failed");
   }
 
   /// Stores the tokens on success and returns null; otherwise the error key.
-  Future<String?> _handle(response, String invalidKey) async {
+  Future<String?> _handle(Response? response, String invalidKey) async {
     if (response == null) {
       return "auth.error.network";
     }

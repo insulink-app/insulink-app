@@ -52,6 +52,7 @@ dependencies:
   android_id: ^0.5.1
   url_launcher: ^6.3.2
   path_provider: ^2.1.6
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.4

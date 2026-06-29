@@ -1,7 +1,12 @@
+// The context is optional UI feedback (logout alert) threaded to the leaf
+// RequestReset.reset, which itself guards `mounted` — so forwarding a stale
+// context through these retry/refresh gaps is harmless.
+// ignore_for_file: use_build_context_synchronously
 import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart';
 import 'package:insulink/src/config/environment_options.dart';
@@ -28,7 +33,7 @@ class Request {
       : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
         method = "POST";
 
-  Future<Response?> send(context) async {
+  Future<Response?> send(BuildContext? context) async {
     Map<String, String> headers = Map.from(this.headers);
     headers["Content-Type"] = "application/json; charset=UTF-8";
     const storage = FlutterSecureStorage();
@@ -41,12 +46,13 @@ class Request {
     return processResponse(context, response, headers);
   }
 
-  Future<Response?> processResponse(context, response, headers) async {
+  Future<Response?> processResponse(
+      BuildContext? context, Response? response, Map<String, String> headers) async {
     if (response == null && _retries < _maxRetries) {
       _retries += 1;
       await Future.delayed(Duration(milliseconds: 500 * _retries));
-      var response = await generateResponse(headers);
-      return processResponse(context, response, headers);
+      var retried = await generateResponse(headers);
+      return processResponse(context, retried, headers);
     }
     if (response?.statusCode == 403) {
       await RequestReset().reset(context);
@@ -62,7 +68,7 @@ class Request {
     return response;
   }
 
-  Future<Response?> generateResponse(headers) async {
+  Future<Response?> generateResponse(Map<String, String> headers) async {
     if (method == "GET") {
       try {
         final response = await get(Uri.parse(url), headers: headers)
@@ -86,7 +92,7 @@ class Request {
         _logRequest(
             method: method,
             headers: headers,
-            body: this.body,
+            body: body,
             exception: exception);
         return null;
       }
