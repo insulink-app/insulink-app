@@ -504,7 +504,13 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
         autoRunOnBoot: false,
         autoRunOnMyPackageReplaced: true,
         allowWakeLock: true,
-        allowWifiLock: false,
+        // Keep the Wi-Fi radio up while the service runs. With the screen off in
+        // Doze, Android powers the radio down even though the wake lock keeps the
+        // CPU alive — so the glucose-report POST fails DNS ("Failed host lookup /
+        // No address associated with hostname", errno=7) and readings never reach
+        // the backend. A Wi-Fi lock holds the radio in a connected state so the
+        // background requests go through screen-off, the way the Dexcom app does.
+        allowWifiLock: true,
       ),
     );
   }
