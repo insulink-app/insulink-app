@@ -29,6 +29,7 @@ class PermissionOnboarding extends StatefulWidget {
 class _PermissionOnboardingState extends State<PermissionOnboarding> {
   final _controller = PageController();
   int _index = 0;
+  bool _busy = false;
 
   static final List<PermissionRequest> _permissions = [
     (
@@ -78,7 +79,11 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
   }
 
   Future<void> _advance() async {
+    setState(() => _busy = true);
     await _permissions[_index].request();
+    if (!mounted) {
+      return;
+    }
     if (_index == _permissions.length - 1) {
       await widget.onDone();
       return;
@@ -87,6 +92,9 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+    if (mounted) {
+      setState(() => _busy = false);
+    }
   }
 
   @override
@@ -102,6 +110,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
             isLast: index == _permissions.length - 1,
             position: index,
             count: _permissions.length,
+            busy: _busy && index == _index,
             onAllow: _advance,
           ),
         ),

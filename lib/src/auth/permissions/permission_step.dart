@@ -11,6 +11,7 @@ class PermissionStep extends StatelessWidget {
     required this.isLast,
     required this.position,
     required this.count,
+    required this.busy,
     required this.onAllow,
   });
 
@@ -18,6 +19,7 @@ class PermissionStep extends StatelessWidget {
   final bool isLast;
   final int position;
   final int count;
+  final bool busy;
   final Future<void> Function() onAllow;
 
   @override
@@ -46,11 +48,20 @@ class PermissionStep extends StatelessWidget {
           _dots(scheme),
           const SizedBox(height: 24),
           FilledButton(
-            onPressed: onAllow,
+            onPressed: busy ? null : onAllow,
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-            child: LocaleText(
-              isLast ? 'permission.continue' : 'permission.next',
-            ),
+            child: busy
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : LocaleText(
+                    isLast ? 'permission.continue' : 'permission.next',
+                  ),
           ),
         ],
       ),
