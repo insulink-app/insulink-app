@@ -6,16 +6,47 @@ import 'package:insulink/src/theme/glucose_colors.dart';
 class AppTheme {
   const AppTheme._();
 
+  /// Shared corner radius for every button, so the whole app matches.
+  static const double buttonRadius = 14;
+
+  /// Foreground (text/icon) on primary-coloured (indigo) buttons. White in both
+  /// themes; change here to retint every filled/elevated button at once.
+  static const Color onPrimary = Colors.white;
+
+  static final RoundedRectangleBorder _buttonShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(buttonRadius),
+  );
+
+  static final FilledButtonThemeData _filledButtons = FilledButtonThemeData(
+    style: FilledButton.styleFrom(shape: _buttonShape),
+  );
+  static final ElevatedButtonThemeData _elevatedButtons =
+      ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(shape: _buttonShape),
+  );
+  static final OutlinedButtonThemeData _outlinedButtons =
+      OutlinedButtonThemeData(
+    style: OutlinedButton.styleFrom(shape: _buttonShape),
+  );
+  static final TextButtonThemeData _textButtons = TextButtonThemeData(
+    style: TextButton.styleFrom(shape: _buttonShape),
+  );
+
   static final ThemeData light = ThemeData(
     useMaterial3: true,
     primaryColor: Colors.black,
     colorScheme: const ColorScheme.light(
       primary: Colors.indigo,
+      onPrimary: onPrimary,
       // ponytail: default secondary is teal — align it to the indigo brand so
       // chips/date-pickers stop tinting turquoise.
       secondary: Colors.indigo,
       surface: Color(0xFFE8E8E8),
     ),
+    filledButtonTheme: _filledButtons,
+    elevatedButtonTheme: _elevatedButtons,
+    outlinedButtonTheme: _outlinedButtons,
+    textButtonTheme: _textButtons,
     appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFFAFAFA)),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Colors.white,
@@ -30,10 +61,15 @@ class AppTheme {
     primaryColor: Colors.white,
     colorScheme: const ColorScheme.dark(
       primary: Colors.indigoAccent,
+      onPrimary: onPrimary,
       secondary: Colors.indigoAccent,
       surface: Color(0xFF1E1E1E),
       surfaceContainerHighest: Color(0xFF2A2A2A),
     ),
+    filledButtonTheme: _filledButtons,
+    elevatedButtonTheme: _elevatedButtons,
+    outlinedButtonTheme: _outlinedButtons,
+    textButtonTheme: _textButtons,
     appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1B1B1B)),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Color(0xFF2A2A2A),

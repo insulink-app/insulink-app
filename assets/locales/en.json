@@ -188,7 +188,9 @@
     },
     "pair": {
       "title": "Pair sensor",
-      "hint": "Enter the pairing code to connect"
+      "hint": "Enter the pairing code to connect",
+      "scan": "Scan code",
+      "scan_hint": "Point the camera at the code on the sensor packaging."
     },
     "life": {
       "title": "Durability",
