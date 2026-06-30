@@ -22,6 +22,7 @@ class _AuthPageState extends State<AuthPage> {
   final _password = TextEditingController();
   bool _signUp = false;
   bool _busy = false;
+  bool _showPassword = false;
 
   @override
   void dispose() {
@@ -76,7 +77,7 @@ class _AuthPageState extends State<AuthPage> {
                 const SizedBox(height: 32),
                 _field(_name, 'auth.name', false),
                 const SizedBox(height: 14),
-                _field(_password, 'auth.password', true),
+                _passwordField(),
                 const SizedBox(height: 24),
                 _submitButton(),
                 const SizedBox(height: 12),
@@ -97,6 +98,24 @@ class _AuthPageState extends State<AuthPage> {
       decoration: InputDecoration(
         labelText: Locales.string(context, labelKey),
         border: const OutlineInputBorder(),
+      ),
+    );
+  }
+
+  Widget _passwordField() {
+    return TextField(
+      controller: _password,
+      obscureText: !_showPassword,
+      enabled: !_busy,
+      decoration: InputDecoration(
+        labelText: Locales.string(context, 'auth.password'),
+        border: const OutlineInputBorder(),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _showPassword ? Icons.visibility_off : Icons.visibility,
+          ),
+          onPressed: () => setState(() => _showPassword = !_showPassword),
+        ),
       ),
     );
   }
