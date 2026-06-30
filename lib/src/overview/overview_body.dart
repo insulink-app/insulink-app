@@ -62,7 +62,10 @@ class OverviewBodyContent extends StatelessWidget {
   /// paired / connecting but no reading has arrived yet. Only fall through to
   /// the "no sensor" view once we're sure.
   Widget _view(G7Controller controller) {
-    if (controller.currentMgdl != null) {
+    // Known data (a live/cached value OR archived history) → show the chart
+    // straight away, even before a fresh reading lands after a re-login/restore;
+    // the headline shows a loader until the current value arrives.
+    if (controller.currentMgdl != null || controller.byTime.isNotEmpty) {
       return _DataView(controller: controller);
     }
     final loading =
@@ -97,7 +100,6 @@ class _DataView extends StatelessWidget {
         OverviewCurrentValue(
           mgdl: controller.currentMgdl,
           trendPerMin: controller.latest?.trendMgDlPerMin,
-          busy: controller.busy,
         ),
         const SizedBox(height: 56),
         Expanded(
