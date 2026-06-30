@@ -402,6 +402,13 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `flutter_blue_plus` 2.x: `device.connect(license: License.nonprofit)` is required.
 - Auth char uses **indications**; control/backfill are subscribed only AFTER
   auth (subscribing them early makes the sensor drop the connection).
+- **QR/DataMatrix scan (mobile_scanner) needs R8 keep rules** in
+  `android/app/proguard-rules.pro` (wired via `proguardFiles` in the release
+  buildType). Flutter enables R8 for release; mobile_scanner's bundled keep
+  rules use a single-star wildcard that misses the
+  `com.google.android.gms.internal.mlkit_*` impl packages, so R8 strips the
+  MLKit barcode pipeline and the scanner NPEs (`null object reference`, obfuscated
+  names) the moment the camera opens — **release only**, debug is fine.
 
 ## Reference
 
