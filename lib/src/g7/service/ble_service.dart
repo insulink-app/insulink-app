@@ -8,6 +8,7 @@ import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
 import 'alarms.dart';
 import 'service_log.dart';
+import '../event_sync.dart';
 import '../glucose_sync.dart';
 import '../protocol/connection.dart';
 import '../sensor_sync.dart';
@@ -191,7 +192,12 @@ class G7TaskHandler extends TaskHandler {
         't': 'conn',
         'connected': connected,
       }),
-      onArchive: (readings) => GlucoseSync().queue(readings, _log),
+      onArchive: (readings) {
+        GlucoseSync().queue(readings, _log);
+        // Flush any service-isolate events (alarm zones, signal loss, new
+        // sensor) to the backend; retries on the next reading if it fails.
+        EventSync().sync(store, _log);
+      },
     );
   }
 

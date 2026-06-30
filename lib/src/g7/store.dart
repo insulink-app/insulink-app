@@ -345,6 +345,27 @@ class G7Store {
     return out;
   }
 
+  /// Merge backend-pulled events into the log, skipping any with the same
+  /// (timestamp, type) already stored. Used by the sign-in pull so a fresh
+  /// install gets its history without duplicating events it already logged.
+  Future<void> mergeEvents(
+    List<({DateTime time, String type, int? value})> events,
+  ) async {
+    final list = _rawEvents();
+    final seen = list.map((event) => '${event['ts']}@${event['type']}').toSet();
+    for (final event in events) {
+      final ts = event.time.millisecondsSinceEpoch;
+      if (seen.add('$ts@${event.type}')) {
+        list.add({'ts': ts, 'type': event.type, 'value': ?event.value});
+      }
+    }
+    list.sort((first, second) => (first['ts'] as int).compareTo(second['ts'] as int));
+    if (list.length > _eventCap) {
+      list.removeRange(0, list.length - _eventCap);
+    }
+    await _set(_kEvents, jsonEncode(list));
+  }
+
   // ---- Long-term glucose archive -------------------------------------------
   // An append-only, absolute-time glucose record that SURVIVES sensor swap,
   // sensor stop, connection loss and even "forget sensor". The per-sensor

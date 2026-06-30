@@ -9,6 +9,7 @@ import 'package:insulink/src/g7/service/ble_service.dart';
 import 'package:insulink/src/g7/service/service_log.dart';
 import 'package:insulink/src/g7/protocol/device_info.dart';
 import 'package:insulink/src/g7/protocol/glucose.dart';
+import 'package:insulink/src/g7/event_sync.dart';
 import 'package:insulink/src/g7/sensor_sync.dart';
 import 'package:insulink/src/g7/store.dart';
 import 'package:insulink/src/localization/service_strings.dart';
@@ -669,6 +670,10 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     final key = _key;
     await FlutterForegroundTask.stopService();
     await _store?.addEvent('sensor_stopped');
+    final store = _store;
+    if (store != null) {
+      await EventSync().sync(store, _append);
+    }
     await _store?.clearSensor(key);
     _append('sensor forgotten');
     if (_disposed) {
