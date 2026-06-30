@@ -6,6 +6,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' show Response;
+import 'package:insulink/src/g7/event_sync.dart';
 import 'package:insulink/src/g7/glucose_sync.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
@@ -27,6 +28,9 @@ class AuthService {
     }
     if (error == null && context.mounted) {
       await GlucoseSync().pullHistory(context);
+    }
+    if (error == null && context.mounted) {
+      await EventSync().pullHistory(context);
     }
     return error;
   }

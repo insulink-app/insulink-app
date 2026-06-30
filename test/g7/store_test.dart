@@ -165,6 +165,31 @@ void main() {
       await store.clearSensor('serialA');
       expect(store.eventsBetween(now.subtract(const Duration(days: 30)), now), hasLength(3));
     });
+
+    test('mergeEvents adds new events but skips existing (ts,type) pairs', () async {
+      final store = await G7Store.open();
+      final base = DateTime(2026, 1, 1, 12);
+      await store.addEvent('glucose_low', at: base, value: 62);
+
+      await store.mergeEvents([
+        // Same (ts,type) as the existing one → skipped, no duplicate.
+        (time: base, type: 'glucose_low', value: 62),
+        // Same instant, different type → kept.
+        (time: base, type: 'signal_loss', value: null),
+        // New instant → kept.
+        (time: base.add(const Duration(hours: 1)), type: 'new_sensor', value: null),
+      ]);
+
+      final all = store.eventsBetween(
+        base.subtract(const Duration(days: 1)),
+        base.add(const Duration(days: 1)),
+      );
+      // The duplicate glucose_low is dropped; the same-instant signal_loss and
+      // the later new_sensor are both kept → 3, not 4.
+      expect(all, hasLength(3));
+      expect(all.map((event) => event.type),
+          containsAll(['glucose_low', 'signal_loss', 'new_sensor']));
+    });
   });
 
   group('backend sensor sync', () {
