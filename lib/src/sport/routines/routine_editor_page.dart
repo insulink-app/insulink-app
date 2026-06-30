@@ -1,0 +1,175 @@
+import 'package:flutter/material.dart';
+import 'package:insulink/src/base/confirm_delete.dart';
+import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/exercises/exercises_page.dart';
+import 'package:insulink/src/sport/routines/routine_item_editor_sheet.dart';
+import 'package:insulink/src/sport/sport_add_tile.dart';
+import 'package:insulink/src/sport/sport_models.dart';
+import 'package:insulink/src/sport/training_state.dart';
+import 'package:insulink/src/sport/workout/workout_runner_page.dart';
+import 'package:provider/provider.dart';
+
+/// Routine bearbeiten: Name, geordnete Übungs-Liste (Reorder per Halten),
+/// Übung hinzufügen, und Training starten.
+class RoutineEditorPage extends StatefulWidget {
+  const RoutineEditorPage({super.key, required this.routineId});
+
+  final String routineId;
+
+  @override
+  State<RoutineEditorPage> createState() => _RoutineEditorPageState();
+}
+
+class _RoutineEditorPageState extends State<RoutineEditorPage> {
+  late final TextEditingController _name;
+
+  @override
+  void initState() {
+    super.initState();
+    final routine = context.read<TrainingState>().routineById(widget.routineId);
+    _name = TextEditingController(text: routine?.name ?? '');
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  TrainingState get _training => context.read<TrainingState>();
+
+  void _addExercise() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ExercisesPage(
+          onPick: (exercise) =>
+              _training.addRoutineItem(widget.routineId, RoutineItem(exerciseId: exercise.id)),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final routine = context.watch<TrainingState>().routineById(widget.routineId);
+    if (routine == null) {
+      return const Scaffold();
+    }
+    return Scaffold(
+      appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
+        title: LocaleText('sport.routines.edit'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => confirmDelete(
+              context,
+              messageKey: 'sport.routines.delete_confirm',
+              onConfirm: () {
+                _training.removeRoutine(routine.id);
+                Navigator.of(context).pop();
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: routine.items.isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'routine-start',
+              icon: const Icon(Icons.play_arrow),
+              label: LocaleText('sport.routines.start'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => WorkoutRunnerPage(routine: routine),
+                ),
+              ),
+            ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: TextField(
+              controller: _name,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: Locales.string(context, 'sport.routines.name'),
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (value) => _training.renameRoutine(routine.id, value.trim()),
+            ),
+          ),
+          Expanded(child: _itemsList(routine)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: SportAddTile(
+              labelKey: 'sport.routines.add_exercise',
+              onTap: _addExercise,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemsList(SportRoutine routine) {
+    if (routine.items.isEmpty) {
+      return Center(child: LocaleText('sport.routines.no_items'));
+    }
+    return ReorderableListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      onReorderItem: (oldIndex, newIndex) =>
+          _training.reorderRoutineItems(routine.id, oldIndex, newIndex),
+      children: [
+        for (var index = 0; index < routine.items.length; index++)
+          _itemRow(routine, index),
+      ],
+    );
+  }
+
+  Widget _itemRow(SportRoutine routine, int index) {
+    final item = routine.items[index];
+    final exercise = _training.exerciseById(item.exerciseId);
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      key: ValueKey('${routine.id}.$index'),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        tileColor: scheme.onSurface.withValues(alpha: 0.04),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
+        ),
+        leading: const Icon(Icons.drag_handle),
+        title: Text(
+          exercise?.name ?? '—',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(_summary(item, exercise)),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline, size: 20),
+          onPressed: () => confirmDelete(
+            context,
+            messageKey: 'sport.routines.item_delete_confirm',
+            onConfirm: () => _training.removeRoutineItem(routine.id, index),
+          ),
+        ),
+        onTap: () => showRoutineItemEditorSheet(
+          context,
+          routineId: routine.id,
+          index: index,
+        ),
+      ),
+    );
+  }
+
+  String _summary(RoutineItem item, SportExercise? exercise) {
+    final timed = exercise?.kind == ExerciseKind.timed;
+    final core = '${item.targetSets} × ${item.target}${timed ? ' s' : ''}';
+    final weight = exercise?.kind == ExerciseKind.weighted
+        ? ' · ${item.targetWeight.toStringAsFixed(1)} kg'
+        : '';
+    return '$core$weight · ${item.restSeconds}s';
+  }
+}

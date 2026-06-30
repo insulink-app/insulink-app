@@ -28,7 +28,8 @@
     "ok": "OK",
     "continue": "Weiter",
     "cancel": "Abbrechen",
-    "done": "Fertig"
+    "done": "Fertig",
+    "delete": "Löschen"
   },
   "permission": {
     "next": "Erlauben",
@@ -48,6 +49,10 @@
     "battery": {
       "title": "Im Hintergrund laufen",
       "body": "Nimm Insulink von der Akku-Optimierung aus, damit dein Sensor weiter gelesen wird, wenn die App geschlossen ist. Ohne das kann Android die Verbindung beenden."
+    },
+    "activity": {
+      "title": "Aktivität & Schritte",
+      "body": "Erlaube Insulink den Zugriff auf die Bewegungsdaten, um deine Schritte im Sport-Bereich zu zählen."
     }
   },
   "legal": {
@@ -256,6 +261,78 @@
   },
   "pump": {
     "label": "Pumpe"
+  },
+  "devices": {
+    "label": "Geräte"
+  },
+  "sport": {
+    "label": "Sport",
+    "today": "Heute",
+    "activity": {
+      "steps": "Schritte",
+      "distance": "Distanz",
+      "calories": "Kalorien",
+      "stride": "Schrittlänge",
+      "estimate_note": "Distanz und Kalorien sind Schätzungen aus deinen Schritten.",
+      "permission": "Bewegungs-Berechtigung fehlt – Schritte können nicht gezählt werden."
+    },
+    "weight": {
+      "_": "Gewicht",
+      "empty": "Noch kein Gewicht erfasst",
+      "add": "Gewicht eintragen",
+      "current": "Aktuell",
+      "history": "Verlauf",
+      "delta": "# kg",
+      "delete_confirm": "Diesen Gewichtseintrag löschen?"
+    },
+    "exercises": {
+      "_": "Übungen",
+      "add": "Übung anlegen",
+      "edit": "Übung bearbeiten",
+      "name": "Name",
+      "empty": "Noch keine Übungen. Lege deine erste an.",
+      "delete_confirm": "Diese Übung wirklich löschen?",
+      "kind": {
+        "reps": "Wiederholungen",
+        "weighted": "Gewicht",
+        "timed": "Zeit"
+      }
+    },
+    "routines": {
+      "_": "Routinen",
+      "new": "Neue Routine",
+      "edit": "Routine bearbeiten",
+      "name": "Name",
+      "count": "# Übungen",
+      "start": "Starten",
+      "add_exercise": "Übung hinzufügen",
+      "no_items": "Noch keine Übungen in dieser Routine.",
+      "delete_confirm": "Diese Routine wirklich löschen?",
+      "item_delete_confirm": "Diese Übung aus der Routine entfernen?",
+      "targets": "Ziele",
+      "sets": "Sätze",
+      "reps": "Wiederholungen",
+      "seconds": "Sekunden",
+      "weight": "Gewicht",
+      "rest": "Pause"
+    },
+    "workout": {
+      "exercise": "Übung",
+      "set": "Satz",
+      "target_time": "Ziel: # s",
+      "complete_set": "Satz fertig",
+      "finish": "Training beenden",
+      "rest": "Pause",
+      "next": "Als nächstes:",
+      "skip_rest": "Pause überspringen"
+    },
+    "health": {
+      "import": "Aus Google Health importieren",
+      "note": "Importiert Schritte, Distanz und Kalorien (heute) sowie dein Gewicht aus Google Health.",
+      "imported": "Aus Google Health importiert",
+      "denied": "Zugriff auf Google Health verweigert",
+      "unavailable": "Google Health (Health Connect) ist nicht verfügbar"
+    }
   },
   "profile": {
     "label": "Profil",

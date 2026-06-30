@@ -138,7 +138,7 @@ class EmptyView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () => appTab.value = kSensorTabIndex,
+              onPressed: () => appTab.value = kDevicesTabIndex,
               icon: const Icon(CupertinoIcons.drop_fill, size: 18),
               label: LocaleText('overview.empty.action'),
               style: FilledButton.styleFrom(

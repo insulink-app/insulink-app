@@ -28,7 +28,8 @@
     "ok": "OK",
     "continue": "Continue",
     "cancel": "Cancel",
-    "done": "Done"
+    "done": "Done",
+    "delete": "Delete"
   },
   "permission": {
     "next": "Allow",
@@ -44,6 +45,10 @@
     "dnd": {
       "title": "Critical alarms",
       "body": "Allow Insulink to bypass Do Not Disturb and silent mode, so an urgent low or high still sounds — even when your phone is muted."
+    },
+    "activity": {
+      "title": "Activity & steps",
+      "body": "Allow Insulink to access your motion data to count your steps in the Sport area."
     },
     "battery": {
       "title": "Run in background",
@@ -256,6 +261,78 @@
   },
   "pump": {
     "label": "Pump"
+  },
+  "devices": {
+    "label": "Devices"
+  },
+  "sport": {
+    "label": "Sport",
+    "today": "Today",
+    "activity": {
+      "steps": "Steps",
+      "distance": "Distance",
+      "calories": "Calories",
+      "stride": "Stride length",
+      "estimate_note": "Distance and calories are estimated from your steps.",
+      "permission": "Motion permission missing – steps can't be counted."
+    },
+    "weight": {
+      "_": "Weight",
+      "empty": "No weight logged yet",
+      "add": "Log weight",
+      "current": "Current",
+      "history": "History",
+      "delta": "# kg",
+      "delete_confirm": "Delete this weight entry?"
+    },
+    "exercises": {
+      "_": "Exercises",
+      "add": "New exercise",
+      "edit": "Edit exercise",
+      "name": "Name",
+      "empty": "No exercises yet. Create your first one.",
+      "delete_confirm": "Delete this exercise?",
+      "kind": {
+        "reps": "Reps",
+        "weighted": "Weight",
+        "timed": "Time"
+      }
+    },
+    "routines": {
+      "_": "Routines",
+      "new": "New routine",
+      "edit": "Edit routine",
+      "name": "Name",
+      "count": "# exercises",
+      "start": "Start",
+      "add_exercise": "Add exercise",
+      "no_items": "No exercises in this routine yet.",
+      "delete_confirm": "Delete this routine?",
+      "item_delete_confirm": "Remove this exercise from the routine?",
+      "targets": "Targets",
+      "sets": "Sets",
+      "reps": "Reps",
+      "seconds": "Seconds",
+      "weight": "Weight",
+      "rest": "Rest"
+    },
+    "workout": {
+      "exercise": "Exercise",
+      "set": "Set",
+      "target_time": "Target: # s",
+      "complete_set": "Set done",
+      "finish": "Finish workout",
+      "rest": "Rest",
+      "next": "Next:",
+      "skip_rest": "Skip rest"
+    },
+    "health": {
+      "import": "Import from Google Health",
+      "note": "Imports steps, distance and calories (today) plus your weight from Google Health.",
+      "imported": "Imported from Google Health",
+      "denied": "Google Health access denied",
+      "unavailable": "Google Health (Health Connect) is not available"
+    }
   },
   "profile": {
     "label": "Profile",

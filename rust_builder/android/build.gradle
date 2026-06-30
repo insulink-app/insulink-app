@@ -46,7 +46,8 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 19
+        // An die App angeglichen (Health Connect verlangt 26).
+        minSdkVersion 26
     }
 }
 

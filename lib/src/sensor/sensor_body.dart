@@ -1,7 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -11,28 +9,7 @@ import 'package:insulink/src/sensor/info/sensor_info.dart';
 import 'package:insulink/src/sensor/sensor_log_panel.dart';
 import 'package:provider/provider.dart';
 
-class SensorBody extends AppPageBody {
-  SensorBody({super.key})
-    : super(
-        name: "sensor.label",
-        unselectedIcon: CupertinoIcons.drop,
-        selectedIcon: CupertinoIcons.drop_fill,
-      );
-
-  @override
-  Widget content(BuildContext context) {
-    return const SensorBodyContent();
-  }
-
-  @override
-  Future<int> notifications(BuildContext context) async {
-    final controller = Provider.of<G7Controller>(context, listen: false);
-    // -1 renders as a small red dot in the navigator (see
-    // AppNavigator.createNotificationBadge) — shown while no sensor is set up.
-    return controller.hasSensor ? 0 : -1;
-  }
-}
-
+/// The sensor device page, shown inside the Devices tab (see [DevicesBody]).
 class SensorBodyContent extends StatefulWidget {
   const SensorBodyContent({super.key});
 

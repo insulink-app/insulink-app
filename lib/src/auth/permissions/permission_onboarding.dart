@@ -61,6 +61,14 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       },
     ),
     (
+      icon: Icons.directions_walk,
+      titleKey: 'permission.activity.title',
+      bodyKey: 'permission.activity.body',
+      request: () async {
+        await Permission.activityRecognition.request();
+      },
+    ),
+    (
       icon: Icons.battery_charging_full,
       titleKey: 'permission.battery.title',
       bodyKey: 'permission.battery.body',

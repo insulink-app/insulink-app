@@ -14,6 +14,9 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/profile/language/profile_language_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/theme/profile_theme_state.dart';
+import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/sport_state.dart';
+import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +28,8 @@ typedef AppPreferences = ({
   ProfileGlucoseState glucose,
   ProfileBolusState bolus,
   ProfileSilentState silent,
+  SportState sport,
+  TrainingState training,
 });
 
 Future<void> main() async {
@@ -106,6 +111,12 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.glucose),
         ChangeNotifierProvider(create: (_) => prefs.bolus),
         ChangeNotifierProvider(create: (_) => prefs.silent),
+        ChangeNotifierProvider(create: (_) => prefs.sport),
+        ChangeNotifierProvider(create: (_) => prefs.training),
+        // Schrittzähler — wird erst beim Öffnen des Sport-Tabs gestartet
+        // (ensureStarted), nicht hier, um Berechtigung/Stream nicht beim
+        // App-Start zu erzwingen.
+        ChangeNotifierProvider(create: (_) => SportActivityState()),
         // Shared G7 read pipeline + service control, observed by the overview
         // and sensor pages.
         ChangeNotifierProvider(create: (_) => G7Controller()..init()),
@@ -148,6 +159,8 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       glucose: await ProfileGlucoseState.load(),
       bolus: await ProfileBolusState.load(),
       silent: ProfileSilentState(await ProfileSilentState.load()),
+      sport: await SportState.load(),
+      training: await TrainingState.load(),
     );
   }
 }

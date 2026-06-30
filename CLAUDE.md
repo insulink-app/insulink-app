@@ -396,9 +396,12 @@ alarms fire with the app closed. `init()` must be called once per isolate
 
 - `rust_builder/cargokit/gradle/plugin.gradle` is patched to use injected
   `ExecOperations` instead of `Project.exec()` (removed in Gradle 9).
-- `compileSdk = 36` / `minSdk = 23` in BOTH `android/app/build.gradle.kts` AND
-  `rust_builder/android/build.gradle` (flutter_blue_plus 2.x). `flutter build`'s
-  one-time "Upgrading build.gradle.kts" migration may revert `minSdk` — reset it.
+- `compileSdk = 36` / `minSdk = 26` in BOTH `android/app/build.gradle.kts` AND
+  `rust_builder/android/build.gradle` (the two must match). `minSdk` is **26**
+  because the `health` plugin (Health Connect, used by the Sport tab's Google
+  Health import) floors it there; flutter_blue_plus 2.x needs ≥23. `flutter
+  build`'s one-time "Upgrading build.gradle.kts" migration may revert `minSdk`
+  (back to `flutter.minSdkVersion`) — reset it to 26.
 - `flutter_blue_plus` 2.x: `device.connect(license: License.nonprofit)` is required.
 - Auth char uses **indications**; control/backfill are subscribed only AFTER
   auth (subscribing them early makes the sensor drop the connection).
