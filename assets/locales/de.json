@@ -101,6 +101,12 @@
     "silent": {
       "title": "Stummschaltung aktiv",
       "hint": "Alarme sind stummgeschaltet · zum Deaktivieren tippen"
+    },
+    "restore": {
+      "title": "Vorherigen Sensor verwenden?",
+      "body": "In deinem Konto ist ein Sensor hinterlegt. Übernimm ihn, um ohne erneutes Koppeln weiterzulesen.",
+      "use": "Verwenden",
+      "dismiss": "Nicht jetzt"
     }
   },
   "statistics": {

@@ -9,6 +9,7 @@ import 'package:insulink/src/g7/service/ble_service.dart';
 import 'package:insulink/src/g7/service/service_log.dart';
 import 'package:insulink/src/g7/protocol/device_info.dart';
 import 'package:insulink/src/g7/protocol/glucose.dart';
+import 'package:insulink/src/g7/sensor_sync.dart';
 import 'package:insulink/src/g7/store.dart';
 import 'package:insulink/src/localization/service_strings.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -503,7 +504,13 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
         autoRunOnBoot: false,
         autoRunOnMyPackageReplaced: true,
         allowWakeLock: true,
-        allowWifiLock: false,
+        // Keep the Wi-Fi radio up while the service runs. With the screen off in
+        // Doze, Android powers the radio down even though the wake lock keeps the
+        // CPU alive — so the glucose-report POST fails DNS ("Failed host lookup /
+        // No address associated with hostname", errno=7) and readings never reach
+        // the backend. A Wi-Fi lock holds the radio in a connected state so the
+        // background requests go through screen-off, the way the Dexcom app does.
+        allowWifiLock: true,
       ),
     );
   }
@@ -558,6 +565,55 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
       await FlutterForegroundTask.requestIgnoreBatteryOptimization();
     }
     return true;
+  }
+
+  /// The account's stored sensor to offer for restore, or null when there's
+  /// already a local sensor, none on the backend, or the offer was dismissed.
+  Future<SensorRestore?> availableBackendSensor(BuildContext context) async {
+    if (hasSensor) {
+      return null;
+    }
+    final restore = await SensorSync().fetchCurrent(context);
+    if (restore == null) {
+      return null;
+    }
+    if (_store?.restoreDismissedId == restore.sensorId) {
+      return null;
+    }
+    return restore;
+  }
+
+  /// Remember the user declined restoring [sensorId] so it isn't offered again.
+  Future<void> dismissRestore(String sensorId) async {
+    await _store?.setRestoreDismissed(sensorId);
+  }
+
+  /// Adopt the sensor the backend has on file (offered on a fresh install when
+  /// no sensor is set up locally): restore its identity into the store so the
+  /// pipeline can reconnect without re-pairing, then start reading.
+  Future<void> restoreSensor(SensorRestore restore) async {
+    final store = _store;
+    if (store == null) {
+      return;
+    }
+    await store.saveIdentity(serial: '', pairingCode: restore.pairingCode);
+    await store.saveResolvedKey(restore.resolvedKey);
+    await store.saveDeviceId(restore.resolvedKey, restore.deviceId);
+    await store.saveSessionKeyHex(restore.resolvedKey, restore.sessionKeyHex);
+    await store.saveBackendSensorId(restore.resolvedKey, restore.sensorId);
+    final infoJson = restore.infoJson;
+    if (infoJson != null) {
+      final start = restore.sensorStartMs;
+      await store.saveInfo(
+        restore.resolvedKey,
+        G7DeviceInfo.fromJson(infoJson),
+        start == null ? null : DateTime.fromMillisecondsSinceEpoch(start),
+      );
+    }
+    code.text = restore.pairingCode;
+    _restoreFromCache(store);
+    notifyListeners();
+    await start();
   }
 
   Future<void> _startService() async {

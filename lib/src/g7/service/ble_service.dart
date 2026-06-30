@@ -10,6 +10,7 @@ import 'alarms.dart';
 import 'service_log.dart';
 import '../glucose_sync.dart';
 import '../protocol/connection.dart';
+import '../sensor_sync.dart';
 import '../store.dart';
 
 /// Entry point for the foreground-service isolate. Must be a top-level function
@@ -162,6 +163,9 @@ class G7TaskHandler extends TaskHandler {
         if (reading.glucoseMgDl != null) {
           alarms.check(reading.glucoseMgDl, reading.trendMgDlPerMin);
         }
+        // Mirror the paired sensor to the account (best-effort; only POSTs on a
+        // fresh pair or when the identity changed).
+        SensorSync().sync(store);
         // One-shot warning when the sensor has < 24 h of session left. The
         // sensor's reported session length is best-effort; fall back to the
         // standard G7 lifetime (10 days + 12 h grace) when it's unknown.

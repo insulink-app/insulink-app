@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
@@ -27,7 +28,7 @@ void main() {
   testWidgets('renders the value, unit and trend', (tester) async {
     await tester.pumpWidget(
       wrap(
-        const OverviewCurrentValue(mgdl: 120, trendPerMin: 1.0, busy: false),
+        const OverviewCurrentValue(mgdl: 120, trendPerMin: 1.0),
       ),
     );
     expect(find.text('120'), findsOneWidget);
@@ -38,7 +39,7 @@ void main() {
   testWidgets('renders in the chosen display unit (mmol/L)', (tester) async {
     await tester.pumpWidget(
       wrap(
-        const OverviewCurrentValue(mgdl: 180, trendPerMin: null, busy: false),
+        const OverviewCurrentValue(mgdl: 180, trendPerMin: null),
         unit: GlucoseUnit.mmol,
       ),
     );
@@ -46,21 +47,14 @@ void main() {
     expect(find.text('mmol/L'), findsOneWidget);
   });
 
-  testWidgets('shows an ellipsis while busy with no reading', (tester) async {
+  testWidgets('shows a loader instead of a value when no reading is known', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       wrap(
-        const OverviewCurrentValue(mgdl: null, trendPerMin: null, busy: true),
+        const OverviewCurrentValue(mgdl: null, trendPerMin: null),
       ),
     );
-    expect(find.text('…'), findsOneWidget);
-  });
-
-  testWidgets('shows dashes with no reading and not busy', (tester) async {
-    await tester.pumpWidget(
-      wrap(
-        const OverviewCurrentValue(mgdl: null, trendPerMin: null, busy: false),
-      ),
-    );
-    expect(find.text('--'), findsOneWidget);
+    expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
   });
 }

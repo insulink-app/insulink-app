@@ -25,6 +25,11 @@ class Request {
   static const int _maxRetries = 3;
   int _retries = 0;
 
+  /// The last transport-level exception (no HTTP response), so a caller logging
+  /// a null status can show WHY instead of just "status null". Cleared on a
+  /// successful response.
+  String? lastError;
+
   Request.get(
       {required String url, this.headers = const {}, this.body = const {}})
       : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
@@ -76,9 +81,11 @@ class Request {
         final response = await get(Uri.parse(url), headers: headers)
             .timeout(const Duration(seconds: _timeout));
         _logRequest(method: method, headers: headers, response: response);
+        lastError = null;
         return response;
       } catch (exception) {
         _logRequest(method: method, headers: headers, exception: exception);
+        lastError = exception.toString();
         return null;
       }
     } else if (method == "POST") {
@@ -89,6 +96,7 @@ class Request {
                 .timeout(const Duration(seconds: _timeout));
         _logRequest(
             method: method, headers: headers, body: body, response: response);
+        lastError = null;
         return response;
       } catch (exception) {
         _logRequest(
@@ -96,6 +104,7 @@ class Request {
             headers: headers,
             body: body,
             exception: exception);
+        lastError = exception.toString();
         return null;
       }
     } else {

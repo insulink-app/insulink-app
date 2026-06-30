@@ -167,6 +167,31 @@ void main() {
     });
   });
 
+  group('backend sensor sync', () {
+    test('id/data are keyed per sensor and the dismissed flag round-trips',
+        () async {
+      final store = await G7Store.open();
+      expect(store.backendSensorId('keyA'), isNull);
+
+      await store.saveBackendSensorId('keyA', 'uuid-a');
+      await store.saveBackendSyncedData('keyA', 'blob-a');
+      // A different sensor key is independent → a new sensor registers afresh.
+      expect(store.backendSensorId('keyA'), 'uuid-a');
+      expect(store.backendSyncedData('keyA'), 'blob-a');
+      expect(store.backendSensorId('keyB'), isNull);
+
+      expect(store.restoreDismissedId, isNull);
+      await store.setRestoreDismissed('uuid-a');
+      expect(store.restoreDismissedId, 'uuid-a');
+    });
+
+    test('sessionKeyHex round-trips the raw wire form', () async {
+      final store = await G7Store.open();
+      await store.saveSessionKeyHex('keyA', 'deadbeef');
+      expect(store.sessionKeyHex('keyA'), 'deadbeef');
+    });
+  });
+
   test('reload observes writes made through another isolate', () async {
     final backing = installSecureStorageMock();
     final store = await G7Store.open();

@@ -10,12 +10,10 @@ class OverviewCurrentValue extends StatelessWidget {
     super.key,
     required this.mgdl,
     required this.trendPerMin,
-    required this.busy,
   });
 
   final int? mgdl;
   final double? trendPerMin;
-  final bool busy;
 
   /// Cupertino arrow for the per-minute trend (5 directional buckets; the exact
   /// rate is shown as text alongside).
@@ -61,15 +59,24 @@ class OverviewCurrentValue extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          value == null ? (busy ? '…' : '--') : glucose.format(value),
-          style: TextStyle(
-            fontSize: 100,
-            fontWeight: FontWeight.bold,
-            height: 1,
-            color: color,
+        // No current value yet (e.g. just after a re-login/restore, awaiting the
+        // first live reading) → a spinner where the number goes, while the chart
+        // below still shows the known history.
+        if (value == null)
+          const SizedBox(
+            height: 100,
+            child: Center(child: CupertinoActivityIndicator(radius: 18)),
+          )
+        else
+          Text(
+            glucose.format(value),
+            style: TextStyle(
+              fontSize: 100,
+              fontWeight: FontWeight.bold,
+              height: 1,
+              color: color,
+            ),
           ),
-        ),
         const SizedBox(width: 12),
         // Arrow sits up near the top of the number; unit + trend stack beneath.
         Column(

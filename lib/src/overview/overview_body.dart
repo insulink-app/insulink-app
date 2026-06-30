@@ -5,6 +5,7 @@ import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
 import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_states.dart';
+import 'package:insulink/src/overview/sensor_restore_offer.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:provider/provider.dart';
 
@@ -61,7 +62,10 @@ class OverviewBodyContent extends StatelessWidget {
   /// paired / connecting but no reading has arrived yet. Only fall through to
   /// the "no sensor" view once we're sure.
   Widget _view(G7Controller controller) {
-    if (controller.currentMgdl != null) {
+    // Known data (a live/cached value OR archived history) → show the chart
+    // straight away, even before a fresh reading lands after a re-login/restore;
+    // the headline shows a loader until the current value arrives.
+    if (controller.currentMgdl != null || controller.byTime.isNotEmpty) {
       return _DataView(controller: controller);
     }
     final loading =
@@ -69,7 +73,15 @@ class OverviewBodyContent extends StatelessWidget {
         controller.hasSensor ||
         controller.connected ||
         controller.busy;
-    return loading ? const SearchingView() : const EmptyView();
+    if (loading) {
+      return const SearchingView();
+    }
+    // No sensor set up: below the empty prompt, offer the account's stored
+    // sensor (renders nothing unless the backend has one).
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [SensorRestoreOffer(), Expanded(child: EmptyView())],
+    );
   }
 }
 
@@ -88,7 +100,6 @@ class _DataView extends StatelessWidget {
         OverviewCurrentValue(
           mgdl: controller.currentMgdl,
           trendPerMin: controller.latest?.trendMgDlPerMin,
-          busy: controller.busy,
         ),
         const SizedBox(height: 56),
         Expanded(

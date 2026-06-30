@@ -158,34 +158,35 @@ class G7Connection {
     bytes,
   );
 
-  /// Mirror the ENTIRE in-memory session history into the permanent, absolute-
-  /// time archive (the stats source) — not just freshly-received records. Maps
-  /// each session-relative key to wall-clock via [_sensorStart]; the archive
-  /// dedups per minute, so re-publishing the whole day each time is idempotent
-  /// and cheap. Without this the archive only ever saw the increments (one live
-  /// EGV + any backfill that completed THIS connect), so the seeded/persisted
-  /// history and earlier days never reached it — starving the stats to a few
-  /// points whenever a fresh backfill didn't get through.
+  /// Mirror the ENTIRE in-memory session history into BOTH the permanent,
+  /// absolute-time archive (the stats source) AND the backend report queue —
+  /// not just freshly-received records. Maps each session-relative key to
+  /// wall-clock via [_sensorStart]; both sinks dedup per minute, so
+  /// re-publishing the whole day each time is idempotent and cheap.
+  ///
+  /// Re-offering the whole known window to the backend (not just this connect's
+  /// increment) is what makes reporting restart-safe: a fresh service isolate
+  /// loses [GlucoseSync]'s in-memory "already sent" set and any pending retry,
+  /// so a value left unreported by a transient network failure (e.g. a DNS
+  /// "Failed host lookup" while the radio was busy) would otherwise be lost —
+  /// gap-based backfill won't re-offer minutes already in the archive. On the
+  /// next connect we re-offer everything recent and the server fills the gap.
+  /// Without the archive half, the stats were likewise starved to a few points
+  /// whenever a fresh backfill didn't get through.
   void _archiveKnown() {
     final start = _sensorStart;
     if (start == null || _byTime.isEmpty) {
       return;
     }
     final out = <DateTime, int>{};
+    final byMinute = <int, int>{};
     _byTime.forEach((secs, mgdl) {
-      out[start.add(Duration(seconds: secs))] = mgdl;
+      final at = start.add(Duration(seconds: secs));
+      out[at] = mgdl;
+      byMinute[at.millisecondsSinceEpoch ~/ 60000] = mgdl;
     });
     store.archiveAddAll(out);
-  }
-
-  /// Absolute epoch-minute for a session-relative [secs] (the archive/backend
-  /// key). Null until the first live EGV has pinned [_sensorStart].
-  int? _epochMinute(int secs) {
-    final start = _sensorStart;
-    if (start == null) {
-      return null;
-    }
-    return start.add(Duration(seconds: secs)).millisecondsSinceEpoch ~/ 60000;
+    onArchive?.call(byMinute);
   }
 
   Future<void> _persistReadings() async {
@@ -316,18 +317,12 @@ class G7Connection {
       );
       _backfillSub = boundTransport.backfillStream.listen((bytes) {
         final records = G7GlucoseCodec.parseBackfill(Uint8List.fromList(bytes));
-        final synced = <int, int>{};
         for (final record in records) {
           _addReading(record.secsSinceStart, record.glucoseMgDl);
-          final minute = _epochMinute(record.secsSinceStart);
-          if (minute != null) {
-            synced[minute] = record.glucoseMgDl;
-          }
         }
         if (records.isNotEmpty) {
           _persistReadings();
-          _archiveKnown(); // publish the whole day to the stats archive
-          onArchive?.call(synced);
+          _archiveKnown(); // publishes the whole window to stats + backend
           onUpdate?.call();
         }
       });
@@ -456,12 +451,9 @@ class G7Connection {
         reading,
       ); // restore the exact headline value on next launch
       // Publish the whole known session history to the permanent archive (stats
-      // source) — not just this point — so seeded/persisted history lands too.
+      // source) AND the backend queue — not just this point — so seeded/
+      // persisted history lands too and a restart can't strand unreported values.
       _archiveKnown();
-      final minute = _epochMinute(reading.secsSinceStart);
-      if (minute != null) {
-        onArchive?.call({minute: reading.glucoseMgDl!});
-      }
     }
     _persistInfo(); // keep cached sensorStart fresh
     onReading?.call(reading);

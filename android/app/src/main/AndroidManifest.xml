@@ -17,6 +17,14 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Backend sync (glucose report / history). Flutter auto-injects INTERNET
+         into the debug + profile manifests ONLY, so without this entry RELEASE
+         builds have no network at all and every request fails DNS with
+         "Failed host lookup … errno=7". ACCESS_WIFI_STATE backs the service's
+         Wi-Fi lock that keeps the radio up for screen-off reporting. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- Persistent notification (Android 13+) + battery-optimisation exemption -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
