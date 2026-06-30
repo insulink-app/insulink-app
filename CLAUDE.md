@@ -156,9 +156,12 @@ dies when the activity is destroyed, so the whole read pipeline runs in a
 **second Dart isolate hosted by an Android foreground service** via
 `flutter_foreground_task` (9.x).
 
-- `connection.dart` (`G7Connection`) is the UI-free read pipeline: scan →
+- `connection.dart` (`G7Connection`) is the UI-free read pipeline: find device →
   connect → `runReconnect`/`run` → stream live EGV + backfill → parse →
-  persist. It only depends on the already widget-free layers (`BleTransport`,
+  persist. **Steady-state reconnects use `autoConnect`** (connect straight to the
+  cached `BluetoothDevice.fromId(deviceId)`, no scan) — see "Reconnect path" in
+  gotcha #4 below; scanning is only for first pairing, the first connect of each
+  process, and the fallback. It only depends on the already widget-free layers (`BleTransport`,
   `G7AuthSession`, codecs, `G7Store`) and reports out via callbacks
   (`onLog`/`onReading`/`onUpdate`/`onConnectionState`). It used to live inline
   in `_ReaderPageState`.
@@ -172,8 +175,9 @@ dies when the activity is destroyed, so the whole read pipeline runs in a
   is idempotent so the watchdog can rebuild a startup that *threw* (otherwise a
   single `onStart` failure left a dead service with a null `_conn` that nothing
   revived). The watchdog escalation ladder: not-connected → reconnect (the
-  normal resting state); `isConnecting` past `_connectStuckAfter` (3 min) →
-  force-reset; connected-but-silent past `_staleAfter` (12 min) → drop the
+  normal resting state); `isConnecting` past `_connectStuckAfter` (7 min — an
+  armed autoConnect legitimately waits up to one G7 cycle for the sensor to
+  advertise) → force-reset; connected-but-silent past `_staleAfter` (12 min) → drop the
   half-open link; no data at all past `_restartAfter` (25 min) → restart the
   whole service (fresh isolate + Rust core + BLE stack). Health is measured by
   **time-since-last-reading, not BLE connection state** (which is normally
@@ -196,17 +200,42 @@ Load-bearing background gotchas (don't regress):
    resume).
 3. Manifest needs `FOREGROUND_SERVICE_CONNECTED_DEVICE` + `POST_NOTIFICATIONS` +
    the `connectedDevice`-typed `com.pravera.flutter_foreground_task…ForegroundService`.
-4. *Scanning* (not maintaining a link) can be throttled while the screen is off
-   (FBP issue #924), so a cold reconnect may complete only on the next
-   screen-on; an already-open connection keeps streaming.
-   - Android delivers **no results for an UNfiltered scan while the screen is
-     off** — `scanForSensor` passes the stored remoteId as a native
-     `withRemoteIds` filter so background results come through. Even so,
-     screen-off scanning stays unreliable on some devices (open issue: scenario
-     where the watchdog fires + scans but never reconnects until screen-on).
-   - **`autoConnect` (connect by `BluetoothDevice.fromId` + `autoConnect: true`)
-     did NOT work here** — it broke connecting entirely (likely the G7 reconnect
-     path doesn't reliably OS-bond). Reverted; the scan path is the known-good one.
+4. **Reconnect path = `autoConnect`, NOT scanning (the fix for the dropping link
+   + the manual-Bluetooth-restart symptom).** The old design scanned on EVERY
+   reconnect; the G7 drops its link after each ~5-min delivery, so that scanned
+   24/7 and **wedged the native Android-13+ BLE scanner** — `startScan` then
+   silently returns 0 results and only a manual Bluetooth toggle recovered it.
+   Mirroring Juggluco, steady-state reconnects now skip the scan: connect
+   directly to the cached `BluetoothDevice.fromId(deviceId)` with
+   `autoConnect: true` (`connectGatt(autoconnect=true, TRANSPORT_LE)`), re-armed
+   explicitly by the watchdog on each disconnect. This removed the connect
+   timeouts and the scanner wedge. Load-bearing details:
+   - **autoConnect to a COLD `fromId` only fires once the OS has SEEN the device
+     in THIS process** — otherwise it silently never connects (the "an app update
+     / service restart killed autoConnect" failure: a fresh isolate that never
+     scanned). So `connection.dart` gates autoConnect on `_scannedThisProcess`:
+     the FIRST connect of every process scans (teaching the OS the address), and
+     only then do in-process reconnects autoConnect. Verified instinct of the user.
+   - **FBP's autoConnect auto-rearm is broken (#528)** — never rely on it; the
+     watchdog re-issues `connect()` per disconnect (Juggluco's pattern).
+   - **No short timeout in autoConnect mode** — `connect(autoConnect:true)` returns
+     immediately and legitimately waits until the sensor next advertises (up to
+     ~one cycle); a 35 s timeout would abort every cycle. `_armAutoConnect`
+     (`ble_transport.dart`) passes `mtu: null` (FBP requires it with autoConnect),
+     awaits the `connected` state, then `requestMtu(512)` manually (else EGV frames
+     split across 20-byte notifications and parse to nothing).
+   - **The reconnect backoff applies to BOTH paths.** autoConnect finds the device
+     via the OS's internal background scan, which is subject to the SAME Android
+     "scanning too frequently" throttle — so re-arming back-to-back can stall it.
+   - **Scan fallback**: after `_maxAutoConnectFailures` (2) cycles that armed but
+     never streamed, scan once to re-discover the address (the remoteId may have
+     changed), then resume autoConnect. Reset to 0 the moment a cycle streams.
+   - *Scanning* (first pair / first connect / fallback) can still be throttled
+     while the screen is off (FBP issue #924), so a cold reconnect may complete
+     only on the next screen-on; an already-open or autoConnect-armed link keeps
+     streaming. Android delivers **no results for an UNfiltered scan while the
+     screen is off** — `scanForSensor` passes the stored remoteId as a native
+     `withRemoteIds` filter so background results come through.
 5. **The G7 connect→deliver→disconnect is NORMAL.** It connects briefly (~every
    5 min), pushes the current EGV + backfill, then drops the link itself — so
    `link dropped` right after `connected — streaming` is expected, and the 30 s
