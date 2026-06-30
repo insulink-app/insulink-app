@@ -18,12 +18,17 @@ class EventLogView extends StatelessWidget {
     if (events.isEmpty) {
       return Center(child: LocaleText('statistics.events.empty'));
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      itemCount: events.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) =>
-          _EventRow(event: events[index], glucose: glucose),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          itemCount: events.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (context, index) =>
+              _EventRow(event: events[index], glucose: glucose),
+        ),
+      ),
     );
   }
 }
@@ -37,23 +42,54 @@ class _EventRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _EventStyle.of(event.type, context);
+    final scheme = Theme.of(context).colorScheme;
     final value = event.value;
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(style.icon, color: style.color),
-      title: LocaleText('statistics.events.type.${event.type}'),
-      subtitle: value == null
-          ? null
-          : Text(
-              _formatGlucose(value),
-              style: TextStyle(fontWeight: FontWeight.w600, color: style.color),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: style.color.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
             ),
-      trailing: Text(
-        _formatWhen(context, event.time),
-        style: TextStyle(
-          fontSize: 12,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-        ),
+            child: Icon(style.icon, color: style.color, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LocaleText(
+                  'statistics.events.type.${event.type}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                if (value != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatGlucose(value),
+                    style: TextStyle(fontSize: 13, color: style.color),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _formatWhen(context, event.time),
+            style: TextStyle(
+              fontSize: 12,
+              color: scheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
       ),
     );
   }
