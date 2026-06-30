@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../g7/g7_controller.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
+import 'pairing_qr_scanner.dart';
 
 /// Box shown when no sensor is set up yet: enter the pairing code and connect.
 class SensorPairingForm extends StatelessWidget {
@@ -26,7 +27,7 @@ class SensorPairingForm extends StatelessWidget {
         children: [
           _header(scheme),
           const SizedBox(height: 16),
-          _codeField(context),
+          _codeRow(context),
           const SizedBox(height: 12),
           _connectButton(),
         ],
@@ -77,6 +78,17 @@ class SensorPairingForm extends StatelessWidget {
     );
   }
 
+  Widget _codeRow(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: _codeField(context)),
+        const SizedBox(width: 8),
+        _scanButton(context),
+      ],
+    );
+  }
+
   Widget _codeField(BuildContext context) {
     return TextField(
       controller: controller.code,
@@ -86,6 +98,32 @@ class SensorPairingForm extends StatelessWidget {
         border: const OutlineInputBorder(),
       ),
     );
+  }
+
+  Widget _scanButton(BuildContext context) {
+    var scheme = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: Locales.string(context, 'sensor.pair.scan'),
+      child: SizedBox(
+        width: 52,
+        height: 52,
+        child: FilledButton(
+          onPressed: () => _scan(context),
+          style: FilledButton.styleFrom(
+            padding: EdgeInsets.zero,
+            backgroundColor: scheme.onSurface.withValues(alpha: 0.12),
+          ),
+          child: const Icon(Icons.qr_code_scanner, size: 26),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _scan(BuildContext context) async {
+    final code = await scanPairingCode(context);
+    if (code != null) {
+      controller.code.text = code;
+    }
   }
 
   Widget _connectButton() {
