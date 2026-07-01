@@ -1,91 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/language/profile_language_state.dart';
 import 'package:provider/provider.dart';
 
+/// Language picker as a plain list of rows: a small flag, the language name and
+/// a check on the active one — simpler than the old big flag buttons.
 class ProfileLanguageSelection extends StatelessWidget {
   const ProfileLanguageSelection({super.key});
 
+  static const _languages = [
+    ("de", "assets/images/languages/de.webp"),
+    ("en", "assets/images/languages/en.webp"),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    var languageState = Provider.of<ProfileLanguageState>(context);
-    return Container(
-      alignment: Alignment.center,
-      child: OverflowBar(
-        alignment: MainAxisAlignment.spaceEvenly,
-        overflowAlignment: OverflowBarAlignment.center,
-        children: [
-          createLanguageButton(
-            languageState,
-            "assets/images/languages/en.webp",
-            "en",
-            languageState.getLanguage == "en",
-            context,
-          ),
-          createLanguageButton(
-            languageState,
-            "assets/images/languages/de.webp",
-            "de",
-            languageState.getLanguage == "de",
-            context,
-          ),
-        ],
-      ),
+    final state = Provider.of<ProfileLanguageState>(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final (code, flag) in _languages) _row(context, state, code, flag),
+      ],
     );
   }
 
-  Container createLanguageButton(
-    ProfileLanguageState languageState,
-    String flag,
-    String language,
-    bool selected,
+  Widget _row(
     BuildContext context,
+    ProfileLanguageState state,
+    String code,
+    String flag,
   ) {
-    var theme = Theme.of(context);
-    return Container(
-      margin: EdgeInsets.all(10),
-      child: TextButton(
-        style: TextButton.styleFrom(
-          backgroundColor: selected
-              ? theme.colorScheme.onSurface.withValues(alpha: 0.08)
-              : theme.scaffoldBackgroundColor,
-          padding: EdgeInsets.all(10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6.0),
-            side: BorderSide(
-              color: selected
-                  ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.2),
-              width: selected ? 2 : 1,
+    final scheme = Theme.of(context).colorScheme;
+    final selected = state.getLanguage == code;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: selected
+            ? scheme.primary.withValues(alpha: 0.10)
+            : scheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _change(context, state, code),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.asset(flag, width: 34, height: 24, fit: BoxFit.cover),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: LocaleText(
+                    "profile.language.$code",
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                if (selected) Icon(Icons.check_rounded, color: scheme.primary),
+              ],
             ),
           ),
         ),
-        onPressed: () async {
-          await changeLanguage(languageState, language, context);
-          if (context.mounted) {
-            await Locales.change(context, language);
-          }
-        },
-        child: Container(
-          width: 120,
-          height: 65,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(5),
-            image: DecorationImage(image: AssetImage(flag), fit: BoxFit.cover),
-          ),
-        ),
       ),
     );
   }
 
-  Future<void> changeLanguage(
-    ProfileLanguageState languageState,
-    String language,
+  Future<void> _change(
     BuildContext context,
+    ProfileLanguageState state,
+    String code,
   ) async {
-    languageState.setLanguage(language);
-    const storage = FlutterSecureStorage();
-    await storage.write(key: "language", value: language);
+    state.setLanguage(code);
+    await const FlutterSecureStorage().write(key: "language", value: code);
+    if (context.mounted) {
+      await Locales.change(context, code);
+    }
   }
 }

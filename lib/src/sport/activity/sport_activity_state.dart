@@ -49,13 +49,37 @@ class SportActivityState extends ChangeNotifier {
     await _store.saveActivityArchive(_archive);
   }
 
-  /// Importierte Schritte (Google Health) haben Vorrang vor dem Schrittzähler.
-  int get todaySteps => _importedSteps ?? _todaySteps ?? 0;
+  /// Heutiger Archiv-Eintrag (aus dem letzten Health-Sync), falls vorhanden.
+  /// Dient als **persistenter** Fallback, damit gesyncte Werte nach einem
+  /// Neustart/Provider-Rebuild NICHT verschwinden (die `_imported*`-Felder sind
+  /// nur sitzungsweit).
+  DailyActivity? get _todayArchive {
+    final key = _paddedTodayKey();
+    for (final day in _archive) {
+      if (day.dateKey == key) {
+        return day;
+      }
+    }
+    return null;
+  }
 
-  /// Echte Werte aus Google Health, falls importiert — sonst null (dann
-  /// schätzt die Kachel aus Schritten + Schrittlänge bzw. Gewicht).
-  double? get importedDistanceKm => _importedDistanceKm;
-  double? get importedCalories => _importedCalories;
+  /// Heutige Schritte: frisch importiert > größerer Wert aus Pedometer bzw.
+  /// gesynctem Archiv (so zählt der Schrittzähler live weiter, ohne dass der
+  /// zuletzt gesyncte Stand verloren geht).
+  int get todaySteps {
+    if (_importedSteps != null) {
+      return _importedSteps!;
+    }
+    final pedometer = _todaySteps ?? 0;
+    final archived = _todayArchive?.steps ?? 0;
+    return pedometer > archived ? pedometer : archived;
+  }
+
+  /// Echte Werte aus Google Health: frisch importiert bzw. der persistente
+  /// heutige Archiv-Wert — sonst null (dann schätzt die Kachel aus Schritten +
+  /// Schrittlänge bzw. Gewicht).
+  double? get importedDistanceKm => _importedDistanceKm ?? _todayArchive?.distanceKm;
+  double? get importedCalories => _importedCalories ?? _todayArchive?.calories;
 
   bool get permissionDenied => _denied;
 
@@ -102,6 +126,15 @@ class SportActivityState extends ChangeNotifier {
   }
 
   String _dateKey(DateTime time) => '${time.year}-${time.month}-${time.day}';
+
+  /// Heutiges Datum im Archiv-Format `yyyy-mm-dd` (null-gepaddet, wie im
+  /// [HealthImporter]) — der Pedometer-Schlüssel oben ist bewusst ungepaddet.
+  String _paddedTodayKey() {
+    final now = DateTime.now();
+    final month = now.month.toString().padLeft(2, '0');
+    final day = now.day.toString().padLeft(2, '0');
+    return '${now.year}-$month-$day';
+  }
 
   @override
   void dispose() {

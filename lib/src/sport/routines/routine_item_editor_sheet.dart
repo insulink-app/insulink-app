@@ -98,9 +98,13 @@ class _RoutineItemEditorSheet extends StatelessWidget {
             child: TextButton.icon(
               icon: const Icon(Icons.edit_outlined, size: 18),
               label: LocaleText('sport.exercises.rename'),
+              // Über den Navigator-Context öffnen, nicht über [context]: dieses
+              // Sheet ist nach dem pop() deaktiviert, ein Provider-Lookup darauf
+              // würde werfen ("deactivated widget's ancestor").
               onPressed: () {
-                Navigator.of(context).pop();
-                showExerciseEditorSheet(context, existing: exercise);
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                showExerciseEditorSheet(navigator.context, existing: exercise);
               },
             ),
           ),

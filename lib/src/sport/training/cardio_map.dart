@@ -20,7 +20,9 @@ class CardioMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
     final route = [for (final point in points) LatLng(point.lat, point.lng)];
     final center = route.isNotEmpty ? route.last : const LatLng(52.52, 13.405);
     return FlutterMap(
@@ -37,8 +39,17 @@ class CardioMap extends StatelessWidget {
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          // CartoDB light/dark passend zum App-Theme.
+          urlTemplate: isDark
+              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+              : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+          subdomains: const ['a', 'b', 'c', 'd'],
+          retinaMode: RetinaMode.isHighDensity(context),
           userAgentPackageName: 'de.insulink.app',
+          // Ohne Netz (z. B. im Emulator) still degradieren statt jede fehlende
+          // Kachel als Exception zu protokollieren.
+          evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
+          errorTileCallback: (tile, error, stackTrace) {},
         ),
         if (route.length >= 2)
           PolylineLayer(
@@ -62,7 +73,7 @@ class CardioMap extends StatelessWidget {
             ],
           ),
         const RichAttributionWidget(
-          attributions: [TextSourceAttribution('OpenStreetMap contributors')],
+          attributions: [TextSourceAttribution('OpenStreetMap contributors, © CARTO')],
         ),
       ],
     );

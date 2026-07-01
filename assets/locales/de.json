@@ -383,7 +383,11 @@
       "logout": "Abmelden",
       "logout_confirm": "Möchtest du dich wirklich abmelden?"
     },
-    "language": "Sprache",
+    "language": {
+      "_": "Sprache",
+      "de": "Deutsch",
+      "en": "English"
+    },
     "theme": {
       "_": "Darstellung",
       "light": "Hell",
@@ -445,6 +449,17 @@
         "_": "Mahlzeitenfaktor",
         "value": "1 E / # g"
       }
+    },
+    "search": {
+      "_": "Einstellungen suchen",
+      "empty": "Keine Einstellung gefunden",
+      "language": "sprache deutsch englisch flagge",
+      "theme": "design darstellung hell dunkel farbe modus erscheinungsbild",
+      "glucose": "glukose zucker einheit zielbereich grenzwerte alarm mmol mgdl",
+      "bolus": "bolus insulin korrektur kohlenhydrate faktor",
+      "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose",
+      "silent": "stumm lautlos ruhe stören nicht dnd",
+      "developer": "entwickler debug logs erweitert protokoll"
     }
   },
   "injection": {

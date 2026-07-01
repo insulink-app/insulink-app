@@ -107,20 +107,18 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
   }
 
   Widget _logoutButton(ThemeData theme) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
         onPressed: _confirmLogout,
-        style: OutlinedButton.styleFrom(
+        style: TextButton.styleFrom(
           foregroundColor: Colors.redAccent,
-          side: const BorderSide(color: Colors.redAccent),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         ),
-        icon: const Icon(Icons.logout, size: 20),
+        icon: const Icon(Icons.logout, size: 18),
         label: const LocaleText(
           "profile.account.logout",
-          style: TextStyle(fontSize: 15),
+          style: TextStyle(fontSize: 14),
         ),
       ),
     );
