@@ -3,6 +3,7 @@ import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/exercises/exercises_page.dart';
+import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/routines/routine_item_editor_sheet.dart';
 import 'package:insulink/src/sport/sport_add_tile.dart';
 import 'package:insulink/src/sport/sport_format.dart';
@@ -92,7 +93,34 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                   _training.renameRoutine(routine.id, value.trim()),
             ),
           ),
+          if (routine.items.isNotEmpty) _durationHint(routine),
           Expanded(child: _itemsList(routine)),
+        ],
+      ),
+    );
+  }
+
+  Widget _durationHint(SportRoutine routine) {
+    final scheme = Theme.of(context).colorScheme;
+    final minutes = estimatedRoutineMinutes(routine, _training.exercises);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+      child: Row(
+        children: [
+          Icon(
+            Icons.schedule,
+            size: 16,
+            color: scheme.onSurface.withValues(alpha: 0.6),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            Locales.string(
+              context,
+              'sport.routines.est_duration',
+              params: ['$minutes'],
+            ),
+            style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+          ),
         ],
       ),
     );

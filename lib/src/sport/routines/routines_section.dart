@@ -3,8 +3,10 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/exercises/exercises_page.dart';
 import 'package:insulink/src/sport/logbook/workout_log_page.dart';
+import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/routines/routine_editor_page.dart';
 import 'package:insulink/src/sport/sport_add_tile.dart';
+import 'package:insulink/src/sport/sport_menu.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
@@ -54,7 +56,7 @@ class RoutinesSection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         for (final routine in routines) _routineCard(context, routine),
         SportAddTile(
           labelKey: 'sport.routines.new',
@@ -79,42 +81,126 @@ class RoutinesSection extends StatelessWidget {
 
   Widget _routineCard(BuildContext context, SportRoutine routine) {
     final scheme = Theme.of(context).colorScheme;
+    final training = context.read<TrainingState>();
+    final hasItems = routine.items.isNotEmpty;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        tileColor: scheme.onSurface.withValues(alpha: 0.04),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
-        ),
-        title: Text(
-          routine.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          Locales.string(
-            context,
-            'sport.routines.count',
-            params: ['${routine.items.length}'],
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: scheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => RoutineEditorPage(routineId: routine.id),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
+            child: Row(
+              children: [
+                _leadingBadge(scheme),
+                const SizedBox(width: 14),
+                Expanded(child: _titleBlock(context, routine, training, scheme)),
+                if (hasItems) _playButton(context, routine, scheme),
+                SportRowMenu(
+                  onCopy: () => training.duplicateRoutine(
+                    routine.id,
+                    Locales.string(context, 'sport.copy_suffix'),
+                  ),
+                  deleteConfirmKey: 'sport.routines.delete_confirm',
+                  onDelete: () => training.removeRoutine(routine.id),
+                ),
+              ],
+            ),
           ),
         ),
-        trailing: routine.items.isEmpty
-            ? null
-            : IconButton(
-                icon: Icon(
-                  Icons.play_circle_fill,
-                  size: 44,
-                  color: scheme.primary,
-                ),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => WorkoutRunnerPage(routine: routine),
-                  ),
-                ),
-              ),
+      ),
+    );
+  }
+
+  Widget _leadingBadge(ColorScheme scheme) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(Icons.fitness_center, size: 20, color: scheme.primary),
+    );
+  }
+
+  Widget _titleBlock(
+    BuildContext context,
+    SportRoutine routine,
+    TrainingState training,
+    ColorScheme scheme,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          routine.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          _subtitle(context, routine, training),
+          style: TextStyle(
+            fontSize: 13,
+            color: scheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _subtitle(
+    BuildContext context,
+    SportRoutine routine,
+    TrainingState training,
+  ) {
+    final count = Locales.string(
+      context,
+      'sport.routines.count',
+      params: ['${routine.items.length}'],
+    );
+    if (routine.items.isEmpty) {
+      return count;
+    }
+    final minutes = estimatedRoutineMinutes(routine, training.exercises);
+    final duration = Locales.string(
+      context,
+      'sport.routines.est_duration',
+      params: ['$minutes'],
+    );
+    return '$count · $duration';
+  }
+
+  Widget _playButton(
+    BuildContext context,
+    SportRoutine routine,
+    ColorScheme scheme,
+  ) {
+    return Material(
+      color: scheme.primary,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => RoutineEditorPage(routineId: routine.id),
+            builder: (_) => WorkoutRunnerPage(routine: routine),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(9),
+          child: Icon(
+            Icons.play_arrow_rounded,
+            size: 24,
+            color: scheme.onPrimary,
           ),
         ),
       ),

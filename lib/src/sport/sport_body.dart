@@ -4,6 +4,7 @@ import 'package:insulink/src/sport/activity/activity_summary_card.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/routines/routines_section.dart';
 import 'package:insulink/src/sport/training/cardio_section.dart';
+import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:provider/provider.dart';
 
 class SportBody extends AppPageBody {
@@ -36,6 +37,7 @@ class _SportBodyContentState extends State<SportBodyContent> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SportActivityState>().ensureStarted();
+      context.read<CardioTrainingState>().detectFromLog();
     });
   }
 

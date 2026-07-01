@@ -89,7 +89,8 @@ class CardioSection extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          '${locale.formatMediumDate(started)} · ${formatDistanceKm(training.distanceM)}',
+          '${locale.formatMediumDate(started)} · ${formatDistanceKm(training.distanceM)}'
+          '${training.detected ? ' · ${Locales.string(context, 'sport.trainings.detected')}' : ''}',
         ),
         trailing: Text(formatDuration(training.duration)),
         onTap: () => Navigator.of(context).push(

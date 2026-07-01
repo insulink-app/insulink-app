@@ -1,8 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/step_baseline.dart';
+import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
+import 'package:insulink/src/sport/sport_store.dart';
+import 'package:insulink/src/sport/training/cardio_detector.dart';
+import 'package:insulink/src/sport/training/cardio_models.dart';
+import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
+import 'package:insulink/src/sport/workout/workout_snapshot.dart';
 
 void main() {
   group('German number formatting', () {
@@ -164,6 +171,188 @@ void main() {
       expect(finished!.sets.length, 2);
       expect(finished!.sets.first.reps, 10);
 
+      runner.dispose();
+    });
+  });
+
+  group('estimatedRoutineMinutes', () {
+    test('sets × (60 s work + rest), rounded to minutes', () {
+      const exercise = SportExercise(
+        id: 'e1',
+        name: 'Squat',
+        kind: ExerciseKind.reps,
+      );
+      const routine = SportRoutine(
+        id: 'r1',
+        name: 'Legs',
+        items: [
+          RoutineItem(
+            id: 'i1',
+            exerciseId: 'e1',
+            targetSets: 3,
+            target: 10,
+            restSeconds: 60,
+          ),
+        ],
+      );
+      // 3 × (60 + 60) = 360 s = 6 min.
+      expect(estimatedRoutineMinutes(routine, [exercise]), 6);
+    });
+  });
+
+  group('monthlyWindows', () {
+    test('cover the range contiguously without gaps or overlaps', () {
+      final windows = monthlyWindows(
+        DateTime(2024, 1, 15),
+        DateTime(2024, 4, 10),
+      );
+      expect(windows.first.start, DateTime(2024, 1, 15));
+      expect(windows.last.end, DateTime(2024, 4, 10));
+      for (var index = 1; index < windows.length; index++) {
+        expect(windows[index].start, windows[index - 1].end);
+      }
+      for (final window in windows) {
+        expect(window.start.isBefore(window.end), isTrue);
+      }
+    });
+  });
+
+  group('CardioDetector', () {
+    test('recognises a ~10 km/h jog surrounded by standing still', () {
+      final points = <TrackPoint>[];
+      var time = 1000000000000;
+      var lat = 52.0;
+      // ~166 m north per minute ≈ 10 km/h.
+      const stepLat = 166 / 111320;
+      void add() {
+        points.add(TrackPoint(lat: lat, lng: 13.0, tMs: time));
+        time += 60000;
+      }
+
+      for (var i = 0; i < 6; i++) {
+        add();
+      }
+      for (var i = 0; i < 21; i++) {
+        add();
+        lat += stepLat;
+      }
+      for (var i = 0; i < 3; i++) {
+        add();
+      }
+
+      final detected = const CardioDetector().detect(points);
+      expect(detected.length, 1);
+      expect(detected.single.type, CardioType.jog);
+      expect(detected.single.detected, isTrue);
+      expect(detected.single.distanceM, greaterThan(3000));
+    });
+
+    test('ignores standing still', () {
+      final points = [
+        for (var i = 0; i < 10; i++)
+          TrackPoint(lat: 52.0, lng: 13.0, tMs: 1000000000000 + i * 60000),
+      ];
+      expect(const CardioDetector().detect(points), isEmpty);
+    });
+  });
+
+  group('TrainingState.lastSetFor', () {
+    TrainingState state(List<WorkoutSession> sessions) =>
+        TrainingState(const SportStore(), const [], const [], sessions, null);
+
+    test('returns the newest matching set, falling back to older sessions', () {
+      const older = WorkoutSession(
+        id: 's1',
+        routineId: 'r1',
+        startedAtMs: 1,
+        sets: [
+          SetLog(exerciseId: 'e1', reps: 8, atEpochMs: 1),
+          SetLog(exerciseId: 'e1', reps: 9, atEpochMs: 2),
+        ],
+      );
+      const newer = WorkoutSession(
+        id: 's2',
+        routineId: 'r1',
+        startedAtMs: 3,
+        sets: [SetLog(exerciseId: 'e1', reps: 12, atEpochMs: 3)],
+      );
+      final training = state([older, newer]);
+      expect(training.lastSetFor('e1', 0)?.reps, 12);
+      expect(training.lastSetFor('e1', 1)?.reps, 9);
+      expect(training.lastSetFor('e1', 2), isNull);
+    });
+  });
+
+  group('WorkoutRunner controls', () {
+    const exercise = SportExercise(
+      id: 'e1',
+      name: 'Squat',
+      kind: ExerciseKind.reps,
+    );
+    SportRoutine routineWithRest(int rest, {int exercises = 1}) => SportRoutine(
+      id: 'r1',
+      name: 'R',
+      items: [
+        for (var i = 0; i < exercises; i++)
+          RoutineItem(
+            id: 'i$i',
+            exerciseId: 'e1',
+            targetSets: 2,
+            target: 10,
+            restSeconds: rest,
+          ),
+      ],
+    );
+
+    test('snapshot resumes the same state', () {
+      final routine = routineWithRest(0);
+      WorkoutSnapshot? snapshot;
+      final runner = WorkoutRunner(
+        routine,
+        [exercise],
+        onPersist: (snap) => snapshot = snap,
+      );
+      runner.completeSet();
+      expect(snapshot, isNotNull);
+      // round-trips through JSON like the store does.
+      final restored = WorkoutRunner(
+        routine,
+        [exercise],
+        resume: WorkoutSnapshot.fromJson(snapshot!.toJson()),
+      );
+      expect(restored.setNumber, 2);
+      expect(restored.lastLoggedSet?.reps, 10);
+      runner.dispose();
+      restored.dispose();
+    });
+
+    test('extendRest adds time to the rest', () {
+      final runner = WorkoutRunner(routineWithRest(2), [exercise]);
+      runner.completeSet();
+      expect(runner.phase, WorkoutPhase.resting);
+      runner.extendRest(60);
+      expect(runner.restRemaining.inSeconds, greaterThan(50));
+      runner.dispose();
+    });
+
+    test('pause freezes and resume clears', () {
+      final runner = WorkoutRunner(routineWithRest(0), [exercise]);
+      runner.pause();
+      expect(runner.isPaused, isTrue);
+      final first = runner.sessionElapsed;
+      final second = runner.sessionElapsed;
+      expect(first, second);
+      runner.resume();
+      expect(runner.isPaused, isFalse);
+      runner.dispose();
+    });
+
+    test('jumpTo switches exercise and resets to its first set', () {
+      final runner = WorkoutRunner(routineWithRest(0, exercises: 3), [exercise]);
+      runner.jumpTo(2);
+      expect(runner.exerciseIndex, 2);
+      expect(runner.setNumber, 1);
+      expect(runner.phase, WorkoutPhase.exercising);
       runner.dispose();
     });
   });

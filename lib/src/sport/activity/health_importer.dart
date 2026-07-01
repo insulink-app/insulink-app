@@ -6,6 +6,26 @@ import 'sport_activity_state.dart';
 
 enum HealthImportResult { success, unavailable, denied }
 
+/// Splits `[start, end)` into contiguous, non-overlapping monthly windows.
+/// `ponytail:` Health Connect caps the records returned per read, so a single
+/// multi-year query silently drops the middle of the range (the "one year, then
+/// a gap, then a single old value" symptom); monthly windows keep each read well
+/// under the cap. Shrink the window only if a single month can exceed it.
+List<({DateTime start, DateTime end})> monthlyWindows(
+  DateTime start,
+  DateTime end,
+) {
+  final windows = <({DateTime start, DateTime end})>[];
+  var windowStart = start;
+  while (windowStart.isBefore(end)) {
+    final nextMonth = DateTime(windowStart.year, windowStart.month + 1);
+    final windowEnd = nextMonth.isBefore(end) ? nextMonth : end;
+    windows.add((start: windowStart, end: windowEnd));
+    windowStart = windowEnd;
+  }
+  return windows;
+}
+
 /// Imports data from Google Health (Health Connect) over the **entire available
 /// history**: steps, distance and calories are merged day-by-day into the
 /// persistent activity archive (the basis of the detail pages), today
@@ -101,17 +121,33 @@ class HealthImporter {
     ];
   }
 
+  /// Reads all points of a type across the range, one monthly window at a time
+  /// (see [monthlyWindows]).
+  Future<List<HealthDataPoint>> _readChunked(
+    HealthDataType type,
+    DateTime start,
+    DateTime end,
+  ) async {
+    final points = <HealthDataPoint>[];
+    for (final window in monthlyWindows(start, end)) {
+      points.addAll(
+        await _health.getHealthDataFromTypes(
+          types: [type],
+          startTime: window.start,
+          endTime: window.end,
+        ),
+      );
+    }
+    return points;
+  }
+
   /// Sums the numeric data points of a type per local calendar day.
   Future<Map<String, double>> _bucketSum(
     HealthDataType type,
     DateTime start,
     DateTime end,
   ) async {
-    final points = await _health.getHealthDataFromTypes(
-      types: [type],
-      startTime: start,
-      endTime: end,
-    );
+    final points = await _readChunked(type, start, end);
     final out = <String, double>{};
     for (final point in _health.removeDuplicates(points)) {
       final value = point.value;
@@ -124,11 +160,7 @@ class HealthImporter {
   }
 
   Future<List<WeightEntry>> _weights(DateTime start, DateTime end) async {
-    final points = await _health.getHealthDataFromTypes(
-      types: [HealthDataType.WEIGHT],
-      startTime: start,
-      endTime: end,
-    );
+    final points = await _readChunked(HealthDataType.WEIGHT, start, end);
     final out = <WeightEntry>[];
     for (final point in _health.removeDuplicates(points)) {
       final value = point.value;

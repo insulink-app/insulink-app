@@ -6,7 +6,10 @@ import 'package:insulink/src/devices/devices_body.dart';
 import 'package:insulink/src/injection/injection_button.dart';
 import 'package:insulink/src/overview/overview_body.dart';
 import 'package:insulink/src/sport/sport_body.dart';
+import 'package:insulink/src/sport/training_state.dart';
+import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:insulink/src/statistics/statistics_body.dart';
+import 'package:provider/provider.dart';
 
 /// Lets any page request a tab switch (e.g. the overview's empty state linking
 /// to the devices page). The value is the index into [AppPageState.pageBodies].
@@ -40,6 +43,31 @@ class AppPageState extends State<AppPage> {
     _selectedIndex = widget.initialPageIndex ?? 0;
     appTab.value = _selectedIndex;
     appTab.addListener(_onExternalTab);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resumeActiveWorkout());
+  }
+
+  /// Reopen a workout that was still running when the app was last closed, so it
+  /// resumes with the correct elapsed time regardless of the active tab. A
+  /// snapshot whose routine no longer exists is cleared.
+  void _resumeActiveWorkout() {
+    if (!mounted) {
+      return;
+    }
+    final training = context.read<TrainingState>();
+    final snapshot = training.activeWorkout;
+    if (snapshot == null) {
+      return;
+    }
+    final routine = training.routineById(snapshot.routineId);
+    if (routine == null) {
+      training.clearActiveWorkout();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => WorkoutRunnerPage(routine: routine, resume: snapshot),
+      ),
+    );
   }
 
   @override

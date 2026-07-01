@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/routines/routine_item_editor_sheet.dart';
@@ -20,7 +19,7 @@ void main() {
       name: 'Legs',
       items: [RoutineItem(id: 'i1', exerciseId: 'e1', targetSets: 2, target: 7, restSeconds: 45)],
     );
-    return TrainingState(const SportStore(), [exercise], [routine], []);
+    return TrainingState(const SportStore(), [exercise], [routine], [], null);
   }
 
   Widget host(TrainingState state) => ChangeNotifierProvider<TrainingState>.value(

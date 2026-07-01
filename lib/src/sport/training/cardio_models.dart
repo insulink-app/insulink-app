@@ -31,6 +31,10 @@ class CardioTraining {
   final List<TrackPoint> track;
   final double distanceM;
 
+  /// True when the training was recognised automatically from the GPS log
+  /// (rather than recorded manually) — shown as an "automatic" hint.
+  final bool detected;
+
   const CardioTraining({
     required this.id,
     required this.type,
@@ -38,6 +42,7 @@ class CardioTraining {
     required this.endMs,
     required this.track,
     required this.distanceM,
+    this.detected = false,
   });
 
   Duration get duration => Duration(milliseconds: endMs - startMs);
@@ -54,6 +59,7 @@ class CardioTraining {
     'start': startMs,
     'end': endMs,
     'dist': distanceM,
+    'auto': detected,
     'track': track.map((point) => point.toJson()).toList(),
   };
 
@@ -63,6 +69,7 @@ class CardioTraining {
     startMs: json['start'] as int,
     endMs: json['end'] as int,
     distanceM: (json['dist'] as num).toDouble(),
+    detected: json['auto'] as bool? ?? false,
     track: (json['track'] as List)
         .cast<Map<String, dynamic>>()
         .map(TrackPoint.fromJson)

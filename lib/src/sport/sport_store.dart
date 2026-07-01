@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'sport_models.dart';
 import 'training/cardio_models.dart';
+import 'workout/workout_snapshot.dart';
 
 /// Persistence for the sport area: JSON blobs in [FlutterSecureStorage], like
 /// `g7/store.dart`. Unlike the G7 store, the sport area needs no synchronous
@@ -24,6 +25,8 @@ class SportStore {
   static const _kStride = 'sport.stride_cm';
   static const _kStepsBaselineDate = 'sport.steps_baseline_date';
   static const _kStepsBaselineCounter = 'sport.steps_baseline_counter';
+  static const _kDetectWatermark = 'sport.detect_watermark';
+  static const _kActiveWorkout = 'sport.active_workout';
 
   /// Default stride length in cm (for the distance estimate), until the user
   /// adjusts it — roughly an adult's stride.
@@ -108,6 +111,29 @@ class SportStore {
       capped.map((point) => point.toJson()).toList(),
     );
   }
+
+  /// Newest location-log timestamp already scanned by the cardio auto-detector,
+  /// so a rescan only looks at points added since.
+  Future<int?> loadDetectWatermark() async =>
+      int.tryParse(await _storage.read(key: _kDetectWatermark) ?? '');
+
+  Future<void> saveDetectWatermark(int tMs) =>
+      _storage.write(key: _kDetectWatermark, value: '$tMs');
+
+  /// The in-progress workout (single JSON object), so it resumes after the app
+  /// is closed. Null when no workout is running.
+  Future<WorkoutSnapshot?> loadActiveWorkout() async {
+    final raw = await _storage.read(key: _kActiveWorkout);
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    return WorkoutSnapshot.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> saveActiveWorkout(WorkoutSnapshot snapshot) =>
+      _storage.write(key: _kActiveWorkout, value: jsonEncode(snapshot.toJson()));
+
+  Future<void> clearActiveWorkout() => _storage.delete(key: _kActiveWorkout);
 
   Future<int> loadStrideCm() async =>
       int.tryParse(await _storage.read(key: _kStride) ?? '') ?? defStrideCm;

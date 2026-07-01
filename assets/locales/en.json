@@ -268,6 +268,8 @@
  "sport": {
   "label": "Sport",
   "today": "Today",
+  "copy": "Copy",
+  "copy_suffix": " (copy)",
   "activity": {
    "steps": "Steps",
    "distance": "Distance",
@@ -324,19 +326,29 @@
    "reps": "Reps",
    "seconds": "Seconds",
    "weight": "Weight",
-   "rest": "Rest"
+   "rest": "Rest",
+   "est_duration": "~# min"
   },
   "workout": {
    "exercise": "Exercise",
    "set": "Set",
    "target_time": "Target: # s",
    "complete_set": "Set done",
-   "finish": "Finish workout",
+   "finish": "Finish",
+   "finish_confirm": "Really finish the workout?",
    "rest": "Rest",
    "next": "Next:",
    "skip_rest": "Skip rest",
    "achieved_reps": "Reps achieved",
-   "target_reps": "Target: # reps"
+   "target_reps": "Target: # reps",
+   "total": "Total:",
+   "pause": "Pause",
+   "resume": "Resume",
+   "paused": "Paused",
+   "extend": "+60 sec",
+   "continue": "Continue",
+   "previous_set": "Previous set",
+   "last_time": "Last time: #"
   },
   "health": {
    "import": "Import from Google Health",
@@ -360,6 +372,7 @@
    "sets": "# sets",
    "duration": "Duration",
    "set_n": "Set #",
+   "resume": "Resume workout",
    "delete_confirm": "Delete this log entry?"
   },
   "trainings": {
@@ -376,7 +389,8 @@
    "avg_speed": "Avg speed",
    "delete_confirm": "Delete this training?",
    "no_route": "No route recorded",
-   "location_denied": "Location permission missing – training can't be recorded."
+   "location_denied": "Location permission missing – training can't be recorded.",
+   "detected": "auto-detected"
   }
  },
  "profile": {

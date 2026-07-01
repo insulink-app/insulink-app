@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'sport_models.dart';
 import 'sport_store.dart';
+import 'workout/workout_snapshot.dart';
 
 /// Shared training state: exercise library, routines and logged sessions. Its
 /// own [ChangeNotifier] alongside [SportState] (weight) so both files stay
@@ -12,8 +13,15 @@ class TrainingState extends ChangeNotifier {
   final List<SportExercise> _exercises;
   final List<SportRoutine> _routines;
   final List<WorkoutSession> _sessions;
+  WorkoutSnapshot? _activeWorkout;
 
-  TrainingState(this._store, this._exercises, this._routines, this._sessions);
+  TrainingState(
+    this._store,
+    this._exercises,
+    this._routines,
+    this._sessions,
+    this._activeWorkout,
+  );
 
   static Future<TrainingState> load() async {
     const store = SportStore();
@@ -22,12 +30,28 @@ class TrainingState extends ChangeNotifier {
       await store.loadExercises(),
       await store.loadRoutines(),
       await store.loadSessions(),
+      await store.loadActiveWorkout(),
     );
   }
 
   List<SportExercise> get exercises => List.unmodifiable(_exercises);
   List<SportRoutine> get routines => List.unmodifiable(_routines);
   List<WorkoutSession> get sessions => List.unmodifiable(_sessions);
+
+  /// The in-progress workout to auto-resume on launch (null when none).
+  WorkoutSnapshot? get activeWorkout => _activeWorkout;
+
+  /// Persist the running workout's snapshot (called by the runner on every
+  /// state change). No [notifyListeners] — the runner owns the live UI.
+  Future<void> saveActiveWorkout(WorkoutSnapshot snapshot) async {
+    _activeWorkout = snapshot;
+    await _store.saveActiveWorkout(snapshot);
+  }
+
+  Future<void> clearActiveWorkout() async {
+    _activeWorkout = null;
+    await _store.clearActiveWorkout();
+  }
 
   SportExercise? exerciseById(String id) {
     for (final exercise in _exercises) {
@@ -47,7 +71,12 @@ class TrainingState extends ChangeNotifier {
     return null;
   }
 
-  String _newId() => DateTime.now().microsecondsSinceEpoch.toRadixString(36);
+  int _idCounter = 0;
+
+  /// Unique id — the counter guards against collisions when several ids are
+  /// generated within the same microsecond (e.g. duplicating a routine's items).
+  String _newId() =>
+      '${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}-${_idCounter++}';
 
   // ---- Exercises ----
 
@@ -75,6 +104,31 @@ class TrainingState extends ChangeNotifier {
     await _store.saveExercises(_exercises);
   }
 
+  /// Reorders the exercise library. [newIndex] is already corrected for the
+  /// removed entry (ReorderableListView.onReorderItem semantics).
+  Future<void> reorderExercises(int oldIndex, int newIndex) async {
+    _exercises.insert(newIndex, _exercises.removeAt(oldIndex));
+    notifyListeners();
+    await _store.saveExercises(_exercises);
+  }
+
+  /// Copies an exercise (fresh id, name + [copySuffix]).
+  Future<void> duplicateExercise(String id, String copySuffix) async {
+    final source = exerciseById(id);
+    if (source == null) {
+      return;
+    }
+    _exercises.add(
+      SportExercise(
+        id: _newId(),
+        name: '${source.name}$copySuffix',
+        kind: source.kind,
+      ),
+    );
+    notifyListeners();
+    await _store.saveExercises(_exercises);
+  }
+
   // ---- Routines ----
 
   Future<SportRoutine> addRoutine(String name) async {
@@ -87,6 +141,33 @@ class TrainingState extends ChangeNotifier {
 
   Future<void> removeRoutine(String id) async {
     _routines.removeWhere((routine) => routine.id == id);
+    notifyListeners();
+    await _store.saveRoutines(_routines);
+  }
+
+  /// Copies a routine (fresh routine id, fresh item ids, name + [copySuffix]).
+  Future<void> duplicateRoutine(String id, String copySuffix) async {
+    final source = routineById(id);
+    if (source == null) {
+      return;
+    }
+    _routines.add(
+      SportRoutine(
+        id: _newId(),
+        name: '${source.name}$copySuffix',
+        items: [
+          for (final item in source.items)
+            RoutineItem(
+              id: _newId(),
+              exerciseId: item.exerciseId,
+              targetSets: item.targetSets,
+              target: item.target,
+              targetWeight: item.targetWeight,
+              restSeconds: item.restSeconds,
+            ),
+        ],
+      ),
+    );
     notifyListeners();
     await _store.saveRoutines(_routines);
   }
@@ -166,5 +247,21 @@ class TrainingState extends ChangeNotifier {
     _sessions.removeWhere((session) => session.id == id);
     notifyListeners();
     await _store.saveSessions(_sessions);
+  }
+
+  /// The most recent logged set for [exerciseId] at [setIndex] (0-based) across
+  /// past sessions — powers the "last time" comparison in the runner. Sessions
+  /// are appended in order, so iterating in reverse yields newest first.
+  SetLog? lastSetFor(String exerciseId, int setIndex) {
+    for (final session in _sessions.reversed) {
+      final matching = [
+        for (final set in session.sets)
+          if (set.exerciseId == exerciseId) set,
+      ];
+      if (setIndex < matching.length) {
+        return matching[setIndex];
+      }
+    }
+    return null;
   }
 }

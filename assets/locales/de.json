@@ -268,6 +268,8 @@
  "sport": {
   "label": "Sport",
   "today": "Heute",
+  "copy": "Kopieren",
+  "copy_suffix": " (Kopie)",
   "activity": {
    "steps": "Schritte",
    "distance": "Distanz",
@@ -324,19 +326,29 @@
    "reps": "Wiederholungen",
    "seconds": "Sekunden",
    "weight": "Gewicht",
-   "rest": "Pause"
+   "rest": "Pause",
+   "est_duration": "ca. # Min."
   },
   "workout": {
    "exercise": "Übung",
    "set": "Satz",
    "target_time": "Ziel: # s",
    "complete_set": "Satz fertig",
-   "finish": "Training beenden",
+   "finish": "Beenden",
+   "finish_confirm": "Training wirklich beenden?",
    "rest": "Pause",
    "next": "Als nächstes:",
    "skip_rest": "Pause überspringen",
    "achieved_reps": "Geschaffte Wiederholungen",
-   "target_reps": "Ziel: # Wdh."
+   "target_reps": "Ziel: # Wdh.",
+   "total": "Gesamt:",
+   "pause": "Pausieren",
+   "resume": "Fortsetzen",
+   "paused": "Pausiert",
+   "extend": "+60 Sek.",
+   "continue": "Weiter",
+   "previous_set": "Vorheriger Satz",
+   "last_time": "Letztes Mal: #"
   },
   "health": {
    "import": "Aus Google Health importieren",
@@ -360,6 +372,7 @@
    "sets": "# Sätze",
    "duration": "Dauer",
    "set_n": "Satz #",
+   "resume": "Training fortsetzen",
    "delete_confirm": "Dieses Protokoll wirklich löschen?"
   },
   "trainings": {
@@ -376,7 +389,8 @@
    "avg_speed": "Ø-Tempo",
    "delete_confirm": "Dieses Training wirklich löschen?",
    "no_route": "Keine Route aufgezeichnet",
-   "location_denied": "Standort-Berechtigung fehlt – Training kann nicht aufgezeichnet werden."
+   "location_denied": "Standort-Berechtigung fehlt – Training kann nicht aufgezeichnet werden.",
+   "detected": "automatisch erkannt"
   }
  },
  "profile": {
