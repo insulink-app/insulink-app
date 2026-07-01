@@ -237,8 +237,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       children: [
         const SizedBox(height: 30),
-        Image.asset('assets/images/cute.png', width: 50),
-        const SizedBox(height: 20),
         _version(),
       ],
     );
