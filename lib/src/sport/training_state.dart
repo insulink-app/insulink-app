@@ -3,10 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'sport_models.dart';
 import 'sport_store.dart';
 
-/// Geteilter Trainings-Zustand: Übungs-Bibliothek, Routinen und protokollierte
-/// Sessions. Eigener [ChangeNotifier] neben [SportState] (Gewicht), damit beide
-/// Dateien fokussiert bleiben. Muster: statisches [load], Mutatoren mutieren →
-/// [notifyListeners] → persistieren.
+/// Shared training state: exercise library, routines and logged sessions. Its
+/// own [ChangeNotifier] alongside [SportState] (weight) so both files stay
+/// focused. Pattern: static [load], mutators mutate → [notifyListeners] →
+/// persist.
 class TrainingState extends ChangeNotifier {
   final SportStore _store;
   final List<SportExercise> _exercises;
@@ -49,7 +49,7 @@ class TrainingState extends ChangeNotifier {
 
   String _newId() => DateTime.now().microsecondsSinceEpoch.toRadixString(36);
 
-  // ---- Übungen ----
+  // ---- Exercises ----
 
   Future<SportExercise> addExercise(String name, ExerciseKind kind) async {
     final exercise = SportExercise(id: _newId(), name: name, kind: kind);
@@ -75,7 +75,7 @@ class TrainingState extends ChangeNotifier {
     await _store.saveExercises(_exercises);
   }
 
-  // ---- Routinen ----
+  // ---- Routines ----
 
   Future<SportRoutine> addRoutine(String name) async {
     final routine = SportRoutine(id: _newId(), name: name, items: const []);
@@ -116,7 +116,11 @@ class TrainingState extends ChangeNotifier {
     }
   }
 
-  Future<void> updateRoutineItem(String routineId, int index, RoutineItem item) async {
+  Future<void> updateRoutineItem(
+    String routineId,
+    int index,
+    RoutineItem item,
+  ) async {
     final routine = routineById(routineId);
     if (routine == null || index < 0 || index >= routine.items.length) {
       return;
@@ -134,9 +138,13 @@ class TrainingState extends ChangeNotifier {
     await _replaceRoutine(routine.copyWith(items: items));
   }
 
-  /// [newIndex] ist bereits um den entfernten Eintrag korrigiert
-  /// (ReorderableListView.onReorderItem-Semantik).
-  Future<void> reorderRoutineItems(String routineId, int oldIndex, int newIndex) async {
+  /// [newIndex] is already corrected for the removed entry
+  /// (ReorderableListView.onReorderItem semantics).
+  Future<void> reorderRoutineItems(
+    String routineId,
+    int oldIndex,
+    int newIndex,
+  ) async {
     final routine = routineById(routineId);
     if (routine == null) {
       return;

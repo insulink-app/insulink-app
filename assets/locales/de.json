@@ -436,7 +436,7 @@
    "warning": {
     "title": "Stummschaltung aktivieren?",
     "body": "Bei aktiver Stummschaltung erhältst du KEINE Alarme – auch nicht bei gefährlich niedrigem oder hohem Blutzucker. Eine Unterzuckerung kann unbemerkt bleiben und lebensbedrohlich werden. Aktiviere sie nur, wenn du deine Werte anderweitig im Blick behältst.",
-    "confirm": "Trotzdem aktivieren"
+    "confirm": "Aktivieren"
    }
   },
   "developer": {

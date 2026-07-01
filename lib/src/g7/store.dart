@@ -359,7 +359,9 @@ class G7Store {
         list.add({'ts': ts, 'type': event.type, 'value': ?event.value});
       }
     }
-    list.sort((first, second) => (first['ts'] as int).compareTo(second['ts'] as int));
+    list.sort(
+      (first, second) => (first['ts'] as int).compareTo(second['ts'] as int),
+    );
     if (list.length > _eventCap) {
       list.removeRange(0, list.length - _eventCap);
     }

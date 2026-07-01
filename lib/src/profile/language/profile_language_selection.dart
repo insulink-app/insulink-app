@@ -50,13 +50,21 @@ class ProfileLanguageSelection extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: Image.asset(flag, width: 34, height: 24, fit: BoxFit.cover),
+                  child: Image.asset(
+                    flag,
+                    width: 34,
+                    height: 24,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: LocaleText(
                     "profile.language.$code",
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 if (selected) Icon(Icons.check_rounded, color: scheme.primary),

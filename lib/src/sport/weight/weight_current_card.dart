@@ -4,9 +4,9 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/weight/weight_entry_row.dart';
 
-/// Hervorgehobene „Aktuell"-Box: aktuelles Gewicht + Trend, darunter Min/Ø/Max
-/// des gewählten Zeitraums. [ranged] sind die Einträge im gewählten Fenster,
-/// [latest] ist stets der neueste Gesamtwert.
+/// Highlighted "Current" box: current weight + trend, with min/avg/max of the
+/// selected range below. [ranged] are the entries in the selected window,
+/// [latest] is always the newest overall value.
 class WeightCurrentCard extends StatelessWidget {
   const WeightCurrentCard({
     super.key,
@@ -36,7 +36,10 @@ class WeightCurrentCard extends StatelessWidget {
         children: [
           LocaleText(
             'sport.weight.current',
-            style: TextStyle(fontSize: 13, color: scheme.onSurface.withValues(alpha: 0.6)),
+            style: TextStyle(
+              fontSize: 13,
+              color: scheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
           const SizedBox(height: 8),
           Row(
@@ -45,10 +48,19 @@ class WeightCurrentCard extends StatelessWidget {
             children: [
               Text(
                 latest.kg.toStringAsFixed(1),
-                style: const TextStyle(fontSize: 46, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 46,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(width: 6),
-              Text('kg', style: TextStyle(fontSize: 16, color: scheme.onSurface.withValues(alpha: 0.6))),
+              Text(
+                'kg',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: scheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
               const Spacer(),
               if (delta != null && delta != 0) WeightDeltaChip(delta: delta),
             ],
@@ -79,7 +91,13 @@ class WeightCurrentCard extends StatelessWidget {
     );
   }
 
-  Widget _stat(BuildContext context, ColorScheme scheme, IconData icon, String labelKey, double kg) {
+  Widget _stat(
+    BuildContext context,
+    ColorScheme scheme,
+    IconData icon,
+    String labelKey,
+    double kg,
+  ) {
     return Row(
       children: [
         Icon(icon, size: 16, color: scheme.primary),
@@ -89,7 +107,10 @@ class WeightCurrentCard extends StatelessWidget {
           children: [
             Text(
               Locales.string(context, labelKey),
-              style: TextStyle(fontSize: 11, color: scheme.onSurface.withValues(alpha: 0.55)),
+              style: TextStyle(
+                fontSize: 11,
+                color: scheme.onSurface.withValues(alpha: 0.55),
+              ),
             ),
             const SizedBox(height: 1),
             Text(

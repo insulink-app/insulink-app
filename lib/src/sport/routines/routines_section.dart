@@ -10,8 +10,8 @@ import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:provider/provider.dart';
 
-/// „Routinen"-Sektion der Sport-Startseite: Liste der Routinen (tippen =
-/// bearbeiten, Play = starten), plus Zugang zur Übungs-Bibliothek und „+ Routine".
+/// "Routines" section of the sport home page: list of routines (tap = edit, play
+/// = start), plus access to the exercise library and "+ Routine".
 class RoutinesSection extends StatelessWidget {
   const RoutinesSection({super.key});
 
@@ -35,7 +35,9 @@ class RoutinesSection extends StatelessWidget {
                   icon: const Icon(Icons.history, size: 20),
                   tooltip: Locales.string(context, 'sport.logbook'),
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const WorkoutLogPage()),
+                    MaterialPageRoute<void>(
+                      builder: (_) => const WorkoutLogPage(),
+                    ),
                   ),
                 ),
                 IconButton(
@@ -43,7 +45,9 @@ class RoutinesSection extends StatelessWidget {
                   icon: const Icon(Icons.fitness_center, size: 20),
                   tooltip: Locales.string(context, 'sport.exercises'),
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const ExercisesPage()),
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ExercisesPage(),
+                    ),
                   ),
                 ),
               ],
@@ -52,7 +56,10 @@ class RoutinesSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         for (final routine in routines) _routineCard(context, routine),
-        SportAddTile(labelKey: 'sport.routines.new', onTap: () => _create(context)),
+        SportAddTile(
+          labelKey: 'sport.routines.new',
+          onTap: () => _create(context),
+        ),
       ],
     );
   }
@@ -85,12 +92,20 @@ class RoutinesSection extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          Locales.string(context, 'sport.routines.count', params: ['${routine.items.length}']),
+          Locales.string(
+            context,
+            'sport.routines.count',
+            params: ['${routine.items.length}'],
+          ),
         ),
         trailing: routine.items.isEmpty
             ? null
             : IconButton(
-                icon: Icon(Icons.play_circle_fill, size: 44, color: scheme.primary),
+                icon: Icon(
+                  Icons.play_circle_fill,
+                  size: 44,
+                  color: scheme.primary,
+                ),
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => WorkoutRunnerPage(routine: routine),

@@ -57,7 +57,9 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       titleKey: 'permission.dnd.title',
       bodyKey: 'permission.dnd.body',
       request: () async {
-        await G7AlarmManager(FlutterLocalNotificationsPlugin()).ensureDndAccess();
+        await G7AlarmManager(
+          FlutterLocalNotificationsPlugin(),
+        ).ensureDndAccess();
       },
     ),
     (

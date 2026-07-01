@@ -5,11 +5,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'sport_models.dart';
 import 'training/cardio_models.dart';
 
-/// Persistenz für den Sport-Bereich: JSON-Blobs in [FlutterSecureStorage], wie
-/// `g7/store.dart`. Anders als der G7-Store braucht der Sport-Bereich keinen
-/// synchronen Isolate-Cache — die UI lädt einmal in einen [ChangeNotifier] und
-/// hält die Daten im Speicher. Generische Listen-Helfer, damit Phase 2
-/// (Übungen/Routinen/Sessions) nur Keys + Mapper ergänzt.
+/// Persistence for the sport area: JSON blobs in [FlutterSecureStorage], like
+/// `g7/store.dart`. Unlike the G7 store, the sport area needs no synchronous
+/// isolate cache — the UI loads once into a [ChangeNotifier] and keeps the data
+/// in memory. Generic list helpers so phase 2 (exercises/routines/sessions) only
+/// adds keys + mappers.
 class SportStore {
   static const _kWeight = 'sport.weight';
   static const _kExercises = 'sport.exercises';
@@ -17,14 +17,16 @@ class SportStore {
   static const _kSessions = 'sport.sessions';
   static const _kActivityArchive = 'sport.activity_archive';
   static const _kTrainings = 'sport.trainings';
+  static const _kLocationLog = 'sport.location_log';
   static const _sessionCap = 500;
   static const _trainingCap = 500;
+  static const _locationLogCap = 2000;
   static const _kStride = 'sport.stride_cm';
   static const _kStepsBaselineDate = 'sport.steps_baseline_date';
   static const _kStepsBaselineCounter = 'sport.steps_baseline_counter';
 
-  /// Standard-Schrittlänge in cm (für die Distanzschätzung), bis der Nutzer sie
-  /// anpasst — grob ein erwachsener Gang.
+  /// Default stride length in cm (for the distance estimate), until the user
+  /// adjusts it — roughly an adult's stride.
   static const defStrideCm = 75;
 
   final FlutterSecureStorage _storage;
@@ -57,13 +59,15 @@ class SportStore {
   Future<List<SportRoutine>> loadRoutines() async =>
       (await _loadList(_kRoutines)).map(SportRoutine.fromJson).toList();
 
-  Future<void> saveRoutines(List<SportRoutine> routines) =>
-      _saveList(_kRoutines, routines.map((routine) => routine.toJson()).toList());
+  Future<void> saveRoutines(List<SportRoutine> routines) => _saveList(
+    _kRoutines,
+    routines.map((routine) => routine.toJson()).toList(),
+  );
 
   Future<List<WorkoutSession>> loadSessions() async =>
       (await _loadList(_kSessions)).map(WorkoutSession.fromJson).toList();
 
-  /// Speichert die Sessions, gekappt auf die jüngsten [_sessionCap].
+  /// Saves the sessions, capped to the most recent [_sessionCap].
   Future<void> saveSessions(List<WorkoutSession> sessions) {
     final capped = sessions.length > _sessionCap
         ? sessions.sublist(sessions.length - _sessionCap)
@@ -84,10 +88,26 @@ class SportStore {
   Future<List<DailyActivity>> loadActivityArchive() async =>
       (await _loadList(_kActivityArchive)).map(DailyActivity.fromJson).toList();
 
-  Future<void> saveActivityArchive(List<DailyActivity> days) => _saveList(
-    _kActivityArchive,
-    days.map((day) => day.toJson()).toList(),
-  );
+  Future<void> saveActivityArchive(List<DailyActivity> days) =>
+      _saveList(_kActivityArchive, days.map((day) => day.toJson()).toList());
+
+  /// Rolling background location log (ring buffer, capped to the most recent
+  /// [_locationLogCap] points) — filled by the foreground service on a ~60s
+  /// cadence, raw material for later location features.
+  Future<List<TrackPoint>> loadLocationLog() async =>
+      (await _loadList(_kLocationLog)).map(TrackPoint.fromJson).toList();
+
+  Future<void> appendLocationSample(TrackPoint sample) async {
+    final log = await loadLocationLog()
+      ..add(sample);
+    final capped = log.length > _locationLogCap
+        ? log.sublist(log.length - _locationLogCap)
+        : log;
+    await _saveList(
+      _kLocationLog,
+      capped.map((point) => point.toJson()).toList(),
+    );
+  }
 
   Future<int> loadStrideCm() async =>
       int.tryParse(await _storage.read(key: _kStride) ?? '') ?? defStrideCm;
@@ -95,8 +115,8 @@ class SportStore {
   Future<void> saveStrideCm(int cm) =>
       _storage.write(key: _kStride, value: '$cm');
 
-  /// Der Mitternachts-Bezugspunkt des kumulativen Schrittzählers: Datum +
-  /// Zählerstand, aus denen „Schritte heute" abgeleitet wird.
+  /// The midnight reference point of the cumulative step counter: date +
+  /// counter, from which "steps today" is derived.
   Future<({String date, int counter})?> loadStepsBaseline() async {
     final date = await _storage.read(key: _kStepsBaselineDate);
     final counter = int.tryParse(

@@ -120,9 +120,13 @@ class EmptyView extends StatelessWidget {
               height: 84,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: scheme.primary.withValues(alpha: 0.12),
+                color: scheme.primary,
               ),
-              child: Icon(CupertinoIcons.drop, size: 44, color: scheme.primary),
+              child: Icon(
+                CupertinoIcons.drop,
+                size: 44,
+                color: scheme.onPrimary,
+              ),
             ),
             const SizedBox(height: 24),
             LocaleText(

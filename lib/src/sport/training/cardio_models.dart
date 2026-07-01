@@ -1,10 +1,10 @@
-/// Ausdauer-Trainings (GPS): Gehen, Joggen, Radfahren.
+/// Endurance trainings (GPS): walking, jogging, cycling.
 library;
 
-/// Art des Ausdauer-Trainings.
+/// Type of endurance training.
 enum CardioType { walk, jog, bike }
 
-/// Ein aufgezeichneter GPS-Punkt: Position + Zeitstempel (epoch ms).
+/// A recorded GPS point: position + timestamp (epoch ms).
 class TrackPoint {
   final double lat;
   final double lng;
@@ -21,8 +21,8 @@ class TrackPoint {
   );
 }
 
-/// Ein abgeschlossenes Ausdauer-Training: Typ, Start/Ende, aufgezeichnete Route
-/// und die zurückgelegte Strecke (Meter, während der Aufzeichnung summiert).
+/// A completed endurance training: type, start/end, recorded route and the
+/// distance covered (meters, summed while recording).
 class CardioTraining {
   final String id;
   final CardioType type;
@@ -42,7 +42,7 @@ class CardioTraining {
 
   Duration get duration => Duration(milliseconds: endMs - startMs);
 
-  /// Durchschnittsgeschwindigkeit in km/h (0, wenn keine Dauer erfasst).
+  /// Average speed in km/h (0 when no duration was recorded).
   double get avgSpeedKmh {
     final seconds = duration.inSeconds;
     return seconds == 0 ? 0 : distanceM / seconds * 3.6;

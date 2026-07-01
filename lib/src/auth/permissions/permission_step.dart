@@ -42,14 +42,20 @@ class PermissionStep extends StatelessWidget {
           LocaleText(
             permission.bodyKey,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, color: Colors.grey[500], height: 1.4),
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey[500],
+              height: 1.4,
+            ),
           ),
           const Spacer(),
           _dots(scheme),
           const SizedBox(height: 24),
           FilledButton(
             onPressed: busy ? null : onAllow,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
+            ),
             child: busy
                 ? const SizedBox(
                     width: 22,
@@ -75,9 +81,9 @@ class PermissionStep extends StatelessWidget {
         height: 96,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: scheme.primary.withValues(alpha: 0.12),
+          color: scheme.primary,
         ),
-        child: Icon(permission.icon, size: 48, color: scheme.primary),
+        child: Icon(permission.icon, size: 48, color: scheme.onPrimary),
       ),
     );
   }

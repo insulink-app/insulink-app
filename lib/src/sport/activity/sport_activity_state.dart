@@ -8,11 +8,10 @@ import '../sport_models.dart';
 import '../sport_store.dart';
 import 'step_baseline.dart';
 
-/// Liest die heutigen Schritte aus dem Hardware-Schrittzähler (`pedometer`).
-/// Eigener [ChangeNotifier], weil der Stream-Lebenszyklus sich vom CRUD-Zustand
-/// unterscheidet. Distanz/Kalorien werden NICHT hier berechnet (das sind
-/// Schätzungen aus Schritten + Schrittlänge + Gewicht) — siehe
-/// `activity_summary_card.dart`.
+/// Reads today's steps from the hardware step counter (`pedometer`). Its own
+/// [ChangeNotifier] because the stream lifecycle differs from the CRUD state.
+/// Distance/calories are NOT computed here (they're estimates from steps +
+/// stride + weight) — see `activity_summary_card.dart`.
 class SportActivityState extends ChangeNotifier {
   final SportStore _store;
   StreamSubscription<StepCount>? _subscription;
@@ -34,10 +33,10 @@ class SportActivityState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Tages-Aktivitätsarchiv (aufsteigend nach Datum) für die Detail-Seiten.
+  /// Daily activity archive (ascending by date) for the detail pages.
   List<DailyActivity> get activityArchive => List.unmodifiable(_archive);
 
-  /// Importierte Tage upserten (per [DailyActivity.dateKey]) und persistieren.
+  /// Upsert imported days (by [DailyActivity.dateKey]) and persist.
   Future<void> mergeArchive(List<DailyActivity> days) async {
     final byDate = {for (final day in _archive) day.dateKey: day};
     for (final day in days) {
@@ -49,10 +48,9 @@ class SportActivityState extends ChangeNotifier {
     await _store.saveActivityArchive(_archive);
   }
 
-  /// Heutiger Archiv-Eintrag (aus dem letzten Health-Sync), falls vorhanden.
-  /// Dient als **persistenter** Fallback, damit gesyncte Werte nach einem
-  /// Neustart/Provider-Rebuild NICHT verschwinden (die `_imported*`-Felder sind
-  /// nur sitzungsweit).
+  /// Today's archive entry (from the last Health sync), if present. Serves as a
+  /// **persistent** fallback so synced values don't disappear after a
+  /// restart/provider rebuild (the `_imported*` fields are session-only).
   DailyActivity? get _todayArchive {
     final key = _paddedTodayKey();
     for (final day in _archive) {
@@ -63,9 +61,9 @@ class SportActivityState extends ChangeNotifier {
     return null;
   }
 
-  /// Heutige Schritte: frisch importiert > größerer Wert aus Pedometer bzw.
-  /// gesynctem Archiv (so zählt der Schrittzähler live weiter, ohne dass der
-  /// zuletzt gesyncte Stand verloren geht).
+  /// Today's steps: freshly imported > the larger of pedometer or synced archive
+  /// (so the step counter keeps counting live without losing the last synced
+  /// value).
   int get todaySteps {
     if (_importedSteps != null) {
       return _importedSteps!;
@@ -75,15 +73,16 @@ class SportActivityState extends ChangeNotifier {
     return pedometer > archived ? pedometer : archived;
   }
 
-  /// Echte Werte aus Google Health: frisch importiert bzw. der persistente
-  /// heutige Archiv-Wert — sonst null (dann schätzt die Kachel aus Schritten +
-  /// Schrittlänge bzw. Gewicht).
-  double? get importedDistanceKm => _importedDistanceKm ?? _todayArchive?.distanceKm;
+  /// Real values from Google Health: freshly imported or the persistent today
+  /// archive value — otherwise null (then the tile estimates from steps + stride
+  /// or weight).
+  double? get importedDistanceKm =>
+      _importedDistanceKm ?? _todayArchive?.distanceKm;
   double? get importedCalories => _importedCalories ?? _todayArchive?.calories;
 
   bool get permissionDenied => _denied;
 
-  /// Heutige Werte aus Google Health übernehmen (Sitzung, nicht persistiert).
+  /// Apply today's values from Google Health (session-only, not persisted).
   void setImported({int? steps, double? distanceKm, double? calories}) {
     _importedSteps = steps;
     _importedDistanceKm = distanceKm;
@@ -91,9 +90,9 @@ class SportActivityState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Fordert ACTIVITY_RECOGNITION an (falls nötig) und abonniert den
-  /// Schrittzähler. Idempotent — beim ersten Öffnen des Sport-Tabs aufgerufen,
-  /// nicht beim App-Start (der Onboarding-Schritt fragt die Berechtigung ab).
+  /// Requests ACTIVITY_RECOGNITION (if needed) and subscribes to the step
+  /// counter. Idempotent — called on first opening the Sport tab, not at app
+  /// start (the onboarding step requests the permission).
   Future<void> ensureStarted() async {
     if (_subscription != null) {
       return;
@@ -127,8 +126,8 @@ class SportActivityState extends ChangeNotifier {
 
   String _dateKey(DateTime time) => '${time.year}-${time.month}-${time.day}';
 
-  /// Heutiges Datum im Archiv-Format `yyyy-mm-dd` (null-gepaddet, wie im
-  /// [HealthImporter]) — der Pedometer-Schlüssel oben ist bewusst ungepaddet.
+  /// Today's date in the archive format `yyyy-mm-dd` (zero-padded, like in the
+  /// [HealthImporter]) — the pedometer key above is intentionally unpadded.
   String _paddedTodayKey() {
     final now = DateTime.now();
     final month = now.month.toString().padLeft(2, '0');

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
 
-/// Einheitliche „Hinzufügen"-Kachel für den Sport-Bereich: volle Breite, runder
-/// Primary-Tint-Hintergrund, „+"-Icon + Label. Hebt sich klar von den grauen
-/// Daten-Karten ab und ersetzt die schlichten OutlinedButtons.
+/// Uniform "add" tile for the sport area: full width, rounded primary-tint
+/// background, "+" icon + label. Stands out clearly from the grey data cards and
+/// replaces the plain OutlinedButtons.
 class SportAddTile extends StatelessWidget {
   const SportAddTile({
     super.key,

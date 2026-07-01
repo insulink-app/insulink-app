@@ -59,6 +59,7 @@ dependencies:
   geolocator: ^13.0.2
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
+  wakelock_plus: ^1.6.1
 
 # health (Health Connect) deckelt device_info_plus auf <13, nutzt davon aber nur
 # `androidInfo.id` — über 12↔13 identisch. device_info_plus 12.x wendet noch das

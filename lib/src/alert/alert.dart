@@ -5,10 +5,10 @@ import 'package:insulink/src/localization/locale_text.dart';
 
 enum AlertType { success, error, neutral }
 
-/// Modaler Hinweis-/Bestätigungsdialog im iOS-Stil: getönter Icon-Kreis,
-/// zentrierte Nachricht und groß gestapelte Aktions-Buttons, über einem
-/// weichgezeichneten Hintergrund eingeblendet. API bewusst schlank gehalten,
-/// damit alle Aufrufer (Löschen, Fehler, Eingabe …) unverändert bleiben.
+/// iOS-style modal notice/confirmation dialog: tinted icon circle, centered
+/// message and large side-by-side action buttons, faded in over a blurred
+/// backdrop. API kept deliberately slim so all callers (delete, error, input …)
+/// stay unchanged.
 class Alert extends StatefulWidget {
   final AlertType? type;
   final IconData? icon;
@@ -42,8 +42,7 @@ class Alert extends StatefulWidget {
   @override
   State<Alert> createState() => AlertState();
 
-  /// Blendet den Dialog mit weichgezeichnetem Hintergrund und sanftem
-  /// Aufskalieren ein.
+  /// Fades the dialog in over a blurred backdrop with a gentle scale-up.
   void show(BuildContext context) {
     showGeneralDialog(
       context: context,
@@ -53,8 +52,9 @@ class Alert extends StatefulWidget {
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (_, _, _) => this,
       transitionBuilder: (context, animation, _, child) {
-        final scale = Tween(begin: 0.92, end: 1.0)
-            .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutBack));
+        final scale = Tween(begin: 0.92, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+        );
         return BackdropFilter(
           filter: ImageFilter.blur(
             sigmaX: 7 * animation.value,
@@ -127,7 +127,7 @@ class AlertState extends State<Alert> {
     );
   }
 
-  /// Die Nachricht: entweder ein lokalisierter Text oder ein eigener [content].
+  /// The message: either a localized text or a custom [content].
   Widget _body() {
     if (widget.description == null) {
       return widget.content ?? const SizedBox.shrink();
@@ -135,12 +135,16 @@ class AlertState extends State<Alert> {
     return LocaleText(
       widget.description ?? "",
       textAlign: TextAlign.center,
-      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, height: 1.35),
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        height: 1.35,
+      ),
     );
   }
 
-  /// Große Buttons nebeneinander: dezentes Abbrechen links, gefüllte
-  /// Bestätigung rechts.
+  /// Large buttons side by side: subtle cancel on the left, filled confirm on
+  /// the right.
   Widget _actions(ThemeData theme) {
     final disabled =
         widget.confirmButtonEnabled != null && !widget.confirmButtonEnabled!();
@@ -155,7 +159,10 @@ class AlertState extends State<Alert> {
     return Row(
       children: [
         Expanded(
-          child: _cancelButton(theme, widget.cancelButtonText ?? "alert.cancel"),
+          child: _cancelButton(
+            theme,
+            widget.cancelButtonText ?? "alert.cancel",
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(child: confirm),
@@ -184,7 +191,9 @@ class AlertState extends State<Alert> {
         style: FilledButton.styleFrom(
           backgroundColor: color,
           minimumSize: const Size.fromHeight(54),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: LocaleText(
           textKey,
@@ -204,7 +213,9 @@ class AlertState extends State<Alert> {
           foregroundColor:
               widget.cancelButtonColor ?? theme.colorScheme.onSurface,
           minimumSize: const Size.fromHeight(54),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: LocaleText(
           textKey,

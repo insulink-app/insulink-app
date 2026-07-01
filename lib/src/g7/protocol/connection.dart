@@ -240,7 +240,8 @@ class G7Connection {
       final knownId = _knownDeviceId;
       // Only autoConnect once we've scanned this process (so the OS has seen the
       // device) and haven't exhausted the failure budget — see [_scannedThisProcess].
-      final useAutoConnect = knownId != null &&
+      final useAutoConnect =
+          knownId != null &&
           _scannedThisProcess &&
           _autoConnectFailures < _maxAutoConnectFailures;
       final BluetoothDevice device;
@@ -259,7 +260,8 @@ class G7Connection {
           return;
         }
         device = found;
-        _scannedThisProcess = true; // OS has now seen the device → autoConnect ok
+        _scannedThisProcess =
+            true; // OS has now seen the device → autoConnect ok
       }
 
       // The serial is only a cache key, not an auth secret — when none was
@@ -481,7 +483,8 @@ class G7Connection {
   void _requestBackfill(BleTransport transport, int liveSecs, int? priorMax) {
     final end = liveSecs - 60;
     final now = DateTime.now();
-    final dueFull = _lastFullBackfill == null ||
+    final dueFull =
+        _lastFullBackfill == null ||
         now.difference(_lastFullBackfill!) >= _fullBackfillEvery;
     var start = liveSecs - 24 * 3600;
     if (priorMax != null && !dueFull) {

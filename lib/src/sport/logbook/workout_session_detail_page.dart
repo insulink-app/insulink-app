@@ -5,8 +5,8 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
 
-/// Detail einer durchgeführten Routine: Kopf-Kennzahlen (Datum, Dauer, Sätze)
-/// plus die protokollierten Sätze je Übung. Löschbar über die AppBar.
+/// Detail of a completed routine: header metrics (date, duration, sets) plus the
+/// logged sets per exercise. Deletable via the app bar.
 class WorkoutSessionDetailPage extends StatelessWidget {
   const WorkoutSessionDetailPage({super.key, required this.session});
 
@@ -39,7 +39,9 @@ class WorkoutSessionDetailPage extends StatelessWidget {
         ],
       ),
       body: ListView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
         children: [
           _header(context, scheme),
@@ -72,9 +74,20 @@ class WorkoutSessionDetailPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _stat(context, scheme, Icons.timer_outlined, 'sport.logbook.duration', _duration()),
-              _stat(context, scheme, Icons.repeat_rounded, 'sport.routines.sets',
-                  '${session.sets.length}'),
+              _stat(
+                context,
+                scheme,
+                Icons.timer_outlined,
+                'sport.logbook.duration',
+                _duration(),
+              ),
+              _stat(
+                context,
+                scheme,
+                Icons.repeat_rounded,
+                'sport.routines.sets',
+                '${session.sets.length}',
+              ),
             ],
           ),
         ],
@@ -94,7 +107,13 @@ class WorkoutSessionDetailPage extends StatelessWidget {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
-  Widget _stat(BuildContext context, ColorScheme scheme, IconData icon, String labelKey, String value) {
+  Widget _stat(
+    BuildContext context,
+    ColorScheme scheme,
+    IconData icon,
+    String labelKey,
+    String value,
+  ) {
     return Row(
       children: [
         Icon(icon, size: 16, color: scheme.primary),
@@ -104,17 +123,23 @@ class WorkoutSessionDetailPage extends StatelessWidget {
           children: [
             Text(
               Locales.string(context, labelKey),
-              style: TextStyle(fontSize: 11, color: scheme.onSurface.withValues(alpha: 0.55)),
+              style: TextStyle(
+                fontSize: 11,
+                color: scheme.onSurface.withValues(alpha: 0.55),
+              ),
             ),
             const SizedBox(height: 1),
-            Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
           ],
         ),
       ],
     );
   }
 
-  /// Die Sätze nach Übung gruppiert (in Protokoll-Reihenfolge) als Kärtchen.
+  /// The sets grouped by exercise (in log order) as small cards.
   List<Widget> _setRows(BuildContext context, TrainingState training) {
     final scheme = Theme.of(context).colorScheme;
     final rows = <Widget>[];
@@ -124,13 +149,15 @@ class WorkoutSessionDetailPage extends StatelessWidget {
       if (set.exerciseId != lastExercise) {
         lastExercise = set.exerciseId;
         setNumber = 0;
-        rows.add(Padding(
-          padding: EdgeInsets.only(top: rows.isEmpty ? 0 : 20, bottom: 8),
-          child: Text(
-            training.exerciseById(set.exerciseId)?.name ?? '—',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        rows.add(
+          Padding(
+            padding: EdgeInsets.only(top: rows.isEmpty ? 0 : 20, bottom: 8),
+            child: Text(
+              training.exerciseById(set.exerciseId)?.name ?? '—',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ),
-        ));
+        );
       }
       setNumber += 1;
       rows.add(_setLine(context, scheme, setNumber, set));
@@ -138,7 +165,12 @@ class WorkoutSessionDetailPage extends StatelessWidget {
     return rows;
   }
 
-  Widget _setLine(BuildContext context, ColorScheme scheme, int number, SetLog set) {
+  Widget _setLine(
+    BuildContext context,
+    ColorScheme scheme,
+    int number,
+    SetLog set,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
@@ -152,10 +184,17 @@ class WorkoutSessionDetailPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              Locales.string(context, 'sport.logbook.set_n', params: ['$number']),
+              Locales.string(
+                context,
+                'sport.logbook.set_n',
+                params: ['$number'],
+              ),
               style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
             ),
-            Text(_value(set), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            Text(
+              _value(set),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+            ),
           ],
         ),
       ),
@@ -164,7 +203,9 @@ class WorkoutSessionDetailPage extends StatelessWidget {
 
   String _value(SetLog set) {
     final core = set.seconds != null ? '${set.seconds} s' : '${set.reps ?? 0}';
-    final weight = set.weightKg != null ? ' · ${set.weightKg!.toStringAsFixed(1)} kg' : '';
+    final weight = set.weightKg != null
+        ? ' · ${set.weightKg!.toStringAsFixed(1)} kg'
+        : '';
     return '$core$weight';
   }
 }

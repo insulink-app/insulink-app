@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../alert/alert.dart';
 
-/// Zeigt eine Lösch-Bestätigung. [messageKey] ist der Lokalisierungs-Schlüssel
-/// der Rückfrage; [onConfirm] läuft nur, wenn der Nutzer „Löschen" wählt.
-/// Geteilt von allen löschenden Buttons, damit keine Aktion versehentlich feuert.
+/// Shows a delete confirmation. [messageKey] is the localization key of the
+/// prompt; [onConfirm] runs only when the user chooses "Delete". Shared by all
+/// deleting buttons so no action fires accidentally.
 void confirmDelete(
   BuildContext context, {
   required String messageKey,

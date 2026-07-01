@@ -17,7 +17,11 @@ import 'package:insulink/src/request/request.dart';
 class AuthService {
   static const _storage = FlutterSecureStorage();
 
-  Future<String?> signIn(BuildContext context, String name, String password) async {
+  Future<String?> signIn(
+    BuildContext context,
+    String name,
+    String password,
+  ) async {
     final response = await Request.post(
       url: "/signin/",
       body: {"name": name, "password": password},
@@ -35,7 +39,11 @@ class AuthService {
     return error;
   }
 
-  Future<String?> signUp(BuildContext context, String name, String password) async {
+  Future<String?> signUp(
+    BuildContext context,
+    String name,
+    String password,
+  ) async {
     final deviceFields = await _deviceFields();
     if (!context.mounted) {
       return "auth.error.network";

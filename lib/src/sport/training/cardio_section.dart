@@ -8,8 +8,8 @@ import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:provider/provider.dart';
 
-/// „Trainings"-Sektion der Sport-Startseite: drei Start-Buttons (Gehen/Joggen/
-/// Radfahren) und die zuletzt aufgezeichneten Trainings.
+/// "Trainings" section of the sport home page: three start buttons
+/// (walk/jog/cycle) and the most recently recorded trainings.
 class CardioSection extends StatelessWidget {
   const CardioSection({super.key});
 
@@ -46,7 +46,9 @@ class CardioSection extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => CardioRecordingPage(type: type)),
+          MaterialPageRoute<void>(
+            builder: (_) => CardioRecordingPage(type: type),
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -56,7 +58,11 @@ class CardioSection extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 Locales.string(context, type.labelKey),
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.primary),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.primary,
+                ),
               ),
             ],
           ),
@@ -87,7 +93,9 @@ class CardioSection extends StatelessWidget {
         ),
         trailing: Text(formatDuration(training.duration)),
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => CardioDetailPage(training: training)),
+          MaterialPageRoute<void>(
+            builder: (_) => CardioDetailPage(training: training),
+          ),
         ),
       ),
     );

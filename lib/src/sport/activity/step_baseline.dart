@@ -1,16 +1,16 @@
-/// Der Android-`STEP_COUNTER` liefert eine seit dem Boot monoton steigende
-/// Gesamtzahl. „Schritte heute" = aktueller Stand minus dem Stand zu
-/// Tagesbeginn. [StepBaseline] hält diesen Bezugspunkt (Datum + Zählerstand)
-/// und setzt ihn zurück, wenn der Tag wechselt oder der Zähler kleiner wird
-/// (Reboot ⇒ Zähler startet wieder bei 0). Reine Logik, ohne Plugin — testbar.
+/// The Android `STEP_COUNTER` reports a cumulative total that increases
+/// monotonically since boot. "Steps today" = current value minus the value at
+/// the start of the day. [StepBaseline] holds this reference point (date +
+/// counter) and resets it when the day changes or the counter drops (reboot ⇒
+/// counter restarts at 0). Pure logic, no plugin — testable.
 class StepBaseline {
   final String date;
   final int counter;
 
   const StepBaseline({required this.date, required this.counter});
 
-  /// Wendet den aktuellen kumulativen [counter], gelesen am Tag [today], an.
-  /// Gibt den (ggf. zurückgesetzten) Bezugspunkt und die heutigen Schritte zurück.
+  /// Applies the current cumulative [counter], read on day [today]. Returns the
+  /// (possibly reset) reference point and today's steps.
   ({StepBaseline baseline, int today}) update(String today, int counter) {
     if (date != today || counter < this.counter) {
       return (baseline: StepBaseline(date: today, counter: counter), today: 0);

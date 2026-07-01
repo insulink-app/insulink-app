@@ -5,12 +5,12 @@ import 'package:geolocator/geolocator.dart';
 
 import 'cardio_models.dart';
 
-/// Zeichnet ein laufendes Ausdauer-Training per GPS auf: abonniert den
-/// [Geolocator]-Positionsstream, sammelt [TrackPoint]s, summiert die Strecke
-/// inkrementell (Haversine via [Geolocator.distanceBetween]) und liefert Dauer +
-/// aktuelle Geschwindigkeit. UI-frei; die Recording-Page hört als [ChangeNotifier]
-/// zu. `ponytail:` — läuft nur im App-Vordergrund; ein Foreground-Service für
-/// Bildschirm-aus-Tracking wäre der nächste Ausbau, falls gewünscht.
+/// Records a running endurance workout via GPS: subscribes to the [Geolocator]
+/// position stream, collects [TrackPoint]s, sums the distance incrementally
+/// (Haversine via [Geolocator.distanceBetween]) and provides duration + current
+/// speed. UI-free; the recording page listens as a [ChangeNotifier]. `ponytail:`
+/// — runs only while the app is in the foreground; a foreground service for
+/// screen-off tracking would be the next step, if wanted.
 class CardioTracker extends ChangeNotifier {
   final CardioType type;
   final List<TrackPoint> _points = [];
@@ -27,17 +27,18 @@ class CardioTracker extends ChangeNotifier {
   double get distanceM => _distanceM;
   double get currentSpeedKmh => _currentSpeedKmh;
 
-  /// Bewegungsrichtung in Grad (0 = Nord, im Uhrzeigersinn), oder null wenn das
-  /// GPS keine verlässliche Richtung liefert (Stillstand meldet oft -1).
+  /// Heading in degrees (0 = north, clockwise), or null when the GPS reports no
+  /// reliable direction (standstill often returns -1).
   double? get currentHeadingDeg {
     final heading = _lastFix?.heading ?? -1;
     return heading < 0 ? null : heading;
   }
+
   Duration get elapsed => DateTime.now().difference(_startedAt);
   TrackPoint? get latest => _points.isEmpty ? null : _points.last;
 
-  /// Fragt die Standort-Berechtigung an und startet den Positionsstream.
-  /// Gibt false zurück, wenn Dienst aus oder Berechtigung verweigert ist.
+  /// Requests location permission and starts the position stream. Returns false
+  /// when the service is off or permission is denied.
   Future<bool> start() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       return false;
@@ -70,15 +71,17 @@ class CardioTracker extends ChangeNotifier {
     }
     _lastFix = fix;
     _currentSpeedKmh = fix.speed < 0 ? 0 : fix.speed * 3.6;
-    _points.add(TrackPoint(
-      lat: fix.latitude,
-      lng: fix.longitude,
-      tMs: DateTime.now().millisecondsSinceEpoch,
-    ));
+    _points.add(
+      TrackPoint(
+        lat: fix.latitude,
+        lng: fix.longitude,
+        tMs: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
     notifyListeners();
   }
 
-  /// Aufzeichnung beenden und das fertige Training bauen.
+  /// Stop recording and build the finished training.
   CardioTraining finish() {
     _subscription?.cancel();
     _subscription = null;

@@ -3,9 +3,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:latlong2/latlong.dart';
 
-/// OpenStreetMap-Karte mit der Trainings-Route als Polyline. [live] hält den
-/// Kartenausschnitt vom Aufrufer gesteuert (recentern beim Aufzeichnen); sonst
-/// wird auf die gesamte Route gezoomt. Geteilt von Recording- und Detail-Seite.
+/// OpenStreetMap map with the training route as a polyline. [live] keeps the map
+/// viewport controlled by the caller (recenter while recording); otherwise it
+/// zooms to the whole route. Shared by the recording and detail pages.
 class CardioMap extends StatelessWidget {
   const CardioMap({
     super.key,
@@ -39,21 +39,23 @@ class CardioMap extends StatelessWidget {
       ),
       children: [
         TileLayer(
-          // CartoDB light/dark passend zum App-Theme.
+          // CartoDB light/dark matching the app theme.
           urlTemplate: isDark
               ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
               : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
           subdomains: const ['a', 'b', 'c', 'd'],
           retinaMode: RetinaMode.isHighDensity(context),
           userAgentPackageName: 'de.insulink.app',
-          // Ohne Netz (z. B. im Emulator) still degradieren statt jede fehlende
-          // Kachel als Exception zu protokollieren.
+          // Degrade quietly without network (e.g. in the emulator) instead of
+          // logging every missing tile as an exception.
           evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
           errorTileCallback: (tile, error, stackTrace) {},
         ),
         if (route.length >= 2)
           PolylineLayer(
-            polylines: [Polyline(points: route, strokeWidth: 5, color: primary)],
+            polylines: [
+              Polyline(points: route, strokeWidth: 5, color: primary),
+            ],
           ),
         if (route.isNotEmpty)
           MarkerLayer(
@@ -73,7 +75,9 @@ class CardioMap extends StatelessWidget {
             ],
           ),
         const RichAttributionWidget(
-          attributions: [TextSourceAttribution('OpenStreetMap contributors, © CARTO')],
+          attributions: [
+            TextSourceAttribution('OpenStreetMap contributors, © CARTO'),
+          ],
         ),
       ],
     );

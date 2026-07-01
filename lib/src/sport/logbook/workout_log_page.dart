@@ -6,9 +6,9 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
 
-/// Logbuch der durchgeführten Routinen: jede [WorkoutSession] mit Datum,
-/// Routinenname, Dauer und Satz-Anzahl (neueste zuerst). Reine Lese-Ansicht über
-/// die bereits gespeicherten Sessions.
+/// Logbook of completed routines: each [WorkoutSession] with date, routine name,
+/// duration and set count (newest first). Read-only view over the already-saved
+/// sessions.
 class WorkoutLogPage extends StatelessWidget {
   const WorkoutLogPage({super.key});
 
@@ -24,7 +24,9 @@ class WorkoutLogPage extends StatelessWidget {
       body: sessions.isEmpty
           ? Center(child: LocaleText('sport.logbook.empty'))
           : ListView(
-              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               children: [
                 for (var index = sessions.length - 1; index >= 0; index--)
@@ -34,7 +36,11 @@ class WorkoutLogPage extends StatelessWidget {
     );
   }
 
-  Widget _row(BuildContext context, TrainingState training, WorkoutSession session) {
+  Widget _row(
+    BuildContext context,
+    TrainingState training,
+    WorkoutSession session,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     final locale = MaterialLocalizations.of(context);
     final started = DateTime.fromMillisecondsSinceEpoch(session.startedAtMs);
@@ -49,14 +55,19 @@ class WorkoutLogPage extends StatelessWidget {
         ),
         leading: Icon(Icons.event_available, color: scheme.primary),
         title: Text(
-          routine?.name ?? Locales.string(context, 'sport.logbook.deleted_routine'),
+          routine?.name ??
+              Locales.string(context, 'sport.logbook.deleted_routine'),
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
           '${locale.formatMediumDate(started)} · ${locale.formatTimeOfDay(TimeOfDay.fromDateTime(started))}',
         ),
         trailing: Text(
-          Locales.string(context, 'sport.logbook.sets', params: ['${session.sets.length}']),
+          Locales.string(
+            context,
+            'sport.logbook.sets',
+            params: ['${session.sets.length}'],
+          ),
           style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
         ),
         onTap: () => Navigator.of(context).push(

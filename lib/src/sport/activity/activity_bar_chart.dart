@@ -2,9 +2,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 
-/// Tageswerte einer Aktivitäts-Kennzahl als Balken (X = Tag, aufsteigend).
-/// Erwartet bereits nach Zeitfenster gefilterte, aufsteigend sortierte [days].
-/// [value] zieht die anzuzeigende Kennzahl aus einem Tag.
+/// Daily values of an activity metric as bars (X = day, ascending). Expects
+/// [days] already filtered by time window and sorted ascending. [value] pulls
+/// the metric to display out of a day.
 class ActivityBarChart extends StatelessWidget {
   const ActivityBarChart({
     super.key,
@@ -38,7 +38,9 @@ class ActivityBarChart extends StatelessWidget {
                   toY: value(days[index]),
                   color: color,
                   width: (260 / days.length).clamp(2, 14).toDouble(),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(3),
+                  ),
                 ),
               ],
             ),
@@ -59,7 +61,9 @@ class ActivityBarChart extends StatelessWidget {
           getTitlesWidget: (value, meta) => SideTitleWidget(
             meta: meta,
             child: Text(
-              value >= 1000 ? '${(value / 1000).toStringAsFixed(0)}k' : value.toStringAsFixed(0),
+              value >= 1000
+                  ? '${(value / 1000).toStringAsFixed(0)}k'
+                  : value.toStringAsFixed(0),
               style: const TextStyle(fontSize: 10, color: Colors.grey),
             ),
           ),

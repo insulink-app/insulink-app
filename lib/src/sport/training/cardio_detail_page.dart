@@ -8,8 +8,8 @@ import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:provider/provider.dart';
 
-/// Detailansicht eines Trainings: Route auf der Karte plus Start-/Endzeit,
-/// Strecke und Durchschnittsgeschwindigkeit.
+/// Detail view of a training: route on the map plus start/end time, distance and
+/// average speed.
 class CardioDetailPage extends StatelessWidget {
   const CardioDetailPage({super.key, required this.training});
 
@@ -58,13 +58,31 @@ class CardioDetailPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _line(context, 'sport.trainings.start',
-              '${locale.formatMediumDate(start)} · ${locale.formatTimeOfDay(TimeOfDay.fromDateTime(start))}'),
-          _line(context, 'sport.trainings.end',
-              '${locale.formatMediumDate(end)} · ${locale.formatTimeOfDay(TimeOfDay.fromDateTime(end))}'),
-          _line(context, 'sport.trainings.duration', formatDuration(training.duration)),
-          _line(context, 'sport.trainings.distance', formatDistanceKm(training.distanceM)),
-          _line(context, 'sport.trainings.avg_speed', formatSpeed(training.avgSpeedKmh)),
+          _line(
+            context,
+            'sport.trainings.start',
+            '${locale.formatMediumDate(start)} · ${locale.formatTimeOfDay(TimeOfDay.fromDateTime(start))}',
+          ),
+          _line(
+            context,
+            'sport.trainings.end',
+            '${locale.formatMediumDate(end)} · ${locale.formatTimeOfDay(TimeOfDay.fromDateTime(end))}',
+          ),
+          _line(
+            context,
+            'sport.trainings.duration',
+            formatDuration(training.duration),
+          ),
+          _line(
+            context,
+            'sport.trainings.distance',
+            formatDistanceKm(training.distanceM),
+          ),
+          _line(
+            context,
+            'sport.trainings.avg_speed',
+            formatSpeed(training.avgSpeedKmh),
+          ),
         ],
       ),
     );

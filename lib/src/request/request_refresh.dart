@@ -15,8 +15,9 @@ class RequestRefresh {
     if (_currentRefresh != null) {
       return _currentRefresh!;
     }
-    _currentRefresh =
-        performRefresh(context).whenComplete(() => _currentRefresh = null);
+    _currentRefresh = performRefresh(
+      context,
+    ).whenComplete(() => _currentRefresh = null);
     return _currentRefresh!;
   }
 
@@ -28,8 +29,9 @@ class RequestRefresh {
       return false;
     }
     var response = await Request.post(
-        url: "/refresh/",
-        body: <String, String>{"refresh_token": refreshToken}).send(context);
+      url: "/refresh/",
+      body: <String, String>{"refresh_token": refreshToken},
+    ).send(context);
     if (response == null || response.statusCode == 409) {
       return false;
     }
@@ -39,10 +41,13 @@ class RequestRefresh {
       return false;
     }
     await storage.write(
-        key: "authentication_token",
-        value: responseBody["authentication_token"]);
+      key: "authentication_token",
+      value: responseBody["authentication_token"],
+    );
     await storage.write(
-        key: "refresh_token", value: responseBody["refresh_token"]);
+      key: "refresh_token",
+      value: responseBody["refresh_token"],
+    );
     return true;
   }
 }

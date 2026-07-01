@@ -20,9 +20,9 @@ class SportBody extends AppPageBody {
   }
 }
 
-/// Sport-Startseite. Eigene Sektionen (Heute, Gewicht); Routinen + Statistik
-/// folgen in Phase 2/3. Eigenes Widget, damit der Schrittzähler beim ersten
-/// Öffnen gestartet werden kann.
+/// Sport home page. Its own sections (Today, Weight); routines + statistics
+/// follow in phase 2/3. Its own widget so the step counter can be started on
+/// first open.
 class SportBodyContent extends StatefulWidget {
   const SportBodyContent({super.key});
 
@@ -42,10 +42,12 @@ class _SportBodyContentState extends State<SportBodyContent> {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      // Immer scroll-/bouncefähig, damit die ganze Seite einheitlich als ein
-      // Block mitscrollt (kein „festgeklebter" Abschnitt).
-      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-      // Bottom-Padding hält die zentrierte Injection-FAB (page.dart) frei.
+      // Always scrollable/bouncy so the whole page scrolls as one block (no
+      // "stuck" section).
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      // Bottom padding keeps the centered injection FAB (page.dart) clear.
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
       children: const [
         ActivitySummaryCard(),

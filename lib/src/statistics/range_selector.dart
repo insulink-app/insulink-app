@@ -28,7 +28,8 @@ class StatisticsRangeSelector extends StatelessWidget {
                 Expanded(
                   child: _segment(
                     context,
-                    selected: !isCustom && controller.statsPreset.inDays == days,
+                    selected:
+                        !isCustom && controller.statsPreset.inDays == days,
                     onTap: () => controller.statsPreset = Duration(days: days),
                     child: Text(
                       Locales.string(context, 'statistics.window.d$days'),
@@ -97,7 +98,8 @@ class StatisticsRangeSelector extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final locale = MaterialLocalizations.of(context);
-    final label = '${locale.formatShortDate(from)} – '
+    final label =
+        '${locale.formatShortDate(from)} – '
         '${locale.formatShortDate(to.subtract(const Duration(days: 1)))}';
     return Padding(
       padding: const EdgeInsets.only(top: 8),

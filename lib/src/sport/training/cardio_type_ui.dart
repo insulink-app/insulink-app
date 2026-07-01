@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'cardio_models.dart';
 
-/// Icon + Lokalisierungs-Key je [CardioType] — geteilt von Section, Recording-
-/// und Detail-Seite, damit das Mapping an einer Stelle liegt.
+/// Icon + localization key per [CardioType] — shared by the section, recording
+/// and detail pages so the mapping lives in one place.
 extension CardioTypeUi on CardioType {
   IconData get icon => switch (this) {
     CardioType.walk => Icons.directions_walk,
@@ -14,10 +14,11 @@ extension CardioTypeUi on CardioType {
   String get labelKey => 'sport.trainings.$name';
 }
 
-/// Strecke als km mit zwei Nachkommastellen.
-String formatDistanceKm(double meters) => '${(meters / 1000).toStringAsFixed(2)} km';
+/// Distance as km with two decimals.
+String formatDistanceKm(double meters) =>
+    '${(meters / 1000).toStringAsFixed(2)} km';
 
-/// Dauer als H:MM:SS bzw. MM:SS.
+/// Duration as H:MM:SS or MM:SS.
 String formatDuration(Duration duration) {
   final hours = duration.inHours;
   final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
@@ -25,5 +26,5 @@ String formatDuration(Duration duration) {
   return hours > 0 ? '$hours:$minutes:$seconds' : '$minutes:$seconds';
 }
 
-/// Geschwindigkeit als km/h mit einer Nachkommastelle.
+/// Speed as km/h with one decimal.
 String formatSpeed(double kmh) => '${kmh.toStringAsFixed(1)} km/h';

@@ -6,9 +6,9 @@ import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
 
-/// Gebrandete Karte, die die **komplette** Google-Health-Historie synchronisiert
-/// (Schritte/Distanz/Kalorien ins Archiv, Gewicht in den Verlauf) — mit Lade-
-/// und Ergebnis-Rückmeldung.
+/// Branded card that syncs the **entire** Google Health history
+/// (steps/distance/calories into the archive, weight into the history) — with
+/// loading and result feedback.
 class HealthImportButton extends StatefulWidget {
   const HealthImportButton({super.key});
 
@@ -69,11 +69,8 @@ class _HealthImportButtonState extends State<HealthImportButton> {
     return Container(
       width: 44,
       height: 44,
-      decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.14),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(Icons.favorite_rounded, color: scheme.primary, size: 22),
+      decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
+      child: Icon(Icons.favorite_rounded, color: scheme.onPrimary, size: 22),
     );
   }
 
@@ -89,7 +86,10 @@ class _HealthImportButtonState extends State<HealthImportButton> {
         const SizedBox(height: 2),
         LocaleText(
           'sport.health.subtitle',
-          style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.6)),
+          style: TextStyle(
+            fontSize: 12,
+            color: scheme.onSurface.withValues(alpha: 0.6),
+          ),
         ),
       ],
     );

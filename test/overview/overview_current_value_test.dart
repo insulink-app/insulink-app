@@ -27,9 +27,7 @@ Widget wrap(Widget child, {GlucoseUnit unit = GlucoseUnit.mgdl}) {
 void main() {
   testWidgets('renders the value, unit and trend', (tester) async {
     await tester.pumpWidget(
-      wrap(
-        const OverviewCurrentValue(mgdl: 120, trendPerMin: 1.0),
-      ),
+      wrap(const OverviewCurrentValue(mgdl: 120, trendPerMin: 1.0)),
     );
     expect(find.text('120'), findsOneWidget);
     expect(find.text('mg/dL'), findsOneWidget);
@@ -51,9 +49,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      wrap(
-        const OverviewCurrentValue(mgdl: null, trendPerMin: null),
-      ),
+      wrap(const OverviewCurrentValue(mgdl: null, trendPerMin: null)),
     );
     expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
   });

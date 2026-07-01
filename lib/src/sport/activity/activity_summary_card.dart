@@ -9,9 +9,9 @@ import 'package:insulink/src/sport/sport_state.dart';
 import 'package:insulink/src/sport/weight/weight_detail_page.dart';
 import 'package:provider/provider.dart';
 
-/// „Heute"-Sektion: 2×2-Raster aus Schritten (echt), geschätzter Distanz +
-/// Kalorien und dem aktuellen Gewicht (tippbar → Gewichtsverlauf). Distanz =
-/// Schritte × Schrittlänge; Kalorien ≈ Distanz × Gewicht × 0.9 (Gehschätzung).
+/// "Today" section: 2×2 grid of steps (real), estimated distance + calories and
+/// the current weight (tappable → weight history). Distance = steps × stride;
+/// calories ≈ distance × weight × 0.9 (walking estimate).
 class ActivitySummaryCard extends StatelessWidget {
   const ActivitySummaryCard({super.key});
 
@@ -58,7 +58,9 @@ class ActivitySummaryCard extends StatelessWidget {
           _SummaryTile(
             icon: Icons.monitor_weight,
             labelKey: 'sport.weight',
-            value: latestWeight == null ? '–' : latestWeight.kg.toStringAsFixed(1),
+            value: latestWeight == null
+                ? '–'
+                : latestWeight.kg.toStringAsFixed(1),
             unit: latestWeight == null ? null : 'kg',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const WeightDetailPage()),
@@ -78,7 +80,9 @@ class ActivitySummaryCard extends StatelessWidget {
 
   void _openDetail(BuildContext context, ActivityMetric metric) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => ActivityDetailPage(metric: metric)),
+      MaterialPageRoute<void>(
+        builder: (_) => ActivityDetailPage(metric: metric),
+      ),
     );
   }
 
@@ -159,11 +163,8 @@ class _SummaryTile extends StatelessWidget {
     return Container(
       width: 40,
       height: 40,
-      decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, size: 20, color: scheme.primary),
+      decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
+      child: Icon(icon, size: 20, color: scheme.onPrimary),
     );
   }
 
@@ -191,7 +192,10 @@ class _SummaryTile extends StatelessWidget {
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             if (unit != null) ...[

@@ -8,8 +8,8 @@ import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
 
-/// Schrittlänge einstellen (cm) und Daten aus Google Health importieren. Die
-/// Schrittlänge geht in die Distanzschätzung der „Heute"-Kacheln ein.
+/// Set the stride length (cm) and import data from Google Health. The stride
+/// length feeds the distance estimate of the "Today" tiles.
 Future<void> showActivitySettingsSheet(BuildContext context) {
   return showModalBottomSheet(
     context: context,

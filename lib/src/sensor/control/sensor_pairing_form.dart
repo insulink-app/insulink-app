@@ -94,7 +94,8 @@ class SensorPairingForm extends StatelessWidget {
       controller: controller.code,
       decoration: InputDecoration(
         labelText: Locales.string(context, 'overview.pairing_code'),
-        isDense: true,      ),
+        isDense: true,
+      ),
     );
   }
 

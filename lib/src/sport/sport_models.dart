@@ -1,10 +1,11 @@
-/// JSON-serialisable Sport-Domänenmodelle.
+/// JSON-serialisable sport domain models.
 library;
 
-/// Zähler für Ersatz-Ids alter [RoutineItem]s ohne gespeicherte `id` (Migration).
+/// Counter for fallback ids of legacy [RoutineItem]s without a stored `id`
+/// (migration).
 int _legacyItemId = 0;
 
-/// Ein Gewichtseintrag: Zeitpunkt (epoch ms) + Gewicht in kg.
+/// A weight entry: timestamp (epoch ms) + weight in kg.
 class WeightEntry {
   final int atEpochMs;
   final double kg;
@@ -21,9 +22,9 @@ class WeightEntry {
   );
 }
 
-/// Tages-Aktivität aus Google Health: Schritte, Distanz (km) und aktive
-/// Kalorien eines Kalendertags. [dateKey] ist `yyyy-mm-dd` (lokal). Persistiert
-/// als Langzeit-Archiv, das die Detail-Seiten (Schritte/Distanz/Kalorien) speist.
+/// Daily activity from Google Health: steps, distance (km) and active calories
+/// of a calendar day. [dateKey] is `yyyy-mm-dd` (local). Persisted as a
+/// long-term archive that feeds the detail pages (steps/distance/calories).
 class DailyActivity {
   final String dateKey;
   final int steps;
@@ -54,26 +55,27 @@ class DailyActivity {
   );
 }
 
-/// Welche Tages-Kennzahl eine Aktivitäts-Detailseite zeigt.
+/// Which daily metric an activity detail page shows.
 enum ActivityMetric { steps, distance, calories }
 
-/// Was eine Übung pro Satz erfasst: Wiederholungen, Wiederholungen+Gewicht,
-/// oder eine Dauer (z. B. Plank). Bestimmt die Eingaben im Editor und Runner.
+/// What an exercise records per set: reps, reps+weight, or a duration (e.g.
+/// plank). Determines the inputs in the editor and runner.
 enum ExerciseKind { reps, weighted, timed }
 
-/// Eine benutzerdefinierte Übung in der Bibliothek.
+/// A user-defined exercise in the library.
 class SportExercise {
   final String id;
   final String name;
   final ExerciseKind kind;
 
-  const SportExercise({required this.id, required this.name, required this.kind});
+  const SportExercise({
+    required this.id,
+    required this.name,
+    required this.kind,
+  });
 
-  SportExercise copyWith({String? name, ExerciseKind? kind}) => SportExercise(
-    id: id,
-    name: name ?? this.name,
-    kind: kind ?? this.kind,
-  );
+  SportExercise copyWith({String? name, ExerciseKind? kind}) =>
+      SportExercise(id: id, name: name ?? this.name, kind: kind ?? this.kind);
 
   Map<String, dynamic> toJson() => {'id': id, 'name': name, 'kind': kind.name};
 
@@ -84,10 +86,10 @@ class SportExercise {
   );
 }
 
-/// Eine Übung innerhalb einer Routine mit ihren Zielwerten. [target] sind je
-/// nach [ExerciseKind] der Übung Wiederholungen ODER Sekunden. [id] ist stabil
-/// über Umsortierungen hinweg (Reorder-Key) und identifiziert den Eintrag, nicht
-/// die referenzierte Übung (dieselbe Übung darf mehrfach vorkommen).
+/// An exercise inside a routine with its target values. Depending on the
+/// exercise's [ExerciseKind], [target] is reps OR seconds. [id] is stable across
+/// reorders (reorder key) and identifies the entry, not the referenced exercise
+/// (the same exercise may appear multiple times).
 class RoutineItem {
   final String id;
   final String exerciseId;
@@ -128,8 +130,8 @@ class RoutineItem {
     'rest': restSeconds,
   };
 
-  /// Alte Einträge ohne `id` bekommen beim Laden eine — sie wird beim nächsten
-  /// Speichern mitgeschrieben (Migration).
+  /// Legacy entries without an `id` get one on load — it's written on the next
+  /// save (migration).
   factory RoutineItem.fromJson(Map<String, dynamic> json) => RoutineItem(
     id: json['id'] as String? ?? 'legacy-${_legacyItemId++}',
     exerciseId: json['ex'] as String,
@@ -140,13 +142,17 @@ class RoutineItem {
   );
 }
 
-/// Eine Routine: ein Name und eine geordnete Abfolge von [RoutineItem]s.
+/// A routine: a name and an ordered sequence of [RoutineItem]s.
 class SportRoutine {
   final String id;
   final String name;
   final List<RoutineItem> items;
 
-  const SportRoutine({required this.id, required this.name, required this.items});
+  const SportRoutine({
+    required this.id,
+    required this.name,
+    required this.items,
+  });
 
   SportRoutine copyWith({String? name, List<RoutineItem>? items}) =>
       SportRoutine(id: id, name: name ?? this.name, items: items ?? this.items);
@@ -167,7 +173,7 @@ class SportRoutine {
   );
 }
 
-/// Ein protokollierter Satz: Wiederholungen ODER Sekunden, optional Gewicht.
+/// A logged set: reps OR seconds, optionally weight.
 class SetLog {
   final String exerciseId;
   final int? reps;
@@ -200,8 +206,8 @@ class SetLog {
   );
 }
 
-/// Eine durchgeführte Routine: Start + alle protokollierten Sätze. Basis der
-/// Statistik in Phase 3.
+/// A completed routine: start + all logged sets. Basis for the statistics in
+/// phase 3.
 class WorkoutSession {
   final String id;
   final String routineId;

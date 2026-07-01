@@ -3,9 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'sport_models.dart';
 import 'sport_store.dart';
 
-/// Geteilter Sport-Zustand (Gewichtsverlauf + Schrittlänge), über `main.dart`
-/// im Provider-Baum bereitgestellt. Muster wie `ProfileBolusState`: statisches
-/// [load], Setter mutieren → [notifyListeners] → persistieren.
+/// Shared sport state (weight history + stride length), provided in the provider
+/// tree via `main.dart`. Pattern like `ProfileBolusState`: static [load],
+/// setters mutate → [notifyListeners] → persist.
 class SportState extends ChangeNotifier {
   final SportStore _store;
   final List<WeightEntry> _weights;
@@ -20,7 +20,7 @@ class SportState extends ChangeNotifier {
     return SportState(store, weights, await store.loadStrideCm());
   }
 
-  /// Gewichte aufsteigend nach Zeit (für den Verlaufs-Chart).
+  /// Weights ascending by time (for the history chart).
   List<WeightEntry> get weights => List.unmodifiable(_weights);
 
   WeightEntry? get latestWeight => _weights.isEmpty ? null : _weights.last;
@@ -39,8 +39,8 @@ class SportState extends ChangeNotifier {
     await _store.saveWeights(_weights);
   }
 
-  /// Fügt importierte Gewichtseinträge hinzu, die noch nicht vorhanden sind
-  /// (dedupliziert per Zeitstempel) — für den Google-Health-Import.
+  /// Adds imported weight entries that aren't present yet (deduplicated by
+  /// timestamp) — for the Google Health import.
   Future<void> mergeWeights(List<WeightEntry> entries) async {
     final known = _weights.map((entry) => entry.atEpochMs).toSet();
     var added = false;
@@ -53,7 +53,9 @@ class SportState extends ChangeNotifier {
     if (!added) {
       return;
     }
-    _weights.sort((first, second) => first.atEpochMs.compareTo(second.atEpochMs));
+    _weights.sort(
+      (first, second) => first.atEpochMs.compareTo(second.atEpochMs),
+    );
     notifyListeners();
     await _store.saveWeights(_weights);
   }

@@ -3,10 +3,10 @@ import 'package:flutter/foundation.dart';
 import '../sport_store.dart';
 import 'cardio_models.dart';
 
-/// Geteilter Zustand der Ausdauer-Trainings: die gespeicherten [CardioTraining]s.
-/// Muster wie [SportState]: statisches [load], Mutator persistiert →
-/// [notifyListeners]. Die Live-Aufzeichnung selbst besitzt die Recording-Page
-/// über einen eigenen `CardioTracker`.
+/// Shared state of the endurance trainings: the stored [CardioTraining]s.
+/// Pattern like [SportState]: static [load], mutator persists →
+/// [notifyListeners]. The live recording itself is owned by the recording page
+/// via its own `CardioTracker`.
 class CardioTrainingState extends ChangeNotifier {
   final SportStore _store;
   final List<CardioTraining> _trainings;
@@ -20,7 +20,7 @@ class CardioTrainingState extends ChangeNotifier {
     return CardioTrainingState(store, trainings);
   }
 
-  /// Trainings aufsteigend nach Startzeit.
+  /// Trainings ascending by start time.
   List<CardioTraining> get trainings => List.unmodifiable(_trainings);
 
   Future<void> addTraining(CardioTraining training) async {

@@ -10,8 +10,8 @@ import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
-/// Live-Aufzeichnung eines Ausdauer-Trainings: Karte mit der laufenden Route,
-/// Dauer/Distanz/Tempo und ein Stopp-Button, der das Training speichert.
+/// Live recording of an endurance workout: map with the running route,
+/// duration/distance/speed and a stop button that saves the training.
 class CardioRecordingPage extends StatefulWidget {
   const CardioRecordingPage({super.key, required this.type});
 
@@ -25,9 +25,9 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
   late final CardioTracker _tracker = CardioTracker(widget.type);
   final MapController _map = MapController();
 
-  /// Zuletzt auf die Karte angewandte Rotation (Grad). Die Karte dreht nur mit,
-  /// wenn sich die Richtung um mehr als [_rotationThresholdDeg] ändert — sonst
-  /// zittert sie bei jeder kleinen Bewegung.
+  /// Rotation last applied to the map (degrees). The map only rotates along when
+  /// the heading changes by more than [_rotationThresholdDeg] — otherwise it
+  /// jitters on every small movement.
   double _appliedRotation = 0;
   static const _rotationThresholdDeg = 25.0;
   static const _rotationMinSpeedKmh = 3.0;
@@ -44,7 +44,11 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(Locales.string(context, 'sport.trainings.location_denied'))),
+      SnackBar(
+        content: Text(
+          Locales.string(context, 'sport.trainings.location_denied'),
+        ),
+      ),
     );
     Navigator.of(context).pop();
   }
@@ -66,8 +70,8 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
     }
   }
 
-  /// Kürzeste Winkeldifferenz (-180..180) zwischen [target] und der aktuell
-  /// angewandten Rotation — damit z. B. 350°→10° als 20° gilt, nicht 340°.
+  /// Shortest angular difference (-180..180) between [target] and the currently
+  /// applied rotation — so e.g. 350°→10° counts as 20°, not 340°.
   double _headingDelta(double target) {
     var delta = (target - _appliedRotation) % 360;
     if (delta > 180) {
@@ -125,7 +129,12 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(22),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 12)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 12,
+          ),
+        ],
       ),
       child: ListenableBuilder(
         listenable: _tracker,
@@ -135,9 +144,21 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _metric(context, 'sport.trainings.duration', formatDuration(_tracker.elapsed)),
-                _metric(context, 'sport.trainings.distance', formatDistanceKm(_tracker.distanceM)),
-                _metric(context, 'sport.trainings.speed', formatSpeed(_tracker.currentSpeedKmh)),
+                _metric(
+                  context,
+                  'sport.trainings.duration',
+                  formatDuration(_tracker.elapsed),
+                ),
+                _metric(
+                  context,
+                  'sport.trainings.distance',
+                  formatDistanceKm(_tracker.distanceM),
+                ),
+                _metric(
+                  context,
+                  'sport.trainings.speed',
+                  formatSpeed(_tracker.currentSpeedKmh),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -149,7 +170,10 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
                 icon: const Icon(Icons.stop_rounded, size: 28),
                 label: LocaleText(
                   'sport.trainings.stop',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 onPressed: _stop,
               ),
@@ -164,11 +188,17 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
     final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 2),
         Text(
           Locales.string(context, labelKey),
-          style: TextStyle(fontSize: 11, color: scheme.onSurface.withValues(alpha: 0.6)),
+          style: TextStyle(
+            fontSize: 11,
+            color: scheme.onSurface.withValues(alpha: 0.6),
+          ),
         ),
       ],
     );

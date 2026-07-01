@@ -48,13 +48,15 @@ class EventSync {
     List<({DateTime time, String type, int? value})> events,
   ) async {
     final entries = events
-        .map((event) => {
-              'type': event.type,
-              // Non-null payload string: the mg/dL value for glucose events,
-              // empty otherwise — keeps the backend column NOT NULL.
-              'data': event.value != null ? '${event.value}' : '',
-              'time': event.time.millisecondsSinceEpoch,
-            })
+        .map(
+          (event) => {
+            'type': event.type,
+            // Non-null payload string: the mg/dL value for glucose events,
+            // empty otherwise — keeps the backend column NOT NULL.
+            'data': event.value != null ? '${event.value}' : '',
+            'time': event.time.millisecondsSinceEpoch,
+          },
+        )
         .toList();
     final request = Request.post(
       url: '/event/report/',
@@ -82,7 +84,9 @@ class EventSync {
     final events = <({DateTime time, String type, int? value})>[];
     for (final entry in entries) {
       events.add((
-        time: DateTime.fromMillisecondsSinceEpoch((entry['time'] as num).toInt()),
+        time: DateTime.fromMillisecondsSinceEpoch(
+          (entry['time'] as num).toInt(),
+        ),
         type: entry['type'] as String,
         value: _value(entry['data']),
       ));

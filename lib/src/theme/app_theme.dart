@@ -22,12 +22,12 @@ class AppTheme {
   );
   static final ElevatedButtonThemeData _elevatedButtons =
       ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(shape: _buttonShape),
-  );
+        style: ElevatedButton.styleFrom(shape: _buttonShape),
+      );
   static final OutlinedButtonThemeData _outlinedButtons =
       OutlinedButtonThemeData(
-    style: OutlinedButton.styleFrom(shape: _buttonShape),
-  );
+        style: OutlinedButton.styleFrom(shape: _buttonShape),
+      );
   static final TextButtonThemeData _textButtons = TextButtonThemeData(
     style: TextButton.styleFrom(shape: _buttonShape),
   );
@@ -89,7 +89,10 @@ class AppTheme {
     elevatedButtonTheme: _elevatedButtons,
     outlinedButtonTheme: _outlinedButtons,
     textButtonTheme: _textButtons,
-    inputDecorationTheme: _inputTheme(const Color(0xFF2A2A2A), Colors.indigoAccent),
+    inputDecorationTheme: _inputTheme(
+      const Color(0xFF2A2A2A),
+      Colors.indigoAccent,
+    ),
     appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1B1B1B)),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Color(0xFF2A2A2A),

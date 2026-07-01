@@ -6,7 +6,7 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
 
-/// Übung anlegen oder bearbeiten: Name + Art (Wiederholungen / Gewicht / Zeit).
+/// Create or edit an exercise: name + kind (reps / weight / time).
 Future<void> showExerciseEditorSheet(
   BuildContext context, {
   SportExercise? existing,
@@ -80,7 +80,9 @@ class _ExerciseEditorSheetState extends State<_ExerciseEditorSheet> {
           const GrabHandle(),
           const SizedBox(height: 20),
           LocaleText(
-            widget.existing == null ? 'sport.exercises.add' : 'sport.exercises.edit',
+            widget.existing == null
+                ? 'sport.exercises.add'
+                : 'sport.exercises.edit',
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
@@ -100,7 +102,9 @@ class _ExerciseEditorSheetState extends State<_ExerciseEditorSheet> {
           const SizedBox(height: 24),
           FilledButton(
             onPressed: _name.text.trim().isEmpty ? null : _save,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
+            ),
             child: LocaleText('alert.done'),
           ),
         ],

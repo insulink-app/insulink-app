@@ -101,19 +101,21 @@ void main() {
       expect(notifications.shown, isEmpty);
     });
 
-    test('silent mode suppresses the notification but still tracks the zone',
-        () async {
-      storage['silent_mode'] = 'true';
-      await alarms.check(60, -1.0);
-      expect(notifications.shown, isEmpty);
-      // Leaving silent: a value still in the SAME zone must not re-fire.
-      storage['silent_mode'] = 'false';
-      await alarms.check(58, -1.0);
-      expect(notifications.shown, isEmpty);
-      // Only a fresh crossing fires.
-      await alarms.check(50, -1.0);
-      expect(notifications.shown, [G7AlarmLevel.lowUrgent.index]);
-    });
+    test(
+      'silent mode suppresses the notification but still tracks the zone',
+      () async {
+        storage['silent_mode'] = 'true';
+        await alarms.check(60, -1.0);
+        expect(notifications.shown, isEmpty);
+        // Leaving silent: a value still in the SAME zone must not re-fire.
+        storage['silent_mode'] = 'false';
+        await alarms.check(58, -1.0);
+        expect(notifications.shown, isEmpty);
+        // Only a fresh crossing fires.
+        await alarms.check(50, -1.0);
+        expect(notifications.shown, [G7AlarmLevel.lowUrgent.index]);
+      },
+    );
 
     test('a null reading is ignored', () async {
       await alarms.check(null, 0.0);
@@ -130,20 +132,22 @@ void main() {
   });
 
   group('connection-lost warning', () {
-    test('fires once after the outage threshold and clears on a reading',
-        () async {
-      await alarms.checkConnectionLost(
-        sensorLinked: true,
-        sinceLastReading: const Duration(minutes: 20),
-      );
-      await alarms.checkConnectionLost(
-        sensorLinked: true,
-        sinceLastReading: const Duration(minutes: 25),
-      );
-      expect(notifications.shown, hasLength(1));
-      await alarms.onReading();
-      expect(notifications.cancelled, hasLength(1));
-    });
+    test(
+      'fires once after the outage threshold and clears on a reading',
+      () async {
+        await alarms.checkConnectionLost(
+          sensorLinked: true,
+          sinceLastReading: const Duration(minutes: 20),
+        );
+        await alarms.checkConnectionLost(
+          sensorLinked: true,
+          sinceLastReading: const Duration(minutes: 25),
+        );
+        expect(notifications.shown, hasLength(1));
+        await alarms.onReading();
+        expect(notifications.cancelled, hasLength(1));
+      },
+    );
 
     test('stays quiet before the threshold or with no sensor', () async {
       await alarms.checkConnectionLost(
@@ -162,11 +166,11 @@ void main() {
     test('fires once when under 24 h remain, then stays persisted', () async {
       final store = await G7Store.open();
       Future<void> tick() => alarms.checkExpiry(
-            store: store,
-            key: 'SERIAL',
-            sessionLengthSec: 864000,
-            secsSinceStart: 864000 - 3600, // 1 h left
-          );
+        store: store,
+        key: 'SERIAL',
+        sessionLengthSec: 864000,
+        secsSinceStart: 864000 - 3600, // 1 h left
+      );
       await tick();
       await tick();
       expect(notifications.shown, hasLength(1));

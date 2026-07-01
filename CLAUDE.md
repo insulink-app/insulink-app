@@ -59,6 +59,11 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
 - **No one-line `if`s.** Always use braces, even for a single statement.
 - **No comments inside function bodies.** Keep functions short enough that they
   read on their own; put the explanation in a doc comment ABOVE the function.
+- **All code comments in English.** Every comment and doc comment (`//`, `///`)
+  is written in English — no German (or other languages). Only user-facing
+  strings are localized (see below); the code itself, including its comments, is
+  English. If you touch a file with a German comment, translate it while you're
+  there.
 - **Short functions and classes.** Split them when they grow; one job each.
   Rule of thumb: **no Dart file over 150 lines**, and methods ideally **5–10
   lines** (split anything longer). Treat these as hard smells, not hard limits.

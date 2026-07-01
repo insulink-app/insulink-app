@@ -7,8 +7,8 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
 
-/// Übungs-Bibliothek. Doppelt genutzt: ohne [onPick] zum Verwalten (tippen =
-/// bearbeiten), mit [onPick] als Auswahl beim Hinzufügen zu einer Routine.
+/// Exercise library. Dual-use: without [onPick] for managing (tap = edit), with
+/// [onPick] as a picker when adding to a routine.
 class ExercisesPage extends StatelessWidget {
   const ExercisesPage({super.key, this.onPick});
 
@@ -30,7 +30,9 @@ class ExercisesPage extends StatelessWidget {
       body: exercises.isEmpty
           ? Center(child: LocaleText('sport.exercises.empty'))
           : ListView(
-              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               children: [for (final ex in exercises) _row(context, ex)],
             ),

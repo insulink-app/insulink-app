@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
 
-/// Gewähltes Zeitfenster einer Sport-Detailseite: ein Preset (Tage), „Alle"
-/// oder ein eigener Datumsbereich. Reine Werteklasse; die Seiten filtern ihre
-/// Daten damit.
+/// Selected time window of a sport detail page: a preset (days), "All" or a
+/// custom date range. Pure value class; the pages filter their data with it.
 class SportRange {
   final int? days;
   final DateTimeRange? custom;
@@ -15,7 +14,7 @@ class SportRange {
 
   bool get isAll => days == null && custom == null;
 
-  /// Untere Grenze (inklusive) relativ zu [now]; null = keine Grenze (alles).
+  /// Lower bound (inclusive) relative to [now]; null = no bound (everything).
   DateTime? startFrom(DateTime now) {
     if (custom != null) {
       return custom!.start;
@@ -26,13 +25,13 @@ class SportRange {
     return null;
   }
 
-  /// Obere Grenze bei eigenem Bereich, sonst null (bis jetzt).
+  /// Upper bound for a custom range, otherwise null (up to now).
   DateTime? get endTo => custom?.end;
 }
 
-/// Zeitraum-Wähler im Statistik-Stil (gleich breite Segmente + Kalender), lokal
-/// gesteuert statt an einen Controller gekoppelt — wiederverwendet von der
-/// Gewichts- und den Aktivitäts-Detailseiten.
+/// Range picker in the statistics style (equal-width segments + calendar),
+/// controlled locally instead of coupled to a controller — reused by the weight
+/// and activity detail pages.
 class SportRangeSelector extends StatelessWidget {
   const SportRangeSelector({
     super.key,
@@ -105,12 +104,18 @@ class SportRangeSelector extends StatelessWidget {
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? onSurface.withValues(alpha: 0.24) : Colors.transparent,
+            color: selected
+                ? onSurface.withValues(alpha: 0.24)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: DefaultTextStyle.merge(
-            style: TextStyle(color: onSurface, fontWeight: FontWeight.w500, fontSize: 12),
+            style: TextStyle(
+              color: onSurface,
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
             child: child,
           ),
         ),
@@ -120,7 +125,8 @@ class SportRangeSelector extends StatelessWidget {
 
   Widget _caption(BuildContext context, DateTimeRange range) {
     final locale = MaterialLocalizations.of(context);
-    final label = '${locale.formatShortDate(range.start)} – '
+    final label =
+        '${locale.formatShortDate(range.start)} – '
         '${locale.formatShortDate(range.end)}';
     return Padding(
       padding: const EdgeInsets.only(top: 8),

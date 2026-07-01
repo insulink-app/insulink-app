@@ -10,8 +10,8 @@ import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:provider/provider.dart';
 
-/// Routine bearbeiten: Name, geordnete Übungs-Liste (Reorder per Halten),
-/// Übung hinzufügen, und Training starten.
+/// Edit a routine: name, ordered exercise list (reorder by holding), add
+/// exercise, and start the workout.
 class RoutineEditorPage extends StatefulWidget {
   const RoutineEditorPage({super.key, required this.routineId});
 
@@ -52,7 +52,9 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    final routine = context.watch<TrainingState>().routineById(widget.routineId);
+    final routine = context.watch<TrainingState>().routineById(
+      widget.routineId,
+    );
     if (routine == null) {
       return const Scaffold();
     }
@@ -85,7 +87,8 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
               decoration: InputDecoration(
                 labelText: Locales.string(context, 'sport.routines.name'),
               ),
-              onChanged: (value) => _training.renameRoutine(routine.id, value.trim()),
+              onChanged: (value) =>
+                  _training.renameRoutine(routine.id, value.trim()),
             ),
           ),
           Expanded(child: _itemsList(routine)),
@@ -94,8 +97,8 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     );
   }
 
-  /// Großer, prominenter „Starten"-Button in der unteren Leiste — kollidiert
-  /// (anders als die alte FAB) nicht mit der „Übung hinzufügen"-Kachel.
+  /// Large, prominent "Start" button in the bottom bar — unlike the old FAB, it
+  /// does not collide with the "Add exercise" tile.
   Widget _startBar(SportRoutine routine) {
     return SafeArea(
       minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
@@ -108,7 +111,9 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           style: FilledButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
           ),
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -149,8 +154,9 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     );
   }
 
-  static const _bouncy =
-      BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
+  static const _bouncy = BouncingScrollPhysics(
+    parent: AlwaysScrollableScrollPhysics(),
+  );
 
   Widget _itemRow(SportRoutine routine, int index) {
     final item = routine.items[index];

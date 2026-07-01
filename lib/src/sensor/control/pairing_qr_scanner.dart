@@ -115,7 +115,10 @@ class _HudPainter extends CustomPainter {
       Path()..addRect(Offset.zero & size),
       Path()..addRRect(window),
     );
-    canvas.drawPath(overlay, Paint()..color = Colors.black.withValues(alpha: 0.6));
+    canvas.drawPath(
+      overlay,
+      Paint()..color = Colors.black.withValues(alpha: 0.6),
+    );
   }
 
   void _corners(Canvas canvas, Rect rect) {
@@ -157,7 +160,7 @@ class _HudPainter extends CustomPainter {
 
 /// Opens the scanner and returns the scanned pairing code, or null.
 Future<String?> scanPairingCode(BuildContext context) {
-  return Navigator.of(context).push<String>(
-    MaterialPageRoute(builder: (_) => const PairingQrScanner()),
-  );
+  return Navigator.of(
+    context,
+  ).push<String>(MaterialPageRoute(builder: (_) => const PairingQrScanner()));
 }

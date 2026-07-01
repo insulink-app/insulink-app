@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
+import '../../sport/training/background_location_sampler.dart';
 import 'alarms.dart';
 import 'service_log.dart';
 import '../event_sync.dart';
@@ -47,6 +48,12 @@ class G7TaskHandler extends TaskHandler {
   /// Durable log so the watchdog's overnight recovery activity survives a
   /// process/isolate restart and is readable in the UI afterwards.
   final ServiceLog _serviceLog = ServiceLog();
+
+  /// Piggybacks periodic GPS sampling on this already-running foreground service
+  /// (flutter_foreground_task hosts only one), independent of the BLE pipeline.
+  /// No-ops unless location is permitted — glucose reading never depends on it.
+  final BackgroundLocationSampler _locationSampler =
+      BackgroundLocationSampler();
 
   /// Wall-clock of the last live reading (seeded at startup so a service that
   /// never produces anything still escalates). The G7 delivers ~every 5 min, so
@@ -207,6 +214,7 @@ class G7TaskHandler extends TaskHandler {
   /// BLE stack has stopped delivering. Cadence: `eventAction` in the UI.
   @override
   void onRepeatEvent(DateTime timestamp) {
+    _locationSampler.tick();
     _watchdog();
   }
 
@@ -248,11 +256,14 @@ class G7TaskHandler extends TaskHandler {
           DateTime.now().difference(last) > _restartAfter) {
         _restarting = true;
         final lastRestart = _store?.lastServiceRestartAt;
-        final restartedRecently = lastRestart != null &&
+        final restartedRecently =
+            lastRestart != null &&
             DateTime.now().difference(lastRestart) < _processRestartAfter;
         if (restartedRecently) {
-          _log('watchdog: still no data after a service restart — native BLE '
-              'stack wedged, restarting the whole process');
+          _log(
+            'watchdog: still no data after a service restart — native BLE '
+            'stack wedged, restarting the whole process',
+          );
           await _conn?.dispose();
           // ponytail: exit(0) relies on the sticky FGS being recreated by
           // Android (reliable on Pixel/AOSP). If an OEM doesn't restart it, the

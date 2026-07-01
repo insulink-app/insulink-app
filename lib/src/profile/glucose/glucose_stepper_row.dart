@@ -11,7 +11,7 @@ class GlucoseStepperRow extends StatelessWidget {
     required this.accent,
     required this.onMinus,
     required this.onPlus,
-    this.onValueTap,
+    this.valueChild,
   });
 
   final String labelKey;
@@ -19,8 +19,9 @@ class GlucoseStepperRow extends StatelessWidget {
   final Color accent;
   final VoidCallback onMinus, onPlus;
 
-  /// Optional: tippt man auf den Wert, direkte Zahleneingabe (statt nur +/-).
-  final VoidCallback? onValueTap;
+  /// Optional: replaces the value text (e.g. with an inline-editable field). It
+  /// then manages its own width; otherwise [valueText] is a fixed 96px wide.
+  final Widget? valueChild;
 
   @override
   Widget build(BuildContext context) {
@@ -47,23 +48,16 @@ class GlucoseStepperRow extends StatelessWidget {
   }
 
   Widget _value() {
-    final text = Text(
-      valueText,
-      textAlign: TextAlign.center,
-      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-    );
+    if (valueChild != null) {
+      return valueChild!;
+    }
     return SizedBox(
       width: 96,
-      child: onValueTap == null
-          ? text
-          : InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: onValueTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: text,
-              ),
-            ),
+      child: Text(
+        valueText,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
     );
   }
 }

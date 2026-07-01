@@ -7,9 +7,9 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_range_selector.dart';
 import 'package:provider/provider.dart';
 
-/// Verlaufs-Übersicht einer Tages-Kennzahl (Schritte/Distanz/Kalorien) aus dem
-/// persistenten Health-Archiv — analog zur Gewichtsseite: Kopf-Kennzahlen,
-/// Balken-Chart mit Zeitraum-Wähler und Tagesliste (neueste zuerst).
+/// History overview of a daily metric (steps/distance/calories) from the
+/// persistent Health archive — analogous to the weight page: header metrics, a
+/// bar chart with range picker and a day list (newest first).
 class ActivityDetailPage extends StatefulWidget {
   const ActivityDetailPage({super.key, required this.metric});
 
@@ -52,7 +52,10 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
     final to = _range.endTo;
     return [
       for (final day in all)
-        if ((from == null || !day.date.isBefore(DateTime(from.year, from.month, from.day))) &&
+        if ((from == null ||
+                !day.date.isBefore(
+                  DateTime(from.year, from.month, from.day),
+                )) &&
             (to == null || day.date.isBefore(to)))
           day,
     ];
@@ -71,7 +74,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
       body: archive.isEmpty
           ? Center(child: LocaleText('sport.activity.detail.empty'))
           : ListView(
-              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               children: [
                 _header(context, scheme, ranged),
@@ -85,7 +90,10 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                 const SizedBox(height: 24),
                 LocaleText(
                   'sport.weight.history',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 for (var index = ranged.length - 1; index >= 0; index--)
@@ -95,7 +103,11 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
     );
   }
 
-  Widget _header(BuildContext context, ColorScheme scheme, List<DailyActivity> ranged) {
+  Widget _header(
+    BuildContext context,
+    ColorScheme scheme,
+    List<DailyActivity> ranged,
+  ) {
     final total = ranged.fold<double>(0, (sum, day) => sum + _value(day));
     final avg = ranged.isEmpty ? 0.0 : total / ranged.length;
     final latest = ranged.isEmpty ? 0.0 : _value(ranged.last);
@@ -112,17 +124,32 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
         children: [
           LocaleText(
             'sport.activity.detail.latest',
-            style: TextStyle(fontSize: 13, color: scheme.onSurface.withValues(alpha: 0.6)),
+            style: TextStyle(
+              fontSize: 13,
+              color: scheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
           const SizedBox(height: 8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(_format(latest), style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
+              Text(
+                _format(latest),
+                style: const TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               if (_unit != null) ...[
                 const SizedBox(width: 6),
-                Text(_unit!, style: TextStyle(fontSize: 15, color: scheme.onSurface.withValues(alpha: 0.6))),
+                Text(
+                  _unit!,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: scheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
               ],
             ],
           ),
@@ -132,8 +159,20 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _stat(context, scheme, Icons.timeline_rounded, 'sport.activity.detail.average', avg),
-              _stat(context, scheme, Icons.functions_rounded, 'sport.activity.detail.total', total),
+              _stat(
+                context,
+                scheme,
+                Icons.timeline_rounded,
+                'sport.activity.detail.average',
+                avg,
+              ),
+              _stat(
+                context,
+                scheme,
+                Icons.functions_rounded,
+                'sport.activity.detail.total',
+                total,
+              ),
             ],
           ),
         ],
@@ -141,7 +180,13 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
     );
   }
 
-  Widget _stat(BuildContext context, ColorScheme scheme, IconData icon, String labelKey, double value) {
+  Widget _stat(
+    BuildContext context,
+    ColorScheme scheme,
+    IconData icon,
+    String labelKey,
+    double value,
+  ) {
     return Row(
       children: [
         Icon(icon, size: 16, color: scheme.primary),
@@ -151,7 +196,10 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
           children: [
             Text(
               Locales.string(context, labelKey),
-              style: TextStyle(fontSize: 11, color: scheme.onSurface.withValues(alpha: 0.55)),
+              style: TextStyle(
+                fontSize: 11,
+                color: scheme.onSurface.withValues(alpha: 0.55),
+              ),
             ),
             const SizedBox(height: 1),
             Text(
@@ -176,7 +224,11 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
         height: 200,
         child: ranged.isEmpty
             ? Center(child: LocaleText('sport.activity.detail.empty'))
-            : ActivityBarChart(days: ranged, value: _value, color: scheme.primary),
+            : ActivityBarChart(
+                days: ranged,
+                value: _value,
+                color: scheme.primary,
+              ),
       ),
     );
   }
@@ -200,7 +252,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
               style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
             ),
             Text(
-              _unit == null ? _format(_value(day)) : '${_format(_value(day))} $_unit',
+              _unit == null
+                  ? _format(_value(day))
+                  : '${_format(_value(day))} $_unit',
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
             ),
           ],

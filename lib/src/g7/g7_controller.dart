@@ -107,7 +107,9 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     final live = _latest;
     if (_latestIsLive && live?.glucoseMgDl != null) {
       final liveMin =
-          start.add(Duration(seconds: live!.secsSinceStart)).millisecondsSinceEpoch ~/
+          start
+              .add(Duration(seconds: live!.secsSinceStart))
+              .millisecondsSinceEpoch ~/
           60000;
       out[liveMin * 60 - startSecs] = live.glucoseMgDl!;
     }
@@ -620,7 +622,7 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _startService() async {
     final result = await FlutterForegroundTask.startService(
       serviceId: 256,
-      serviceTypes: const [ForegroundServiceTypes.connectedDevice],
+      serviceTypes: await _serviceTypes(),
       notificationTitle: 'Insulink',
       notificationText: await _strings.get('service.connecting'),
       callback: startCallback,
@@ -630,6 +632,19 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     } else if (result is ServiceRequestFailure) {
       _append('service start failed: ${result.error}');
     }
+  }
+
+  /// Service types for the foreground service. `location` is added ONLY when the
+  /// OS location permission is held — the location FGS type requires it at
+  /// `startForeground` (Android 14+), and glucose reading must never depend on
+  /// location. With the type present the service samples GPS in the background
+  /// (see [BackgroundLocationSampler]); without it, only glucose runs.
+  Future<List<ForegroundServiceTypes>> _serviceTypes() async {
+    final types = [ForegroundServiceTypes.connectedDevice];
+    if (await Permission.location.isGranted) {
+      types.add(ForegroundServiceTypes.location);
+    }
+    return types;
   }
 
   /// Fire a test alarm (low or high) so the user can preview the notification +

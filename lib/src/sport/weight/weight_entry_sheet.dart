@@ -6,9 +6,9 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
 
-/// Eingabe-Sheet für einen neuen Gewichtseintrag (kg, Zeitpunkt = jetzt).
-// ponytail: nur „jetzt" — ein Datumswähler wäre nachrüstbar, wenn rückwirkendes
-// Erfassen gebraucht wird.
+/// Input sheet for a new weight entry (kg, timestamp = now).
+// ponytail: only "now" — a date picker could be added later if backdated entry
+// is needed.
 Future<void> showWeightEntrySheet(BuildContext context) {
   return showModalBottomSheet(
     context: context,
@@ -86,12 +86,15 @@ class _WeightEntrySheetState extends State<_WeightEntrySheet> {
             ],
             decoration: InputDecoration(
               labelText: Locales.string(context, 'sport.weight'),
-              suffixText: 'kg',            ),
+              suffixText: 'kg',
+            ),
           ),
           const SizedBox(height: 24),
           FilledButton(
             onPressed: kg == null ? null : _save,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
+            ),
             child: LocaleText('alert.done'),
           ),
         ],

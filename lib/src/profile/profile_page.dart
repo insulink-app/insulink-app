@@ -40,7 +40,9 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _search.addListener(() => setState(() => _query = _search.text.trim().toLowerCase()));
+    _search.addListener(
+      () => setState(() => _query = _search.text.trim().toLowerCase()),
+    );
   }
 
   @override
@@ -109,7 +111,8 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     final corpus =
         '${Locales.string(context, topic.titleKey)} '
-        '${Locales.string(context, topic.searchKey)}'.toLowerCase();
+                '${Locales.string(context, topic.searchKey)}'
+            .toLowerCase();
     return corpus.contains(_query);
   }
 
@@ -196,7 +199,9 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: scheme.onSurface.withValues(alpha: 0.07)),
+              border: Border.all(
+                color: scheme.onSurface.withValues(alpha: 0.07),
+              ),
             ),
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -214,10 +219,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 Expanded(
                   child: LocaleText(
                     topic.titleKey,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                Icon(CupertinoIcons.chevron_right, size: 18, color: scheme.onSurface.withValues(alpha: 0.4)),
+                Icon(
+                  CupertinoIcons.chevron_right,
+                  size: 18,
+                  color: scheme.onSurface.withValues(alpha: 0.4),
+                ),
               ],
             ),
           ),
@@ -234,12 +246,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _footer() {
-    return Column(
-      children: [
-        const SizedBox(height: 30),
-        _version(),
-      ],
-    );
+    return Column(children: [const SizedBox(height: 30), _version()]);
   }
 
   Widget _version() {

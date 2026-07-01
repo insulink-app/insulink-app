@@ -66,7 +66,10 @@ class _AuthPageState extends State<AuthPage> {
                 LocaleText(
                   'auth.title',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 LocaleText(
@@ -90,14 +93,16 @@ class _AuthPageState extends State<AuthPage> {
     );
   }
 
-  Widget _field(TextEditingController controller, String labelKey, bool obscure) {
+  Widget _field(
+    TextEditingController controller,
+    String labelKey,
+    bool obscure,
+  ) {
     return TextField(
       controller: controller,
       obscureText: obscure,
       enabled: !_busy,
-      decoration: InputDecoration(
-        labelText: Locales.string(context, labelKey),
-      ),
+      decoration: InputDecoration(labelText: Locales.string(context, labelKey)),
     );
   }
 
@@ -109,9 +114,7 @@ class _AuthPageState extends State<AuthPage> {
       decoration: InputDecoration(
         labelText: Locales.string(context, 'auth.password'),
         suffixIcon: IconButton(
-          icon: Icon(
-            _showPassword ? Icons.visibility_off : Icons.visibility,
-          ),
+          icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
           onPressed: () => setState(() => _showPassword = !_showPassword),
         ),
       ),
@@ -126,7 +129,10 @@ class _AuthPageState extends State<AuthPage> {
           ? const SizedBox(
               width: 22,
               height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             )
           : LocaleText(_signUp ? 'auth.signup' : 'auth.signin'),
     );

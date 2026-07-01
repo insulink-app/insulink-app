@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
+import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:insulink/src/sport/sport_models.dart';
-import 'package:insulink/src/sport/sport_number_input.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
 
-/// Zielwerte einer Übung in einer Routine bearbeiten: Sätze, Wiederholungen
-/// bzw. Sekunden, Gewicht (nur bei Gewichts-Übungen) und Pausendauer. Jeder Wert
-/// ist per +/- ODER durch Antippen (direkte Zahleneingabe) änderbar.
+/// Edit an exercise's target values in a routine: sets, reps or seconds, weight
+/// (weighted exercises only) and rest duration. Each value can be changed with
+/// +/- OR by tapping it (direct number entry).
 Future<void> showRoutineItemEditorSheet(
   BuildContext context, {
   required String routineId,
@@ -131,9 +131,9 @@ class _RoutineItemEditorSheet extends StatelessWidget {
       accent: accent,
       onMinus: () => set(current - step),
       onPlus: () => set(current + step),
-      onValueTap: () => showSportNumberInput(
-        context,
-        titleKey: labelKey,
+      valueChild: SportEditableNumber(
+        key: ValueKey('$labelKey-$valueText'),
+        valueText: valueText,
         initial: current,
         min: min,
         max: max,

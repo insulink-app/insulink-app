@@ -5,11 +5,11 @@ import 'package:insulink/src/sport/sport_models.dart';
 
 enum WorkoutPhase { exercising, resting, done }
 
-/// Steuert eine laufende Routine: aktuelle Übung + Satz, eine wall-clock-basierte
-/// Stoppuhr (überlebt Hintergrund, da aus Zeitstempeln berechnet) und der
-/// Pausen-Countdown. Protokolliert je Satz einen [SetLog] und liefert am Ende
-/// eine [WorkoutSession] über [onFinished]. UI-/Audio-frei — die Page hängt
-/// [onRestFinished] (Ton) und [onFinished] (Speichern) ein.
+/// Drives a running routine: current exercise + set, a wall-clock-based
+/// stopwatch (survives backgrounding, since computed from timestamps) and the
+/// rest countdown. Logs one [SetLog] per set and delivers a [WorkoutSession] at
+/// the end via [onFinished]. UI-/audio-free — the page attaches [onRestFinished]
+/// (tone) and [onFinished] (save).
 class WorkoutRunner extends ChangeNotifier {
   final SportRoutine routine;
   final List<SportExercise> _exercises;
@@ -26,10 +26,10 @@ class WorkoutRunner extends ChangeNotifier {
   final List<SetLog> _sets = [];
   Timer? _ticker;
 
-  /// Vom UI gesetzt: Ton, wenn die Pause abläuft.
+  /// Set by the UI: tone when the rest expires.
   VoidCallback? onRestFinished;
 
-  /// Vom UI gesetzt: fertige Session speichern + Seite schließen.
+  /// Set by the UI: save the finished session + close the page.
   void Function(WorkoutSession session)? onFinished;
 
   WorkoutRunner(this.routine, List<SportExercise> exercises)
@@ -78,8 +78,8 @@ class WorkoutRunner extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Tatsächlich geschaffte Wiederholungen setzen (aus dem Abschluss-Dialog),
-  /// bevor [completeSet] den Satz protokolliert.
+  /// Set the reps actually achieved (from the inline field) before [completeSet]
+  /// logs the set.
   void recordReps(int reps) {
     _currentReps = reps.clamp(0, 999);
   }
@@ -89,8 +89,8 @@ class WorkoutRunner extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Aktuellen Satz protokollieren und zum nächsten Satz/Übung wechseln (mit
-  /// Pause), oder die Session abschließen.
+  /// Log the current set and advance to the next set/exercise (with rest), or
+  /// finish the session.
   void completeSet() {
     if (_phase != WorkoutPhase.exercising) {
       return;
@@ -108,27 +108,29 @@ class WorkoutRunner extends ChangeNotifier {
     }
   }
 
-  /// Verbleibende Pause überspringen.
+  /// Skip the remaining rest.
   void skipRest() {
     if (_phase == WorkoutPhase.resting) {
       _enterExercising();
     }
   }
 
-  /// Training vorzeitig beenden (protokolliert den laufenden Satz NICHT).
+  /// Finish the workout early (does NOT log the current set).
   void finishEarly() => _finish();
 
   void _logCurrentSet() {
-    _sets.add(SetLog(
-      exerciseId: currentItem.exerciseId,
-      reps: isTimed ? null : _currentReps,
-      seconds: isTimed ? elapsed.inSeconds : null,
-      weightKg: isWeighted ? _currentWeight : null,
-      atEpochMs: DateTime.now().millisecondsSinceEpoch,
-    ));
+    _sets.add(
+      SetLog(
+        exerciseId: currentItem.exerciseId,
+        reps: isTimed ? null : _currentReps,
+        seconds: isTimed ? elapsed.inSeconds : null,
+        weightKg: isWeighted ? _currentWeight : null,
+        atEpochMs: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
   }
 
-  /// Rückt setIndex/exerciseIndex vor. false, wenn nichts mehr folgt.
+  /// Advances setIndex/exerciseIndex. false when nothing follows.
   bool _advancePointers() {
     if (_setIndex + 1 < currentItem.targetSets) {
       _setIndex += 1;
@@ -175,12 +177,14 @@ class WorkoutRunner extends ChangeNotifier {
   void _finish() {
     _phase = WorkoutPhase.done;
     _ticker?.cancel();
-    onFinished?.call(WorkoutSession(
-      id: _sessionStartedMs.toRadixString(36),
-      routineId: routine.id,
-      startedAtMs: _sessionStartedMs,
-      sets: List.unmodifiable(_sets),
-    ));
+    onFinished?.call(
+      WorkoutSession(
+        id: _sessionStartedMs.toRadixString(36),
+        routineId: routine.id,
+        startedAtMs: _sessionStartedMs,
+        sets: List.unmodifiable(_sets),
+      ),
+    );
     notifyListeners();
   }
 

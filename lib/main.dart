@@ -117,9 +117,9 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.sport),
         ChangeNotifierProvider(create: (_) => prefs.training),
         ChangeNotifierProvider(create: (_) => prefs.cardio),
-        // Schrittzähler — wird erst beim Öffnen des Sport-Tabs gestartet
-        // (ensureStarted), nicht hier, um Berechtigung/Stream nicht beim
-        // App-Start zu erzwingen.
+        // Step counter — only started when the Sport tab is opened
+        // (ensureStarted), not here, to avoid forcing the permission/stream at
+        // app start.
         ChangeNotifierProvider(create: (_) => SportActivityState()),
         // Shared G7 read pipeline + service control, observed by the overview
         // and sensor pages.

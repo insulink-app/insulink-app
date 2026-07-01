@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// App-weites Scroll-Verhalten: iOS-artiges Überziehen (Bounce) auf ALLEN
-/// Plattformen und für jede scrollbare Fläche — statt jede Seite einzeln mit
-/// `physics:` zu bestücken.
+/// App-wide scroll behavior: iOS-style overscroll (bounce) on ALL platforms and
+/// for every scrollable surface — instead of equipping each page individually
+/// with `physics:`.
 class BouncyScrollBehavior extends MaterialScrollBehavior {
   const BouncyScrollBehavior();
 

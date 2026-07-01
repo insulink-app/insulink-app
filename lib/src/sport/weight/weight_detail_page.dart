@@ -9,8 +9,8 @@ import 'package:insulink/src/sport/weight/weight_entry_row.dart';
 import 'package:insulink/src/sport/weight/weight_entry_sheet.dart';
 import 'package:provider/provider.dart';
 
-/// Gewichtsverlauf: aktueller Wert + Zeitraum-Kennzahlen, Chart mit
-/// Zeitraum-Wähler und die Einträge (neueste zuerst). „+" öffnet das Sheet.
+/// Weight history: current value + range metrics, chart with range picker and
+/// the entries (newest first). "+" opens the sheet.
 class WeightDetailPage extends StatefulWidget {
   const WeightDetailPage({super.key});
 
@@ -50,12 +50,16 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
       body: weights.isEmpty
           ? Center(child: LocaleText('sport.weight.empty'))
           : ListView(
-              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               children: [
                 WeightCurrentCard(
                   latest: weights.last,
-                  previousKg: weights.length >= 2 ? weights[weights.length - 2].kg : null,
+                  previousKg: weights.length >= 2
+                      ? weights[weights.length - 2].kg
+                      : null,
                   ranged: ranged,
                 ),
                 const SizedBox(height: 20),
@@ -68,14 +72,18 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
                 const SizedBox(height: 24),
                 LocaleText(
                   'sport.weight.history',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 for (var index = ranged.length - 1; index >= 0; index--)
                   WeightEntryRow(
                     entry: ranged[index],
                     previousKg: index > 0 ? ranged[index - 1].kg : null,
-                    onDelete: () => context.read<SportState>().removeWeight(ranged[index]),
+                    onDelete: () =>
+                        context.read<SportState>().removeWeight(ranged[index]),
                   ),
               ],
             ),

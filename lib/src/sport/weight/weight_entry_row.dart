@@ -3,8 +3,8 @@ import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 
-/// Kleines Pille-Badge für die Gewichtsveränderung (grün = abgenommen,
-/// orange = zugenommen). Auch im Kopf der Gewichtsseite verwendet.
+/// Small pill badge for the weight change (green = lost, orange = gained). Also
+/// used in the header of the weight page.
 class WeightDeltaChip extends StatelessWidget {
   const WeightDeltaChip({super.key, required this.delta});
 
@@ -23,11 +23,19 @@ class WeightDeltaChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(up ? Icons.arrow_upward : Icons.arrow_downward, size: 12, color: color),
+          Icon(
+            up ? Icons.arrow_upward : Icons.arrow_downward,
+            size: 12,
+            color: color,
+          ),
           const SizedBox(width: 2),
           Text(
             '${delta.abs().toStringAsFixed(1)} kg',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
           ),
         ],
       ),
@@ -35,8 +43,8 @@ class WeightDeltaChip extends StatelessWidget {
   }
 }
 
-/// Eine Zeile im Gewichtsverlauf: Wert + Datum, Veränderung zum vorigen
-/// Eintrag, und Löschen.
+/// A row in the weight history: value + date, change from the previous entry,
+/// and delete.
 class WeightEntryRow extends StatelessWidget {
   const WeightEntryRow({
     super.key,
@@ -70,7 +78,10 @@ class WeightEntryRow extends StatelessWidget {
               children: [
                 Text(
                   '${entry.kg.toStringAsFixed(1)} kg',
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(

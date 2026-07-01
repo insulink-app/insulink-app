@@ -2,10 +2,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 
-/// Gewicht über die Zeit als Linie — X = Zeitstempel (echte Abstände bei
-/// ungleichen Lücken), Y automatisch skaliert mit etwas Rand. Erwartet bereits
-/// nach Zeitfenster gefilterte, aufsteigend sortierte [weights]. Ein einzelner
-/// Punkt wird als Punkt gezeichnet.
+/// Weight over time as a line — X = timestamp (true spacing for uneven gaps), Y
+/// scaled automatically with a little margin. Expects [weights] already filtered
+/// by time window and sorted ascending. A single point is drawn as a dot.
 class WeightChart extends StatelessWidget {
   const WeightChart({super.key, required this.weights});
 
@@ -15,8 +14,7 @@ class WeightChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final spots = [
-      for (final entry in weights)
-        FlSpot(entry.atEpochMs.toDouble(), entry.kg),
+      for (final entry in weights) FlSpot(entry.atEpochMs.toDouble(), entry.kg),
     ];
     final values = weights.map((entry) => entry.kg);
     final minKg = values.reduce((a, b) => a < b ? a : b);
@@ -51,7 +49,12 @@ class WeightChart extends StatelessWidget {
     );
   }
 
-  FlTitlesData _titles(BuildContext context, Color onSurface, double minX, double maxX) {
+  FlTitlesData _titles(
+    BuildContext context,
+    Color onSurface,
+    double minX,
+    double maxX,
+  ) {
     final locale = MaterialLocalizations.of(context);
     return FlTitlesData(
       topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),

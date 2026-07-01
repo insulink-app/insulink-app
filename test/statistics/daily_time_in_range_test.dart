@@ -5,14 +5,14 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/statistics/calendar/daily_time_in_range.dart';
 
 ProfileGlucoseState _state() => ProfileGlucoseState(
-      unit: GlucoseUnit.mgdl,
-      targetLow: 70,
-      targetHigh: 180,
-      urgentLow: 55,
-      low: 70,
-      high: 180,
-      urgentHigh: 250,
-    );
+  unit: GlucoseUnit.mgdl,
+  targetLow: 70,
+  targetHigh: 180,
+  urgentLow: 55,
+  low: 70,
+  high: 180,
+  urgentHigh: 250,
+);
 
 int _min(DateTime time) => time.millisecondsSinceEpoch ~/ 60000;
 

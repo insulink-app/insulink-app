@@ -436,7 +436,7 @@
    "warning": {
     "title": "Enable silent mode?",
     "body": "While silent mode is on you will receive NO alarms — not even for dangerously low or high glucose. A hypo can go unnoticed and become life-threatening. Only enable it if you keep an eye on your levels another way.",
-    "confirm": "Enable anyway"
+    "confirm": "Enable"
    }
   },
   "developer": {

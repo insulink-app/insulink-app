@@ -94,27 +94,37 @@ class DevicesBodyContent extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: 0.12),
+                  color: scheme.primary,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: scheme.primary, size: 26),
+                child: Icon(icon, color: scheme.onPrimary, size: 26),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               if (notify) ...[
                 Container(
                   width: 10,
                   height: 10,
-                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
                 ),
                 const SizedBox(width: 12),
               ],
-              Icon(CupertinoIcons.chevron_right, size: 18, color: scheme.onSurface.withValues(alpha: 0.4)),
+              Icon(
+                CupertinoIcons.chevron_right,
+                size: 18,
+                color: scheme.onSurface.withValues(alpha: 0.4),
+              ),
             ],
           ),
         ),
@@ -133,10 +143,7 @@ class _DeviceSubPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        surfaceTintColor: Colors.transparent,
-        title: Text(title),
-      ),
+      appBar: AppBar(surfaceTintColor: Colors.transparent, title: Text(title)),
       body: body,
     );
   }

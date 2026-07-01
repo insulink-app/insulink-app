@@ -92,15 +92,15 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
     final initial = (name ?? "").trim();
     return CircleAvatar(
       radius: 24,
-      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+      backgroundColor: theme.colorScheme.primary,
       child: initial.isEmpty
-          ? Icon(Icons.person, color: theme.colorScheme.primary)
+          ? Icon(Icons.person, color: theme.colorScheme.onPrimary)
           : Text(
               initial[0].toUpperCase(),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
+                color: theme.colorScheme.onPrimary,
               ),
             ),
     );
@@ -138,7 +138,8 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
           decoration: InputDecoration(
             counterText: "",
             prefixIcon: const Icon(Icons.person),
-            hintText: Locales.string(context, "profile.account.name"),          ),
+            hintText: Locales.string(context, "profile.account.name"),
+          ),
         ),
       ),
       cancelButton: true,

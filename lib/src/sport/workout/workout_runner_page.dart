@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:insulink/src/sport/sport_models.dart';
-import 'package:insulink/src/sport/sport_number_input.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
 import 'package:provider/provider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
-/// Live-Durchführung einer Routine: Stoppuhr je Satz, Eingaben und der
-/// Pausen-Countdown. Treibt einen [WorkoutRunner] und speichert die Session.
+/// Live execution of a routine: per-set stopwatch, inputs and the rest
+/// countdown. Drives a [WorkoutRunner] and saves the session.
 class WorkoutRunnerPage extends StatefulWidget {
   const WorkoutRunnerPage({super.key, required this.routine});
 
@@ -27,6 +28,8 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
   @override
   void initState() {
     super.initState();
+    // Keep the screen on during the workout (timer/rests stay readable).
+    WakelockPlus.enable();
     final training = context.read<TrainingState>();
     _runner = WorkoutRunner(widget.routine, training.exercises)
       ..onRestFinished = _chime
@@ -51,12 +54,13 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
         ),
       );
     } catch (_) {
-      // ponytail: Ton ist best-effort; der Countdown läuft auch ohne weiter.
+      // ponytail: tone is best-effort; the countdown continues without it.
     }
   }
 
   @override
   void dispose() {
+    WakelockPlus.disable();
     _runner.dispose();
     _player.dispose();
     super.dispose();
@@ -116,7 +120,11 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
           const SizedBox(height: 8),
           if (_runner.isTimed)
             Text(
-              Locales.string(context, 'sport.workout.target_time', params: ['${_runner.currentItem.target}']),
+              Locales.string(
+                context,
+                'sport.workout.target_time',
+                params: ['${_runner.currentItem.target}'],
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
             )
@@ -124,8 +132,10 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
             _repWeightControls(context),
           const Spacer(),
           FilledButton(
-            onPressed: _completeSet,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
+            onPressed: _runner.completeSet,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(54),
+            ),
             child: LocaleText('sport.workout.complete_set'),
           ),
           TextButton(
@@ -137,33 +147,29 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     );
   }
 
-  /// Bei Kraftübungen erst die geschafften Wiederholungen abfragen (man weiß sie
-  /// oft erst nach dem Satz), dann protokollieren. Zeitübungen direkt fertig.
-  void _completeSet() {
-    if (_runner.isTimed) {
-      _runner.completeSet();
-      return;
-    }
-    showSportNumberInput(
-      context,
-      titleKey: 'sport.workout.achieved_reps',
-      initial: _runner.currentReps.toDouble(),
-      min: 0,
-      max: 999,
-      onSubmit: (value) {
-        _runner.recordReps(value.round());
-        _runner.completeSet();
-      },
-    );
-  }
-
+  /// Enter the achieved reps inline (you often only know them after the set) —
+  /// prefilled with the target; "Set done" logs the value.
   Widget _repWeightControls(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
-        Text(
-          Locales.string(context, 'sport.workout.target_reps', params: ['${_runner.currentItem.target}']),
-          style: TextStyle(fontSize: 15, color: scheme.onSurface.withValues(alpha: 0.6)),
+        LocaleText(
+          'sport.routines.reps',
+          style: TextStyle(
+            fontSize: 14,
+            color: scheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 4),
+        SportEditableNumber(
+          key: ValueKey('reps-${_runner.exerciseIndex}-${_runner.setNumber}'),
+          valueText: '${_runner.currentReps}',
+          initial: _runner.currentReps.toDouble(),
+          min: 0,
+          max: 999,
+          width: 120,
+          style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
+          onSubmit: (value) => _runner.recordReps(value.round()),
         ),
         if (_runner.isWeighted) ...[
           const SizedBox(height: 16),
@@ -179,7 +185,13 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     );
   }
 
-  Widget _stepperRow(String labelKey, String value, Color accent, VoidCallback minus, VoidCallback plus) {
+  Widget _stepperRow(
+    String labelKey,
+    String value,
+    Color accent,
+    VoidCallback minus,
+    VoidCallback plus,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -208,13 +220,20 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
           LocaleText(
             'sport.workout.rest',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, color: scheme.onSurface.withValues(alpha: 0.6)),
+            style: TextStyle(
+              fontSize: 18,
+              color: scheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             _clock(_runner.restRemaining),
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 72, fontWeight: FontWeight.bold, color: scheme.primary),
+            style: TextStyle(
+              fontSize: 72,
+              fontWeight: FontWeight.bold,
+              color: scheme.primary,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -228,7 +247,9 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
           const Spacer(),
           FilledButton(
             onPressed: _runner.skipRest,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(54),
+            ),
             child: LocaleText('sport.workout.skip_rest'),
           ),
         ],
