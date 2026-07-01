@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
@@ -204,7 +205,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
   String _value(SetLog set) {
     final core = set.seconds != null ? '${set.seconds} s' : '${set.reps ?? 0}';
     final weight = set.weightKg != null
-        ? ' · ${set.weightKg!.toStringAsFixed(1)} kg'
+        ? ' · ${sportDecimal(set.weightKg!, 1)} kg'
         : '';
     return '$core$weight';
   }

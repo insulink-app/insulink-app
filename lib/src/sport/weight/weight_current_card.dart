@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/weight/weight_entry_row.dart';
 
@@ -47,7 +48,7 @@ class WeightCurrentCard extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                latest.kg.toStringAsFixed(1),
+                sportDecimal(latest.kg, 1),
                 style: const TextStyle(
                   fontSize: 46,
                   fontWeight: FontWeight.bold,
@@ -114,7 +115,7 @@ class WeightCurrentCard extends StatelessWidget {
             ),
             const SizedBox(height: 1),
             Text(
-              '${kg.toStringAsFixed(1)} kg',
+              '${sportDecimal(kg, 1)} kg',
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
           ],

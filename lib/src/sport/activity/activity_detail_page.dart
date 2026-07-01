@@ -3,6 +3,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/activity_bar_chart.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_range_selector.dart';
 import 'package:provider/provider.dart';
@@ -29,9 +30,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
   };
 
   String _format(double value) => switch (widget.metric) {
-    ActivityMetric.steps => value.round().toString(),
-    ActivityMetric.distance => value.toStringAsFixed(2),
-    ActivityMetric.calories => value.round().toString(),
+    ActivityMetric.steps => sportInt(value.round()),
+    ActivityMetric.distance => sportDecimal(value, 2),
+    ActivityMetric.calories => sportInt(value.round()),
   };
 
   String? get _unit => switch (widget.metric) {

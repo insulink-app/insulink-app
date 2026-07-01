@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../sport_format.dart';
 import 'cardio_models.dart';
 
 /// Icon + localization key per [CardioType] — shared by the section, recording
@@ -16,7 +17,7 @@ extension CardioTypeUi on CardioType {
 
 /// Distance as km with two decimals.
 String formatDistanceKm(double meters) =>
-    '${(meters / 1000).toStringAsFixed(2)} km';
+    '${sportDecimal(meters / 1000, 2)} km';
 
 /// Duration as H:MM:SS or MM:SS.
 String formatDuration(Duration duration) {
@@ -27,4 +28,4 @@ String formatDuration(Duration duration) {
 }
 
 /// Speed as km/h with one decimal.
-String formatSpeed(double kmh) => '${kmh.toStringAsFixed(1)} km/h';
+String formatSpeed(double kmh) => '${sportDecimal(kmh, 1)} km/h';

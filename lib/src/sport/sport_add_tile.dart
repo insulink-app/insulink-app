@@ -18,9 +18,9 @@ class SportAddTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: primary.withValues(alpha: 0.10),
+      color: scheme.primary,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -30,14 +30,14 @@ class SportAddTile extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: primary),
+              Icon(icon, size: 20, color: scheme.onPrimary),
               const SizedBox(width: 8),
               Text(
                 Locales.string(context, labelKey),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: primary,
+                  color: scheme.onPrimary,
                 ),
               ),
             ],

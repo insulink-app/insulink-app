@@ -4,6 +4,7 @@ import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
@@ -175,7 +176,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
           const SizedBox(height: 16),
           _stepperRow(
             'sport.routines.weight',
-            '${_runner.currentWeight.toStringAsFixed(1)} kg',
+            '${sportDecimal(_runner.currentWeight, 1)} kg',
             scheme.primary,
             () => _runner.adjustWeight(-2.5),
             () => _runner.adjustWeight(2.5),

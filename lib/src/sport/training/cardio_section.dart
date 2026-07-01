@@ -41,7 +41,7 @@ class CardioSection extends StatelessWidget {
   Widget _startButton(BuildContext context, CardioType type) {
     final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.primary.withValues(alpha: 0.08),
+      color: scheme.primary,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
@@ -54,14 +54,14 @@ class CardioSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
             children: [
-              Icon(type.icon, color: scheme.primary, size: 26),
+              Icon(type.icon, color: scheme.onPrimary, size: 26),
               const SizedBox(height: 6),
               Text(
                 Locales.string(context, type.labelKey),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: scheme.primary,
+                  color: scheme.onPrimary,
                 ),
               ),
             ],

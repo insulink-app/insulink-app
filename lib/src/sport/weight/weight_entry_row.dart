@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 
 /// Small pill badge for the weight change (green = lost, orange = gained). Also
@@ -30,7 +31,7 @@ class WeightDeltaChip extends StatelessWidget {
           ),
           const SizedBox(width: 2),
           Text(
-            '${delta.abs().toStringAsFixed(1)} kg',
+            '${sportDecimal(delta.abs(), 1)} kg',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -77,7 +78,7 @@ class WeightEntryRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${entry.kg.toStringAsFixed(1)} kg',
+                  '${sportDecimal(entry.kg, 1)} kg',
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,

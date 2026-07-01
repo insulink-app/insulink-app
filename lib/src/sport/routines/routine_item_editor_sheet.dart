@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
@@ -78,7 +79,7 @@ class _RoutineItemEditorSheet extends StatelessWidget {
           _stepper(
             context,
             labelKey: 'sport.routines.weight',
-            valueText: '${item.targetWeight.toStringAsFixed(1)} kg',
+            valueText: '${sportDecimal(item.targetWeight, 1)} kg',
             accent: accent,
             current: item.targetWeight,
             min: 0,

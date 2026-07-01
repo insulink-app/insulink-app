@@ -4,6 +4,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/activity_detail_page.dart';
 import 'package:insulink/src/sport/activity/activity_settings_sheet.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:insulink/src/sport/weight/weight_detail_page.dart';
@@ -35,13 +36,13 @@ class ActivitySummaryCard extends StatelessWidget {
           _SummaryTile(
             icon: Icons.directions_walk,
             labelKey: 'sport.activity.steps',
-            value: '$steps',
+            value: sportInt(steps),
             onTap: () => _openDetail(context, ActivityMetric.steps),
           ),
           _SummaryTile(
             icon: Icons.straighten,
             labelKey: 'sport.activity.distance',
-            value: distanceKm.toStringAsFixed(2),
+            value: sportDecimal(distanceKm, 2),
             unit: 'km',
             onTap: () => _openDetail(context, ActivityMetric.distance),
           ),
@@ -51,7 +52,7 @@ class ActivitySummaryCard extends StatelessWidget {
           _SummaryTile(
             icon: Icons.local_fire_department,
             labelKey: 'sport.activity.calories',
-            value: '${calories.round()}',
+            value: sportInt(calories.round()),
             unit: 'kcal',
             onTap: () => _openDetail(context, ActivityMetric.calories),
           ),
@@ -60,7 +61,7 @@ class ActivitySummaryCard extends StatelessWidget {
             labelKey: 'sport.weight',
             value: latestWeight == null
                 ? '–'
-                : latestWeight.kg.toStringAsFixed(1),
+                : sportDecimal(latestWeight.kg, 1),
             unit: latestWeight == null ? null : 'kg',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const WeightDetailPage()),

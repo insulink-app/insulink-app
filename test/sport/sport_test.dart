@@ -1,9 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/sport/activity/step_baseline.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
 
 void main() {
+  group('German number formatting', () {
+    test('thousands use "." and decimals use ","', () {
+      expect(sportInt(1234), '1.234');
+      expect(sportInt(8000), '8.000');
+      expect(sportDecimal(6.2, 2), '6,20');
+      expect(sportDecimal(72.5, 1), '72,5');
+    });
+  });
+
   group('WeightEntry round-trip', () {
     test('survives encode → decode', () {
       const entry = WeightEntry(atEpochMs: 1719700000000, kg: 72.5);

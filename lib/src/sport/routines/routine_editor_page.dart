@@ -5,6 +5,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/exercises/exercises_page.dart';
 import 'package:insulink/src/sport/routines/routine_item_editor_sheet.dart';
 import 'package:insulink/src/sport/sport_add_tile.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
@@ -198,7 +199,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     final timed = exercise?.kind == ExerciseKind.timed;
     final core = '${item.targetSets} × ${item.target}${timed ? ' s' : ''}';
     final weight = exercise?.kind == ExerciseKind.weighted
-        ? ' · ${item.targetWeight.toStringAsFixed(1)} kg'
+        ? ' · ${sportDecimal(item.targetWeight, 1)} kg'
         : '';
     return '$core$weight · ${item.restSeconds}s';
   }
