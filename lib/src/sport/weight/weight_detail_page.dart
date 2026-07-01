@@ -50,6 +50,7 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
       body: weights.isEmpty
           ? Center(child: LocaleText('sport.weight.empty'))
           : ListView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               children: [
                 WeightCurrentCard(

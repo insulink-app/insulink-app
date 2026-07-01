@@ -25,6 +25,13 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
   late final CardioTracker _tracker = CardioTracker(widget.type);
   final MapController _map = MapController();
 
+  /// Zuletzt auf die Karte angewandte Rotation (Grad). Die Karte dreht nur mit,
+  /// wenn sich die Richtung um mehr als [_rotationThresholdDeg] ändert — sonst
+  /// zittert sie bei jeder kleinen Bewegung.
+  double _appliedRotation = 0;
+  static const _rotationThresholdDeg = 25.0;
+  static const _rotationMinSpeedKmh = 3.0;
+
   @override
   void initState() {
     super.initState();
@@ -44,9 +51,32 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
 
   void _recenter() {
     final latest = _tracker.latest;
-    if (latest != null) {
-      _map.move(LatLng(latest.lat, latest.lng), _map.camera.zoom);
+    if (latest == null) {
+      return;
     }
+    final center = LatLng(latest.lat, latest.lng);
+    final heading = _tracker.currentHeadingDeg;
+    if (heading != null &&
+        _tracker.currentSpeedKmh >= _rotationMinSpeedKmh &&
+        _headingDelta(-heading).abs() > _rotationThresholdDeg) {
+      _appliedRotation = -heading;
+      _map.moveAndRotate(center, _map.camera.zoom, _appliedRotation);
+    } else {
+      _map.move(center, _map.camera.zoom);
+    }
+  }
+
+  /// Kürzeste Winkeldifferenz (-180..180) zwischen [target] und der aktuell
+  /// angewandten Rotation — damit z. B. 350°→10° als 20° gilt, nicht 340°.
+  double _headingDelta(double target) {
+    var delta = (target - _appliedRotation) % 360;
+    if (delta > 180) {
+      delta -= 360;
+    }
+    if (delta < -180) {
+      delta += 360;
+    }
+    return delta;
   }
 
   Future<void> _stop() async {

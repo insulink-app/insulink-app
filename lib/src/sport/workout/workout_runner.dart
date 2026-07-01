@@ -78,6 +78,12 @@ class WorkoutRunner extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Tatsächlich geschaffte Wiederholungen setzen (aus dem Abschluss-Dialog),
+  /// bevor [completeSet] den Satz protokolliert.
+  void recordReps(int reps) {
+    _currentReps = reps.clamp(0, 999);
+  }
+
   void adjustWeight(double delta) {
     _currentWeight = (_currentWeight + delta).clamp(0, 999);
     notifyListeners();

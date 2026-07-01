@@ -30,6 +30,7 @@ class ExercisesPage extends StatelessWidget {
       body: exercises.isEmpty
           ? Center(child: LocaleText('sport.exercises.empty'))
           : ListView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               children: [for (final ex in exercises) _row(context, ex)],
             ),

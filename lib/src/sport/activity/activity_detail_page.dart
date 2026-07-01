@@ -71,6 +71,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
       body: archive.isEmpty
           ? Center(child: LocaleText('sport.activity.detail.empty'))
           : ListView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               children: [
                 _header(context, scheme, ranged),

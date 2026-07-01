@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/logbook/workout_session_detail_page.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +24,7 @@ class WorkoutLogPage extends StatelessWidget {
       body: sessions.isEmpty
           ? Center(child: LocaleText('sport.logbook.empty'))
           : ListView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               children: [
                 for (var index = sessions.length - 1; index >= 0; index--)
@@ -56,6 +58,11 @@ class WorkoutLogPage extends StatelessWidget {
         trailing: Text(
           Locales.string(context, 'sport.logbook.sets', params: ['${session.sets.length}']),
           style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+        ),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => WorkoutSessionDetailPage(session: session),
+          ),
         ),
       ),
     );

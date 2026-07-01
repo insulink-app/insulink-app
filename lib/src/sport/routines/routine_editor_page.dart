@@ -121,16 +121,14 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   }
 
   Widget _itemsList(SportRoutine routine) {
-    final addTile = Padding(
-      padding: EdgeInsets.fromLTRB(20, routine.items.isEmpty ? 0 : 2, 20, 24),
-      child: SportAddTile(
-        labelKey: 'sport.routines.add_exercise',
-        onTap: _addExercise,
-      ),
+    final addTile = SportAddTile(
+      labelKey: 'sport.routines.add_exercise',
+      onTap: _addExercise,
     );
     if (routine.items.isEmpty) {
       return ListView(
-        padding: const EdgeInsets.only(top: 24),
+        physics: _bouncy,
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
         children: [
           Center(child: LocaleText('sport.routines.no_items')),
           const SizedBox(height: 20),
@@ -139,8 +137,9 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       );
     }
     return ReorderableListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-      footer: addTile,
+      physics: _bouncy,
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      footer: Padding(padding: const EdgeInsets.only(top: 2), child: addTile),
       onReorderItem: (oldIndex, newIndex) =>
           _training.reorderRoutineItems(routine.id, oldIndex, newIndex),
       children: [
@@ -149,6 +148,9 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       ],
     );
   }
+
+  static const _bouncy =
+      BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
 
   Widget _itemRow(SportRoutine routine, int index) {
     final item = routine.items[index];

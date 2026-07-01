@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
+import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -134,6 +135,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   Widget _app(ProfileThemeState themeState, Locale? locale) {
     return MaterialApp(
       title: 'Insulink',
+      scrollBehavior: const BouncyScrollBehavior(),
       themeMode: themeState.themeMode,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

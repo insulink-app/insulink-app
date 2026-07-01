@@ -153,4 +153,10 @@ class TrainingState extends ChangeNotifier {
     notifyListeners();
     await _store.saveSessions(_sessions);
   }
+
+  Future<void> removeSession(String id) async {
+    _sessions.removeWhere((session) => session.id == id);
+    notifyListeners();
+    await _store.saveSessions(_sessions);
+  }
 }

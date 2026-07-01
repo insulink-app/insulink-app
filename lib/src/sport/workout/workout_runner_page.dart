@@ -4,6 +4,7 @@ import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_models.dart';
+import 'package:insulink/src/sport/sport_number_input.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
 import 'package:provider/provider.dart';
@@ -123,7 +124,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
             _repWeightControls(context),
           const Spacer(),
           FilledButton(
-            onPressed: _runner.completeSet,
+            onPressed: _completeSet,
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
             child: LocaleText('sport.workout.complete_set'),
           ),
@@ -136,23 +137,40 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     );
   }
 
+  /// Bei Kraftübungen erst die geschafften Wiederholungen abfragen (man weiß sie
+  /// oft erst nach dem Satz), dann protokollieren. Zeitübungen direkt fertig.
+  void _completeSet() {
+    if (_runner.isTimed) {
+      _runner.completeSet();
+      return;
+    }
+    showSportNumberInput(
+      context,
+      titleKey: 'sport.workout.achieved_reps',
+      initial: _runner.currentReps.toDouble(),
+      min: 0,
+      max: 999,
+      onSubmit: (value) {
+        _runner.recordReps(value.round());
+        _runner.completeSet();
+      },
+    );
+  }
+
   Widget _repWeightControls(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
-        _stepperRow(
-          'sport.routines.reps',
-          '${_runner.currentReps}',
-          accent,
-          () => _runner.adjustReps(-1),
-          () => _runner.adjustReps(1),
+        Text(
+          Locales.string(context, 'sport.workout.target_reps', params: ['${_runner.currentItem.target}']),
+          style: TextStyle(fontSize: 15, color: scheme.onSurface.withValues(alpha: 0.6)),
         ),
         if (_runner.isWeighted) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _stepperRow(
             'sport.routines.weight',
             '${_runner.currentWeight.toStringAsFixed(1)} kg',
-            accent,
+            scheme.primary,
             () => _runner.adjustWeight(-2.5),
             () => _runner.adjustWeight(2.5),
           ),

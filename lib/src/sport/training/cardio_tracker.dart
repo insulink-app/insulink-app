@@ -26,6 +26,13 @@ class CardioTracker extends ChangeNotifier {
   List<TrackPoint> get points => List.unmodifiable(_points);
   double get distanceM => _distanceM;
   double get currentSpeedKmh => _currentSpeedKmh;
+
+  /// Bewegungsrichtung in Grad (0 = Nord, im Uhrzeigersinn), oder null wenn das
+  /// GPS keine verlässliche Richtung liefert (Stillstand meldet oft -1).
+  double? get currentHeadingDeg {
+    final heading = _lastFix?.heading ?? -1;
+    return heading < 0 ? null : heading;
+  }
   Duration get elapsed => DateTime.now().difference(_startedAt);
   TrackPoint? get latest => _points.isEmpty ? null : _points.last;
 

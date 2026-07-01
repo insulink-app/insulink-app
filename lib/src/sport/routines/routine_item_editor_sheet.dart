@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
-import 'package:insulink/src/sport/exercises/exercise_editor_sheet.dart';
 import 'package:insulink/src/sport/sport_models.dart';
+import 'package:insulink/src/sport/sport_number_input.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
 
 /// Zielwerte einer Übung in einer Routine bearbeiten: Sätze, Wiederholungen
-/// bzw. Sekunden, Gewicht (nur bei Gewichts-Übungen) und Pausendauer.
+/// bzw. Sekunden, Gewicht (nur bei Gewichts-Übungen) und Pausendauer. Jeder Wert
+/// ist per +/- ODER durch Antippen (direkte Zahleneingabe) änderbar.
 Future<void> showRoutineItemEditorSheet(
   BuildContext context, {
   required String routineId,
@@ -52,80 +52,76 @@ class _RoutineItemEditorSheet extends StatelessWidget {
       children: [
         _stepper(
           context,
-          'sport.routines.sets',
-          '${item.targetSets}',
-          accent,
-          (delta) => item.copyWith(
-            targetSets: (item.targetSets + delta).clamp(1, 12),
-          ),
+          labelKey: 'sport.routines.sets',
+          valueText: '${item.targetSets}',
+          accent: accent,
+          current: item.targetSets.toDouble(),
+          min: 1,
+          max: 12,
+          step: 1,
+          apply: (value) => item.copyWith(targetSets: value.round()),
         ),
         const SizedBox(height: 8),
         _stepper(
           context,
-          isTimed ? 'sport.routines.seconds' : 'sport.routines.reps',
-          isTimed ? '${item.target} s' : '${item.target}',
-          accent,
-          (delta) => item.copyWith(
-            target: (item.target + delta * (isTimed ? 5 : 1)).clamp(1, 600),
-          ),
+          labelKey: isTimed ? 'sport.routines.seconds' : 'sport.routines.reps',
+          valueText: isTimed ? '${item.target} s' : '${item.target}',
+          accent: accent,
+          current: item.target.toDouble(),
+          min: 1,
+          max: 600,
+          step: isTimed ? 5 : 1,
+          apply: (value) => item.copyWith(target: value.round()),
         ),
         if (isWeighted) ...[
           const SizedBox(height: 8),
           _stepper(
             context,
-            'sport.routines.weight',
-            '${item.targetWeight.toStringAsFixed(1)} kg',
-            accent,
-            (delta) => item.copyWith(
-              targetWeight: (item.targetWeight + delta * 2.5).clamp(0, 500),
-            ),
+            labelKey: 'sport.routines.weight',
+            valueText: '${item.targetWeight.toStringAsFixed(1)} kg',
+            accent: accent,
+            current: item.targetWeight,
+            min: 0,
+            max: 500,
+            step: 2.5,
+            decimal: true,
+            apply: (value) => item.copyWith(targetWeight: value),
           ),
         ],
         const SizedBox(height: 8),
         _stepper(
           context,
-          'sport.routines.rest',
-          '${item.restSeconds} s',
-          accent,
-          (delta) => item.copyWith(
-            restSeconds: (item.restSeconds + delta * 15).clamp(0, 600),
-          ),
+          labelKey: 'sport.routines.rest',
+          valueText: '${item.restSeconds} s',
+          accent: accent,
+          current: item.restSeconds.toDouble(),
+          min: 0,
+          max: 600,
+          step: 15,
+          apply: (value) => item.copyWith(restSeconds: value.round()),
         ),
-        if (exercise != null) ...[
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              label: LocaleText('sport.exercises.rename'),
-              // Über den Navigator-Context öffnen, nicht über [context]: dieses
-              // Sheet ist nach dem pop() deaktiviert, ein Provider-Lookup darauf
-              // würde werfen ("deactivated widget's ancestor").
-              onPressed: () {
-                final navigator = Navigator.of(context);
-                navigator.pop();
-                showExerciseEditorSheet(navigator.context, existing: exercise);
-              },
-            ),
-          ),
-        ],
       ],
     );
   }
 
   Widget _stepper(
-    BuildContext context,
-    String labelKey,
-    String valueText,
-    Color accent,
-    RoutineItem Function(int delta) apply,
-  ) {
-    void bump(int delta) {
+    BuildContext context, {
+    required String labelKey,
+    required String valueText,
+    required Color accent,
+    required double current,
+    required double min,
+    required double max,
+    required double step,
+    bool decimal = false,
+    required RoutineItem Function(double value) apply,
+  }) {
+    void set(double value) {
       HapticFeedback.selectionClick();
       context.read<TrainingState>().updateRoutineItem(
         routineId,
         index,
-        apply(delta),
+        apply(value.clamp(min, max).toDouble()),
       );
     }
 
@@ -133,8 +129,17 @@ class _RoutineItemEditorSheet extends StatelessWidget {
       labelKey: labelKey,
       valueText: valueText,
       accent: accent,
-      onMinus: () => bump(-1),
-      onPlus: () => bump(1),
+      onMinus: () => set(current - step),
+      onPlus: () => set(current + step),
+      onValueTap: () => showSportNumberInput(
+        context,
+        titleKey: labelKey,
+        initial: current,
+        min: min,
+        max: max,
+        decimal: decimal,
+        onSubmit: set,
+      ),
     );
   }
 }
