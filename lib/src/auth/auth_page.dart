@@ -97,7 +97,6 @@ class _AuthPageState extends State<AuthPage> {
       enabled: !_busy,
       decoration: InputDecoration(
         labelText: Locales.string(context, labelKey),
-        border: const OutlineInputBorder(),
       ),
     );
   }
@@ -109,7 +108,6 @@ class _AuthPageState extends State<AuthPage> {
       enabled: !_busy,
       decoration: InputDecoration(
         labelText: Locales.string(context, 'auth.password'),
-        border: const OutlineInputBorder(),
         suffixIcon: IconButton(
           icon: Icon(
             _showPassword ? Icons.visibility_off : Icons.visibility,

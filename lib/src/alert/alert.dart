@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 
@@ -52,13 +51,17 @@ class AlertState extends State<Alert> {
     final theme = Theme.of(context);
     return AlertDialog(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(15.0)),
+        borderRadius: BorderRadius.all(Radius.circular(26.0)),
       ),
-      contentPadding: const EdgeInsets.only(top: 10),
+      contentPadding: const EdgeInsets.only(top: 24),
       title: Center(
-        child: CircleAvatar(
-          radius: 30,
-          backgroundColor: theme.bottomNavigationBarTheme.backgroundColor,
+        child: Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: createAlertIconColor()?.withValues(alpha: 0.12),
+          ),
           child: createAlertIcon(),
         ),
       ),
@@ -81,31 +84,33 @@ class AlertState extends State<Alert> {
     );
   }
 
-  /// The (optional) cancel button next to the confirm button.
+  /// The large, full-width action buttons: an optional outlined cancel next to
+  /// the filled confirm.
   Widget _actions(ThemeData theme) {
     final disabled =
         widget.confirmButtonEnabled != null && !widget.confirmButtonEnabled!();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (widget.cancelButton == true)
-          Container(
-            margin: const EdgeInsets.only(top: 15, bottom: 15, right: 10),
-            child: _button(
-              color: widget.cancelButtonColor ?? Colors.grey,
-              textKey: widget.cancelButtonText ?? "alert.cancel",
-              onPressed: () => Navigator.pop(context),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+      child: Row(
+        children: [
+          if (widget.cancelButton == true) ...[
+            Expanded(
+              child: _cancelButton(
+                widget.cancelButtonColor,
+                widget.cancelButtonText ?? "alert.cancel",
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: _confirmButton(
+              _confirmColor(theme, disabled),
+              widget.confirmButtonText ?? "alert.ok",
+              () => _onConfirm(disabled),
             ),
           ),
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 15),
-          child: _button(
-            color: _confirmColor(theme, disabled),
-            textKey: widget.confirmButtonText ?? "alert.ok",
-            onPressed: () => _onConfirm(disabled),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -125,47 +130,46 @@ class AlertState extends State<Alert> {
     widget.callback?.call();
   }
 
-  /// The shared compact, rounded action button used for both cancel and confirm.
-  Widget _button({
-    required Color color,
-    required String textKey,
-    required VoidCallback onPressed,
-  }) {
-    return ElevatedButton(
+  Widget _confirmButton(Color color, String textKey, VoidCallback onPressed) {
+    return FilledButton(
       onPressed: onPressed,
-      style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.all(color),
-        shape: WidgetStateProperty.all(
-          const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(5.0)),
-          ),
-        ),
-        padding: WidgetStateProperty.all(
-          const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-        ),
-        minimumSize: WidgetStateProperty.all(Size.zero),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        visualDensity: VisualDensity.compact,
+      style: FilledButton.styleFrom(
+        backgroundColor: color,
+        minimumSize: const Size.fromHeight(50),
       ),
       child: LocaleText(
         textKey,
-        style: const TextStyle(color: Colors.white, fontSize: 15),
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _cancelButton(Color? color, String textKey) {
+    return OutlinedButton(
+      onPressed: () => Navigator.pop(context),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color ?? Theme.of(context).colorScheme.onSurface,
+        minimumSize: const Size.fromHeight(50),
+      ),
+      child: LocaleText(
+        textKey,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
       ),
     );
   }
 
   Widget createAlertIcon() {
-    IconData? iconData = CupertinoIcons.circle;
+    IconData? iconData = Icons.info_rounded;
     if (widget.icon != null) {
       iconData = widget.icon;
     } else if (widget.type != null) {
       if (widget.type == AlertType.success) {
-        iconData = CupertinoIcons.check_mark_circled;
+        iconData = Icons.check_circle_rounded;
       } else if (widget.type == AlertType.error) {
-        iconData = CupertinoIcons.exclamationmark_triangle;
+        iconData = Icons.error_rounded;
       }
     }
-    return Icon(iconData, size: 35, color: createAlertIconColor());
+    return Icon(iconData, size: 38, color: createAlertIconColor());
   }
 
   Color? createAlertIconColor() {

@@ -86,9 +86,7 @@ class _WeightEntrySheetState extends State<_WeightEntrySheet> {
             ],
             decoration: InputDecoration(
               labelText: Locales.string(context, 'sport.weight'),
-              suffixText: 'kg',
-              border: const OutlineInputBorder(),
-            ),
+              suffixText: 'kg',            ),
           ),
           const SizedBox(height: 24),
           FilledButton(

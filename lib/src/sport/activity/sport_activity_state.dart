@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../sport_models.dart';
 import '../sport_store.dart';
 import 'step_baseline.dart';
 
@@ -21,8 +22,32 @@ class SportActivityState extends ChangeNotifier {
   int? _importedSteps;
   double? _importedDistanceKm;
   double? _importedCalories;
+  List<DailyActivity> _archive = const [];
 
-  SportActivityState([this._store = const SportStore()]);
+  SportActivityState([this._store = const SportStore()]) {
+    _loadArchive();
+  }
+
+  Future<void> _loadArchive() async {
+    _archive = await _store.loadActivityArchive()
+      ..sort((first, second) => first.dateKey.compareTo(second.dateKey));
+    notifyListeners();
+  }
+
+  /// Tages-Aktivitätsarchiv (aufsteigend nach Datum) für die Detail-Seiten.
+  List<DailyActivity> get activityArchive => List.unmodifiable(_archive);
+
+  /// Importierte Tage upserten (per [DailyActivity.dateKey]) und persistieren.
+  Future<void> mergeArchive(List<DailyActivity> days) async {
+    final byDate = {for (final day in _archive) day.dateKey: day};
+    for (final day in days) {
+      byDate[day.dateKey] = day;
+    }
+    _archive = byDate.values.toList()
+      ..sort((first, second) => first.dateKey.compareTo(second.dateKey));
+    notifyListeners();
+    await _store.saveActivityArchive(_archive);
+  }
 
   /// Importierte Schritte (Google Health) haben Vorrang vor dem Schrittzähler.
   int get todaySteps => _importedSteps ?? _todaySteps ?? 0;

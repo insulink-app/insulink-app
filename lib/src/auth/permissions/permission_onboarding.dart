@@ -96,13 +96,13 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       await widget.onDone();
       return;
     }
+    // Reset BEFORE animating so the incoming page never inherits the spinner
+    // (onPageChanged flips _index mid-animation, which would flash it there).
+    setState(() => _busy = false);
     await _controller.nextPage(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
-    if (mounted) {
-      setState(() => _busy = false);
-    }
   }
 
   @override

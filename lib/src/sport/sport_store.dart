@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'sport_models.dart';
+import 'training/cardio_models.dart';
 
 /// Persistenz für den Sport-Bereich: JSON-Blobs in [FlutterSecureStorage], wie
 /// `g7/store.dart`. Anders als der G7-Store braucht der Sport-Bereich keinen
@@ -14,7 +15,10 @@ class SportStore {
   static const _kExercises = 'sport.exercises';
   static const _kRoutines = 'sport.routines';
   static const _kSessions = 'sport.sessions';
+  static const _kActivityArchive = 'sport.activity_archive';
+  static const _kTrainings = 'sport.trainings';
   static const _sessionCap = 500;
+  static const _trainingCap = 500;
   static const _kStride = 'sport.stride_cm';
   static const _kStepsBaselineDate = 'sport.steps_baseline_date';
   static const _kStepsBaselineCounter = 'sport.steps_baseline_counter';
@@ -66,6 +70,24 @@ class SportStore {
         : sessions;
     return _saveList(_kSessions, capped.map((s) => s.toJson()).toList());
   }
+
+  Future<List<CardioTraining>> loadTrainings() async =>
+      (await _loadList(_kTrainings)).map(CardioTraining.fromJson).toList();
+
+  Future<void> saveTrainings(List<CardioTraining> trainings) {
+    final capped = trainings.length > _trainingCap
+        ? trainings.sublist(trainings.length - _trainingCap)
+        : trainings;
+    return _saveList(_kTrainings, capped.map((t) => t.toJson()).toList());
+  }
+
+  Future<List<DailyActivity>> loadActivityArchive() async =>
+      (await _loadList(_kActivityArchive)).map(DailyActivity.fromJson).toList();
+
+  Future<void> saveActivityArchive(List<DailyActivity> days) => _saveList(
+    _kActivityArchive,
+    days.map((day) => day.toJson()).toList(),
+  );
 
   Future<int> loadStrideCm() async =>
       int.tryParse(await _storage.read(key: _kStride) ?? '') ?? defStrideCm;

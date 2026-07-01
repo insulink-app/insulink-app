@@ -6,9 +6,9 @@ import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
 
-/// Knopf, der Daten aus Google Health (Health Connect) zieht — Schritte,
-/// Distanz, Kalorien (heute) und Gewicht (Verlauf) — mit Lade- und Ergebnis-
-/// Rückmeldung.
+/// Gebrandete Karte, die die **komplette** Google-Health-Historie synchronisiert
+/// (Schritte/Distanz/Kalorien ins Archiv, Gewicht in den Verlauf) — mit Lade-
+/// und Ergebnis-Rückmeldung.
 class HealthImportButton extends StatefulWidget {
   const HealthImportButton({super.key});
 
@@ -42,17 +42,67 @@ class _HealthImportButtonState extends State<HealthImportButton> {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: _busy ? null : _run,
-      icon: _busy
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.sync),
-      label: LocaleText('sport.health.import'),
-      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.primary.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: _busy ? null : _run,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              _badge(scheme),
+              const SizedBox(width: 14),
+              Expanded(child: _text(context, scheme)),
+              const SizedBox(width: 10),
+              _trailing(scheme),
+            ],
+          ),
+        ),
+      ),
     );
+  }
+
+  Widget _badge(ColorScheme scheme) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(Icons.favorite_rounded, color: scheme.primary, size: 22),
+    );
+  }
+
+  Widget _text(BuildContext context, ColorScheme scheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        LocaleText(
+          'sport.health.import',
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 2),
+        LocaleText(
+          'sport.health.subtitle',
+          style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.6)),
+        ),
+      ],
+    );
+  }
+
+  Widget _trailing(ColorScheme scheme) {
+    if (_busy) {
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    return Icon(Icons.sync_rounded, color: scheme.primary);
   }
 }

@@ -140,9 +140,7 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
           decoration: InputDecoration(
             counterText: "",
             prefixIcon: const Icon(Icons.person),
-            hintText: Locales.string(context, "profile.account.name"),
-            border: const OutlineInputBorder(),
-          ),
+            hintText: Locales.string(context, "profile.account.name"),          ),
         ),
       ),
       cancelButton: true,

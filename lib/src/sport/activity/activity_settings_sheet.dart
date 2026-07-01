@@ -51,11 +51,6 @@ class _ActivitySettingsSheet extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         const HealthImportButton(),
-        const SizedBox(height: 8),
-        LocaleText(
-          'sport.health.note',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-        ),
       ],
     );
   }

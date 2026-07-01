@@ -16,6 +16,7 @@ import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/theme/profile_theme_state.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_state.dart';
+import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/theme/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +31,7 @@ typedef AppPreferences = ({
   ProfileSilentState silent,
   SportState sport,
   TrainingState training,
+  CardioTrainingState cardio,
 });
 
 Future<void> main() async {
@@ -113,6 +115,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.silent),
         ChangeNotifierProvider(create: (_) => prefs.sport),
         ChangeNotifierProvider(create: (_) => prefs.training),
+        ChangeNotifierProvider(create: (_) => prefs.cardio),
         // Schrittzähler — wird erst beim Öffnen des Sport-Tabs gestartet
         // (ensureStarted), nicht hier, um Berechtigung/Stream nicht beim
         // App-Start zu erzwingen.
@@ -161,6 +164,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       silent: ProfileSilentState(await ProfileSilentState.load()),
       sport: await SportState.load(),
       training: await TrainingState.load(),
+      cardio: await CardioTrainingState.load(),
     );
   }
 }

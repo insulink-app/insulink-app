@@ -3,6 +3,7 @@ import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/sport/activity/activity_summary_card.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/routines/routines_section.dart';
+import 'package:insulink/src/sport/training/cardio_section.dart';
 import 'package:provider/provider.dart';
 
 class SportBody extends AppPageBody {
@@ -41,9 +42,15 @@ class _SportBodyContentState extends State<SportBodyContent> {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      // Immer scroll-/bouncefähig, damit die ganze Seite einheitlich als ein
+      // Block mitscrollt (kein „festgeklebter" Abschnitt).
+      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+      // Bottom-Padding hält die zentrierte Injection-FAB (page.dart) frei.
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
       children: const [
         ActivitySummaryCard(),
+        SizedBox(height: 28),
+        CardioSection(),
         SizedBox(height: 28),
         RoutinesSection(),
       ],

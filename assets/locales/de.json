@@ -274,7 +274,13 @@
       "calories": "Kalorien",
       "stride": "Schrittlänge",
       "estimate_note": "Distanz und Kalorien sind Schätzungen aus deinen Schritten.",
-      "permission": "Bewegungs-Berechtigung fehlt – Schritte können nicht gezählt werden."
+      "permission": "Bewegungs-Berechtigung fehlt – Schritte können nicht gezählt werden.",
+      "detail": {
+        "empty": "Noch keine Aktivitätsdaten. Synchronisiere Google Health.",
+        "latest": "Zuletzt",
+        "average": "Ø / Tag",
+        "total": "Gesamt"
+      }
     },
     "weight": {
       "_": "Gewicht",
@@ -283,7 +289,10 @@
       "current": "Aktuell",
       "history": "Verlauf",
       "delta": "# kg",
-      "delete_confirm": "Diesen Gewichtseintrag löschen?"
+      "delete_confirm": "Diesen Gewichtseintrag löschen?",
+      "min": "Min",
+      "avg": "Ø",
+      "max": "Max"
     },
     "exercises": {
       "_": "Übungen",
@@ -296,7 +305,8 @@
         "reps": "Wiederholungen",
         "weighted": "Gewicht",
         "timed": "Zeit"
-      }
+      },
+      "rename": "Übung umbenennen"
     },
     "routines": {
       "_": "Routinen",
@@ -328,10 +338,40 @@
     },
     "health": {
       "import": "Aus Google Health importieren",
-      "note": "Importiert Schritte, Distanz und Kalorien (heute) sowie dein Gewicht aus Google Health.",
+      "note": "Synchronisiert deine komplette Google-Health-Historie: Schritte, Distanz und Kalorien pro Tag sowie dein Gewicht.",
       "imported": "Aus Google Health importiert",
       "denied": "Zugriff auf Google Health verweigert",
-      "unavailable": "Google Health (Health Connect) ist nicht verfügbar"
+      "unavailable": "Google Health (Health Connect) ist nicht verfügbar",
+      "subtitle": "Komplette Historie synchronisieren"
+    },
+    "range": {
+      "d7": "7T",
+      "d30": "30T",
+      "d90": "90T",
+      "d365": "1J",
+      "all": "Alle"
+    },
+    "logbook": {
+      "_": "Logbuch",
+      "empty": "Noch keine durchgeführten Routinen.",
+      "deleted_routine": "Gelöschte Routine",
+      "sets": "# Sätze"
+    },
+    "trainings": {
+      "_": "Trainings",
+      "walk": "Gehen",
+      "jog": "Joggen",
+      "bike": "Radfahren",
+      "duration": "Dauer",
+      "distance": "Strecke",
+      "speed": "Tempo",
+      "stop": "Stopp",
+      "start": "Start",
+      "end": "Ende",
+      "avg_speed": "Ø-Tempo",
+      "delete_confirm": "Dieses Training wirklich löschen?",
+      "no_route": "Keine Route aufgezeichnet",
+      "location_denied": "Standort-Berechtigung fehlt – Training kann nicht aufgezeichnet werden."
     }
   },
   "profile": {

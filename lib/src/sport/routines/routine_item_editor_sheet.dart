@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
+import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
+import 'package:insulink/src/sport/exercises/exercise_editor_sheet.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
@@ -89,6 +91,20 @@ class _RoutineItemEditorSheet extends StatelessWidget {
             restSeconds: (item.restSeconds + delta * 15).clamp(0, 600),
           ),
         ),
+        if (exercise != null) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: LocaleText('sport.exercises.rename'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                showExerciseEditorSheet(context, existing: exercise);
+              },
+            ),
+          ),
+        ],
       ],
     );
   }

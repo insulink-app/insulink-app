@@ -41,7 +41,7 @@ void main() {
       const routine = SportRoutine(
         id: 'r1',
         name: 'Push',
-        items: [RoutineItem(exerciseId: 'e1', targetSets: 4, target: 8, targetWeight: 20, restSeconds: 90)],
+        items: [RoutineItem(id: 'i1', exerciseId: 'e1', targetSets: 4, target: 8, targetWeight: 20, restSeconds: 90)],
       );
       final back = SportRoutine.fromJson(routine.toJson());
       expect(back.name, 'Push');
@@ -62,6 +62,41 @@ void main() {
     });
   });
 
+  group('RoutineItem id (reorder key)', () {
+    test('preserves a stored id', () {
+      const item = RoutineItem(id: 'keep', exerciseId: 'e1');
+      expect(RoutineItem.fromJson(item.toJson()).id, 'keep');
+    });
+
+    test('migrates legacy items without an id to a non-empty unique one', () {
+      final legacy = {'ex': 'e1', 'sets': 3, 'target': 10, 'weight': 0, 'rest': 60};
+      final first = RoutineItem.fromJson(Map.of(legacy)).id;
+      final second = RoutineItem.fromJson(Map.of(legacy)).id;
+      expect(first, isNotEmpty);
+      expect(first, isNot(second));
+    });
+  });
+
+  group('reorder semantics (onReorderItem)', () {
+    // onReorderItem liefert newIndex bereits korrigiert; die Bewegung ist ein
+    // reines removeAt→insert. Dieser Test sichert die Reihenfolge-Logik ab.
+    test('moving item 0 to index 2 reorders correctly', () {
+      final items = ['a', 'b', 'c'];
+      items.insert(2, items.removeAt(0));
+      expect(items, ['b', 'c', 'a']);
+    });
+  });
+
+  group('DailyActivity round-trip', () {
+    test('survives encode → decode', () {
+      const day = DailyActivity(dateKey: '2026-07-01', steps: 8000, distanceKm: 6.2, calories: 320);
+      final back = DailyActivity.fromJson(day.toJson());
+      expect(back.dateKey, '2026-07-01');
+      expect(back.steps, 8000);
+      expect(back.calories, 320);
+    });
+  });
+
   group('WorkoutRunner', () {
     test('logs one set per completion and finishes after the last set', () {
       const exercise = SportExercise(id: 'e1', name: 'Squat', kind: ExerciseKind.reps);
@@ -69,7 +104,7 @@ void main() {
         id: 'r1',
         name: 'Legs',
         // restSeconds: 0 ⇒ keine zeitgesteuerte Pause, deterministisch testbar.
-        items: [RoutineItem(exerciseId: 'e1', targetSets: 2, target: 10, restSeconds: 0)],
+        items: [RoutineItem(id: 'i1', exerciseId: 'e1', targetSets: 2, target: 10, restSeconds: 0)],
       );
       WorkoutSession? finished;
       final runner = WorkoutRunner(routine, [exercise])

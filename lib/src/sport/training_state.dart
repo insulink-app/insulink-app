@@ -108,9 +108,10 @@ class TrainingState extends ChangeNotifier {
     }
   }
 
-  Future<void> addRoutineItem(String routineId, RoutineItem item) async {
+  Future<void> addRoutineItem(String routineId, String exerciseId) async {
     final routine = routineById(routineId);
     if (routine != null) {
+      final item = RoutineItem(id: _newId(), exerciseId: exerciseId);
       await _replaceRoutine(routine.copyWith(items: [...routine.items, item]));
     }
   }

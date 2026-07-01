@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/exercises/exercises_page.dart';
+import 'package:insulink/src/sport/logbook/workout_log_page.dart';
 import 'package:insulink/src/sport/routines/routine_editor_page.dart';
 import 'package:insulink/src/sport/sport_add_tile.dart';
 import 'package:insulink/src/sport/sport_models.dart';
@@ -27,13 +28,25 @@ class RoutinesSection extends StatelessWidget {
               'sport.routines',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.fitness_center, size: 20),
-              tooltip: Locales.string(context, 'sport.exercises'),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const ExercisesPage()),
-              ),
+            Row(
+              children: [
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.history, size: 20),
+                  tooltip: Locales.string(context, 'sport.logbook'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const WorkoutLogPage()),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.fitness_center, size: 20),
+                  tooltip: Locales.string(context, 'sport.exercises'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const ExercisesPage()),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -77,7 +90,7 @@ class RoutinesSection extends StatelessWidget {
         trailing: routine.items.isEmpty
             ? null
             : IconButton(
-                icon: Icon(Icons.play_circle_fill, size: 32, color: scheme.primary),
+                icon: Icon(Icons.play_circle_fill, size: 44, color: scheme.primary),
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => WorkoutRunnerPage(routine: routine),

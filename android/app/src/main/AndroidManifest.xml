@@ -6,11 +6,17 @@
     <!-- Schrittzähler für den Sport-Tab (pedometer) -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
 
+    <!-- GPS-Trainings (Gehen/Joggen/Radfahren) — Route auf der Karte -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <!-- Health Connect (Google Health) Import: Schritte, Distanz, Kalorien, Gewicht -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+    <!-- Erlaubt das Lesen von Daten älter als 30 Tage (komplette Historie) -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
 
     <!-- Bluetooth Berechtigungen (Android < 12) -->
     <uses-permission android:name="android.permission.BLUETOOTH"

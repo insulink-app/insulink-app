@@ -142,9 +142,7 @@ class _NumberField extends StatelessWidget {
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
       decoration: InputDecoration(
         labelText: Locales.string(context, labelKey),
-        suffixText: suffix,
-        border: const OutlineInputBorder(),
-      ),
+        suffixText: suffix,      ),
     );
   }
 }
@@ -161,9 +159,7 @@ class _BolusField extends StatelessWidget {
     final value = bolus;
     return InputDecorator(
       decoration: InputDecoration(
-        labelText: Locales.string(context, 'injection.bolus'),
-        border: const OutlineInputBorder(),
-        filled: true,
+        labelText: Locales.string(context, 'injection.bolus'),        filled: true,
         fillColor: theme.colorScheme.primary.withValues(alpha: 0.06),
       ),
       child: Text(

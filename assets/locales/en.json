@@ -274,7 +274,13 @@
       "calories": "Calories",
       "stride": "Stride length",
       "estimate_note": "Distance and calories are estimated from your steps.",
-      "permission": "Motion permission missing – steps can't be counted."
+      "permission": "Motion permission missing – steps can't be counted.",
+      "detail": {
+        "empty": "No activity data yet. Sync Google Health.",
+        "latest": "Latest",
+        "average": "Avg / day",
+        "total": "Total"
+      }
     },
     "weight": {
       "_": "Weight",
@@ -283,7 +289,10 @@
       "current": "Current",
       "history": "History",
       "delta": "# kg",
-      "delete_confirm": "Delete this weight entry?"
+      "delete_confirm": "Delete this weight entry?",
+      "min": "Min",
+      "avg": "Avg",
+      "max": "Max"
     },
     "exercises": {
       "_": "Exercises",
@@ -296,7 +305,8 @@
         "reps": "Reps",
         "weighted": "Weight",
         "timed": "Time"
-      }
+      },
+      "rename": "Rename exercise"
     },
     "routines": {
       "_": "Routines",
@@ -328,10 +338,40 @@
     },
     "health": {
       "import": "Import from Google Health",
-      "note": "Imports steps, distance and calories (today) plus your weight from Google Health.",
+      "note": "Syncs your complete Google Health history: daily steps, distance and calories plus your weight.",
       "imported": "Imported from Google Health",
       "denied": "Google Health access denied",
-      "unavailable": "Google Health (Health Connect) is not available"
+      "unavailable": "Google Health (Health Connect) is not available",
+      "subtitle": "Sync your full history"
+    },
+    "range": {
+      "d7": "7d",
+      "d30": "30d",
+      "d90": "90d",
+      "d365": "1y",
+      "all": "All"
+    },
+    "logbook": {
+      "_": "Logbook",
+      "empty": "No completed routines yet.",
+      "deleted_routine": "Deleted routine",
+      "sets": "# sets"
+    },
+    "trainings": {
+      "_": "Trainings",
+      "walk": "Walk",
+      "jog": "Jog",
+      "bike": "Cycle",
+      "duration": "Duration",
+      "distance": "Distance",
+      "speed": "Speed",
+      "stop": "Stop",
+      "start": "Start",
+      "end": "End",
+      "avg_speed": "Avg speed",
+      "delete_confirm": "Delete this training?",
+      "no_route": "No route recorded",
+      "location_denied": "Location permission missing – training can't be recorded."
     }
   },
   "profile": {

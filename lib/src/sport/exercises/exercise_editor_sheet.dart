@@ -90,7 +90,6 @@ class _ExerciseEditorSheetState extends State<_ExerciseEditorSheet> {
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               labelText: Locales.string(context, 'sport.exercises.name'),
-              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 20),

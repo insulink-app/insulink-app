@@ -37,7 +37,7 @@ class DevicesBodyContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasSensor = context.watch<G7Controller>().hasSensor;
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       children: [
         _deviceRow(
           context,
@@ -48,6 +48,7 @@ class DevicesBodyContent extends StatelessWidget {
           // mirrored here from the navigator badge.
           notify: !hasSensor,
         ),
+        const SizedBox(height: 14),
         _deviceRow(
           context,
           icon: CupertinoIcons.today_fill,
@@ -59,6 +60,9 @@ class DevicesBodyContent extends StatelessWidget {
     );
   }
 
+  /// A large, card-styled device row: tinted icon badge, bold label, an
+  /// attention dot when needed, and a chevron. More prominent than a plain
+  /// ListTile since there are only two devices.
   Widget _deviceRow(
     BuildContext context, {
     required IconData icon,
@@ -67,32 +71,52 @@ class DevicesBodyContent extends StatelessWidget {
     required bool notify,
   }) {
     final label = Locales.string(context, labelKey);
-    return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(
-        label,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (notify) ...[
-            Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.onSurface.withValues(alpha: 0.04),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => _DeviceSubPage(title: label, body: page),
+          ),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: scheme.onSurface.withValues(alpha: 0.07)),
+          ),
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: scheme.primary, size: 26),
               ),
-            ),
-            const SizedBox(width: 10),
-          ],
-          const Icon(CupertinoIcons.chevron_right, size: 18),
-        ],
-      ),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => _DeviceSubPage(title: label, body: page),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (notify) ...[
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Icon(CupertinoIcons.chevron_right, size: 18, color: scheme.onSurface.withValues(alpha: 0.4)),
+            ],
+          ),
         ),
       ),
     );

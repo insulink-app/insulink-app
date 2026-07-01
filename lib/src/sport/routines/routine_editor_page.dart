@@ -44,7 +44,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       MaterialPageRoute<void>(
         builder: (_) => ExercisesPage(
           onPick: (exercise) =>
-              _training.addRoutineItem(widget.routineId, RoutineItem(exerciseId: exercise.id)),
+              _training.addRoutineItem(widget.routineId, exercise.id),
         ),
       ),
     );
@@ -74,18 +74,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
           ),
         ],
       ),
-      floatingActionButton: routine.items.isEmpty
-          ? null
-          : FloatingActionButton.extended(
-              heroTag: 'routine-start',
-              icon: const Icon(Icons.play_arrow),
-              label: LocaleText('sport.routines.start'),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => WorkoutRunnerPage(routine: routine),
-                ),
-              ),
-            ),
+      bottomNavigationBar: routine.items.isEmpty ? null : _startBar(routine),
       body: Column(
         children: [
           Padding(
@@ -95,30 +84,63 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 labelText: Locales.string(context, 'sport.routines.name'),
-                border: const OutlineInputBorder(),
               ),
               onChanged: (value) => _training.renameRoutine(routine.id, value.trim()),
             ),
           ),
           Expanded(child: _itemsList(routine)),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            child: SportAddTile(
-              labelKey: 'sport.routines.add_exercise',
-              onTap: _addExercise,
-            ),
-          ),
         ],
       ),
     );
   }
 
+  /// Großer, prominenter „Starten"-Button in der unteren Leiste — kollidiert
+  /// (anders als die alte FAB) nicht mit der „Übung hinzufügen"-Kachel.
+  Widget _startBar(SportRoutine routine) {
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      child: SizedBox(
+        height: 64,
+        child: FilledButton.icon(
+          icon: const Icon(Icons.play_arrow_rounded, size: 34),
+          label: LocaleText(
+            'sport.routines.start',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          ),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => WorkoutRunnerPage(routine: routine),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _itemsList(SportRoutine routine) {
+    final addTile = Padding(
+      padding: EdgeInsets.fromLTRB(20, routine.items.isEmpty ? 0 : 2, 20, 24),
+      child: SportAddTile(
+        labelKey: 'sport.routines.add_exercise',
+        onTap: _addExercise,
+      ),
+    );
     if (routine.items.isEmpty) {
-      return Center(child: LocaleText('sport.routines.no_items'));
+      return ListView(
+        padding: const EdgeInsets.only(top: 24),
+        children: [
+          Center(child: LocaleText('sport.routines.no_items')),
+          const SizedBox(height: 20),
+          addTile,
+        ],
+      );
     }
     return ReorderableListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      footer: addTile,
       onReorderItem: (oldIndex, newIndex) =>
           _training.reorderRoutineItems(routine.id, oldIndex, newIndex),
       children: [
@@ -133,7 +155,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     final exercise = _training.exerciseById(item.exerciseId);
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      key: ValueKey('${routine.id}.$index'),
+      key: ValueKey(item.id),
       padding: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         tileColor: scheme.onSurface.withValues(alpha: 0.04),

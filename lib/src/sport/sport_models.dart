@@ -1,6 +1,9 @@
 /// JSON-serialisable Sport-Domänenmodelle.
 library;
 
+/// Zähler für Ersatz-Ids alter [RoutineItem]s ohne gespeicherte `id` (Migration).
+int _legacyItemId = 0;
+
 /// Ein Gewichtseintrag: Zeitpunkt (epoch ms) + Gewicht in kg.
 class WeightEntry {
   final int atEpochMs;
@@ -17,6 +20,42 @@ class WeightEntry {
     kg: (json['kg'] as num).toDouble(),
   );
 }
+
+/// Tages-Aktivität aus Google Health: Schritte, Distanz (km) und aktive
+/// Kalorien eines Kalendertags. [dateKey] ist `yyyy-mm-dd` (lokal). Persistiert
+/// als Langzeit-Archiv, das die Detail-Seiten (Schritte/Distanz/Kalorien) speist.
+class DailyActivity {
+  final String dateKey;
+  final int steps;
+  final double distanceKm;
+  final double calories;
+
+  const DailyActivity({
+    required this.dateKey,
+    required this.steps,
+    required this.distanceKm,
+    required this.calories,
+  });
+
+  DateTime get date => DateTime.parse(dateKey);
+
+  Map<String, dynamic> toJson() => {
+    'd': dateKey,
+    'steps': steps,
+    'km': distanceKm,
+    'kcal': calories,
+  };
+
+  factory DailyActivity.fromJson(Map<String, dynamic> json) => DailyActivity(
+    dateKey: json['d'] as String,
+    steps: json['steps'] as int,
+    distanceKm: (json['km'] as num).toDouble(),
+    calories: (json['kcal'] as num).toDouble(),
+  );
+}
+
+/// Welche Tages-Kennzahl eine Aktivitäts-Detailseite zeigt.
+enum ActivityMetric { steps, distance, calories }
 
 /// Was eine Übung pro Satz erfasst: Wiederholungen, Wiederholungen+Gewicht,
 /// oder eine Dauer (z. B. Plank). Bestimmt die Eingaben im Editor und Runner.
@@ -46,8 +85,11 @@ class SportExercise {
 }
 
 /// Eine Übung innerhalb einer Routine mit ihren Zielwerten. [target] sind je
-/// nach [ExerciseKind] der Übung Wiederholungen ODER Sekunden.
+/// nach [ExerciseKind] der Übung Wiederholungen ODER Sekunden. [id] ist stabil
+/// über Umsortierungen hinweg (Reorder-Key) und identifiziert den Eintrag, nicht
+/// die referenzierte Übung (dieselbe Übung darf mehrfach vorkommen).
 class RoutineItem {
+  final String id;
   final String exerciseId;
   final int targetSets;
   final int target;
@@ -55,6 +97,7 @@ class RoutineItem {
   final int restSeconds;
 
   const RoutineItem({
+    required this.id,
     required this.exerciseId,
     this.targetSets = 3,
     this.target = 10,
@@ -68,6 +111,7 @@ class RoutineItem {
     double? targetWeight,
     int? restSeconds,
   }) => RoutineItem(
+    id: id,
     exerciseId: exerciseId,
     targetSets: targetSets ?? this.targetSets,
     target: target ?? this.target,
@@ -76,6 +120,7 @@ class RoutineItem {
   );
 
   Map<String, dynamic> toJson() => {
+    'id': id,
     'ex': exerciseId,
     'sets': targetSets,
     'target': target,
@@ -83,7 +128,10 @@ class RoutineItem {
     'rest': restSeconds,
   };
 
+  /// Alte Einträge ohne `id` bekommen beim Laden eine — sie wird beim nächsten
+  /// Speichern mitgeschrieben (Migration).
   factory RoutineItem.fromJson(Map<String, dynamic> json) => RoutineItem(
+    id: json['id'] as String? ?? 'legacy-${_legacyItemId++}',
     exerciseId: json['ex'] as String,
     targetSets: json['sets'] as int,
     target: json['target'] as int,

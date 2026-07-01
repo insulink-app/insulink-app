@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/activity/activity_detail_page.dart';
 import 'package:insulink/src/sport/activity/activity_settings_sheet.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:insulink/src/sport/weight/weight_detail_page.dart';
 import 'package:provider/provider.dart';
@@ -34,12 +36,14 @@ class ActivitySummaryCard extends StatelessWidget {
             icon: Icons.directions_walk,
             labelKey: 'sport.activity.steps',
             value: '$steps',
+            onTap: () => _openDetail(context, ActivityMetric.steps),
           ),
           _SummaryTile(
             icon: Icons.straighten,
             labelKey: 'sport.activity.distance',
             value: distanceKm.toStringAsFixed(2),
             unit: 'km',
+            onTap: () => _openDetail(context, ActivityMetric.distance),
           ),
         ),
         const SizedBox(height: 12),
@@ -49,6 +53,7 @@ class ActivitySummaryCard extends StatelessWidget {
             labelKey: 'sport.activity.calories',
             value: '${calories.round()}',
             unit: 'kcal',
+            onTap: () => _openDetail(context, ActivityMetric.calories),
           ),
           _SummaryTile(
             icon: Icons.monitor_weight,
@@ -68,6 +73,12 @@ class ActivitySummaryCard extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+
+  void _openDetail(BuildContext context, ActivityMetric metric) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => ActivityDetailPage(metric: metric)),
     );
   }
 
