@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'sport_models.dart';
 import 'sport_store.dart';
+import 'sport_sync.dart';
 import 'workout/workout_snapshot.dart';
 
 /// Shared training state: exercise library, routines and logged sessions. Its
@@ -84,7 +85,7 @@ class TrainingState extends ChangeNotifier {
     final exercise = SportExercise(id: _newId(), name: name, kind: kind);
     _exercises.add(exercise);
     notifyListeners();
-    await _store.saveExercises(_exercises);
+    await _saveExercises();
     return exercise;
   }
 
@@ -95,13 +96,13 @@ class TrainingState extends ChangeNotifier {
     }
     _exercises[index] = exercise;
     notifyListeners();
-    await _store.saveExercises(_exercises);
+    await _saveExercises();
   }
 
   Future<void> removeExercise(String id) async {
     _exercises.removeWhere((exercise) => exercise.id == id);
     notifyListeners();
-    await _store.saveExercises(_exercises);
+    await _saveExercises();
   }
 
   /// Reorders the exercise library. [newIndex] is already corrected for the
@@ -109,7 +110,7 @@ class TrainingState extends ChangeNotifier {
   Future<void> reorderExercises(int oldIndex, int newIndex) async {
     _exercises.insert(newIndex, _exercises.removeAt(oldIndex));
     notifyListeners();
-    await _store.saveExercises(_exercises);
+    await _saveExercises();
   }
 
   /// Copies an exercise (fresh id, name + [copySuffix]).
@@ -126,7 +127,7 @@ class TrainingState extends ChangeNotifier {
       ),
     );
     notifyListeners();
-    await _store.saveExercises(_exercises);
+    await _saveExercises();
   }
 
   // ---- Routines ----
@@ -135,14 +136,14 @@ class TrainingState extends ChangeNotifier {
     final routine = SportRoutine(id: _newId(), name: name, items: const []);
     _routines.add(routine);
     notifyListeners();
-    await _store.saveRoutines(_routines);
+    await _saveRoutines();
     return routine;
   }
 
   Future<void> removeRoutine(String id) async {
     _routines.removeWhere((routine) => routine.id == id);
     notifyListeners();
-    await _store.saveRoutines(_routines);
+    await _saveRoutines();
   }
 
   /// Copies a routine (fresh routine id, fresh item ids, name + [copySuffix]).
@@ -169,7 +170,7 @@ class TrainingState extends ChangeNotifier {
       ),
     );
     notifyListeners();
-    await _store.saveRoutines(_routines);
+    await _saveRoutines();
   }
 
   Future<void> _replaceRoutine(SportRoutine routine) async {
@@ -179,7 +180,7 @@ class TrainingState extends ChangeNotifier {
     }
     _routines[index] = routine;
     notifyListeners();
-    await _store.saveRoutines(_routines);
+    await _saveRoutines();
   }
 
   Future<void> renameRoutine(String id, String name) async {
@@ -240,13 +241,13 @@ class TrainingState extends ChangeNotifier {
   Future<void> addSession(WorkoutSession session) async {
     _sessions.add(session);
     notifyListeners();
-    await _store.saveSessions(_sessions);
+    await _saveSessions();
   }
 
   Future<void> removeSession(String id) async {
     _sessions.removeWhere((session) => session.id == id);
     notifyListeners();
-    await _store.saveSessions(_sessions);
+    await _saveSessions();
   }
 
   /// The most recent logged set for [exerciseId] at [setIndex] (0-based) across
@@ -263,5 +264,22 @@ class TrainingState extends ChangeNotifier {
       }
     }
     return null;
+  }
+
+  // ---- Persistence (each save also queues a backend sync) ----
+
+  Future<void> _saveExercises() async {
+    await _store.saveExercises(_exercises);
+    SportSync().pushExercises();
+  }
+
+  Future<void> _saveRoutines() async {
+    await _store.saveRoutines(_routines);
+    SportSync().pushRoutines();
+  }
+
+  Future<void> _saveSessions() async {
+    await _store.saveSessions(_sessions);
+    SportSync().pushWorkouts();
   }
 }

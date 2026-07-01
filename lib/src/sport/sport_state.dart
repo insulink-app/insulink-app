@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'sport_models.dart';
 import 'sport_store.dart';
+import 'sport_sync.dart';
 
 /// Shared sport state (weight history + stride length), provided in the provider
 /// tree via `main.dart`. Pattern like `ProfileBolusState`: static [load],
@@ -36,7 +37,7 @@ class SportState extends ChangeNotifier {
       ..add(entry)
       ..sort((first, second) => first.atEpochMs.compareTo(second.atEpochMs));
     notifyListeners();
-    await _store.saveWeights(_weights);
+    await _saveWeights();
   }
 
   /// Adds imported weight entries that aren't present yet (deduplicated by
@@ -57,13 +58,13 @@ class SportState extends ChangeNotifier {
       (first, second) => first.atEpochMs.compareTo(second.atEpochMs),
     );
     notifyListeners();
-    await _store.saveWeights(_weights);
+    await _saveWeights();
   }
 
   Future<void> removeWeight(WeightEntry entry) async {
     _weights.remove(entry);
     notifyListeners();
-    await _store.saveWeights(_weights);
+    await _saveWeights();
   }
 
   Future<void> setStrideCm(int cm) async {
@@ -74,5 +75,11 @@ class SportState extends ChangeNotifier {
     _strideCm = cm;
     notifyListeners();
     await _store.saveStrideCm(cm);
+  }
+
+  /// Persist the weights and queue a backend sync.
+  Future<void> _saveWeights() async {
+    await _store.saveWeights(_weights);
+    SportSync().pushMeasurements();
   }
 }

@@ -54,9 +54,9 @@ class _SportBodyContentState extends State<SportBodyContent> {
       children: const [
         ActivitySummaryCard(),
         SizedBox(height: 28),
-        CardioSection(),
-        SizedBox(height: 28),
         RoutinesSection(),
+        SizedBox(height: 28),
+        CardioSection(),
       ],
     );
   }

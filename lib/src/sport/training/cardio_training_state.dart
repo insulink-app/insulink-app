@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../sport_store.dart';
+import '../sport_sync.dart';
 import 'cardio_detector.dart';
 import 'cardio_models.dart';
 
@@ -27,13 +28,13 @@ class CardioTrainingState extends ChangeNotifier {
   Future<void> addTraining(CardioTraining training) async {
     _trainings.add(training);
     notifyListeners();
-    await _store.saveTrainings(_trainings);
+    await _saveTrainings();
   }
 
   Future<void> removeTraining(String id) async {
     _trainings.removeWhere((training) => training.id == id);
     notifyListeners();
-    await _store.saveTrainings(_trainings);
+    await _saveTrainings();
   }
 
   /// Scans the background GPS log for endurance trainings and saves new ones
@@ -65,7 +66,7 @@ class CardioTrainingState extends ChangeNotifier {
     }
     _trainings.sort((first, second) => first.startMs.compareTo(second.startMs));
     notifyListeners();
-    await _store.saveTrainings(_trainings);
+    await _saveTrainings();
   }
 
   bool _overlapsExisting(CardioTraining candidate) {
@@ -76,5 +77,11 @@ class CardioTrainingState extends ChangeNotifier {
       }
     }
     return false;
+  }
+
+  /// Persist the trainings and queue a backend sync.
+  Future<void> _saveTrainings() async {
+    await _store.saveTrainings(_trainings);
+    SportSync().pushTrainings();
   }
 }

@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../sport_models.dart';
 import '../sport_store.dart';
+import '../sport_sync.dart';
 import 'step_baseline.dart';
 
 /// Reads today's steps from the hardware step counter (`pedometer`). Its own
@@ -46,6 +47,7 @@ class SportActivityState extends ChangeNotifier {
       ..sort((first, second) => first.dateKey.compareTo(second.dateKey));
     notifyListeners();
     await _store.saveActivityArchive(_archive);
+    SportSync().pushMeasurements();
   }
 
   /// Today's archive entry (from the last Health sync), if present. Serves as a
