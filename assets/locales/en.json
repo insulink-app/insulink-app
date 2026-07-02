@@ -88,6 +88,9 @@
    "empty": "no readings yet",
    "hour": "#:00"
   },
+  "time_in_range": "Time in Range",
+  "time_in_range_window": "Last 24 h",
+  "glucose": "Glucose",
   "connect": "Connect",
   "connecting": "Connecting…",
   "pairing_code": "Pairing code",

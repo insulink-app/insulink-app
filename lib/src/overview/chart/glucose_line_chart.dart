@@ -18,6 +18,12 @@ class GlucoseLineChart extends StatelessWidget {
     required this.glucose,
     required this.colors,
     required this.onChartTouch,
+    this.interactive = true,
+    this.minimal = false,
+    this.minYmgdl = 0,
+    this.maxYmgdl = 300,
+    this.highlightSpot,
+    this.pulse = 0,
   });
 
   final List<LineChartBarData> bars;
@@ -35,9 +41,33 @@ class GlucoseLineChart extends StatelessWidget {
   final GlucoseColors colors;
   final void Function(FlTouchEvent, LineTouchResponse?) onChartTouch;
 
-  double get _maxY => glucose.toDisplay(300);
+  /// When false the chart is a static preview (no scrub tooltip/haptics), so an
+  /// outer tap handler can open the full-screen detail page instead.
+  final bool interactive;
 
-  /// Whole-unit gridlines that read cleanly in either unit.
+  /// Minimal (overview) styling: no grid lines and only the two target bounds on
+  /// the Y axis. When false the chart keeps the full look — every Y tick and the
+  /// horizontal grid lines (the detail/"Glucose" page).
+  final bool minimal;
+
+  /// Bottom of the Y axis, in mg/dL. The overview lifts it to ~50 when there's
+  /// no lower data (freeing vertical space); the detail page keeps 0.
+  final int minYmgdl;
+
+  /// Top of the Y axis, in mg/dL. The overview shrinks it to the data so a low
+  /// day doesn't waste vertical space; the detail page keeps the full 300.
+  final int maxYmgdl;
+
+  /// The latest reading, drawn as a pulsing highlighted dot. Null hides it.
+  final FlSpot? highlightSpot;
+
+  /// Pulse phase 0..1 driving the highlight dot's halo (animated by the parent).
+  final double pulse;
+
+  double get _minY => glucose.toDisplay(minYmgdl);
+  double get _maxY => glucose.toDisplay(maxYmgdl);
+
+  /// Whole-unit gridlines/ticks that read cleanly in either unit.
   double get _yInterval => glucose.unit == GlucoseUnit.mmol ? 3.0 : 50.0;
 
   /// Fewer X ticks for shorter windows so labels don't crowd.
@@ -52,12 +82,12 @@ class GlucoseLineChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return LineChart(
       LineChartData(
-        minY: 0,
+        minY: _minY,
         maxY: _maxY,
         minX: shift - rangeHours,
         maxX: shift,
         gridData: FlGridData(
-          show: true,
+          show: !minimal,
           drawVerticalLine: false,
           horizontalInterval: _yInterval,
         ),
@@ -65,7 +95,7 @@ class GlucoseLineChart extends StatelessWidget {
         titlesData: _titles(context),
         extraLinesData: _targetBand(),
         lineTouchData: _touchData(context),
-        lineBarsData: bars,
+        lineBarsData: [...bars, if (highlightSpot != null) _highlightBar()],
       ),
       // No implicit morph animation: the number of zone bars changes between
       // states, so fl_chart would interpolate between mismatched structures —
@@ -81,9 +111,9 @@ class GlucoseLineChart extends StatelessWidget {
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
-          reservedSize: 36,
-          interval: _yInterval,
-          getTitlesWidget: (value, _) => _label(_formatY(value)),
+          reservedSize: 24,
+          interval: minimal ? _minimalTick : _yInterval,
+          getTitlesWidget: (value, _) => _leftLabel(value),
         ),
       ),
       bottomTitles: AxisTitles(
@@ -103,9 +133,45 @@ class GlucoseLineChart extends StatelessWidget {
   Widget _label(String text) =>
       Text(text, style: const TextStyle(fontSize: 10, color: Colors.grey));
 
-  String _formatY(double value) => glucose.unit == GlucoseUnit.mmol
-      ? value.toStringAsFixed(0)
-      : '${value.toInt()}';
+  /// Coarse tick step for the minimal axis — kept large (few ticks per frame,
+  /// since the pulse re-lays-out the chart) while still landing a tick near each
+  /// target bound.
+  double get _minimalTick => glucose.unit == GlucoseUnit.mmol ? 0.5 : 10.0;
+
+  /// Left-axis Y label. In minimal mode only the two target bounds are labelled
+  /// (at their nearest tick, showing the true threshold value); the full chart
+  /// labels every tick.
+  Widget _leftLabel(double value) {
+    if (!minimal) {
+      return _label(_formatY(value));
+    }
+    final target = _targetForTick(value);
+    if (target == null) {
+      return const SizedBox.shrink();
+    }
+    return _label(glucose.format(target));
+  }
+
+  /// The target bound (mg/dL) whose nearest axis tick is [value], or null.
+  int? _targetForTick(double value) {
+    for (final target in [glucose.targetLow, glucose.targetHigh]) {
+      final nearest =
+          (glucose.toDisplay(target) / _minimalTick).round() * _minimalTick;
+      if ((value - nearest).abs() < _minimalTick / 2) {
+        return target;
+      }
+    }
+    return null;
+  }
+
+  String _formatY(double value) {
+    if (glucose.unit == GlucoseUnit.mgdl) {
+      return '${value.round()}';
+    }
+    return value == value.roundToDouble()
+        ? value.toStringAsFixed(0)
+        : value.toStringAsFixed(1);
+  }
 
   /// value is in shifted hours; (value - shift) hours back from the anchor lands
   /// on a full clock hour. Without an anchor, fall back to "Nh" offsets.
@@ -123,28 +189,46 @@ class GlucoseLineChart extends StatelessWidget {
     );
   }
 
-  /// User-configurable target range band.
+  /// User-configurable target range band (the two bound lines). The values are
+  /// labelled on the Y axis (see `_leftLabel`), so the lines stay label-free.
   ExtraLinesData _targetBand() {
     return ExtraLinesData(
       horizontalLines: [
-        HorizontalLine(
-          y: glucose.toDisplay(glucose.targetLow),
-          color: colors.low.withValues(alpha: 0.4),
-          strokeWidth: 1,
-        ),
-        HorizontalLine(
-          y: glucose.toDisplay(glucose.targetHigh),
-          color: colors.high.withValues(alpha: 0.4),
-          strokeWidth: 1,
-        ),
+        _boundLine(glucose.targetLow, colors.low),
+        _boundLine(glucose.targetHigh, colors.high),
       ],
+    );
+  }
+
+  HorizontalLine _boundLine(int mgdl, Color color) {
+    return HorizontalLine(
+      y: glucose.toDisplay(mgdl),
+      color: color.withValues(alpha: 0.4),
+      strokeWidth: 1,
+    );
+  }
+
+  /// The latest reading as a solid zone-coloured core emitting expanding,
+  /// fading rings (a radar-style ripple driven by [pulse]).
+  LineChartBarData _highlightBar() {
+    final spot = highlightSpot!;
+    final color = _zoneForDisplay(spot.y);
+    return LineChartBarData(
+      spots: [spot],
+      barWidth: 0,
+      color: Colors.transparent,
+      dotData: FlDotData(
+        show: true,
+        getDotPainter: (spot, _, _, _) =>
+            RippleDotPainter(color: color, phase: pulse),
+      ),
     );
   }
 
   LineTouchData _touchData(BuildContext context) {
     final theme = Theme.of(context);
     return LineTouchData(
-      enabled: true,
+      enabled: interactive,
       touchCallback: onChartTouch,
       // Only the transparent overlay bar shows a value/indicator → exactly one
       // reading at a time while scrubbing.
@@ -238,4 +322,46 @@ class GlucoseLineChart extends StatelessWidget {
     }
     return colors.inRange;
   }
+}
+
+/// Draws the latest-reading marker: a solid core with a single filled wave that
+/// grows out from the centre and fades as it expands (one wave at a time).
+/// [phase] is the animation clock in 0..1 (sawtooth, not reversing).
+class RippleDotPainter extends FlDotPainter {
+  const RippleDotPainter({required this.color, required this.phase});
+
+  final Color color;
+  final double phase;
+
+  static const double _coreRadius = 5;
+  static const double _maxRadius = 22;
+
+  @override
+  void draw(Canvas canvas, FlSpot spot, Offset center) {
+    final wave = Paint()
+      ..style = PaintingStyle.fill
+      ..color = color.withValues(alpha: (1 - phase) * 0.4);
+    canvas.drawCircle(center, phase * _maxRadius, wave);
+    canvas.drawCircle(center, _coreRadius, Paint()..color = color);
+  }
+
+  @override
+  Size getSize(FlSpot spot) => const Size(_maxRadius * 2, _maxRadius * 2);
+
+  @override
+  Color get mainColor => color;
+
+  @override
+  FlDotPainter lerp(FlDotPainter a, FlDotPainter b, double t) {
+    if (a is RippleDotPainter && b is RippleDotPainter) {
+      return RippleDotPainter(
+        color: Color.lerp(a.color, b.color, t) ?? b.color,
+        phase: b.phase,
+      );
+    }
+    return b;
+  }
+
+  @override
+  List<Object?> get props => [color, phase];
 }

@@ -88,6 +88,9 @@
    "empty": "Noch keine Messwerte",
    "hour": "# Uhr"
   },
+  "time_in_range": "Zeit im Zielbereich",
+  "time_in_range_window": "Letzte 24h",
+  "glucose": "Glukose",
   "connect": "Verbinden",
   "connecting": "Verbinde…",
   "pairing_code": "Kopplungscode",

@@ -50,22 +50,24 @@ class AppTheme {
     );
   }
 
+  static final Color lightPrimary = Colors.indigo;
+
   static final ThemeData light = ThemeData(
     useMaterial3: true,
     primaryColor: Colors.black,
-    colorScheme: const ColorScheme.light(
-      primary: Colors.indigo,
+    colorScheme: ColorScheme.light(
+      primary: lightPrimary,
       onPrimary: onPrimary,
       // ponytail: default secondary is teal — align it to the indigo brand so
       // chips/date-pickers stop tinting turquoise.
-      secondary: Colors.indigo,
-      surface: Color(0xFFE8E8E8),
+      secondary: lightPrimary,
+      surface: const Color(0xFFE8E8E8),
     ),
     filledButtonTheme: _filledButtons,
     elevatedButtonTheme: _elevatedButtons,
     outlinedButtonTheme: _outlinedButtons,
     textButtonTheme: _textButtons,
-    inputDecorationTheme: _inputTheme(const Color(0xFFECECEC), Colors.indigo),
+    inputDecorationTheme: _inputTheme(const Color(0xFFECECEC), lightPrimary),
     appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFFAFAFA)),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Colors.white,
@@ -75,24 +77,23 @@ class AppTheme {
     extensions: const [GlucoseColors.standard],
   );
 
+  static final Color darkPrimary = Colors.indigoAccent;
+
   static final ThemeData dark = ThemeData(
     useMaterial3: true,
     primaryColor: Colors.white,
-    colorScheme: const ColorScheme.dark(
-      primary: Colors.indigoAccent,
+    colorScheme: ColorScheme.dark(
+      primary: darkPrimary,
       onPrimary: onPrimary,
-      secondary: Colors.indigoAccent,
-      surface: Color(0xFF1E1E1E),
-      surfaceContainerHighest: Color(0xFF2A2A2A),
+      secondary: darkPrimary,
+      surface: const Color(0xFF1E1E1E),
+      surfaceContainerHighest: const Color(0xFF2A2A2A),
     ),
     filledButtonTheme: _filledButtons,
     elevatedButtonTheme: _elevatedButtons,
     outlinedButtonTheme: _outlinedButtons,
     textButtonTheme: _textButtons,
-    inputDecorationTheme: _inputTheme(
-      const Color(0xFF2A2A2A),
-      Colors.indigoAccent,
-    ),
+    inputDecorationTheme: _inputTheme(const Color(0xFF2A2A2A), darkPrimary),
     appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1B1B1B)),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Color(0xFF2A2A2A),

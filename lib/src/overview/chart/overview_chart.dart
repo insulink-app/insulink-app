@@ -13,9 +13,25 @@ import 'package:provider/provider.dart';
 
 /// fl_chart line graph of glucose vs. time (hours, 0 = latest reading).
 class OverviewChart extends StatefulWidget {
-  const OverviewChart({super.key, required this.byTime, this.sensorStart});
+  const OverviewChart({
+    super.key,
+    required this.byTime,
+    this.sensorStart,
+    this.preview = false,
+    this.minYmgdl = 0,
+    this.maxYmgdl = 300,
+  });
 
   final SplayTreeMap<int, int> byTime;
+
+  /// Preview mode (on the overview): hide the range selector and disable touch,
+  /// so an outer tap handler can open the full-screen detail page.
+  final bool preview;
+
+  /// Y-axis bounds in mg/dL — the overview passes adaptive values; the detail
+  /// page keeps the full 0–300.
+  final int minYmgdl;
+  final int maxYmgdl;
 
   /// Wall-clock time the session started (`secsSinceStart == 0`). Lets the X
   /// axis show real clock times instead of hours-ago offsets.
@@ -25,12 +41,16 @@ class OverviewChart extends StatefulWidget {
   State<OverviewChart> createState() => _OverviewChartState();
 }
 
-class _OverviewChartState extends State<OverviewChart> {
+class _OverviewChartState extends State<OverviewChart>
+    with SingleTickerProviderStateMixin {
   static const _kRangeKey = 'chart_range_hours';
   static const _storage = FlutterSecureStorage();
 
   /// Visible time window in hours (selectable: 6 / 12 / 24). Persisted.
   int _rangeHours = 24;
+
+  /// Drives the latest-reading dot's pulsing halo.
+  late final AnimationController _pulse;
 
   /// Index of the transparent overlay bar that owns touch (so the haptic and
   /// tooltip ignore the per-zone colour bars + interpolated crossing points).
@@ -44,6 +64,16 @@ class _OverviewChartState extends State<OverviewChart> {
   void initState() {
     super.initState();
     _loadRange();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRange() async {
@@ -85,6 +115,9 @@ class _OverviewChartState extends State<OverviewChart> {
     if (byTime.isEmpty) {
       return Center(child: LocaleText('overview.chart.empty'));
     }
+    if (widget.preview) {
+      return _chart(byTime, glucose, colors);
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -124,11 +157,15 @@ class _OverviewChartState extends State<OverviewChart> {
     // bar (which share boundary points) and the interpolated crossings.
     _touchBarIndex = bars.length;
     bars.add(_touchBar(series.realSpots));
-    return GlucoseLineChart(
-      // Remount on each data change so fl_chart renders the new data statically
-      // instead of tweening between structurally-different bar lists — that lerp
-      // flashes a malformed frame even with a zero-duration animation.
-      key: ValueKey('$latestSecs-${entries.length}-$_rangeHours'),
+    final highlightSpot = series.realSpots.isEmpty
+        ? null
+        : series.realSpots.last;
+    // Remount on each data change so fl_chart renders the new data statically
+    // instead of tweening between structurally-different bar lists — that lerp
+    // flashes a malformed frame even with a zero-duration animation.
+    final key = ValueKey('$latestSecs-${entries.length}-$_rangeHours');
+    GlucoseLineChart chart(double pulse) => GlucoseLineChart(
+      key: key,
       bars: bars,
       touchBarIndex: _touchBarIndex,
       shift: shift,
@@ -137,6 +174,21 @@ class _OverviewChartState extends State<OverviewChart> {
       glucose: glucose,
       colors: colors,
       onChartTouch: _onChartTouch,
+      interactive: !widget.preview,
+      minimal: widget.preview,
+      minYmgdl: widget.minYmgdl,
+      maxYmgdl: widget.maxYmgdl,
+      highlightSpot: widget.preview ? highlightSpot : null,
+      pulse: pulse,
+    );
+    // Only the overview preview pulses; the detail page renders once (no per-
+    // frame relayout of the full chart).
+    if (!widget.preview) {
+      return chart(0);
+    }
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, _) => chart(_pulse.value),
     );
   }
 

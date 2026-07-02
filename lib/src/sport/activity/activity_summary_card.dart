@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/activity_detail_page.dart';
 import 'package:insulink/src/sport/activity/activity_settings_sheet.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/activity/sport_summary_tile.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_state.dart';
@@ -33,13 +33,13 @@ class ActivitySummaryCard extends StatelessWidget {
         _header(context),
         const SizedBox(height: 12),
         _row(
-          _SummaryTile(
+          SportSummaryTile(
             icon: Icons.directions_walk,
             labelKey: 'sport.activity.steps',
             value: sportInt(steps),
             onTap: () => _openDetail(context, ActivityMetric.steps),
           ),
-          _SummaryTile(
+          SportSummaryTile(
             icon: Icons.straighten,
             labelKey: 'sport.activity.distance',
             value: sportDecimal(distanceKm, 2),
@@ -49,14 +49,14 @@ class ActivitySummaryCard extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _row(
-          _SummaryTile(
+          SportSummaryTile(
             icon: Icons.local_fire_department,
             labelKey: 'sport.activity.calories',
             value: sportInt(calories.round()),
             unit: 'kcal',
             onTap: () => _openDetail(context, ActivityMetric.calories),
           ),
-          _SummaryTile(
+          SportSummaryTile(
             icon: Icons.monitor_weight,
             labelKey: 'sport.weight',
             value: latestWeight == null
@@ -112,104 +112,6 @@ class ActivitySummaryCard extends StatelessWidget {
           visualDensity: VisualDensity.compact,
           icon: const Icon(Icons.tune, size: 20),
           onPressed: () => showActivitySettingsSheet(context),
-        ),
-      ],
-    );
-  }
-}
-
-class _SummaryTile extends StatelessWidget {
-  const _SummaryTile({
-    required this.icon,
-    required this.labelKey,
-    required this.value,
-    this.unit,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String labelKey;
-  final String value;
-  final String? unit;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: scheme.primary.withValues(alpha: 0.06),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: scheme.primary.withValues(alpha: 0.12)),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _iconBadge(scheme),
-              const SizedBox(width: 12),
-              Expanded(child: _text(context, scheme)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _iconBadge(ColorScheme scheme) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
-      child: Icon(icon, size: 20, color: scheme.onPrimary),
-    );
-  }
-
-  Widget _text(BuildContext context, ColorScheme scheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          Locales.string(context, labelKey),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Flexible(
-              child: Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            if (unit != null) ...[
-              const SizedBox(width: 3),
-              Text(
-                unit!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
-          ],
         ),
       ],
     );
