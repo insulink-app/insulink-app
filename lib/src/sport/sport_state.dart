@@ -11,14 +11,20 @@ class SportState extends ChangeNotifier {
   final SportStore _store;
   final List<WeightEntry> _weights;
   int _strideCm;
+  int _heightCm;
 
-  SportState(this._store, this._weights, this._strideCm);
+  SportState(this._store, this._weights, this._strideCm, this._heightCm);
 
   static Future<SportState> load() async {
     const store = SportStore();
     final weights = await store.loadWeights()
       ..sort((first, second) => first.atEpochMs.compareTo(second.atEpochMs));
-    return SportState(store, weights, await store.loadStrideCm());
+    return SportState(
+      store,
+      weights,
+      await store.loadStrideCm(),
+      await store.loadHeightCm(),
+    );
   }
 
   /// Weights ascending by time (for the history chart).
@@ -27,6 +33,19 @@ class SportState extends ChangeNotifier {
   WeightEntry? get latestWeight => _weights.isEmpty ? null : _weights.last;
 
   int get strideCm => _strideCm;
+
+  int get heightCm => _heightCm;
+
+  /// Body-mass index from the latest weight and the stored height, or null when
+  /// no weight has been logged yet.
+  double? get bmi {
+    final weight = latestWeight;
+    if (weight == null || _heightCm <= 0) {
+      return null;
+    }
+    final meters = _heightCm / 100;
+    return weight.kg / (meters * meters);
+  }
 
   Future<void> addWeight(double kg, {DateTime? at}) async {
     final entry = WeightEntry(
@@ -75,6 +94,16 @@ class SportState extends ChangeNotifier {
     _strideCm = cm;
     notifyListeners();
     await _store.saveStrideCm(cm);
+  }
+
+  Future<void> setHeightCm(int cm) async {
+    cm = cm.clamp(100, 250);
+    if (cm == _heightCm) {
+      return;
+    }
+    _heightCm = cm;
+    notifyListeners();
+    await _store.saveHeightCm(cm);
   }
 
   /// Persist the weights and queue a backend sync.

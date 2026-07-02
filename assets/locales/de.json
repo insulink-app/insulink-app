@@ -274,8 +274,11 @@
    "steps": "Schritte",
    "distance": "Distanz",
    "calories": "Kalorien",
+   "settings": "Aktivität",
    "stride": "Schrittlänge",
+   "height": "Körpergröße",
    "estimate_note": "Distanz und Kalorien sind Schätzungen aus deinen Schritten.",
+   "height_note": "Die Körpergröße wird für die BMI-Berechnung verwendet.",
    "permission": "Bewegungs-Berechtigung fehlt – Schritte können nicht gezählt werden.",
    "detail": {
     "empty": "Noch keine Aktivitätsdaten. Synchronisiere Google Health.",
@@ -290,6 +293,7 @@
    "add": "Gewicht eintragen",
    "current": "Aktuell",
    "history": "Verlauf",
+   "bmi": "BMI",
    "delta": "# kg",
    "delete_confirm": "Diesen Gewichtseintrag löschen?",
    "min": "Min",
@@ -384,6 +388,11 @@
    "distance": "Strecke",
    "speed": "Tempo",
    "stop": "Stopp",
+   "stop_confirm": "Training wirklich beenden?",
+   "pause": "Pausieren",
+   "resume": "Fortsetzen",
+   "paused": "Pausiert",
+   "resume_active": "Laufendes Training fortsetzen",
    "start": "Start",
    "end": "Ende",
    "avg_speed": "Ø-Tempo",
@@ -431,6 +440,10 @@
    "mgdl": "mg/dL",
    "mmol": "mmol/L"
   },
+  "body": {
+   "_": "Körpermaße",
+   "note": "Die Schrittlänge schätzt die Distanz aus deinen Schritten; die Körpergröße berechnet den BMI auf der Gewichtsseite."
+  },
   "notification": {
    "_": "Benachrichtigungen",
    "description": "Benachrichtigungen erhalten"
@@ -476,6 +489,7 @@
    "theme": "design darstellung hell dunkel farbe modus erscheinungsbild",
    "glucose": "glukose zucker einheit zielbereich grenzwerte alarm mmol mgdl",
    "bolus": "bolus insulin korrektur kohlenhydrate faktor",
+   "body": "körpermaße schrittlänge körpergröße größe bmi gewicht schritte distanz",
    "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose",
    "silent": "stumm lautlos ruhe stören nicht dnd",
    "developer": "entwickler debug logs erweitert protokoll"

@@ -6,6 +6,8 @@ import 'package:insulink/src/devices/devices_body.dart';
 import 'package:insulink/src/injection/injection_button.dart';
 import 'package:insulink/src/overview/overview_body.dart';
 import 'package:insulink/src/sport/sport_body.dart';
+import 'package:insulink/src/sport/training/cardio_recording_page.dart';
+import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:insulink/src/statistics/statistics_body.dart';
@@ -43,16 +45,24 @@ class AppPageState extends State<AppPage> {
     _selectedIndex = widget.initialPageIndex ?? 0;
     appTab.value = _selectedIndex;
     appTab.addListener(_onExternalTab);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _resumeActiveWorkout());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resumeActive());
   }
 
-  /// Reopen a workout that was still running when the app was last closed, so it
+  /// Reopen anything that was still running when the app was last closed, so it
   /// resumes with the correct elapsed time regardless of the active tab. A
-  /// snapshot whose routine no longer exists is cleared.
-  void _resumeActiveWorkout() {
+  /// running GPS training is opened LAST so it ends up on top (it is
+  /// time-sensitive), with a paused workout reachable underneath.
+  void _resumeActive() {
     if (!mounted) {
       return;
     }
+    _resumeActiveWorkout();
+    _resumeActiveTraining();
+  }
+
+  /// Reopen a workout that was still running. A snapshot whose routine no longer
+  /// exists is cleared.
+  void _resumeActiveWorkout() {
     final training = context.read<TrainingState>();
     final snapshot = training.activeWorkout;
     if (snapshot == null) {
@@ -66,6 +76,18 @@ class AppPageState extends State<AppPage> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => WorkoutRunnerPage(routine: routine, resume: snapshot),
+      ),
+    );
+  }
+
+  /// Reopen a GPS training that is still recording in the service.
+  void _resumeActiveTraining() {
+    if (context.read<CardioTrainingState>().activeTraining == null) {
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const CardioRecordingPage(resume: true),
       ),
     );
   }

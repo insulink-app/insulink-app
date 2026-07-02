@@ -25,12 +25,20 @@ class WorkoutRestView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Spacer(),
+    // Keeps the Spacer-centered layout when there is room but scrolls instead of
+    // overflowing when space is tight (e.g. the keyboard covers half the screen
+    // while editing the previous set).
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: IntrinsicHeight(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Spacer(),
           LocaleText(
             'sport.workout.rest',
             textAlign: TextAlign.center,
@@ -45,13 +53,17 @@ class WorkoutRestView extends StatelessWidget {
           _nextLine(context, scheme),
           const SizedBox(height: 24),
           _previousSetEditor(context, scheme),
-          const Spacer(),
-          _buttons(context),
-          TextButton(
-            onPressed: onFinish,
-            child: LocaleText('sport.workout.finish'),
+                  const Spacer(),
+                  _buttons(context),
+                  TextButton(
+                    onPressed: onFinish,
+                    child: LocaleText('sport.workout.finish'),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

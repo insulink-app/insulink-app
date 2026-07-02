@@ -143,6 +143,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
       onNotification: (_) => _snapScroll(),
       child: SingleChildScrollView(
         controller: _scroll,
+        physics: const ClampingScrollPhysics(),
         child: Padding(
           padding: EdgeInsets.only(top: _boxHeight > 0 ? _boxHeight + _gap : 0),
           child: Column(

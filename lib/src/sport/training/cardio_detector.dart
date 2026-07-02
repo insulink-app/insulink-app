@@ -4,14 +4,20 @@ import 'cardio_models.dart';
 
 /// Segments a GPS log into endurance trainings by speed. Pure and plugin-free
 /// (local haversine) so it is unit-testable. Consecutive points moving faster
-/// than [_walkMinKmh] with gaps up to [_maxGap] form a segment; segments below
+/// than [_walkMinKmh] with gaps up to [_maxGap] form a segment; brief stops
+/// (a traffic light / crossing) up to [_maxPause] are tolerated inside a segment
+/// so a short standstill does not split one ride into two. Segments below
 /// [_minDuration] or [_minDistanceM] are dropped; the average speed maps to
-/// walk/jog/bike. `ponytail:` threshold segmentation over the coarse ~60 s log
+/// walk/jog/bike. `ponytail:` threshold segmentation over the coarse ~10 s log
 /// is enough to catch a real run/ride; a proper activity classifier is the
 /// upgrade path if false positives appear.
 class CardioDetector {
   static const _walkMinKmh = 3.0;
   static const _maxGap = Duration(minutes: 5);
+
+  /// How long a standstill inside an otherwise-moving segment is tolerated
+  /// before the segment is closed — bridges red lights and short stops.
+  static const _maxPause = Duration(minutes: 3);
   static const _minDuration = Duration(minutes: 8);
   static const _minDistanceM = 500.0;
 
@@ -24,34 +30,51 @@ class CardioDetector {
     ];
   }
 
+  /// Groups moving stretches into segments. A standstill (speed below
+  /// [_walkMinKmh]) stays inside the current segment as long as it lasts at most
+  /// [_maxPause]; a longer pause or a data gap over [_maxGap] closes the segment,
+  /// trimming the trailing standstill down to the last moving point.
   List<List<TrackPoint>> _segment(List<TrackPoint> log) {
     final segments = <List<TrackPoint>>[];
     var current = <TrackPoint>[];
+    var lastMovingTMs = 0;
+
+    void close() {
+      final trimmed = [
+        for (final point in current)
+          if (point.tMs <= lastMovingTMs) point,
+      ];
+      if (trimmed.length >= 2) {
+        segments.add(trimmed);
+      }
+      current = <TrackPoint>[];
+    }
+
     for (var index = 1; index < log.length; index++) {
       final previous = log[index - 1];
       final point = log[index];
       final gap = Duration(milliseconds: point.tMs - previous.tMs);
-      if (_isMoving(previous, point, gap)) {
+      if (gap <= Duration.zero || gap > _maxGap) {
+        close();
+        continue;
+      }
+      if (_speedKmh(previous, point, gap) >= _walkMinKmh) {
         if (current.isEmpty) {
           current.add(previous);
+          lastMovingTMs = previous.tMs;
         }
         current.add(point);
+        lastMovingTMs = point.tMs;
       } else if (current.isNotEmpty) {
-        segments.add(current);
-        current = <TrackPoint>[];
+        if (Duration(milliseconds: point.tMs - lastMovingTMs) <= _maxPause) {
+          current.add(point);
+        } else {
+          close();
+        }
       }
     }
-    if (current.isNotEmpty) {
-      segments.add(current);
-    }
+    close();
     return segments;
-  }
-
-  bool _isMoving(TrackPoint from, TrackPoint to, Duration gap) {
-    if (gap <= Duration.zero || gap > _maxGap) {
-      return false;
-    }
-    return _speedKmh(from, to, gap) >= _walkMinKmh;
   }
 
   bool _qualifies(List<TrackPoint> segment) {

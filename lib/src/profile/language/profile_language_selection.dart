@@ -38,9 +38,14 @@ class ProfileLanguageSelection extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: selected
-            ? scheme.primary.withValues(alpha: 0.10)
+            ? scheme.primary.withValues(alpha: 0.14)
             : scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: selected
+              ? BorderSide(color: scheme.primary, width: 1.5)
+              : BorderSide.none,
+        ),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: () => _change(context, state, code),
@@ -61,9 +66,10 @@ class ProfileLanguageSelection extends StatelessWidget {
                 Expanded(
                   child: LocaleText(
                     "profile.language.$code",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                      color: selected ? scheme.primary : null,
                     ),
                   ),
                 ),

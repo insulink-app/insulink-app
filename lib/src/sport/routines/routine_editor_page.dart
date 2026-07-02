@@ -174,6 +174,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       physics: _bouncy,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       footer: Padding(padding: const EdgeInsets.only(top: 2), child: addTile),
+      proxyDecorator: _transparentDrag,
       onReorderItem: (oldIndex, newIndex) =>
           _training.reorderRoutineItems(routine.id, oldIndex, newIndex),
       children: [
@@ -187,6 +188,12 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     parent: AlwaysScrollableScrollPhysics(),
   );
 
+  /// Drag proxy without the default elevated shadow — the row keeps its own
+  /// (transparent-material) look so nothing "pops" while reordering.
+  Widget _transparentDrag(Widget child, int index, Animation<double> animation) {
+    return Material(color: Colors.transparent, child: child);
+  }
+
   Widget _itemRow(SportRoutine routine, int index) {
     final item = routine.items[index];
     final exercise = _training.exerciseById(item.exerciseId);
@@ -194,30 +201,36 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     return Padding(
       key: ValueKey(item.id),
       padding: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        tileColor: scheme.onSurface.withValues(alpha: 0.04),
-        shape: RoundedRectangleBorder(
+      // Background lives on the Container (part of the reordered subtree) so it
+      // moves with the row; ListTile.tileColor would paint via Ink on an
+      // ancestor Material and lag behind the drag transform.
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: scheme.onSurface.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
+          border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
         ),
-        leading: const Icon(Icons.drag_handle),
-        title: Text(
-          exercise?.name ?? '—',
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(_summary(item, exercise)),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, size: 20),
-          onPressed: () => confirmDelete(
-            context,
-            messageKey: 'sport.routines.item_delete_confirm',
-            onConfirm: () => _training.removeRoutineItem(routine.id, index),
+        child: ListTile(
+          leading: const Icon(Icons.drag_handle),
+          title: Text(
+            exercise?.name ?? '—',
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-        ),
-        onTap: () => showRoutineItemEditorSheet(
-          context,
-          routineId: routine.id,
-          index: index,
+          subtitle: Text(_summary(item, exercise)),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete_outline, size: 20),
+            onPressed: () => confirmDelete(
+              context,
+              messageKey: 'sport.routines.item_delete_confirm',
+              onConfirm: () => _training.removeRoutineItem(routine.id, index),
+            ),
+          ),
+          onTap: () => showRoutineItemEditorSheet(
+            context,
+            routineId: routine.id,
+            index: index,
+          ),
         ),
       ),
     );

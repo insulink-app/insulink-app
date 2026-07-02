@@ -25,12 +25,20 @@ class WorkoutExerciseView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _header(context, scheme),
+    // Keeps the Spacer-centered layout when there is room but scrolls instead of
+    // overflowing when space is tight (e.g. the keyboard covers half the screen
+    // while editing reps).
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: IntrinsicHeight(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _header(context, scheme),
           const SizedBox(height: 8),
           Text(
             runner.currentExercise?.name ?? '—',
@@ -57,11 +65,15 @@ class WorkoutExerciseView extends StatelessWidget {
             ),
             child: LocaleText('sport.workout.complete_set'),
           ),
-          TextButton(
-            onPressed: onFinish,
-            child: LocaleText('sport.workout.finish'),
+                  TextButton(
+                    onPressed: onFinish,
+                    child: LocaleText('sport.workout.finish'),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

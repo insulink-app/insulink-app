@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'sport_models.dart';
+import 'training/active_training.dart';
 import 'training/cardio_models.dart';
 import 'workout/workout_snapshot.dart';
 
@@ -21,16 +22,22 @@ class SportStore {
   static const _kLocationLog = 'sport.location_log';
   static const _sessionCap = 500;
   static const _trainingCap = 500;
-  static const _locationLogCap = 2000;
+  // ~24 h of route at the 10 s sampling cadence.
+  static const _locationLogCap = 8640;
   static const _kStride = 'sport.stride_cm';
+  static const _kHeight = 'sport.height_cm';
   static const _kStepsBaselineDate = 'sport.steps_baseline_date';
   static const _kStepsBaselineCounter = 'sport.steps_baseline_counter';
   static const _kDetectWatermark = 'sport.detect_watermark';
   static const _kActiveWorkout = 'sport.active_workout';
+  static const _kActiveTraining = 'sport.active_training';
 
   /// Default stride length in cm (for the distance estimate), until the user
   /// adjusts it — roughly an adult's stride.
   static const defStrideCm = 75;
+
+  /// Default body height in cm (for the BMI), until the user adjusts it.
+  static const defHeightCm = 175;
 
   final FlutterSecureStorage _storage;
 
@@ -135,11 +142,34 @@ class SportStore {
 
   Future<void> clearActiveWorkout() => _storage.delete(key: _kActiveWorkout);
 
+  /// The in-progress live training (single JSON object), so it keeps recording
+  /// in the service isolate and resumes after the app is closed. Null when none.
+  Future<ActiveTraining?> loadActiveTraining() async {
+    final raw = await _storage.read(key: _kActiveTraining);
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    return ActiveTraining.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> saveActiveTraining(ActiveTraining training) => _storage.write(
+    key: _kActiveTraining,
+    value: jsonEncode(training.toJson()),
+  );
+
+  Future<void> clearActiveTraining() => _storage.delete(key: _kActiveTraining);
+
   Future<int> loadStrideCm() async =>
       int.tryParse(await _storage.read(key: _kStride) ?? '') ?? defStrideCm;
 
   Future<void> saveStrideCm(int cm) =>
       _storage.write(key: _kStride, value: '$cm');
+
+  Future<int> loadHeightCm() async =>
+      int.tryParse(await _storage.read(key: _kHeight) ?? '') ?? defHeightCm;
+
+  Future<void> saveHeightCm(int cm) =>
+      _storage.write(key: _kHeight, value: '$cm');
 
   /// The midnight reference point of the cumulative step counter: date +
   /// counter, from which "steps today" is derived.

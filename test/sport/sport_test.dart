@@ -5,6 +5,7 @@ import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_store.dart';
+import 'package:insulink/src/sport/training/active_training.dart';
 import 'package:insulink/src/sport/training/cardio_detector.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
@@ -253,6 +254,60 @@ void main() {
           TrackPoint(lat: 52.0, lng: 13.0, tMs: 1000000000000 + i * 60000),
       ];
       expect(const CardioDetector().detect(points), isEmpty);
+    });
+
+    // Builds a ride: [moving minutes] + [stationary minutes] + [moving minutes],
+    // one point per minute, ~24 km/h while moving.
+    List<TrackPoint> ride(int moveA, int stopMinutes, int moveB) {
+      final points = <TrackPoint>[];
+      var time = 1000000000000;
+      var lat = 52.0;
+      const stepLat = 400 / 111320; // ~400 m/min ≈ 24 km/h
+      void add() {
+        points.add(TrackPoint(lat: lat, lng: 13.0, tMs: time));
+        time += 60000;
+      }
+
+      for (var i = 0; i < moveA; i++) {
+        add();
+        lat += stepLat;
+      }
+      for (var i = 0; i < stopMinutes; i++) {
+        add();
+      }
+      for (var i = 0; i < moveB; i++) {
+        add();
+        lat += stepLat;
+      }
+      return points;
+    }
+
+    test('a 2-min stop (crossing) keeps the ride as ONE training', () {
+      final detected = const CardioDetector().detect(ride(12, 2, 12));
+      expect(detected.length, 1);
+      expect(detected.single.type, CardioType.bike);
+    });
+
+    test('a long stop (> tolerance) splits into two trainings', () {
+      final detected = const CardioDetector().detect(ride(12, 5, 12));
+      expect(detected.length, 2);
+    });
+  });
+
+  group('ActiveTraining', () {
+    test('round-trips through JSON and pause/resume', () {
+      const active = ActiveTraining(
+        type: CardioType.bike,
+        startMs: 1000,
+        pausedTotalMs: 500,
+      );
+      final back = ActiveTraining.fromJson(active.toJson());
+      expect(back.type, CardioType.bike);
+      expect(back.startMs, 1000);
+      expect(back.pausedTotalMs, 500);
+      expect(back.isPaused, isFalse);
+      expect(active.pause().isPaused, isTrue);
+      expect(active.pause().resume().isPaused, isFalse);
     });
   });
 

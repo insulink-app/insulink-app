@@ -61,6 +61,7 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
                       ? weights[weights.length - 2].kg
                       : null,
                   ranged: ranged,
+                  bmi: context.watch<SportState>().bmi,
                 ),
                 const SizedBox(height: 20),
                 SportRangeSelector(

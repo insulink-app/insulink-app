@@ -12,11 +12,16 @@ class CardioMap extends StatelessWidget {
     required this.points,
     this.controller,
     this.live = false,
+    this.fallbackCenter,
   });
 
   final List<TrackPoint> points;
   final MapController? controller;
   final bool live;
+
+  /// Where to center when no route point exists yet (e.g. the last-known
+  /// position while a live recording waits for its first fix).
+  final LatLng? fallbackCenter;
 
   @override
   Widget build(BuildContext context) {
@@ -24,12 +29,19 @@ class CardioMap extends StatelessWidget {
     final primary = theme.colorScheme.primary;
     final isDark = theme.brightness == Brightness.dark;
     final route = [for (final point in points) LatLng(point.lat, point.lng)];
-    final center = route.isNotEmpty ? route.last : const LatLng(52.52, 13.405);
+    final center = route.isNotEmpty
+        ? route.last
+        : (fallbackCenter ?? const LatLng(52.52, 13.405));
     return FlutterMap(
       mapController: controller,
       options: MapOptions(
         initialCenter: center,
         initialZoom: 16,
+        // Larger rotation threshold so a pinch-zoom doesn't tilt the map by
+        // accident; programmatic moveAndRotate (live recenter) is unaffected.
+        interactionOptions: const InteractionOptions(
+          enableMultiFingerGestureRace: true,
+        ),
         initialCameraFit: !live && route.length >= 2
             ? CameraFit.bounds(
                 bounds: LatLngBounds.fromPoints(route),
@@ -46,6 +58,9 @@ class CardioMap extends StatelessWidget {
           subdomains: const ['a', 'b', 'c', 'd'],
           retinaMode: RetinaMode.isHighDensity(context),
           userAgentPackageName: 'de.insulink.app',
+          // dark_all is very dark — lift brightness/contrast so streets and
+          // details stay visible while keeping the dark look.
+          tileBuilder: isDark ? _brightenDarkTiles : null,
           // Degrade quietly without network (e.g. in the emulator) instead of
           // logging every missing tile as an exception.
           evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
@@ -74,12 +89,22 @@ class CardioMap extends StatelessWidget {
               ),
             ],
           ),
-        const RichAttributionWidget(
-          attributions: [
-            TextSourceAttribution('OpenStreetMap contributors, © CARTO'),
-          ],
-        ),
       ],
+    );
+  }
+
+  /// Brightens + adds a little contrast to the very dark CartoDB dark tiles so
+  /// streets and details are legible, without abandoning the dark look. The 5×4
+  /// matrix scales each RGB channel by 1.45 and lifts it by +22 (0–255).
+  Widget _brightenDarkTiles(BuildContext context, Widget tile, TileImage image) {
+    return ColorFiltered(
+      colorFilter: const ColorFilter.matrix(<double>[
+        1.45, 0, 0, 0, 22, //
+        0, 1.45, 0, 0, 22, //
+        0, 0, 1.45, 0, 22, //
+        0, 0, 0, 1, 0, //
+      ]),
+      child: tile,
     );
   }
 }

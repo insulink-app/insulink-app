@@ -44,6 +44,8 @@ class ExercisesPage extends StatelessWidget {
     return ReorderableListView(
       physics: _bouncy,
       padding: _padding,
+      proxyDecorator: (child, index, animation) =>
+          Material(color: Colors.transparent, child: child),
       onReorderItem: (oldIndex, newIndex) =>
           context.read<TrainingState>().reorderExercises(oldIndex, newIndex),
       children: [
@@ -114,22 +116,27 @@ class ExercisesPage extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     final scheme = Theme.of(context).colorScheme;
-    return ListTile(
-      tileColor: scheme.onSurface.withValues(alpha: 0.04),
-      shape: RoundedRectangleBorder(
+    // Background on the Container (not ListTile.tileColor) so it follows the
+    // reorder transform instead of lagging behind — see routine_editor_page.
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: scheme.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
+        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
       ),
-      leading: leading,
-      title: Text(
-        exercise.name,
-        style: const TextStyle(fontWeight: FontWeight.w600),
+      child: ListTile(
+        leading: leading,
+        title: Text(
+          exercise.name,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          Locales.string(context, 'sport.exercises.kind.${exercise.kind.name}'),
+        ),
+        trailing: trailing,
+        onTap: onTap,
       ),
-      subtitle: Text(
-        Locales.string(context, 'sport.exercises.kind.${exercise.kind.name}'),
-      ),
-      trailing: trailing,
-      onTap: onTap,
     );
   }
 }

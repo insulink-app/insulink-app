@@ -14,11 +14,15 @@ class WeightCurrentCard extends StatelessWidget {
     required this.latest,
     required this.previousKg,
     required this.ranged,
+    this.bmi,
   });
 
   final WeightEntry latest;
   final double? previousKg;
   final List<WeightEntry> ranged;
+
+  /// Body-mass index (from the stored height), shown as a pill when available.
+  final double? bmi;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +66,10 @@ class WeightCurrentCard extends StatelessWidget {
                   color: scheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
+              if (bmi != null) ...[
+                const SizedBox(width: 12),
+                _bmiPill(context, scheme),
+              ],
               const Spacer(),
               if (delta != null && delta != 0) WeightDeltaChip(delta: delta),
             ],
@@ -73,6 +81,24 @@ class WeightCurrentCard extends StatelessWidget {
             _stats(context, scheme),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _bmiPill(BuildContext context, ColorScheme scheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '${Locales.string(context, 'sport.weight.bmi')} ${sportDecimal(bmi!, 1)}',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: scheme.primary,
+        ),
       ),
     );
   }

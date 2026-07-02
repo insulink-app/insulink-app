@@ -274,8 +274,11 @@
    "steps": "Steps",
    "distance": "Distance",
    "calories": "Calories",
+   "settings": "Activity",
    "stride": "Stride length",
+   "height": "Body height",
    "estimate_note": "Distance and calories are estimated from your steps.",
+   "height_note": "Body height is used to calculate the BMI.",
    "permission": "Motion permission missing – steps can't be counted.",
    "detail": {
     "empty": "No activity data yet. Sync Google Health.",
@@ -290,6 +293,7 @@
    "add": "Log weight",
    "current": "Current",
    "history": "History",
+   "bmi": "BMI",
    "delta": "# kg",
    "delete_confirm": "Delete this weight entry?",
    "min": "Min",
@@ -384,6 +388,11 @@
    "distance": "Distance",
    "speed": "Speed",
    "stop": "Stop",
+   "stop_confirm": "Really end the training?",
+   "pause": "Pause",
+   "resume": "Resume",
+   "paused": "Paused",
+   "resume_active": "Resume running training",
    "start": "Start",
    "end": "End",
    "avg_speed": "Avg speed",
@@ -431,6 +440,10 @@
    "mgdl": "mg/dL",
    "mmol": "mmol/L"
   },
+  "body": {
+   "_": "Body metrics",
+   "note": "Stride length estimates distance from your steps; body height computes the BMI on the weight page."
+  },
   "notification": {
    "_": "Notifications",
    "description": "Receive notifications"
@@ -476,6 +489,7 @@
    "theme": "theme appearance light dark color mode display",
    "glucose": "glucose sugar unit target thresholds alarm mmol mgdl",
    "bolus": "bolus insulin correction carbs factor",
+   "body": "body metrics stride length height bmi weight steps distance",
    "notification": "notification alert sound alarm connection live glucose",
    "silent": "silent mute quiet do not disturb dnd",
    "developer": "developer debug logs advanced"
