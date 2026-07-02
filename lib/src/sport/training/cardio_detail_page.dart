@@ -53,9 +53,7 @@ class CardioDetailPage extends StatelessWidget {
       borderRadius: BorderRadius.circular(24),
       child: Container(
         height: 500,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
         child: training.track.length >= 2
             ? CardioMap(points: training.track)
             : Center(child: LocaleText('sport.trainings.no_route')),

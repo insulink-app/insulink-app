@@ -33,20 +33,22 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     // Keep the screen on during the workout (timer/rests stay readable).
     WakelockPlus.enable();
     final training = context.read<TrainingState>();
-    _runner = WorkoutRunner(
-      widget.routine,
-      training.exercises,
-      resume: widget.resume,
-      findLastSet: training.lastSetFor,
-      onPersist: (snapshot) => snapshot == null
-          ? training.clearActiveWorkout()
-          : training.saveActiveWorkout(snapshot),
-    )..onFinished = (session) {
-      training.addSession(session);
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    };
+    _runner =
+        WorkoutRunner(
+            widget.routine,
+            training.exercises,
+            resume: widget.resume,
+            findLastSet: training.lastSetFor,
+            onPersist: (snapshot) => snapshot == null
+                ? training.clearActiveWorkout()
+                : training.saveActiveWorkout(snapshot),
+          )
+          ..onFinished = (session) {
+            training.addSession(session);
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          };
   }
 
   @override
@@ -104,7 +106,8 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
             context,
             _runner.isPaused ? 'sport.workout.resume' : 'sport.workout.pause',
           ),
-          onPressed: () => _runner.isPaused ? _runner.resume() : _runner.pause(),
+          onPressed: () =>
+              _runner.isPaused ? _runner.resume() : _runner.pause(),
         ),
       ],
       bottom: PreferredSize(

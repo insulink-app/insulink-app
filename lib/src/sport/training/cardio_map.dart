@@ -96,7 +96,11 @@ class CardioMap extends StatelessWidget {
   /// Brightens + adds a little contrast to the very dark CartoDB dark tiles so
   /// streets and details are legible, without abandoning the dark look. The 5×4
   /// matrix scales each RGB channel by 1.45 and lifts it by +22 (0–255).
-  Widget _brightenDarkTiles(BuildContext context, Widget tile, TileImage image) {
+  Widget _brightenDarkTiles(
+    BuildContext context,
+    Widget tile,
+    TileImage image,
+  ) {
     return ColorFiltered(
       colorFilter: const ColorFilter.matrix(<double>[
         1.45, 0, 0, 0, 22, //

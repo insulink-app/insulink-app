@@ -39,32 +39,38 @@ class WorkoutExerciseView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _header(context, scheme),
-          const SizedBox(height: 8),
-          Text(
-            runner.currentExercise?.name ?? '—',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-          ),
-          const Spacer(),
-          Text(
-            formatDuration(runner.elapsed),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          if (runner.isTimed)
-            _targetTime(context, scheme)
-          else
-            _repWeightControls(context, scheme),
-          _lastTime(context, scheme),
-          const Spacer(),
-          FilledButton(
-            onPressed: runner.completeSet,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(54),
-            ),
-            child: LocaleText('sport.workout.complete_set'),
-          ),
+                  const SizedBox(height: 8),
+                  Text(
+                    runner.currentExercise?.name ?? '—',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    formatDuration(runner.elapsed),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 64,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (runner.isTimed)
+                    _targetTime(context, scheme)
+                  else
+                    _repWeightControls(context, scheme),
+                  _lastTime(context, scheme),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: runner.completeSet,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(54),
+                    ),
+                    child: LocaleText('sport.workout.complete_set'),
+                  ),
                   TextButton(
                     onPressed: onFinish,
                     child: LocaleText('sport.workout.finish'),

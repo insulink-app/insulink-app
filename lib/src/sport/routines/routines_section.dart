@@ -101,7 +101,9 @@ class RoutinesSection extends StatelessWidget {
               children: [
                 _leadingBadge(scheme),
                 const SizedBox(width: 14),
-                Expanded(child: _titleBlock(context, routine, training, scheme)),
+                Expanded(
+                  child: _titleBlock(context, routine, training, scheme),
+                ),
                 if (hasItems) _playButton(context, routine, scheme),
                 SportRowMenu(
                   onCopy: () => training.duplicateRoutine(

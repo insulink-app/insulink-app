@@ -39,20 +39,20 @@ class WorkoutRestView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Spacer(),
-          LocaleText(
-            'sport.workout.rest',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _countdown(scheme),
-          const SizedBox(height: 12),
-          _nextLine(context, scheme),
-          const SizedBox(height: 24),
-          _previousSetEditor(context, scheme),
+                  LocaleText(
+                    'sport.workout.rest',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: scheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _countdown(scheme),
+                  const SizedBox(height: 12),
+                  _nextLine(context, scheme),
+                  const SizedBox(height: 24),
+                  _previousSetEditor(context, scheme),
                   const Spacer(),
                   _buttons(context),
                   TextButton(
@@ -100,15 +100,13 @@ class WorkoutRestView extends StatelessWidget {
                 '${Locales.string(context, 'sport.workout.set')} '
                 '${runner.setNumber}/${runner.totalSets}',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+                style: TextStyle(
+                  color: scheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
             ),
             const SizedBox(width: 6),
-            Icon(
-              Icons.swap_horiz_rounded,
-              size: 18,
-              color: scheme.primary,
-            ),
+            Icon(Icons.swap_horiz_rounded, size: 18, color: scheme.primary),
           ],
         ),
       ),
@@ -157,7 +155,8 @@ class WorkoutRestView extends StatelessWidget {
         CircleIconButton(
           icon: Icons.remove,
           accent: scheme.primary,
-          onTap: () => runner.updateLastSet(weightKg: (weight - 2.5).clamp(0, 999)),
+          onTap: () =>
+              runner.updateLastSet(weightKg: (weight - 2.5).clamp(0, 999)),
         ),
         SizedBox(
           width: 120,
@@ -170,7 +169,8 @@ class WorkoutRestView extends StatelessWidget {
         CircleIconButton(
           icon: Icons.add,
           accent: scheme.primary,
-          onTap: () => runner.updateLastSet(weightKg: (weight + 2.5).clamp(0, 999)),
+          onTap: () =>
+              runner.updateLastSet(weightKg: (weight + 2.5).clamp(0, 999)),
         ),
       ],
     );

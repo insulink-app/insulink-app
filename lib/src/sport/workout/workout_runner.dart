@@ -89,9 +89,7 @@ class WorkoutRunner extends ChangeNotifier {
 
   /// Total workout time so far, excluding paused spans.
   Duration get sessionElapsed =>
-      _now.difference(
-        DateTime.fromMillisecondsSinceEpoch(_sessionStartedMs),
-      ) -
+      _now.difference(DateTime.fromMillisecondsSinceEpoch(_sessionStartedMs)) -
       _pausedTotal;
 
   Duration get elapsed => _now.difference(_setStartedAt);

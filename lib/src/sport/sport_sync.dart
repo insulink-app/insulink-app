@@ -57,8 +57,16 @@ class SportSync {
         {'type': 'WEIGHT', 'value': weight.kg, 'time': weight.atEpochMs},
       for (final day in activity) ...[
         {'type': 'STEPS', 'value': day.steps, 'time': _dayMs(day.dateKey)},
-        {'type': 'DISTANCE', 'value': day.distanceKm, 'time': _dayMs(day.dateKey)},
-        {'type': 'CALORIES', 'value': day.calories, 'time': _dayMs(day.dateKey)},
+        {
+          'type': 'DISTANCE',
+          'value': day.distanceKm,
+          'time': _dayMs(day.dateKey),
+        },
+        {
+          'type': 'CALORIES',
+          'value': day.calories,
+          'time': _dayMs(day.dateKey),
+        },
       ],
     ];
     await _post('/sport/measurements/sync/', {'entries': entries});
@@ -134,7 +142,11 @@ class SportSync {
   }
 
   Future<void> _pullMeasurements(BuildContext context) async {
-    final entries = await _fetch(context, '/sport/measurements/find/', 'entries');
+    final entries = await _fetch(
+      context,
+      '/sport/measurements/find/',
+      'entries',
+    );
     if (entries == null) {
       return;
     }
@@ -157,9 +169,7 @@ class SportSync {
       }
     }
     await _store.saveWeights(weights);
-    await _store.saveActivityArchive(
-      _activityDays(steps, distance, calories),
-    );
+    await _store.saveActivityArchive(_activityDays(steps, distance, calories));
   }
 
   List<DailyActivity> _activityDays(

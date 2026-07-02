@@ -137,8 +137,10 @@ class SportStore {
     return WorkoutSnapshot.fromJson(jsonDecode(raw) as Map<String, dynamic>);
   }
 
-  Future<void> saveActiveWorkout(WorkoutSnapshot snapshot) =>
-      _storage.write(key: _kActiveWorkout, value: jsonEncode(snapshot.toJson()));
+  Future<void> saveActiveWorkout(WorkoutSnapshot snapshot) => _storage.write(
+    key: _kActiveWorkout,
+    value: jsonEncode(snapshot.toJson()),
+  );
 
   Future<void> clearActiveWorkout() => _storage.delete(key: _kActiveWorkout);
 

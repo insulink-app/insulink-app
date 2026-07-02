@@ -38,7 +38,8 @@ class BackgroundLocationSampler {
       return;
     }
     final last = _lastSampledAt;
-    if (last != null && DateTime.now().difference(last) < _interval(recording)) {
+    if (last != null &&
+        DateTime.now().difference(last) < _interval(recording)) {
       return;
     }
     try {
@@ -53,9 +54,7 @@ class BackgroundLocationSampler {
       _lastSampledAt = DateTime.now();
       final fix = await Geolocator.getCurrentPosition(
         locationSettings: LocationSettings(
-          accuracy: recording
-              ? LocationAccuracy.high
-              : LocationAccuracy.medium,
+          accuracy: recording ? LocationAccuracy.high : LocationAccuracy.medium,
         ),
       ).timeout(_fixTimeout);
       _lastFix = fix;

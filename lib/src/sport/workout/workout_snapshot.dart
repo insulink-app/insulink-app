@@ -45,20 +45,21 @@ class WorkoutSnapshot {
     'sets': sets.map((set) => set.toJson()).toList(),
   };
 
-  factory WorkoutSnapshot.fromJson(Map<String, dynamic> json) => WorkoutSnapshot(
-    routineId: json['routine'] as String,
-    startedAtMs: json['started'] as int,
-    exerciseIndex: json['ex'] as int,
-    setIndex: json['set'] as int,
-    phase: WorkoutPhase.values.byName(json['phase'] as String),
-    setStartedAtMs: json['setStarted'] as int,
-    restEndsAtMs: json['restEnds'] as int?,
-    pausedTotalMs: json['paused'] as int,
-    currentReps: json['reps'] as int,
-    currentWeight: (json['weight'] as num).toDouble(),
-    sets: (json['sets'] as List)
-        .cast<Map<String, dynamic>>()
-        .map(SetLog.fromJson)
-        .toList(),
-  );
+  factory WorkoutSnapshot.fromJson(Map<String, dynamic> json) =>
+      WorkoutSnapshot(
+        routineId: json['routine'] as String,
+        startedAtMs: json['started'] as int,
+        exerciseIndex: json['ex'] as int,
+        setIndex: json['set'] as int,
+        phase: WorkoutPhase.values.byName(json['phase'] as String),
+        setStartedAtMs: json['setStarted'] as int,
+        restEndsAtMs: json['restEnds'] as int?,
+        pausedTotalMs: json['paused'] as int,
+        currentReps: json['reps'] as int,
+        currentWeight: (json['weight'] as num).toDouble(),
+        sets: (json['sets'] as List)
+            .cast<Map<String, dynamic>>()
+            .map(SetLog.fromJson)
+            .toList(),
+      );
 }

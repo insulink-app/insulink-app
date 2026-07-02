@@ -30,8 +30,9 @@ class ActiveTraining {
   Duration get elapsed =>
       Duration(milliseconds: _nowMs - startMs - pausedTotalMs);
 
-  ActiveTraining pause() =>
-      isPaused ? this : _copy(pausedAtMs: DateTime.now().millisecondsSinceEpoch);
+  ActiveTraining pause() => isPaused
+      ? this
+      : _copy(pausedAtMs: DateTime.now().millisecondsSinceEpoch);
 
   ActiveTraining resume() {
     final since = pausedAtMs;

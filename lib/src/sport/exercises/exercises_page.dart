@@ -74,9 +74,9 @@ class ExercisesPage extends StatelessWidget {
           index: index,
           child: Icon(
             Icons.drag_handle,
-            color: Theme.of(context).colorScheme.onSurface.withValues(
-              alpha: 0.4,
-            ),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.4),
           ),
         ),
         trailing: SportRowMenu(

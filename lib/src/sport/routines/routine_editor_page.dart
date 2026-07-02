@@ -190,7 +190,11 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
 
   /// Drag proxy without the default elevated shadow — the row keeps its own
   /// (transparent-material) look so nothing "pops" while reordering.
-  Widget _transparentDrag(Widget child, int index, Animation<double> animation) {
+  Widget _transparentDrag(
+    Widget child,
+    int index,
+    Animation<double> animation,
+  ) {
     return Material(color: Colors.transparent, child: child);
   }
 

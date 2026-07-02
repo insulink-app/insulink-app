@@ -3,7 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
 
 void main() {
-  Widget host(void Function(double) onSubmit, {double initial = 3, bool decimal = false}) {
+  Widget host(
+    void Function(double) onSubmit, {
+    double initial = 3,
+    bool decimal = false,
+  }) {
     return MaterialApp(
       home: Scaffold(
         body: Center(
@@ -46,7 +50,9 @@ void main() {
     expect(got, 12);
   });
 
-  testWidgets('committing without typing leaves the value unchanged', (tester) async {
+  testWidgets('committing without typing leaves the value unchanged', (
+    tester,
+  ) async {
     var calls = 0;
     await tester.pumpWidget(host((_) => calls++));
     await tester.tap(find.byType(SportEditableNumber));
@@ -59,7 +65,9 @@ void main() {
 
   testWidgets('decimal comma commits', (tester) async {
     double? got;
-    await tester.pumpWidget(host((value) => got = value, initial: 3, decimal: true));
+    await tester.pumpWidget(
+      host((value) => got = value, initial: 3, decimal: true),
+    );
     await tester.tap(find.byType(SportEditableNumber));
     await tester.pumpAndSettle();
 

@@ -93,7 +93,10 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       _startTicker();
       return;
     }
-    _countdown = Timer.periodic(const Duration(seconds: 1), (_) => _countTick());
+    _countdown = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _countTick(),
+    );
   }
 
   Future<void> _countTick() async {
@@ -121,7 +124,8 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
     }
     setState(() {});
     _tickCount += 1;
-    if (_tickCount % _refreshEvery == 0 && !(_state.activeTraining?.isPaused ?? true)) {
+    if (_tickCount % _refreshEvery == 0 &&
+        !(_state.activeTraining?.isPaused ?? true)) {
       _refreshTrack();
     }
   }
@@ -309,7 +313,10 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
         color: scheme.surface,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 12),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 12,
+          ),
         ],
       ),
       child: Column(
@@ -328,11 +335,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
                 'sport.trainings.distance',
                 formatDistanceKm(_distanceM),
               ),
-              _metric(
-                context,
-                'sport.trainings.speed',
-                formatSpeed(_speedKmh),
-              ),
+              _metric(context, 'sport.trainings.speed', formatSpeed(_speedKmh)),
             ],
           ),
           if (paused) ...[

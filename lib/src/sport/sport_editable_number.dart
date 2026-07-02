@@ -142,7 +142,9 @@ class _SportEditableNumberState extends State<SportEditableNumber> {
         fillColor: accent.withValues(alpha: 0.10),
         hintText: _hint,
         hintStyle: widget.style.copyWith(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.35),
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         enabledBorder: border,

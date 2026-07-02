@@ -23,7 +23,11 @@ class CardioTrainingState extends ChangeNotifier {
     const store = SportStore();
     final trainings = await store.loadTrainings()
       ..sort((first, second) => first.startMs.compareTo(second.startMs));
-    return CardioTrainingState(store, trainings, await store.loadActiveTraining());
+    return CardioTrainingState(
+      store,
+      trainings,
+      await store.loadActiveTraining(),
+    );
   }
 
   /// Trainings ascending by start time.
@@ -163,7 +167,10 @@ class CardioTrainingState extends ChangeNotifier {
     final watermark = await _store.loadDetectWatermark();
     final fresh = watermark == null
         ? log
-        : [for (final point in log) if (point.tMs > watermark) point];
+        : [
+            for (final point in log)
+              if (point.tMs > watermark) point,
+          ];
     await _store.saveDetectWatermark(log.last.tMs);
     var changed = false;
     for (final training in const CardioDetector().detect(fresh)) {

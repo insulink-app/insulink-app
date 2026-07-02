@@ -4,6 +4,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/routines/routine_item_editor_sheet.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_store.dart';
+import 'package:insulink/src/sport/sport_sync.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
 
@@ -13,31 +14,47 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   TrainingState buildState() {
-    const exercise = SportExercise(id: 'e1', name: 'Squat', kind: ExerciseKind.reps);
+    const exercise = SportExercise(
+      id: 'e1',
+      name: 'Squat',
+      kind: ExerciseKind.reps,
+    );
     const routine = SportRoutine(
       id: 'r1',
       name: 'Legs',
-      items: [RoutineItem(id: 'i1', exerciseId: 'e1', targetSets: 2, target: 7, restSeconds: 45)],
+      items: [
+        RoutineItem(
+          id: 'i1',
+          exerciseId: 'e1',
+          targetSets: 2,
+          target: 7,
+          restSeconds: 45,
+        ),
+      ],
     );
     return TrainingState(const SportStore(), [exercise], [routine], [], null);
   }
 
-  Widget host(TrainingState state) => ChangeNotifierProvider<TrainingState>.value(
-    value: state,
-    child: MaterialApp(
-      localizationsDelegates: Locales.delegates,
-      supportedLocales: Locales.supportedLocales,
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: ElevatedButton(
-            onPressed: () =>
-                showRoutineItemEditorSheet(context, routineId: 'r1', index: 0),
-            child: const Text('open'),
+  Widget host(TrainingState state) =>
+      ChangeNotifierProvider<TrainingState>.value(
+        value: state,
+        child: MaterialApp(
+          localizationsDelegates: Locales.delegates,
+          supportedLocales: Locales.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () => showRoutineItemEditorSheet(
+                  context,
+                  routineId: 'r1',
+                  index: 0,
+                ),
+                child: const Text('open'),
+              ),
+            ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 
   Future<void> editField(WidgetTester tester, String pill, String typed) async {
     await tester.tap(find.text(pill));
@@ -47,7 +64,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('editing sets and reps via the text field updates the item', (tester) async {
+  testWidgets('editing sets and reps via the text field updates the item', (
+    tester,
+  ) async {
     installSecureStorageMock();
     await Locales.init(['de', 'en']);
     final state = buildState();
@@ -61,5 +80,9 @@ void main() {
 
     await editField(tester, '7', '11'); // reps pill shows "7"
     expect(state.routineById('r1')!.items.first.target, 11);
+
+    // Persisting arms SportSync's 3s debounce; cancel it before the test ends so
+    // it doesn't trip the "Timer still pending" invariant.
+    SportSync.cancelPending();
   });
 }

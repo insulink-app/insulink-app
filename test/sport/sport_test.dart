@@ -362,19 +362,15 @@ void main() {
     test('snapshot resumes the same state', () {
       final routine = routineWithRest(0);
       WorkoutSnapshot? snapshot;
-      final runner = WorkoutRunner(
-        routine,
-        [exercise],
-        onPersist: (snap) => snapshot = snap,
-      );
+      final runner = WorkoutRunner(routine, [
+        exercise,
+      ], onPersist: (snap) => snapshot = snap);
       runner.completeSet();
       expect(snapshot, isNotNull);
       // round-trips through JSON like the store does.
-      final restored = WorkoutRunner(
-        routine,
-        [exercise],
-        resume: WorkoutSnapshot.fromJson(snapshot!.toJson()),
-      );
+      final restored = WorkoutRunner(routine, [
+        exercise,
+      ], resume: WorkoutSnapshot.fromJson(snapshot!.toJson()));
       expect(restored.setNumber, 2);
       expect(restored.lastLoggedSet?.reps, 10);
       runner.dispose();
@@ -403,7 +399,9 @@ void main() {
     });
 
     test('jumpTo switches exercise and resets to its first set', () {
-      final runner = WorkoutRunner(routineWithRest(0, exercises: 3), [exercise]);
+      final runner = WorkoutRunner(routineWithRest(0, exercises: 3), [
+        exercise,
+      ]);
       runner.jumpTo(2);
       expect(runner.exerciseIndex, 2);
       expect(runner.setNumber, 1);
