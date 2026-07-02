@@ -141,13 +141,19 @@ class _LegalPageState extends State<LegalPage> {
     return Text.rich(
       TextSpan(
         children: [
-          TextSpan(text: Locales.string(context, "legal.checkbox.prefix"), style: plain),
+          TextSpan(
+            text: Locales.string(context, "legal.checkbox.prefix"),
+            style: plain,
+          ),
           TextSpan(
             text: Locales.string(context, "legal.checkbox.terms"),
             style: link,
             recognizer: TapGestureRecognizer()..onTap = _openTerms,
           ),
-          TextSpan(text: Locales.string(context, "legal.checkbox.and"), style: plain),
+          TextSpan(
+            text: Locales.string(context, "legal.checkbox.and"),
+            style: plain,
+          ),
           TextSpan(
             text: Locales.string(context, "legal.checkbox.privacy"),
             style: link,

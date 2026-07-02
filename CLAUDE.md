@@ -59,6 +59,11 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
 - **No one-line `if`s.** Always use braces, even for a single statement.
 - **No comments inside function bodies.** Keep functions short enough that they
   read on their own; put the explanation in a doc comment ABOVE the function.
+- **All code comments in English.** Every comment and doc comment (`//`, `///`)
+  is written in English — no German (or other languages). Only user-facing
+  strings are localized (see below); the code itself, including its comments, is
+  English. If you touch a file with a German comment, translate it while you're
+  there.
 - **Short functions and classes.** Split them when they grow; one job each.
   Rule of thumb: **no Dart file over 150 lines**, and methods ideally **5–10
   lines** (split anything longer). Treat these as hard smells, not hard limits.
@@ -396,9 +401,12 @@ alarms fire with the app closed. `init()` must be called once per isolate
 
 - `rust_builder/cargokit/gradle/plugin.gradle` is patched to use injected
   `ExecOperations` instead of `Project.exec()` (removed in Gradle 9).
-- `compileSdk = 36` / `minSdk = 23` in BOTH `android/app/build.gradle.kts` AND
-  `rust_builder/android/build.gradle` (flutter_blue_plus 2.x). `flutter build`'s
-  one-time "Upgrading build.gradle.kts" migration may revert `minSdk` — reset it.
+- `compileSdk = 36` / `minSdk = 26` in BOTH `android/app/build.gradle.kts` AND
+  `rust_builder/android/build.gradle` (the two must match). `minSdk` is **26**
+  because the `health` plugin (Health Connect, used by the Sport tab's Google
+  Health import) floors it there; flutter_blue_plus 2.x needs ≥23. `flutter
+  build`'s one-time "Upgrading build.gradle.kts" migration may revert `minSdk`
+  (back to `flutter.minSdkVersion`) — reset it to 26.
 - `flutter_blue_plus` 2.x: `device.connect(license: License.nonprofit)` is required.
 - Auth char uses **indications**; control/backfill are subscribed only AFTER
   auth (subscribing them early makes the sensor drop the connection).

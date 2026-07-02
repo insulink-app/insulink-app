@@ -176,7 +176,9 @@ void main() {
 
   group('G7GlucoseCodec.debugDump', () {
     test('hex-dumps each byte zero-padded', () {
-      final dump = G7GlucoseCodec.debugDump(Uint8List.fromList([0x0a, 0xff, 0]));
+      final dump = G7GlucoseCodec.debugDump(
+        Uint8List.fromList([0x0a, 0xff, 0]),
+      );
       expect(dump, '0a ff 00');
     });
   });

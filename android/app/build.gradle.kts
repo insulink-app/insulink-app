@@ -20,7 +20,9 @@ android {
         applicationId = "de.lukasbreuer.insulink"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // 26 (Android 8.0) ist die Untergrenze von Health Connect (health-Plugin).
+        // Muss mit rust_builder/android/build.gradle übereinstimmen.
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

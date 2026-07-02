@@ -120,9 +120,13 @@ class EmptyView extends StatelessWidget {
               height: 84,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: scheme.primary.withValues(alpha: 0.12),
+                color: scheme.primary,
               ),
-              child: Icon(CupertinoIcons.drop, size: 44, color: scheme.primary),
+              child: Icon(
+                CupertinoIcons.drop,
+                size: 44,
+                color: scheme.onPrimary,
+              ),
             ),
             const SizedBox(height: 24),
             LocaleText(
@@ -138,7 +142,7 @@ class EmptyView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () => appTab.value = kSensorTabIndex,
+              onPressed: () => appTab.value = kDevicesTabIndex,
               icon: const Icon(CupertinoIcons.drop_fill, size: 18),
               label: LocaleText('overview.empty.action'),
               style: FilledButton.styleFrom(

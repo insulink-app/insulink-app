@@ -68,8 +68,8 @@ class SensorLifeBar extends StatelessWidget {
         color: life.expired
             ? Colors.redAccent
             : life.inGrace
-                ? Colors.orangeAccent
-                : scheme.onSurface,
+            ? Colors.orangeAccent
+            : scheme.onSurface,
       ),
     );
   }

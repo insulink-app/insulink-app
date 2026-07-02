@@ -22,10 +22,14 @@ void main() {
       expect(Gs1PairingCode.parse(url).value, '2344');
     });
 
-    test('reads AI 240 from a raw GS1 element string (GS after the serial)', () {
-      final raw = '010038627000487121515929398457${gs}11251201172705312402344';
-      expect(Gs1PairingCode.parse(raw).value, '2344');
-    });
+    test(
+      'reads AI 240 from a raw GS1 element string (GS after the serial)',
+      () {
+        final raw =
+            '010038627000487121515929398457${gs}11251201172705312402344';
+        expect(Gs1PairingCode.parse(raw).value, '2344');
+      },
+    );
 
     test('reads AI 240 as the trailing element with no serial', () {
       const raw = '010038627000487111251201172705312402585';

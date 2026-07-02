@@ -10,6 +10,7 @@ import 'package:insulink/src/profile/notifications/profile_connection_state.dart
 import 'package:insulink/src/profile/notifications/profile_live_notification_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/sport/sport_store.dart';
 
 /// Syncs the user-tunable settings (glucose, bolus, notifications, silent,
 /// developer) with the account's `settings` JSON blob on the backend. Language
@@ -28,6 +29,7 @@ class ProfileSettings {
   static Future<Map<String, String>> collect() async {
     final glucose = await ProfileGlucoseState.load();
     final bolus = await ProfileBolusState.load();
+    const sport = SportStore();
     final notifications =
         (await _storage.read(key: "notifications")) != "false";
     return {
@@ -47,6 +49,10 @@ class ProfileSettings {
           "${await ProfileLiveNotificationState().load()}",
       "silent_mode": "${await ProfileSilentState.load()}",
       "developer": "${await ProfileDeveloperState.load()}",
+      // Keys must match SportStore's storage keys so pull() writes them back
+      // where SportState reads them.
+      "sport.stride_cm": "${await sport.loadStrideCm()}",
+      "sport.height_cm": "${await sport.loadHeightCm()}",
     };
   }
 

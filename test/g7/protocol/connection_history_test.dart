@@ -34,22 +34,32 @@ void main() {
     expect(conn.history.length, (now - 36000) ~/ 300 + 1);
   });
 
-  test('a live EGV with a reset clock (new sensor) does drop old history', () async {
-    final conn = await connection();
-    conn.ingestLive(691200, 100); // ~8 days into the old session
-    conn.ingestLive(120, 95); // new sensor: clock back near zero
-    expect(conn.history.containsKey(691200), isFalse);
-    expect(conn.history, {120: 95});
-  });
+  test(
+    'a live EGV with a reset clock (new sensor) does drop old history',
+    () async {
+      final conn = await connection();
+      conn.ingestLive(691200, 100); // ~8 days into the old session
+      conn.ingestLive(120, 95); // new sensor: clock back near zero
+      expect(conn.history.containsKey(691200), isFalse);
+      expect(conn.history, {120: 95});
+    },
+  );
 
-  test('a live EGV packet flows through the control handler into history', () async {
-    final conn = await connection();
-    final packet = Uint8List(19);
-    packet[0] = 0x4E; // EGV opcode
-    final fields = ByteData.sublistView(packet);
-    fields.setInt32(2, 300, Endian.little); // secsSinceStart (low → no backfill)
-    fields.setUint16(12, 100, Endian.little); // mgdl
-    conn.handleControlBytes(packet);
-    expect(conn.history, {300: 100});
-  });
+  test(
+    'a live EGV packet flows through the control handler into history',
+    () async {
+      final conn = await connection();
+      final packet = Uint8List(19);
+      packet[0] = 0x4E; // EGV opcode
+      final fields = ByteData.sublistView(packet);
+      fields.setInt32(
+        2,
+        300,
+        Endian.little,
+      ); // secsSinceStart (low → no backfill)
+      fields.setUint16(12, 100, Endian.little); // mgdl
+      conn.handleControlBytes(packet);
+      expect(conn.history, {300: 100});
+    },
+  );
 }

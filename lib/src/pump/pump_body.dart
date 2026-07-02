@@ -1,23 +1,6 @@
-import 'package:flutter/cupertino.dart';
-import 'package:insulink/src/base/page_body.dart';
+import 'package:flutter/widgets.dart';
 
-class PumpBody extends AppPageBody {
-  final GlobalKey<_PumpBodyContentState> _key =
-      GlobalKey<_PumpBodyContentState>();
-
-  PumpBody({super.key})
-    : super(
-        name: "pump.label",
-        unselectedIcon: CupertinoIcons.today,
-        selectedIcon: CupertinoIcons.today_fill,
-      );
-
-  @override
-  Widget content(BuildContext context) {
-    return PumpBodyContent(key: _key);
-  }
-}
-
+/// The pump device page, shown inside the Devices tab (see [DevicesBody]).
 class PumpBodyContent extends StatefulWidget {
   const PumpBodyContent({super.key});
 

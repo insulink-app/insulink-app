@@ -152,63 +152,95 @@ void main() {
   });
 
   group('event log', () {
-    test('filters by window, newest first, and is kept by clearSensor', () async {
-      final store = await G7Store.open();
-      final now = DateTime.now();
-      await store.addEvent('new_sensor', at: now.subtract(const Duration(days: 10)));
-      await store.addEvent('glucose_low', at: now.subtract(const Duration(days: 1)));
-      await store.addEvent('signal_loss', at: now.subtract(const Duration(hours: 1)));
+    test(
+      'filters by window, newest first, and is kept by clearSensor',
+      () async {
+        final store = await G7Store.open();
+        final now = DateTime.now();
+        await store.addEvent(
+          'new_sensor',
+          at: now.subtract(const Duration(days: 10)),
+        );
+        await store.addEvent(
+          'glucose_low',
+          at: now.subtract(const Duration(days: 1)),
+        );
+        await store.addEvent(
+          'signal_loss',
+          at: now.subtract(const Duration(hours: 1)),
+        );
 
-      final recent = store.eventsBetween(now.subtract(const Duration(days: 7)), now);
-      expect(recent.map((event) => event.type), ['signal_loss', 'glucose_low']);
+        final recent = store.eventsBetween(
+          now.subtract(const Duration(days: 7)),
+          now,
+        );
+        expect(recent.map((event) => event.type), [
+          'signal_loss',
+          'glucose_low',
+        ]);
 
-      await store.clearSensor('serialA');
-      expect(store.eventsBetween(now.subtract(const Duration(days: 30)), now), hasLength(3));
-    });
+        await store.clearSensor('serialA');
+        expect(
+          store.eventsBetween(now.subtract(const Duration(days: 30)), now),
+          hasLength(3),
+        );
+      },
+    );
 
-    test('mergeEvents adds new events but skips existing (ts,type) pairs', () async {
-      final store = await G7Store.open();
-      final base = DateTime(2026, 1, 1, 12);
-      await store.addEvent('glucose_low', at: base, value: 62);
+    test(
+      'mergeEvents adds new events but skips existing (ts,type) pairs',
+      () async {
+        final store = await G7Store.open();
+        final base = DateTime(2026, 1, 1, 12);
+        await store.addEvent('glucose_low', at: base, value: 62);
 
-      await store.mergeEvents([
-        // Same (ts,type) as the existing one → skipped, no duplicate.
-        (time: base, type: 'glucose_low', value: 62),
-        // Same instant, different type → kept.
-        (time: base, type: 'signal_loss', value: null),
-        // New instant → kept.
-        (time: base.add(const Duration(hours: 1)), type: 'new_sensor', value: null),
-      ]);
+        await store.mergeEvents([
+          // Same (ts,type) as the existing one → skipped, no duplicate.
+          (time: base, type: 'glucose_low', value: 62),
+          // Same instant, different type → kept.
+          (time: base, type: 'signal_loss', value: null),
+          // New instant → kept.
+          (
+            time: base.add(const Duration(hours: 1)),
+            type: 'new_sensor',
+            value: null,
+          ),
+        ]);
 
-      final all = store.eventsBetween(
-        base.subtract(const Duration(days: 1)),
-        base.add(const Duration(days: 1)),
-      );
-      // The duplicate glucose_low is dropped; the same-instant signal_loss and
-      // the later new_sensor are both kept → 3, not 4.
-      expect(all, hasLength(3));
-      expect(all.map((event) => event.type),
-          containsAll(['glucose_low', 'signal_loss', 'new_sensor']));
-    });
+        final all = store.eventsBetween(
+          base.subtract(const Duration(days: 1)),
+          base.add(const Duration(days: 1)),
+        );
+        // The duplicate glucose_low is dropped; the same-instant signal_loss and
+        // the later new_sensor are both kept → 3, not 4.
+        expect(all, hasLength(3));
+        expect(
+          all.map((event) => event.type),
+          containsAll(['glucose_low', 'signal_loss', 'new_sensor']),
+        );
+      },
+    );
   });
 
   group('backend sensor sync', () {
-    test('id/data are keyed per sensor and the dismissed flag round-trips',
-        () async {
-      final store = await G7Store.open();
-      expect(store.backendSensorId('keyA'), isNull);
+    test(
+      'id/data are keyed per sensor and the dismissed flag round-trips',
+      () async {
+        final store = await G7Store.open();
+        expect(store.backendSensorId('keyA'), isNull);
 
-      await store.saveBackendSensorId('keyA', 'uuid-a');
-      await store.saveBackendSyncedData('keyA', 'blob-a');
-      // A different sensor key is independent → a new sensor registers afresh.
-      expect(store.backendSensorId('keyA'), 'uuid-a');
-      expect(store.backendSyncedData('keyA'), 'blob-a');
-      expect(store.backendSensorId('keyB'), isNull);
+        await store.saveBackendSensorId('keyA', 'uuid-a');
+        await store.saveBackendSyncedData('keyA', 'blob-a');
+        // A different sensor key is independent → a new sensor registers afresh.
+        expect(store.backendSensorId('keyA'), 'uuid-a');
+        expect(store.backendSyncedData('keyA'), 'blob-a');
+        expect(store.backendSensorId('keyB'), isNull);
 
-      expect(store.restoreDismissedId, isNull);
-      await store.setRestoreDismissed('uuid-a');
-      expect(store.restoreDismissedId, 'uuid-a');
-    });
+        expect(store.restoreDismissedId, isNull);
+        await store.setRestoreDismissed('uuid-a');
+        expect(store.restoreDismissedId, 'uuid-a');
+      },
+    );
 
     test('sessionKeyHex round-trips the raw wire form', () async {
       final store = await G7Store.open();

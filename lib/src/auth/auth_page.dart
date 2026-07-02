@@ -22,6 +22,7 @@ class _AuthPageState extends State<AuthPage> {
   final _password = TextEditingController();
   bool _signUp = false;
   bool _busy = false;
+  bool _showPassword = false;
 
   @override
   void dispose() {
@@ -65,7 +66,10 @@ class _AuthPageState extends State<AuthPage> {
                 LocaleText(
                   'auth.title',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 LocaleText(
@@ -76,7 +80,7 @@ class _AuthPageState extends State<AuthPage> {
                 const SizedBox(height: 32),
                 _field(_name, 'auth.name', false),
                 const SizedBox(height: 14),
-                _field(_password, 'auth.password', true),
+                _passwordField(),
                 const SizedBox(height: 24),
                 _submitButton(),
                 const SizedBox(height: 12),
@@ -89,14 +93,30 @@ class _AuthPageState extends State<AuthPage> {
     );
   }
 
-  Widget _field(TextEditingController controller, String labelKey, bool obscure) {
+  Widget _field(
+    TextEditingController controller,
+    String labelKey,
+    bool obscure,
+  ) {
     return TextField(
       controller: controller,
       obscureText: obscure,
       enabled: !_busy,
+      decoration: InputDecoration(labelText: Locales.string(context, labelKey)),
+    );
+  }
+
+  Widget _passwordField() {
+    return TextField(
+      controller: _password,
+      obscureText: !_showPassword,
+      enabled: !_busy,
       decoration: InputDecoration(
-        labelText: Locales.string(context, labelKey),
-        border: const OutlineInputBorder(),
+        labelText: Locales.string(context, 'auth.password'),
+        suffixIcon: IconButton(
+          icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
+          onPressed: () => setState(() => _showPassword = !_showPassword),
+        ),
       ),
     );
   }
@@ -109,7 +129,10 @@ class _AuthPageState extends State<AuthPage> {
           ? const SizedBox(
               width: 22,
               height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             )
           : LocaleText(_signUp ? 'auth.signup' : 'auth.signin'),
     );

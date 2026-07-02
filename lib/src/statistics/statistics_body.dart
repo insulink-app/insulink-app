@@ -111,13 +111,16 @@ class _TwoRowTabs extends StatelessWidget {
     );
   }
 
-  Widget _row(BuildContext context, TabController controller, int start, int end) {
+  Widget _row(
+    BuildContext context,
+    TabController controller,
+    int start,
+    int end,
+  ) {
     return Row(
       children: [
         for (var index = start; index < end; index++)
-          Expanded(
-            child: _segment(context, controller, index),
-          ),
+          Expanded(child: _segment(context, controller, index)),
       ],
     );
   }

@@ -11,6 +11,7 @@ class PermissionStep extends StatelessWidget {
     required this.isLast,
     required this.position,
     required this.count,
+    required this.busy,
     required this.onAllow,
   });
 
@@ -18,6 +19,7 @@ class PermissionStep extends StatelessWidget {
   final bool isLast;
   final int position;
   final int count;
+  final bool busy;
   final Future<void> Function() onAllow;
 
   @override
@@ -40,17 +42,32 @@ class PermissionStep extends StatelessWidget {
           LocaleText(
             permission.bodyKey,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, color: Colors.grey[500], height: 1.4),
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey[500],
+              height: 1.4,
+            ),
           ),
           const Spacer(),
           _dots(scheme),
           const SizedBox(height: 24),
           FilledButton(
-            onPressed: onAllow,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-            child: LocaleText(
-              isLast ? 'permission.continue' : 'permission.next',
+            onPressed: busy ? null : onAllow,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
             ),
+            child: busy
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : LocaleText(
+                    isLast ? 'permission.continue' : 'permission.next',
+                  ),
           ),
         ],
       ),
@@ -64,9 +81,9 @@ class PermissionStep extends StatelessWidget {
         height: 96,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: scheme.primary.withValues(alpha: 0.12),
+          color: scheme.primary,
         ),
-        child: Icon(permission.icon, size: 48, color: scheme.primary),
+        child: Icon(permission.icon, size: 48, color: scheme.onPrimary),
       ),
     );
   }

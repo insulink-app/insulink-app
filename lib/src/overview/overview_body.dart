@@ -80,7 +80,10 @@ class OverviewBodyContent extends StatelessWidget {
     // sensor (renders nothing unless the backend has one).
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [SensorRestoreOffer(), Expanded(child: EmptyView())],
+      children: [
+        SensorRestoreOffer(),
+        Expanded(child: EmptyView()),
+      ],
     );
   }
 }

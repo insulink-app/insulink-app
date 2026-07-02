@@ -54,7 +54,8 @@ class GlucoseHistorySeries {
     final sums = List<double>.filled(_starts.length, 0);
     final counts = List<int>.filled(_starts.length, 0);
     archive.forEach((epochMin, mgdl) {
-      final index = indexOf[_floor(_localOf(epochMin), kind).millisecondsSinceEpoch];
+      final index =
+          indexOf[_floor(_localOf(epochMin), kind).millisecondsSinceEpoch];
       if (index != null) {
         sums[index] += mgdl;
         counts[index] += 1;
@@ -63,7 +64,10 @@ class GlucoseHistorySeries {
     return [
       for (var i = 0; i < _starts.length; i++)
         if (counts[i] > 0)
-          FlSpot(i.toDouble(), glucose.toDisplay((sums[i] / counts[i]).round())),
+          FlSpot(
+            i.toDouble(),
+            glucose.toDisplay((sums[i] / counts[i]).round()),
+          ),
     ];
   }
 
@@ -97,7 +101,11 @@ class GlucoseHistorySeries {
     }
   }
 
-  List<DateTime> _spanStarts(DateTime first, DateTime last, HistoryBucket kind) {
+  List<DateTime> _spanStarts(
+    DateTime first,
+    DateTime last,
+    HistoryBucket kind,
+  ) {
     final out = <DateTime>[];
     var cursor = first;
     while (!cursor.isAfter(last) && out.length < 1000) {

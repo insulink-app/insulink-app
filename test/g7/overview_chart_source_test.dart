@@ -33,21 +33,23 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(installSecureStorageMock);
 
-  test('archived readings round-trip to session-seconds and survive a wipe',
-      () async {
-    final store = await G7Store.open();
-    final start = DateTime(2024, 1, 1, 8, 0);
-    // Three readings 5 min apart, as the service archives them (wall-clock).
-    for (var step = 0; step < 3; step++) {
-      final secs = step * 300;
-      await store.archiveAdd(start.add(Duration(seconds: secs)), 100 + step);
-    }
-    // A session-cache wipe (clearSensor / _resetIfNewSession) leaves the chart
-    // source untouched because it reads the archive, not the cache.
-    await store.clearSensor('whatever');
+  test(
+    'archived readings round-trip to session-seconds and survive a wipe',
+    () async {
+      final store = await G7Store.open();
+      final start = DateTime(2024, 1, 1, 8, 0);
+      // Three readings 5 min apart, as the service archives them (wall-clock).
+      for (var step = 0; step < 3; step++) {
+        final secs = step * 300;
+        await store.archiveAdd(start.add(Duration(seconds: secs)), 100 + step);
+      }
+      // A session-cache wipe (clearSensor / _resetIfNewSession) leaves the chart
+      // source untouched because it reads the archive, not the cache.
+      await store.clearSensor('whatever');
 
-    final now = start.add(const Duration(minutes: 20));
-    final chart = chartFromArchive(store, start, now);
-    expect(chart, {0: 100, 300: 101, 600: 102});
-  });
+      final now = start.add(const Duration(minutes: 20));
+      final chart = chartFromArchive(store, start, now);
+      expect(chart, {0: 100, 300: 101, 600: 102});
+    },
+  );
 }

@@ -29,6 +29,7 @@ class PermissionOnboarding extends StatefulWidget {
 class _PermissionOnboardingState extends State<PermissionOnboarding> {
   final _controller = PageController();
   int _index = 0;
+  bool _busy = false;
 
   static final List<PermissionRequest> _permissions = [
     (
@@ -56,7 +57,17 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       titleKey: 'permission.dnd.title',
       bodyKey: 'permission.dnd.body',
       request: () async {
-        await G7AlarmManager(FlutterLocalNotificationsPlugin()).ensureDndAccess();
+        await G7AlarmManager(
+          FlutterLocalNotificationsPlugin(),
+        ).ensureDndAccess();
+      },
+    ),
+    (
+      icon: Icons.directions_walk,
+      titleKey: 'permission.activity.title',
+      bodyKey: 'permission.activity.body',
+      request: () async {
+        await Permission.activityRecognition.request();
       },
     ),
     (
@@ -78,11 +89,18 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
   }
 
   Future<void> _advance() async {
+    setState(() => _busy = true);
     await _permissions[_index].request();
+    if (!mounted) {
+      return;
+    }
     if (_index == _permissions.length - 1) {
       await widget.onDone();
       return;
     }
+    // Reset BEFORE animating so the incoming page never inherits the spinner
+    // (onPageChanged flips _index mid-animation, which would flash it there).
+    setState(() => _busy = false);
     await _controller.nextPage(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -102,6 +120,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
             isLast: index == _permissions.length - 1,
             position: index,
             count: _permissions.length,
+            busy: _busy && index == _index,
             onAllow: _advance,
           ),
         ),

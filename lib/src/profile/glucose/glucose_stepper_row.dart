@@ -11,12 +11,17 @@ class GlucoseStepperRow extends StatelessWidget {
     required this.accent,
     required this.onMinus,
     required this.onPlus,
+    this.valueChild,
   });
 
   final String labelKey;
   final String valueText;
   final Color accent;
   final VoidCallback onMinus, onPlus;
+
+  /// Optional: replaces the value text (e.g. with an inline-editable field). It
+  /// then manages its own width; otherwise [valueText] is a fixed 96px wide.
+  final Widget? valueChild;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +30,9 @@ class GlucoseStepperRow extends StatelessWidget {
       children: [
         Expanded(child: _label(theme)),
         CircleIconButton(icon: Icons.remove, accent: accent, onTap: onMinus),
+        const SizedBox(width: 10),
         _value(),
+        const SizedBox(width: 10),
         CircleIconButton(icon: Icons.add, accent: accent, onTap: onPlus),
       ],
     );
@@ -43,6 +50,9 @@ class GlucoseStepperRow extends StatelessWidget {
   }
 
   Widget _value() {
+    if (valueChild != null) {
+      return valueChild!;
+    }
     return SizedBox(
       width: 96,
       child: Text(

@@ -3,7 +3,9 @@ import 'package:insulink/src/g7/glucose_sync.dart';
 
 void main() {
   test('chunk splits a 282-entry map preserving every key/value', () {
-    final values = {for (var minute = 0; minute < 282; minute++) minute: 100 + minute};
+    final values = {
+      for (var minute = 0; minute < 282; minute++) minute: 100 + minute,
+    };
     final chunks = GlucoseSync.chunk(values, 60);
     expect(chunks.length, 5); // ceil(282 / 60)
     expect(chunks.map((part) => part.length).toList(), [60, 60, 60, 60, 42]);

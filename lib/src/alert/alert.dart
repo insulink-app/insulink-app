@@ -1,9 +1,14 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 
 enum AlertType { success, error, neutral }
 
+/// iOS-style modal notice/confirmation dialog: tinted icon circle, centered
+/// message and large side-by-side action buttons, faded in over a blurred
+/// backdrop. API kept deliberately slim so all callers (delete, error, input …)
+/// stay unchanged.
 class Alert extends StatefulWidget {
   final AlertType? type;
   final IconData? icon;
@@ -37,8 +42,31 @@ class Alert extends StatefulWidget {
   @override
   State<Alert> createState() => AlertState();
 
+  /// Fades the dialog in over a blurred backdrop with a gentle scale-up.
   void show(BuildContext context) {
-    showDialog(context: context, builder: (BuildContext context) => this);
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (_, _, _) => this,
+      transitionBuilder: (context, animation, _, child) {
+        final scale = Tween(begin: 0.92, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+        );
+        return BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: 7 * animation.value,
+            sigmaY: 7 * animation.value,
+          ),
+          child: FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(scale: scale, child: child),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -50,71 +78,101 @@ class AlertState extends State<Alert> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return AlertDialog(
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(15.0)),
-      ),
-      contentPadding: const EdgeInsets.only(top: 10),
-      title: Center(
-        child: CircleAvatar(
-          radius: 30,
-          backgroundColor: theme.bottomNavigationBarTheme.backgroundColor,
-          child: createAlertIcon(),
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 150),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: _card(theme),
+          ),
         ),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [_message(), _actions(theme)],
       ),
     );
   }
 
-  /// The dialog body: a localized description, or a custom [content] widget.
-  Widget _message() {
+  Widget _card(ThemeData theme) {
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(32),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _iconCircle(),
+            const SizedBox(height: 18),
+            _body(),
+            const SizedBox(height: 24),
+            _actions(theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _iconCircle() {
+    final color = _iconColor();
+    return Container(
+      width: 76,
+      height: 76,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color?.withValues(alpha: 0.12),
+      ),
+      child: Icon(_iconData(), size: 36, color: color),
+    );
+  }
+
+  /// The message: either a localized text or a custom [content].
+  Widget _body() {
     if (widget.description == null) {
       return widget.content ?? const SizedBox.shrink();
     }
-    return Container(
-      padding: const EdgeInsets.only(left: 30, right: 30, top: 10),
-      child: LocaleText(widget.description ?? "", textAlign: TextAlign.center),
+    return LocaleText(
+      widget.description ?? "",
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        height: 1.35,
+      ),
     );
   }
 
-  /// The (optional) cancel button next to the confirm button.
+  /// Large buttons side by side: subtle cancel on the left, filled confirm on
+  /// the right.
   Widget _actions(ThemeData theme) {
     final disabled =
         widget.confirmButtonEnabled != null && !widget.confirmButtonEnabled!();
+    final confirm = _confirmButton(
+      _confirmColor(theme, disabled),
+      widget.confirmButtonText ?? "alert.ok",
+      () => _onConfirm(disabled),
+    );
+    if (widget.cancelButton != true) {
+      return confirm;
+    }
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (widget.cancelButton == true)
-          Container(
-            margin: const EdgeInsets.only(top: 15, bottom: 15, right: 10),
-            child: _button(
-              color: widget.cancelButtonColor ?? Colors.grey,
-              textKey: widget.cancelButtonText ?? "alert.cancel",
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 15),
-          child: _button(
-            color: _confirmColor(theme, disabled),
-            textKey: widget.confirmButtonText ?? "alert.ok",
-            onPressed: () => _onConfirm(disabled),
+        Expanded(
+          child: _cancelButton(
+            theme,
+            widget.cancelButtonText ?? "alert.cancel",
           ),
         ),
+        const SizedBox(width: 12),
+        Expanded(child: confirm),
       ],
     );
   }
 
   Color _confirmColor(ThemeData theme, bool disabled) {
-    if (widget.confirmButtonColor != null) {
-      return widget.confirmButtonColor!;
-    }
-    final primary = theme.colorScheme.primary;
-    return disabled ? primary.withValues(alpha: 0.5) : primary;
+    final base = widget.confirmButtonColor ?? theme.colorScheme.primary;
+    return disabled ? base.withValues(alpha: 0.5) : base;
   }
 
   void _onConfirm(bool disabled) {
@@ -125,60 +183,67 @@ class AlertState extends State<Alert> {
     widget.callback?.call();
   }
 
-  /// The shared compact, rounded action button used for both cancel and confirm.
-  Widget _button({
-    required Color color,
-    required String textKey,
-    required VoidCallback onPressed,
-  }) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.all(color),
-        shape: WidgetStateProperty.all(
-          const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(5.0)),
+  Widget _confirmButton(Color color, String textKey, VoidCallback onPressed) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: color,
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
-        padding: WidgetStateProperty.all(
-          const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        child: LocaleText(
+          textKey,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        minimumSize: WidgetStateProperty.all(Size.zero),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        visualDensity: VisualDensity.compact,
-      ),
-      child: LocaleText(
-        textKey,
-        style: const TextStyle(color: Colors.white, fontSize: 15),
       ),
     );
   }
 
-  Widget createAlertIcon() {
-    IconData? iconData = CupertinoIcons.circle;
-    if (widget.icon != null) {
-      iconData = widget.icon;
-    } else if (widget.type != null) {
-      if (widget.type == AlertType.success) {
-        iconData = CupertinoIcons.check_mark_circled;
-      } else if (widget.type == AlertType.error) {
-        iconData = CupertinoIcons.exclamationmark_triangle;
-      }
-    }
-    return Icon(iconData, size: 35, color: createAlertIconColor());
+  Widget _cancelButton(ThemeData theme, String textKey) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: () => Navigator.pop(context),
+        style: FilledButton.styleFrom(
+          backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.06),
+          foregroundColor:
+              widget.cancelButtonColor ?? theme.colorScheme.onSurface,
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: LocaleText(
+          textKey,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
   }
 
-  Color? createAlertIconColor() {
-    Color? iconColor = Theme.of(context).colorScheme.onSurface;
-    if (widget.iconColor != null) {
-      iconColor = widget.iconColor;
-    } else if (widget.type != null) {
-      if (widget.type == AlertType.success) {
-        iconColor = Colors.green;
-      } else if (widget.type == AlertType.error) {
-        iconColor = Colors.red;
-      }
+  IconData _iconData() {
+    if (widget.icon != null) {
+      return widget.icon!;
     }
-    return iconColor;
+    return switch (widget.type) {
+      AlertType.success => Icons.check_circle_rounded,
+      AlertType.error => Icons.error_rounded,
+      _ => Icons.info_rounded,
+    };
+  }
+
+  Color? _iconColor() {
+    if (widget.iconColor != null) {
+      return widget.iconColor;
+    }
+    return switch (widget.type) {
+      AlertType.success => Colors.green,
+      AlertType.error => Colors.red,
+      _ => Theme.of(context).colorScheme.onSurface,
+    };
   }
 }

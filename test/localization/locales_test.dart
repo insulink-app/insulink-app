@@ -47,12 +47,15 @@ void main() {
     expect(en.get('statistics.range.in_range'), 'In Range');
   });
 
-  test('localeParams resolve the param itself through the locale table', () async {
-    final de = await loaded('de');
-    // The param key is looked up in the locale table, then substituted.
-    final resolved = de.get('sensor.life.remaining', null, ['alert.ok']);
-    expect(resolved, 'noch OK Tage');
-  });
+  test(
+    'localeParams resolve the param itself through the locale table',
+    () async {
+      final de = await loaded('de');
+      // The param key is looked up in the locale table, then substituted.
+      final resolved = de.get('sensor.life.remaining', null, ['alert.ok']);
+      expect(resolved, 'noch OK Tage');
+    },
+  );
 
   test('init seeds selectedLocale and supportedLocales', () async {
     installSecureStorageMock();

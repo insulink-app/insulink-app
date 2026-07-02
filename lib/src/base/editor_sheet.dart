@@ -29,7 +29,14 @@ class EditorSheet extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      // Lift the sheet above the keyboard when an inline field is focused
+      // (otherwise the keyboard covers the value being edited).
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        20 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
       child: SafeArea(
         top: false,
         child: Column(

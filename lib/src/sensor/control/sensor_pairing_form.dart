@@ -95,7 +95,6 @@ class SensorPairingForm extends StatelessWidget {
       decoration: InputDecoration(
         labelText: Locales.string(context, 'overview.pairing_code'),
         isDense: true,
-        border: const OutlineInputBorder(),
       ),
     );
   }

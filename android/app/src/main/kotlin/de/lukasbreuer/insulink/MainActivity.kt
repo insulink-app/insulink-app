@@ -1,5 +1,7 @@
 package de.lukasbreuer.insulink
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// FlutterFragmentActivity (statt FlutterActivity) ist für den Health-Connect-
+// Berechtigungs-Flow des `health`-Plugins erforderlich.
+class MainActivity : FlutterFragmentActivity()

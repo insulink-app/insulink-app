@@ -30,15 +30,19 @@ class Request {
   /// successful response.
   String? lastError;
 
-  Request.get(
-      {required String url, this.headers = const {}, this.body = const {}})
-      : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
-        method = "GET";
+  Request.get({
+    required String url,
+    this.headers = const {},
+    this.body = const {},
+  }) : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
+       method = "GET";
 
-  Request.post(
-      {required String url, this.headers = const {}, this.body = const {}})
-      : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
-        method = "POST";
+  Request.post({
+    required String url,
+    this.headers = const {},
+    this.body = const {},
+  }) : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
+       method = "POST";
 
   Future<Response?> send(BuildContext? context) async {
     Map<String, String> headers = Map.from(this.headers);
@@ -54,7 +58,10 @@ class Request {
   }
 
   Future<Response?> processResponse(
-      BuildContext? context, Response? response, Map<String, String> headers) async {
+    BuildContext? context,
+    Response? response,
+    Map<String, String> headers,
+  ) async {
     if (response == null && _retries < _maxRetries) {
       _retries += 1;
       await Future.delayed(Duration(milliseconds: 500 * _retries));
@@ -78,8 +85,10 @@ class Request {
   Future<Response?> generateResponse(Map<String, String> headers) async {
     if (method == "GET") {
       try {
-        final response = await get(Uri.parse(url), headers: headers)
-            .timeout(const Duration(seconds: _timeout));
+        final response = await get(
+          Uri.parse(url),
+          headers: headers,
+        ).timeout(const Duration(seconds: _timeout));
         _logRequest(method: method, headers: headers, response: response);
         lastError = null;
         return response;
@@ -91,19 +100,26 @@ class Request {
     } else if (method == "POST") {
       try {
         Map<String, Object> body = Map.from(this.body);
-        final response =
-            await post(Uri.parse(url), headers: headers, body: jsonEncode(body))
-                .timeout(const Duration(seconds: _timeout));
+        final response = await post(
+          Uri.parse(url),
+          headers: headers,
+          body: jsonEncode(body),
+        ).timeout(const Duration(seconds: _timeout));
         _logRequest(
-            method: method, headers: headers, body: body, response: response);
+          method: method,
+          headers: headers,
+          body: body,
+          response: response,
+        );
         lastError = null;
         return response;
       } catch (exception) {
         _logRequest(
-            method: method,
-            headers: headers,
-            body: body,
-            exception: exception);
+          method: method,
+          headers: headers,
+          body: body,
+          exception: exception,
+        );
         lastError = exception.toString();
         return null;
       }

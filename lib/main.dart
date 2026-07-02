@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
+import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -14,6 +15,10 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/profile/language/profile_language_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/theme/profile_theme_state.dart';
+import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/sport_state.dart';
+import 'package:insulink/src/sport/training/cardio_training_state.dart';
+import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +30,9 @@ typedef AppPreferences = ({
   ProfileGlucoseState glucose,
   ProfileBolusState bolus,
   ProfileSilentState silent,
+  SportState sport,
+  TrainingState training,
+  CardioTrainingState cardio,
 });
 
 Future<void> main() async {
@@ -106,6 +114,13 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.glucose),
         ChangeNotifierProvider(create: (_) => prefs.bolus),
         ChangeNotifierProvider(create: (_) => prefs.silent),
+        ChangeNotifierProvider(create: (_) => prefs.sport),
+        ChangeNotifierProvider(create: (_) => prefs.training),
+        ChangeNotifierProvider(create: (_) => prefs.cardio),
+        // Step counter — only started when the Sport tab is opened
+        // (ensureStarted), not here, to avoid forcing the permission/stream at
+        // app start.
+        ChangeNotifierProvider(create: (_) => SportActivityState()),
         // Shared G7 read pipeline + service control, observed by the overview
         // and sensor pages.
         ChangeNotifierProvider(create: (_) => G7Controller()..init()),
@@ -120,6 +135,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   Widget _app(ProfileThemeState themeState, Locale? locale) {
     return MaterialApp(
       title: 'Insulink',
+      scrollBehavior: const BouncyScrollBehavior(),
       themeMode: themeState.themeMode,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
@@ -148,6 +164,9 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       glucose: await ProfileGlucoseState.load(),
       bolus: await ProfileBolusState.load(),
       silent: ProfileSilentState(await ProfileSilentState.load()),
+      sport: await SportState.load(),
+      training: await TrainingState.load(),
+      cardio: await CardioTrainingState.load(),
     );
   }
 }

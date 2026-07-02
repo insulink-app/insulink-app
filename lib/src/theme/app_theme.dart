@@ -22,15 +22,33 @@ class AppTheme {
   );
   static final ElevatedButtonThemeData _elevatedButtons =
       ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(shape: _buttonShape),
-  );
+        style: ElevatedButton.styleFrom(shape: _buttonShape),
+      );
   static final OutlinedButtonThemeData _outlinedButtons =
       OutlinedButtonThemeData(
-    style: OutlinedButton.styleFrom(shape: _buttonShape),
-  );
+        style: OutlinedButton.styleFrom(shape: _buttonShape),
+      );
   static final TextButtonThemeData _textButtons = TextButtonThemeData(
     style: TextButton.styleFrom(shape: _buttonShape),
   );
+
+  /// Modern, filled, borderless text fields with a soft rounded shape — the
+  /// focused state gets a thin primary ring. One place styles every [TextField]
+  /// in the app (auth, sport editors, …).
+  static InputDecorationTheme _inputTheme(Color fill, Color primary) {
+    OutlineInputBorder ring(Color color, double width) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(buttonRadius),
+      borderSide: BorderSide(color: color, width: width),
+    );
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: fill,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: ring(Colors.transparent, 0),
+      enabledBorder: ring(Colors.transparent, 0),
+      focusedBorder: ring(primary, 1.6),
+    );
+  }
 
   static final ThemeData light = ThemeData(
     useMaterial3: true,
@@ -47,6 +65,7 @@ class AppTheme {
     elevatedButtonTheme: _elevatedButtons,
     outlinedButtonTheme: _outlinedButtons,
     textButtonTheme: _textButtons,
+    inputDecorationTheme: _inputTheme(const Color(0xFFECECEC), Colors.indigo),
     appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFFAFAFA)),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Colors.white,
@@ -70,6 +89,10 @@ class AppTheme {
     elevatedButtonTheme: _elevatedButtons,
     outlinedButtonTheme: _outlinedButtons,
     textButtonTheme: _textButtons,
+    inputDecorationTheme: _inputTheme(
+      const Color(0xFF2A2A2A),
+      Colors.indigoAccent,
+    ),
     appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1B1B1B)),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Color(0xFF2A2A2A),

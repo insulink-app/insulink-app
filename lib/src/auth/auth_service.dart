@@ -10,6 +10,7 @@ import 'package:insulink/src/g7/event_sync.dart';
 import 'package:insulink/src/g7/glucose_sync.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/sport/sport_sync.dart';
 
 /// Talks to the backend `/signin/` and `/signup/` endpoints and persists the
 /// returned tokens. Each method returns `null` on success, or a localization
@@ -17,7 +18,11 @@ import 'package:insulink/src/request/request.dart';
 class AuthService {
   static const _storage = FlutterSecureStorage();
 
-  Future<String?> signIn(BuildContext context, String name, String password) async {
+  Future<String?> signIn(
+    BuildContext context,
+    String name,
+    String password,
+  ) async {
     final response = await Request.post(
       url: "/signin/",
       body: {"name": name, "password": password},
@@ -32,10 +37,17 @@ class AuthService {
     if (error == null && context.mounted) {
       await EventSync().pullHistory(context);
     }
+    if (error == null && context.mounted) {
+      await SportSync().pull(context);
+    }
     return error;
   }
 
-  Future<String?> signUp(BuildContext context, String name, String password) async {
+  Future<String?> signUp(
+    BuildContext context,
+    String name,
+    String password,
+  ) async {
     final deviceFields = await _deviceFields();
     if (!context.mounted) {
       return "auth.error.network";

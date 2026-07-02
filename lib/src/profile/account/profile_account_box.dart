@@ -92,35 +92,33 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
     final initial = (name ?? "").trim();
     return CircleAvatar(
       radius: 24,
-      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+      backgroundColor: theme.colorScheme.primary,
       child: initial.isEmpty
-          ? Icon(Icons.person, color: theme.colorScheme.primary)
+          ? Icon(Icons.person, color: theme.colorScheme.onPrimary)
           : Text(
               initial[0].toUpperCase(),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
+                color: theme.colorScheme.onPrimary,
               ),
             ),
     );
   }
 
   Widget _logoutButton(ThemeData theme) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
         onPressed: _confirmLogout,
-        style: OutlinedButton.styleFrom(
+        style: TextButton.styleFrom(
           foregroundColor: Colors.redAccent,
-          side: const BorderSide(color: Colors.redAccent),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         ),
-        icon: const Icon(Icons.logout, size: 20),
+        icon: const Icon(Icons.logout, size: 18),
         label: const LocaleText(
           "profile.account.logout",
-          style: TextStyle(fontSize: 15),
+          style: TextStyle(fontSize: 14),
         ),
       ),
     );
@@ -141,7 +139,6 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
             counterText: "",
             prefixIcon: const Icon(Icons.person),
             hintText: Locales.string(context, "profile.account.name"),
-            border: const OutlineInputBorder(),
           ),
         ),
       ),

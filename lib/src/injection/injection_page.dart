@@ -143,7 +143,6 @@ class _NumberField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: Locales.string(context, labelKey),
         suffixText: suffix,
-        border: const OutlineInputBorder(),
       ),
     );
   }
@@ -162,7 +161,6 @@ class _BolusField extends StatelessWidget {
     return InputDecorator(
       decoration: InputDecoration(
         labelText: Locales.string(context, 'injection.bolus'),
-        border: const OutlineInputBorder(),
         filled: true,
         fillColor: theme.colorScheme.primary.withValues(alpha: 0.06),
       ),
