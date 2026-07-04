@@ -77,6 +77,14 @@ class G7AlarmManager {
   /// Notification id for the "sensor halfway through its life" reminder.
   static const _halftimeId = 103;
 
+  /// How long after the true halfway crossing the reminder stays eligible. The
+  /// persisted flag is the normal one-shot guard, but it doesn't survive an app
+  /// reinstall / cleared storage; without this window a fresh isolate would re-fire
+  /// the reminder for the ENTIRE second half (days 5–10 of a G7) — the user got it
+  /// "again and again" on day 7/8, still claiming halftime. Bounding eligibility to
+  /// a few hours makes a fire past the actual midpoint impossible.
+  static const _halftimeWindowSec = 6 * 3600;
+
   /// A short double-buzz, deliberately DISTINCT from the glucose alarm pattern so
   /// a detected training doesn't feel like an alarm.
   static const _trainingVibrationPattern = [0, 60, 40, 60];
@@ -272,10 +280,11 @@ class G7AlarmManager {
     );
   }
 
-  /// Fire a one-shot reminder once the sensor has passed the halfway point of its
-  /// session (≈ day 5 of a 10-day G7). Persisted per-sensor in [store] so it
-  /// fires only once per sensor, even across restarts. Same silent/toggle gating
-  /// as [checkExpiry].
+  /// Fire a one-shot reminder in a short window right after the sensor passes the
+  /// halfway point of its session (≈ day 5 of a 10-day G7). Persisted per-sensor
+  /// in [store] so it fires only once per sensor; the window ([_halftimeWindowSec])
+  /// caps eligibility so it can't re-fire deep into the second half if that flag is
+  /// ever lost. Same silent/toggle gating as [checkExpiry].
   Future<void> checkHalftime({
     required G7Store store,
     required String key,
@@ -285,7 +294,8 @@ class G7AlarmManager {
     if (key.isEmpty || sessionLengthSec == null) {
       return;
     }
-    if (secsSinceStart < sessionLengthSec ~/ 2) {
+    final pastHalf = secsSinceStart - sessionLengthSec ~/ 2;
+    if (pastHalf < 0 || pastHalf > _halftimeWindowSec) {
       return;
     }
     if (await ProfileSilentState.load()) {

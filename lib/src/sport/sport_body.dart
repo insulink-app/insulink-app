@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:insulink/src/base/page_body.dart';
-import 'package:insulink/src/fitbit/fitbit_section.dart';
 import 'package:insulink/src/fitbit/fitbit_state.dart';
 import 'package:insulink/src/sport/activity/activity_summary_card.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
@@ -57,7 +56,6 @@ class _SportBodyContentState extends State<SportBodyContent> {
       children: const [
         ActivitySummaryCard(),
         SizedBox(height: 28),
-        FitbitSection(),
         RoutinesSection(),
         SizedBox(height: 28),
         CardioSection(),

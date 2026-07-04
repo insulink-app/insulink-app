@@ -72,6 +72,18 @@ class SportSync {
     await _post('/sport/measurements/sync/', {'entries': entries});
   }
 
+  /// Deletes a single weight from the account via the measurements delete
+  /// endpoint. Needed because the measurements `sync` MERGES (never deletes), so
+  /// a removed point only vanishes server-side when named here by its natural key
+  /// (type + timestamp). The endpoint takes an `entries` list, like `sync`.
+  Future<void> deleteWeight(WeightEntry entry) async {
+    await _post('/sport/measurements/delete/', {
+      'entries': [
+        {'type': 'WEIGHT', 'time': entry.atEpochMs},
+      ],
+    });
+  }
+
   Future<void> _sendExercises() async {
     final exercises = await _store.loadExercises();
     await _post('/sport/exercises/sync/', {

@@ -10,6 +10,7 @@ import 'package:insulink/src/fitbit/fitbit_state.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -17,6 +18,7 @@ import 'package:insulink/src/profile/language/profile_language_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/theme/profile_theme_state.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
@@ -35,6 +37,8 @@ typedef AppPreferences = ({
   TrainingState training,
   CardioTrainingState cardio,
   FitbitState fitbit,
+  TodayLayoutState todayLayout,
+  OverviewLayoutState overviewLayout,
 });
 
 Future<void> main() async {
@@ -120,6 +124,8 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.training),
         ChangeNotifierProvider(create: (_) => prefs.cardio),
         ChangeNotifierProvider(create: (_) => prefs.fitbit),
+        ChangeNotifierProvider(create: (_) => prefs.todayLayout),
+        ChangeNotifierProvider(create: (_) => prefs.overviewLayout),
         // Step counter — only started when the Sport tab is opened
         // (ensureStarted), not here, to avoid forcing the permission/stream at
         // app start.
@@ -173,6 +179,8 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       training: await TrainingState.load(),
       cardio: await CardioTrainingState.load(),
       fitbit: await FitbitState.load(),
+      todayLayout: await TodayLayoutState.load(),
+      overviewLayout: await OverviewLayoutState.load(),
     );
   }
 }

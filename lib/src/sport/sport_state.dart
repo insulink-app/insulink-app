@@ -83,7 +83,8 @@ class SportState extends ChangeNotifier {
   Future<void> removeWeight(WeightEntry entry) async {
     _weights.remove(entry);
     notifyListeners();
-    await _saveWeights();
+    await _store.saveWeights(_weights);
+    await SportSync().deleteWeight(entry);
   }
 
   Future<void> setStrideCm(int cm) async {

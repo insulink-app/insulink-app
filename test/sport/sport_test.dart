@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/step_baseline.dart';
 import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/sport_format.dart';
@@ -198,23 +197,6 @@ void main() {
       );
       // 3 × (60 + 60) = 360 s = 6 min.
       expect(estimatedRoutineMinutes(routine, [exercise]), 6);
-    });
-  });
-
-  group('monthlyWindows', () {
-    test('cover the range contiguously without gaps or overlaps', () {
-      final windows = monthlyWindows(
-        DateTime(2024, 1, 15),
-        DateTime(2024, 4, 10),
-      );
-      expect(windows.first.start, DateTime(2024, 1, 15));
-      expect(windows.last.end, DateTime(2024, 4, 10));
-      for (var index = 1; index < windows.length; index++) {
-        expect(windows[index].start, windows[index - 1].end);
-      }
-      for (final window in windows) {
-        expect(window.start.isBefore(window.end), isTrue);
-      }
     });
   });
 

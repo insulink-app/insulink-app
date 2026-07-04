@@ -26,7 +26,7 @@ class ProfileAccount {
   /// re-paired on device; only [_keepOnLogout] remains. The network call is
   /// best-effort — the local wipe runs regardless, so logout works offline.
   Future<void> logout(BuildContext context) async {
-    await Request.post(url: "/logout/").send(context);
+    await Request.get(url: "/logout/").send(context);
     final keys = (await _storage.readAll()).keys.toList();
     for (final key in keys) {
       if (!_keepOnLogout.contains(key)) {

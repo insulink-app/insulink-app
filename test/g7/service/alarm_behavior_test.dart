@@ -215,4 +215,34 @@ void main() {
       expect(notifications.shown, isEmpty);
     });
   });
+
+  group('halftime reminder', () {
+    const session = 864000; // 10 d
+    const half = session ~/ 2;
+
+    test('fires once just after the halfway crossing', () async {
+      final store = await G7Store.open();
+      Future<void> tick(int secsSinceStart) => alarms.checkHalftime(
+        store: store,
+        key: 'SERIAL',
+        sessionLengthSec: session,
+        secsSinceStart: secsSinceStart,
+      );
+      await tick(half - 300); // still first half → nothing
+      await tick(half + 300); // just past half → fires
+      await tick(half + 600); // already notified → nothing
+      expect(notifications.shown, [103]);
+    });
+
+    test('never fires deep into the second half, even if not yet notified', () async {
+      final store = await G7Store.open();
+      await alarms.checkHalftime(
+        store: store,
+        key: 'SERIAL',
+        sessionLengthSec: session,
+        secsSinceStart: half + 3 * 86400, // day 8 → outside the window
+      );
+      expect(notifications.shown, isEmpty);
+    });
+  });
 }
