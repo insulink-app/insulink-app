@@ -11,7 +11,6 @@ import '../../sport/training/activity_recognition_sampler.dart';
 import '../../sport/training/background_location_sampler.dart';
 import '../../sport/training/cardio_detection_runner.dart';
 import 'alarms.dart';
-import 'service_log.dart';
 import '../event_sync.dart';
 import '../glucose_sync.dart';
 import '../protocol/connection.dart';
@@ -47,10 +46,6 @@ class G7TaskHandler extends TaskHandler {
   /// so the watchdog's recovery re-init doesn't re-call `RustLib.init()` (which
   /// throws if already initialised).
   bool _coreReady = false;
-
-  /// Durable log so the watchdog's overnight recovery activity survives a
-  /// process/isolate restart and is readable in the UI afterwards.
-  final ServiceLog _serviceLog = ServiceLog();
 
   /// Piggybacks periodic GPS sampling on this already-running foreground service
   /// (flutter_foreground_task hosts only one), independent of the BLE pipeline.
@@ -374,7 +369,6 @@ class G7TaskHandler extends TaskHandler {
 
   void _log(String line) {
     FlutterForegroundTask.sendDataToMain({'t': 'log', 'line': line});
-    _serviceLog.append(line);
   }
 
   @override
