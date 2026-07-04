@@ -29,7 +29,13 @@ class OverviewSportBoxes extends StatelessWidget {
           alignment: Alignment.centerRight,
           child: IconButton(
             visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.tune, size: 20),
+            icon: Icon(
+              Icons.tune,
+              size: 20,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
             onPressed: () => _edit(context, layout),
           ),
         ),
