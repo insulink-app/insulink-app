@@ -21,18 +21,25 @@ class ActivityRecognitionSampler {
   ActivityRecognitionSampler([this._store = const SportStore()]);
 
   /// Idempotent: subscribe once, only if the permission is already granted.
+  /// The plugin's permission check needs an attached Activity, which the
+  /// service isolate lacks (throws ACTIVITY_NOT_ATTACHED) — best-effort, so
+  /// any failure just skips activity sampling.
   Future<void> start() async {
     if (_subscription != null) {
       return;
     }
-    final permission =
-        await FlutterActivityRecognition.instance.checkPermission();
-    if (permission != ActivityPermission.GRANTED) {
+    try {
+      final permission =
+          await FlutterActivityRecognition.instance.checkPermission();
+      if (permission != ActivityPermission.GRANTED) {
+        return;
+      }
+      _subscription = FlutterActivityRecognition.instance.activityStream
+          .handleError((_) {})
+          .listen(_onActivity);
+    } catch (_) {
       return;
     }
-    _subscription = FlutterActivityRecognition.instance.activityStream
-        .handleError((_) {})
-        .listen(_onActivity);
   }
 
   /// Records one sample per distinct kind — the stream re-emits the same activity

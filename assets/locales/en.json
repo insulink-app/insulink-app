@@ -265,6 +265,22 @@
  "pump": {
   "label": "Pump"
  },
+ "fitbit": {
+  "label": "Fitbit",
+  "connect": "Connect",
+  "disconnect": "Disconnect",
+  "hint": "Connects Fitbit through Google Health. The Fitbit app must be installed and syncing its data to Health Connect.",
+  "denied": "Access to Google Health was denied.",
+  "unavailable": "Google Health (Health Connect) is not available.",
+  "resting_hr": "Resting HR",
+  "sleep": "Sleep",
+  "heart_rate": "Heart rate",
+  "spo2": "Blood oxygen",
+  "status": {
+   "connected": "Connected",
+   "disconnected": "Not connected"
+  }
+ },
  "devices": {
   "label": "Devices"
  },
@@ -362,6 +378,7 @@
    "note": "Syncs your complete Google Health history: daily steps, distance and calories plus your weight.",
    "imported": "Imported from Google Health",
    "imported_no_history": "Imported (only ~last 30 days). Allow access to past data in Health Connect – if that option isn't offered, update Health Connect. Data not stored in Health Connect can't be imported.",
+   "partial": "Some data couldn't be read (Health Connect rate limit) – tap Import again to fetch the rest.",
    "denied": "Google Health access denied",
    "unavailable": "Google Health (Health Connect) is not available",
    "subtitle": "Sync your full history"
@@ -403,8 +420,11 @@
    "delete_confirm": "Delete this training?",
    "no_route": "No route recorded",
    "location_denied": "Location permission missing – training can't be recorded.",
-   "detected": "auto-detected",
-   "detected_prompt": "Training detected – is that right?"
+   "detected": "automatic",
+   "detected_prompt": "Training detected – is that right?",
+   "show_more": "Show more",
+   "all": "All trainings",
+   "empty": "No trainings yet"
   },
   "detect_notification": {
    "title": "Training detected",
@@ -465,6 +485,15 @@
   "connection": {
    "description": "Warn when no reading for 15 min"
   },
+  "expiry": {
+   "description": "Warn when the sensor is about to expire"
+  },
+  "halftime": {
+   "description": "Remind when the sensor is half used up (day 5)"
+  },
+  "training": {
+   "description": "Notify when a training was detected"
+  },
   "alarmsound": {
    "description": "Play alarm sound for high/low glucose"
   },
@@ -501,7 +530,7 @@
    "glucose": "glucose sugar unit target thresholds alarm mmol mgdl",
    "bolus": "bolus insulin correction carbs factor",
    "body": "body metrics stride length height bmi weight steps distance",
-   "notification": "notification alert sound alarm connection live glucose",
+   "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training",
    "silent": "silent mute quiet do not disturb dnd",
    "developer": "developer debug logs advanced"
   }
@@ -565,6 +594,10 @@
   "expiry": {
    "title": "Sensor expiring soon",
    "body": "Your sensor expires in about # h. Prepare a new one."
+  },
+  "halftime": {
+   "title": "Sensor half used up",
+   "body": "Your sensor has reached half of its lifetime (day 5)."
   }
  }
 }

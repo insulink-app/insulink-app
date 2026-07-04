@@ -6,6 +6,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
+import 'package:insulink/src/fitbit/fitbit_state.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -33,6 +34,7 @@ typedef AppPreferences = ({
   SportState sport,
   TrainingState training,
   CardioTrainingState cardio,
+  FitbitState fitbit,
 });
 
 Future<void> main() async {
@@ -117,6 +119,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.sport),
         ChangeNotifierProvider(create: (_) => prefs.training),
         ChangeNotifierProvider(create: (_) => prefs.cardio),
+        ChangeNotifierProvider(create: (_) => prefs.fitbit),
         // Step counter — only started when the Sport tab is opened
         // (ensureStarted), not here, to avoid forcing the permission/stream at
         // app start.
@@ -169,6 +172,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       sport: await SportState.load(),
       training: await TrainingState.load(),
       cardio: await CardioTrainingState.load(),
+      fitbit: await FitbitState.load(),
     );
   }
 }

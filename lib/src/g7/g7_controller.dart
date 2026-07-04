@@ -287,10 +287,23 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     return series.isEmpty ? null : series[series.lastKey()];
   }
 
-  /// True when the headline value is NOT a fresh live reading — restored from
-  /// cache on launch or recovered from the synced archive. The overview dims it
-  /// and labels it "outdated" so a stale number isn't mistaken for a live one.
-  bool get currentIsStale => !_latestIsLive;
+  /// True when the headline value should be dimmed as "outdated". A fresh live
+  /// reading is never stale. A restored/synced value is stale only when it has
+  /// no known time (new sensor, value from the archive before the live clock has
+  /// loaded) or is older than [_headlineStaleAfter] — a recently cached value
+  /// restored on launch still reads as current.
+  bool get currentIsStale {
+    if (_latestIsLive) {
+      return false;
+    }
+    final at = lastUpdate;
+    if (at == null) {
+      return true;
+    }
+    return DateTime.now().difference(at) > _headlineStaleAfter;
+  }
+
+  static const _headlineStaleAfter = Duration(minutes: 10);
 
   /// Trend for the headline: the live/cached reading's own trend, else derived
   /// from the last two archive points (a returning device with synced-only data).

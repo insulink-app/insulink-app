@@ -265,6 +265,22 @@
  "pump": {
   "label": "Pumpe"
  },
+ "fitbit": {
+  "label": "Fitbit",
+  "connect": "Verbinden",
+  "disconnect": "Trennen",
+  "hint": "Verbindet Fitbit über Google Health. Die Fitbit-App muss installiert sein und ihre Daten mit Health Connect synchronisieren.",
+  "denied": "Zugriff auf Google Health verweigert.",
+  "unavailable": "Google Health (Health Connect) ist nicht verfügbar.",
+  "resting_hr": "Ruhepuls",
+  "sleep": "Schlaf",
+  "heart_rate": "Herzfrequenz",
+  "spo2": "Sauerstoff",
+  "status": {
+   "connected": "Verbunden",
+   "disconnected": "Nicht verbunden"
+  }
+ },
  "devices": {
   "label": "Geräte"
  },
@@ -362,6 +378,7 @@
    "note": "Synchronisiert deine komplette Google-Health-Historie: Schritte, Distanz und Kalorien pro Tag sowie dein Gewicht.",
    "imported": "Aus Google Health importiert",
    "imported_no_history": "Importiert (nur ca. letzte 30 Tage). Erlaube in Health Connect den Zugriff auf vergangene Daten – erscheint das nicht, aktualisiere Health Connect. Daten, die nicht in Health Connect stehen, lassen sich nicht importieren.",
+   "partial": "Einige Daten konnten nicht gelesen werden (Health-Connect-Limit) – tippe erneut auf Import, um den Rest zu holen.",
    "denied": "Zugriff auf Google Health verweigert",
    "unavailable": "Google Health (Health Connect) ist nicht verfügbar",
    "subtitle": "Komplette Historie synchronisieren"
@@ -403,8 +420,11 @@
    "delete_confirm": "Dieses Training wirklich löschen?",
    "no_route": "Keine Route aufgezeichnet",
    "location_denied": "Standort-Berechtigung fehlt – Training kann nicht aufgezeichnet werden.",
-   "detected": "automatisch erkannt",
-   "detected_prompt": "Training erkannt – stimmt das?"
+   "detected": "automatisch",
+   "detected_prompt": "Training erkannt – stimmt das?",
+   "show_more": "Mehr anzeigen",
+   "all": "Alle Trainings",
+   "empty": "Noch keine Trainings"
   },
   "detect_notification": {
    "title": "Training erkannt",
@@ -465,6 +485,15 @@
   "connection": {
    "description": "Warnen, wenn 15 min kein Wert kommt"
   },
+  "expiry": {
+   "description": "Warnen, wenn der Sensor bald abläuft"
+  },
+  "halftime": {
+   "description": "Erinnern, wenn der Sensor halb aufgebraucht ist (Tag 5)"
+  },
+  "training": {
+   "description": "Benachrichtigen, wenn ein Training erkannt wurde"
+  },
   "alarmsound": {
    "description": "Alarmton bei hohem/niedrigem Zucker abspielen"
   },
@@ -501,7 +530,7 @@
    "glucose": "glukose zucker einheit zielbereich grenzwerte alarm mmol mgdl",
    "bolus": "bolus insulin korrektur kohlenhydrate faktor",
    "body": "körpermaße schrittlänge körpergröße größe bmi gewicht schritte distanz",
-   "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose",
+   "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose ablauf halbzeit halbwertszeit sensor training",
    "silent": "stumm lautlos ruhe stören nicht dnd",
    "developer": "entwickler debug logs erweitert protokoll"
   }
@@ -565,6 +594,10 @@
   "expiry": {
    "title": "Sensor läuft bald ab",
    "body": "Dein Sensor läuft in etwa # h ab. Bereite einen neuen vor."
+  },
+  "halftime": {
+   "title": "Sensor zur Hälfte aufgebraucht",
+   "body": "Dein Sensor hat die Hälfte seiner Laufzeit erreicht (Tag 5)."
   }
  }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 
 import '../sport_models.dart';
@@ -6,8 +7,34 @@ import 'sport_activity_state.dart';
 
 /// Outcome of a Health import. [successNoHistory] means data was imported but the
 /// "read past data" permission is missing, so only ~30 days were reachable — the
-/// user needs to grant it in Health Connect for the full history.
-enum HealthImportResult { success, successNoHistory, unavailable, denied }
+/// user needs to grant it in Health Connect for the full history. [partial] means
+/// some windows still failed after retries (usually Health Connect read
+/// rate-limiting), so the history has gaps — the user should import again.
+enum HealthImportResult { success, successNoHistory, partial, unavailable, denied }
+
+/// Runs [read], retrying up to [maxAttempts] times with a growing [backoff]
+/// between attempts. Returns the result of the first successful attempt, or null
+/// if every attempt threw. Health Connect throws a `PlatformException` when its
+/// burst read quota is exceeded; retrying after a short backoff recovers the
+/// window instead of losing it — the reason older months used to vanish silently.
+@visibleForTesting
+Future<List<T>?> retryRead<T>(
+  Future<List<T>> Function() read, {
+  int maxAttempts = 3,
+  Duration backoff = const Duration(milliseconds: 400),
+}) async {
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) {
+      await Future.delayed(backoff * attempt);
+    }
+    try {
+      return await read();
+    } catch (_) {
+      // Retry after backoff on the next iteration; give up after maxAttempts.
+    }
+  }
+  return null;
+}
 
 /// Splits `[start, end)` into contiguous, non-overlapping monthly windows.
 /// `ponytail:` reading one window at a time keeps each Health Connect call small
@@ -52,6 +79,16 @@ class HealthImporter {
   /// One day, in seconds — the aggregation bucket size.
   static const _dayInterval = 86400;
 
+  /// Gap left after each successful window read to keep the ~240-call import from
+  /// bursting straight through Health Connect's read quota. ponytail: this is a
+  /// hard floor on import time (~20 s for a full 5-year history); raise
+  /// [retryRead]'s backoff instead of dropping the throttle if bursts still fail.
+  static const _throttle = Duration(milliseconds: 80);
+
+  /// Windows that still failed after all retries this import — makes [import]
+  /// report [HealthImportResult.partial] instead of a false success.
+  int _failedWindows = 0;
+
   static const _types = [
     HealthDataType.STEPS,
     HealthDataType.DISTANCE_DELTA,
@@ -73,6 +110,7 @@ class HealthImporter {
     if (!await _health.requestAuthorization(_types, permissions: _read)) {
       return HealthImportResult.denied;
     }
+    _failedWindows = 0;
     final history = await _ensureHistoryAccess();
     final now = DateTime.now();
     final start = DateTime(now.year - _historyYears);
@@ -80,9 +118,39 @@ class HealthImporter {
     await activity.mergeArchive(archive);
     _applyToday(activity, archive, now);
     await sport.mergeWeights(await _weights(start, now));
-    return history
-        ? HealthImportResult.success
-        : HealthImportResult.successNoHistory;
+    _logImport(archive);
+    if (!history) {
+      return HealthImportResult.successNoHistory;
+    }
+    return _failedWindows > 0
+        ? HealthImportResult.partial
+        : HealthImportResult.success;
+  }
+
+  /// One-line diagnostic: the actual imported date range + how many windows were
+  /// dropped after retries. A genuine "Health Connect never stored that old data"
+  /// situation shows here as a short range with zero drops (no app can retrieve
+  /// data Health Connect doesn't hold); rate-limit gaps show a non-zero drop count.
+  void _logImport(List<DailyActivity> archive) {
+    final keys = archive.map((day) => day.dateKey).toList()..sort();
+    final range = keys.isEmpty ? 'none' : '${keys.first}..${keys.last}';
+    debugPrint(
+      'HealthImporter: imported ${archive.length} day(s) ($range), '
+      '$_failedWindows window(s) dropped after retries',
+    );
+  }
+
+  /// Reads one window with retry/backoff and the inter-window throttle. Returns
+  /// null when the window still failed after all retries (counted in
+  /// [_failedWindows]), so the caller skips it and the rest of the range imports.
+  Future<List<T>?> _readWindow<T>(Future<List<T>> Function() read) async {
+    final result = await retryRead(read);
+    if (result == null) {
+      _failedWindows++;
+      return null;
+    }
+    await Future.delayed(_throttle);
+    return result;
   }
 
   /// Requests the "read past data" (history) permission needed for anything older
@@ -163,30 +231,30 @@ class HealthImporter {
   ) async {
     final out = <String, double>{};
     for (final window in monthlyWindows(start, end)) {
-      try {
-        final points = await _health.getHealthIntervalDataFromTypes(
+      final points = await _readWindow(
+        () => _health.getHealthIntervalDataFromTypes(
           startDate: window.start,
           endDate: window.end,
           types: [type],
           interval: _dayInterval,
-        );
-        for (final point in points) {
-          final value = point.value;
-          if (value is NumericHealthValue) {
-            final total = value.numericValue.toDouble();
-            // Aggregation emits a bucket for EVERY day in the range, including
-            // empty ones (value 0). Skip those, or the archive fills with
-            // thousands of meaningless zero-days that blow up the backend sync.
-            if (total <= 0) {
-              continue;
-            }
-            final key = _dateKey(point.dateFrom.toLocal());
-            out[key] = (out[key] ?? 0) + total;
+        ),
+      );
+      if (points == null) {
+        continue;
+      }
+      for (final point in points) {
+        final value = point.value;
+        if (value is NumericHealthValue) {
+          final total = value.numericValue.toDouble();
+          // Aggregation emits a bucket for EVERY day in the range, including
+          // empty ones (value 0). Skip those, or the archive fills with
+          // thousands of meaningless zero-days that blow up the backend sync.
+          if (total <= 0) {
+            continue;
           }
+          final key = _dateKey(point.dateFrom.toLocal());
+          out[key] = (out[key] ?? 0) + total;
         }
-      } catch (_) {
-        // ponytail: a window Health Connect can't serve is skipped; the rest of
-        // the range still imports.
       }
     }
     return out;
@@ -195,25 +263,26 @@ class HealthImporter {
   Future<List<WeightEntry>> _weights(DateTime start, DateTime end) async {
     final out = <WeightEntry>[];
     for (final window in monthlyWindows(start, end)) {
-      try {
-        final points = await _health.getHealthDataFromTypes(
+      final points = await _readWindow(
+        () => _health.getHealthDataFromTypes(
           types: [HealthDataType.WEIGHT],
           startTime: window.start,
           endTime: window.end,
-        );
-        for (final point in _health.removeDuplicates(points)) {
-          final value = point.value;
-          if (value is NumericHealthValue) {
-            out.add(
-              WeightEntry(
-                atEpochMs: point.dateFrom.millisecondsSinceEpoch,
-                kg: value.numericValue.toDouble(),
-              ),
-            );
-          }
+        ),
+      );
+      if (points == null) {
+        continue;
+      }
+      for (final point in _health.removeDuplicates(points)) {
+        final value = point.value;
+        if (value is NumericHealthValue) {
+          out.add(
+            WeightEntry(
+              atEpochMs: point.dateFrom.millisecondsSinceEpoch,
+              kg: value.numericValue.toDouble(),
+            ),
+          );
         }
-      } catch (_) {
-        // ponytail: skip an unreadable window (see [_dailyTotals]).
       }
     }
     return out;

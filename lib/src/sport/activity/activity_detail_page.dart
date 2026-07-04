@@ -228,6 +228,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
             : ActivityBarChart(
                 days: ranged,
                 value: _value,
+                label: (day) => _unit == null
+                    ? _format(_value(day))
+                    : '${_format(_value(day))} $_unit',
                 color: scheme.primary,
               ),
       ),

@@ -123,6 +123,33 @@ void main() {
     });
   });
 
+  group('event log groups an excursion into one event', () {
+    Future<List<String>> eventTypes() async {
+      final store = await G7Store.open();
+      return store
+          .eventsBetween(
+            DateTime.fromMillisecondsSinceEpoch(0),
+            DateTime.now().add(const Duration(days: 1)),
+          )
+          .map((event) => event.type)
+          .toList();
+    }
+
+    test('escalating within an out-of-range spell logs only one event', () async {
+      await alarms.check(60, -1.0); // low warning → new event
+      await alarms.check(50, -1.0); // urgent low → same spell, no new event
+      await alarms.check(60, 1.0); // back to warning → still the same spell
+      expect(await eventTypes(), ['glucose_low']);
+    });
+
+    test('a fresh event only after glucose recovered into range', () async {
+      await alarms.check(60, -1.0); // low → event
+      await alarms.check(100, 1.0); // back in range
+      await alarms.check(60, -1.0); // low again → second event
+      expect(await eventTypes(), ['glucose_low', 'glucose_low']);
+    });
+  });
+
   group('fireTest previews an alarm regardless of zone/silent', () {
     test('high test shows the high-warning notification', () async {
       storage['silent_mode'] = 'true';

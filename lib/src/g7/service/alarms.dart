@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../localization/service_strings.dart';
+import '../../profile/notifications/notification_setting.dart';
 import '../../profile/notifications/profile_alarm_sound_state.dart';
 import '../../profile/notifications/profile_connection_state.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
@@ -72,6 +73,9 @@ class G7AlarmManager {
 
   /// Notification id for the "training detected" confirm prompt.
   static const _trainingDetectedId = 102;
+
+  /// Notification id for the "sensor halfway through its life" reminder.
+  static const _halftimeId = 103;
 
   /// A short double-buzz, deliberately DISTINCT from the glucose alarm pattern so
   /// a detected training doesn't feel like an alarm.
@@ -149,11 +153,19 @@ class G7AlarmManager {
     if (level == _last) {
       return;
     }
+    final leftTargetRange =
+        _last == G7AlarmLevel.none && level != G7AlarmLevel.none;
     _last = level;
     if (level == G7AlarmLevel.none) {
       return;
     }
-    await _store?.addEvent(eventTypeFor(level), value: mgdl);
+    // Only log ONE event per excursion: on leaving the target range. Escalating
+    // within the same out-of-range spell (low warning → urgent low, or back)
+    // still re-fires the notification below, but does not open a new event — a
+    // fresh event needs glucose to have recovered into range in between.
+    if (leftTargetRange) {
+      await _store?.addEvent(eventTypeFor(level), value: mgdl);
+    }
     if (await ProfileSilentState.load()) {
       return;
     }
@@ -242,6 +254,9 @@ class G7AlarmManager {
     if (await ProfileSilentState.load()) {
       return;
     }
+    if (!await NotificationSetting.expiry.load()) {
+      return;
+    }
     if (store.expiryNotified(key)) {
       return;
     }
@@ -251,6 +266,42 @@ class G7AlarmManager {
       id: _expiryId,
       title: await _strings.get('alarm.expiry.title'),
       body: await _strings.format('alarm.expiry.body', hours),
+      notificationDetails: NotificationDetails(
+        android: await _warningChannel(),
+      ),
+    );
+  }
+
+  /// Fire a one-shot reminder once the sensor has passed the halfway point of its
+  /// session (≈ day 5 of a 10-day G7). Persisted per-sensor in [store] so it
+  /// fires only once per sensor, even across restarts. Same silent/toggle gating
+  /// as [checkExpiry].
+  Future<void> checkHalftime({
+    required G7Store store,
+    required String key,
+    required int? sessionLengthSec,
+    required int secsSinceStart,
+  }) async {
+    if (key.isEmpty || sessionLengthSec == null) {
+      return;
+    }
+    if (secsSinceStart < sessionLengthSec ~/ 2) {
+      return;
+    }
+    if (await ProfileSilentState.load()) {
+      return;
+    }
+    if (!await NotificationSetting.halftime.load()) {
+      return;
+    }
+    if (store.halftimeNotified(key)) {
+      return;
+    }
+    await store.setHalftimeNotified(key);
+    await _plugin.show(
+      id: _halftimeId,
+      title: await _strings.get('alarm.halftime.title'),
+      body: await _strings.get('alarm.halftime.body'),
       notificationDetails: NotificationDetails(
         android: await _warningChannel(),
       ),
@@ -385,6 +436,9 @@ class G7AlarmManager {
   /// actions, a distinct vibration and no alarm tone. The payload carries the
   /// pending training id so [trainingNotificationAction] can resolve it.
   Future<void> notifyTrainingDetected(CardioTraining training) async {
+    if (!await NotificationSetting.training.load()) {
+      return;
+    }
     final template = await _strings.get('sport.detect_notification.body');
     final body = template
         .replaceFirst('#', await _strings.get('sport.trainings.${training.type.name}'))

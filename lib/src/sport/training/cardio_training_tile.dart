@@ -1,0 +1,85 @@
+import 'package:flutter/material.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/training/cardio_detail_page.dart';
+import 'package:insulink/src/sport/training/cardio_models.dart';
+import 'package:insulink/src/sport/training/cardio_type_ui.dart';
+
+/// One recorded training as a tappable list tile (type, date, distance,
+/// duration). Shared by the sport home section and the full trainings log.
+class CardioTrainingTile extends StatelessWidget {
+  const CardioTrainingTile({
+    super.key,
+    required this.training,
+    this.showDate = true,
+  });
+
+  final CardioTraining training;
+
+  /// Whether the trailing corner shows the date above the time. The log page
+  /// groups by day already, so it passes `false` to show only the time.
+  final bool showDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final locale = MaterialLocalizations.of(context);
+    final started = DateTime.fromMillisecondsSinceEpoch(training.startMs);
+    return ListTile(
+      tileColor: scheme.onSurface.withValues(alpha: 0.04),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
+      ),
+      leading: Icon(training.type.icon, color: scheme.primary),
+      title: Text(
+        Locales.string(context, training.type.labelKey),
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        '${formatDistanceKm(training.distanceM)} · ${formatDuration(training.duration)}'
+        '${training.detected ? ' · ${Locales.string(context, 'sport.trainings.detected')}' : ''}',
+      ),
+      trailing: _trailing(context, locale, started),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => CardioDetailPage(training: training),
+        ),
+      ),
+    );
+  }
+
+  /// Right-hand corner: the time, with the date stacked above it on the
+  /// overview (where there is no day section header).
+  Widget _trailing(
+    BuildContext context,
+    MaterialLocalizations locale,
+    DateTime started,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final time = Text(
+      locale.formatTimeOfDay(TimeOfDay.fromDateTime(started)),
+      style: TextStyle(
+        fontWeight: FontWeight.w600,
+        color: scheme.onSurface.withValues(alpha: 0.7),
+      ),
+    );
+    if (!showDate) {
+      return time;
+    }
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          locale.formatMediumDate(started),
+          style: TextStyle(
+            fontSize: 12,
+            color: scheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 2),
+        time,
+      ],
+    );
+  }
+}

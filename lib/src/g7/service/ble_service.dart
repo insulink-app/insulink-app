@@ -206,6 +206,13 @@ class G7TaskHandler extends TaskHandler {
           sessionLengthSec: _conn?.sessionLengthSec ?? 907200,
           secsSinceStart: reading.secsSinceStart,
         );
+        // One-shot reminder at the halfway point (≈ day 5 of a 10-day G7).
+        alarms.checkHalftime(
+          store: store,
+          key: store.resolvedKey ?? serial,
+          sessionLengthSec: _conn?.sessionLengthSec ?? 907200,
+          secsSinceStart: reading.secsSinceStart,
+        );
         FlutterForegroundTask.sendDataToMain({
           't': 'reading',
           'mgdl': reading.glucoseMgDl,

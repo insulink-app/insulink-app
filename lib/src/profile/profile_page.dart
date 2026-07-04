@@ -12,6 +12,8 @@ import 'package:insulink/src/profile/notifications/profile_connection_toggle.dar
 import 'package:insulink/src/profile/developer/profile_developer_toggle.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_selection.dart';
 import 'package:insulink/src/profile/language/profile_language_selection.dart';
+import 'package:insulink/src/profile/notifications/notification_setting.dart';
+import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_notification_toggle.dart';
 import 'package:insulink/src/profile/silent/profile_silent_toggle.dart';
@@ -94,6 +96,12 @@ class _ProfilePageState extends State<ProfilePage> {
         ProfileLiveNotificationToggle(),
         SizedBox(height: 10),
         ProfileConnectionToggle(),
+        SizedBox(height: 10),
+        NotificationToggle(NotificationSetting.expiry),
+        SizedBox(height: 10),
+        NotificationToggle(NotificationSetting.halftime),
+        SizedBox(height: 10),
+        NotificationToggle(NotificationSetting.training),
         SizedBox(height: 10),
         ProfileAlarmSoundToggle(),
       ],

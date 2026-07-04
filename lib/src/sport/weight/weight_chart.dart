@@ -1,17 +1,31 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 
 /// Weight over time as a line — X = timestamp (true spacing for uneven gaps), Y
 /// scaled automatically with a little margin. Expects [weights] already filtered
 /// by time window and sorted ascending. A single point is drawn as a dot.
-class WeightChart extends StatelessWidget {
+///
+/// Scrubbing/hovering shows a value+date tooltip with an indicator dot and a
+/// haptic tick per point, mirroring the overview glucose chart.
+class WeightChart extends StatefulWidget {
   const WeightChart({super.key, required this.weights});
 
   final List<WeightEntry> weights;
 
   @override
+  State<WeightChart> createState() => _WeightChartState();
+}
+
+class _WeightChartState extends State<WeightChart> {
+  /// Spot index under the finger on the last touch event, so we buzz once per
+  /// point as the finger moves across (and reset when it lifts off).
+  int? _lastTouchedIndex;
+
+  @override
   Widget build(BuildContext context) {
+    final weights = widget.weights;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final spots = [
       for (final entry in weights) FlSpot(entry.atEpochMs.toDouble(), entry.kg),
@@ -32,7 +46,7 @@ class WeightChart extends StatelessWidget {
         gridData: const FlGridData(show: true, drawVerticalLine: false),
         borderData: FlBorderData(show: false),
         titlesData: _titles(context, onSurface, minX, maxX),
-        lineTouchData: const LineTouchData(enabled: false),
+        lineTouchData: _touchData(context),
         lineBarsData: [
           LineChartBarData(
             spots: spots,
@@ -47,6 +61,73 @@ class WeightChart extends StatelessWidget {
       ),
       duration: Duration.zero,
     );
+  }
+
+  LineTouchData _touchData(BuildContext context) {
+    final theme = Theme.of(context);
+    return LineTouchData(
+      touchCallback: _onTouch,
+      touchTooltipData: LineTouchTooltipData(
+        getTooltipColor: (_) => theme.colorScheme.inverseSurface,
+        tooltipBorderRadius: BorderRadius.circular(8),
+        getTooltipItems: (spots) =>
+            [for (final spot in spots) _tooltipItem(context, spot)],
+      ),
+      getTouchedSpotIndicator: (barData, indexes) => [
+        for (final _ in indexes)
+          TouchedSpotIndicatorData(
+            FlLine(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+              strokeWidth: 1.5,
+              dashArray: const [4, 4],
+            ),
+            FlDotData(
+              getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
+                radius: 4,
+                color: theme.colorScheme.onSurface,
+                strokeColor: theme.colorScheme.surface,
+                strokeWidth: 1.5,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  LineTooltipItem _tooltipItem(BuildContext context, LineBarSpot spot) {
+    final theme = Theme.of(context);
+    final date = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt());
+    return LineTooltipItem(
+      '${spot.y.toStringAsFixed(1)} kg',
+      TextStyle(
+        color: theme.colorScheme.onInverseSurface,
+        fontWeight: FontWeight.bold,
+        fontSize: 13,
+      ),
+      children: [
+        TextSpan(
+          text: '\n${MaterialLocalizations.of(context).formatShortDate(date)}',
+          style: TextStyle(
+            color: theme.colorScheme.onInverseSurface.withValues(alpha: 0.7),
+            fontWeight: FontWeight.normal,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Light haptic tick when the highlighted point changes while scrubbing.
+  void _onTouch(FlTouchEvent event, LineTouchResponse? response) {
+    final spots = response?.lineBarSpots;
+    if (!event.isInterestedForInteractions || spots == null || spots.isEmpty) {
+      _lastTouchedIndex = null;
+      return;
+    }
+    if (spots.first.spotIndex != _lastTouchedIndex) {
+      _lastTouchedIndex = spots.first.spotIndex;
+      HapticFeedback.selectionClick();
+    }
   }
 
   FlTitlesData _titles(

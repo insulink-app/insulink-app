@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/sport/training/cardio_detail_page.dart';
+import 'package:insulink/src/sport/training/cardio_log_page.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_recording_page.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
+import 'package:insulink/src/sport/training/cardio_training_tile.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -40,7 +41,18 @@ class CardioSection extends StatelessWidget {
             ],
           ],
         ),
-        for (final training in recent) _trainingCard(context, training),
+        for (final training in recent)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: CardioTrainingTile(training: training),
+          ),
+        if (trainings.length > recent.length)
+          TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const CardioLogPage()),
+            ),
+            child: LocaleText('sport.trainings.show_more'),
+          ),
       ],
     );
   }
@@ -180,37 +192,6 @@ class CardioSection extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _trainingCard(BuildContext context, CardioTraining training) {
-    final scheme = Theme.of(context).colorScheme;
-    final locale = MaterialLocalizations.of(context);
-    final started = DateTime.fromMillisecondsSinceEpoch(training.startMs);
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: ListTile(
-        tileColor: scheme.onSurface.withValues(alpha: 0.04),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
-        ),
-        leading: Icon(training.type.icon, color: scheme.primary),
-        title: Text(
-          Locales.string(context, training.type.labelKey),
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          '${locale.formatMediumDate(started)} · ${formatDistanceKm(training.distanceM)}'
-          '${training.detected ? ' · ${Locales.string(context, 'sport.trainings.detected')}' : ''}',
-        ),
-        trailing: Text(formatDuration(training.duration)),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => CardioDetailPage(training: training),
           ),
         ),
       ),
