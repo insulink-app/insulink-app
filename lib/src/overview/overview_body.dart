@@ -137,7 +137,7 @@ class _DataView extends StatelessWidget {
           const SizedBox(height: 16),
         ],
         const OverviewSportBoxes(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 48),
       ],
     );
   }
