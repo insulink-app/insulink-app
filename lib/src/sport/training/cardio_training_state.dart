@@ -4,7 +4,6 @@ import 'package:geolocator/geolocator.dart';
 import '../sport_store.dart';
 import '../sport_sync.dart';
 import 'active_training.dart';
-import 'cardio_detector.dart';
 import 'cardio_models.dart';
 
 /// Shared state of the endurance trainings: the stored [CardioTraining]s plus
@@ -15,9 +14,10 @@ import 'cardio_models.dart';
 class CardioTrainingState extends ChangeNotifier {
   final SportStore _store;
   final List<CardioTraining> _trainings;
+  List<CardioTraining> _pending;
   ActiveTraining? _active;
 
-  CardioTrainingState(this._store, this._trainings, this._active);
+  CardioTrainingState(this._store, this._trainings, this._pending, this._active);
 
   static Future<CardioTrainingState> load() async {
     const store = SportStore();
@@ -26,12 +26,52 @@ class CardioTrainingState extends ChangeNotifier {
     return CardioTrainingState(
       store,
       trainings,
+      await store.loadPendingTrainings(),
       await store.loadActiveTraining(),
     );
   }
 
   /// Trainings ascending by start time.
   List<CardioTraining> get trainings => List.unmodifiable(_trainings);
+
+  /// Auto-detected trainings awaiting the user's confirm/reject (newest first).
+  List<CardioTraining> get pendingTrainings =>
+      List.unmodifiable(_pending.reversed);
+
+  /// Confirm a pending detection → it becomes a normal training (and syncs).
+  Future<void> confirmDetected(String id) async {
+    final index = _pending.indexWhere((training) => training.id == id);
+    if (index < 0) {
+      return;
+    }
+    final confirmed = _pending.removeAt(index);
+    _trainings
+      ..add(confirmed)
+      ..sort((first, second) => first.startMs.compareTo(second.startMs));
+    notifyListeners();
+    await _store.confirmPendingTraining(id);
+    SportSync().pushTrainings();
+  }
+
+  /// Reject (discard) a pending detection.
+  Future<void> rejectDetected(String id) async {
+    _pending.removeWhere((training) => training.id == id);
+    notifyListeners();
+    await _store.rejectPendingTraining(id);
+  }
+
+  /// Re-read the pending detections + confirmed trainings the background service
+  /// (or a notification action) may have written — the store is cross-isolate,
+  /// so the UI must reload to see writes from the service isolate.
+  Future<void> reloadPending() async {
+    _pending = await _store.loadPendingTrainings();
+    final trainings = await _store.loadTrainings()
+      ..sort((first, second) => first.startMs.compareTo(second.startMs));
+    _trainings
+      ..clear()
+      ..addAll(trainings);
+    notifyListeners();
+  }
 
   /// The live training being recorded, or null when none is running.
   ActiveTraining? get activeTraining => _active;
@@ -151,51 +191,6 @@ class CardioTrainingState extends ChangeNotifier {
     _trainings.removeWhere((training) => training.id == id);
     notifyListeners();
     await _saveTrainings();
-  }
-
-  /// Scans the background GPS log for endurance trainings and saves new ones
-  /// directly (marked as auto-detected). Runs over points added since the last
-  /// scan (watermark), skips anything overlapping an existing training. Called
-  /// on opening the sport tab. `ponytail:` the watermark advances to the newest
-  /// point, so a training still in progress at scan time is finalised early;
-  /// acceptable for a page-open scan, revisit if live detection is wanted.
-  Future<void> detectFromLog() async {
-    final log = await _store.loadLocationLog();
-    if (log.isEmpty) {
-      return;
-    }
-    final watermark = await _store.loadDetectWatermark();
-    final fresh = watermark == null
-        ? log
-        : [
-            for (final point in log)
-              if (point.tMs > watermark) point,
-          ];
-    await _store.saveDetectWatermark(log.last.tMs);
-    var changed = false;
-    for (final training in const CardioDetector().detect(fresh)) {
-      if (_overlapsExisting(training)) {
-        continue;
-      }
-      _trainings.add(training);
-      changed = true;
-    }
-    if (!changed) {
-      return;
-    }
-    _trainings.sort((first, second) => first.startMs.compareTo(second.startMs));
-    notifyListeners();
-    await _saveTrainings();
-  }
-
-  bool _overlapsExisting(CardioTraining candidate) {
-    for (final existing in _trainings) {
-      if (candidate.startMs <= existing.endMs &&
-          existing.startMs <= candidate.endMs) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /// Persist the trainings and queue a backend sync.

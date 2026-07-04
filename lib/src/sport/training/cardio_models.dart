@@ -4,6 +4,27 @@ library;
 /// Type of endurance training.
 enum CardioType { walk, jog, bike }
 
+/// A recognised-activity kind from the OS activity-recognition API, logged so
+/// the auto-detector can tell a real bike ride from a bus/train (speed alone
+/// classifies both as cycling).
+enum ActivityKind { still, walk, run, bike, vehicle, unknown }
+
+/// One activity-recognition change event: the [kind] detected at [tMs] (epoch
+/// ms). Recorded by the foreground service alongside the GPS log.
+class ActivitySample {
+  final int tMs;
+  final ActivityKind kind;
+
+  const ActivitySample({required this.tMs, required this.kind});
+
+  Map<String, dynamic> toJson() => {'t': tMs, 'k': kind.name};
+
+  factory ActivitySample.fromJson(Map<String, dynamic> json) => ActivitySample(
+    tMs: json['t'] as int,
+    kind: ActivityKind.values.byName(json['k'] as String),
+  );
+}
+
 /// A recorded GPS point: position + timestamp (epoch ms).
 class TrackPoint {
   final double lat;

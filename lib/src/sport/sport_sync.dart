@@ -181,12 +181,15 @@ class SportSync {
       ..sort();
     return [
       for (final day in days)
-        DailyActivity(
-          dateKey: day,
-          steps: steps[day] ?? 0,
-          distanceKm: distance[day] ?? 0,
-          calories: calories[day] ?? 0,
-        ),
+        if ((steps[day] ?? 0) > 0 ||
+            (distance[day] ?? 0) > 0 ||
+            (calories[day] ?? 0) > 0)
+          DailyActivity(
+            dateKey: day,
+            steps: steps[day] ?? 0,
+            distanceKm: distance[day] ?? 0,
+            calories: calories[day] ?? 0,
+          ),
     ];
   }
 

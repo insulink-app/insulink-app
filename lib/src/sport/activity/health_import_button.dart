@@ -36,6 +36,7 @@ class _HealthImportButtonState extends State<HealthImportButton> {
 
   String _messageKey(HealthImportResult result) => switch (result) {
     HealthImportResult.success => 'sport.health.imported',
+    HealthImportResult.successNoHistory => 'sport.health.imported_no_history',
     HealthImportResult.denied => 'sport.health.denied',
     HealthImportResult.unavailable => 'sport.health.unavailable',
   };

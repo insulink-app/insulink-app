@@ -122,7 +122,7 @@ class _OverviewChartState extends State<OverviewChart>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Align(alignment: Alignment.centerLeft, child: _rangeSelector(context)),
-        const SizedBox(height: 20),
+        const SizedBox(height: 40),
         Expanded(child: _chart(byTime, glucose, colors)),
       ],
     );
@@ -135,6 +135,9 @@ class _OverviewChartState extends State<OverviewChart>
   ) {
     final entries = byTime.entries.toList();
     final latestSecs = entries.last.key;
+    // The overview preview always shows 24 h; only the full-screen detail page
+    // honours the persisted, user-selectable range.
+    final effectiveRange = widget.preview ? 24 : _rangeHours;
     // Wall-clock time at x == 0 (the latest reading), to label the X axis with
     // real times. x is hours relative to this, so wall(x) = anchor + x hours.
     final anchor = widget.sensorStart?.add(Duration(seconds: latestSecs));
@@ -146,7 +149,7 @@ class _OverviewChartState extends State<OverviewChart>
     final series = GlucoseChartSeries(
       entries: entries,
       latestSecs: latestSecs,
-      cutoff: latestSecs - _rangeHours * 3600,
+      cutoff: latestSecs - effectiveRange * 3600,
       shift: shift,
       glucose: glucose,
       colors: colors,
@@ -163,13 +166,13 @@ class _OverviewChartState extends State<OverviewChart>
     // Remount on each data change so fl_chart renders the new data statically
     // instead of tweening between structurally-different bar lists — that lerp
     // flashes a malformed frame even with a zero-duration animation.
-    final key = ValueKey('$latestSecs-${entries.length}-$_rangeHours');
+    final key = ValueKey('$latestSecs-${entries.length}-$effectiveRange');
     GlucoseLineChart chart(double pulse) => GlucoseLineChart(
       key: key,
       bars: bars,
       touchBarIndex: _touchBarIndex,
       shift: shift,
-      rangeHours: _rangeHours,
+      rangeHours: effectiveRange,
       anchor: anchor,
       glucose: glucose,
       colors: colors,

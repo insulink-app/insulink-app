@@ -13,10 +13,16 @@ class SensorLifeBar extends StatelessWidget {
     super.key,
     required this.start,
     required this.sessionLengthSec,
+    this.overview = false,
   });
 
   final DateTime start;
   final int sessionLengthSec;
+
+  /// On the overview the header matches the other section titles (large + bold,
+  /// full-strength) with a greyed value on the right; on the sensor page it keeps
+  /// the original compact look (greyed title, full-strength value).
+  final bool overview;
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +50,12 @@ class SensorLifeBar extends StatelessWidget {
       children: [
         LocaleText(
           'sensor.life.title',
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
+          style: overview
+              ? const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+              : TextStyle(
+                  fontSize: 12,
+                  color: scheme.onSurface.withValues(alpha: 0.6),
+                ),
         ),
         const Spacer(),
         _remainingLabel(context, scheme, life),
@@ -60,16 +68,19 @@ class SensorLifeBar extends StatelessWidget {
     ColorScheme scheme,
     SensorLifespan life,
   ) {
+    final normalColor = overview
+        ? scheme.onSurface.withValues(alpha: 0.6)
+        : scheme.onSurface;
     return Text(
       _remainingText(context, life),
       style: TextStyle(
         fontSize: 12,
-        fontWeight: FontWeight.w600,
+        fontWeight: overview ? FontWeight.normal : FontWeight.w600,
         color: life.expired
             ? Colors.redAccent
             : life.inGrace
             ? Colors.orangeAccent
-            : scheme.onSurface,
+            : normalColor,
       ),
     );
   }

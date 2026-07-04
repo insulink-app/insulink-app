@@ -30,6 +30,8 @@ class CardioSection extends StatelessWidget {
           _resumeBanner(context, state.activeTraining!.type),
           const SizedBox(height: 12),
         ],
+        for (final pending in state.pendingTrainings)
+          _pendingCard(context, state, pending),
         Row(
           children: [
             for (final type in CardioType.values) ...[
@@ -76,6 +78,77 @@ class CardioSection extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Confirmation prompt for an auto-detected training: what was detected, with
+  /// Confirm / Reject actions (also offered as buttons on the notification).
+  Widget _pendingCard(
+    BuildContext context,
+    CardioTrainingState state,
+    CardioTraining training,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final locale = MaterialLocalizations.of(context);
+    final started = DateTime.fromMillisecondsSinceEpoch(training.startMs);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.30)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(training.type.icon, color: scheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LocaleText(
+                      'sport.trainings.detected_prompt',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${Locales.string(context, training.type.labelKey)} · '
+                      '${locale.formatMediumDate(started)} · '
+                      '${formatDistanceKm(training.distanceM)}',
+                      style: TextStyle(
+                        color: scheme.onSurface.withValues(alpha: 0.7),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => state.rejectDetected(training.id),
+                  child: LocaleText('sport.detect_notification.reject'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => state.confirmDetected(training.id),
+                  child: LocaleText('sport.detect_notification.confirm'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

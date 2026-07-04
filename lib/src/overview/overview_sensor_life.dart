@@ -21,6 +21,7 @@ class OverviewSensorLife extends StatelessWidget {
     return SensorLifeBar(
       start: start,
       sessionLengthSec: _sessionLength(controller),
+      overview: true,
     );
   }
 

@@ -292,6 +292,24 @@ void main() {
       final detected = const CardioDetector().detect(ride(12, 5, 12));
       expect(detected.length, 2);
     });
+
+    test('a vehicle-tagged fast segment is discarded (bus/train, not bike)', () {
+      final points = ride(12, 0, 12);
+      final log = [
+        ActivitySample(tMs: points.first.tMs, kind: ActivityKind.vehicle),
+      ];
+      expect(const CardioDetector().detect(points, log), isEmpty);
+    });
+
+    test('a bike-tagged fast segment stays a bike ride', () {
+      final points = ride(12, 0, 12);
+      final log = [
+        ActivitySample(tMs: points.first.tMs, kind: ActivityKind.bike),
+      ];
+      final detected = const CardioDetector().detect(points, log);
+      expect(detected.length, 1);
+      expect(detected.single.type, CardioType.bike);
+    });
   });
 
   group('ActiveTraining', () {

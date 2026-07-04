@@ -108,10 +108,16 @@ class _DataView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: [
+        // Still offer the account's stored sensor when none is paired locally —
+        // a returning device now shows this data view (synced history) instead of
+        // the empty screen, so the restore offer must live here too. Renders
+        // nothing unless the backend has a sensor to adopt.
+        const SensorRestoreOffer(),
         const SizedBox(height: 16),
         OverviewCurrentValue(
           mgdl: controller.currentMgdl,
-          trendPerMin: controller.latest?.trendMgDlPerMin,
+          trendPerMin: controller.displayTrendPerMin,
+          stale: controller.currentIsStale,
         ),
         const SizedBox(height: 28),
         OverviewSection(child: _ChartPreview(controller: controller)),

@@ -37,7 +37,7 @@ class _SportBodyContentState extends State<SportBodyContent> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SportActivityState>().ensureStarted();
-      context.read<CardioTrainingState>().detectFromLog();
+      context.read<CardioTrainingState>().reloadPending();
     });
   }
 

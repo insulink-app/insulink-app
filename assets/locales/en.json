@@ -361,6 +361,7 @@
    "import": "Import from Google Health",
    "note": "Syncs your complete Google Health history: daily steps, distance and calories plus your weight.",
    "imported": "Imported from Google Health",
+   "imported_no_history": "Imported (only ~last 30 days). Allow access to past data in Health Connect – if that option isn't offered, update Health Connect. Data not stored in Health Connect can't be imported.",
    "denied": "Google Health access denied",
    "unavailable": "Google Health (Health Connect) is not available",
    "subtitle": "Sync your full history"
@@ -402,7 +403,14 @@
    "delete_confirm": "Delete this training?",
    "no_route": "No route recorded",
    "location_denied": "Location permission missing – training can't be recorded.",
-   "detected": "auto-detected"
+   "detected": "auto-detected",
+   "detected_prompt": "Training detected – is that right?"
+  },
+  "detect_notification": {
+   "title": "Training detected",
+   "body": "# · # min – confirm?",
+   "confirm": "Confirm",
+   "reject": "Reject"
   }
  },
  "profile": {
@@ -532,6 +540,10 @@
    "warning": {
     "name": "Glucose warning",
     "desc": "Mild warning for a borderline glucose value."
+   },
+   "training_detected": {
+    "name": "Training detected",
+    "desc": "Notice when a training was detected automatically."
    }
   },
   "low": {

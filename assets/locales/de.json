@@ -361,6 +361,7 @@
    "import": "Aus Google Health importieren",
    "note": "Synchronisiert deine komplette Google-Health-Historie: Schritte, Distanz und Kalorien pro Tag sowie dein Gewicht.",
    "imported": "Aus Google Health importiert",
+   "imported_no_history": "Importiert (nur ca. letzte 30 Tage). Erlaube in Health Connect den Zugriff auf vergangene Daten – erscheint das nicht, aktualisiere Health Connect. Daten, die nicht in Health Connect stehen, lassen sich nicht importieren.",
    "denied": "Zugriff auf Google Health verweigert",
    "unavailable": "Google Health (Health Connect) ist nicht verfügbar",
    "subtitle": "Komplette Historie synchronisieren"
@@ -402,7 +403,14 @@
    "delete_confirm": "Dieses Training wirklich löschen?",
    "no_route": "Keine Route aufgezeichnet",
    "location_denied": "Standort-Berechtigung fehlt – Training kann nicht aufgezeichnet werden.",
-   "detected": "automatisch erkannt"
+   "detected": "automatisch erkannt",
+   "detected_prompt": "Training erkannt – stimmt das?"
+  },
+  "detect_notification": {
+   "title": "Training erkannt",
+   "body": "# · # Min. – bestätigen?",
+   "confirm": "Bestätigen",
+   "reject": "Verwerfen"
   }
  },
  "profile": {
@@ -532,6 +540,10 @@
    "warning": {
     "name": "Zucker-Warnung",
     "desc": "Leichte Warnung bei grenzwertigem Zuckerwert."
+   },
+   "training_detected": {
+    "name": "Training erkannt",
+    "desc": "Hinweis, wenn automatisch ein Training erkannt wurde."
    }
   },
   "low": {

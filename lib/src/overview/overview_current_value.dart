@@ -10,10 +10,15 @@ class OverviewCurrentValue extends StatelessWidget {
     super.key,
     required this.mgdl,
     required this.trendPerMin,
+    this.stale = false,
   });
 
   final int? mgdl;
   final double? trendPerMin;
+
+  /// The value/trend are NOT from a fresh live reading (cached on launch or from
+  /// the synced archive) — shown grey so it reads as not-live.
+  final bool stale;
 
   /// Cupertino arrow for the per-minute trend (5 directional buckets; the exact
   /// rate is shown as text alongside).
@@ -52,7 +57,11 @@ class OverviewCurrentValue extends StatelessWidget {
         ? GlucoseColors.headlineDark
         : GlucoseColors.headlineLight;
     final value = mgdl;
-    final color = value == null ? Colors.grey : _color(value, glucose, colors);
+    // A stale (cached / synced, not live) value is shown grey regardless of its
+    // low/high zone, so it clearly reads as not-live.
+    final color = (value == null || stale)
+        ? Colors.grey
+        : _color(value, glucose, colors);
     final hasTrend = value != null && trendPerMin != null;
 
     return Row(

@@ -78,9 +78,12 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// before a session start is known, falls back to the cached [_byTime].
   SplayTreeMap<int, int> get byTime {
     final store = _store;
-    final start = _sensorStart;
-    if (store == null || start == null) {
+    if (store == null) {
       return _byTime;
+    }
+    final start = _sensorStart;
+    if (start == null) {
+      return _archiveByTimeNoSession(store);
     }
     final startSecs = start.millisecondsSinceEpoch ~/ 1000;
     final now = DateTime.now();
@@ -113,6 +116,31 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
           60000;
       out[liveMin * 60 - startSecs] = live.glucoseMgDl!;
     }
+    return out;
+  }
+
+  /// Chart series when no current session start is known yet — e.g. a returning
+  /// device right after sign-in, whose glucose came from [GlucoseSync.pullHistory]
+  /// into the archive but which hasn't connected a sensor. Plots the last 24 h of
+  /// the archive keyed by seconds relative to its OLDEST point (a self-consistent
+  /// origin the chart can render without a session clock), so the overview shows
+  /// the synced history — with the headline value pending as a loader — instead
+  /// of the full "searching" screen. Falls back to the cached session points when
+  /// the archive is empty.
+  SplayTreeMap<int, int> _archiveByTimeNoSession(G7Store store) {
+    final now = DateTime.now();
+    final archive = store.archiveRange(
+      now.subtract(const Duration(hours: 24)),
+      now,
+    );
+    if (archive.isEmpty) {
+      return _byTime;
+    }
+    final firstMin = archive.firstKey()!;
+    final out = SplayTreeMap<int, int>();
+    archive.forEach((epochMin, mgdl) {
+      out[(epochMin - firstMin) * 60] = mgdl;
+    });
     return out;
   }
 
@@ -252,11 +280,44 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     return _latestAt;
   }
 
-  /// Current glucose value to display: the live reading, else the last cached
-  /// history point.
-  int? get currentMgdl =>
-      _latest?.glucoseMgDl ??
-      (_byTime.isNotEmpty ? _byTime[_byTime.lastKey()] : null);
+  /// Current glucose value to display: the live reading, else the newest point
+  /// of the (archive-backed) chart series — so a returning device shows its last
+  /// synced value instead of nothing. Null only when there is no glucose at all.
+  int? get currentMgdl {
+    final live = _latest?.glucoseMgDl;
+    if (live != null) {
+      return live;
+    }
+    final series = byTime;
+    return series.isEmpty ? null : series[series.lastKey()];
+  }
+
+  /// True when the headline value is NOT a fresh live reading — restored from
+  /// cache on launch or recovered from the synced archive. The overview dims it
+  /// and labels it "outdated" so a stale number isn't mistaken for a live one.
+  bool get currentIsStale => !_latestIsLive;
+
+  /// Trend for the headline: the live/cached reading's own trend, else derived
+  /// from the last two archive points (a returning device with synced-only data).
+  double? get displayTrendPerMin =>
+      _latest?.trendMgDlPerMin ?? _archiveTrendPerMin;
+
+  double? get _archiveTrendPerMin {
+    final series = byTime;
+    if (series.length < 2) {
+      return null;
+    }
+    final lastKey = series.lastKey()!;
+    final prevKey = series.lastKeyBefore(lastKey);
+    if (prevKey == null) {
+      return null;
+    }
+    final deltaMin = (lastKey - prevKey) / 60.0;
+    if (deltaMin <= 0) {
+      return null;
+    }
+    return (series[lastKey]! - series[prevKey]!) / deltaMin;
+  }
 
   /// The whole log oldest-line-first (chronological), for copying/sharing.
   /// [_log] is stored newest-first, so it's reversed here.

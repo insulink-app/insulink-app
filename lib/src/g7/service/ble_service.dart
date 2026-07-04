@@ -7,7 +7,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
+import '../../sport/training/activity_recognition_sampler.dart';
 import '../../sport/training/background_location_sampler.dart';
+import '../../sport/training/cardio_detection_runner.dart';
 import 'alarms.dart';
 import 'service_log.dart';
 import '../event_sync.dart';
@@ -55,6 +57,21 @@ class G7TaskHandler extends TaskHandler {
   /// No-ops unless location is permitted — glucose reading never depends on it.
   final BackgroundLocationSampler _locationSampler =
       BackgroundLocationSampler();
+
+  /// Logs OS activity-recognition changes (cycling vs. in-vehicle) so the cardio
+  /// auto-detector can reject bus/train rides. Permission-gated; no-op otherwise.
+  final ActivityRecognitionSampler _activitySampler =
+      ActivityRecognitionSampler();
+
+  /// Scans the GPS + activity logs for finished trainings and raises a
+  /// confirm-notification for each. Runs off the watchdog, throttled by
+  /// [_detectEvery].
+  final CardioDetectionRunner _detectionRunner = CardioDetectionRunner();
+
+  /// When training detection last ran, so it doesn't re-decode the whole location
+  /// log every watchdog tick.
+  DateTime? _lastDetectionAt;
+  static const _detectEvery = Duration(minutes: 2);
 
   /// Dedicated timer so GPS can be sampled far more often than the ~30s watchdog
   /// (up to every 10s while moving / recording a training). The sampler itself
@@ -122,6 +139,7 @@ class G7TaskHandler extends TaskHandler {
       const Duration(seconds: 10),
       (_) => _locationSampler.tick(),
     );
+    _activitySampler.start();
     if (await _ensureReady()) {
       _startConnect();
     }
@@ -225,6 +243,24 @@ class G7TaskHandler extends TaskHandler {
   @override
   void onRepeatEvent(DateTime timestamp) {
     _watchdog();
+    _maybeDetectTraining();
+  }
+
+  /// Runs cardio auto-detection at most every [_detectEvery]; each new training
+  /// is added to the pending list and raises a confirm-notification.
+  Future<void> _maybeDetectTraining() async {
+    final last = _lastDetectionAt;
+    if (last != null && DateTime.now().difference(last) < _detectEvery) {
+      return;
+    }
+    _lastDetectionAt = DateTime.now();
+    try {
+      await _detectionRunner.run(
+        (training) async => _alarms?.notifyTrainingDetected(training),
+      );
+    } catch (e) {
+      _log('training detection error: $e');
+    }
   }
 
   Future<void> _watchdog() async {
@@ -352,6 +388,7 @@ class G7TaskHandler extends TaskHandler {
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
     _locationTimer?.cancel();
     _locationTimer = null;
+    _activitySampler.dispose();
     await _conn?.dispose();
     _conn = null;
   }

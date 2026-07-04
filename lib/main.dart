@@ -125,9 +125,11 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         // and sensor pages.
         ChangeNotifierProvider(create: (_) => G7Controller()..init()),
       ],
-      child: Consumer<ProfileThemeState>(
-        builder: (context, themeState, _) =>
-            LocaleBuilder(builder: (locale) => _app(themeState, locale)),
+      child: _AppLifecycle(
+        child: Consumer<ProfileThemeState>(
+          builder: (context, themeState, _) =>
+              LocaleBuilder(builder: (locale) => _app(themeState, locale)),
+        ),
       ),
     );
   }
@@ -169,4 +171,58 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       cardio: await CardioTrainingState.load(),
     );
   }
+}
+
+/// Sits just below the provider tree so it can read the shared state, and runs
+/// the once-per-open / on-resume side effects: start the live step counter (if
+/// already permitted) so the overview counts without opening the Sport tab, and
+/// re-read the pending auto-detected trainings the background service may have
+/// written while we were away.
+class _AppLifecycle extends StatefulWidget {
+  const _AppLifecycle({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_AppLifecycle> createState() => _AppLifecycleState();
+}
+
+class _AppLifecycleState extends State<_AppLifecycle>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refresh();
+    } else if (state == AppLifecycleState.paused) {
+      // Final backup of today's steps before we're backgrounded/killed, so they
+      // reach the account and survive a reinstall.
+      if (mounted) {
+        context.read<SportActivityState>().flushToday();
+      }
+    }
+  }
+
+  void _refresh() {
+    if (!mounted) {
+      return;
+    }
+    context.read<SportActivityState>().startIfPermitted();
+    context.read<CardioTrainingState>().reloadPending();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
