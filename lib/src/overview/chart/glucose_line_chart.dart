@@ -71,6 +71,7 @@ class GlucoseLineChart extends StatelessWidget {
   final double pulse;
 
   double get _minY => glucose.toDisplay(minYmgdl);
+
   double get _maxY => glucose.toDisplay(maxYmgdl);
 
   /// Whole-unit gridlines/ticks that read cleanly in either unit.
@@ -253,6 +254,9 @@ class GlucoseLineChart extends StatelessWidget {
         barData,
         indexes,
         theme.colorScheme.onSurface.withValues(alpha: 0.35),
+        HSLColor.fromColor(
+          theme.colorScheme.onSurface,
+        ).withLightness(0.6).toColor(),
       ),
     );
   }
@@ -300,20 +304,23 @@ class GlucoseLineChart extends StatelessWidget {
     LineChartBarData barData,
     List<int> indexes,
     Color lineColor,
+    Color predictionColor,
   ) {
     if (barData.barWidth != 0) {
       return List<TouchedSpotIndicatorData?>.filled(indexes.length, null);
     }
-    return [for (final _ in indexes) _indicator(lineColor)];
+    return [for (final _ in indexes) _indicator(lineColor, predictionColor)];
   }
 
-  TouchedSpotIndicatorData _indicator(Color lineColor) {
+  TouchedSpotIndicatorData _indicator(Color lineColor, Color predictionColor) {
     return TouchedSpotIndicatorData(
       FlLine(color: lineColor, strokeWidth: 1.5, dashArray: const [4, 4]),
       FlDotData(
+        // Forecast points (x > shift) get the neutral prediction grey, not a
+        // glucose-zone colour — the estimate isn't a measured value.
         getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
           radius: 4,
-          color: _zoneForDisplay(spot.y),
+          color: spot.x > shift ? predictionColor : _zoneForDisplay(spot.y),
           strokeColor: Colors.white,
           strokeWidth: 1.5,
         ),
