@@ -52,4 +52,22 @@ class ProfileAccount {
     await _storage.write(key: "name", value: name);
     return true;
   }
+
+  /// Changes the account password on the backend, verifying [current] against
+  /// the stored hash server-side. Nothing is persisted locally — the password is
+  /// never stored on device. Returns true when the change was accepted.
+  Future<bool> changePassword(
+    BuildContext context,
+    String current,
+    String next,
+  ) async {
+    final response = await Request.post(
+      url: "/user/password/change/",
+      body: {"password": current, "new_password": next},
+    ).send(context);
+    if (response == null) {
+      return false;
+    }
+    return jsonDecode(response.body)["success"] == true;
+  }
 }

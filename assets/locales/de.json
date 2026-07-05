@@ -446,7 +446,13 @@
       "name": "Name",
       "save": "Speichern",
       "logout": "Abmelden",
-      "logout_confirm": "Möchtest du dich wirklich abmelden?"
+      "logout_confirm": "Möchtest du dich wirklich abmelden?",
+      "change_password": "Passwort ändern",
+      "current_password": "Aktuelles Passwort",
+      "new_password": "Neues Passwort",
+      "password_changed": "Dein Passwort wurde geändert.",
+      "password_error": "Passwort konnte nicht geändert werden. Prüfe dein aktuelles Passwort.",
+      "show_password": "Passwort anzeigen"
     },
     "language": {
       "_": "Sprache",

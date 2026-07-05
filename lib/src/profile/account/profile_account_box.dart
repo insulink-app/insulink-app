@@ -9,6 +9,7 @@ import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/account/profile_account.dart';
+import 'package:insulink/src/profile/account/profile_password_dialog.dart';
 
 /// The signed-in account card shown at the top of the profile page: the stored
 /// name (editable) plus a confirm-guarded log-out button.
@@ -38,8 +39,19 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
       child: Column(
         children: [
           _nameRow(theme),
-          const SizedBox(height: 16),
-          _logoutButton(theme),
+          const SizedBox(height: 8),
+          _actionButton(
+            icon: Icons.lock_outline,
+            labelKey: "profile.account.change_password",
+            onPressed: () => const ProfilePasswordDialog().show(context),
+          ),
+          const SizedBox(height: 8),
+          _actionButton(
+            icon: Icons.logout,
+            labelKey: "profile.account.logout",
+            onPressed: _confirmLogout,
+            color: Colors.redAccent,
+          ),
         ],
       ),
     );
@@ -108,20 +120,29 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
     );
   }
 
-  Widget _logoutButton(ThemeData theme) {
+  /// Shared compact, left-aligned action row for the card (change password /
+  /// log out) — one builder so both stay pixel-identical, tightly stacked, and
+  /// their leading icons line up.
+  Widget _actionButton({
+    required IconData icon,
+    required String labelKey,
+    required VoidCallback onPressed,
+    Color? color,
+  }) {
     return Align(
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
-        onPressed: _confirmLogout,
+        onPressed: onPressed,
         style: TextButton.styleFrom(
-          foregroundColor: Colors.redAccent,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          foregroundColor: color,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+          alignment: Alignment.centerLeft,
         ),
-        icon: const Icon(Icons.logout, size: 18),
-        label: const LocaleText(
-          "profile.account.logout",
-          style: TextStyle(fontSize: 14),
-        ),
+        icon: Icon(icon, size: 18),
+        label: LocaleText(labelKey, style: const TextStyle(fontSize: 14)),
       ),
     );
   }
