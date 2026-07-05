@@ -246,23 +246,29 @@ class _OverviewChartState extends State<OverviewChart>
     );
   }
 
-  /// The forecast line: STRAIGHT (not curved) so it doesn't overshoot into a
-  /// squished wiggle when the 30–60 min horizon is compressed into the right
-  /// sliver of a wide (12/24 h) window, with a dot on the final point so that
-  /// short stub stays legible.
+  /// The forecast line: a smooth curve with a dot on the final point so the
+  /// short stub stays legible. Overshoot-prevention is deliberately OFF here —
+  /// it clamps the spline flat at turning points (which is what stopped the
+  /// curve looking smooth); the gently-varying forecast values don't overshoot
+  /// enough to matter.
   LineChartBarData _predictionBar(List<FlSpot> spots) {
-    final color = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5);
+    final scheme = Theme.of(context).colorScheme;
+    final lineColor = scheme.onSurface.withValues(alpha: 0.5);
+    final dotColor = HSLColor.fromColor(
+      scheme.onSurface,
+    ).withLightness(0.6).toColor();
     return LineChartBarData(
       spots: spots,
-      isCurved: false,
+      isCurved: true,
+      curveSmoothness: 0.4,
       barWidth: 2.5,
-      color: color,
       dashArray: const [6, 5],
+      color: lineColor,
       dotData: FlDotData(
         show: true,
         checkToShowDot: (spot, bar) => spot.x == bar.spots.last.x,
         getDotPainter: (spot, _, _, _) =>
-            FlDotCirclePainter(radius: 3, color: color, strokeWidth: 0),
+            FlDotCirclePainter(radius: 3.5, color: dotColor, strokeWidth: 0),
       ),
     );
   }
