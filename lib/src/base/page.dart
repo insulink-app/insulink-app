@@ -17,6 +17,9 @@ import 'package:provider/provider.dart';
 /// to the devices page). The value is the index into [AppPageState.pageBodies].
 final ValueNotifier<int> appTab = ValueNotifier<int>(0);
 
+/// Tab index of the statistics page within [AppPageState.pageBodies].
+const int kStatisticsTabIndex = 2;
+
 /// Tab index of the devices page (Sensor + Pump) within
 /// [AppPageState.pageBodies].
 const int kDevicesTabIndex = 3;

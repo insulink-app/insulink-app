@@ -64,7 +64,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final archive = context.watch<SportActivityState>().activityArchive;
+    final archive = context.watch<SportActivityState>().activityArchiveWithToday;
     final ranged = _inRange(archive);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
@@ -228,6 +228,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
             : ActivityBarChart(
                 days: ranged,
                 value: _value,
+                label: (day) => _unit == null
+                    ? _format(_value(day))
+                    : '${_format(_value(day))} $_unit',
                 color: scheme.primary,
               ),
       ),

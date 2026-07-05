@@ -4,6 +4,7 @@ import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/sport/activity/health_import_button.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/activity/today_layout_button.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
@@ -86,6 +87,8 @@ class _ActivitySettingsSheet extends StatelessWidget {
           style: TextStyle(fontSize: 12, color: Colors.grey[500]),
         ),
         const SizedBox(height: 20),
+        const TodayLayoutButton(),
+        const SizedBox(height: 12),
         const HealthImportButton(),
       ],
     );

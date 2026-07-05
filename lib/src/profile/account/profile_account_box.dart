@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart';
 import 'package:insulink/src/alert/alert.dart';
+import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/alert/loader_alert.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -178,6 +180,10 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
   /// (which shows the sign-in page).
   Future<void> _logout() async {
     LoaderAlert().show(context);
+    await context.read<G7Controller>().disconnect();
+    if (!mounted) {
+      return;
+    }
     await ProfileAccount().logout(context);
     if (!mounted) {
       return;

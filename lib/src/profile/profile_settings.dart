@@ -9,7 +9,9 @@ import 'package:insulink/src/profile/notifications/profile_alarm_sound_state.dar
 import 'package:insulink/src/profile/notifications/profile_connection_state.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
+import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 
 /// Syncs the user-tunable settings (glucose, bolus, notifications, silent,
@@ -53,6 +55,10 @@ class ProfileSettings {
       // where SportState reads them.
       "sport.stride_cm": "${await sport.loadStrideCm()}",
       "sport.height_cm": "${await sport.loadHeightCm()}",
+      // Box layouts (which boxes + order) of the Today grid and the overview,
+      // so they survive logout/login.
+      TodayLayoutState.key: await TodayLayoutState.loadRaw(),
+      OverviewLayoutState.key: await OverviewLayoutState.loadRaw(),
     };
   }
 

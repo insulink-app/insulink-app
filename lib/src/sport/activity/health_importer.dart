@@ -4,40 +4,27 @@ import '../sport_models.dart';
 import '../sport_state.dart';
 import 'sport_activity_state.dart';
 
+/// Outcome of a Health import.
 enum HealthImportResult { success, unavailable, denied }
 
-/// Splits `[start, end)` into contiguous, non-overlapping monthly windows.
-/// `ponytail:` Health Connect caps the records returned per read, so a single
-/// multi-year query silently drops the middle of the range (the "one year, then
-/// a gap, then a single old value" symptom); monthly windows keep each read well
-/// under the cap. Shrink the window only if a single month can exceed it.
-List<({DateTime start, DateTime end})> monthlyWindows(
-  DateTime start,
-  DateTime end,
-) {
-  final windows = <({DateTime start, DateTime end})>[];
-  var windowStart = start;
-  while (windowStart.isBefore(end)) {
-    final nextMonth = DateTime(windowStart.year, windowStart.month + 1);
-    final windowEnd = nextMonth.isBefore(end) ? nextMonth : end;
-    windows.add((start: windowStart, end: windowEnd));
-    windowStart = windowEnd;
-  }
-  return windows;
-}
-
-/// Imports data from Google Health (Health Connect) over the **entire available
-/// history**: steps, distance and calories are merged day-by-day into the
-/// persistent activity archive (the basis of the detail pages), today
-/// additionally feeds the "Today" tiles, and weight entries flow into the
-/// history. Wraps the `health` plugin (Android/Health Connect).
+/// Imports the last [_historyDays] of data from Google Health (Health Connect):
+/// steps, distance and calories are merged day-by-day into the persistent
+/// activity archive (the basis of the detail pages), today additionally feeds the
+/// "Today" tiles, and weight entries flow into the history. Wraps the `health`
+/// plugin (Android/Health Connect), mirroring [FitbitImporter].
+///
+/// Steps/distance/calories are read via Health Connect's AGGREGATION API (daily
+/// buckets) rather than raw records: it de-duplicates across source apps and is
+/// far less likely to hit read rate-limits than summing thousands of raw points.
 class HealthImporter {
   final Health _health = Health();
 
-  /// How far back the "entire" history reaches. `ponytail:` three years cover
-  /// the usual Health Connect retentions; go further back only if someone
-  /// actually keeps older data.
-  static const _historyYears = 3;
+  /// How far back to import. 90 days needs the "read past data" permission
+  /// (anything older than 30 days does).
+  static const _historyDays = 90;
+
+  /// One day, in seconds — the aggregation bucket size.
+  static const _dayInterval = 86400;
 
   static const _types = [
     HealthDataType.STEPS,
@@ -60,19 +47,23 @@ class HealthImporter {
     if (!await _health.requestAuthorization(_types, permissions: _read)) {
       return HealthImportResult.denied;
     }
-    // Without this permission Health Connect only returns the last 30 days —
-    // it's required for the full history (best-effort).
-    if (await _health.isHealthDataHistoryAvailable() &&
-        !await _health.isHealthDataHistoryAuthorized()) {
-      await _health.requestHealthDataHistoryAuthorization();
-    }
+    await _ensureHistoryAccess();
     final now = DateTime.now();
-    final start = DateTime(now.year - _historyYears);
+    final start = now.subtract(const Duration(days: _historyDays));
     final archive = await _dailyArchive(start, now);
     await activity.mergeArchive(archive);
     _applyToday(activity, archive, now);
     await sport.mergeWeights(await _weights(start, now));
     return HealthImportResult.success;
+  }
+
+  /// Requests the "read past data" permission (needed for anything older than 30
+  /// days). Best-effort: if it isn't granted, older reads simply return nothing.
+  Future<void> _ensureHistoryAccess() async {
+    if (await _health.isHealthDataHistoryAvailable() &&
+        !await _health.isHealthDataHistoryAuthorized()) {
+      await _health.requestHealthDataHistoryAuthorization();
+    }
   }
 
   /// Also apply today to the "Today" tiles (overrides the pedometer estimate).
@@ -98,13 +89,13 @@ class HealthImporter {
     DateTime start,
     DateTime end,
   ) async {
-    final steps = await _bucketSum(HealthDataType.STEPS, start, end);
-    final distance = await _bucketSum(
+    final steps = await _dailyTotals(HealthDataType.STEPS, start, end);
+    final distance = await _dailyTotals(
       HealthDataType.DISTANCE_DELTA,
       start,
       end,
     );
-    final calories = await _bucketSum(
+    final calories = await _dailyTotals(
       HealthDataType.ACTIVE_ENERGY_BURNED,
       start,
       end,
@@ -121,59 +112,60 @@ class HealthImporter {
     ];
   }
 
-  /// Reads all points of a type across the range, one monthly window at a time
-  /// (see [monthlyWindows]).
-  Future<List<HealthDataPoint>> _readChunked(
+  /// Daily totals of an aggregatable type across the range, via Health Connect's
+  /// aggregation (one bucket per day). Distance comes back in metres, energy in
+  /// kilocalories.
+  Future<Map<String, double>> _dailyTotals(
     HealthDataType type,
     DateTime start,
     DateTime end,
   ) async {
-    final points = <HealthDataPoint>[];
-    for (final window in monthlyWindows(start, end)) {
-      points.addAll(
-        await _health.getHealthDataFromTypes(
-          types: [type],
-          startTime: window.start,
-          endTime: window.end,
-        ),
-      );
-    }
-    return points;
-  }
-
-  /// Sums the numeric data points of a type per local calendar day.
-  Future<Map<String, double>> _bucketSum(
-    HealthDataType type,
-    DateTime start,
-    DateTime end,
-  ) async {
-    final points = await _readChunked(type, start, end);
     final out = <String, double>{};
-    for (final point in _health.removeDuplicates(points)) {
-      final value = point.value;
-      if (value is NumericHealthValue) {
-        final key = _dateKey(point.dateFrom.toLocal());
-        out[key] = (out[key] ?? 0) + value.numericValue.toDouble();
+    try {
+      final points = await _health.getHealthIntervalDataFromTypes(
+        startDate: start,
+        endDate: end,
+        types: [type],
+        interval: _dayInterval,
+      );
+      for (final point in points) {
+        final value = point.value;
+        if (value is NumericHealthValue) {
+          final total = value.numericValue.toDouble();
+          // Aggregation emits a bucket for EVERY day, including empty ones
+          // (value 0). Skip those, so the archive never fills with zero-days.
+          if (total <= 0) {
+            continue;
+          }
+          final key = _dateKey(point.dateFrom.toLocal());
+          out[key] = (out[key] ?? 0) + total;
+        }
       }
+    } catch (_) {
+      // ponytail: a range Health Connect can't serve (e.g. history permission
+      // missing for >30 days) is skipped; grant it and re-import for the rest.
     }
     return out;
   }
 
   Future<List<WeightEntry>> _weights(DateTime start, DateTime end) async {
-    final points = await _readChunked(HealthDataType.WEIGHT, start, end);
-    final out = <WeightEntry>[];
-    for (final point in _health.removeDuplicates(points)) {
-      final value = point.value;
-      if (value is NumericHealthValue) {
-        out.add(
-          WeightEntry(
-            atEpochMs: point.dateFrom.millisecondsSinceEpoch,
-            kg: value.numericValue.toDouble(),
-          ),
-        );
-      }
+    try {
+      final points = await _health.getHealthDataFromTypes(
+        types: [HealthDataType.WEIGHT],
+        startTime: start,
+        endTime: end,
+      );
+      return [
+        for (final point in _health.removeDuplicates(points))
+          if (point.value case final NumericHealthValue value)
+            WeightEntry(
+              atEpochMs: point.dateFrom.millisecondsSinceEpoch,
+              kg: value.numericValue.toDouble(),
+            ),
+      ];
+    } catch (_) {
+      return const [];
     }
-    return out;
   }
 
   String _dateKey(DateTime time) {

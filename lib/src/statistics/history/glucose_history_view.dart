@@ -29,7 +29,7 @@ class GlucoseHistoryView extends StatelessWidget {
       return Center(child: LocaleText('statistics.empty'));
     }
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 24, 20, 16),
+      padding: const EdgeInsets.fromLTRB(12, 24, 20, 48),
       child: _Chart(
         spots: spots,
         starts: series.starts,

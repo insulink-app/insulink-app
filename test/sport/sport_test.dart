@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/step_baseline.dart';
 import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/sport_format.dart';
@@ -201,23 +200,6 @@ void main() {
     });
   });
 
-  group('monthlyWindows', () {
-    test('cover the range contiguously without gaps or overlaps', () {
-      final windows = monthlyWindows(
-        DateTime(2024, 1, 15),
-        DateTime(2024, 4, 10),
-      );
-      expect(windows.first.start, DateTime(2024, 1, 15));
-      expect(windows.last.end, DateTime(2024, 4, 10));
-      for (var index = 1; index < windows.length; index++) {
-        expect(windows[index].start, windows[index - 1].end);
-      }
-      for (final window in windows) {
-        expect(window.start.isBefore(window.end), isTrue);
-      }
-    });
-  });
-
   group('CardioDetector', () {
     test('recognises a ~10 km/h jog surrounded by standing still', () {
       final points = <TrackPoint>[];
@@ -291,6 +273,24 @@ void main() {
     test('a long stop (> tolerance) splits into two trainings', () {
       final detected = const CardioDetector().detect(ride(12, 5, 12));
       expect(detected.length, 2);
+    });
+
+    test('a vehicle-tagged fast segment is discarded (bus/train, not bike)', () {
+      final points = ride(12, 0, 12);
+      final log = [
+        ActivitySample(tMs: points.first.tMs, kind: ActivityKind.vehicle),
+      ];
+      expect(const CardioDetector().detect(points, log), isEmpty);
+    });
+
+    test('a bike-tagged fast segment stays a bike ride', () {
+      final points = ride(12, 0, 12);
+      final log = [
+        ActivitySample(tMs: points.first.tMs, kind: ActivityKind.bike),
+      ];
+      final detected = const CardioDetector().detect(points, log);
+      expect(detected.length, 1);
+      expect(detected.single.type, CardioType.bike);
     });
   });
 

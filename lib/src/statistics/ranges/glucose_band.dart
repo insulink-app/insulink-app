@@ -37,13 +37,21 @@ class TimeInRangeBands {
     required this.values,
     required this.glucose,
     required this.colors,
+    this.coarse = false,
   });
 
   final Iterable<int> values;
   final ProfileGlucoseState glucose;
   final GlucoseColors colors;
 
+  /// When true collapse the urgent bands, yielding just low / in range / high
+  /// (the compact overview breakdown).
+  final bool coarse;
+
   List<GlucoseBand> build() {
+    if (coarse) {
+      return _buildCoarse();
+    }
     final counts = _counts();
     final total = counts.fold<int>(0, (sum, count) => sum + count);
     if (total == 0) {
@@ -97,6 +105,35 @@ class TimeInRangeBands {
         4,
         '< ${glucose.format(glucose.urgentLow)}',
       ),
+    ];
+  }
+
+  /// The three-way breakdown (high / in range / low), top → bottom.
+  List<GlucoseBand> _buildCoarse() {
+    var low = 0, inRange = 0, high = 0;
+    for (final value in values) {
+      if (value < glucose.targetLow) {
+        low++;
+      } else if (value <= glucose.targetHigh) {
+        inRange++;
+      } else {
+        high++;
+      }
+    }
+    final counts = [high, inRange, low];
+    final total = counts.fold<int>(0, (sum, count) => sum + count);
+    if (total == 0) {
+      return const [];
+    }
+    final fractions = [for (final count in counts) count / total];
+    final percents = _largestRemainderPercents(fractions);
+    return [
+      _band('high', colors.high, fractions, percents, counts, 0,
+          '> ${glucose.format(glucose.targetHigh)}'),
+      _band('in_range', colors.inRange, fractions, percents, counts, 1,
+          '${glucose.format(glucose.targetLow)}–${glucose.format(glucose.targetHigh)}'),
+      _band('low', colors.low, fractions, percents, counts, 2,
+          '< ${glucose.format(glucose.targetLow)}'),
     ];
   }
 

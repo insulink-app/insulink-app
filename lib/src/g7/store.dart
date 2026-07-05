@@ -138,6 +138,7 @@ class G7Store {
       _kInfo(key),
       _kStart(key),
       _kExpiryNotified(key),
+      _kHalftimeNotified(key),
     ]) {
       await _remove(sensorKey);
     }
@@ -270,6 +271,17 @@ class G7Store {
 
   Future<void> setExpiryNotified(String serial) =>
       _set(_kExpiryNotified(serial), 'true');
+
+  static String _kHalftimeNotified(String serial) =>
+      'g7.halftime_notified.$serial';
+
+  /// Whether the "sensor halfway through its life" notification already fired for
+  /// this sensor — so it only fires once per sensor (cleared by [clearSensor]).
+  bool halftimeNotified(String serial) =>
+      _cache[_kHalftimeNotified(serial)] == 'true';
+
+  Future<void> setHalftimeNotified(String serial) =>
+      _set(_kHalftimeNotified(serial), 'true');
 
   static const _kLastRestart = 'g7.last_service_restart';
 

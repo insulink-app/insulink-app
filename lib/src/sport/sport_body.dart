@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:insulink/src/base/page_body.dart';
+import 'package:insulink/src/fitbit/fitbit_state.dart';
 import 'package:insulink/src/sport/activity/activity_summary_card.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/routines/routines_section.dart';
@@ -37,7 +38,8 @@ class _SportBodyContentState extends State<SportBodyContent> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SportActivityState>().ensureStarted();
-      context.read<CardioTrainingState>().detectFromLog();
+      context.read<CardioTrainingState>().reloadPending();
+      context.read<FitbitState>().refreshIfConnected();
     });
   }
 
@@ -50,7 +52,7 @@ class _SportBodyContentState extends State<SportBodyContent> {
         parent: AlwaysScrollableScrollPhysics(),
       ),
       // Bottom padding keeps the centered injection FAB (page.dart) clear.
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 64),
       children: const [
         ActivitySummaryCard(),
         SizedBox(height: 28),

@@ -19,11 +19,16 @@ class SportStore {
   static const _kSessions = 'sport.sessions';
   static const _kActivityArchive = 'sport.activity_archive';
   static const _kTrainings = 'sport.trainings';
+  static const _kPendingTrainings = 'sport.pending_trainings';
   static const _kLocationLog = 'sport.location_log';
+  static const _kActivityLog = 'sport.activity_log';
   static const _sessionCap = 500;
   static const _trainingCap = 500;
   // ~24 h of route at the 10 s sampling cadence.
   static const _locationLogCap = 8640;
+  // Activity-recognition CHANGES are infrequent, so a small ring buffer covers
+  // well over a day of transitions.
+  static const _activityLogCap = 500;
   static const _kStride = 'sport.stride_cm';
   static const _kHeight = 'sport.height_cm';
   static const _kStepsBaselineDate = 'sport.steps_baseline_date';
@@ -95,6 +100,37 @@ class SportStore {
     return _saveList(_kTrainings, capped.map((t) => t.toJson()).toList());
   }
 
+  /// Auto-detected trainings awaiting the user's confirm/reject. Kept apart from
+  /// [loadTrainings] so the confirmed list (and its backend sync) stays clean and
+  /// a misdetection never reaches it.
+  Future<List<CardioTraining>> loadPendingTrainings() async =>
+      (await _loadList(_kPendingTrainings)).map(CardioTraining.fromJson).toList();
+
+  Future<void> savePendingTrainings(List<CardioTraining> trainings) =>
+      _saveList(_kPendingTrainings, trainings.map((t) => t.toJson()).toList());
+
+  /// Confirm a pending auto-detected training: move it from the pending list to
+  /// the confirmed list. No-op if the id is gone. Shared by the UI and the
+  /// notification-action background handler.
+  Future<void> confirmPendingTraining(String id) async {
+    final pending = await loadPendingTrainings();
+    final index = pending.indexWhere((training) => training.id == id);
+    if (index < 0) {
+      return;
+    }
+    final confirmed = pending.removeAt(index);
+    final trainings = await loadTrainings()..add(confirmed);
+    await saveTrainings(trainings);
+    await savePendingTrainings(pending);
+  }
+
+  /// Reject (discard) a pending auto-detected training.
+  Future<void> rejectPendingTraining(String id) async {
+    final pending = await loadPendingTrainings()
+      ..removeWhere((training) => training.id == id);
+    await savePendingTrainings(pending);
+  }
+
   Future<List<DailyActivity>> loadActivityArchive() async =>
       (await _loadList(_kActivityArchive)).map(DailyActivity.fromJson).toList();
 
@@ -116,6 +152,24 @@ class SportStore {
     await _saveList(
       _kLocationLog,
       capped.map((point) => point.toJson()).toList(),
+    );
+  }
+
+  /// Rolling activity-recognition log (ring buffer): one entry per activity
+  /// CHANGE, filled by the foreground service — read by the auto-detector to
+  /// distinguish cycling from riding in a vehicle.
+  Future<List<ActivitySample>> loadActivityLog() async =>
+      (await _loadList(_kActivityLog)).map(ActivitySample.fromJson).toList();
+
+  Future<void> appendActivitySample(ActivitySample sample) async {
+    final log = await loadActivityLog()
+      ..add(sample);
+    final capped = log.length > _activityLogCap
+        ? log.sublist(log.length - _activityLogCap)
+        : log;
+    await _saveList(
+      _kActivityLog,
+      capped.map((entry) => entry.toJson()).toList(),
     );
   }
 

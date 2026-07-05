@@ -6,7 +6,7 @@ import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
 
-/// Branded card that syncs the **entire** Google Health history
+/// Branded card that syncs the last ~90 days of Google Health data
 /// (steps/distance/calories into the archive, weight into the history) — with
 /// loading and result feedback.
 class HealthImportButton extends StatefulWidget {

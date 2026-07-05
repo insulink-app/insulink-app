@@ -6,9 +6,11 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
+import 'package:insulink/src/fitbit/fitbit_state.dart';
 import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -16,6 +18,7 @@ import 'package:insulink/src/profile/language/profile_language_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/theme/profile_theme_state.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
@@ -33,6 +36,9 @@ typedef AppPreferences = ({
   SportState sport,
   TrainingState training,
   CardioTrainingState cardio,
+  FitbitState fitbit,
+  TodayLayoutState todayLayout,
+  OverviewLayoutState overviewLayout,
 });
 
 Future<void> main() async {
@@ -117,6 +123,9 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.sport),
         ChangeNotifierProvider(create: (_) => prefs.training),
         ChangeNotifierProvider(create: (_) => prefs.cardio),
+        ChangeNotifierProvider(create: (_) => prefs.fitbit),
+        ChangeNotifierProvider(create: (_) => prefs.todayLayout),
+        ChangeNotifierProvider(create: (_) => prefs.overviewLayout),
         // Step counter — only started when the Sport tab is opened
         // (ensureStarted), not here, to avoid forcing the permission/stream at
         // app start.
@@ -125,9 +134,11 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         // and sensor pages.
         ChangeNotifierProvider(create: (_) => G7Controller()..init()),
       ],
-      child: Consumer<ProfileThemeState>(
-        builder: (context, themeState, _) =>
-            LocaleBuilder(builder: (locale) => _app(themeState, locale)),
+      child: _AppLifecycle(
+        child: Consumer<ProfileThemeState>(
+          builder: (context, themeState, _) =>
+              LocaleBuilder(builder: (locale) => _app(themeState, locale)),
+        ),
       ),
     );
   }
@@ -167,6 +178,63 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       sport: await SportState.load(),
       training: await TrainingState.load(),
       cardio: await CardioTrainingState.load(),
+      fitbit: await FitbitState.load(),
+      todayLayout: await TodayLayoutState.load(),
+      overviewLayout: await OverviewLayoutState.load(),
     );
   }
+}
+
+/// Sits just below the provider tree so it can read the shared state, and runs
+/// the once-per-open / on-resume side effects: start the live step counter (if
+/// already permitted) so the overview counts without opening the Sport tab, and
+/// re-read the pending auto-detected trainings the background service may have
+/// written while we were away.
+class _AppLifecycle extends StatefulWidget {
+  const _AppLifecycle({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_AppLifecycle> createState() => _AppLifecycleState();
+}
+
+class _AppLifecycleState extends State<_AppLifecycle>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refresh();
+    } else if (state == AppLifecycleState.paused) {
+      // Final backup of today's steps before we're backgrounded/killed, so they
+      // reach the account and survive a reinstall.
+      if (mounted) {
+        context.read<SportActivityState>().flushToday();
+      }
+    }
+  }
+
+  void _refresh() {
+    if (!mounted) {
+      return;
+    }
+    context.read<SportActivityState>().startIfPermitted();
+    context.read<CardioTrainingState>().reloadPending();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

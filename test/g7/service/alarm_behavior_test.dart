@@ -123,6 +123,33 @@ void main() {
     });
   });
 
+  group('event log groups an excursion into one event', () {
+    Future<List<String>> eventTypes() async {
+      final store = await G7Store.open();
+      return store
+          .eventsBetween(
+            DateTime.fromMillisecondsSinceEpoch(0),
+            DateTime.now().add(const Duration(days: 1)),
+          )
+          .map((event) => event.type)
+          .toList();
+    }
+
+    test('escalating within an out-of-range spell logs only one event', () async {
+      await alarms.check(60, -1.0); // low warning → new event
+      await alarms.check(50, -1.0); // urgent low → same spell, no new event
+      await alarms.check(60, 1.0); // back to warning → still the same spell
+      expect(await eventTypes(), ['glucose_low']);
+    });
+
+    test('a fresh event only after glucose recovered into range', () async {
+      await alarms.check(60, -1.0); // low → event
+      await alarms.check(100, 1.0); // back in range
+      await alarms.check(60, -1.0); // low again → second event
+      expect(await eventTypes(), ['glucose_low', 'glucose_low']);
+    });
+  });
+
   group('fireTest previews an alarm regardless of zone/silent', () {
     test('high test shows the high-warning notification', () async {
       storage['silent_mode'] = 'true';
@@ -184,6 +211,36 @@ void main() {
         key: 'SERIAL',
         sessionLengthSec: 864000,
         secsSinceStart: 0,
+      );
+      expect(notifications.shown, isEmpty);
+    });
+  });
+
+  group('halftime reminder', () {
+    const session = 864000; // 10 d
+    const half = session ~/ 2;
+
+    test('fires once just after the halfway crossing', () async {
+      final store = await G7Store.open();
+      Future<void> tick(int secsSinceStart) => alarms.checkHalftime(
+        store: store,
+        key: 'SERIAL',
+        sessionLengthSec: session,
+        secsSinceStart: secsSinceStart,
+      );
+      await tick(half - 300); // still first half → nothing
+      await tick(half + 300); // just past half → fires
+      await tick(half + 600); // already notified → nothing
+      expect(notifications.shown, [103]);
+    });
+
+    test('never fires deep into the second half, even if not yet notified', () async {
+      final store = await G7Store.open();
+      await alarms.checkHalftime(
+        store: store,
+        key: 'SERIAL',
+        sessionLengthSec: session,
+        secsSinceStart: half + 3 * 86400, // day 8 → outside the window
       );
       expect(notifications.shown, isEmpty);
     });

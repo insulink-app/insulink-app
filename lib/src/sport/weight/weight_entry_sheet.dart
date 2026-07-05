@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
 
-/// Input sheet for a new weight entry (kg, timestamp = now).
-// ponytail: only "now" — a date picker could be added later if backdated entry
-// is needed.
+/// Input sheet for a new weight entry (kg + timestamp, defaulting to now).
 Future<void> showWeightEntrySheet(BuildContext context) {
   return showModalBottomSheet(
     context: context,
@@ -33,6 +32,7 @@ class _WeightEntrySheet extends StatefulWidget {
 
 class _WeightEntrySheetState extends State<_WeightEntrySheet> {
   final _controller = TextEditingController();
+  DateTime _at = DateTime.now();
 
   @override
   void initState() {
@@ -51,8 +51,37 @@ class _WeightEntrySheetState extends State<_WeightEntrySheet> {
     return (value != null && value > 0) ? value : null;
   }
 
+  Future<void> _pickDateTime() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _at,
+      firstDate: DateTime(2000),
+      lastDate: now,
+    );
+    if (date == null || !mounted) {
+      return;
+    }
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_at),
+    );
+    if (time == null) {
+      return;
+    }
+    setState(() {
+      _at = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
   void _save() {
-    context.read<SportState>().addWeight(_kg!);
+    context.read<SportState>().addWeight(_kg!, at: _at);
     Navigator.of(context).pop();
   }
 
@@ -89,6 +118,8 @@ class _WeightEntrySheetState extends State<_WeightEntrySheet> {
               suffixText: 'kg',
             ),
           ),
+          const SizedBox(height: 16),
+          _TimeRow(at: _at, onTap: _pickDateTime),
           const SizedBox(height: 24),
           FilledButton(
             onPressed: kg == null ? null : _save,
@@ -98,6 +129,50 @@ class _WeightEntrySheetState extends State<_WeightEntrySheet> {
             child: LocaleText('alert.done'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Tappable row showing the selected timestamp of the weight entry.
+class _TimeRow extends StatelessWidget {
+  const _TimeRow({required this.at, required this.onTap});
+
+  final DateTime at;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(Icons.schedule, size: 20, color: scheme.primary),
+              const SizedBox(width: 12),
+              LocaleText(
+                'sport.weight.time',
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
+              const Spacer(),
+              Text(
+                DateFormat('dd.MM.yyyy, HH:mm', 'de').format(at),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.edit, size: 16, color: scheme.onSurfaceVariant),
+            ],
+          ),
+        ),
       ),
     );
   }

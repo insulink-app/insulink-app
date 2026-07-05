@@ -9,18 +9,29 @@ import 'package:insulink/src/request/request.dart';
 class ProfileAccount {
   static const _storage = FlutterSecureStorage();
 
-  /// Tells the backend to invalidate the session, then clears the local
-  /// secrets. The network call is best-effort — the local clear runs regardless
-  /// so the user is signed out even offline.
+  /// Device-local flags that survive sign-out: not tied to the account and not
+  /// held on the backend, so re-doing legal/onboarding or losing the chosen
+  /// language/theme on every logout would be wrong. Everything else is wiped.
+  static const _keepOnLogout = {
+    "legal_accepted",
+    "onboarding_done",
+    "language",
+    "theme",
+  };
+
+  /// Tells the backend to invalidate the session, then wipes ALL local data —
+  /// account secrets, cached glucose/sport/fitbit data, the G7 sensor pairing
+  /// and the synced settings — so the next account signs in clean. Everything
+  /// removed is either re-fetched from the backend (glucose, settings) or
+  /// re-paired on device; only [_keepOnLogout] remains. The network call is
+  /// best-effort — the local wipe runs regardless, so logout works offline.
   Future<void> logout(BuildContext context) async {
-    await Request.post(url: "/logout/").send(context);
-    for (final key in [
-      "user",
-      "name",
-      "authentication_token",
-      "refresh_token",
-    ]) {
-      await _storage.delete(key: key);
+    await Request.get(url: "/logout/").send(context);
+    final keys = (await _storage.readAll()).keys.toList();
+    for (final key in keys) {
+      if (!_keepOnLogout.contains(key)) {
+        await _storage.delete(key: key);
+      }
     }
   }
 

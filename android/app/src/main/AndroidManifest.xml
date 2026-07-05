@@ -3,8 +3,10 @@
         android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
-    <!-- Schrittzähler für den Sport-Tab (pedometer) -->
+    <!-- Schrittzähler für den Sport-Tab (pedometer) + automatische Trainings-
+         erkennung (flutter_activity_recognition: Rad vs. Fahrzeug) -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
 
     <!-- GPS-Trainings (Gehen/Joggen/Radfahren) — Route auf der Karte -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -15,6 +17,11 @@
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+    <!-- Fitbit (via Health Connect): Herzfrequenz, Ruhepuls, Schlaf, SpO2 -->
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
     <!-- Erlaubt das Lesen von Daten älter als 30 Tage (komplette Historie) -->
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
 

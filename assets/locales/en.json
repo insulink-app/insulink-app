@@ -1,555 +1,609 @@
 {
- "date": {
-  "weekday": {
-   "1": "Mon",
-   "2": "Tue",
-   "3": "Wed",
-   "4": "Thu",
-   "5": "Fri",
-   "6": "Sat",
-   "7": "Sun"
+  "date": {
+    "weekday": {
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat",
+      "7": "Sun"
+    },
+    "month": {
+      "1": "Jan",
+      "2": "Feb",
+      "3": "Mar",
+      "4": "Apr",
+      "5": "May",
+      "6": "Jun",
+      "7": "Jul",
+      "8": "Aug",
+      "9": "Sep",
+      "10": "Oct",
+      "11": "Nov",
+      "12": "Dec"
+    }
   },
-  "month": {
-   "1": "Jan",
-   "2": "Feb",
-   "3": "Mar",
-   "4": "Apr",
-   "5": "May",
-   "6": "Jun",
-   "7": "Jul",
-   "8": "Aug",
-   "9": "Sep",
-   "10": "Oct",
-   "11": "Nov",
-   "12": "Dec"
+  "alert": {
+    "ok": "OK",
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "done": "Done",
+    "delete": "Delete"
+  },
+  "permission": {
+    "next": "Allow",
+    "continue": "Continue",
+    "bluetooth": {
+      "title": "Bluetooth",
+      "body": "Insulink connects to your Dexcom G7 over Bluetooth to read your glucose. Without it the app can't find your sensor."
+    },
+    "notification": {
+      "title": "Notifications",
+      "body": "Glucose alarms warn you about highs and lows — even when the app is closed. Allow notifications so you don't miss them."
+    },
+    "dnd": {
+      "title": "Critical alarms",
+      "body": "Allow Insulink to bypass Do Not Disturb and silent mode, so an urgent low or high still sounds — even when your phone is muted."
+    },
+    "activity": {
+      "title": "Activity & steps",
+      "body": "Allow Insulink to access your motion data to count your steps in the Sport area."
+    },
+    "battery": {
+      "title": "Run in background",
+      "body": "Exempt Insulink from battery optimization so it keeps reading your sensor when the app is closed. Without it Android may stop the connection."
+    }
+  },
+  "legal": {
+    "title": "Welcome to Insulink",
+    "subtitle": "Before you start, please review and accept our terms.",
+    "continue": "Get started",
+    "checkbox": {
+      "prefix": "I accept the ",
+      "terms": "Terms of Service",
+      "and": " and ",
+      "privacy": "Privacy Policy"
+    }
+  },
+  "auth": {
+    "title": "Welcome",
+    "subtitle_signin": "Sign in to your account",
+    "subtitle_signup": "Create your account",
+    "name": "Name",
+    "password": "Password",
+    "signin": "Sign in",
+    "signup": "Create account",
+    "to_signup": "No account yet? Sign up",
+    "to_signin": "Already have an account? Sign in",
+    "error": {
+      "invalid": "Name or password is incorrect.",
+      "signup_failed": "Could not create the account. Please check your details.",
+      "network": "Connection failed. Please try again."
+    }
+  },
+  "overview": {
+    "label": "Overview",
+    "chart": {
+      "empty": "no readings yet",
+      "hour": "#:00"
+    },
+    "time_in_range": "Time in Range",
+    "time_in_range_window": "Last 24 h",
+    "glucose": "Glucose",
+    "connect": "Connect",
+    "connecting": "Connecting…",
+    "pairing_code": "Pairing code",
+    "next": "Next",
+    "overdue": "overdue",
+    "waiting": "waiting…",
+    "searching": {
+      "_": "Searching for sensor…",
+      "hint": "Establishing the connection. Keep the sensor nearby."
+    },
+    "empty": {
+      "title": "No sensor connected",
+      "body": "Set up your Dexcom G7 on the sensor page to see your glucose readings.",
+      "action": "Go to sensor page"
+    },
+    "silent": {
+      "title": "Silent mode on",
+      "hint": "Alarms are muted · tap to turn off"
+    },
+    "restore": {
+      "title": "Use your previous sensor?",
+      "body": "Your account has a sensor on file. Adopt it to keep reading without re-pairing.",
+      "use": "Use it",
+      "dismiss": "Not now"
+    }
+  },
+  "statistics": {
+    "label": "Statistics",
+    "tab": {
+      "ranges": "Ranges",
+      "history": "History",
+      "calendar": "Calendar",
+      "averages": "Metrics",
+      "patterns": "Patterns",
+      "events": "Events"
+    },
+    "calendar": {
+      "good": "Good",
+      "ok": "OK",
+      "fair": "Fair",
+      "poor": "Poor"
+    },
+    "empty": "No glucose data yet",
+    "events": {
+      "empty": "No events yet",
+      "type": {
+        "glucose_low": "Low glucose",
+        "glucose_low_urgent": "Urgent low glucose",
+        "glucose_high": "High glucose",
+        "glucose_high_urgent": "Urgent high glucose",
+        "signal_loss": "Signal loss",
+        "new_sensor": "New sensor",
+        "sensor_stopped": "Sensor stopped"
+      }
+    },
+    "window": {
+      "d1": "1 d",
+      "d3": "3 d",
+      "d7": "7 d",
+      "d30": "30 d",
+      "d90": "90 d"
+    },
+    "avg": {
+      "mean": "Avg. Glucose",
+      "gmi": "GMI",
+      "cv": "Variability",
+      "sd": "Std. Dev.",
+      "max": "Highest",
+      "min": "Lowest"
+    },
+    "patterns": {
+      "title": "Average by time of day",
+      "hint": "Mean glucose for each hour of the day"
+    },
+    "range": {
+      "very_high": "Very High",
+      "high": "High",
+      "in_range": "In Range",
+      "low": "Low",
+      "very_low": "Very Low"
+    }
+  },
+  "sensor": {
+    "label": "Sensor",
+    "info": {
+      "status": "STATUS",
+      "device": "DEVICE",
+      "session": "SESSION",
+      "battery": "BATTERY",
+      "empty": "no sensor info yet",
+      "title": "Sensor data"
+    },
+    "disconnect": "Disconnect",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "paired": "Paired",
+      "unpaired": "Not paired",
+      "searching": "Searching for sensor…"
+    },
+    "searching": {
+      "hint": "Keep the sensor nearby."
+    },
+    "pair": {
+      "title": "Pair sensor",
+      "hint": "Enter the pairing code to connect",
+      "scan": "Scan code",
+      "scan_hint": "Point the camera at the code on the sensor packaging."
+    },
+    "life": {
+      "title": "Durability",
+      "remaining": "# days left",
+      "remaining_hours": "# hours left",
+      "grace": "Grace period · # h left"
+    },
+    "control": {
+      "end_session": "End session",
+      "stop_sensor": "Stop sensor",
+      "end_session_title": "End session?",
+      "end_session_body": "Reading will stop. The pairing is kept — you can reconnect later.",
+      "stop_sensor_title": "Stop sensor?",
+      "stop_sensor_body": "The sensor will be unpaired: the stored key and history are deleted. The physical sensor keeps running."
+    },
+    "log": "Log",
+    "copy": "Copy",
+    "log_copied": "# log lines copied",
+    "field": {
+      "state": "State",
+      "last_reading": "Last reading",
+      "started": "Started",
+      "expires": "Expires",
+      "age": "Age",
+      "calibration": "Calibration",
+      "last_cal_bg": "Last cal BG",
+      "firmware": "Firmware",
+      "software": "Software #",
+      "hardware": "Hardware",
+      "algorithm": "Algorithm",
+      "silicon": "Silicon",
+      "serial": "Serial",
+      "session": "Session",
+      "warmup": "Warmup",
+      "max_days": "Max days",
+      "voltage": "Voltage",
+      "runtime": "Runtime",
+      "temperature": "Temperature"
+    },
+    "value": {
+      "expired": "expired",
+      "cal_allowed": "allowed",
+      "cal_not_allowed": "not allowed"
+    },
+    "state": {
+      "none": "none",
+      "session_stopped": "session stopped",
+      "warmup": "warmup",
+      "excess_noise": "excess noise",
+      "bg1_needed": "1st of 2 BGs needed",
+      "bg2_needed": "2nd of 2 BGs needed",
+      "ok": "OK",
+      "needs_calibration": "needs calibration",
+      "calibration_error": "calibration error",
+      "sensor_failed": "sensor failed",
+      "out_of_calibration": "out of calibration",
+      "calibration_requested": "calibration requested",
+      "session_expired": "session expired",
+      "session_failed": "session failed",
+      "temporary_issue": "temporary issue",
+      "sensor_declining": "sensor declining"
+    }
+  },
+  "pump": {
+    "label": "Pump"
+  },
+  "fitbit": {
+    "label": "Fitbit",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "disconnect_confirm": "Really disconnect Fitbit? Its boxes will then be hidden.",
+    "hint": "Connects Fitbit through Google Health. The Fitbit app must be installed and syncing its data to Health Connect.",
+    "denied": "Access to Google Health was denied.",
+    "unavailable": "Google Health (Health Connect) is not available.",
+    "resting_hr": "Resting HR",
+    "sleep": "Sleep",
+    "heart_rate": "Heart rate",
+    "spo2": "Blood oxygen",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Not connected",
+      "source": "Via Google Health"
+    }
+  },
+  "devices": {
+    "label": "Devices"
+  },
+  "sport": {
+    "label": "Sport",
+    "today": "Today",
+    "layout": {
+      "title": "Customize boxes",
+      "subtitle": "Show, hide and arrange boxes",
+      "hint": "Choose which boxes appear under Today and drag them into the order you want."
+    },
+    "copy": "Copy",
+    "copy_suffix": " (copy)",
+    "activity": {
+      "steps": "Steps",
+      "distance": "Distance",
+      "calories": "Calories",
+      "settings": "Activity",
+      "stride": "Stride length",
+      "height": "Body height",
+      "estimate_note": "Distance and calories are estimated from your steps.",
+      "height_note": "Body height is used to calculate the BMI.",
+      "permission": "Motion permission missing – steps can't be counted.",
+      "detail": {
+        "empty": "No activity data yet. Sync Google Health.",
+        "latest": "Latest",
+        "average": "Avg / day",
+        "total": "Total"
+      }
+    },
+    "weight": {
+      "_": "Weight",
+      "empty": "No weight logged yet",
+      "add": "Log weight",
+      "time": "Time",
+      "current": "Current",
+      "history": "History",
+      "bmi": "BMI",
+      "delta": "# kg",
+      "delete_confirm": "Delete this weight entry?",
+      "min": "Min",
+      "avg": "Avg",
+      "max": "Max"
+    },
+    "exercises": {
+      "_": "Exercises",
+      "add": "New exercise",
+      "edit": "Edit exercise",
+      "name": "Name",
+      "empty": "No exercises yet. Create your first one.",
+      "delete_confirm": "Delete this exercise?",
+      "kind": {
+        "reps": "Reps",
+        "weighted": "Weight",
+        "timed": "Time"
+      },
+      "rename": "Rename exercise"
+    },
+    "routines": {
+      "_": "Routines",
+      "new": "New routine",
+      "edit": "Edit routine",
+      "name": "Name",
+      "count": "# exercises",
+      "start": "Start",
+      "add_exercise": "Add exercise",
+      "no_items": "No exercises in this routine yet.",
+      "delete_confirm": "Delete this routine?",
+      "item_delete_confirm": "Remove this exercise from the routine?",
+      "targets": "Targets",
+      "sets": "Sets",
+      "reps": "Reps",
+      "seconds": "Seconds",
+      "weight": "Weight",
+      "rest": "Rest",
+      "est_duration": "~# min"
+    },
+    "workout": {
+      "exercise": "Exercise",
+      "set": "Set",
+      "target_time": "Target: # s",
+      "complete_set": "Set done",
+      "finish": "Finish",
+      "finish_confirm": "Really finish the workout?",
+      "rest": "Rest",
+      "next": "Next:",
+      "skip_rest": "Skip rest",
+      "achieved_reps": "Reps achieved",
+      "target_reps": "Target: # reps",
+      "total": "Total:",
+      "pause": "Pause",
+      "resume": "Resume",
+      "paused": "Paused",
+      "extend": "+60 sec",
+      "continue": "Continue",
+      "previous_set": "Previous set",
+      "last_time": "Last time: #"
+    },
+    "health": {
+      "import": "Import from Google Health",
+      "note": "Syncs the last ~90 days from Google Health: daily steps, distance and calories plus your weight.",
+      "imported": "Imported from Google Health",
+      "denied": "Google Health access denied",
+      "unavailable": "Google Health (Health Connect) is not available",
+      "subtitle": "Sync the last ~90 days"
+    },
+    "range": {
+      "d7": "7d",
+      "d30": "30d",
+      "d90": "90d",
+      "d365": "1y",
+      "all": "All"
+    },
+    "logbook": {
+      "_": "Logbook",
+      "empty": "No completed routines yet.",
+      "deleted_routine": "Deleted routine",
+      "sets": "# sets",
+      "duration": "Duration",
+      "set_n": "Set #",
+      "resume": "Resume workout",
+      "delete_confirm": "Delete this log entry?"
+    },
+    "trainings": {
+      "_": "Trainings",
+      "walk": "Walk",
+      "jog": "Jog",
+      "bike": "Cycle",
+      "duration": "Duration",
+      "distance": "Distance",
+      "speed": "Speed",
+      "stop": "Stop",
+      "stop_confirm": "Really end the training?",
+      "pause": "Pause",
+      "resume": "Resume",
+      "paused": "Paused",
+      "resume_active": "Resume running training",
+      "start": "Start",
+      "end": "End",
+      "avg_speed": "Avg speed",
+      "delete_confirm": "Delete this training?",
+      "no_route": "No route recorded",
+      "location_denied": "Location permission missing – training can't be recorded.",
+      "detected": "automatic",
+      "detected_prompt": "Training detected – is that right?",
+      "show_more": "Show more",
+      "all": "All trainings",
+      "empty": "No trainings yet"
+    },
+    "detect_notification": {
+      "title": "Training detected",
+      "body": "# · # min – confirm?",
+      "confirm": "Confirm",
+      "reject": "Reject"
+    }
+  },
+  "profile": {
+    "label": "Profile",
+    "account": {
+      "_": "Account",
+      "name": "Name",
+      "save": "Save",
+      "logout": "Log out",
+      "logout_confirm": "Are you sure you want to log out?"
+    },
+    "language": {
+      "_": "Language",
+      "de": "Deutsch",
+      "en": "English"
+    },
+    "theme": {
+      "_": "Theme",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "glucose": {
+      "_": "Glucose",
+      "target": "Target range",
+      "alarms_low": "Low alarms",
+      "alarms_high": "High alarms",
+      "target_low": "Lower target",
+      "target_high": "Upper target",
+      "urgent_low": "Urgent low",
+      "low": "Low",
+      "high": "High",
+      "urgent_high": "Urgent high",
+      "edit_hint": "Tap to adjust",
+      "test_alarm": "Test alarm"
+    },
+    "unit": {
+      "_": "Unit",
+      "mgdl": "mg/dL",
+      "mmol": "mmol/L"
+    },
+    "body": {
+      "_": "Body metrics",
+      "note": "Stride length estimates distance from your steps; body height computes the BMI on the weight page."
+    },
+    "notification": {
+      "_": "Notifications",
+      "description": "Receive notifications"
+    },
+    "live": {
+      "description": "Show glucose value in the ongoing notification"
+    },
+    "connection": {
+      "description": "Warn when no reading for 15 min"
+    },
+    "expiry": {
+      "description": "Warn when the sensor is about to expire"
+    },
+    "halftime": {
+      "description": "Remind when the sensor is half used up (day 5)"
+    },
+    "training": {
+      "description": "Notify when a training was detected"
+    },
+    "alarmsound": {
+      "description": "Play alarm sound for high/low glucose"
+    },
+    "silent": {
+      "_": "Silent mode",
+      "description": "Mute all notifications and alarms",
+      "warning": {
+        "title": "Enable silent mode?",
+        "body": "While silent mode is on you will receive NO alarms — not even for dangerously low or high glucose. A hypo can go unnoticed and become life-threatening. Only enable it if you keep an eye on your levels another way.",
+        "confirm": "Enable"
+      }
+    },
+    "developer": {
+      "_": "Developer",
+      "description": "Enable developer mode"
+    },
+    "version": "Version #",
+    "bolus": {
+      "_": "Bolus",
+      "correction": {
+        "_": "Correction factor",
+        "value": "1 U / # mg/dL"
+      },
+      "carb": {
+        "_": "Carb ratio",
+        "value": "1 U / # g"
+      }
+    },
+    "search": {
+      "_": "Search settings",
+      "empty": "No setting found",
+      "language": "language german english flag",
+      "theme": "theme appearance light dark color mode display",
+      "glucose": "glucose sugar unit target thresholds alarm mmol mgdl",
+      "bolus": "bolus insulin correction carbs factor",
+      "body": "body metrics stride length height bmi weight steps distance",
+      "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training",
+      "silent": "silent mute quiet do not disturb dnd",
+      "developer": "developer debug logs advanced"
+    }
+  },
+  "injection": {
+    "title": "Bolus calculator",
+    "carbs": "Carbohydrates",
+    "glucose": "Current glucose",
+    "bolus": {
+      "_": "Suggested bolus",
+      "value": "# U"
+    },
+    "next": "Next"
+  },
+  "service": {
+    "connecting": "Connecting…"
+  },
+  "alarm": {
+    "channel": {
+      "low_warning": {
+        "name": "Glucose low — warning",
+        "desc": "Warning when glucose is low."
+      },
+      "low_urgent": {
+        "name": "Glucose low — alarm",
+        "desc": "Strong alarm when glucose is critically low."
+      },
+      "high_warning": {
+        "name": "Glucose high — warning",
+        "desc": "Warning when glucose is high."
+      },
+      "high_urgent": {
+        "name": "Glucose high — alarm",
+        "desc": "Strong alarm when glucose is critically high."
+      },
+      "warning": {
+        "name": "Glucose warning",
+        "desc": "Mild warning for a borderline glucose value."
+      },
+      "training_detected": {
+        "name": "Training detected",
+        "desc": "Notice when a training was detected automatically."
+      }
+    },
+    "low": {
+      "title": "Glucose low"
+    },
+    "low_urgent": {
+      "title": "⚠️ Glucose VERY low"
+    },
+    "high": {
+      "title": "Glucose high"
+    },
+    "high_urgent": {
+      "title": "⚠️ Glucose VERY high"
+    },
+    "connection_lost": {
+      "title": "Connection lost",
+      "body": "No reading from the sensor for over 15 min. Move your phone closer."
+    },
+    "expiry": {
+      "title": "Sensor expiring soon",
+      "body": "Your sensor expires in about # h. Prepare a new one."
+    },
+    "halftime": {
+      "title": "Sensor half used up",
+      "body": "Your sensor has reached half of its lifetime."
+    }
   }
- },
- "alert": {
-  "ok": "OK",
-  "continue": "Continue",
-  "cancel": "Cancel",
-  "done": "Done",
-  "delete": "Delete"
- },
- "permission": {
-  "next": "Allow",
-  "continue": "Continue",
-  "bluetooth": {
-   "title": "Bluetooth",
-   "body": "Insulink connects to your Dexcom G7 over Bluetooth to read your glucose. Without it the app can't find your sensor."
-  },
-  "notification": {
-   "title": "Notifications",
-   "body": "Glucose alarms warn you about highs and lows — even when the app is closed. Allow notifications so you don't miss them."
-  },
-  "dnd": {
-   "title": "Critical alarms",
-   "body": "Allow Insulink to bypass Do Not Disturb and silent mode, so an urgent low or high still sounds — even when your phone is muted."
-  },
-  "activity": {
-   "title": "Activity & steps",
-   "body": "Allow Insulink to access your motion data to count your steps in the Sport area."
-  },
-  "battery": {
-   "title": "Run in background",
-   "body": "Exempt Insulink from battery optimization so it keeps reading your sensor when the app is closed. Without it Android may stop the connection."
-  }
- },
- "legal": {
-  "title": "Welcome to Insulink",
-  "subtitle": "Before you start, please review and accept our terms.",
-  "continue": "Get started",
-  "checkbox": {
-   "prefix": "I accept the ",
-   "terms": "Terms of Service",
-   "and": " and ",
-   "privacy": "Privacy Policy"
-  }
- },
- "auth": {
-  "title": "Welcome",
-  "subtitle_signin": "Sign in to your account",
-  "subtitle_signup": "Create your account",
-  "name": "Name",
-  "password": "Password",
-  "signin": "Sign in",
-  "signup": "Create account",
-  "to_signup": "No account yet? Sign up",
-  "to_signin": "Already have an account? Sign in",
-  "error": {
-   "invalid": "Name or password is incorrect.",
-   "signup_failed": "Could not create the account. Please check your details.",
-   "network": "Connection failed. Please try again."
-  }
- },
- "overview": {
-  "label": "Overview",
-  "chart": {
-   "empty": "no readings yet",
-   "hour": "#:00"
-  },
-  "connect": "Connect",
-  "connecting": "Connecting…",
-  "pairing_code": "Pairing code",
-  "next": "Next",
-  "overdue": "overdue",
-  "waiting": "waiting…",
-  "searching": {
-   "_": "Searching for sensor…",
-   "hint": "Establishing the connection. Keep the sensor nearby."
-  },
-  "empty": {
-   "title": "No sensor connected",
-   "body": "Set up your Dexcom G7 on the sensor page to see your glucose readings.",
-   "action": "Go to sensor page"
-  },
-  "silent": {
-   "title": "Silent mode on",
-   "hint": "Alarms are muted · tap to turn off"
-  },
-  "restore": {
-   "title": "Use your previous sensor?",
-   "body": "Your account has a sensor on file. Adopt it to keep reading without re-pairing.",
-   "use": "Use it",
-   "dismiss": "Not now"
-  }
- },
- "statistics": {
-  "label": "Statistics",
-  "tab": {
-   "ranges": "Ranges",
-   "history": "History",
-   "calendar": "Calendar",
-   "averages": "Metrics",
-   "patterns": "Patterns",
-   "events": "Events"
-  },
-  "calendar": {
-   "good": "Good",
-   "ok": "OK",
-   "fair": "Fair",
-   "poor": "Poor"
-  },
-  "empty": "No glucose data yet",
-  "events": {
-   "empty": "No events yet",
-   "type": {
-    "glucose_low": "Low glucose",
-    "glucose_low_urgent": "Urgent low glucose",
-    "glucose_high": "High glucose",
-    "glucose_high_urgent": "Urgent high glucose",
-    "signal_loss": "Signal loss",
-    "new_sensor": "New sensor",
-    "sensor_stopped": "Sensor stopped"
-   }
-  },
-  "window": {
-   "d1": "1 d",
-   "d3": "3 d",
-   "d7": "7 d",
-   "d30": "30 d",
-   "d90": "90 d"
-  },
-  "avg": {
-   "mean": "Avg. Glucose",
-   "gmi": "GMI",
-   "cv": "Variability",
-   "sd": "Std. Dev.",
-   "max": "Highest",
-   "min": "Lowest"
-  },
-  "patterns": {
-   "title": "Average by time of day",
-   "hint": "Mean glucose for each hour of the day"
-  },
-  "range": {
-   "very_high": "Very High",
-   "high": "High",
-   "in_range": "In Range",
-   "low": "Low",
-   "very_low": "Very Low"
-  }
- },
- "sensor": {
-  "label": "Sensor",
-  "info": {
-   "status": "STATUS",
-   "device": "DEVICE",
-   "session": "SESSION",
-   "battery": "BATTERY",
-   "empty": "no sensor info yet",
-   "title": "Sensor data"
-  },
-  "disconnect": "Disconnect",
-  "status": {
-   "connected": "Connected",
-   "disconnected": "Disconnected",
-   "paired": "Paired",
-   "unpaired": "Not paired",
-   "searching": "Searching for sensor…"
-  },
-  "searching": {
-   "hint": "Keep the sensor nearby."
-  },
-  "pair": {
-   "title": "Pair sensor",
-   "hint": "Enter the pairing code to connect",
-   "scan": "Scan code",
-   "scan_hint": "Point the camera at the code on the sensor packaging."
-  },
-  "life": {
-   "title": "Durability",
-   "remaining": "# days left",
-   "remaining_hours": "# hours left",
-   "grace": "Grace period · # h left"
-  },
-  "control": {
-   "end_session": "End session",
-   "stop_sensor": "Stop sensor",
-   "end_session_title": "End session?",
-   "end_session_body": "Reading will stop. The pairing is kept — you can reconnect later.",
-   "stop_sensor_title": "Stop sensor?",
-   "stop_sensor_body": "The sensor will be unpaired: the stored key and history are deleted. The physical sensor keeps running."
-  },
-  "log": "Log",
-  "copy": "Copy",
-  "log_copied": "# log lines copied",
-  "field": {
-   "state": "State",
-   "last_reading": "Last reading",
-   "started": "Started",
-   "expires": "Expires",
-   "age": "Age",
-   "calibration": "Calibration",
-   "last_cal_bg": "Last cal BG",
-   "firmware": "Firmware",
-   "software": "Software #",
-   "hardware": "Hardware",
-   "algorithm": "Algorithm",
-   "silicon": "Silicon",
-   "serial": "Serial",
-   "session": "Session",
-   "warmup": "Warmup",
-   "max_days": "Max days",
-   "voltage": "Voltage",
-   "runtime": "Runtime",
-   "temperature": "Temperature"
-  },
-  "value": {
-   "expired": "expired",
-   "cal_allowed": "allowed",
-   "cal_not_allowed": "not allowed"
-  },
-  "state": {
-   "none": "none",
-   "session_stopped": "session stopped",
-   "warmup": "warmup",
-   "excess_noise": "excess noise",
-   "bg1_needed": "1st of 2 BGs needed",
-   "bg2_needed": "2nd of 2 BGs needed",
-   "ok": "OK",
-   "needs_calibration": "needs calibration",
-   "calibration_error": "calibration error",
-   "sensor_failed": "sensor failed",
-   "out_of_calibration": "out of calibration",
-   "calibration_requested": "calibration requested",
-   "session_expired": "session expired",
-   "session_failed": "session failed",
-   "temporary_issue": "temporary issue",
-   "sensor_declining": "sensor declining"
-  }
- },
- "pump": {
-  "label": "Pump"
- },
- "devices": {
-  "label": "Devices"
- },
- "sport": {
-  "label": "Sport",
-  "today": "Today",
-  "copy": "Copy",
-  "copy_suffix": " (copy)",
-  "activity": {
-   "steps": "Steps",
-   "distance": "Distance",
-   "calories": "Calories",
-   "settings": "Activity",
-   "stride": "Stride length",
-   "height": "Body height",
-   "estimate_note": "Distance and calories are estimated from your steps.",
-   "height_note": "Body height is used to calculate the BMI.",
-   "permission": "Motion permission missing – steps can't be counted.",
-   "detail": {
-    "empty": "No activity data yet. Sync Google Health.",
-    "latest": "Latest",
-    "average": "Avg / day",
-    "total": "Total"
-   }
-  },
-  "weight": {
-   "_": "Weight",
-   "empty": "No weight logged yet",
-   "add": "Log weight",
-   "current": "Current",
-   "history": "History",
-   "bmi": "BMI",
-   "delta": "# kg",
-   "delete_confirm": "Delete this weight entry?",
-   "min": "Min",
-   "avg": "Avg",
-   "max": "Max"
-  },
-  "exercises": {
-   "_": "Exercises",
-   "add": "New exercise",
-   "edit": "Edit exercise",
-   "name": "Name",
-   "empty": "No exercises yet. Create your first one.",
-   "delete_confirm": "Delete this exercise?",
-   "kind": {
-    "reps": "Reps",
-    "weighted": "Weight",
-    "timed": "Time"
-   },
-   "rename": "Rename exercise"
-  },
-  "routines": {
-   "_": "Routines",
-   "new": "New routine",
-   "edit": "Edit routine",
-   "name": "Name",
-   "count": "# exercises",
-   "start": "Start",
-   "add_exercise": "Add exercise",
-   "no_items": "No exercises in this routine yet.",
-   "delete_confirm": "Delete this routine?",
-   "item_delete_confirm": "Remove this exercise from the routine?",
-   "targets": "Targets",
-   "sets": "Sets",
-   "reps": "Reps",
-   "seconds": "Seconds",
-   "weight": "Weight",
-   "rest": "Rest",
-   "est_duration": "~# min"
-  },
-  "workout": {
-   "exercise": "Exercise",
-   "set": "Set",
-   "target_time": "Target: # s",
-   "complete_set": "Set done",
-   "finish": "Finish",
-   "finish_confirm": "Really finish the workout?",
-   "rest": "Rest",
-   "next": "Next:",
-   "skip_rest": "Skip rest",
-   "achieved_reps": "Reps achieved",
-   "target_reps": "Target: # reps",
-   "total": "Total:",
-   "pause": "Pause",
-   "resume": "Resume",
-   "paused": "Paused",
-   "extend": "+60 sec",
-   "continue": "Continue",
-   "previous_set": "Previous set",
-   "last_time": "Last time: #"
-  },
-  "health": {
-   "import": "Import from Google Health",
-   "note": "Syncs your complete Google Health history: daily steps, distance and calories plus your weight.",
-   "imported": "Imported from Google Health",
-   "denied": "Google Health access denied",
-   "unavailable": "Google Health (Health Connect) is not available",
-   "subtitle": "Sync your full history"
-  },
-  "range": {
-   "d7": "7d",
-   "d30": "30d",
-   "d90": "90d",
-   "d365": "1y",
-   "all": "All"
-  },
-  "logbook": {
-   "_": "Logbook",
-   "empty": "No completed routines yet.",
-   "deleted_routine": "Deleted routine",
-   "sets": "# sets",
-   "duration": "Duration",
-   "set_n": "Set #",
-   "resume": "Resume workout",
-   "delete_confirm": "Delete this log entry?"
-  },
-  "trainings": {
-   "_": "Trainings",
-   "walk": "Walk",
-   "jog": "Jog",
-   "bike": "Cycle",
-   "duration": "Duration",
-   "distance": "Distance",
-   "speed": "Speed",
-   "stop": "Stop",
-   "stop_confirm": "Really end the training?",
-   "pause": "Pause",
-   "resume": "Resume",
-   "paused": "Paused",
-   "resume_active": "Resume running training",
-   "start": "Start",
-   "end": "End",
-   "avg_speed": "Avg speed",
-   "delete_confirm": "Delete this training?",
-   "no_route": "No route recorded",
-   "location_denied": "Location permission missing – training can't be recorded.",
-   "detected": "auto-detected"
-  }
- },
- "profile": {
-  "label": "Profile",
-  "account": {
-   "_": "Account",
-   "name": "Name",
-   "save": "Save",
-   "logout": "Log out",
-   "logout_confirm": "Are you sure you want to log out?"
-  },
-  "language": {
-   "_": "Language",
-   "de": "Deutsch",
-   "en": "English"
-  },
-  "theme": {
-   "_": "Theme",
-   "light": "Light",
-   "dark": "Dark"
-  },
-  "glucose": {
-   "_": "Glucose",
-   "target": "Target range",
-   "alarms_low": "Low alarms",
-   "alarms_high": "High alarms",
-   "target_low": "Lower target",
-   "target_high": "Upper target",
-   "urgent_low": "Urgent low",
-   "low": "Low",
-   "high": "High",
-   "urgent_high": "Urgent high",
-   "edit_hint": "Tap to adjust",
-   "test_alarm": "Test alarm"
-  },
-  "unit": {
-   "_": "Unit",
-   "mgdl": "mg/dL",
-   "mmol": "mmol/L"
-  },
-  "body": {
-   "_": "Body metrics",
-   "note": "Stride length estimates distance from your steps; body height computes the BMI on the weight page."
-  },
-  "notification": {
-   "_": "Notifications",
-   "description": "Receive notifications"
-  },
-  "live": {
-   "description": "Show glucose value in the ongoing notification"
-  },
-  "connection": {
-   "description": "Warn when no reading for 15 min"
-  },
-  "alarmsound": {
-   "description": "Play alarm sound for high/low glucose"
-  },
-  "silent": {
-   "_": "Silent mode",
-   "description": "Mute all notifications and alarms",
-   "warning": {
-    "title": "Enable silent mode?",
-    "body": "While silent mode is on you will receive NO alarms — not even for dangerously low or high glucose. A hypo can go unnoticed and become life-threatening. Only enable it if you keep an eye on your levels another way.",
-    "confirm": "Enable"
-   }
-  },
-  "developer": {
-   "_": "Developer",
-   "description": "Enable developer mode"
-  },
-  "version": "Version #",
-  "bolus": {
-   "_": "Bolus",
-   "correction": {
-    "_": "Correction factor",
-    "value": "1 U / # mg/dL"
-   },
-   "carb": {
-    "_": "Carb ratio",
-    "value": "1 U / # g"
-   }
-  },
-  "search": {
-   "_": "Search settings",
-   "empty": "No setting found",
-   "language": "language german english flag",
-   "theme": "theme appearance light dark color mode display",
-   "glucose": "glucose sugar unit target thresholds alarm mmol mgdl",
-   "bolus": "bolus insulin correction carbs factor",
-   "body": "body metrics stride length height bmi weight steps distance",
-   "notification": "notification alert sound alarm connection live glucose",
-   "silent": "silent mute quiet do not disturb dnd",
-   "developer": "developer debug logs advanced"
-  }
- },
- "injection": {
-  "title": "Bolus calculator",
-  "carbs": "Carbohydrates",
-  "glucose": "Current glucose",
-  "bolus": {
-   "_": "Suggested bolus",
-   "value": "# U"
-  },
-  "next": "Next"
- },
- "service": {
-  "connecting": "Connecting…"
- },
- "alarm": {
-  "channel": {
-   "low_warning": {
-    "name": "Glucose low — warning",
-    "desc": "Warning when glucose is low."
-   },
-   "low_urgent": {
-    "name": "Glucose low — alarm",
-    "desc": "Strong alarm when glucose is critically low."
-   },
-   "high_warning": {
-    "name": "Glucose high — warning",
-    "desc": "Warning when glucose is high."
-   },
-   "high_urgent": {
-    "name": "Glucose high — alarm",
-    "desc": "Strong alarm when glucose is critically high."
-   },
-   "warning": {
-    "name": "Glucose warning",
-    "desc": "Mild warning for a borderline glucose value."
-   }
-  },
-  "low": {
-   "title": "Glucose low"
-  },
-  "low_urgent": {
-   "title": "⚠️ Glucose VERY low"
-  },
-  "high": {
-   "title": "Glucose high"
-  },
-  "high_urgent": {
-   "title": "⚠️ Glucose VERY high"
-  },
-  "connection_lost": {
-   "title": "Connection lost",
-   "body": "No reading from the sensor for over 15 min. Move your phone closer."
-  },
-  "expiry": {
-   "title": "Sensor expiring soon",
-   "body": "Your sensor expires in about # h. Prepare a new one."
-  }
- }
 }

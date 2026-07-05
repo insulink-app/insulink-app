@@ -1,16 +1,17 @@
 import 'dart:math';
 
+import 'cardio_activity_classifier.dart';
 import 'cardio_models.dart';
 
-/// Segments a GPS log into endurance trainings by speed. Pure and plugin-free
-/// (local haversine) so it is unit-testable. Consecutive points moving faster
-/// than [_walkMinKmh] with gaps up to [_maxGap] form a segment; brief stops
-/// (a traffic light / crossing) up to [_maxPause] are tolerated inside a segment
-/// so a short standstill does not split one ride into two. Segments below
-/// [_minDuration] or [_minDistanceM] are dropped; the average speed maps to
-/// walk/jog/bike. `ponytail:` threshold segmentation over the coarse ~10 s log
-/// is enough to catch a real run/ride; a proper activity classifier is the
-/// upgrade path if false positives appear.
+/// Segments a GPS log into endurance trainings. Pure and plugin-free (local
+/// haversine) so it is unit-testable. Consecutive points moving faster than
+/// [_walkMinKmh] with gaps up to [_maxGap] form a segment; brief stops (a
+/// traffic light / crossing) up to [_maxPause] are tolerated inside a segment so
+/// a short standstill does not split one ride into two. Segments below
+/// [_minDuration] or [_minDistanceM] are dropped. Each surviving segment is typed
+/// by [CardioActivityClassifier] — the recognised activity (from the optional
+/// `activityLog`) when available, else average speed — which also discards
+/// segments recognised as a vehicle (bus/train).
 class CardioDetector {
   static const _walkMinKmh = 3.0;
   static const _maxGap = Duration(minutes: 5);
@@ -23,11 +24,30 @@ class CardioDetector {
 
   const CardioDetector();
 
-  List<CardioTraining> detect(List<TrackPoint> log) {
-    return [
-      for (final segment in _segment(log))
-        if (_qualifies(segment)) _toTraining(segment),
-    ];
+  /// Detects trainings in [log]. The optional [activityLog] (empty by default,
+  /// preserving the pure speed behaviour) lets the classifier reject vehicles and
+  /// confirm a real ride via the OS activity recognition.
+  List<CardioTraining> detect(
+    List<TrackPoint> log, [
+    List<ActivitySample> activityLog = const [],
+  ]) {
+    final trainings = <CardioTraining>[];
+    for (final segment in _segment(log)) {
+      if (!_qualifies(segment)) {
+        continue;
+      }
+      final type = const CardioActivityClassifier().classify(
+        startMs: segment.first.tMs,
+        endMs: segment.last.tMs,
+        avgKmh: _avgKmh(segment),
+        activityLog: activityLog,
+      );
+      if (type == null) {
+        continue;
+      }
+      trainings.add(_toTraining(segment, type));
+    }
+    return trainings;
   }
 
   /// Groups moving stretches into segments. A standstill (speed below
@@ -82,29 +102,24 @@ class CardioDetector {
         _distanceM(segment) >= _minDistanceM;
   }
 
-  CardioTraining _toTraining(List<TrackPoint> segment) {
-    final distance = _distanceM(segment);
-    final seconds = _duration(segment).inSeconds;
-    final avgKmh = seconds == 0 ? 0.0 : distance / seconds * 3.6;
+  CardioTraining _toTraining(List<TrackPoint> segment, CardioType type) {
     return CardioTraining(
       id: 'auto-${segment.first.tMs.toRadixString(36)}',
-      type: _classify(avgKmh),
+      type: type,
       startMs: segment.first.tMs,
       endMs: segment.last.tMs,
       track: List.unmodifiable(segment),
-      distanceM: distance,
+      distanceM: _distanceM(segment),
       detected: true,
     );
   }
 
-  CardioType _classify(double avgKmh) {
-    if (avgKmh > 15) {
-      return CardioType.bike;
+  double _avgKmh(List<TrackPoint> segment) {
+    final seconds = _duration(segment).inSeconds;
+    if (seconds == 0) {
+      return 0;
     }
-    if (avgKmh > 7) {
-      return CardioType.jog;
-    }
-    return CardioType.walk;
+    return _distanceM(segment) / seconds * 3.6;
   }
 
   Duration _duration(List<TrackPoint> segment) =>
