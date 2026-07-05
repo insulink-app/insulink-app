@@ -15,6 +15,7 @@ import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/profile/language/profile_language_state.dart';
+import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/theme/profile_theme_state.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
@@ -33,6 +34,7 @@ typedef AppPreferences = ({
   ProfileGlucoseState glucose,
   ProfileBolusState bolus,
   ProfileSilentState silent,
+  ProfilePredictionState prediction,
   SportState sport,
   TrainingState training,
   CardioTrainingState cardio,
@@ -120,6 +122,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.glucose),
         ChangeNotifierProvider(create: (_) => prefs.bolus),
         ChangeNotifierProvider(create: (_) => prefs.silent),
+        ChangeNotifierProvider(create: (_) => prefs.prediction),
         ChangeNotifierProvider(create: (_) => prefs.sport),
         ChangeNotifierProvider(create: (_) => prefs.training),
         ChangeNotifierProvider(create: (_) => prefs.cardio),
@@ -175,6 +178,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       glucose: await ProfileGlucoseState.load(),
       bolus: await ProfileBolusState.load(),
       silent: ProfileSilentState(await ProfileSilentState.load()),
+      prediction: await ProfilePredictionState.load(),
       sport: await SportState.load(),
       training: await TrainingState.load(),
       cardio: await CardioTrainingState.load(),

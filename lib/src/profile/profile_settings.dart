@@ -8,15 +8,18 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/profile/notifications/profile_alarm_sound_state.dart';
 import 'package:insulink/src/profile/notifications/profile_connection_state.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_state.dart';
+import 'package:insulink/src/profile/notifications/notification_setting.dart';
+import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 
-/// Syncs the user-tunable settings (glucose, bolus, notifications, silent,
-/// developer) with the account's `settings` JSON blob on the backend. Language
-/// and theme are device-local and deliberately excluded.
+/// Syncs the user-tunable settings (glucose, bolus, every notification toggle,
+/// silent mode, prediction, developer, body metrics and the box layouts) with
+/// the account's `settings` JSON blob on the backend. Only language and theme
+/// are deliberately excluded — they're device-local view preferences.
 ///
 /// The blob is keyed by the same secure-storage keys the rest of the app reads,
 /// so [pull] can write the server's values straight back into storage. The
@@ -31,6 +34,7 @@ class ProfileSettings {
   static Future<Map<String, String>> collect() async {
     final glucose = await ProfileGlucoseState.load();
     final bolus = await ProfileBolusState.load();
+    final prediction = await ProfilePredictionState.load();
     const sport = SportStore();
     final notifications =
         (await _storage.read(key: "notifications")) != "false";
@@ -49,8 +53,17 @@ class ProfileSettings {
       "connection_lost_alert": "${await ProfileConnectionState().load()}",
       "live_glucose_notification":
           "${await ProfileLiveNotificationState().load()}",
+      // The per-lifecycle notification toggles (default ON, stored under these
+      // exact keys by NotificationSetting) — otherwise they wouldn't survive
+      // logout/login like the other notification prefs.
+      "sensor_expiry_alert": "${await NotificationSetting.expiry.load()}",
+      "sensor_halftime_alert": "${await NotificationSetting.halftime.load()}",
+      "training_detected_alert": "${await NotificationSetting.training.load()}",
       "silent_mode": "${await ProfileSilentState.load()}",
       "developer": "${await ProfileDeveloperState.load()}",
+      // Glucose-prediction overlay (on/off + horizon).
+      "prediction_enabled": "${prediction.enabled}",
+      "prediction_horizon": "${prediction.horizon}",
       // Keys must match SportStore's storage keys so pull() writes them back
       // where SportState reads them.
       "sport.stride_cm": "${await sport.loadStrideCm()}",

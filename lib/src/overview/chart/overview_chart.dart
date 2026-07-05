@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/g7/g7_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
@@ -155,6 +156,16 @@ class _OverviewChartState extends State<OverviewChart>
       colors: colors,
     );
     final bars = series.buildBars();
+    // Dashed forecast line extending past the latest reading (when enabled).
+    final controller = context.watch<G7Controller>();
+    final futureHours = _addPredictionBar(
+      bars,
+      controller,
+      entries,
+      latestSecs,
+      shift,
+      glucose,
+    );
     // Transparent overlay over only the REAL readings: it owns touch, so the
     // tooltip + indicator snap to a single actual value instead of every zone
     // bar (which share boundary points) and the interpolated crossings.
@@ -166,7 +177,10 @@ class _OverviewChartState extends State<OverviewChart>
     // Remount on each data change so fl_chart renders the new data statically
     // instead of tweening between structurally-different bar lists — that lerp
     // flashes a malformed frame even with a zero-duration animation.
-    final key = ValueKey('$latestSecs-${entries.length}-$effectiveRange');
+    final predictionCount = controller.predictionCurve?.length ?? 0;
+    final key = ValueKey(
+      '$latestSecs-${entries.length}-$effectiveRange-$predictionCount',
+    );
     GlucoseLineChart chart(double pulse) => GlucoseLineChart(
       key: key,
       bars: bars,
@@ -183,6 +197,7 @@ class _OverviewChartState extends State<OverviewChart>
       maxYmgdl: widget.maxYmgdl,
       highlightSpot: widget.preview ? highlightSpot : null,
       pulse: pulse,
+      futureHours: futureHours,
     );
     // Only the overview preview pulses; the detail page renders once (no per-
     // frame relayout of the full chart).
@@ -192,6 +207,57 @@ class _OverviewChartState extends State<OverviewChart>
     return AnimatedBuilder(
       animation: _pulse,
       builder: (context, _) => chart(_pulse.value),
+    );
+  }
+
+  /// Appends the dashed forecast bar (anchored at the latest reading) and
+  /// returns how many hours it extends past it, so the X axis can widen to fit.
+  /// No forecast (disabled/unavailable) or no session clock → nothing added, 0.
+  double _addPredictionBar(
+    List<LineChartBarData> bars,
+    G7Controller controller,
+    List<MapEntry<int, int>> entries,
+    int latestSecs,
+    double shift,
+    ProfileGlucoseState glucose,
+  ) {
+    final curve = controller.predictionCurve;
+    final base = controller.predictionBase;
+    final start = widget.sensorStart;
+    if (curve == null || base == null || start == null || entries.isEmpty) {
+      return 0;
+    }
+    final baseSecs = base.difference(start).inSeconds;
+    final spots = <FlSpot>[FlSpot(shift, glucose.toDisplay(entries.last.value))];
+    for (final point in curve) {
+      final secs = baseSecs + point.offsetMin * 60;
+      spots.add(
+        FlSpot((secs - latestSecs) / 3600.0 + shift, glucose.toDisplay(point.mgdl)),
+      );
+    }
+    bars.add(_predictionBar(spots));
+    final lastSecs = baseSecs + curve.last.offsetMin * 60;
+    return ((lastSecs - latestSecs) / 3600.0).clamp(0.0, 24.0);
+  }
+
+  /// The forecast line: STRAIGHT (not curved) so it doesn't overshoot into a
+  /// squished wiggle when the 30–60 min horizon is compressed into the right
+  /// sliver of a wide (12/24 h) window, with a dot on the final point so that
+  /// short stub stays legible.
+  LineChartBarData _predictionBar(List<FlSpot> spots) {
+    final color = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5);
+    return LineChartBarData(
+      spots: spots,
+      isCurved: false,
+      barWidth: 2.5,
+      color: color,
+      dashArray: const [6, 5],
+      dotData: FlDotData(
+        show: true,
+        checkToShowDot: (spot, bar) => spot.x == bar.spots.last.x,
+        getDotPainter: (spot, _, _, _) =>
+            FlDotCirclePainter(radius: 3, color: color, strokeWidth: 0),
+      ),
     );
   }
 

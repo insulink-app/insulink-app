@@ -544,7 +544,14 @@
       "body": "body metrics stride length height bmi weight steps distance",
       "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training",
       "silent": "silent mute quiet do not disturb dnd",
-      "developer": "developer debug logs advanced"
+      "developer": "developer debug logs advanced",
+      "prediction": "prediction forecast future trend minutes"
+    },
+    "prediction": {
+      "_": "Prediction",
+      "description": "Show glucose prediction",
+      "min_30": "30 minutes",
+      "min_60": "60 minutes"
     }
   },
   "injection": {

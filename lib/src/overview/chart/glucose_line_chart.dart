@@ -24,9 +24,15 @@ class GlucoseLineChart extends StatelessWidget {
     this.maxYmgdl = 300,
     this.highlightSpot,
     this.pulse = 0,
+    this.futureHours = 0,
   });
 
   final List<LineChartBarData> bars;
+
+  /// Extra hours drawn to the RIGHT of the latest reading, for the prediction
+  /// overlay (0 when there's no forecast). Widens [maxX] past [shift] so the
+  /// future dashed line isn't clipped.
+  final double futureHours;
 
   /// Index of the transparent overlay bar that owns touch.
   final int touchBarIndex;
@@ -85,7 +91,7 @@ class GlucoseLineChart extends StatelessWidget {
         minY: _minY,
         maxY: _maxY,
         minX: shift - rangeHours,
-        maxX: shift,
+        maxX: shift + futureHours,
         gridData: FlGridData(
           show: !minimal,
           drawVerticalLine: false,

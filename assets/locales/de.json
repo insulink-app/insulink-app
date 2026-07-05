@@ -544,7 +544,14 @@
       "body": "körpermaße schrittlänge körpergröße größe bmi gewicht schritte distanz",
       "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose ablauf halbzeit halbwertszeit sensor training",
       "silent": "stumm lautlos ruhe stören nicht dnd",
-      "developer": "entwickler debug logs erweitert protokoll"
+      "developer": "entwickler debug logs erweitert protokoll",
+      "prediction": "vorhersage prognose forecast zukunft trend verlauf minuten"
+    },
+    "prediction": {
+      "_": "Vorhersage",
+      "description": "Blutzuckervorhersage anzeigen",
+      "min_30": "30 Minuten",
+      "min_60": "60 Minuten"
     }
   },
   "injection": {
