@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/developer/profile_developer_state.dart';
@@ -90,7 +90,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
 
   /// Copy the whole log (chronological) to the clipboard and confirm via a
   /// snackbar.
-  Future<void> _copyLog(BuildContext context, G7Controller controller) async {
+  Future<void> _copyLog(BuildContext context, CgmController controller) async {
     final message = Locales.string(
       context,
       'sensor.log_copied',
@@ -106,7 +106,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<G7Controller>();
+    final controller = context.watch<CgmController>();
     final showLog = context.watch<ProfileDeveloperState>().enabled;
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureBox());
     return Scaffold(
@@ -129,7 +129,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
 
   /// The connection box stays pinned at the top; the attribute list scrolls
   /// underneath it and the box fades out to free up the room it occupies.
-  Widget _pinnedScrollArea(G7Controller controller) {
+  Widget _pinnedScrollArea(CgmController controller) {
     return Stack(
       children: [
         Positioned.fill(child: _scrollContent(controller)),
@@ -138,7 +138,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
     );
   }
 
-  Widget _scrollContent(G7Controller controller) {
+  Widget _scrollContent(CgmController controller) {
     return NotificationListener<ScrollEndNotification>(
       onNotification: (_) => _snapScroll(),
       child: SingleChildScrollView(
@@ -171,7 +171,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
     );
   }
 
-  Widget _pinnedBox(G7Controller controller) {
+  Widget _pinnedBox(CgmController controller) {
     return Positioned(
       top: 0,
       left: 0,

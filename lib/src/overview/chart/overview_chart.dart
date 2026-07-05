@@ -4,7 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
@@ -157,7 +157,7 @@ class _OverviewChartState extends State<OverviewChart>
     );
     final bars = series.buildBars();
     // Dashed forecast line extending past the latest reading (when enabled).
-    final controller = context.watch<G7Controller>();
+    final controller = context.watch<CgmController>();
     final prediction = _addPredictionBar(
       bars,
       controller,
@@ -217,7 +217,7 @@ class _OverviewChartState extends State<OverviewChart>
   /// hoverable. No forecast / no session clock → nothing added, 0 / empty.
   ({double futureHours, List<FlSpot> touchSpots}) _addPredictionBar(
     List<LineChartBarData> bars,
-    G7Controller controller,
+    CgmController controller,
     List<MapEntry<int, int>> entries,
     int latestSecs,
     double shift,

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
-import 'package:insulink/src/g7/store.dart';
+import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/request/request.dart';
 
 /// Keeps the on-device glucose record and the backend account in step.
@@ -191,7 +191,7 @@ class GlucoseSync {
       readings[DateTime.fromMillisecondsSinceEpoch(time)] =
           (entry["value"] as num).round();
     }
-    final store = await G7Store.open();
+    final store = await CgmStore.open();
     await store.archiveAddAll(readings);
   }
 }

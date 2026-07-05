@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/g7/service/alarms.dart';
+import 'package:insulink/src/cgm/service/alarms.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 
 typedef Thresholds = ({

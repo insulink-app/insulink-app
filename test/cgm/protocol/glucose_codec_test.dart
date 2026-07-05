@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/g7/protocol/glucose.dart';
+import 'package:insulink/src/cgm/protocol/glucose.dart';
 
 /// Builds a 19-byte live-EGV packet (opcode 0x4E) per the documented layout.
 Uint8List egvPacket({
@@ -140,7 +140,7 @@ void main() {
     });
   });
 
-  group('G7GlucoseReading', () {
+  group('CgmReading', () {
     test('timestamp accounts for the reading age', () {
       final reading = G7GlucoseCodec.parseEgv(egvPacket(secs: 3600, age: 30))!;
       final start = DateTime(2024, 1, 1);

@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../alert/alert.dart';
-import '../../g7/g7_controller.dart';
+import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
 
 /// The two session buttons under the status header: end the current reading
@@ -11,7 +11,7 @@ import '../../localization/locale_text.dart';
 class SensorSessionControls extends StatelessWidget {
   const SensorSessionControls({super.key, required this.controller});
 
-  final G7Controller controller;
+  final CgmController controller;
 
   bool get _connected => controller.connected;
 

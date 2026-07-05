@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/g7/service/alarms.dart';
-import 'package:insulink/src/g7/store.dart';
+import 'package:insulink/src/cgm/service/alarms.dart';
+import 'package:insulink/src/cgm/cgm_store.dart';
 
 import '../../support/secure_storage_mock.dart';
 
@@ -61,7 +61,7 @@ void main() {
     AndroidFlutterLocalNotificationsPlugin.registerWith();
     alarms = G7AlarmManager(
       FlutterLocalNotificationsPlugin(),
-      await G7Store.open(),
+      await CgmStore.open(),
     );
     await alarms.init();
   });
@@ -125,7 +125,7 @@ void main() {
 
   group('event log groups an excursion into one event', () {
     Future<List<String>> eventTypes() async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       return store
           .eventsBetween(
             DateTime.fromMillisecondsSinceEpoch(0),
@@ -191,7 +191,7 @@ void main() {
 
   group('sensor-expiry warning is one-shot per sensor', () {
     test('fires once when under 24 h remain, then stays persisted', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       Future<void> tick() => alarms.checkExpiry(
         store: store,
         key: 'SERIAL',
@@ -205,7 +205,7 @@ void main() {
     });
 
     test('does not fire while plenty of session remains', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       await alarms.checkExpiry(
         store: store,
         key: 'SERIAL',
@@ -221,7 +221,7 @@ void main() {
     const half = session ~/ 2;
 
     test('fires once just after the halfway crossing', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       Future<void> tick(int secsSinceStart) => alarms.checkHalftime(
         store: store,
         key: 'SERIAL',
@@ -235,7 +235,7 @@ void main() {
     });
 
     test('never fires deep into the second half, even if not yet notified', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       await alarms.checkHalftime(
         store: store,
         key: 'SERIAL',

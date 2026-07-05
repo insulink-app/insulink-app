@@ -1,7 +1,7 @@
 import 'dart:collection';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/g7/store.dart';
+import 'package:insulink/src/cgm/cgm_store.dart';
 
 import '../support/secure_storage_mock.dart';
 
@@ -11,7 +11,7 @@ import '../support/secure_storage_mock.dart';
 /// epoch-minutes back to session-relative seconds — and that a point archived
 /// once survives a session-cache wipe (the failure that dropped chart data).
 SplayTreeMap<int, int> chartFromArchive(
-  G7Store store,
+  CgmStore store,
   DateTime sensorStart,
   DateTime now,
 ) {
@@ -36,7 +36,7 @@ void main() {
   test(
     'archived readings round-trip to session-seconds and survive a wipe',
     () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       final start = DateTime(2024, 1, 1, 8, 0);
       // Three readings 5 min apart, as the service archives them (wall-clock).
       for (var step = 0; step < 3; step++) {

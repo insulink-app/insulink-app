@@ -7,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
 import 'package:insulink/src/fitbit/fitbit_state.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
@@ -69,7 +69,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   /// Loaded ONCE here, never in `build()`. Recreating the future on every root
   /// rebuild would reset the [FutureBuilder] to "waiting" (a blank frame =
   /// flicker) and tear down + rebuild the whole provider tree — re-running
-  /// `G7Controller.init()` → `start()` → the foreground service/scan in a loop.
+  /// `CgmController.init()` → `start()` → the foreground service/scan in a loop.
   late Future<AppPreferences> _preferences;
 
   @override
@@ -135,7 +135,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => SportActivityState()),
         // Shared G7 read pipeline + service control, observed by the overview
         // and sensor pages.
-        ChangeNotifierProvider(create: (_) => G7Controller()..init()),
+        ChangeNotifierProvider(create: (_) => CgmController()..init()),
       ],
       child: _AppLifecycle(
         child: Consumer<ProfileThemeState>(

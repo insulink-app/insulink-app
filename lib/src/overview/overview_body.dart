@@ -4,7 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page.dart';
 import 'package:insulink/src/base/page_body.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
@@ -44,7 +44,7 @@ class _OverviewTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lastUpdate = context.watch<G7Controller>().lastUpdate;
+    final lastUpdate = context.watch<CgmController>().lastUpdate;
     return OverviewUpdate(lastUpdate: lastUpdate);
   }
 }
@@ -54,7 +54,7 @@ class OverviewBodyContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<G7Controller>();
+    final controller = context.watch<CgmController>();
     final silent = context.watch<ProfileSilentState>().silent;
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -71,7 +71,7 @@ class OverviewBodyContent extends StatelessWidget {
   /// know there's NO sensor: during initial store load, or when a sensor is
   /// paired / connecting but no reading has arrived yet. Only fall through to
   /// the "no sensor" view once we're sure.
-  Widget _view(G7Controller controller) {
+  Widget _view(CgmController controller) {
     // Known data (a live/cached value OR archived history) → show the chart
     // straight away, even before a fresh reading lands after a re-login/restore;
     // the headline shows a loader until the current value arrives.
@@ -102,7 +102,7 @@ class OverviewBodyContent extends StatelessWidget {
 class _DataView extends StatelessWidget {
   const _DataView({required this.controller});
 
-  final G7Controller controller;
+  final CgmController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +147,7 @@ class _DataView extends StatelessWidget {
 class _ChartPreview extends StatelessWidget {
   const _ChartPreview({required this.controller});
 
-  final G7Controller controller;
+  final CgmController controller;
 
   @override
   Widget build(BuildContext context) {

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/g7/protocol/device_info.dart';
+import 'package:insulink/src/cgm/protocol/device_info.dart';
 
 void main() {
   group('G7DeviceInfo.applyControl', () {

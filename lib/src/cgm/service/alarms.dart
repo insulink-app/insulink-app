@@ -10,7 +10,7 @@ import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/silent/profile_silent_state.dart';
 import '../../sport/sport_store.dart';
 import '../../sport/training/cardio_models.dart';
-import '../store.dart';
+import '../cgm_store.dart';
 
 /// Notification-action ids for the "training detected" confirm prompt.
 const String _trainingConfirmAction = 'training_confirm';
@@ -41,7 +41,7 @@ enum G7AlarmLevel { none, lowWarning, lowUrgent, highWarning, highUrgent }
 
 /// Watches live EGV readings and raises local notifications when glucose
 /// crosses into a low/high zone. Runs inside the foreground-service isolate
-/// (same place [G7TaskHandler] lives) so alarms fire even with the app closed.
+/// (same place [CgmTaskHandler] lives) so alarms fire even with the app closed.
 ///
 /// The alarm TONE is played manually through the ALARM audio stream (see
 /// [_playSound]) — NOT via the notification channel. Channel sounds proved
@@ -59,7 +59,7 @@ class G7AlarmManager {
   // The event log sink. Null for the UI-isolate managers that only run
   // ensureDndAccess()/fireTest() (which log nothing); the service isolate passes
   // its store so glucose/signal events are recorded.
-  final G7Store? _store;
+  final CgmStore? _store;
   final AudioPlayer _player = AudioPlayer(playerId: 'insulink_alarm');
   final ServiceStrings _strings = ServiceStrings();
   G7AlarmLevel _last = G7AlarmLevel.none;
@@ -247,7 +247,7 @@ class G7AlarmManager {
   /// marking it notified, so the one-shot warning still fires once silent mode
   /// is turned off (if there's time left).
   Future<void> checkExpiry({
-    required G7Store store,
+    required CgmStore store,
     required String key,
     required int? sessionLengthSec,
     required int secsSinceStart,
@@ -286,7 +286,7 @@ class G7AlarmManager {
   /// caps eligibility so it can't re-fire deep into the second half if that flag is
   /// ever lost. Same silent/toggle gating as [checkExpiry].
   Future<void> checkHalftime({
-    required G7Store store,
+    required CgmStore store,
     required String key,
     required int? sessionLengthSec,
     required int secsSinceStart,

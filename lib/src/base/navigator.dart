@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/nav_badge.dart';
 import 'package:insulink/src/base/page_body.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:provider/provider.dart';
 
@@ -29,7 +29,7 @@ class _AppNavigatorState extends State<AppNavigator> {
 
   /// The badges (e.g. the sensor "no sensor" dot) depend on app state, so the
   /// navigator listens to the controller and reloads them whenever it changes.
-  G7Controller? _controller;
+  CgmController? _controller;
 
   /// Display position of the empty slot that leaves room for the centre-docked
   /// floating button. The real [widget.pageBodies] indices are mapped around it
@@ -59,7 +59,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final controller = context.read<G7Controller>();
+    final controller = context.read<CgmController>();
     if (!identical(controller, _controller)) {
       _controller?.removeListener(_refreshNotifications);
       _controller = controller..addListener(_refreshNotifications);

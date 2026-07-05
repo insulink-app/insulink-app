@@ -63,6 +63,12 @@
     <uses-feature android:name="android.hardware.bluetooth_le"
         android:required="true" />
 
+    <!-- NFC: one scan activates a FreeStyle Libre 3 (it then streams over BLE).
+         required="false" so Dexcom-G7-only phones without NFC still install. -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc"
+        android:required="false" />
+
     <application
         android:label="Insulink"
         android:name="${applicationName}"

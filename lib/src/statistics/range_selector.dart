@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:provider/provider.dart';
 
 /// Preset windows offered alongside the custom range, in days.
 const _presets = [1, 3, 7, 30, 90];
 
-/// Statistics-window selector driving [G7Controller]: equal-width segments (one
+/// Statistics-window selector driving [CgmController]: equal-width segments (one
 /// per preset, like the tab control above) plus a calendar segment that opens
 /// the native date-range picker. The picked custom range is shown as a caption
 /// below so the segment labels stay compact. Selecting a segment updates all
@@ -16,7 +16,7 @@ class StatisticsRangeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<G7Controller>();
+    final controller = context.watch<CgmController>();
     final isCustom = controller.statsIsCustom;
     return Column(
       children: [
@@ -91,7 +91,7 @@ class StatisticsRangeSelector extends StatelessWidget {
     );
   }
 
-  Widget _customCaption(BuildContext context, G7Controller controller) {
+  Widget _customCaption(BuildContext context, CgmController controller) {
     final from = controller.statsCustomFrom;
     final to = controller.statsCustomTo;
     if (from == null || to == null) {
@@ -115,7 +115,7 @@ class StatisticsRangeSelector extends StatelessWidget {
 
   Future<void> _pickCustom(
     BuildContext context,
-    G7Controller controller,
+    CgmController controller,
   ) async {
     final now = DateTime.now();
     final current = controller.statsCustomFrom != null

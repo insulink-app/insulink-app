@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:insulink/src/auth/permissions/permission_step.dart';
-import 'package:insulink/src/g7/service/alarms.dart';
+import 'package:insulink/src/cgm/service/alarms.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// One explained permission the user is walked through before sign-in.

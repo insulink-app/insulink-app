@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/devices/device_row.dart';
 import 'package:insulink/src/fitbit/fitbit_body.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
 import 'package:provider/provider.dart';
@@ -25,7 +25,7 @@ class DevicesBody extends AppPageBody {
 
   @override
   Future<int> notifications(BuildContext context) async {
-    final controller = Provider.of<G7Controller>(context, listen: false);
+    final controller = Provider.of<CgmController>(context, listen: false);
     // -1 renders as the red "no sensor" dot, same as the old Sensor tab.
     return controller.hasSensor ? 0 : -1;
   }
@@ -36,7 +36,7 @@ class DevicesBodyContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasSensor = context.watch<G7Controller>().hasSensor;
+    final hasSensor = context.watch<CgmController>().hasSensor;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       children: [

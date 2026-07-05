@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
-import 'package:insulink/src/g7/store.dart';
+import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/request/request.dart';
 
 /// Mirrors the paired sensor to the user's backend account so a fresh install
@@ -14,16 +14,13 @@ import 'package:insulink/src/request/request.dart';
 /// changes (e.g. a re-pair rotates the session key). [fetchCurrent] runs in the
 /// UI isolate, where [Request] can refresh an expired token.
 class SensorSync {
-  // The only sensor kind this app reads; matches the backend SensorType enum.
-  static const _type = 'DEXCOM_G7';
-
   // Fallback G7 lifetime (10 days + 12 h grace) when the sensor hasn't reported
   // its session length yet — same fallback the expiry warning uses.
   static const _fallbackLifetimeSec = 907200;
 
   /// Register or update the current sensor. Idempotent and cheap: it only POSTs
   /// on the first complete identity and whenever that identity changes.
-  Future<void> sync(G7Store store) async {
+  Future<void> sync(CgmStore store) async {
     final key = store.resolvedKey;
     if (key == null || key.isEmpty) {
       return;
@@ -47,7 +44,7 @@ class SensorSync {
   // ponytail: the dedup keys on the whole blob, so a slowly-drifting field
   // (battery voltage) can trigger an update each reconnect — fine, it's one
   // small POST; split static vs volatile fields only if it proves chatty.
-  String? _data(G7Store store, String key) {
+  String? _data(CgmStore store, String key) {
     final pairingCode = store.pairingCode;
     final deviceId = store.deviceId(key);
     final sessionKey = store.sessionKeyHex(key);
@@ -72,7 +69,7 @@ class SensorSync {
   }
 
   /// Epoch-ms the sensor session ends — start plus its reported lifetime.
-  int _expiresAt(G7Store store, String key) {
+  int _expiresAt(CgmStore store, String key) {
     final start =
         store.loadSensorStart(key)?.millisecondsSinceEpoch ??
         DateTime.now().millisecondsSinceEpoch;
@@ -81,10 +78,14 @@ class SensorSync {
     return start + lifetimeSec * 1000;
   }
 
-  Future<void> _register(G7Store store, String key, String data) async {
+  Future<void> _register(CgmStore store, String key, String data) async {
     final response = await Request.post(
       url: '/sensor/register/',
-      body: {'type': _type, 'data': data, 'expires_at': _expiresAt(store, key)},
+      body: {
+        'type': store.sensorType.backendType,
+        'data': data,
+        'expires_at': _expiresAt(store, key),
+      },
     ).send(null);
     if (!_isSuccess(response)) {
       return;
@@ -97,7 +98,7 @@ class SensorSync {
   }
 
   Future<void> _update(
-    G7Store store,
+    CgmStore store,
     String sensorId,
     String key,
     String data,

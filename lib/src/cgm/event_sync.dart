@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
-import 'package:insulink/src/g7/store.dart';
+import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/request/request.dart';
 
 /// Mirrors the on-device statistics event log (glucose lows/highs, signal loss,
@@ -18,7 +18,7 @@ class EventSync {
 
   /// POST the local events newer than [_syncedThroughMs], advancing the mark on
   /// success. Best-effort: a failure leaves the mark, so the next call retries.
-  Future<void> sync(G7Store store, void Function(String) onLog) async {
+  Future<void> sync(CgmStore store, void Function(String) onLog) async {
     final fresh = store
         .eventsBetween(DateTime.fromMillisecondsSinceEpoch(0), DateTime.now())
         .where((event) => event.time.millisecondsSinceEpoch > _syncedThroughMs)
@@ -91,7 +91,7 @@ class EventSync {
         value: _value(entry['data']),
       ));
     }
-    final store = await G7Store.open();
+    final store = await CgmStore.open();
     await store.mergeEvents(events);
   }
 

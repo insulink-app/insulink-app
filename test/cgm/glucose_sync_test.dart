@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/g7/glucose_sync.dart';
+import 'package:insulink/src/cgm/glucose_sync.dart';
 
 void main() {
   test('chunk splits a 282-entry map preserving every key/value', () {

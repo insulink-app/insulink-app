@@ -11,23 +11,26 @@ import '../../sport/training/activity_recognition_sampler.dart';
 import '../../sport/training/background_location_sampler.dart';
 import '../../sport/training/cardio_detection_runner.dart';
 import 'alarms.dart';
+import '../cgm_connection.dart';
 import '../event_sync.dart';
 import '../glucose_sync.dart';
 import '../protocol/connection.dart';
 import '../sensor_sync.dart';
-import '../store.dart';
+import '../cgm_store.dart';
+import '../../libre3/libre3_connection.dart';
+import '../../libre3/libre3_crypto.dart';
 
 /// Entry point for the foreground-service isolate. Must be a top-level function
 /// annotated `vm:entry-point` so it survives tree-shaking and can be invoked by
 /// the native service after the UI/activity (and its isolate) are gone.
 @pragma('vm:entry-point')
 void startCallback() {
-  FlutterForegroundTask.setTaskHandler(G7TaskHandler());
+  FlutterForegroundTask.setTaskHandler(CgmTaskHandler());
 }
 
-/// Hosts the [G7Connection] inside the Android foreground service. This isolate
+/// Hosts the active [CgmConnection] inside the Android foreground service. This isolate
 /// keeps the BLE link and the read pipeline alive while the app is backgrounded
-/// or fully closed, persisting glucose to [G7Store] and pushing live updates
+/// or fully closed, persisting glucose to [CgmStore] and pushing live updates
 /// back to the UI over the foreground-task data channel.
 ///
 /// Robustness is the whole point of this class: the isolate must survive a
@@ -35,10 +38,10 @@ void startCallback() {
 /// stops delivering — without a UI around to notice. The [onRepeatEvent]
 /// watchdog (cadence from `ForegroundTaskOptions.eventAction`) is the only thing
 /// that runs while the phone is asleep, so it owns every recovery path.
-class G7TaskHandler extends TaskHandler {
-  G7Connection? _conn;
+class CgmTaskHandler extends TaskHandler {
+  CgmConnection? _conn;
   G7AlarmManager? _alarms;
-  G7Store? _store;
+  CgmStore? _store;
   String _serial = '';
   String _pairingCode = '';
 
@@ -86,44 +89,25 @@ class G7TaskHandler extends TaskHandler {
   /// before the isolate is torn down and replaced.
   bool _restarting = false;
 
-  /// No reading for this long while "connected" ⇒ half-open link ⇒ force a clean
-  /// reconnect.
-  static const _staleAfter = Duration(minutes: 12);
+  /// All watchdog cadence thresholds now come from the active connection's
+  /// [CgmConnection.timing], because the G7 (connect/deliver/drop every ~5 min)
+  /// and the Libre 3 (continuous link, ~1-min stream) have very different
+  /// "healthy silence" windows. See [CgmTiming].
+  CgmTiming get _timing => _conn?.timing ?? _fallbackTiming;
 
-  /// No reading for this long at all ⇒ the in-process BLE stack is likely wedged
-  /// ⇒ restart the service (fresh isolate + Rust core), and if THAT already
-  /// failed, the whole process (the only thing that resets a wedged native BLE
-  /// scanner on Android 13+).
-  static const _restartAfter = Duration(minutes: 25);
-
-  /// If a `restartService()` happened within this window and data is STILL
-  /// absent, the isolate wasn't the problem — the native BLE scanner is wedged
-  /// (the Pixel/Android-13+ "scanner silently stops returning results" failure;
-  /// a Bluetooth toggle would clear it but `turnOff()` is a no-op on 13+). Only
-  /// a full process restart resets it. Generous enough to span the ~25-min gap a
-  /// fresh isolate runs before it would re-trip [_restartAfter].
-  static const _processRestartAfter = Duration(minutes: 35);
-
-  /// A single `connect()` should resolve well within this; if it doesn't,
-  /// force-reset so it can't pin the watchdog. Sized for the autoConnect
-  /// reconnect path: after we arm autoConnect, the OS reconnects only when the
-  /// G7 next advertises — up to one ~5-min delivery cycle away — so a wait that
-  /// long is NORMAL, not a wedge. `connectAndBind` self-bounds the wait at 6 min;
-  /// this backstop sits just past that so it only fires on a genuinely pinned
-  /// attempt. (The scan path resolves far quicker, so the looser bound is free.)
-  static const _connectStuckAfter = Duration(minutes: 7);
-
-  /// After a successful reading the G7 won't advertise again for ~5 min, so
-  /// scanning in the minutes right after one is pure wasted radio — and that
-  /// near-continuous scanning ran THIS app's Android BLE scan "Score" to ~40×
-  /// any other app on the device (dumpsys). Hold the watchdog's reconnect off
-  /// this long after a delivery. Kept well under the ~5-min delivery interval so
-  /// clock drift can't make us miss the next advertisement; a MISSED delivery
-  /// leaves [_lastDeliveryAt] old, so we resume scanning normally.
-  static const _reconnectBackoff = Duration(minutes: 3);
+  /// Used only in the brief window before [_conn] exists (the restart
+  /// escalation can run then). Matches the G7's generous values.
+  static const _fallbackTiming = CgmTiming(
+    staleAfter: Duration(minutes: 12),
+    restartAfter: Duration(minutes: 25),
+    processRestartAfter: Duration(minutes: 35),
+    connectStuckAfter: Duration(minutes: 7),
+    reconnectBackoff: Duration(minutes: 3),
+    expectsContinuousLink: false,
+  );
 
   /// Wall-clock of the last actual EGV delivery (null until the first), used
-  /// only for [_reconnectBackoff]. Distinct from [_lastReadingAt], which is
+  /// only for the reconnect backoff. Distinct from [_lastReadingAt], which is
   /// SEEDED at startup for the restart escalation — seeding this one would
   /// wrongly suppress the very first connect.
   DateTime? _lastDeliveryAt;
@@ -156,7 +140,7 @@ class G7TaskHandler extends TaskHandler {
         _coreReady = true;
       }
       if (_store == null) {
-        final store = await G7Store.open();
+        final store = await CgmStore.open();
         _store = store;
         final alarms = G7AlarmManager(FlutterLocalNotificationsPlugin(), store);
         await alarms.init();
@@ -175,67 +159,87 @@ class G7TaskHandler extends TaskHandler {
     }
   }
 
+  /// Build the read pipeline for the paired sensor. The strategy is chosen by
+  /// [CgmStore.sensorType]; both implement [CgmConnection] and wire the SAME
+  /// callbacks (below), so the rest of this handler drives them identically.
   void _buildConnection() {
     final store = _store!;
+    _conn = switch (store.sensorType) {
+      SensorType.dexcomG7 => G7Connection(
+        store: store,
+        serial: _serial,
+        pairingCode: _pairingCode,
+        onLog: _log,
+        onReading: _handleReading,
+        onUpdate: _handleUpdate,
+        onConnectionState: _handleConnectionState,
+        onArchive: _handleArchive,
+      ),
+      SensorType.abbottLibre3 => Libre3Connection(
+        store: store,
+        crypto: Libre3NativeCrypto(),
+        onLog: _log,
+        onReading: _handleReading,
+        onUpdate: _handleUpdate,
+        onConnectionState: _handleConnectionState,
+        onArchive: _handleArchive,
+      ),
+    };
+  }
+
+  /// A reading means the link is healthy — reset the health clock, alarm, mirror
+  /// the sensor to the account, check expiry/halftime, and push to the UI. Shared
+  /// by both sensor strategies.
+  void _handleReading(CgmReading reading) {
+    _lastReadingAt = DateTime.now();
+    _lastDeliveryAt = _lastReadingAt;
+    final store = _store!;
     final alarms = _alarms!;
-    final serial = _serial;
-    _conn = G7Connection(
+    alarms.onReading();
+    _updateNotification(reading.glucoseMgDl, reading.trendMgDlPerMin);
+    if (reading.glucoseMgDl != null) {
+      alarms.check(reading.glucoseMgDl, reading.trendMgDlPerMin);
+    }
+    SensorSync().sync(store);
+    // Fall back to the standard G7 lifetime (10 days + 12 h grace) when the
+    // sensor hasn't reported its own session length.
+    final key = store.resolvedKey ?? _serial;
+    final lifetime = _conn?.sessionLengthSec ?? 907200;
+    alarms.checkExpiry(
       store: store,
-      serial: serial,
-      pairingCode: _pairingCode,
-      onLog: _log,
-      onReading: (reading) {
-        // A reading means the link is healthy — reset the health clock and
-        // clear any pending "connection lost" warning.
-        _lastReadingAt = DateTime.now();
-        _lastDeliveryAt = _lastReadingAt;
-        alarms.onReading();
-        _updateNotification(reading.glucoseMgDl, reading.trendMgDlPerMin);
-        if (reading.glucoseMgDl != null) {
-          alarms.check(reading.glucoseMgDl, reading.trendMgDlPerMin);
-        }
-        // Mirror the paired sensor to the account (best-effort; only POSTs on a
-        // fresh pair or when the identity changed).
-        SensorSync().sync(store);
-        // One-shot warning when the sensor has < 24 h of session left. The
-        // sensor's reported session length is best-effort; fall back to the
-        // standard G7 lifetime (10 days + 12 h grace) when it's unknown.
-        alarms.checkExpiry(
-          store: store,
-          key: store.resolvedKey ?? serial,
-          sessionLengthSec: _conn?.sessionLengthSec ?? 907200,
-          secsSinceStart: reading.secsSinceStart,
-        );
-        // One-shot reminder at the halfway point (≈ day 5 of a 10-day G7).
-        alarms.checkHalftime(
-          store: store,
-          key: store.resolvedKey ?? serial,
-          sessionLengthSec: _conn?.sessionLengthSec ?? 907200,
-          secsSinceStart: reading.secsSinceStart,
-        );
-        FlutterForegroundTask.sendDataToMain({
-          't': 'reading',
-          'mgdl': reading.glucoseMgDl,
-          'trendTenths': reading.trendTenths,
-          'state': reading.state,
-          'secs': reading.secsSinceStart,
-        });
-      },
-      onUpdate: () {
-        _updateNotification(_conn?.latestMgDl, _conn?.latestTrendPerMin);
-        FlutterForegroundTask.sendDataToMain({'t': 'update'});
-      },
-      onConnectionState: (connected) => FlutterForegroundTask.sendDataToMain({
-        't': 'conn',
-        'connected': connected,
-      }),
-      onArchive: (readings) {
-        GlucoseSync().queue(readings, _log);
-        // Flush any service-isolate events (alarm zones, signal loss, new
-        // sensor) to the backend; retries on the next reading if it fails.
-        EventSync().sync(store, _log);
-      },
+      key: key,
+      sessionLengthSec: lifetime,
+      secsSinceStart: reading.secsSinceStart,
     );
+    alarms.checkHalftime(
+      store: store,
+      key: key,
+      sessionLengthSec: lifetime,
+      secsSinceStart: reading.secsSinceStart,
+    );
+    FlutterForegroundTask.sendDataToMain({
+      't': 'reading',
+      'mgdl': reading.glucoseMgDl,
+      'trendTenths': reading.trendTenths,
+      'state': reading.state,
+      'secs': reading.secsSinceStart,
+    });
+  }
+
+  void _handleUpdate() {
+    _updateNotification(_conn?.latestMgDl, _conn?.latestTrendPerMin);
+    FlutterForegroundTask.sendDataToMain({'t': 'update'});
+  }
+
+  void _handleConnectionState(bool connected) {
+    FlutterForegroundTask.sendDataToMain({'t': 'conn', 'connected': connected});
+  }
+
+  void _handleArchive(Map<int, int> readings) {
+    GlucoseSync().queue(readings, _log);
+    // Flush any service-isolate events (alarm zones, signal loss, new sensor)
+    // to the backend; retries on the next reading if it fails.
+    EventSync().sync(_store!, _log);
   }
 
   /// Watchdog: the only code that runs while the phone is asleep. Drives every
@@ -300,12 +304,12 @@ class G7TaskHandler extends TaskHandler {
       //     fresh BLE stack — what the user was doing by hand.
       if (!_restarting &&
           last != null &&
-          DateTime.now().difference(last) > _restartAfter) {
+          DateTime.now().difference(last) > _timing.restartAfter) {
         _restarting = true;
         final lastRestart = _store?.lastServiceRestartAt;
         final restartedRecently =
             lastRestart != null &&
-            DateTime.now().difference(lastRestart) < _processRestartAfter;
+            DateTime.now().difference(lastRestart) < _timing.processRestartAfter;
         if (restartedRecently) {
           _log(
             'watchdog: still no data after a service restart — native BLE '
@@ -328,7 +332,7 @@ class G7TaskHandler extends TaskHandler {
       if (connection.isConnecting) {
         final since = _connectStartedAt;
         if (since != null &&
-            DateTime.now().difference(since) > _connectStuckAfter) {
+            DateTime.now().difference(since) > _timing.connectStuckAfter) {
           _log('watchdog: connect wedged — resetting');
           await connection.dispose();
         }
@@ -337,7 +341,7 @@ class G7TaskHandler extends TaskHandler {
 
       // The G7 drops the link after each ~5-min delivery, so "not connected" is
       // the NORMAL resting state — reconnect to catch the next delivery. Hold off
-      // for [_reconnectBackoff] after a delivery on BOTH paths: the sensor won't
+      // for the reconnect backoff after a delivery on BOTH paths: the sensor won't
       // advertise again for ~5 min, and arming early just makes the radio hunt a
       // device that isn't there yet. This backoff applies to autoConnect too —
       // autoConnect finds the device via the OS's internal background scan, which
@@ -348,7 +352,7 @@ class G7TaskHandler extends TaskHandler {
       if (!connection.isConnected) {
         final delivered = _lastDeliveryAt;
         if (delivered != null &&
-            DateTime.now().difference(delivered) < _reconnectBackoff) {
+            DateTime.now().difference(delivered) < _timing.reconnectBackoff) {
           return;
         }
         _log('watchdog: reconnecting…');
@@ -358,7 +362,7 @@ class G7TaskHandler extends TaskHandler {
 
       // Connected but silent past the stale window ⇒ a half-open link that will
       // never deliver — drop it so the next tick reconnects cleanly.
-      if (last != null && DateTime.now().difference(last) > _staleAfter) {
+      if (last != null && DateTime.now().difference(last) > _timing.staleAfter) {
         _log('watchdog: link stale — forcing reconnect');
         await connection.dispose();
       }

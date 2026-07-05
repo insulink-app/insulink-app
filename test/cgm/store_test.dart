@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/g7/store.dart';
+import 'package:insulink/src/cgm/cgm_store.dart';
 
 import '../support/secure_storage_mock.dart';
 
@@ -10,18 +10,18 @@ void main() {
   setUp(installSecureStorageMock);
 
   test('saveReadings/loadReadings round-trips the int-map codec', () async {
-    final store = await G7Store.open();
+    final store = await CgmStore.open();
     await store.saveReadings('serialA', {0: 100, 300: 110, 600: 120});
     expect(store.loadReadings('serialA'), {0: 100, 300: 110, 600: 120});
   });
 
   test('loadReadings returns empty for an unknown serial', () async {
-    final store = await G7Store.open();
+    final store = await CgmStore.open();
     expect(store.loadReadings('nope'), isEmpty);
   });
 
   test('saveReadings keeps only the most recent ~300 points', () async {
-    final store = await G7Store.open();
+    final store = await CgmStore.open();
     final many = {for (var index = 0; index < 400; index++) index * 300: 100};
     await store.saveReadings('serialA', many);
     final loaded = store.loadReadings('serialA');
@@ -32,7 +32,7 @@ void main() {
   });
 
   test('session key hex-encodes and decodes round-trip', () async {
-    final store = await G7Store.open();
+    final store = await CgmStore.open();
     final key = Uint8List.fromList(
       List<int>.generate(16, (index) => index * 7 % 256),
     );
@@ -41,7 +41,7 @@ void main() {
   });
 
   test('sessionKey is null when none stored', () async {
-    final store = await G7Store.open();
+    final store = await CgmStore.open();
     expect(store.sessionKey('serialA'), isNull);
   });
 
@@ -49,7 +49,7 @@ void main() {
     test(
       'archiveRange returns readings within the window, key-sorted',
       () async {
-        final store = await G7Store.open();
+        final store = await CgmStore.open();
         await store.archiveAddAll({
           DateTime(2024, 1, 1, 10, 0): 100,
           DateTime(2024, 1, 1, 10, 5): 110,
@@ -70,7 +70,7 @@ void main() {
     );
 
     test('readings on the same minute dedupe', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       await store.archiveAdd(DateTime(2024, 1, 1, 10, 0, 10), 100);
       await store.archiveAdd(DateTime(2024, 1, 1, 10, 0, 50), 105);
       final range = store.archiveRange(
@@ -81,7 +81,7 @@ void main() {
     });
 
     test('archivePrune drops day-chunks older than the kept window', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       final old = DateTime.now().subtract(const Duration(days: 100));
       final recent = DateTime.now().subtract(const Duration(minutes: 5));
       await store.archiveAddAll({old: 100, recent: 120});
@@ -94,7 +94,7 @@ void main() {
     });
 
     test('clearSensor wipes the session cache but KEEPS the archive', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       await store.saveReadings('serialA', {0: 100});
       await store.saveSessionKey(
         'serialA',
@@ -116,7 +116,7 @@ void main() {
 
   group('latest reading + metadata', () {
     test('saveLatest/loadLatest round-trips the headline reading', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       await store.saveLatest(
         'serialA',
         mgdl: 123,
@@ -129,12 +129,12 @@ void main() {
     });
 
     test('loadLatest is null when none stored', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       expect(store.loadLatest('serialA'), isNull);
     });
 
     test('expiryNotified is a one-shot, cleared by clearSensor', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       expect(store.expiryNotified('serialA'), isFalse);
       await store.setExpiryNotified('serialA');
       expect(store.expiryNotified('serialA'), isTrue);
@@ -143,7 +143,7 @@ void main() {
     });
 
     test('resolved key and device id persist', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       await store.saveResolvedKey('AA:BB');
       await store.saveDeviceId('AA:BB', 'AA:BB:CC');
       expect(store.resolvedKey, 'AA:BB');
@@ -155,7 +155,7 @@ void main() {
     test(
       'filters by window, newest first, and is kept by clearSensor',
       () async {
-        final store = await G7Store.open();
+        final store = await CgmStore.open();
         final now = DateTime.now();
         await store.addEvent(
           'new_sensor',
@@ -190,7 +190,7 @@ void main() {
     test(
       'mergeEvents adds new events but skips existing (ts,type) pairs',
       () async {
-        final store = await G7Store.open();
+        final store = await CgmStore.open();
         final base = DateTime(2026, 1, 1, 12);
         await store.addEvent('glucose_low', at: base, value: 62);
 
@@ -226,7 +226,7 @@ void main() {
     test(
       'id/data are keyed per sensor and the dismissed flag round-trips',
       () async {
-        final store = await G7Store.open();
+        final store = await CgmStore.open();
         expect(store.backendSensorId('keyA'), isNull);
 
         await store.saveBackendSensorId('keyA', 'uuid-a');
@@ -243,7 +243,7 @@ void main() {
     );
 
     test('sessionKeyHex round-trips the raw wire form', () async {
-      final store = await G7Store.open();
+      final store = await CgmStore.open();
       await store.saveSessionKeyHex('keyA', 'deadbeef');
       expect(store.sessionKeyHex('keyA'), 'deadbeef');
     });
@@ -251,7 +251,7 @@ void main() {
 
   test('reload observes writes made through another isolate', () async {
     final backing = installSecureStorageMock();
-    final store = await G7Store.open();
+    final store = await CgmStore.open();
     expect(store.loadReadings('serialA'), isEmpty);
     // Simulate the service isolate writing directly to the backing store.
     backing['g7.readings.serialA'] = '0:100,300:110';

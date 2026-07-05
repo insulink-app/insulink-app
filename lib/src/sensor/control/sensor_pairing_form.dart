@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../../g7/g7_controller.dart';
+import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
 import 'pairing_qr_scanner.dart';
@@ -10,7 +10,7 @@ import 'pairing_qr_scanner.dart';
 class SensorPairingForm extends StatelessWidget {
   const SensorPairingForm({super.key, required this.controller});
 
-  final G7Controller controller;
+  final CgmController controller;
 
   @override
   Widget build(BuildContext context) {

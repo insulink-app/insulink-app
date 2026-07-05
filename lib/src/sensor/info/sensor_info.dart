@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/g7/protocol/device_info.dart';
+import 'package:insulink/src/cgm/protocol/device_info.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sensor/info/sensor_attributes.dart';

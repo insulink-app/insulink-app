@@ -1,60 +1,6 @@
 import 'dart:typed_data';
 
-/// A decoded estimated glucose value (EGV) from the G7.
-///
-/// Layout confirmed against real sensor packets and Juggluco's `glucoseinput`
-/// struct (java.cpp) — packed, little-endian:
-///   [0]      uint8   type (0x4E for a live EGV)
-///   [1]      int8    status
-///   [2..6)   int32   secsSinceStart (seconds since sensor session start)
-///   [6..8)   uint16  sequence
-///   [8..10)  uint16  (reserved)
-///   [10..12) uint16  age (seconds since this reading was taken)
-///   [12..14) uint16  mgdL:12 | donly:4      → glucose = value & 0x0FFF
-///   [14]     int8    state (algorithm/calibration state)
-///   [15]     int8    trend (0.1 mg/dL per minute)
-///   [16..18) uint16  predictedmgdL:10 | unknown:6 → predicted = value & 0x03FF
-///   [18]     uint8   info
-class G7GlucoseReading {
-  G7GlucoseReading({
-    required this.secsSinceStart,
-    required this.age,
-    required this.sequence,
-    required this.glucoseMgDl,
-    required this.predictedMgDl,
-    required this.trendTenths,
-    required this.state,
-    this.raw,
-  });
-
-  final int secsSinceStart;
-  final int age;
-  final int sequence;
-
-  /// Glucose in mg/dL, or null if out of the valid 39..501 range.
-  final int? glucoseMgDl;
-  final int predictedMgDl;
-
-  /// Trend in 0.1 mg/dL per minute (so 2 == +0.2 mg/dL/min).
-  final int trendTenths;
-  final int state;
-  final Uint8List? raw;
-
-  double get trendMgDlPerMin => trendTenths / 10.0;
-
-  bool get isValid => glucoseMgDl != null;
-
-  /// Wall-clock time of this reading, given the sensor session start.
-  DateTime timestamp(DateTime sessionStart) =>
-      sessionStart.add(Duration(seconds: secsSinceStart - age));
-
-  @override
-  String toString() => isValid
-      ? '$glucoseMgDl mg/dL (${trendMgDlPerMin >= 0 ? '+' : ''}'
-            '${trendMgDlPerMin.toStringAsFixed(1)}/min), predicted $predictedMgDl, '
-            'age ${age}s, state 0x${state.toRadixString(16)}'
-      : 'invalid (state 0x${state.toRadixString(16)}, age ${age}s)';
-}
+import '../cgm_connection.dart';
 
 /// A single historical record from the backfill stream (Juggluco `dexbackfill`,
 /// 9 bytes, little-endian): int32 secsSinceStart, int16 mgdL, uint8 type,
@@ -83,8 +29,23 @@ class G7BackfillRecord {
 class G7GlucoseCodec {
   static bool _validMgdl(int mgdl) => mgdl >= 39 && mgdl <= 501;
 
-  /// Parse a live EGV packet (Control characteristic, opcode 0x4E).
-  static G7GlucoseReading? parseEgv(Uint8List packet) {
+  /// Parse a live EGV packet (Control characteristic, opcode 0x4E) into the
+  /// shared [CgmReading].
+  ///
+  /// Layout confirmed against real sensor packets and Juggluco's `glucoseinput`
+  /// struct (java.cpp) — packed, little-endian:
+  ///   [0]      uint8   type (0x4E for a live EGV)
+  ///   [1]      int8    status
+  ///   [2..6)   int32   secsSinceStart (seconds since sensor session start)
+  ///   [6..8)   uint16  sequence
+  ///   [8..10)  uint16  (reserved)
+  ///   [10..12) uint16  age (seconds since this reading was taken)
+  ///   [12..14) uint16  mgdL:12 | donly:4      → glucose = value & 0x0FFF
+  ///   [14]     int8    state (algorithm/calibration state)
+  ///   [15]     int8    trend (0.1 mg/dL per minute)
+  ///   [16..18) uint16  predictedmgdL:10 | unknown:6 → predicted = value & 0x03FF
+  ///   [18]     uint8   info
+  static CgmReading? parseEgv(Uint8List packet) {
     if (packet.length < 19 || packet[0] != 0x4E) {
       return null;
     }
@@ -96,7 +57,7 @@ class G7GlucoseCodec {
     final state = bytes.getInt8(14);
     final trend = bytes.getInt8(15);
     final predicted = bytes.getUint16(16, Endian.little) & 0x03FF;
-    return G7GlucoseReading(
+    return CgmReading(
       secsSinceStart: secs,
       age: age,
       sequence: sequence,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/profile/profile_toggle_row.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +12,7 @@ class ProfilePredictionToggle extends StatelessWidget {
 
   void _onChanged(BuildContext context, ProfilePredictionState state, bool value) {
     state.setEnabled(value);
-    context.read<G7Controller>().refreshPrediction();
+    context.read<CgmController>().refreshPrediction();
   }
 
   @override

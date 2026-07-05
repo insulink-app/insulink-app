@@ -198,7 +198,17 @@
       "title": "Pair sensor",
       "hint": "Enter the pairing code to connect",
       "scan": "Scan code",
-      "scan_hint": "Point the camera at the code on the sensor packaging."
+      "scan_hint": "Point the camera at the code on the sensor packaging.",
+      "libre": {
+        "title": "Activate Libre 3",
+        "hint": "Hold the sensor to the back of your phone to activate it via NFC.",
+        "activate": "Scan sensor (NFC)",
+        "account": "LibreView account ID (optional)",
+        "account_hint": "Only needed to take over a sensor already activated by Abbott's app.",
+        "scanning": "Hold the sensor to your phone…",
+        "failed": "NFC scan failed — try again.",
+        "done": "Sensor activated"
+      }
     },
     "life": {
       "title": "Durability",
@@ -260,6 +270,11 @@
       "session_failed": "session failed",
       "temporary_issue": "temporary issue",
       "sensor_declining": "sensor declining"
+    },
+    "type": {
+      "_": "Sensor type",
+      "g7": "Dexcom G7",
+      "libre3": "FreeStyle Libre 3"
     }
   },
   "pump": {

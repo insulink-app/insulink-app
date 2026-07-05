@@ -1,4 +1,4 @@
-import '../../g7/protocol/device_info.dart';
+import '../../cgm/protocol/device_info.dart';
 
 /// One labelled group of sensor attributes (status / device / session / battery)
 /// with its already-formatted rows (label → value).

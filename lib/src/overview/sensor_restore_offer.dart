@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
-import 'package:insulink/src/g7/sensor_sync.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
+import 'package:insulink/src/cgm/sensor_sync.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:provider/provider.dart';
 
@@ -24,7 +24,7 @@ class _SensorRestoreOfferState extends State<SensorRestoreOffer> {
   }
 
   Future<void> _load() async {
-    final restore = await context.read<G7Controller>().availableBackendSensor(
+    final restore = await context.read<CgmController>().availableBackendSensor(
       context,
     );
     if (mounted) {
@@ -38,7 +38,7 @@ class _SensorRestoreOfferState extends State<SensorRestoreOffer> {
       return;
     }
     setState(() => _offer = null);
-    await context.read<G7Controller>().restoreSensor(offer);
+    await context.read<CgmController>().restoreSensor(offer);
   }
 
   Future<void> _dismiss() async {
@@ -47,7 +47,7 @@ class _SensorRestoreOfferState extends State<SensorRestoreOffer> {
       return;
     }
     setState(() => _offer = null);
-    await context.read<G7Controller>().dismissRestore(offer.sensorId);
+    await context.read<CgmController>().dismissRestore(offer.sensorId);
   }
 
   @override

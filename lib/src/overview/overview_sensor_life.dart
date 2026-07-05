@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/sensor/control/sensor_life_bar.dart';
 import 'package:provider/provider.dart';
 
@@ -13,7 +13,7 @@ class OverviewSensorLife extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<G7Controller>();
+    final controller = context.watch<CgmController>();
     final start = controller.sensorStart;
     if (start == null) {
       return const SizedBox.shrink();
@@ -27,7 +27,7 @@ class OverviewSensorLife extends StatelessWidget {
 
   /// Best-effort session length: the sensor's reported value, else its max
   /// lifetime, else the standard G7 lifetime — so the bar always renders.
-  int _sessionLength(G7Controller controller) {
+  int _sessionLength(CgmController controller) {
     final info = controller.info;
     if (info.sessionLengthSec != null) {
       return info.sessionLengthSec!;

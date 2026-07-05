@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../g7/g7_controller.dart';
+import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import 'sensor_life_bar.dart';
@@ -21,7 +21,7 @@ class SensorStatusBox extends StatelessWidget {
     required this.searching,
   });
 
-  final G7Controller controller;
+  final CgmController controller;
   final bool searching;
 
   bool get _connected => controller.connected;

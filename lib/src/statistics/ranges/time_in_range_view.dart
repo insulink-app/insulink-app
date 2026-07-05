@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/statistics/ranges/glucose_band.dart';
@@ -14,7 +14,7 @@ class TimeInRangeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<G7Controller>();
+    final controller = context.watch<CgmController>();
     final glucose = context.watch<ProfileGlucoseState>();
     final colors = Theme.of(context).extension<GlucoseColors>()!;
 

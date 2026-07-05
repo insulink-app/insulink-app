@@ -198,7 +198,17 @@
       "title": "Sensor koppeln",
       "hint": "Kopplungscode eingeben zum Verbinden",
       "scan": "Code scannen",
-      "scan_hint": "Richte die Kamera auf den Code auf der Sensorverpackung."
+      "scan_hint": "Richte die Kamera auf den Code auf der Sensorverpackung.",
+      "libre": {
+        "title": "Libre 3 aktivieren",
+        "hint": "Halte den Sensor zum Aktivieren an die Rückseite deines Handys (NFC).",
+        "activate": "Sensor scannen (NFC)",
+        "account": "LibreView-Konto-ID (optional)",
+        "account_hint": "Nur nötig, um einen bereits von Abbotts App aktivierten Sensor zu übernehmen.",
+        "scanning": "Halte den Sensor an dein Handy…",
+        "failed": "NFC-Scan fehlgeschlagen — bitte erneut versuchen.",
+        "done": "Sensor aktiviert"
+      }
     },
     "life": {
       "title": "Haltbarkeit",
@@ -260,6 +270,11 @@
       "session_failed": "Sitzung fehlgeschlagen",
       "temporary_issue": "vorübergehendes Problem",
       "sensor_declining": "Sensor lässt nach"
+    },
+    "type": {
+      "_": "Sensortyp",
+      "g7": "Dexcom G7",
+      "libre3": "FreeStyle Libre 3"
     }
   },
   "pump": {

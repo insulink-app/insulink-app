@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'cgm_connection.dart';
 import 'protocol/device_info.dart';
 
 /// Persists the sensor serial, pairing code, and the per-sensor EC-JPAKE
@@ -14,7 +15,7 @@ import 'protocol/device_info.dart';
 /// and refreshed by [reload]; writes go to secure storage and update the cache.
 /// This keeps the synchronous getter API the read pipeline relies on while the
 /// data lives encrypted at rest.
-class G7Store {
+class CgmStore {
   static const _kSerial = 'g7.serial';
   static const _kCode = 'g7.pairing_code';
 
@@ -23,12 +24,12 @@ class G7Store {
   final FlutterSecureStorage _storage;
   final Map<String, String> _cache;
 
-  G7Store(this._storage, this._cache);
+  CgmStore(this._storage, this._cache);
 
-  static Future<G7Store> open() async {
+  static Future<CgmStore> open() async {
     const storage = FlutterSecureStorage();
     final cache = await storage.readAll();
-    return G7Store(storage, cache);
+    return CgmStore(storage, cache);
   }
 
   /// Re-read values written by another isolate. The in-memory cache is local to
@@ -65,6 +66,15 @@ class G7Store {
 
   Future<void> saveResolvedKey(String key) => _set(_kResolved, key);
 
+  static const _kSensorType = 'cgm.type';
+
+  /// Which CGM the current pairing is for. Defaults to the Dexcom G7 (the
+  /// original, only sensor), so installs that predate this key keep reading.
+  SensorType get sensorType => SensorType.fromWireKey(_cache[_kSensorType]);
+
+  Future<void> saveSensorType(SensorType type) =>
+      _set(_kSensorType, type.wireKey);
+
   Future<void> saveIdentity({
     required String serial,
     required String pairingCode,
@@ -100,6 +110,43 @@ class G7Store {
       _set(_kKey(serial), hex);
 
   Future<void> clearSessionKey(String serial) => _remove(_kKey(serial));
+
+  // ---- FreeStyle Libre 3 (NFC-derived + cached auth key) -------------------
+  // The BLE MAC + 4-byte PIN come from the NFC activation scan; the 16-byte
+  // kAuth is derived at the end of the BLE handshake and cached so the next
+  // reconnect can take the fast pre-authorised path. All keyed by resolved key.
+
+  static String _kLibreMac(String key) => 'libre3.mac.$key';
+  static String _kLibrePin(String key) => 'libre3.pin.$key';
+  static String _kLibreAuth(String key) => 'libre3.auth.$key';
+
+  String? libreMac(String key) => _cache[_kLibreMac(key)];
+
+  Future<void> saveLibreMac(String key, String mac) =>
+      _set(_kLibreMac(key), mac);
+
+  Uint8List? librePin(String key) => _decodeHex(_cache[_kLibrePin(key)]);
+
+  Future<void> saveLibrePin(String key, Uint8List pin) =>
+      _set(_kLibrePin(key), _encodeHex(pin));
+
+  Uint8List? libreAuthKey(String key) => _decodeHex(_cache[_kLibreAuth(key)]);
+
+  Future<void> saveLibreAuthKey(String key, Uint8List authKey) =>
+      _set(_kLibreAuth(key), _encodeHex(authKey));
+
+  static String _encodeHex(Uint8List bytes) =>
+      bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+
+  static Uint8List? _decodeHex(String? hex) {
+    if (hex == null || hex.isEmpty || hex.length.isOdd) {
+      return null;
+    }
+    return Uint8List.fromList([
+      for (var offset = 0; offset < hex.length; offset += 2)
+        int.parse(hex.substring(offset, offset + 2), radix: 16),
+    ]);
+  }
 
   // ---- Backend sensor sync -------------------------------------------------
   // Bookkeeping for mirroring the paired sensor to the account: the backend's
@@ -139,12 +186,16 @@ class G7Store {
       _kStart(key),
       _kExpiryNotified(key),
       _kHalftimeNotified(key),
+      _kLibreMac(key),
+      _kLibrePin(key),
+      _kLibreAuth(key),
     ]) {
       await _remove(sensorKey);
     }
     await _remove(_kResolved);
     await _remove(_kSerial);
     await _remove(_kCode);
+    await _remove(_kSensorType);
   }
 
   // The BLE remoteId of the physical sensor paired for this serial. Lets the
@@ -290,7 +341,7 @@ class G7Store {
   /// per-isolate cache) so the FRESH isolate that restart spawned can tell a
   /// restart was JUST attempted. If data is still absent after one, the native
   /// BLE stack — not the isolate — is wedged, and only a full PROCESS restart
-  /// clears it (`restartService()` reuses the same process). See [G7TaskHandler].
+  /// clears it (`restartService()` reuses the same process). See [CgmTaskHandler].
   DateTime? get lastServiceRestartAt {
     final ms = int.tryParse(_cache[_kLastRestart] ?? '');
     return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);

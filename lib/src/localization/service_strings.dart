@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Resolves localized strings OUTSIDE the widget tree — for the foreground
-/// service isolate and [G7Controller], which have no [BuildContext] and, in a
+/// service isolate and [CgmController], which have no [BuildContext] and, in a
 /// freshly-spawned isolate, no initialized [Locales] state either.
 ///
 /// Reads the persisted language directly from secure storage (the same

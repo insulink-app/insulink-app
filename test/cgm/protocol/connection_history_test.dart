@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/g7/protocol/connection.dart';
-import 'package:insulink/src/g7/store.dart';
+import 'package:insulink/src/cgm/protocol/connection.dart';
+import 'package:insulink/src/cgm/cgm_store.dart';
 
 import '../../support/secure_storage_mock.dart';
 
@@ -13,7 +13,7 @@ void main() {
   setUp(installSecureStorageMock);
 
   Future<G7Connection> connection() async {
-    final store = await G7Store.open();
+    final store = await CgmStore.open();
     return G7Connection(store: store, serial: 's', pairingCode: '0000');
   }
 

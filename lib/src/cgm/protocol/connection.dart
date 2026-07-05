@@ -8,7 +8,8 @@ import 'auth_session.dart';
 import 'ble_transport.dart';
 import 'device_info.dart';
 import 'glucose.dart';
-import '../store.dart';
+import '../cgm_connection.dart';
+import '../cgm_store.dart';
 
 /// UI-agnostic driver for the full G7 read pipeline: scan → connect → auth
 /// (reconnect-or-pair) → stream live EGV + backfill → parse → persist.
@@ -17,8 +18,11 @@ import '../store.dart';
 /// (`_start`/`_onControl`), with every UI touch replaced by a callback so the
 /// exact same logic can run inside the background foreground-service isolate.
 /// Everything it depends on ([BleTransport], [G7AuthSession], [G7GlucoseCodec],
-/// [G7DeviceInfo], [G7Store]) is already widget-free.
-class G7Connection {
+/// [G7DeviceInfo], [CgmStore]) is already widget-free.
+///
+/// It is the Dexcom G7 implementation of the shared [CgmConnection] contract, so
+/// the service isolate can drive it and a `Libre3Connection` interchangeably.
+class G7Connection implements CgmConnection {
   G7Connection({
     required this.store,
     required this.serial,
@@ -30,7 +34,7 @@ class G7Connection {
     this.onArchive,
   });
 
-  final G7Store store;
+  final CgmStore store;
   final String serial;
   final String pairingCode;
 
@@ -38,7 +42,7 @@ class G7Connection {
   final void Function(String line)? onLog;
 
   /// The most recent live EGV reading.
-  final void Function(G7GlucoseReading reading)? onReading;
+  final void Function(CgmReading reading)? onReading;
 
   /// Fired whenever persisted history/info changed (live EGV or backfill), so
   /// listeners can refresh the notification and signal the UI to reload.
@@ -58,7 +62,7 @@ class G7Connection {
 
   /// Glucose history keyed by seconds-since-session-start (dedupes EGV+backfill).
   final SplayTreeMap<int, int> _byTime = SplayTreeMap();
-  G7GlucoseReading? _latest;
+  CgmReading? _latest;
   final G7DeviceInfo _info = G7DeviceInfo();
   DateTime? _sensorStart;
   bool _backfillAsked = false;
@@ -87,8 +91,10 @@ class G7Connection {
   /// service isolate resets this, forcing a re-scan before we trust autoConnect.
   bool _scannedThisProcess = false;
 
+  @override
   bool get isConnected => _transport?.device.isConnected ?? false;
 
+  @override
   bool get isConnecting => _connecting;
 
   /// The cached BLE device id to reconnect to, or null when we must scan first.
@@ -104,16 +110,32 @@ class G7Connection {
   }
 
   /// The latest known glucose value (live EGV, else newest history point).
+  @override
   int? get latestMgDl =>
       _latest?.glucoseMgDl ??
       (_byTime.isNotEmpty ? _byTime[_byTime.lastKey()] : null);
 
   /// Trend of the latest live EGV in mg/dL per minute (null if none yet — the
   /// history archive doesn't carry a trend).
+  @override
   double? get latestTrendPerMin => _latest?.trendMgDlPerMin;
 
   /// Total session length reported by the sensor (for the expiry warning).
+  @override
   int? get sessionLengthSec => _info.sessionLengthSec;
+
+  /// The G7 connects, delivers, then drops its link every ~5 min, so silence
+  /// between deliveries is normal — the watchdog holds a reconnect backoff and
+  /// tolerates long gaps before escalating. These are today's proven values.
+  @override
+  CgmTiming get timing => const CgmTiming(
+    staleAfter: Duration(minutes: 12),
+    restartAfter: Duration(minutes: 25),
+    processRestartAfter: Duration(minutes: 35),
+    connectStuckAfter: Duration(minutes: 7),
+    reconnectBackoff: Duration(minutes: 3),
+    expectsContinuousLink: false,
+  );
 
   void _log(String line) => onLog?.call(line);
 
@@ -201,7 +223,7 @@ class G7Connection {
     }
   }
 
-  Future<void> _persistLatest(G7GlucoseReading reading) async {
+  Future<void> _persistLatest(CgmReading reading) async {
     if (_persistKey.isEmpty) {
       return;
     }
@@ -217,6 +239,7 @@ class G7Connection {
   /// Scan, connect, authenticate, and begin streaming. Reuses a stored session
   /// key for a fast reconnect, falling back to a full pairing if the sensor
   /// rejects it. Safe to call again after a drop (the watchdog does this).
+  @override
   Future<void> connect() async {
     if (_connecting) {
       return;
@@ -303,7 +326,7 @@ class G7Connection {
       // One clean attempt per connect(): the G7 rejects rapid in-process
       // reconnects (REMOTE_USER_TERMINATED / CONNECTION_TIMEOUT), so on a
       // handshake failure we tear down and let the 30s watchdog re-scan and retry
-      // on the sensor's own advertising schedule (see G7TaskHandler.onRepeatEvent).
+      // on the sensor's own advertising schedule (see CgmTaskHandler.onRepeatEvent).
       transport = BleTransport(device);
       await transport.connectAndBind(autoConnect: useAutoConnect, log: _log);
       await _authenticate(transport);
@@ -510,6 +533,7 @@ class G7Connection {
     _transport = null;
   }
 
+  @override
   Future<void> dispose() async {
     await _teardownTransport();
     onConnectionState?.call(false);

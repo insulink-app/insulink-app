@@ -4,27 +4,31 @@ import 'dart:collection';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:insulink/src/g7/service/alarms.dart';
-import 'package:insulink/src/g7/service/ble_service.dart';
-import 'package:insulink/src/g7/protocol/device_info.dart';
-import 'package:insulink/src/g7/protocol/glucose.dart';
-import 'package:insulink/src/g7/event_sync.dart';
-import 'package:insulink/src/g7/glucose_prediction.dart';
-import 'package:insulink/src/g7/sensor_sync.dart';
-import 'package:insulink/src/g7/store.dart';
+import 'package:insulink/src/cgm/service/alarms.dart';
+import 'package:insulink/src/cgm/cgm_connection.dart';
+import 'package:insulink/src/cgm/service/cgm_service.dart';
+import 'package:insulink/src/libre3/libre3_activation.dart';
+import 'package:insulink/src/cgm/protocol/device_info.dart';
+import 'package:insulink/src/cgm/event_sync.dart';
+import 'package:insulink/src/cgm/glucose_prediction.dart';
+import 'package:insulink/src/cgm/sensor_sync.dart';
+import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/localization/service_strings.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// Shared, UI-free state + control for the Dexcom G7 read pipeline.
+/// Shared, UI-free state + control for the CGM read pipeline (Dexcom G7 or
+/// FreeStyle Libre 3 — the active sensor is [CgmStore.sensorType]).
 ///
 /// Holds the live reading, glucose history, device info, log and service
-/// state, and drives the foreground service that owns the BLE link. It's a
+/// state, and drives the foreground service that owns the BLE link. It deals in
+/// sensor-agnostic mg/dL / history / archive, so a single instance serves both
+/// sensors. It's a
 /// [ChangeNotifier] provided above the page tree so several pages (overview,
 /// sensor) observe the same data. The actual BLE work lives in the
-/// foreground-service isolate (see [ble_service.dart]); this class is the UI
+/// foreground-service isolate (see [cgm_service.dart]); this class is the UI
 /// isolate's viewer + remote control.
-class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
+class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// Pairing-code input. Owned here so the connect form (overview) and the start
   /// logic stay in sync and survive page switches. (No serial input: the serial
   /// is only a cache key and is resolved automatically from the sensor's BLE id.)
@@ -52,10 +56,10 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// sensor" view (which briefly flashed on launch).
   bool get initialized => _store != null;
 
-  G7Store? _store;
+  CgmStore? _store;
 
   /// glucose history keyed by seconds-since-session-start (dedupes EGV+backfill).
-  /// Mirrors what the background service persists to [G7Store]'s per-session
+  /// Mirrors what the background service persists to [CgmStore]'s per-session
   /// cache. Kept only as the cold-launch fallback (before [_sensorStart] is
   /// known) and the source for [currentMgdl]/[_lastDataAt]; the overview chart
   /// reads [byTime] below, which is sourced from the durable archive instead.
@@ -66,7 +70,7 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// append-only, never capped or wiped within the 90-day retention), converted
   /// back to session-relative seconds via [_sensorStart].
   ///
-  /// Deliberately NOT the per-session [G7Store.loadReadings] cache: that cache
+  /// Deliberately NOT the per-session [CgmStore.loadReadings] cache: that cache
   /// is capped (~300 pts), cleared on a new session, and reload-clobbered — which
   /// is exactly how points that were once on the chart disappeared. The archive
   /// keeps every point ever seen, so a value plotted once stays plotted until it
@@ -124,7 +128,7 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// the synced history — with the headline value pending as a loader — instead
   /// of the full "searching" screen. Falls back to the cached session points when
   /// the archive is empty.
-  SplayTreeMap<int, int> _archiveByTimeNoSession(G7Store store) {
+  SplayTreeMap<int, int> _archiveByTimeNoSession(CgmStore store) {
     final now = DateTime.now();
     final archive = store.archiveRange(
       now.subtract(const Duration(hours: 24)),
@@ -230,8 +234,8 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// Builds a reading from a persisted/IPC map. The trend field is keyed
   /// differently by the cached headline ('trend') and the live service payload
   /// ('trendTenths'); the other fixed fields aren't carried across.
-  G7GlucoseReading _reading(Map map, String trendKey) {
-    return G7GlucoseReading(
+  CgmReading _reading(Map map, String trendKey) {
+    return CgmReading(
       secsSinceStart: map['secs'] as int? ?? 0,
       age: 0,
       sequence: 0,
@@ -242,8 +246,8 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
-  G7GlucoseReading? _latest;
-  G7GlucoseReading? get latest => _latest;
+  CgmReading? _latest;
+  CgmReading? get latest => _latest;
 
   /// False when [_latest] was restored from cache (shown dimmed as "cached"),
   /// true once a live reading arrives from the service.
@@ -379,7 +383,7 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // Receive live updates pushed from the foreground-service isolate.
     FlutterForegroundTask.addTaskDataCallback(_onTaskData);
-    final store = await G7Store.open();
+    final store = await CgmStore.open();
     if (_disposed) {
       return;
     }
@@ -404,7 +408,7 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   /// store cache so the UI shows something immediately, before the service
   /// produces a fresh reading. The headline value stays marked non-live until
   /// one arrives. Data is keyed by the resolved key (the sensor BLE id).
-  void _restoreFromCache(G7Store store) {
+  void _restoreFromCache(CgmStore store) {
     final key = _key;
     if (key.isEmpty) {
       return;

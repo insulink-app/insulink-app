@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
@@ -7,13 +7,13 @@ import 'package:provider/provider.dart';
 
 /// Chronological log of notable events over the selected statistics window:
 /// glucose lows/highs, signal loss, and sensor swap/stop. Reads the store-backed
-/// event log via [G7Controller.statsEvents] (newest first).
+/// event log via [CgmController.statsEvents] (newest first).
 class EventLogView extends StatelessWidget {
   const EventLogView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final events = context.watch<G7Controller>().statsEvents;
+    final events = context.watch<CgmController>().statsEvents;
     final glucose = context.watch<ProfileGlucoseState>();
     if (events.isEmpty) {
       return Center(child: LocaleText('statistics.events.empty'));
