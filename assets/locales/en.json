@@ -446,7 +446,13 @@
       "name": "Name",
       "save": "Save",
       "logout": "Log out",
-      "logout_confirm": "Are you sure you want to log out?"
+      "logout_confirm": "Are you sure you want to log out?",
+      "change_password": "Change password",
+      "current_password": "Current password",
+      "new_password": "New password",
+      "password_changed": "Your password has been changed.",
+      "password_error": "Could not change the password. Check your current password.",
+      "show_password": "Show password"
     },
     "language": {
       "_": "Language",
