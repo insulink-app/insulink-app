@@ -260,8 +260,11 @@ class GlucoseLineChart extends StatelessWidget {
   LineTooltipItem _tooltipItem(BuildContext context, LineBarSpot spot) {
     final theme = Theme.of(context);
     final digits = glucose.unit == GlucoseUnit.mmol ? 1 : 0;
+    // Points past the latest reading (x > shift) are the forecast — mark the
+    // value as an estimate with a leading "~".
+    final prefix = spot.x > shift ? '~' : '';
     return LineTooltipItem(
-      '${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
+      '$prefix${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
       TextStyle(
         color: theme.colorScheme.onInverseSurface,
         fontWeight: FontWeight.bold,

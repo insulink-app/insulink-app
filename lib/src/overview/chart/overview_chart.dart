@@ -158,7 +158,7 @@ class _OverviewChartState extends State<OverviewChart>
     final bars = series.buildBars();
     // Dashed forecast line extending past the latest reading (when enabled).
     final controller = context.watch<G7Controller>();
-    final futureHours = _addPredictionBar(
+    final prediction = _addPredictionBar(
       bars,
       controller,
       entries,
@@ -166,11 +166,12 @@ class _OverviewChartState extends State<OverviewChart>
       shift,
       glucose,
     );
-    // Transparent overlay over only the REAL readings: it owns touch, so the
-    // tooltip + indicator snap to a single actual value instead of every zone
-    // bar (which share boundary points) and the interpolated crossings.
+    final futureHours = prediction.futureHours;
+    // Transparent overlay owning touch — over the REAL readings AND the forecast
+    // points, so scrubbing snaps to a single value in either region (not to the
+    // zone bars, which share boundary points, or the interpolated crossings).
     _touchBarIndex = bars.length;
-    bars.add(_touchBar(series.realSpots));
+    bars.add(_touchBar([...series.realSpots, ...prediction.touchSpots]));
     final highlightSpot = series.realSpots.isEmpty
         ? null
         : series.realSpots.last;
@@ -211,9 +212,10 @@ class _OverviewChartState extends State<OverviewChart>
   }
 
   /// Appends the dashed forecast bar (anchored at the latest reading) and
-  /// returns how many hours it extends past it, so the X axis can widen to fit.
-  /// No forecast (disabled/unavailable) or no session clock → nothing added, 0.
-  double _addPredictionBar(
+  /// returns how many hours it extends past it (so the X axis can widen to fit)
+  /// plus the future points, which the touch overlay also covers so they're
+  /// hoverable. No forecast / no session clock → nothing added, 0 / empty.
+  ({double futureHours, List<FlSpot> touchSpots}) _addPredictionBar(
     List<LineChartBarData> bars,
     G7Controller controller,
     List<MapEntry<int, int>> entries,
@@ -225,19 +227,23 @@ class _OverviewChartState extends State<OverviewChart>
     final base = controller.predictionBase;
     final start = widget.sensorStart;
     if (curve == null || base == null || start == null || entries.isEmpty) {
-      return 0;
+      return (futureHours: 0, touchSpots: const <FlSpot>[]);
     }
     final baseSecs = base.difference(start).inSeconds;
-    final spots = <FlSpot>[FlSpot(shift, glucose.toDisplay(entries.last.value))];
-    for (final point in curve) {
-      final secs = baseSecs + point.offsetMin * 60;
-      spots.add(
-        FlSpot((secs - latestSecs) / 3600.0 + shift, glucose.toDisplay(point.mgdl)),
-      );
-    }
-    bars.add(_predictionBar(spots));
+    final anchor = FlSpot(shift, glucose.toDisplay(entries.last.value));
+    final future = [
+      for (final point in curve)
+        FlSpot(
+          (baseSecs + point.offsetMin * 60 - latestSecs) / 3600.0 + shift,
+          glucose.toDisplay(point.mgdl),
+        ),
+    ];
+    bars.add(_predictionBar([anchor, ...future]));
     final lastSecs = baseSecs + curve.last.offsetMin * 60;
-    return ((lastSecs - latestSecs) / 3600.0).clamp(0.0, 24.0);
+    return (
+      futureHours: ((lastSecs - latestSecs) / 3600.0).clamp(0.0, 24.0),
+      touchSpots: future,
+    );
   }
 
   /// The forecast line: STRAIGHT (not curved) so it doesn't overshoot into a
