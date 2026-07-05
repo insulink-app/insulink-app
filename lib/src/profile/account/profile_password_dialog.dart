@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/alert/loader_alert.dart';
+import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/account/profile_account.dart';
 
 /// Current + new password prompt that forwards the change to the backend. The
