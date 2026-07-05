@@ -24,9 +24,15 @@ class GlucoseLineChart extends StatelessWidget {
     this.maxYmgdl = 300,
     this.highlightSpot,
     this.pulse = 0,
+    this.futureHours = 0,
   });
 
   final List<LineChartBarData> bars;
+
+  /// Extra hours drawn to the RIGHT of the latest reading, for the prediction
+  /// overlay (0 when there's no forecast). Widens [maxX] past [shift] so the
+  /// future dashed line isn't clipped.
+  final double futureHours;
 
   /// Index of the transparent overlay bar that owns touch.
   final int touchBarIndex;
@@ -65,6 +71,7 @@ class GlucoseLineChart extends StatelessWidget {
   final double pulse;
 
   double get _minY => glucose.toDisplay(minYmgdl);
+
   double get _maxY => glucose.toDisplay(maxYmgdl);
 
   /// Whole-unit gridlines/ticks that read cleanly in either unit.
@@ -85,7 +92,7 @@ class GlucoseLineChart extends StatelessWidget {
         minY: _minY,
         maxY: _maxY,
         minX: shift - rangeHours,
-        maxX: shift,
+        maxX: shift + futureHours,
         gridData: FlGridData(
           show: !minimal,
           drawVerticalLine: false,
@@ -247,6 +254,9 @@ class GlucoseLineChart extends StatelessWidget {
         barData,
         indexes,
         theme.colorScheme.onSurface.withValues(alpha: 0.35),
+        HSLColor.fromColor(
+          theme.colorScheme.onSurface,
+        ).withLightness(0.6).toColor(),
       ),
     );
   }
@@ -254,8 +264,11 @@ class GlucoseLineChart extends StatelessWidget {
   LineTooltipItem _tooltipItem(BuildContext context, LineBarSpot spot) {
     final theme = Theme.of(context);
     final digits = glucose.unit == GlucoseUnit.mmol ? 1 : 0;
+    // Points past the latest reading (x > shift) are the forecast — mark the
+    // value as an estimate with a leading "~".
+    final prefix = spot.x > shift ? '~' : '';
     return LineTooltipItem(
-      '${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
+      '$prefix${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
       TextStyle(
         color: theme.colorScheme.onInverseSurface,
         fontWeight: FontWeight.bold,
@@ -291,20 +304,23 @@ class GlucoseLineChart extends StatelessWidget {
     LineChartBarData barData,
     List<int> indexes,
     Color lineColor,
+    Color predictionColor,
   ) {
     if (barData.barWidth != 0) {
       return List<TouchedSpotIndicatorData?>.filled(indexes.length, null);
     }
-    return [for (final _ in indexes) _indicator(lineColor)];
+    return [for (final _ in indexes) _indicator(lineColor, predictionColor)];
   }
 
-  TouchedSpotIndicatorData _indicator(Color lineColor) {
+  TouchedSpotIndicatorData _indicator(Color lineColor, Color predictionColor) {
     return TouchedSpotIndicatorData(
       FlLine(color: lineColor, strokeWidth: 1.5, dashArray: const [4, 4]),
       FlDotData(
+        // Forecast points (x > shift) get the neutral prediction grey, not a
+        // glucose-zone colour — the estimate isn't a measured value.
         getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
           radius: 4,
-          color: _zoneForDisplay(spot.y),
+          color: spot.x > shift ? predictionColor : _zoneForDisplay(spot.y),
           strokeColor: Colors.white,
           strokeWidth: 1.5,
         ),

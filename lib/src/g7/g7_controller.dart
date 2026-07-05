@@ -9,9 +9,11 @@ import 'package:insulink/src/g7/service/ble_service.dart';
 import 'package:insulink/src/g7/protocol/device_info.dart';
 import 'package:insulink/src/g7/protocol/glucose.dart';
 import 'package:insulink/src/g7/event_sync.dart';
+import 'package:insulink/src/g7/glucose_prediction.dart';
 import 'package:insulink/src/g7/sensor_sync.dart';
 import 'package:insulink/src/g7/store.dart';
 import 'package:insulink/src/localization/service_strings.dart';
+import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Shared, UI-free state + control for the Dexcom G7 read pipeline.
@@ -255,6 +257,48 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
   G7DeviceInfo _info = G7DeviceInfo();
   G7DeviceInfo get info => _info;
 
+  /// The current glucose forecast overlay, fetched from the backend when the
+  /// prediction setting is on (null when off or unavailable). [predictionBase]
+  /// is the reading time the curve is anchored to; each point is that many
+  /// minutes ahead of it.
+  final GlucosePredictionFetcher _predictionFetcher = GlucosePredictionFetcher();
+  final PredictionCache _predictionCache = PredictionCache();
+  GlucosePrediction? _prediction;
+  List<PredictionPoint>? get predictionCurve => _prediction?.points;
+  DateTime? get predictionBase => _prediction?.base;
+
+  /// Fetch a fresh forecast and update the overlay. Fire-and-forget. Called on
+  /// every new reading and when the setting changes.
+  ///
+  /// A disabled setting clears the overlay (and its cache); a FAILED request
+  /// keeps the last good forecast, so a transient network error doesn't blank
+  /// the just-restored cache on launch.
+  Future<void> refreshPrediction() async {
+    final setting = await ProfilePredictionState.load();
+    if (!setting.enabled) {
+      await _setPrediction(null);
+      return;
+    }
+    final result = await _predictionFetcher.fetch(
+      setting.horizon,
+      mgdl: currentMgdl,
+      time: lastUpdate,
+    );
+    if (result == null) {
+      return;
+    }
+    await _setPrediction(result);
+  }
+
+  Future<void> _setPrediction(GlucosePrediction? prediction) async {
+    await _predictionCache.save(prediction);
+    if (_disposed) {
+      return;
+    }
+    _prediction = prediction;
+    notifyListeners();
+  }
+
   DateTime? _sensorStart;
   DateTime? get sensorStart => _sensorStart;
 
@@ -342,7 +386,11 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
     _store = store;
     code.text = store.pairingCode ?? '';
     _restoreFromCache(store);
+    _prediction = await _predictionCache.load();
     notifyListeners();
+    // Show the cached forecast immediately, then fetch a fresh one (kept on
+    // failure) so a reload isn't blank until the next reading.
+    unawaited(refreshPrediction());
     if (_byTime.isNotEmpty) {
       _append('showing ${_byTime.length} cached readings');
     }
@@ -487,6 +535,8 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
           _byTime[secs] = mgdl;
         }
         notifyListeners();
+        // A new reading means the backend has fresh data to forecast from.
+        unawaited(refreshPrediction());
       case 'update':
         _reloadFromStore();
     }

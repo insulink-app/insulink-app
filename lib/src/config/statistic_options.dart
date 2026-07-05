@@ -1,4 +1,4 @@
 class StatisticOptions {
   static String statisticKey =
-      "k#rFNP#aT%PHiqONHX@49#IH^xk\$rMQPWO!bQnYWV&zKCBC0*r%4psYP2c56WTcxiMR5S^hoLVsfBAx9f*ertmWKOiqM1nvjtpiM8S0&n5IJ%P%3WbO*ZpnV^xGmu*C*";
+      "Xz3xKeQr.GUL1iur&x.Uie&%(MvM/1aM+2E)W_)a-{cT6&[a&T6&K5{!t)&Q+aD%r+Q(D7XKc*wSXWrmR46U?((4(7=1Be,cN8zDpG9+5Gci,i\$*CMxjQ9@/(q+Kh,D5";
 }

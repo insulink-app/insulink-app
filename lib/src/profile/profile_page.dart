@@ -16,6 +16,8 @@ import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_notification_toggle.dart';
+import 'package:insulink/src/profile/prediction/profile_prediction_horizon.dart';
+import 'package:insulink/src/profile/prediction/profile_prediction_toggle.dart';
 import 'package:insulink/src/profile/silent/profile_silent_toggle.dart';
 import 'package:insulink/src/profile/theme/profile_theme_selection.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -104,6 +106,16 @@ class _ProfilePageState extends State<ProfilePage> {
         NotificationToggle(NotificationSetting.training),
         SizedBox(height: 10),
         ProfileAlarmSoundToggle(),
+      ],
+    ),
+    (
+      titleKey: "profile.prediction",
+      icon: Icons.timeline,
+      searchKey: "profile.search.prediction",
+      children: () => const [
+        ProfilePredictionToggle(),
+        SizedBox(height: 10),
+        ProfilePredictionHorizon(),
       ],
     ),
     (
