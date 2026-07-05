@@ -47,10 +47,14 @@ class GlucosePrediction {
 /// forecast). The backend reads the user's recent readings from its own store
 /// and calls the Python model, so no reading data is sent from the client.
 class GlucosePredictionFetcher {
-  Future<GlucosePrediction?> fetch(int horizon) async {
-    final response = await Request.get(
-      url: '/glucose/predict/?horizon=$horizon',
-    ).send(null);
+  /// [mgdl]/[time] carry the client's freshest reading so the backend anchors
+  /// the forecast to it even before the debounced glucose report has synced it.
+  Future<GlucosePrediction?> fetch(int horizon, {int? mgdl, DateTime? time}) async {
+    var url = '/glucose/predict/?horizon=$horizon';
+    if (mgdl != null && time != null) {
+      url += '&value=$mgdl&time=${time.millisecondsSinceEpoch}';
+    }
+    final response = await Request.get(url: url).send(null);
     if (response == null || response.statusCode != 200) {
       return null;
     }

@@ -279,7 +279,11 @@ class G7Controller extends ChangeNotifier with WidgetsBindingObserver {
       await _setPrediction(null);
       return;
     }
-    final result = await _predictionFetcher.fetch(setting.horizon);
+    final result = await _predictionFetcher.fetch(
+      setting.horizon,
+      mgdl: currentMgdl,
+      time: lastUpdate,
+    );
     if (result == null) {
       return;
     }
