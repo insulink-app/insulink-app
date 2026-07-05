@@ -231,13 +231,20 @@ class _OverviewChartState extends State<OverviewChart>
     }
     final baseSecs = base.difference(start).inSeconds;
     final anchor = FlSpot(shift, glucose.toDisplay(entries.last.value));
+    // Only points still ahead of the latest reading. A stale forecast (base
+    // older than the newest reading because a refresh failed) otherwise draws
+    // its early points to the LEFT of x=0, overlapping the real readings.
     final future = [
       for (final point in curve)
-        FlSpot(
-          (baseSecs + point.offsetMin * 60 - latestSecs) / 3600.0 + shift,
-          glucose.toDisplay(point.mgdl),
-        ),
+        if (baseSecs + point.offsetMin * 60 > latestSecs)
+          FlSpot(
+            (baseSecs + point.offsetMin * 60 - latestSecs) / 3600.0 + shift,
+            glucose.toDisplay(point.mgdl),
+          ),
     ];
+    if (future.isEmpty) {
+      return (futureHours: 0, touchSpots: const <FlSpot>[]);
+    }
     bars.add(_predictionBar([anchor, ...future]));
     final lastSecs = baseSecs + curve.last.offsetMin * 60;
     return (

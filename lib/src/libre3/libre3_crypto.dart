@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart';
 
+import 'libre3_ccm.dart';
+
 /// The FreeStyle Libre 3 BLE security crypto, as a bridge interface.
 ///
 /// Every operation here is performed by Abbott's proprietary native blobs
@@ -60,6 +62,11 @@ abstract class Libre3Crypto {
 class Libre3NativeCrypto implements Libre3Crypto {
   static const _channel = MethodChannel('insulink/libre3_security');
 
+  /// Session key + IV from the handshake, kept for the clean-room AES-CCM data
+  /// path (Juggluco's `initcrypt`/`intDecrypt` — NOT the blob).
+  Uint8List? _kEnc;
+  Uint8List? _ivEnc;
+
   @override
   Future<bool> initKeys(Uint8List? authKey, int securityVersion) async {
     final ok = await _channel.invokeMethod<bool>('initKeys', {
@@ -69,6 +76,8 @@ class Libre3NativeCrypto implements Libre3Crypto {
     return ok ?? false;
   }
 
+  /// The embedded app certificate for the current security version (served from
+  /// the Kotlin side's `Libre3Keys`, ported from Juggluco's `KEYSCrypto.java`).
   @override
   Future<Uint8List> appCertificate() => _bytes('appCertificate');
 
@@ -99,17 +108,33 @@ class Libre3NativeCrypto implements Libre3Crypto {
   @override
   Future<Uint8List> exportAuthKey() => _bytes('exportAuthKey');
 
+  /// Clean-room: keep the session key/IV for the AES-CCM data path — no blob.
   @override
   Future<void> initCipher(Uint8List kEnc, Uint8List ivEnc) async {
-    await _channel.invokeMethod<void>('initCipher', {
-      'kEnc': kEnc,
-      'ivEnc': ivEnc,
-    });
+    _kEnc = kEnc;
+    _ivEnc = ivEnc;
   }
 
+  /// Decrypt one data-characteristic payload with AES-128-CCM (see [Libre3Ccm]).
+  ///
+  /// ponytail: the CCM nonce (here `ivEnc`), MAC length (4 bytes) and whether the
+  /// channel id / a per-frame sequence feed the nonce or AAD are the parts to
+  /// confirm against a real sensor — the AES-CCM primitive itself is RFC-3610
+  /// verified. Adjust the nonce/aad/macBits here once captured on-device.
   @override
-  Future<Uint8List> decrypt(int channelId, Uint8List data) =>
-      _bytes('decrypt', {'channelId': channelId, 'data': data});
+  Future<Uint8List> decrypt(int channelId, Uint8List data) async {
+    final key = _kEnc;
+    final iv = _ivEnc;
+    if (key == null || iv == null) {
+      throw StateError('initCipher must run before decrypt');
+    }
+    return Libre3Ccm.decrypt(
+      key: key,
+      nonce: iv,
+      ciphertextAndTag: data,
+      macBits: 32,
+    );
+  }
 
   Future<Uint8List> _bytes(String method, [Map<String, Object?>? args]) async {
     final result = await _channel.invokeMethod<Uint8List>(method, args);

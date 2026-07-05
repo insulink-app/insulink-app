@@ -82,6 +82,9 @@
       "network": "Connection failed. Please try again."
     }
   },
+  "connection": {
+    "logout": "Your session has expired. Please sign in again."
+  },
   "overview": {
     "label": "Overview",
     "chart": {
@@ -373,7 +376,7 @@
       "seconds": "Seconds",
       "weight": "Weight",
       "rest": "Rest",
-      "est_duration": "~# min"
+      "est_duration": "~#"
     },
     "workout": {
       "exercise": "Exercise",
@@ -419,7 +422,16 @@
       "duration": "Duration",
       "set_n": "Set #",
       "resume": "Resume workout",
-      "delete_confirm": "Delete this log entry?"
+      "delete_confirm": "Delete this log entry?",
+      "edit_set": "Edit set",
+      "add_set": "Add set",
+      "delete_set_confirm": "Delete this set?"
+    },
+    "calendar": {
+      "_": "Calendar",
+      "routine": "Routine",
+      "training": "Training",
+      "empty": "No activities on this day."
     },
     "trainings": {
       "_": "Trainings",

@@ -250,6 +250,18 @@ class TrainingState extends ChangeNotifier {
     await _saveSessions();
   }
 
+  /// Replace a logged session in place (edited sets in the logbook). No-op if
+  /// the id is gone.
+  Future<void> updateSession(WorkoutSession session) async {
+    final index = _sessions.indexWhere((other) => other.id == session.id);
+    if (index < 0) {
+      return;
+    }
+    _sessions[index] = session;
+    notifyListeners();
+    await _saveSessions();
+  }
+
   /// The most recent logged set for [exerciseId] at [setIndex] (0-based) across
   /// past sessions — powers the "last time" comparison in the runner. Sessions
   /// are appended in order, so iterating in reverse yields newest first.

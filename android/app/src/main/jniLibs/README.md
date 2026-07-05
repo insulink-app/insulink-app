@@ -6,27 +6,66 @@ from Juggluco's own `loadlibs.cpp`, which `dlopen`s Abbott's binaries and
 delegates to their `process1`/`process2` symbols. So this app, like Juggluco,
 must call those binaries. They are **not** and cannot be committed here.
 
-To enable the Libre 3, add — for **`arm64-v8a/`** (the only supported ABI):
+## Where the binary comes from
 
-1. **Abbott's blobs**, extracted from an official APK / Juggluco:
-   - `liblibre3extension.so`  (the ECDH / challenge / AES crypto)
-   - `libcrl_dp.so`           (activation / data-provider helpers)
-   - `libinit.so`             (dependency loader)
-2. **`liblibre3bridge.so`** — a small shim you build that `dlopen`s the three
-   blobs and exposes their symbols as the JNI functions
-   `Libre3SecurityPlugin.processInt/processBar/appCertificate/setPatchCertificate/initCipher/decrypt`.
-   Port this from Juggluco's `Common/src/main/cpp/libre3/loadlibs.cpp`
-   (`dlopen(RTLD_NOW)` + `dlsym` of `process1`, `process2`,
-   `DPGetActivationCommandData`, …) and wire it via CMake/`externalNativeBuild`
-   in `android/app/build.gradle.kts`.
+From **Juggluco's own release APK** — Juggluco has already extracted and
+repackaged Abbott's Libre 3 crypto into `liblibre3extension.so`, and our shim is
+ported from Juggluco's `loadlibs.cpp` to match it exactly (class
+`…Libre3SKBCryptoLib`, symbols `process1`/`process2`).
 
-Without these files the app still builds and runs; `Libre3SecurityPlugin`
-reports `nativeLoaded = false` and every crypto call returns a `no_blob` error,
-so only the Libre 3 pairing is unavailable — the Dexcom G7 is unaffected.
+> ⚠️ NOT the LibreLink app. LibreLink (`com.freestylelibre.app`) is obfuscated and
+> ships differently-named libs (`libDataProcessing.so`, `libSecureKeyBoxJava.so`)
+> that do NOT match this shim. Use the Juggluco APK.
 
-The embedded app certificate / patch signing keys / wrapped private keys live in
-Juggluco's `KEYSCrypto.java`; they are inputs the blob consumes (the wrapped
-private keys are SKB-protected and unusable without it).
+```sh
+# 1. Download the arm64 Juggluco APK from https://www.juggluco.nl/Juggluco/download.html
+unzip -o Juggluco*.apk 'lib/arm64-v8a/liblibre3extension.so' -d jug
+# 2. Copy it here:
+cp jug/lib/arm64-v8a/liblibre3extension.so \
+   android/app/src/main/jniLibs/arm64-v8a/
+```
+
+Only `liblibre3extension.so` is needed (the ECDH / challenge crypto =
+`process1`/`process2`). `libcrl_dp.so` / `libinit.so` are for Abbott-side NFC
+activation, which we do clean-room in Dart (`Libre3Activation`), so they're
+optional.
+
+## What is already wired
+
+`liblibre3bridge.so` — the `dlopen` shim (`src/main/cpp/libre3bridge.cpp`, built
+via `externalNativeBuild`) — is **already in this repo**. It ports Juggluco's
+`loadlibs.cpp`: it `dlopen`s `liblibre3extension.so`, intercepts its
+`JNI_OnLoad` → `RegisterNatives` to capture `process1`/`process2`, and exposes
+them to `Libre3SecurityPlugin`. Drop the Abbott `.so` in and the handshake
+primitives (`initKeys`, `generateEphemeralKeys`, `setPatchCertificate`,
+`setPatchEphemeral`, `encryptChallenge`, `decryptChallenge`, `exportAuthKey`)
+work. Without it, `nativeLoaded = false` → `no_blob`, and the Dexcom G7 is
+unaffected.
+
+## Already ported (no extra binary)
+
+- **App certificate + wrapped private keys** — embedded in `Libre3Keys.kt` (the
+  162-byte `LIBRE3_APP_CERTIFICATES_B` + 165-byte `LIBRE3_APP_PRIVATE_KEYS` from
+  Juggluco's GPL `KEYSCrypto.java`). `initKeys` runs the real two-step load
+  (`process1(1)` then `process1(2, privateKey, kAuth)`); `appCertificate` returns
+  the embedded cert.
+- **AES-128-CCM data path** — `Libre3Ccm` (pointycastle), RFC-3610 tested.
+
+## SKB anti-tamper caveat (on-device frontier)
+
+The Juggluco 10.9.5 `liblibre3extension.so` is WhiteCryption-SKB-protected: its
+JNI class name is runtime-decrypted (not in the binary), and Juggluco's real
+loader carries anti-tamper machinery (Frida-Gum `gumshim_install_*`, a
+`process1 = JNI_OnLoad + offset` fallback, a date-pinned `libre3_gum_…` wrapper)
+because SKB resists a faked JNI env. Our `libre3bridge.cpp` implements the clean
+RegisterNatives-intercept only. It may work (the intercept fires with the
+decrypted name at runtime) — but if SKB detects the fake VM, Juggluco's Gum layer
+would need porting too. Decidable only on-device: watch `adb logcat` for the
+shim's `dlopen` / `process1=%p` lines.
+
+So the blob is packaged and every clean-room piece is done; a first real reading
+still hinges on this SKB question plus the `ponytail:`-marked protocol details
+(NFC frame flags, CCM nonce/MAC, fragment framing) — a sensor is required.
 
 ⚠️ Shipping Abbott's proprietary binaries has redistribution implications — the
 same ones Juggluco carries. This was an explicit project decision (see

@@ -18,6 +18,10 @@ import io.flutter.plugin.common.MethodChannel
  * working and the Libre 3 flow degrades cleanly.
  */
 class Libre3SecurityPlugin {
+    // The sensor's security generation, set by initKeys and used to pick the
+    // embedded cert/key pair (KEYSCrypto's `securityVersion`).
+    private var securityVersion = 0
+
     companion object {
         private const val CHANNEL = "insulink/libre3_security"
 
@@ -28,15 +32,12 @@ class Libre3SecurityPlugin {
             false
         }
 
-        // JNI surface of the native shim. Command numbers mirror Juggluco's
+        // The two real Abbott primitives, bridged by liblibre3bridge.so
+        // (process1/process2). Command numbers mirror Juggluco's
         // Natives.processint/processbar (see docs/LIBRE3.md). Only invoked when
         // nativeLoaded is true, so their absence never crashes the app.
         @JvmStatic external fun processInt(cmd: Int, a: ByteArray?, b: ByteArray?): Int
         @JvmStatic external fun processBar(cmd: Int, nonce: ByteArray?, data: ByteArray?): ByteArray?
-        @JvmStatic external fun appCertificate(): ByteArray?
-        @JvmStatic external fun setPatchCertificate(cert: ByteArray)
-        @JvmStatic external fun initCipher(kEnc: ByteArray, ivEnc: ByteArray)
-        @JvmStatic external fun decrypt(channelId: Int, data: ByteArray): ByteArray?
     }
 
     fun register(engine: FlutterEngine) {
@@ -64,14 +65,27 @@ class Libre3SecurityPlugin {
         result: MethodChannel.Result,
     ) {
         when (method) {
-            "initKeys" ->
-                result.success(processInt(1, call.argument("authKey"), null) >= 0)
-            "appCertificate" -> result.success(appCertificate())
-            "generateEphemeralKeys" -> result.success(processBar(5, null, null))
-            "setPatchCertificate" -> {
-                setPatchCertificate(call.argument<ByteArray>("cert")!!)
-                result.success(null)
+            // KEYSCrypto.initKEYS: process1(1) to init, then process1(2) to load
+            // the embedded (SKB-wrapped) private key with the cached kAuth `op`.
+            "initKeys" -> {
+                securityVersion = call.argument<Int>("securityVersion") ?: 0
+                if (securityVersion >= Libre3Keys.appPrivateKeys.size) {
+                    result.success(true)
+                } else {
+                    processInt(1, null, null)
+                    processInt(2, Libre3Keys.appPrivateKeys[securityVersion],
+                        call.argument("authKey"))
+                    result.success(true)
+                }
             }
+            // getAppCertificate: the embedded cert for this security version.
+            "appCertificate" ->
+                result.success(Libre3Keys.appCertificates[securityVersion])
+            // The rest map onto Abbott's process1/process2 (command numbers from
+            // Juggluco's Libre3GattCallback; see docs/LIBRE3.md).
+            "generateEphemeralKeys" -> result.success(processBar(5, null, null))
+            "setPatchCertificate" ->
+                result.success(processInt(4, call.argument<ByteArray>("cert")!!, null) >= 0)
             "setPatchEphemeral" ->
                 result.success(processInt(6, call.argument("ephemeral"), null) >= 0)
             "encryptChallenge" ->
@@ -79,12 +93,7 @@ class Libre3SecurityPlugin {
             "decryptChallenge" ->
                 result.success(processBar(8, call.argument("nonce"), call.argument("data")))
             "exportAuthKey" -> result.success(processBar(9, null, null))
-            "initCipher" -> {
-                initCipher(call.argument<ByteArray>("kEnc")!!, call.argument<ByteArray>("ivEnc")!!)
-                result.success(null)
-            }
-            "decrypt" ->
-                result.success(decrypt(call.argument<Int>("channelId")!!, call.argument<ByteArray>("data")!!))
+            // The AES-CCM data path (initCipher/decrypt) is clean-room in Dart.
             else -> result.notImplemented()
         }
     }

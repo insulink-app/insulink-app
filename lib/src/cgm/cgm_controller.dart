@@ -51,6 +51,43 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// forgotten/stopped.
   bool get hasSensor => (_store?.resolvedKey ?? '').isNotEmpty;
 
+  /// The CGM the pairing UI + read pipeline should use. Defaults to the Dexcom
+  /// G7 until a Libre 3 is activated (or the type is switched).
+  SensorType get sensorType => _store?.sensorType ?? SensorType.dexcomG7;
+
+  /// Switch the sensor type the pairing UI shows (persisted so the service
+  /// isolate builds the matching connection).
+  Future<void> setSensorType(SensorType type) async {
+    await _store?.saveSensorType(type);
+    notifyListeners();
+  }
+
+  /// Activate a FreeStyle Libre 3 over NFC and start reading it. Returns null on
+  /// success, or a message describing why the scan failed. [accountId] is the
+  /// LibreView GUID — needed only to take over a sensor Abbott's app already
+  /// activated; leave blank for a fresh sensor.
+  Future<String?> activateLibre3({String accountId = ''}) async {
+    final store = _store;
+    if (store == null) {
+      return 'not ready';
+    }
+    try {
+      final result = await Libre3Activation(accountId: accountId).run();
+      final key = result.bleMac;
+      await store.saveSensorType(SensorType.abbottLibre3);
+      await store.saveResolvedKey(key);
+      await store.saveLibreMac(key, result.bleMac);
+      await store.saveLibrePin(key, result.blePin);
+      await store.saveIdentity(serial: '', pairingCode: '');
+      code.text = '';
+      await start();
+      return null;
+    } catch (error) {
+      _append('Libre 3 activation failed: $error');
+      return '$error';
+    }
+  }
+
   /// True once [init] has loaded the store. Until then we don't yet know whether
   /// a sensor is paired, so the UI should show a loader rather than the "no
   /// sensor" view (which briefly flashed on launch).
@@ -467,7 +504,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// (the symptom behind this method; see CLAUDE.md background gotchas).
   Future<void> _recoverIfStale() async {
     final key = _key;
-    if (key.isEmpty || _store?.sessionKey(key) == null) {
+    if (key.isEmpty || !_isPaired(key)) {
       return;
     }
     final running = await FlutterForegroundTask.isRunningService;
@@ -499,6 +536,15 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     await _refreshServiceState();
+  }
+
+  /// Whether the sensor under [key] is fully paired and can auto-reconnect —
+  /// a stored G7 session key, or a Libre 3 BLE MAC from NFC activation.
+  bool _isPaired(String key) {
+    if (sensorType == SensorType.abbottLibre3) {
+      return _store?.libreMac(key) != null;
+    }
+    return _store?.sessionKey(key) != null;
   }
 
   /// The key cached data is stored under: the resolved key set by the read

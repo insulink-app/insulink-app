@@ -12,3 +12,17 @@ String sportDecimal(num value, int decimals) {
     ..maximumFractionDigits = decimals;
   return format.format(value);
 }
+
+/// A whole-minute span as a compact "1h 20min" / "45min" / "2h" — never a bare
+/// "80min". Language-neutral units.
+String sportMinutes(int minutes) {
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  if (hours == 0) {
+    return '${rest}min';
+  }
+  if (rest == 0) {
+    return '${hours}h';
+  }
+  return '${hours}h ${rest}min';
+}

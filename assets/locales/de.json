@@ -82,6 +82,9 @@
       "network": "Verbindung fehlgeschlagen. Bitte versuche es erneut."
     }
   },
+  "connection": {
+    "logout": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
+  },
   "overview": {
     "label": "Übersicht",
     "chart": {
@@ -373,7 +376,7 @@
       "seconds": "Sekunden",
       "weight": "Gewicht",
       "rest": "Pause",
-      "est_duration": "ca. # Min."
+      "est_duration": "ca. #"
     },
     "workout": {
       "exercise": "Übung",
@@ -419,7 +422,16 @@
       "duration": "Dauer",
       "set_n": "Satz #",
       "resume": "Training fortsetzen",
-      "delete_confirm": "Dieses Protokoll wirklich löschen?"
+      "delete_confirm": "Dieses Protokoll wirklich löschen?",
+      "edit_set": "Satz bearbeiten",
+      "add_set": "Satz hinzufügen",
+      "delete_set_confirm": "Diesen Satz wirklich löschen?"
+    },
+    "calendar": {
+      "_": "Kalender",
+      "routine": "Routine",
+      "training": "Training",
+      "empty": "Keine Aktivitäten an diesem Tag."
     },
     "trainings": {
       "_": "Trainings",

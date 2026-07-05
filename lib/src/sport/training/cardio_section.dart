@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/calendar/sport_calendar_page.dart';
 import 'package:insulink/src/sport/training/cardio_log_page.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_recording_page.dart';
@@ -22,9 +23,24 @@ class CardioSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        LocaleText(
-          'sport.trainings',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            LocaleText(
+              'sport.trainings',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.calendar_month, size: 20),
+              tooltip: Locales.string(context, 'sport.calendar'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SportCalendarPage(),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         if (state.activeTraining != null) ...[

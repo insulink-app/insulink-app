@@ -163,15 +163,35 @@ blobs, usable only through those functions. There is no clean-room path.
 
 ### Vendor-blob bridge (the chosen approach — matches Juggluco)
 
-- `lib/src/libre3/libre3_crypto.dart` — `Libre3Crypto` interface + a
+- **The binary comes from Juggluco's own release APK** —
+  `lib/arm64-v8a/liblibre3extension.so` (Juggluco already repackaged Abbott's
+  crypto; our shim matches it 1:1). **NOT LibreLink** — that app is obfuscated and
+  ships differently-named, incompatible libs. Steps:
+  `android/app/src/main/jniLibs/README.md`. **arm64-only.** Not committed here.
+- **App cert + wrapped private keys are embedded** in `Libre3Keys.kt`, ported
+  from Juggluco's GPL `KEYSCrypto.java` (162-B cert, 165-B SKB-wrapped key, per
+  security version). `initKeys` = `process1(1)` then `process1(2, key, kAuth)`.
+- `android/…/cpp/libre3bridge.cpp` — **shipped** dlopen shim, ported from
+  Juggluco's `loadlibs.cpp`: `dlopen`s `liblibre3extension.so`, intercepts its
+  `JNI_OnLoad` → `RegisterNatives` to capture Abbott's `process1`/`process2`, and
+  exposes them as JNI. Built via `externalNativeBuild` (CMake). Absent the `.so`,
+  it returns `no_blob` and the G7 is unaffected.
+- `Libre3SecurityPlugin.kt` — maps the handshake ops onto `process1`/`process2`
+  (initKeys=1, setPatchCertificate=4, generateEphemeralKeys=5, setPatchEphemeral=6,
+  encryptChallenge=7, decryptChallenge=8, exportAuthKey=9).
+- `lib/src/libre3/libre3_crypto.dart` — `Libre3Crypto` interface +
   `MethodChannel('insulink/libre3_security')` implementation.
-- `android/…/Libre3SecurityPlugin.kt` — the channel handler mapping each method
-  to the native `processInt`/`processBar`/`decrypt` symbols. Loads
-  `liblibre3bridge.so`; if absent, returns `no_blob` (G7 builds unaffected).
-- `android/app/src/main/jniLibs/README.md` — the `.so` files to supply and how to
-  build the `dlopen` shim from Juggluco's `loadlibs.cpp`. **arm64-only.**
 - The open parts (CRC-16, FNV-32, activation) stay in Dart. The Rust core stays
-  **G7-only** — Libre crypto is the blob, not RustCrypto.
+  **G7-only**.
+
+**Clean-room data path (done):** the AES-128-CCM decrypt (`initcrypt`/`intDecrypt`
+in Juggluco — its OWN code, not the blob) is `lib/src/libre3/libre3_ccm.dart`
+using pointycastle's audited `CCMBlockCipher`, keyed by the kEnc/ivEnc from
+`decryptChallenge`. RFC-3610 verified (`test/libre3/libre3_ccm_test.dart`). The
+`ponytail:`-marked Libre specifics (nonce = ivEnc, 4-byte MAC, AAD) need an
+on-device capture to confirm. The **app certificate** loads from
+`assets/libre3/app_certificate.bin` — the proprietary `LIBRE3_APP_CERTIFICATES_B`
+bytes the user drops in (see that folder's README).
 
 > ⚠️ Legal: shipping Abbott's proprietary binaries has redistribution
 > implications (the same ones Juggluco carries). This was an explicit, accepted
@@ -188,8 +208,11 @@ blobs, usable only through those functions. There is no clean-room path.
 | BLE transport + handshake (`Libre3Transport`) | ✅ code ported from Juggluco; fragment framing + event order need on-device check |
 | `Libre3Connection` (`CgmConnection`) + service dispatch | ✅ wired — the service builds it for `SensorType.abbottLibre3` |
 | Crypto bridge (`Libre3Crypto` + `Libre3SecurityPlugin.kt`) | ✅ interface + channel done; degrades to `no_blob` |
-| Abbott `.so` blobs + `liblibre3bridge.so` shim | ⛔ developer-supplied (see `jniLibs/README.md`) |
-| Pairing UI sensor-type selector + NFC form | ⛔ pending (add once the pipeline streams) |
+| Pairing UI (sensor-type selector + NFC activation form) + de/en locale | ✅ done — pick "FreeStyle Libre 3", scan to activate |
+| Native dlopen bridge (`libre3bridge.cpp` + CMake + Kotlin) | ✅ shipped, compiles into the APK; bridges Abbott `process1`/`process2` |
+| AES-128-CCM data path (`Libre3Ccm`, pointycastle) | ✅ done, RFC-3610 tested; Libre nonce/MAC wiring marked for on-device check |
+| App cert + wrapped private keys (`Libre3Keys.kt`, from Juggluco GPL) | ✅ embedded; `initKeys`/`appCertificate` ported faithfully |
+| Abbott `liblibre3extension.so` (from **Juggluco's** APK) | ⛔ user-extracted — `jniLibs/README.md`. The ONE remaining artifact. |
 
 The whole clean-room pipeline (NFC → BLE handshake orchestration → decode →
 persist) is implemented, compiles, and the pure logic is unit-tested. The two

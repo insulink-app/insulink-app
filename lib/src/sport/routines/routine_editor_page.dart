@@ -102,7 +102,11 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
 
   Widget _durationHint(SportRoutine routine) {
     final scheme = Theme.of(context).colorScheme;
-    final minutes = estimatedRoutineMinutes(routine, _training.exercises);
+    final minutes = estimatedRoutineMinutes(
+      routine,
+      _training.exercises,
+      _training.sessions,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
       child: Row(
@@ -117,7 +121,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             Locales.string(
               context,
               'sport.routines.est_duration',
-              params: ['$minutes'],
+              params: [sportMinutes(minutes)],
             ),
             style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
           ),
