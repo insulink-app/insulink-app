@@ -162,8 +162,17 @@ class CardioSection extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: TextButton(
                   onPressed: () => state.rejectDetected(training.id),
+                  style: TextButton.styleFrom(
+                    foregroundColor: scheme.onSurface.withValues(alpha: 0.75),
+                    backgroundColor: scheme.onSurface.withValues(alpha: 0.06),
+                    minimumSize: const Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   child: LocaleText('sport.detect_notification.reject'),
                 ),
               ),
@@ -171,6 +180,13 @@ class CardioSection extends StatelessWidget {
               Expanded(
                 child: FilledButton(
                   onPressed: () => state.confirmDetected(training.id),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   child: LocaleText('sport.detect_notification.confirm'),
                 ),
               ),

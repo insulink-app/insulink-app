@@ -47,14 +47,25 @@ class GlucosePrediction {
 /// forecast). The backend reads the user's recent readings from its own store
 /// and calls the Python model, so no reading data is sent from the client.
 class GlucosePredictionFetcher {
-  /// [mgdl]/[time] carry the client's freshest reading so the backend anchors
-  /// the forecast to it even before the debounced glucose report has synced it.
-  Future<GlucosePrediction?> fetch(int horizon, {int? mgdl, DateTime? time}) async {
-    var url = '/glucose/predict/?horizon=$horizon';
-    if (mgdl != null && time != null) {
-      url += '&value=$mgdl&time=${time.millisecondsSinceEpoch}';
-    }
-    final response = await Request.get(url: url).send(null);
+  /// [readings] carry the client's freshest readings (oldest→newest) as repeated
+  /// `value`/`time` params so the backend anchors the forecast to them even
+  /// before the debounced glucose report has synced them. Multiple readings let
+  /// the backend catch up after a sync outage. An empty list is fine — the
+  /// backend then anchors to its own stored tip.
+  Future<GlucosePrediction?> fetch(
+    int horizon, {
+    List<(int mgdl, DateTime time)> readings = const [],
+  }) async {
+    final response = await Request.post(
+      url: '/glucose/predict/',
+      body: {
+        'horizon': horizon,
+        'readings': [
+          for (final (mgdl, time) in readings)
+            {'value': mgdl, 'time': time.millisecondsSinceEpoch},
+        ],
+      },
+    ).send(null);
     if (response == null || response.statusCode != 200) {
       return null;
     }

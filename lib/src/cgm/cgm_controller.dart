@@ -322,13 +322,33 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     }
     final result = await _predictionFetcher.fetch(
       setting.horizon,
-      mgdl: currentMgdl,
-      time: lastUpdate,
+      readings: _recentReadings(),
     );
     if (result == null) {
       return;
     }
     await _setPrediction(result);
+  }
+
+  /// How many recent readings to forward to the predictor (~30 min at the G7's
+  /// 5-min cadence) so it can catch up after a sync outage.
+  static const _predictionCatchUp = 6;
+
+  /// The freshest readings (oldest→newest) with wall-clock times, drawn from the
+  /// session series. Falls back to the single headline reading when the session
+  /// clock isn't known yet (no [sensorStart]), else an empty list.
+  List<(int, DateTime)> _recentReadings() {
+    final start = _sensorStart;
+    if (start == null) {
+      final mgdl = currentMgdl;
+      final at = lastUpdate;
+      return mgdl != null && at != null ? [(mgdl, at)] : const [];
+    }
+    final keys = _byTime.keys.toList();
+    final tail = keys.sublist((keys.length - _predictionCatchUp).clamp(0, keys.length));
+    return [
+      for (final secs in tail) (_byTime[secs]!, start.add(Duration(seconds: secs))),
+    ];
   }
 
   Future<void> _setPrediction(GlucosePrediction? prediction) async {
