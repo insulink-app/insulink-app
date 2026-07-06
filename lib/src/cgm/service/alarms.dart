@@ -318,7 +318,7 @@ class G7AlarmManager {
     );
   }
 
-  /// Stable event-log slug for a glucose alarm level (the statistics events page
+  /// Stable event-log slug for a glucose alarm level (the analysis events page
   /// maps it to a localized label + icon).
   @visibleForTesting
   static String eventTypeFor(G7AlarmLevel level) {

@@ -10,15 +10,15 @@ import 'package:insulink/src/sport/training/cardio_recording_page.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
-import 'package:insulink/src/statistics/statistics_body.dart';
+import 'package:insulink/src/analysis/analysis_body.dart';
 import 'package:provider/provider.dart';
 
 /// Lets any page request a tab switch (e.g. the overview's empty state linking
 /// to the devices page). The value is the index into [AppPageState.pageBodies].
 final ValueNotifier<int> appTab = ValueNotifier<int>(0);
 
-/// Tab index of the statistics page within [AppPageState.pageBodies].
-const int kStatisticsTabIndex = 2;
+/// Tab index of the analysis page within [AppPageState.pageBodies].
+const int kAnalysisTabIndex = 2;
 
 /// Tab index of the devices page (Sensor + Pump) within
 /// [AppPageState.pageBodies].
@@ -37,7 +37,7 @@ class AppPageState extends State<AppPage> {
   final List<AppPageBody> pageBodies = [
     OverviewBody(),
     SportBody(),
-    StatisticsBody(),
+    AnalysisBody(),
     DevicesBody(),
   ];
   int _selectedIndex = 0;

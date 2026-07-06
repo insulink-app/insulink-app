@@ -6,13 +6,13 @@ import 'package:provider/provider.dart';
 /// Preset windows offered alongside the custom range, in days.
 const _presets = [1, 3, 7, 30, 90];
 
-/// Statistics-window selector driving [CgmController]: equal-width segments (one
+/// Analysis-window selector driving [CgmController]: equal-width segments (one
 /// per preset, like the tab control above) plus a calendar segment that opens
 /// the native date-range picker. The picked custom range is shown as a caption
 /// below so the segment labels stay compact. Selecting a segment updates all
-/// statistics views.
-class StatisticsRangeSelector extends StatelessWidget {
-  const StatisticsRangeSelector({super.key});
+/// analysis views.
+class AnalysisRangeSelector extends StatelessWidget {
+  const AnalysisRangeSelector({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class StatisticsRangeSelector extends StatelessWidget {
                         !isCustom && controller.statsPreset.inDays == days,
                     onTap: () => controller.statsPreset = Duration(days: days),
                     child: Text(
-                      Locales.string(context, 'statistics.window.d$days'),
+                      Locales.string(context, 'analysis.window.d$days'),
                       textAlign: TextAlign.center,
                     ),
                   ),

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/statistics/patterns/hourly_glucose_pattern.dart';
+import 'package:insulink/src/analysis/patterns/hourly_glucose_pattern.dart';
 
 /// Epoch-minute key for a reading at [hour]:[minute] on a fixed day.
 int minuteKey(int hour, [int minute = 30]) =>

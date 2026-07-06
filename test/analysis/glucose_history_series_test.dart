@@ -2,7 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/statistics/history/glucose_history_series.dart';
+import 'package:insulink/src/analysis/history/glucose_history_series.dart';
 
 /// mg/dL glucose state (no conversion) so y == input mean.
 ProfileGlucoseState _mgdl() => ProfileGlucoseState(

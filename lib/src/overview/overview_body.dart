@@ -124,7 +124,7 @@ class _DataView extends StatelessWidget {
         const SizedBox(height: 16),
         GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => appTab.value = kStatisticsTabIndex,
+          onTap: () => appTab.value = kAnalysisTabIndex,
           child: const OverviewSection(child: OverviewTimeInRange()),
         ),
         const SizedBox(height: 16),

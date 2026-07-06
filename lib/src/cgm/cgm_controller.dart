@@ -182,10 +182,10 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     return out;
   }
 
-  /// Default analysis window for the statistics page.
+  /// Default analysis window for the analysis page.
   static const statsWindow = Duration(days: 7);
 
-  /// Currently selected statistics window. A preset duration ([statsPreset],
+  /// Currently selected analysis window. A preset duration ([statsPreset],
   /// relative to now so it stays fresh) OR an explicit custom range
   /// ([statsCustomFrom]/[statsCustomTo]); the custom range wins when set.
   Duration _statsPreset = statsWindow;
@@ -210,8 +210,8 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  /// The archive over the currently selected statistics window — the single
-  /// source the statistics views read so the range selector drives them all.
+  /// The archive over the currently selected analysis window — the single
+  /// source the analysis views read so the range selector drives them all.
   SplayTreeMap<int, int> get statsArchive {
     final from = _statsCustomFrom;
     final to = _statsCustomTo;
@@ -225,7 +225,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     return archiveSince(_statsPreset);
   }
 
-  /// The effective length of the currently selected statistics window — the
+  /// The effective length of the currently selected analysis window — the
   /// custom range's span when set, else the preset duration. Drives the history
   /// page's adaptive X-axis (hours vs days vs months).
   Duration get statsSpan {
@@ -238,7 +238,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Logged events (lows/highs, signal loss, sensor swap/stop) over the currently
-  /// selected statistics window, newest first — drives the events page.
+  /// selected analysis window, newest first — drives the events page.
   List<({DateTime time, String type, int? value})> get statsEvents {
     final store = _store;
     if (store == null) {
@@ -257,7 +257,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// (recover wall-clock time via `DateTime.fromMillisecondsSinceEpoch(min *
   /// 60000)`). Unlike [byTime] this spans sensor swaps, stops and reconnects —
   /// it's the absolute-time archive the background service appends to, and the
-  /// basis for the statistics views. Reads the store cache the controller keeps
+  /// basis for the analysis views. Reads the store cache the controller keeps
   /// fresh via [reload] on every `update` ping and on resume.
   SplayTreeMap<int, int> archiveSince(Duration window) {
     final store = _store;
@@ -856,7 +856,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// sensor's session cache so the app no longer auto-reconnects. The physical
   /// sensor keeps running — this is an app-side unpair, not a sensor stop
   /// command. The long-term glucose archive ([archiveSince]) is KEPT, so the
-  /// statistics survive switching to a new sensor; only the current-session
+  /// analysis history survives switching to a new sensor; only the current-session
   /// chart resets. With the session key cleared, the next connect scans broadly
   /// and pairs whatever new sensor is presented (see G7Connection.connect).
   Future<void> forgetSensor() async {

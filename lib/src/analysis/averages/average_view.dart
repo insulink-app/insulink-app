@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/statistics/averages/glucose_summary.dart';
+import 'package:insulink/src/analysis/averages/glucose_summary.dart';
 import 'package:provider/provider.dart';
 
 /// Summary glucose statistics over the cached history: average, GMI (estimated
@@ -18,7 +18,7 @@ class AverageView extends StatelessWidget {
     // Long-term archive (spans sensor swaps), not the current-session cache.
     final values = controller.statsArchive.values.toList();
     if (values.isEmpty) {
-      return Center(child: LocaleText('statistics.empty'));
+      return Center(child: LocaleText('analysis.empty'));
     }
     final stats = GlucoseSummary(values, glucose).build();
 

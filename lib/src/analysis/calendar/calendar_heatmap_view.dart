@@ -3,7 +3,7 @@ import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/statistics/calendar/daily_time_in_range.dart';
+import 'package:insulink/src/analysis/calendar/daily_time_in_range.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -20,7 +20,7 @@ class CalendarHeatmapView extends StatelessWidget {
     final colors = Theme.of(context).extension<GlucoseColors>()!;
     final tirByDay = DailyTimeInRange(controller.statsArchive, glucose).build();
     if (tirByDay.isEmpty) {
-      return Center(child: LocaleText('statistics.empty'));
+      return Center(child: LocaleText('analysis.empty'));
     }
     final days = tirByDay.keys.toList()..sort();
     return SingleChildScrollView(
@@ -157,10 +157,10 @@ class _Legend extends StatelessWidget {
       spacing: 14,
       runSpacing: 6,
       children: [
-        _entry(context, 0.8, 'statistics.calendar.good'),
-        _entry(context, 0.6, 'statistics.calendar.ok'),
-        _entry(context, 0.4, 'statistics.calendar.fair'),
-        _entry(context, 0.1, 'statistics.calendar.poor'),
+        _entry(context, 0.8, 'analysis.calendar.good'),
+        _entry(context, 0.6, 'analysis.calendar.ok'),
+        _entry(context, 0.4, 'analysis.calendar.fair'),
+        _entry(context, 0.1, 'analysis.calendar.poor'),
       ],
     );
   }

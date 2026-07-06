@@ -2,7 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/statistics/calendar/daily_time_in_range.dart';
+import 'package:insulink/src/analysis/calendar/daily_time_in_range.dart';
 
 ProfileGlucoseState _state() => ProfileGlucoseState(
   unit: GlucoseUnit.mgdl,

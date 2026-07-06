@@ -5,7 +5,7 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 
-/// Chronological log of notable events over the selected statistics window:
+/// Chronological log of notable events over the selected analysis window:
 /// glucose lows/highs, signal loss, and sensor swap/stop. Reads the store-backed
 /// event log via [CgmController.statsEvents] (newest first).
 class EventLogView extends StatelessWidget {
@@ -16,7 +16,7 @@ class EventLogView extends StatelessWidget {
     final events = context.watch<CgmController>().statsEvents;
     final glucose = context.watch<ProfileGlucoseState>();
     if (events.isEmpty) {
-      return Center(child: LocaleText('statistics.events.empty'));
+      return Center(child: LocaleText('analysis.events.empty'));
     }
     return Center(
       child: ConstrainedBox(
@@ -68,7 +68,7 @@ class _EventRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 LocaleText(
-                  'statistics.events.type.${event.type}',
+                  'analysis.events.type.${event.type}',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 if (value != null) ...[

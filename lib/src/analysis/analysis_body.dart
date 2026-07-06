@@ -2,47 +2,47 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/statistics/averages/average_view.dart';
-import 'package:insulink/src/statistics/calendar/calendar_heatmap_view.dart';
-import 'package:insulink/src/statistics/events/event_log_view.dart';
-import 'package:insulink/src/statistics/history/glucose_history_view.dart';
-import 'package:insulink/src/statistics/patterns/patterns_view.dart';
-import 'package:insulink/src/statistics/range_selector.dart';
-import 'package:insulink/src/statistics/ranges/time_in_range_view.dart';
+import 'package:insulink/src/analysis/averages/average_view.dart';
+import 'package:insulink/src/analysis/calendar/calendar_heatmap_view.dart';
+import 'package:insulink/src/analysis/events/event_log_view.dart';
+import 'package:insulink/src/analysis/history/glucose_history_view.dart';
+import 'package:insulink/src/analysis/patterns/patterns_view.dart';
+import 'package:insulink/src/analysis/range_selector.dart';
+import 'package:insulink/src/analysis/ranges/time_in_range_view.dart';
 
-class StatisticsBody extends AppPageBody {
-  StatisticsBody({super.key})
+class AnalysisBody extends AppPageBody {
+  AnalysisBody({super.key})
     : super(
-        name: "statistics.label",
+        name: "analysis.label",
         unselectedIcon: CupertinoIcons.chart_pie,
         selectedIcon: CupertinoIcons.chart_pie_fill,
       );
 
   @override
   Widget content(BuildContext context) {
-    return const StatisticsBodyContent();
+    return const AnalysisBodyContent();
   }
 }
 
-/// One selectable statistic, shown as a top tab.
-class _StatisticTab {
-  const _StatisticTab(this.labelKey, this.view);
+/// One selectable analysis, shown as a top tab.
+class _AnalysisTab {
+  const _AnalysisTab(this.labelKey, this.view);
   final String labelKey;
   final Widget view;
 }
 
-class StatisticsBodyContent extends StatelessWidget {
-  const StatisticsBodyContent({super.key});
+class AnalysisBodyContent extends StatelessWidget {
+  const AnalysisBodyContent({super.key});
 
-  /// The statistics offered as top tabs. Add new analyses here — the first one
+  /// The analyses offered as top tabs. Add new ones here — the first one
   /// is the main time-in-range breakdown; the rest are placeholders for now.
-  static const List<_StatisticTab> _tabs = [
-    _StatisticTab('statistics.tab.ranges', TimeInRangeView()),
-    _StatisticTab('statistics.tab.patterns', PatternsView()),
-    _StatisticTab('statistics.tab.averages', AverageView()),
-    _StatisticTab('statistics.tab.history', GlucoseHistoryView()),
-    _StatisticTab('statistics.tab.events', EventLogView()),
-    _StatisticTab('statistics.tab.calendar', CalendarHeatmapView()),
+  static const List<_AnalysisTab> _tabs = [
+    _AnalysisTab('analysis.tab.ranges', TimeInRangeView()),
+    _AnalysisTab('analysis.tab.patterns', PatternsView()),
+    _AnalysisTab('analysis.tab.averages', AverageView()),
+    _AnalysisTab('analysis.tab.history', GlucoseHistoryView()),
+    _AnalysisTab('analysis.tab.events', EventLogView()),
+    _AnalysisTab('analysis.tab.calendar', CalendarHeatmapView()),
   ];
 
   @override
@@ -73,7 +73,7 @@ class StatisticsBodyContent extends StatelessWidget {
           ),
           const Padding(
             padding: EdgeInsets.only(bottom: 4),
-            child: StatisticsRangeSelector(),
+            child: AnalysisRangeSelector(),
           ),
           Expanded(
             child: TabBarView(children: [for (final t in _tabs) t.view]),

@@ -29,7 +29,7 @@ class SportRange {
   DateTime? get endTo => custom?.end;
 }
 
-/// Range picker in the statistics style (equal-width segments + calendar),
+/// Range picker in the analysis-page style (equal-width segments + calendar),
 /// controlled locally instead of coupled to a controller — reused by the weight
 /// and activity detail pages.
 class SportRangeSelector extends StatelessWidget {

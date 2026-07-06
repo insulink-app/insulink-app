@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/statistics/averages/glucose_summary.dart';
+import 'package:insulink/src/analysis/averages/glucose_summary.dart';
 
 ProfileGlucoseState glucoseState({GlucoseUnit unit = GlucoseUnit.mgdl}) {
   return ProfileGlucoseState(
@@ -16,7 +16,7 @@ ProfileGlucoseState glucoseState({GlucoseUnit unit = GlucoseUnit.mgdl}) {
 
 /// Reads a stat tile's value by its locale key suffix (`mean`, `gmi`, …).
 String statValue(List<GlucoseStat> stats, String suffix) =>
-    stats.firstWhere((stat) => stat.labelKey == 'statistics.avg.$suffix').value;
+    stats.firstWhere((stat) => stat.labelKey == 'analysis.avg.$suffix').value;
 
 void main() {
   group('GlucoseSummary', () {
@@ -58,12 +58,12 @@ void main() {
       expect(
         stats.map((stat) => stat.labelKey),
         containsAll(<String>[
-          'statistics.avg.mean',
-          'statistics.avg.gmi',
-          'statistics.avg.cv',
-          'statistics.avg.sd',
-          'statistics.avg.max',
-          'statistics.avg.min',
+          'analysis.avg.mean',
+          'analysis.avg.gmi',
+          'analysis.avg.cv',
+          'analysis.avg.sd',
+          'analysis.avg.max',
+          'analysis.avg.min',
         ]),
       );
       expect(stats, hasLength(6));

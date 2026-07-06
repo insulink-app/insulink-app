@@ -167,7 +167,7 @@ class TimeInRangeBands {
     String rangeLabel,
   ) {
     return GlucoseBand(
-      labelKey: 'statistics.range.$slug',
+      labelKey: 'analysis.range.$slug',
       color: color,
       fraction: fractions[index],
       rangeLabel: rangeLabel,

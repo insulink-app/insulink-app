@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/statistics/patterns/hourly_glucose_pattern.dart';
-import 'package:insulink/src/statistics/patterns/pattern_chart.dart';
+import 'package:insulink/src/analysis/patterns/hourly_glucose_pattern.dart';
+import 'package:insulink/src/analysis/patterns/pattern_chart.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -24,7 +24,7 @@ class PatternsView extends StatelessWidget {
     // hour-of-day comes straight from the timestamp — no session start needed.
     final pattern = HourlyGlucosePattern(controller.statsArchive).build();
     if (pattern.isEmpty) {
-      return Center(child: LocaleText('statistics.empty'));
+      return Center(child: LocaleText('analysis.empty'));
     }
 
     return Padding(
@@ -47,12 +47,12 @@ class PatternsView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         LocaleText(
-          'statistics.patterns.title',
+          'analysis.patterns.title',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         LocaleText(
-          'statistics.patterns.hint',
+          'analysis.patterns.hint',
           style: TextStyle(
             fontSize: 12,
             color: onSurface.withValues(alpha: 0.5),

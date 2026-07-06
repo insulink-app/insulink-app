@@ -352,7 +352,7 @@ class CgmStore {
 
   // ---- Event log -----------------------------------------------------------
   // A small append-only log of notable events (glucose lows/highs, signal loss,
-  // sensor swap/stop) for the statistics "events" page. Kept in one JSON array
+  // sensor swap/stop) for the analysis "events" page. Kept in one JSON array
   // (events are rare — zone crossings and sensor lifecycle), capped, and — like
   // the archive — NOT wiped by clearSensor, so it spans sensors.
 
@@ -441,7 +441,7 @@ class CgmStore {
   // This archive instead keys readings by absolute epoch-minute, bucketed into
   // day-sized chunks (`g7.hist.<dayIndex>`) so each new reading rewrites only
   // the current day's chunk, not the whole record. It is deliberately NOT keyed
-  // by serial and NOT removed by [clearSensor], so the chart/statistics retain a
+  // by serial and NOT removed by [clearSensor], so the chart/analysis retain a
   // continuous record across every sensor the user has worn.
 
   static const _kHistPrefix = 'g7.hist.';

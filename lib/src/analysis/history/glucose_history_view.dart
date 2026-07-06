@@ -4,7 +4,7 @@ import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/statistics/history/glucose_history_series.dart';
+import 'package:insulink/src/analysis/history/glucose_history_series.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -26,7 +26,7 @@ class GlucoseHistoryView extends StatelessWidget {
     );
     final spots = series.build();
     if (spots.isEmpty) {
-      return Center(child: LocaleText('statistics.empty'));
+      return Center(child: LocaleText('analysis.empty'));
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 24, 20, 48),

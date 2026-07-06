@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/statistics/ranges/glucose_band.dart';
+import 'package:insulink/src/analysis/ranges/glucose_band.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -21,7 +21,7 @@ class TimeInRangeView extends StatelessWidget {
     // Long-term archive (spans sensor swaps), not the current-session cache.
     final values = controller.statsArchive.values;
     if (values.isEmpty) {
-      return Center(child: LocaleText('statistics.empty'));
+      return Center(child: LocaleText('analysis.empty'));
     }
     final bands = TimeInRangeBands(
       values: values,

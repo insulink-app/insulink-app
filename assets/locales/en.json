@@ -120,8 +120,8 @@
       "dismiss": "Not now"
     }
   },
-  "statistics": {
-    "label": "Statistics",
+  "analysis": {
+    "label": "Analysis",
     "tab": {
       "ranges": "Ranges",
       "history": "History",

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/statistics/ranges/glucose_band.dart';
+import 'package:insulink/src/analysis/ranges/glucose_band.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 
 ProfileGlucoseState glucoseState() => ProfileGlucoseState(
@@ -21,7 +21,7 @@ List<GlucoseBand> bandsFor(Iterable<int> values) => TimeInRangeBands(
 
 /// Reads a band's percent label by its slug suffix.
 String pct(List<GlucoseBand> bands, String slug) => bands
-    .firstWhere((band) => band.labelKey == 'statistics.range.$slug')
+    .firstWhere((band) => band.labelKey == 'analysis.range.$slug')
     .pctLabel;
 
 void main() {
@@ -35,11 +35,11 @@ void main() {
       final values = [300, 200, 100, 100, 100, 100, 100, 60, 60, 40];
       final bands = bandsFor(values);
       expect(bands.map((band) => band.labelKey).toList(), [
-        'statistics.range.very_high',
-        'statistics.range.high',
-        'statistics.range.in_range',
-        'statistics.range.low',
-        'statistics.range.very_low',
+        'analysis.range.very_high',
+        'analysis.range.high',
+        'analysis.range.in_range',
+        'analysis.range.low',
+        'analysis.range.very_low',
       ]);
       expect(pct(bands, 'very_high'), '10%');
       expect(pct(bands, 'high'), '10%');
@@ -52,19 +52,19 @@ void main() {
       // urgentLow=55, targetLow=70, targetHigh=180, urgentHigh=250.
       expect(
         bandsFor([70]).firstWhere((b) => b.fraction > 0).labelKey,
-        'statistics.range.in_range',
+        'analysis.range.in_range',
       );
       expect(
         bandsFor([180]).firstWhere((b) => b.fraction > 0).labelKey,
-        'statistics.range.in_range',
+        'analysis.range.in_range',
       );
       expect(
         bandsFor([250]).firstWhere((b) => b.fraction > 0).labelKey,
-        'statistics.range.high',
+        'analysis.range.high',
       );
       expect(
         bandsFor([54]).firstWhere((b) => b.fraction > 0).labelKey,
-        'statistics.range.very_low',
+        'analysis.range.very_low',
       );
     });
 

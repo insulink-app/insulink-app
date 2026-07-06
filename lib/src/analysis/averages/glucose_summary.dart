@@ -25,17 +25,17 @@ class GlucoseSummary {
     final sd = math.sqrt(_variance(mean));
     final unit = glucose.unit.label;
     return [
-      GlucoseStat('statistics.avg.mean', glucose.format(mean.round()), unit),
-      GlucoseStat('statistics.avg.gmi', _gmi(mean).toStringAsFixed(1), '%'),
-      GlucoseStat('statistics.avg.cv', _cv(mean, sd).toStringAsFixed(1), '%'),
-      GlucoseStat('statistics.avg.sd', glucose.format(sd.round()), unit),
+      GlucoseStat('analysis.avg.mean', glucose.format(mean.round()), unit),
+      GlucoseStat('analysis.avg.gmi', _gmi(mean).toStringAsFixed(1), '%'),
+      GlucoseStat('analysis.avg.cv', _cv(mean, sd).toStringAsFixed(1), '%'),
+      GlucoseStat('analysis.avg.sd', glucose.format(sd.round()), unit),
       GlucoseStat(
-        'statistics.avg.max',
+        'analysis.avg.max',
         glucose.format(values.reduce(math.max)),
         unit,
       ),
       GlucoseStat(
-        'statistics.avg.min',
+        'analysis.avg.min',
         glucose.format(values.reduce(math.min)),
         unit,
       ),
