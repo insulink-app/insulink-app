@@ -62,11 +62,20 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Abort an in-progress [activateLibre3] NFC scan (user dismissed the sheet).
+  Future<void> cancelLibre3Scan() => Libre3Activation.abort();
+
   /// Activate a FreeStyle Libre 3 over NFC and start reading it. Returns null on
   /// success, or a message describing why the scan failed. [accountId] is the
   /// LibreView GUID — needed only to take over a sensor Abbott's app already
   /// activated; leave blank for a fresh sensor.
-  Future<String?> activateLibre3({String accountId = ''}) async {
+  /// [onActivated] fires the moment the NFC read succeeds and is persisted —
+  /// before the (slower, possibly permission-gated) [start] — so the UI can drop
+  /// the "hold the sensor" prompt and show "connecting" while BLE comes up.
+  Future<String?> activateLibre3({
+    String accountId = '',
+    void Function()? onActivated,
+  }) async {
     final store = _store;
     if (store == null) {
       return 'not ready';
@@ -80,6 +89,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       await store.saveLibrePin(key, result.blePin);
       await store.saveIdentity(serial: '', pairingCode: '');
       code.text = '';
+      onActivated?.call();
       await start();
       return null;
     } catch (error) {
@@ -577,6 +587,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     _log.insert(0, line);
+    debugPrint(line);
     notifyListeners();
   }
 

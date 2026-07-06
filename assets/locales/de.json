@@ -207,10 +207,13 @@
         "hint": "Halte den Sensor zum Aktivieren an die Rückseite deines Handys (NFC).",
         "activate": "Sensor scannen (NFC)",
         "account": "LibreView-Konto-ID (optional)",
-        "account_hint": "Nur nötig, um einen bereits von Abbotts App aktivierten Sensor zu übernehmen.",
+        "account_hint": "Leer lassen ist okay. Für die Übernahme eines bereits aktivierten Sensors die numerische LibreView-Konto-ID eintragen.",
         "scanning": "Halte den Sensor an dein Handy…",
         "failed": "NFC-Scan fehlgeschlagen — bitte erneut versuchen.",
-        "done": "Sensor aktiviert"
+        "done": "Sensor gescannt",
+        "cancel": "Scan abbrechen",
+        "connecting": "Verbinde mit Sensor…",
+        "connected": "Verbunden — empfange Glukose"
       }
     },
     "life": {
@@ -305,6 +308,10 @@
   },
   "devices": {
     "label": "Geräte"
+  },
+  "nutrition": {
+    "label": "Ernährung",
+    "placeholder": "Bald verfügbar"
   },
   "sport": {
     "label": "Sport",

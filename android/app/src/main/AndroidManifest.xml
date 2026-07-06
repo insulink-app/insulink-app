@@ -71,7 +71,7 @@
 
     <application
         android:label="Insulink"
-        android:name="${applicationName}"
+        android:name=".InsulinkApplication"
         android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"

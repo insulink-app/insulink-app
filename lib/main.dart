@@ -237,6 +237,7 @@ class _AppLifecycleState extends State<_AppLifecycle>
     }
     context.read<SportActivityState>().startIfPermitted();
     context.read<CardioTrainingState>().reloadPending();
+    context.read<FitbitState>().refreshIfConnected();
   }
 
   @override

@@ -31,39 +31,134 @@ all glucose is BLE. Implemented in `lib/src/libre3/libre3_activation.dart` (Andr
 `NfcV#transceive`, ISO 15693). Pure logic is unit-tested
 (`test/libre3/libre3_activation_test.dart`).
 
-**Activation command** — custom command `0xA8` for a fresh sensor (state byte
-`patchInfo[14] == 0x01` storage), else `0xA0` to query an activated one.
-Parameters (little-endian):
+All frames are ported byte-for-byte from **Juggluco** (`libre3/NFC.java` +
+`cpp/libre3/dp_activation.hpp`), the GPL upstream that works on real hardware —
+NOT DiaBLE (whose activation is unverified for Libre 3, and was the source of our
+initial wrong bytes; see § "On-device result").
+
+**Frame** — `flags(0x02) ‖ command ‖ manufacturer ‖ params`, where the
+manufacturer byte is **read from the sensor UID** (Libre 3 = `0x7A`, not the
+Libre 1/2 `0x07`), see [Manufacturer byte](#manufacturer-byte).
+
+**Command selection** — first read patch info with `0xA1` (no params). Then, from
+the raw reply (ISO flag byte at `[0]` included), Juggluco's `nfc1[17]`:
+`patchInfo[17] == 1 → 0xA0`, else `→ 0xA8`. (Both reach the activation logic; the
+byte is a sensor discriminator, NOT a simple "activated?" flag — do not invert.)
+
+**Params** (`dp_activation.hpp`, all little-endian):
 
 ```
 (activationTime − 1)  UInt32   Unix seconds
-receiverId            UInt32   = fnv32(LibreView account GUID)
-crc16(above 8 bytes)  UInt16
+account               UInt32   low 32 bits of the LibreView account NUMBER
+crc16Activation([0,8)) UInt16
 ```
 
-- **`fnv32`** — an FNV-1 variant with a 0-seeded accumulator and 0xFFFFFFFF mask,
-  ported verbatim from DiaBLE's `String.fnv32Hash`:
-  `acc = ((acc * 0x811C9DC5) & 0xFFFFFFFF) ^ ascii`.
-- **`crc16`** — the FreeStyle Libre CRC-16 (CCITT/Kermit-style, init 0xFFFF), the
-  same routine that validates sensor memory across xDrip/DiaBLE.
+- **`account`** — a decimal integer (Juggluco `getlibreAccountIDnumber()`), NOT a
+  hashed GUID. Blank ⇒ 0. (Our earlier `fnv32(string)` was a DiaBLE mistake.)
+- **`crc16Activation`** — poly `0x1021`, init `0xFFFF`, **refin=true**
+  (each input byte bit-reversed), refout=false, xorout=0, stored LE. NOT the
+  FreeStyle Kermit CRC. KATs (Juggluco static-asserts):
+  `crc(00×8)=0x313E`, `crc(01,00×7)=0xCCBF`, `crc(08,00,00,00,0C,00,00,00)=0x2063`.
 
-**Response** (flag `0x00`, 16 bytes, after dropping leading `0xA5` filler):
+**Response** — Juggluco's packed `nfc2` struct (`cpp/libre3/nfc.cpp`), 19 bytes:
 
 ```
-[0..6)   BLE MAC address   (reversed on the wire → find the sensor over BLE)
-[6..10)  BLE PIN (4 bytes) (secret consumed in the BLE challenge)
-[10..14) activation time   UInt32 LE
-[14..16) CRC-16            over [0..14)
+[0]      zero            ISO success flag 0x00
+[1..3)   response        2 bytes, ignored
+[3..9)   deviceAddress   BLE MAC, reversed on the wire → find the sensor over BLE
+[9..13)  pin             BLE PIN (4 bytes), consumed in the BLE challenge
+[13..17) activationTime  UInt32 LE
+[17..19) crc16           NOT verified (Juggluco's interpret3NFC2 doesn't either)
 ```
+
+A 4-byte reply `00 A5 01 <code>` is Juggluco's `nfc2error` (app-level rejection).
+Verified by the real captured vector in `nfc.cpp`
+(`00 A500 111DB7193218 9A948F6E 9F0A7562 A2FA` → MAC `18:32:19:B7:1D:11`, PIN
+`9A948F6E`, A_UTC `1651837599`), used as a KAT.
+
+> ⚠️ The OLD DiaBLE layout was `flag ‖ MAC(6) ‖ PIN(4) ‖ time(4) ‖ crc(2)` — it
+> omitted the 2-byte `response` field after the flag, so MAC/PIN read 2 bytes
+> early and the (also-wrong) Kermit CRC "mismatched". That was the last bug.
 
 **Account-ID takeover:** the sensor binds to the receiver id it was activated
-with and refuses a different one. A *fresh* sensor accepts any id; to adopt a
-sensor Abbott's app already activated, pass that LibreView account's GUID
-(Juggluco: *Settings → Exchange data → LibreView → Get account ID*).
+with. A *fresh* sensor is activated under whatever account number is sent; to
+adopt a sensor Abbott's app already activated, pass that LibreView account's
+number (Juggluco: *Settings → Exchange data → LibreView → Get account ID*).
 
-> ⚠️ On-device verification pending: the raw ISO 15693 frame's request flags and
-> the Abbott IC manufacturer byte (`0x07`, Texas Instruments) are marked
-> `ponytail:` in the code — they can only be confirmed against a real sensor.
+<a name="manufacturer-byte"></a>
+> ⚠️ Manufacturer byte: Android reports the ISO 15693 UID LSB-first (the `0xE0`
+> tag byte LAST), so the IC manufacturer code is `uid[6]` — the byte before
+> `0xE0`. `manufacturerFromUid` reads it; `0x07` is only the fallback.
+
+### On-device result (2026-07, real Libre 3)
+
+First scan of a real sensor: **every custom command was rejected** with ISO
+15693 error `01 d3` (byte 0 = `0x01` error flag, byte 1 = `0xD3`, Abbott's
+`0xA0–0xDF` custom range) — including read-patch-info (`0xA1`, no params), which
+the old code silently ignored (only checked `length > 14`). Captured:
+
+```
+patchInfo (0xA1) → 01 d3
+cmd 0xA0 params 22da4b6a 00000000 1081 → 01 d3
+uid = 316B978E8E007AE0
+```
+
+**Root cause of `0xD3` found in the UID.** Android reports the ISO 15693 UID
+LSB-first (the `0xE0` tag byte is LAST), so the bytes are `31 6B 97 8E 8E 00 7A
+E0` and the IC **manufacturer code is byte 6 = `0x7A`**, not the `0x07` (Texas
+Instruments, the Libre 1/2 chip) we were hardcoding. ISO 15693 custom commands
+require the tag's own manufacturer code or the IC rejects them — the exact
+`0xD3`. Fix: `manufacturerFromUid` reads the code from the polled UID and
+`_customCommand` sends it (`0x07` kept only as fallback).
+
+**With `0x7A`, read-patch-info (`0xA1`) now succeeds** and returns a valid patch
+info (with the real sensor serial as trailing ASCII):
+
+```
+00 | a5 00 01 00 01 00 01 00 60 54 1e 02 04 01 04 0c 01 30 | 4a5537394655544a | 9ebf
+^flag OK   patchInfo[14]=0x01 → storage/fresh                ^"JU79FUTJ" serial  ^CRC
+```
+
+**But the activate command (`0xA8`) is still rejected — ISO error `0xC2`.** With
+the sensor confirmed *fresh* (so `0xA8` is the correct command, not `0xA0`) and
+a *non-zero* receiver id (`fnv32("insulink")` = `b1639881`), the params
+`16dd4b6a b1639881 <crc>` still return `01 c2`. `0xC2` is an **app-layer** custom
+error (`0xA0–0xDF`), not a standard ISO framing error — Abbott validated the
+frame shape but rejected its **contents**. So the blocker is the exact activate
+**parameter structure**, which is ported from DiaBLE and **unverified for Libre
+3**; Libre 3's activate likely expects a different (possibly key-derived
+"unlock") payload that can't be inferred from error codes.
+
+**Then `0xA8` returned a NEW error `0xC2`** (not `0xD3`), i.e. an app-layer
+rejection of the activate frame's *contents* — with a non-zero receiver id, so
+not the account.
+
+**Resolved against Juggluco source** (`libre3/NFC.java` + `dp_activation.hpp`).
+Three bugs vs the working reference, all inherited from the DiaBLE port:
+1. **Command byte** — Juggluco selects on `nfc1[17]` (`==1 → 0xA0`, else `0xA8`),
+   we used `patchInfo[14]` with inverted logic. Our `patchInfo[17]=0x01` ⇒ the
+   correct command is `0xA0`, but we sent `0xA8` ⇒ `0xC2`.
+2. **CRC** — the payload CRC is poly `0x1021`/init `0xFFFF`/refin=true, NOT the
+   FreeStyle Kermit CRC we used. (Now KAT-verified vs Juggluco static-asserts.)
+3. **Account** — a raw numeric account (`(uint32)account`), not `fnv32(string)`.
+
+Fixed in `Libre3Activation` (command selection on byte 17, `crc16Activation`,
+numeric `account`).
+
+**Then `0xA0` returned `0xB0`** — because `account` was 0 (blank field).
+`ScanNfcV.java:154` shows Juggluco itself refuses `getlibreAccountIDnumber()==0`
+("zero account ID"); the sensor rejects a zero receiver id. It does NOT validate
+the value against Abbott's cloud over NFC, so any non-zero id it can bind to
+works for local reading. `_account` falls back to a fixed non-zero
+`_defaultAccount` when the field is blank/zero.
+
+**Then the sensor ACCEPTED the command and returned a full 19-byte response**,
+which failed only our (wrong) response parser — "CRC mismatch". Root cause: the
+DiaBLE response layout omitted the 2-byte `response` field, so MAC/PIN were read
+2 bytes early; the CRC was also the wrong algorithm AND is not verified by
+Juggluco at all. `parseActivationResponse` now matches the `nfc2` struct and
+drops the CRC check. **The NFC activation exchange is now complete end-to-end**
+(request + response byte-matched to Juggluco); next gate is the BLE handshake.
 
 ## BLE GATT
 
@@ -130,10 +225,10 @@ is delegated to the `Libre3Crypto` bridge (Juggluco's `Natives.processint`
 
 | Step | GATT action | crypto bridge call |
 |---|---|---|
-| init | notify challenge/cert chars | `initKeys(cachedAuthKey, secVer)` |
+| init | notify challenge/cert chars | `initKeys(cachedAuthKey, secVer=1)` |
 | `0x01` → COMMAND | start security | — |
 | `0x02` → COMMAND | request cert exchange | — |
-| CERT_DATA ← app cert | send 162-B app cert (18-B chunks + LE16 offset) | `appCertificate()` |
+| CERT_DATA ← app cert | send app cert as fixed 20-B frames (LE16 offset + ≤18 data, zero-padded) | `appCertificate()` |
 | `0x03` → COMMAND | app cert sent | — |
 | CERT_DATA → 140 B | receive patch cert | `setPatchCertificate(cert140)` |
 | `0x0D` → COMMAND | patch cert set | — |
@@ -176,9 +271,28 @@ blobs, usable only through those functions. There is no clean-room path.
   `JNI_OnLoad` → `RegisterNatives` to capture Abbott's `process1`/`process2`, and
   exposes them as JNI. Built via `externalNativeBuild` (CMake). Absent the `.so`,
   it returns `no_blob` and the G7 is unaffected.
+  - **Anti-tamper patch (load-bearing, aarch64).** Abbott's blob runs an
+    anti-instrumentation/root check (a `bl` to a "gum root encoder") from inside
+    `JNI_OnLoad`; under the dlopen + fake-VM setup it dereferences invalid state
+    and **SIGSEGVs**. `patchAntiTamper` NOPs that `bl` (`04 2E 05 94` →
+    `E0 03 00 AA` = `mov x0,x0`) at `OnLoad + 0x119c + 7560 - 4` BEFORE running
+    `JNI_OnLoad`, via an mprotect `Unprotect` guard — a faithful port of
+    Juggluco's `changelib`/`unprotect.hpp`. The offset + expected bytes are
+    specific to Juggluco's `liblibre3extension.so`; on a mismatch it leaves the
+    code untouched (never patches a wrong instruction). Juggluco layers extra
+    anti-debug around each `process*` call (`has_debugger`/`getsid`/`wrongfiles`,
+    a `libinit.so` `PATH` shim) — NOT ported; if the blob still detects
+    instrumentation past OnLoad, that's the next thing to port.
 - `Libre3SecurityPlugin.kt` — maps the handshake ops onto `process1`/`process2`
   (initKeys=1, setPatchCertificate=4, generateEphemeralKeys=5, setPatchEphemeral=6,
-  encryptChallenge=7, decryptChallenge=8, exportAuthKey=9).
+  encryptChallenge=7, decryptChallenge=8, exportAuthKey=9). **Registered on BOTH
+  engines**: the UI engine via `MainActivity.configureFlutterEngine`, AND the
+  foreground-service engine via `InsulinkApplication`, which adds an FFT
+  `TaskLifecycleListener` whose `onEngineCreate` registers the channel. The
+  handshake runs in the SERVICE isolate, so without the service-side
+  registration `initKeys` throws `MissingPluginException` (FFT only auto-registers
+  *pub* plugins, not this hand-rolled channel). Done from `Application.onCreate`
+  so it survives a system/sticky service restart when `MainActivity` never runs.
 - `lib/src/libre3/libre3_crypto.dart` — `Libre3Crypto` interface +
   `MethodChannel('insulink/libre3_security')` implementation.
 - The open parts (CRC-16, FNV-32, activation) stay in Dart. The Rust core stays
@@ -202,12 +316,12 @@ bytes the user drops in (see that folder's README).
 | Piece | State |
 |---|---|
 | Sensor abstraction (`CgmConnection`/`CgmReading`/`CgmTiming`, per-type service dispatch) | ✅ done, G7 unchanged, tested |
-| NFC activation (`Libre3Activation`) | ✅ code + pure-logic tests; NFC frame flags need on-device check |
+| NFC activation (`Libre3Activation`) | ✅ end-to-end on a real sensor — re-ported byte-for-byte from Juggluco (mfg `0x7A` from UID, command on `patchInfo[17]`, `crc16Activation` + `nfc2` response KAT-verified, numeric account, non-zero fallback). Sensor accepts the command and returns MAC/PIN. |
 | Glucose decode (`Libre3GlucoseCodec`) | ✅ one-minute reading tested; historical stride to confirm |
 | Backend `ABBOTT_LIBRE3` type | ✅ wired (`SensorType.backendType`) |
 | BLE transport + handshake (`Libre3Transport`) | ✅ code ported from Juggluco; fragment framing + event order need on-device check |
 | `Libre3Connection` (`CgmConnection`) + service dispatch | ✅ wired — the service builds it for `SensorType.abbottLibre3` |
-| Crypto bridge (`Libre3Crypto` + `Libre3SecurityPlugin.kt`) | ✅ interface + channel done; degrades to `no_blob` |
+| Crypto bridge (`Libre3Crypto` + `Libre3SecurityPlugin.kt`) | 🔧 channel registered on BOTH engines (fixed service-isolate `MissingPluginException`); native anti-tamper `bl` NOP'd in `libre3bridge.cpp` (fixed `JNI_OnLoad` SIGSEGV); handshake re-test pending |
 | Pairing UI (sensor-type selector + NFC activation form) + de/en locale | ✅ done — pick "FreeStyle Libre 3", scan to activate |
 | Native dlopen bridge (`libre3bridge.cpp` + CMake + Kotlin) | ✅ shipped, compiles into the APK; bridges Abbott `process1`/`process2` |
 | AES-128-CCM data path (`Libre3Ccm`, pointycastle) | ✅ done, RFC-3610 tested; Libre nonce/MAC wiring marked for on-device check |

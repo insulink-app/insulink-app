@@ -15,13 +15,58 @@
 #include <jni.h>
 #include <dlfcn.h>
 #include <cstring>
+#include <cstdint>
 #include <string>
+#include <unistd.h>
+#include <sys/mman.h>
 #include <android/log.h>
 
 #define LOG_TAG "Libre3Bridge"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 namespace {
+
+// Make a code region writable while patching, then restore R+X. Ported from
+// Juggluco's `unprotect.hpp`.
+class Unprotect {
+  void *start_;
+  size_t len_;
+ public:
+  Unprotect(void *addr, size_t size) {
+    const unsigned long page = static_cast<unsigned long>(sysconf(_SC_PAGE_SIZE));
+    const unsigned long mask = ~(page - 1);
+    start_ = reinterpret_cast<void *>(reinterpret_cast<unsigned long>(addr) & mask);
+    len_ = ((reinterpret_cast<uint8_t *>(addr) - reinterpret_cast<uint8_t *>(start_)) +
+            size + page - 1) & mask;
+    mprotect(start_, len_, PROT_READ | PROT_WRITE);
+  }
+  ~Unprotect() { mprotect(start_, len_, PROT_READ | PROT_EXEC); }
+};
+
+// Abbott's `liblibre3extension.so` runs an anti-tamper / anti-instrumentation
+// check (a `bl` to a root/gum encoder) from inside `JNI_OnLoad`; under our
+// dlopen+fake-VM setup it dereferences invalid state and SIGSEGVs. Juggluco's
+// `changelib` NOPs that `bl` out before running OnLoad — this is a faithful
+// port. The offset + expected bytes are specific to the exact
+// `liblibre3extension.so` shipped with Juggluco (the one in jniLibs/). If the
+// blob differs the memcmp fails and we leave it untouched (and likely still
+// crash — but never patch the wrong instruction).
+void patchAntiTamper(uint8_t *onLoad) {
+#if defined(__aarch64__)
+  uint8_t *site = onLoad + 0x119c + 7560 - 4;
+  const uint8_t expected[4] = {0x04, 0x2E, 0x05, 0x94};  // bl <root check>
+  if (memcmp(site, expected, 4) == 0) {
+    Unprotect guard(site, 4);
+    const uint8_t nop[4] = {0xE0, 0x03, 0x00, 0xAA};  // mov x0, x0
+    memcpy(site, nop, 4);
+    LOGE("anti-tamper bl patched out");
+  } else {
+    LOGE("anti-tamper site mismatch (blob version differs) — not patching");
+  }
+#else
+  (void)onLoad;
+#endif
+}
 
 // Abbott's two crypto primitives, captured from its RegisterNatives call.
 using Process1 = jint (*)(JNIEnv *, jclass, jint, jbyteArray, jbyteArray);
@@ -102,6 +147,10 @@ bool ensureLoaded() {
   gFake.vm.AttachCurrentThread = fakeAttach;
   gFake.envObj.functions = &gFake.env;
   gFake.vmObj.functions = &gFake.vm;
+
+  // Disable Abbott's in-OnLoad anti-tamper check before it runs, or JNI_OnLoad
+  // SIGSEGVs (see patchAntiTamper).
+  patchAntiTamper(reinterpret_cast<uint8_t *>(onLoad));
 
   onLoad(&gFake.vmObj, nullptr);
   return gProcess1 && gProcess2;
