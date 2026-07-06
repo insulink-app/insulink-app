@@ -195,6 +195,26 @@ class G7Connection implements CgmConnection {
   /// next connect we re-offer everything recent and the server fills the gap.
   /// Without the archive half, the stats were likewise starved to a few points
   /// whenever a fresh backfill didn't get through.
+  /// Tolerance around the existing anchor: below it, a candidate is treated as
+  /// latency jitter and ignored; above it, as a real session reset / clock jump.
+  static const _startDriftTolerance = Duration(minutes: 2);
+
+  /// Fix the wall-clock time of session-second 0 to a STABLE value. Recomputing
+  /// `now - secsSinceStart` on every EGV jitters the anchor by the BLE delivery
+  /// latency, so the SAME reading lands in a different epoch-minute bucket each
+  /// cycle — defeating the archive + backend per-minute dedup and re-POSTing the
+  /// whole window every reading. So seed the anchor once (from the persisted
+  /// value across isolate restarts) and only move it when the candidate jumps
+  /// past [_startDriftTolerance] — a genuine new session or clock change.
+  void _anchorSensorStart(int secs) {
+    final candidate = DateTime.now().subtract(Duration(seconds: secs));
+    final current = _sensorStart ?? store.loadSensorStart(_persistKey);
+    final drifted =
+        current == null ||
+        candidate.difference(current).abs() > _startDriftTolerance;
+    _sensorStart = drifted ? candidate : current;
+  }
+
   void _archiveKnown() {
     final start = _sensorStart;
     if (start == null || _byTime.isEmpty) {
@@ -465,9 +485,7 @@ class G7Connection implements CgmConnection {
     // start point (so we only pull what we missed, not a fixed 24 h).
     final priorMax = _byTime.isEmpty ? null : _byTime.lastKey();
     _latest = reading;
-    _sensorStart = DateTime.now().subtract(
-      Duration(seconds: reading.secsSinceStart),
-    );
+    _anchorSensorStart(reading.secsSinceStart);
     if (reading.glucoseMgDl != null) {
       _resetIfNewSession(reading.secsSinceStart);
       _addReading(reading.secsSinceStart, reading.glucoseMgDl!);
