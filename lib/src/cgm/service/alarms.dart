@@ -21,11 +21,14 @@ import '../glucose_prediction.dart';
 const String _trainingConfirmAction = 'training_confirm';
 const String _trainingRejectAction = 'training_reject';
 
-/// Applies a Confirm/Reject tap on the "training detected" notification straight
-/// to the store — used for the foreground tap AND as the `vm:entry-point`
-/// background handler (app closed). The UI re-reads pending on its next resume.
-/// `ponytail:` fire-and-forget; a secure-storage read/write is quick and the
-/// plugin keeps the background isolate alive long enough for it.
+/// Records a Confirm/Reject tap on the "training detected" notification. This
+/// runs in the bare background isolate `flutter_local_notifications` spawns for
+/// action taps (even while the app is foreground) — it has NO
+/// `flutter_secure_storage`, so it can't touch [SportStore]'s pending list
+/// directly. It appends the decision to a plain file (plugin-free `dart:io`,
+/// synchronous so it finishes before the isolate is torn down); the service
+/// isolate applies it via [SportStore.applyTrainingDecisions] on its next
+/// watchdog tick, and the UI re-reads pending on its next resume.
 @pragma('vm:entry-point')
 void trainingNotificationAction(NotificationResponse response) {
   final id = response.payload;
@@ -34,9 +37,9 @@ void trainingNotificationAction(NotificationResponse response) {
   }
   const store = SportStore();
   if (response.actionId == _trainingConfirmAction) {
-    store.confirmPendingTraining(id);
+    store.recordTrainingDecision('confirm', id);
   } else if (response.actionId == _trainingRejectAction) {
-    store.rejectPendingTraining(id);
+    store.recordTrainingDecision('reject', id);
   }
 }
 

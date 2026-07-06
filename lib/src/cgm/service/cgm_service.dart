@@ -7,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
+import '../../sport/sport_store.dart';
 import '../../sport/training/activity_recognition_sampler.dart';
 import '../../sport/training/background_location_sampler.dart';
 import '../../sport/training/cardio_detection_runner.dart';
@@ -119,6 +120,7 @@ class CgmTaskHandler extends TaskHandler {
       (_) => _locationSampler.tick(),
     );
     _activitySampler.start();
+    unawaited(const SportStore().applyTrainingDecisions());
     if (await _ensureReady()) {
       _startConnect();
     }
@@ -251,6 +253,9 @@ class CgmTaskHandler extends TaskHandler {
   void onRepeatEvent(DateTime timestamp) {
     _watchdog();
     _maybeDetectTraining();
+    // Apply Confirm/Reject taps buffered by the notification-action isolate,
+    // which can't reach secure storage itself (see SportStore.recordTrainingDecision).
+    const SportStore().applyTrainingDecisions();
   }
 
   /// Runs cardio auto-detection at most every [_detectEvery]; each new training

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -144,6 +145,53 @@ class SportStore {
     final pending = await loadPendingTrainings()
       ..removeWhere((training) => training.id == id);
     await savePendingTrainings(pending);
+  }
+
+  /// The decision hand-off file. The `flutter_local_notifications` action-tap
+  /// handler runs in a bare background isolate that has NO `flutter_secure_storage`
+  /// (the plugin's own engine never registers it), so it can't mutate the pending
+  /// list directly. It appends the decision here instead — plain `dart:io`, needs
+  /// no plugin channel — and the service isolate (which does have secure storage)
+  /// drains it via [applyTrainingDecisions]. Both isolates share one process, so
+  /// [Directory.systemTemp] resolves to the same app-private dir in each.
+  File get _decisionFile =>
+      File('${Directory.systemTemp.path}/insulink_training_decisions');
+
+  /// Record a Confirm/Reject notification tap. Synchronous + plugin-free so it
+  /// completes before the ephemeral action isolate is torn down. [action] is
+  /// `confirm` or `reject`; drained later by [applyTrainingDecisions].
+  void recordTrainingDecision(String action, String id) {
+    // ponytail: systemTemp is the app cache dir — if the OS clears it between the
+    // tap and the next drain the decision is lost (card reappears), acceptable for
+    // a user-repeatable action; move to the documents dir if it ever matters.
+    _decisionFile.writeAsStringSync(
+      '$action:$id\n',
+      mode: FileMode.append,
+      flush: true,
+    );
+  }
+
+  /// Apply every decision buffered by [recordTrainingDecision], then clear the
+  /// file. Runs in the service isolate on the watchdog tick; no-op (one cheap
+  /// existence check) when nothing is pending.
+  Future<void> applyTrainingDecisions() async {
+    final file = _decisionFile;
+    if (!await file.exists()) {
+      return;
+    }
+    final lines = await file.readAsLines();
+    await file.delete();
+    for (final line in lines) {
+      final parts = line.split(':');
+      if (parts.length != 2) {
+        continue;
+      }
+      if (parts[0] == 'confirm') {
+        await confirmPendingTraining(parts[1]);
+      } else if (parts[0] == 'reject') {
+        await rejectPendingTraining(parts[1]);
+      }
+    }
   }
 
   Future<List<DailyActivity>> loadActivityArchive() async =>
