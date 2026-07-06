@@ -17,11 +17,35 @@ class CardioDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<CardioTrainingState>();
+    final training = state.trainings.firstWhere(
+      (item) => item.id == this.training.id,
+      orElse: () => this.training,
+    );
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
         title: LocaleText(training.type.labelKey),
         actions: [
+          PopupMenuButton<CardioType>(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: Locales.string(context, 'sport.trainings.change_type'),
+            onSelected: (type) =>
+                state.changeTrainingType(training.id, type),
+            itemBuilder: (context) => [
+              for (final type in CardioType.values)
+                PopupMenuItem<CardioType>(
+                  value: type,
+                  child: Row(
+                    children: [
+                      Icon(type.icon, size: 20),
+                      const SizedBox(width: 12),
+                      Text(Locales.string(context, type.labelKey)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () => confirmDelete(

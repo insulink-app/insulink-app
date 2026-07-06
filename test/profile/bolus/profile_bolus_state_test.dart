@@ -65,6 +65,37 @@ void main() {
     });
   });
 
+  group('suggestedRescueCarbs', () {
+    test('grams to raise glucose up to target', () {
+      // rise 60 mg/dL × 15 g·u⁻¹ / 35 mg/dL·u⁻¹ ≈ 25.7 g.
+      final grams = bolusState().suggestedRescueCarbs(
+        glucoseMgdl: 65,
+        targetMgdl: 125,
+      );
+      expect(grams, closeTo(60 * 15 / 35, 1e-9));
+    });
+
+    test('no carbs when already at/above target', () {
+      expect(
+        bolusState().suggestedRescueCarbs(glucoseMgdl: 125, targetMgdl: 125),
+        0,
+      );
+      expect(
+        bolusState().suggestedRescueCarbs(glucoseMgdl: 140, targetMgdl: 125),
+        0,
+      );
+    });
+
+    test('respects custom factors', () {
+      // rise 40 × 10 / 50 = 8 g.
+      final grams = bolusState(
+        correction: 50,
+        carb: 10,
+      ).suggestedRescueCarbs(glucoseMgdl: 60, targetMgdl: 100);
+      expect(grams, closeTo(8.0, 1e-9));
+    });
+  });
+
   group('factor setters clamp to the allowed range', () {
     setUp(installSecureStorageMock);
 

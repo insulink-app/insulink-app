@@ -1,16 +1,21 @@
+import 'dart:math' as math;
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../localization/service_strings.dart';
+import '../../profile/bolus/profile_bolus_state.dart';
 import '../../profile/notifications/notification_setting.dart';
 import '../../profile/notifications/profile_alarm_sound_state.dart';
 import '../../profile/notifications/profile_connection_state.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
+import '../../profile/prediction/profile_prediction_state.dart';
 import '../../profile/silent/profile_silent_state.dart';
 import '../../sport/sport_store.dart';
 import '../../sport/training/cardio_models.dart';
 import '../cgm_store.dart';
+import '../glucose_prediction.dart';
 
 /// Notification-action ids for the "training detected" confirm prompt.
 const String _trainingConfirmAction = 'training_confirm';
@@ -39,6 +44,10 @@ void trainingNotificationAction(NotificationResponse response) {
 /// levels (e.g. urgent low → warning low) still re-fires the notification.
 enum G7AlarmLevel { none, lowWarning, lowUrgent, highWarning, highUrgent }
 
+/// Predictive advisory zone: glucose is currently in range but forecast to
+/// cross the low or high threshold within the advisory horizon.
+enum AdvisoryLevel { none, low, high }
+
 /// Watches live EGV readings and raises local notifications when glucose
 /// crosses into a low/high zone. Runs inside the foreground-service isolate
 /// (same place [CgmTaskHandler] lives) so alarms fire even with the app closed.
@@ -63,6 +72,7 @@ class G7AlarmManager {
   final AudioPlayer _player = AudioPlayer(playerId: 'insulink_alarm');
   final ServiceStrings _strings = ServiceStrings();
   G7AlarmLevel _last = G7AlarmLevel.none;
+  AdvisoryLevel _lastAdvisory = AdvisoryLevel.none;
 
   /// Notification id for the sensor-expiry warning (kept clear of the glucose
   /// alarm ids, which use [G7AlarmLevel.index] 0–4).
@@ -76,6 +86,26 @@ class G7AlarmManager {
 
   /// Notification id for the "sensor halfway through its life" reminder.
   static const _halftimeId = 103;
+
+  /// Notification id for the predictive glucose advisory pre-warning.
+  static const _advisoryId = 104;
+
+  /// How many minutes ahead the advisory projects the current value + trend.
+  static const _advisoryHorizonMin = 20;
+
+  /// Grams of fast carbs per glucose tablet ("Plättchen"), for the hypo
+  /// countermeasure's tablet-count conversion.
+  static const _gramsPerTablet = 6;
+
+  /// A cached backend prediction older than this is ignored — only the UI
+  /// isolate refreshes it, so with the app closed it goes stale and the advisory
+  /// falls back to the pure trend projection.
+  static const _predictionMaxAgeMin = 10;
+
+  /// A short triple-buzz, distinct from the glucose ([_vibrationPattern]) and
+  /// training ([_trainingVibrationPattern]) patterns, so the advisory feels its
+  /// own.
+  static const _advisoryVibrationPattern = [0, 100, 60, 100, 60, 100];
 
   /// How long after the true halfway crossing the reminder stays eligible. The
   /// persisted flag is the normal one-shot guard, but it doesn't survive an app
@@ -179,6 +209,147 @@ class G7AlarmManager {
     }
     await _show(level, _formatValue(mgdl, thresholds.unit, trendPerMin));
     await _playSound(high: _isHigh(level));
+  }
+
+  /// Raise a PRE-warning before glucose actually reaches a low/high zone and
+  /// suggest a countermeasure: insulin units for a predicted high, grams of fast
+  /// carbs (plus a tablet count) for a predicted low. The forecast is driven
+  /// primarily by the current value + trend projected [_advisoryHorizonMin] min
+  /// ahead; a fresh backend prediction curve refines it when available. Edge-
+  /// triggered on [_lastAdvisory] like [check], with its own toggle; suppressed
+  /// while glucose is already out of range (the real alarm owns that) and while
+  /// silent. Settings are read fresh so changes apply without a service restart.
+  Future<void> checkAdvisory(int? mgdl, double trendPerMin) async {
+    if (mgdl == null) {
+      return;
+    }
+    if (!await NotificationSetting.advisory.load()) {
+      return;
+    }
+    final glucose = await ProfileGlucoseState.load();
+    final forecast = await _forecast(mgdl, trendPerMin);
+    final level = advisoryLevelFor(
+      mgdl,
+      forecast,
+      (low: glucose.low, high: glucose.high),
+    );
+    if (level == _lastAdvisory) {
+      return;
+    }
+    _lastAdvisory = level;
+    if (level == AdvisoryLevel.none) {
+      return;
+    }
+    if (await ProfileSilentState.load()) {
+      return;
+    }
+    await _showAdvisory(level, await _advisoryBody(level, forecast, glucose));
+    await _playAdvisorySound();
+  }
+
+  /// Decide the advisory zone. Pure and static so it can be unit-tested without
+  /// the notification plugin. A value already at/over the warning thresholds is
+  /// left to the real glucose alarm — the advisory only pre-warns while in range.
+  @visibleForTesting
+  static AdvisoryLevel advisoryLevelFor(
+    int mgdl,
+    ({double low, double high}) forecast,
+    ({int low, int high}) thresholds,
+  ) {
+    if (mgdl <= thresholds.low || mgdl >= thresholds.high) {
+      return AdvisoryLevel.none;
+    }
+    if (forecast.low <= thresholds.low) {
+      return AdvisoryLevel.low;
+    }
+    if (forecast.high >= thresholds.high) {
+      return AdvisoryLevel.high;
+    }
+    return AdvisoryLevel.none;
+  }
+
+  /// Forecast the glucose extremes [_advisoryHorizonMin] min ahead. The trend
+  /// line is the always-available base; a fresh cached prediction curve nudges
+  /// the extremes toward whichever direction warns earlier.
+  Future<({double low, double high})> _forecast(
+    int mgdl,
+    double trendPerMin,
+  ) async {
+    final linear = mgdl + trendPerMin * _advisoryHorizonMin;
+    var low = linear;
+    var high = linear;
+    for (final point in await _freshPredictionCurve() ?? const <PredictionPoint>[]) {
+      if (point.offsetMin <= 0 || point.offsetMin > _advisoryHorizonMin) {
+        continue;
+      }
+      low = math.min(low, point.mgdl.toDouble());
+      high = math.max(high, point.mgdl.toDouble());
+    }
+    return (low: low, high: high);
+  }
+
+  /// The cached prediction points, but only when predictions are enabled and the
+  /// forecast is still recent. Returns null otherwise so the advisory falls back
+  /// to the pure trend projection.
+  /// ponytail: only the UI isolate refreshes [PredictionCache], so with the app
+  /// closed this goes stale within minutes and is correctly ignored here.
+  Future<List<PredictionPoint>?> _freshPredictionCurve() async {
+    if (!(await ProfilePredictionState.load()).enabled) {
+      return null;
+    }
+    final cached = await PredictionCache().load();
+    if (cached == null) {
+      return null;
+    }
+    final ageMin = DateTime.now().difference(cached.base).inMinutes;
+    if (ageMin < 0 || ageMin > _predictionMaxAgeMin) {
+      return null;
+    }
+    return cached.points;
+  }
+
+  /// The advisory body: the localized suggestion plus a concrete countermeasure
+  /// derived from the user's bolus factors and the midpoint of their target
+  /// range. Low → grams of fast carbs (with a tablet count); high → insulin units.
+  Future<String> _advisoryBody(
+    AdvisoryLevel level,
+    ({double low, double high}) forecast,
+    ProfileGlucoseState glucose,
+  ) async {
+    final bolus = await ProfileBolusState.load();
+    final target = ((glucose.targetLow + glucose.targetHigh) / 2).round();
+    if (level == AdvisoryLevel.low) {
+      final grams = bolus.suggestedRescueCarbs(
+        glucoseMgdl: forecast.low.round(),
+        targetMgdl: target,
+      );
+      final tablets = (grams / _gramsPerTablet).ceil();
+      return _strings.formatAll('alarm.advisory.low_body', [
+        grams.ceil(),
+        tablets,
+      ]);
+    }
+    final units = bolus.suggestedBolus(
+      carbs: 0,
+      glucoseMgdl: forecast.high.round(),
+      targetMgdl: target,
+    );
+    return _strings.format('alarm.advisory.high_body', units.toStringAsFixed(1));
+  }
+
+  /// Post the advisory pre-warning notification.
+  Future<void> _showAdvisory(AdvisoryLevel level, String body) async {
+    final titleKey = level == AdvisoryLevel.low
+        ? 'alarm.advisory.low_title'
+        : 'alarm.advisory.high_title';
+    await _plugin.show(
+      id: _advisoryId,
+      title: await _strings.get(titleKey),
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: await _advisoryChannel(),
+      ),
+    );
   }
 
   /// Fire a test alarm on demand from the settings UI: the low/high glucose
@@ -442,6 +613,23 @@ class G7AlarmManager {
     );
   }
 
+  /// Silent, DnD-bypassing channel for the predictive advisory pre-warning. A
+  /// predicted low is safety-relevant, so it bypasses DnD like the glucose
+  /// alarms, but it is a heads-up (not a full-screen in-progress emergency).
+  Future<AndroidNotificationDetails> _advisoryChannel() async {
+    return AndroidNotificationDetails(
+      'insulink_alarm_advisory',
+      await _strings.get('alarm.channel.advisory.name'),
+      channelDescription: await _strings.get('alarm.channel.advisory.desc'),
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: false,
+      channelBypassDnd: true,
+      vibrationPattern: Int64List.fromList(_advisoryVibrationPattern),
+      enableVibration: true,
+    );
+  }
+
   /// Prompt the user to confirm an auto-detected training: Confirm/Reject
   /// actions, a distinct vibration and no alarm tone. The payload carries the
   /// pending training id so [trainingNotificationAction] can resolve it.
@@ -489,16 +677,24 @@ class G7AlarmManager {
     );
   }
 
-  /// Play the distinct low/high tone through the ALARM stream so it sounds
-  /// regardless of ringer/notification volume, DnD, or screen state. Best-effort:
-  /// the notification still shows if audio fails or the user disabled the tone.
-  Future<void> _playSound({required bool high}) async {
+  /// Play the distinct low/high tone through the ALARM stream.
+  Future<void> _playSound({required bool high}) =>
+      _playAsset(high ? 'sounds/alarm_high.wav' : 'sounds/alarm_low.wav');
+
+  /// Play the advisory pre-warning tone — its own sound file, distinct from the
+  /// low/high alarm tones.
+  Future<void> _playAdvisorySound() => _playAsset('sounds/alarm_advisory.wav');
+
+  /// Play [asset] through the ALARM stream so it sounds regardless of ringer/
+  /// notification volume, DnD, or screen state. Best-effort: the notification
+  /// still shows if audio fails or the user disabled the tone.
+  Future<void> _playAsset(String asset) async {
     if (!await ProfileAlarmSoundState().load()) {
       return;
     }
     try {
       await _player.play(
-        AssetSource(high ? 'sounds/alarm_high.wav' : 'sounds/alarm_low.wav'),
+        AssetSource(asset),
         ctx: AudioContext(
           android: const AudioContextAndroid(
             usageType: AndroidUsageType.alarm,

@@ -199,6 +199,7 @@ class CgmTaskHandler extends TaskHandler {
     _updateNotification(reading.glucoseMgDl, reading.trendMgDlPerMin);
     if (reading.glucoseMgDl != null) {
       alarms.check(reading.glucoseMgDl, reading.trendMgDlPerMin);
+      alarms.checkAdvisory(reading.glucoseMgDl, reading.trendMgDlPerMin);
     }
     SensorSync().sync(store);
     // Fall back to the standard G7 lifetime (10 days + 12 h grace) when the

@@ -112,6 +112,8 @@ class _ProfilePageState extends State<ProfilePage> {
         SizedBox(height: 10),
         NotificationToggle(NotificationSetting.training),
         SizedBox(height: 10),
+        NotificationToggle(NotificationSetting.advisory),
+        SizedBox(height: 10),
         ProfileAlarmSoundToggle(),
       ],
     ),

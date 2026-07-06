@@ -59,4 +59,49 @@ void main() {
       expect(G7AlarmManager.levelFor(180, collapsed), G7AlarmLevel.highUrgent);
     });
   });
+
+  group('G7AlarmManager.advisoryLevelFor', () {
+    const t = (low: 70, high: 180);
+
+    test('in range with a forecast that stays in range → none', () {
+      expect(
+        G7AlarmManager.advisoryLevelFor(120, (low: 90, high: 150), t),
+        AdvisoryLevel.none,
+      );
+    });
+
+    test('in range but forecast dips to/below low → low', () {
+      expect(
+        G7AlarmManager.advisoryLevelFor(120, (low: 65, high: 120), t),
+        AdvisoryLevel.low,
+      );
+    });
+
+    test('in range but forecast climbs to/above high → high', () {
+      expect(
+        G7AlarmManager.advisoryLevelFor(150, (low: 150, high: 190), t),
+        AdvisoryLevel.high,
+      );
+    });
+
+    test('already out of range → none (the real alarm owns it)', () {
+      // Current already low: advisory suppressed even with a low forecast.
+      expect(
+        G7AlarmManager.advisoryLevelFor(68, (low: 50, high: 68), t),
+        AdvisoryLevel.none,
+      );
+      // Current already high.
+      expect(
+        G7AlarmManager.advisoryLevelFor(185, (low: 185, high: 220), t),
+        AdvisoryLevel.none,
+      );
+    });
+
+    test('low takes precedence when the forecast crosses both bounds', () {
+      expect(
+        G7AlarmManager.advisoryLevelFor(120, (low: 60, high: 200), t),
+        AdvisoryLevel.low,
+      );
+    });
+  });
 }

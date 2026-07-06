@@ -66,6 +66,17 @@ class CardioTraining {
     this.detected = false,
   });
 
+  /// Same training with a different [type] (edited after the fact).
+  CardioTraining withType(CardioType newType) => CardioTraining(
+    id: id,
+    type: newType,
+    startMs: startMs,
+    endMs: endMs,
+    track: track,
+    distanceM: distanceM,
+    detected: detected,
+  );
+
   Duration get duration => Duration(milliseconds: endMs - startMs);
 
   /// Average speed in km/h (0 when no duration was recorded).
