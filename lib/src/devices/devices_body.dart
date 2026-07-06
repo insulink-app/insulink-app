@@ -1,33 +1,35 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/devices/device_row.dart';
 import 'package:insulink/src/fitbit/fitbit_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
+import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
 import 'package:provider/provider.dart';
 
-/// Aggregates the Sensor, Pump and Fitbit devices under one tab; each row opens
-/// the respective device page as a sub-page (see [DeviceSubPage]).
-class DevicesBody extends AppPageBody {
-  DevicesBody({super.key})
-    : super(
-        name: "devices.label",
-        unselectedIcon: CupertinoIcons.square_stack,
-        selectedIcon: CupertinoIcons.square_stack_fill,
-      );
+/// Opens the devices page (Sensor + Pump + Fitbit) on top of the current tab.
+/// Reached from the header device button and the overview shortcuts, now that
+/// devices is no longer a bottom-navigation tab.
+void openDevicesPage(BuildContext context) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(builder: (_) => const DevicesPage()),
+  );
+}
+
+/// The devices page as a standalone route, with its own header + back button.
+class DevicesPage extends StatelessWidget {
+  const DevicesPage({super.key});
 
   @override
-  Widget content(BuildContext context) {
-    return const DevicesBodyContent();
-  }
-
-  @override
-  Future<int> notifications(BuildContext context) async {
-    final controller = Provider.of<CgmController>(context, listen: false);
-    // -1 renders as the red "no sensor" dot, same as the old Sensor tab.
-    return controller.hasSensor ? 0 : -1;
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
+        title: LocaleText('devices.label'),
+      ),
+      body: const DevicesBodyContent(),
+    );
   }
 }
 

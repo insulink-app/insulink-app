@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/header.dart';
 import 'package:insulink/src/base/navigator.dart';
 import 'package:insulink/src/base/page_body.dart';
-import 'package:insulink/src/devices/devices_body.dart';
 import 'package:insulink/src/injection/injection_button.dart';
+import 'package:insulink/src/nutrition/nutrition_body.dart';
 import 'package:insulink/src/overview/overview_body.dart';
 import 'package:insulink/src/sport/sport_body.dart';
 import 'package:insulink/src/sport/training/cardio_recording_page.dart';
@@ -20,10 +20,6 @@ final ValueNotifier<int> appTab = ValueNotifier<int>(0);
 /// Tab index of the analysis page within [AppPageState.pageBodies].
 const int kAnalysisTabIndex = 2;
 
-/// Tab index of the devices page (Sensor + Pump) within
-/// [AppPageState.pageBodies].
-const int kDevicesTabIndex = 3;
-
 class AppPage extends StatefulWidget {
   final int? initialPageIndex;
 
@@ -37,8 +33,8 @@ class AppPageState extends State<AppPage> {
   final List<AppPageBody> pageBodies = [
     OverviewBody(),
     SportBody(),
+    NutritionBody(),
     AnalysisBody(),
-    DevicesBody(),
   ];
   int _selectedIndex = 0;
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
+import 'package:insulink/src/devices/devices_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
@@ -131,7 +132,7 @@ class _DataView extends StatelessWidget {
         if (controller.sensorStart != null) ...[
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => appTab.value = kDevicesTabIndex,
+            onTap: () => openDevicesPage(context),
             child: const OverviewSection(child: OverviewSensorLife()),
           ),
           const SizedBox(height: 16),
