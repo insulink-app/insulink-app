@@ -104,7 +104,10 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
         height: 200,
         child: ranged.isEmpty
             ? Center(child: LocaleText('sport.weight.empty'))
-            : WeightChart(weights: ranged),
+            : WeightChart(
+                weights: ranged,
+                goalKg: context.watch<SportState>().weightGoalKg,
+              ),
       ),
     );
   }

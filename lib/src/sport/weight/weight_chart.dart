@@ -10,9 +10,13 @@ import 'package:insulink/src/sport/sport_models.dart';
 /// Scrubbing/hovering shows a value+date tooltip with an indicator dot and a
 /// haptic tick per point, mirroring the overview glucose chart.
 class WeightChart extends StatefulWidget {
-  const WeightChart({super.key, required this.weights});
+  const WeightChart({super.key, required this.weights, this.goalKg});
 
   final List<WeightEntry> weights;
+
+  /// Target weight drawn as a dashed horizontal line, and folded into the Y
+  /// range so the line is always visible.
+  final double? goalKg;
 
   @override
   State<WeightChart> createState() => _WeightChartState();
@@ -30,7 +34,11 @@ class _WeightChartState extends State<WeightChart> {
     final spots = [
       for (final entry in weights) FlSpot(entry.atEpochMs.toDouble(), entry.kg),
     ];
-    final values = weights.map((entry) => entry.kg);
+    final goal = widget.goalKg;
+    final values = [
+      for (final entry in weights) entry.kg,
+      ?goal,
+    ];
     final minKg = values.reduce((a, b) => a < b ? a : b);
     final maxKg = values.reduce((a, b) => a > b ? a : b);
     final pad = (maxKg - minKg) < 1 ? 1.0 : (maxKg - minKg) * 0.2;
@@ -46,6 +54,7 @@ class _WeightChartState extends State<WeightChart> {
         gridData: const FlGridData(show: true, drawVerticalLine: false),
         borderData: FlBorderData(show: false),
         titlesData: _titles(context, onSurface, minX, maxX),
+        extraLinesData: _goalLine(context, goal),
         lineTouchData: _touchData(context),
         lineBarsData: [
           LineChartBarData(
@@ -60,6 +69,29 @@ class _WeightChartState extends State<WeightChart> {
         ],
       ),
       duration: Duration.zero,
+    );
+  }
+
+  /// Dashed target-weight line with the goal value labelled above it.
+  ExtraLinesData _goalLine(BuildContext context, double? goal) {
+    if (goal == null) {
+      return const ExtraLinesData();
+    }
+    final accent = Theme.of(context).colorScheme.primary;
+    return ExtraLinesData(
+      horizontalLines: [
+        HorizontalLine(
+          y: goal,
+          color: accent.withValues(alpha: 0.7),
+          strokeWidth: 1.5,
+          label: HorizontalLineLabel(
+            show: true,
+            alignment: Alignment.bottomLeft,
+            style: TextStyle(fontSize: 10, color: accent, fontWeight: FontWeight.w600),
+            labelResolver: (_) => '${goal.toStringAsFixed(1)} kg',
+          ),
+        ),
+      ],
     );
   }
 

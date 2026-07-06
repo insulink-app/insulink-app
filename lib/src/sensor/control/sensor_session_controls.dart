@@ -61,7 +61,7 @@ class SensorSessionControls extends StatelessWidget {
       context,
       titleKey: 'sensor.control.end_session_title',
       bodyKey: 'sensor.control.end_session_body',
-      confirmKey: 'sensor.control.end_session',
+      confirmKey: 'sensor.control.end_session_confirm',
       onConfirm: () => controller.disconnect(),
     );
   }
@@ -71,7 +71,7 @@ class SensorSessionControls extends StatelessWidget {
       context,
       titleKey: 'sensor.control.stop_sensor_title',
       bodyKey: 'sensor.control.stop_sensor_body',
-      confirmKey: 'sensor.control.stop_sensor',
+      confirmKey: 'sensor.control.stop_sensor_confirm',
       destructive: true,
       onConfirm: () => controller.forgetSensor(),
     );

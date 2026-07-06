@@ -221,7 +221,9 @@
     },
     "control": {
       "end_session": "End session",
+      "end_session_confirm": "End",
       "stop_sensor": "Stop sensor",
+      "stop_sensor_confirm": "Stop",
       "end_session_title": "End session?",
       "end_session_body": "Reading will stop. The pairing is kept — you can reconnect later.",
       "stop_sensor_title": "Stop sensor?",
@@ -464,6 +466,14 @@
       "body": "# · # min – confirm?",
       "confirm": "Confirm",
       "reject": "Reject"
+    },
+    "goals": {
+      "_": "Goals",
+      "steps": "Steps goal",
+      "distance": "Distance goal",
+      "calories": "Calories goal",
+      "weight": "Weight goal",
+      "note": "Each box fills up as you approach its daily goal. The weight goal shows as a line on the weight graph."
     }
   },
   "profile": {
@@ -572,7 +582,8 @@
       "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training",
       "silent": "silent mute quiet do not disturb dnd",
       "developer": "developer debug logs advanced",
-      "prediction": "prediction forecast future trend minutes"
+      "prediction": "prediction forecast future trend minutes",
+      "sport_goals": "sport goals daily steps distance calories targets"
     },
     "prediction": {
       "_": "Prediction",

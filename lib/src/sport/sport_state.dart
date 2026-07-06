@@ -12,8 +12,21 @@ class SportState extends ChangeNotifier {
   final List<WeightEntry> _weights;
   int _strideCm;
   int _heightCm;
+  int _stepsGoal;
+  int _distanceGoalM;
+  int _caloriesGoal;
+  double _weightGoalKg;
 
-  SportState(this._store, this._weights, this._strideCm, this._heightCm);
+  SportState(
+    this._store,
+    this._weights,
+    this._strideCm,
+    this._heightCm,
+    this._stepsGoal,
+    this._distanceGoalM,
+    this._caloriesGoal,
+    this._weightGoalKg,
+  );
 
   static Future<SportState> load() async {
     const store = SportStore();
@@ -24,6 +37,10 @@ class SportState extends ChangeNotifier {
       weights,
       await store.loadStrideCm(),
       await store.loadHeightCm(),
+      await store.loadStepsGoal(),
+      await store.loadDistanceGoalM(),
+      await store.loadCaloriesGoal(),
+      await store.loadWeightGoalKg(),
     );
   }
 
@@ -35,6 +52,17 @@ class SportState extends ChangeNotifier {
   int get strideCm => _strideCm;
 
   int get heightCm => _heightCm;
+
+  /// Daily goals: steps, distance (metres) and calories (kcal). Distance is
+  /// exposed in km for the tiles' progress bars.
+  int get stepsGoal => _stepsGoal;
+
+  double get distanceGoalKm => _distanceGoalM / 1000;
+
+  int get caloriesGoal => _caloriesGoal;
+
+  /// Target weight (kg), drawn as a line on the weight graph.
+  double get weightGoalKg => _weightGoalKg;
 
   /// Body-mass index from the latest weight and the stored height, or null when
   /// no weight has been logged yet.
@@ -105,6 +133,46 @@ class SportState extends ChangeNotifier {
     _heightCm = cm;
     notifyListeners();
     await _store.saveHeightCm(cm);
+  }
+
+  Future<void> setStepsGoal(int steps) async {
+    steps = steps.clamp(1000, 50000);
+    if (steps == _stepsGoal) {
+      return;
+    }
+    _stepsGoal = steps;
+    notifyListeners();
+    await _store.saveStepsGoal(steps);
+  }
+
+  Future<void> setDistanceGoalM(int metres) async {
+    metres = metres.clamp(500, 50000);
+    if (metres == _distanceGoalM) {
+      return;
+    }
+    _distanceGoalM = metres;
+    notifyListeners();
+    await _store.saveDistanceGoalM(metres);
+  }
+
+  Future<void> setCaloriesGoal(int kcal) async {
+    kcal = kcal.clamp(50, 5000);
+    if (kcal == _caloriesGoal) {
+      return;
+    }
+    _caloriesGoal = kcal;
+    notifyListeners();
+    await _store.saveCaloriesGoal(kcal);
+  }
+
+  Future<void> setWeightGoalKg(double kg) async {
+    kg = kg.clamp(30, 250);
+    if (kg == _weightGoalKg) {
+      return;
+    }
+    _weightGoalKg = kg;
+    notifyListeners();
+    await _store.saveWeightGoalKg(kg);
   }
 
   /// Persist the weights and queue a backend sync.
