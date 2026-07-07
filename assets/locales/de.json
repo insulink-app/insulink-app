@@ -550,7 +550,7 @@
       "description": "Warnen, wenn der Sensor bald abläuft"
     },
     "halftime": {
-      "description": "Erinnern, wenn der Sensor halb aufgebraucht ist (Tag 5)"
+      "description": "Erinnern, wenn der Sensor halb aufgebraucht ist"
     },
     "training": {
       "description": "Benachrichtigen, wenn ein Training erkannt wurde"

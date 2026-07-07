@@ -550,7 +550,7 @@
       "description": "Warn when the sensor is about to expire"
     },
     "halftime": {
-      "description": "Remind when the sensor is half used up (day 5)"
+      "description": "Remind when the sensor is half used up"
     },
     "training": {
       "description": "Notify when a training was detected"
