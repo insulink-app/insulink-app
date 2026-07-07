@@ -230,8 +230,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
         height: 200,
         child: ranged.isEmpty
             ? Center(child: LocaleText('sport.activity.detail.empty'))
-            : ActivityBarChart(
+            : ActivityBarChart<DailyActivity>(
                 days: ranged,
+                date: (day) => day.date,
                 value: _value,
                 label: (day) => _unit == null
                     ? _format(_value(day))

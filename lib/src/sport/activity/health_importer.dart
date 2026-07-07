@@ -11,7 +11,7 @@ enum HealthImportResult { success, unavailable, denied }
 /// steps, distance and calories are merged day-by-day into the persistent
 /// activity archive (the basis of the detail pages), today additionally feeds the
 /// "Today" tiles, and weight entries flow into the history. Wraps the `health`
-/// plugin (Android/Health Connect), mirroring [FitbitImporter].
+/// plugin (Android/Health Connect), mirroring [GoogleHealthImporter].
 ///
 /// Steps/distance/calories are read via Health Connect's AGGREGATION API (daily
 /// buckets) rather than raw records: it de-duplicates across source apps and is

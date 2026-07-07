@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/fitbit/fitbit_state.dart';
+import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/sport/activity/activity_settings_sheet.dart';
 import 'package:insulink/src/sport/activity/reorderable_tile_grid.dart';
@@ -11,8 +11,8 @@ import 'package:provider/provider.dart';
 
 /// "Today" section: a grid of summary boxes the user can configure (which boxes
 /// and their order — see [TodayLayoutState]) and reorder by dragging. Steps are
-/// real; distance/calories are estimated; weight and the Fitbit metrics come
-/// from their states. Fitbit boxes only appear while a Fitbit is connected.
+/// real; distance/calories are estimated; weight and the Google Health metrics come
+/// from their states. Google Health boxes only appear while a Google Health is connected.
 class ActivitySummaryCard extends StatelessWidget {
   const ActivitySummaryCard({super.key});
 
@@ -21,15 +21,15 @@ class ActivitySummaryCard extends StatelessWidget {
     final layout = context.watch<TodayLayoutState>();
     final activity = context.watch<SportActivityState>();
     final sport = context.watch<SportState>();
-    final fitbit = context.watch<FitbitState>();
-    final builder = TodayTileBuilder(activity, sport, fitbit);
+    final health = context.watch<GoogleHealthState>();
+    final builder = TodayTileBuilder(activity, sport, health);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _header(context),
         const SizedBox(height: 12),
         ReorderableTileGrid(
-          tiles: layout.visible(fitbit.connected),
+          tiles: layout.visible(health.connected),
           state: layout,
           tileBuilder: builder.build,
         ),

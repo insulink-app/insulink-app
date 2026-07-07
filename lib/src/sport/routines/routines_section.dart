@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/exercises/exercises_page.dart';
-import 'package:insulink/src/sport/logbook/workout_log_page.dart';
 import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/routines/routine_editor_page.dart';
 import 'package:insulink/src/sport/sport_add_tile.dart';
@@ -31,29 +30,15 @@ class RoutinesSection extends StatelessWidget {
               'sport.routines',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            Row(
-              children: [
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.history, size: 20),
-                  tooltip: Locales.string(context, 'sport.logbook'),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const WorkoutLogPage(),
-                    ),
-                  ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.fitness_center, size: 20),
+              tooltip: Locales.string(context, 'sport.exercises'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ExercisesPage(),
                 ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.fitness_center, size: 20),
-                  tooltip: Locales.string(context, 'sport.exercises'),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const ExercisesPage(),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
@@ -174,7 +159,7 @@ class RoutinesSection extends StatelessWidget {
     if (routine.items.isEmpty) {
       return count;
     }
-    final minutes = estimatedRoutineMinutes(
+    final seconds = estimatedRoutineSeconds(
       routine,
       training.exercises,
       training.sessions,
@@ -182,7 +167,7 @@ class RoutinesSection extends StatelessWidget {
     final duration = Locales.string(
       context,
       'sport.routines.est_duration',
-      params: [sportMinutes(minutes)],
+      params: [sportClock(seconds)],
     );
     return '$count · $duration';
   }

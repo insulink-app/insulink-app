@@ -1,26 +1,26 @@
 import '../sport_models.dart';
 
-/// Estimated duration of a routine in whole minutes. Once the routine has been
+/// Estimated duration of a routine in whole seconds. Once the routine has been
 /// logged at least once, the estimate is the AVERAGE actual duration of its past
 /// sessions (far more reliable than any model). Only when it has never been run
 /// do we fall back to the additive guess: each set costs ~1 min of work (or its
 /// target seconds for a timed exercise) plus its rest.
-int estimatedRoutineMinutes(
+int estimatedRoutineSeconds(
   SportRoutine routine,
   List<SportExercise> exercises,
   List<WorkoutSession> sessions,
 ) {
-  final measured = _averagePastMinutes(routine.id, sessions);
+  final measured = _averagePastSeconds(routine.id, sessions);
   if (measured != null) {
     return measured;
   }
-  return _additiveMinutes(routine, exercises);
+  return _additiveSeconds(routine, exercises);
 }
 
-/// Average duration (minutes) of the most recent completed sessions of this
+/// Average duration (seconds) of the most recent completed sessions of this
 /// routine, or null if it has never been run with logged sets. Limited to the
 /// last few sessions so a changed routine converges on its current length.
-int? _averagePastMinutes(String routineId, List<WorkoutSession> sessions) {
+int? _averagePastSeconds(String routineId, List<WorkoutSession> sessions) {
   final durations = <int>[];
   for (final session in sessions.reversed) {
     if (session.routineId == routineId && session.sets.isNotEmpty) {
@@ -34,17 +34,17 @@ int? _averagePastMinutes(String routineId, List<WorkoutSession> sessions) {
     return null;
   }
   final total = durations.reduce((sum, value) => sum + value);
-  return (total / durations.length / 60000).round();
+  return (total / durations.length / 1000).round();
 }
 
-int _additiveMinutes(SportRoutine routine, List<SportExercise> exercises) {
+int _additiveSeconds(SportRoutine routine, List<SportExercise> exercises) {
   var seconds = 0;
   for (final item in routine.items) {
     final exercise = _exerciseById(exercises, item.exerciseId);
     final perSet = exercise?.kind == ExerciseKind.timed ? item.target : 60;
     seconds += item.targetSets * (perSet + item.restSeconds);
   }
-  return (seconds / 60).round();
+  return seconds;
 }
 
 SportExercise? _exerciseById(List<SportExercise> exercises, String id) {

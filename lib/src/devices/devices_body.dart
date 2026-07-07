@@ -1,14 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/devices/device_row.dart';
-import 'package:insulink/src/fitbit/fitbit_body.dart';
+import 'package:insulink/src/google_health/google_health_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
 import 'package:provider/provider.dart';
 
-/// Opens the devices page (Sensor + Pump + Fitbit) on top of the current tab.
+/// Opens the devices page (Sensor + Pump + Google Health) on top of the current tab.
 /// Reached from the header device button and the overview shortcuts, now that
 /// devices is no longer a bottom-navigation tab.
 void openDevicesPage(BuildContext context) {
@@ -59,8 +59,8 @@ class DevicesBodyContent extends StatelessWidget {
         const SizedBox(height: 14),
         DeviceRow(
           icon: Icons.watch,
-          labelKey: "fitbit.label",
-          page: const FitbitBodyContent(),
+          labelKey: "google_health.label",
+          page: const GoogleHealthBodyContent(),
         ),
       ],
     );

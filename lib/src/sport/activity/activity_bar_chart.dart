@@ -1,34 +1,35 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:insulink/src/sport/sport_models.dart';
 
-/// Daily values of an activity metric as bars (X = day, ascending). Expects
-/// [days] already filtered by time window and sorted ascending. [value] pulls
-/// the metric to display out of a day; [label] renders its tooltip text
-/// (formatted value + unit).
+/// Daily values of a metric as bars (X = day, ascending). Expects [days] already
+/// filtered by time window and sorted ascending. [date] pulls each entry's day,
+/// [value] the metric to display, and [label] its tooltip text (formatted value
+/// + unit). Generic so both the sport and the Google Health detail pages share it.
 ///
 /// Tapping/hovering a bar shows a value+date tooltip with a haptic tick per bar,
 /// mirroring the overview glucose chart.
-class ActivityBarChart extends StatefulWidget {
+class ActivityBarChart<T> extends StatefulWidget {
   const ActivityBarChart({
     super.key,
     required this.days,
+    required this.date,
     required this.value,
     required this.label,
     required this.color,
   });
 
-  final List<DailyActivity> days;
-  final double Function(DailyActivity day) value;
-  final String Function(DailyActivity day) label;
+  final List<T> days;
+  final DateTime Function(T day) date;
+  final double Function(T day) value;
+  final String Function(T day) label;
   final Color color;
 
   @override
-  State<ActivityBarChart> createState() => _ActivityBarChartState();
+  State<ActivityBarChart<T>> createState() => _ActivityBarChartState<T>();
 }
 
-class _ActivityBarChartState extends State<ActivityBarChart> {
+class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
   /// Bar index under the finger on the last touch event, so we buzz once per bar
   /// as the finger moves across (and reset when it lifts off).
   int? _lastTouchedIndex;
@@ -85,7 +86,7 @@ class _ActivityBarChartState extends State<ActivityBarChart> {
             ),
             children: [
               TextSpan(
-                text: '\n${locale.formatShortDate(day.date)}',
+                text: '\n${locale.formatShortDate(widget.date(day))}',
                 style: TextStyle(
                   color: theme.colorScheme.onInverseSurface.withValues(
                     alpha: 0.7,
@@ -146,7 +147,7 @@ class _ActivityBarChartState extends State<ActivityBarChart> {
               meta: meta,
               fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
               child: Text(
-                locale.formatShortDate(widget.days[index].date),
+                locale.formatShortDate(widget.date(widget.days[index])),
                 style: const TextStyle(fontSize: 9, color: Colors.grey),
               ),
             );

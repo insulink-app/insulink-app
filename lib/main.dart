@@ -6,7 +6,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
-import 'package:insulink/src/fitbit/fitbit_state.dart';
+import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -38,7 +38,7 @@ typedef AppPreferences = ({
   SportState sport,
   TrainingState training,
   CardioTrainingState cardio,
-  FitbitState fitbit,
+  GoogleHealthState health,
   TodayLayoutState todayLayout,
   OverviewLayoutState overviewLayout,
 });
@@ -126,7 +126,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.sport),
         ChangeNotifierProvider(create: (_) => prefs.training),
         ChangeNotifierProvider(create: (_) => prefs.cardio),
-        ChangeNotifierProvider(create: (_) => prefs.fitbit),
+        ChangeNotifierProvider(create: (_) => prefs.health..init()),
         ChangeNotifierProvider(create: (_) => prefs.todayLayout),
         ChangeNotifierProvider(create: (_) => prefs.overviewLayout),
         // Step counter — only started when the Sport tab is opened
@@ -182,7 +182,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       sport: await SportState.load(),
       training: await TrainingState.load(),
       cardio: await CardioTrainingState.load(),
-      fitbit: await FitbitState.load(),
+      health: await GoogleHealthState.load(),
       todayLayout: await TodayLayoutState.load(),
       overviewLayout: await OverviewLayoutState.load(),
     );
@@ -237,7 +237,7 @@ class _AppLifecycleState extends State<_AppLifecycle>
     }
     context.read<SportActivityState>().startIfPermitted();
     context.read<CardioTrainingState>().reloadPending();
-    context.read<FitbitState>().refreshIfConnected();
+    context.read<GoogleHealthState>().refreshIfConnected();
   }
 
   @override

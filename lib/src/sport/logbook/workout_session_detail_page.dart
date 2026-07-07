@@ -117,9 +117,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
     final total = Duration(
       milliseconds: session.sets.last.atEpochMs - session.startedAtMs,
     );
-    final minutes = total.inMinutes;
-    final seconds = total.inSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+    return sportClock(total.inSeconds);
   }
 
   Widget _stat(
@@ -232,15 +230,30 @@ class WorkoutSessionDetailPage extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Text(
-                  Locales.string(
-                    context,
-                    'sport.logbook.set_n',
-                    params: ['$number'],
-                  ),
-                  style: TextStyle(
-                    color: scheme.onSurface.withValues(alpha: 0.6),
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      Locales.string(
+                        context,
+                        'sport.logbook.set_n',
+                        params: ['$number'],
+                      ),
+                      style: TextStyle(
+                        color: scheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    if (_meta(context, set) case final meta?) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        meta,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: scheme.onSurface.withValues(alpha: 0.45),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const Spacer(),
                 Text(
@@ -317,6 +330,23 @@ class WorkoutSessionDetailPage extends StatelessWidget {
     final sets = [...session.sets]..insert(afterIndex + 1, copy);
     training.updateSession(session.copyWith(sets: sets));
   }
+
+  /// The secondary line under a set: its actual duration and the rest that
+  /// followed it, each when recorded. Null when neither exists (legacy/manual
+  /// sets) so no empty line renders.
+  String? _meta(BuildContext context, SetLog set) {
+    final parts = <String>[
+      if (set.durationSecs != null)
+        '${Locales.string(context, 'sport.logbook.duration')} ${_clock(set.durationSecs!)}',
+      if (set.restSecs != null)
+        '${Locales.string(context, 'sport.logbook.rest')} ${_clock(set.restSecs!)}',
+    ];
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  /// Seconds as `m:ss`.
+  String _clock(int seconds) =>
+      '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
 
   String _value(SetLog set) {
     final core = set.seconds != null ? '${set.seconds} s' : '${set.reps ?? 0}';

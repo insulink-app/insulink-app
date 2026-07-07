@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/grab_handle.dart';
+import 'package:insulink/src/sport/activity/activity_entry.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/calendar/sport_calendar_section.dart';
@@ -41,18 +42,13 @@ class _DayActivitiesSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final training = context.watch<TrainingState>();
     final cardio = context.watch<CardioTrainingState>();
-    final sessions = [
-      for (final session in training.sessions)
+    final entries = [
+      for (final entry in mergedActivities(training.sessions, cardio.trainings))
         if (_isSameDay(
-          DateTime.fromMillisecondsSinceEpoch(session.startedAtMs),
+          DateTime.fromMillisecondsSinceEpoch(entry.startMs),
           day,
         ))
-          session,
-    ];
-    final trainings = [
-      for (final ride in cardio.trainings)
-        if (_isSameDay(DateTime.fromMillisecondsSinceEpoch(ride.startMs), day))
-          ride,
+          entry,
     ];
     return Container(
       decoration: BoxDecoration(
@@ -78,10 +74,11 @@ class _DayActivitiesSheet extends StatelessWidget {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  if (sessions.isEmpty && trainings.isEmpty)
-                    LocaleText('sport.calendar.empty'),
-                  for (final session in sessions) _routineTile(context, session),
-                  for (final ride in trainings) _trainingTile(context, ride),
+                  if (entries.isEmpty) LocaleText('sport.calendar.empty'),
+                  for (final entry in entries)
+                    entry.session != null
+                        ? _routineTile(context, entry.session!)
+                        : _trainingTile(context, entry.training!),
                 ],
               ),
             ),

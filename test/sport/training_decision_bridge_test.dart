@@ -55,6 +55,22 @@ void main() {
     expect(await decisionFile.exists(), isFalse);
   });
 
+  test('confirm via the payload-embedded file path is drained', () async {
+    await store.savePendingTrainings([training('d')]);
+
+    // Mirrors the action-tap isolate: write to the path the notification carried
+    // (decisionFilePath), which the drain then reads.
+    store.recordTrainingDecision(
+      'confirm',
+      'd',
+      filePath: store.decisionFilePath,
+    );
+    await store.applyTrainingDecisions();
+
+    expect((await store.loadPendingTrainings()), isEmpty);
+    expect((await store.loadTrainings()).map((t) => t.id), ['d']);
+  });
+
   test('applyTrainingDecisions is a no-op when nothing was recorded', () async {
     await store.savePendingTrainings([training('c')]);
 

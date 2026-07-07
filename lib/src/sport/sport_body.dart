@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:insulink/src/base/page_body.dart';
-import 'package:insulink/src/fitbit/fitbit_state.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
+import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/sport/activity/activity_summary_card.dart';
+import 'package:insulink/src/sport/activity/recent_activities_section.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/routines/routines_section.dart';
 import 'package:insulink/src/sport/training/cardio_section.dart';
@@ -33,14 +35,29 @@ class SportBodyContent extends StatefulWidget {
 }
 
 class _SportBodyContentState extends State<SportBodyContent> {
+  // Captured on first open so [dispose] can stop the live poll without a
+  // `context.read` (which Provider forbids during dispose).
+  GoogleHealthState? _health;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SportActivityState>().ensureStarted();
+      // Run the background service so cardio auto-detection works even without a
+      // CGM sensor (samplers + detection live in that isolate).
+      context.read<CgmController>().ensureDetectionService();
       context.read<CardioTrainingState>().reloadPending();
-      context.read<FitbitState>().refreshIfConnected();
+      _health = context.read<GoogleHealthState>();
+      _health!.refreshIfConnected();
+      _health!.startLive();
     });
+  }
+
+  @override
+  void dispose() {
+    _health?.stopLive();
+    super.dispose();
   }
 
   @override
@@ -59,6 +76,8 @@ class _SportBodyContentState extends State<SportBodyContent> {
         RoutinesSection(),
         SizedBox(height: 28),
         CardioSection(),
+        SizedBox(height: 28),
+        RecentActivitiesSection(),
       ],
     );
   }

@@ -4,20 +4,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// A configurable summary box. The first four are always available; the rest
-/// come from a connected Fitbit (via Health Connect).
+/// come from a connected Google Health (via Health Connect).
 enum TodayTile { steps, distance, calories, weight, restingHr, sleep, heartRate, spo2 }
 
 extension TodayTileInfo on TodayTile {
-  /// Whether this tile's data comes from a Fitbit (only rendered while one is
+  /// Whether this tile's data comes from a Google Health (only rendered while one is
   /// connected).
-  bool get isFitbit => index >= TodayTile.restingHr.index;
+  bool get isGoogleHealth => index >= TodayTile.restingHr.index;
 }
 
 /// Shared ordered-visibility model for a personalizable grid of summary boxes —
 /// the Sport "Today" grid and the overview boxes. Subclasses only supply the
 /// storage key + defaults; all order/visibility/persistence logic lives here.
 /// Persisted to secure storage AND the synced settings blob (see
-/// [ProfileSettings]) so an arrangement survives logout/login. Fitbit tiles keep
+/// [ProfileSettings]) so an arrangement survives logout/login. Google Health tiles keep
 /// their slot even while disconnected; they are just not rendered.
 abstract class TileLayoutState extends ChangeNotifier {
   static const _storage = FlutterSecureStorage();
@@ -34,10 +34,10 @@ abstract class TileLayoutState extends ChangeNotifier {
 
   bool isVisible(TodayTile tile) => !_hidden.contains(tile);
 
-  /// The tiles to render: visible, in order, Fitbit tiles only when connected.
-  List<TodayTile> visible(bool fitbitConnected) => [
+  /// The tiles to render: visible, in order, Google Health tiles only when connected.
+  List<TodayTile> visible(bool googleHealthConnected) => [
     for (final tile in _order)
-      if (!_hidden.contains(tile) && (!tile.isFitbit || fitbitConnected)) tile,
+      if (!_hidden.contains(tile) && (!tile.isGoogleHealth || googleHealthConnected)) tile,
   ];
 
   Future<void> setVisible(TodayTile tile, bool visible) async {

@@ -13,16 +13,16 @@ String sportDecimal(num value, int decimals) {
   return format.format(value);
 }
 
-/// A whole-minute span as a compact "1h 20min" / "45min" / "2h" — never a bare
-/// "80min". Language-neutral units.
-String sportMinutes(int minutes) {
-  final hours = minutes ~/ 60;
-  final rest = minutes % 60;
+/// A duration as a clock: "MM:SS", widening to "HH:MM:SS" once it reaches an
+/// hour. Minutes and seconds are always two digits.
+String sportClock(int seconds) {
+  final hours = seconds ~/ 3600;
+  final minutes = (seconds % 3600) ~/ 60;
+  final secs = seconds % 60;
+  final mm = minutes.toString().padLeft(2, '0');
+  final ss = secs.toString().padLeft(2, '0');
   if (hours == 0) {
-    return '${rest}min';
+    return '$mm:$ss';
   }
-  if (rest == 0) {
-    return '${hours}h';
-  }
-  return '${hours}h ${rest}min';
+  return '${hours.toString().padLeft(2, '0')}:$mm:$ss';
 }

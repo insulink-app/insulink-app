@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/sport/activity/activity_entry.dart';
 import 'package:insulink/src/sport/activity/step_baseline.dart';
 import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/sport_format.dart';
@@ -19,6 +20,14 @@ void main() {
       expect(sportInt(8000), '8.000');
       expect(sportDecimal(6.2, 2), '6,20');
       expect(sportDecimal(72.5, 1), '72,5');
+    });
+  });
+
+  group('sportClock', () {
+    test('MM:SS below an hour, HH:MM:SS from an hour', () {
+      expect(sportClock(65), '01:05');
+      expect(sportClock(600), '10:00');
+      expect(sportClock(3661), '01:01:01');
     });
   });
 
@@ -76,18 +85,34 @@ void main() {
       expect(back.items.single.targetWeight, 20);
     });
 
-    test('WorkoutSession survives encode → decode', () {
+    test('WorkoutSession survives encode → decode (incl. duration + rest)', () {
       const session = WorkoutSession(
         id: 's1',
         routineId: 'r1',
         startedAtMs: 100,
         sets: [
-          SetLog(exerciseId: 'e1', reps: 12, weightKg: 20, atEpochMs: 200),
+          SetLog(
+            exerciseId: 'e1',
+            reps: 12,
+            weightKg: 20,
+            durationSecs: 45,
+            restSecs: 72,
+            atEpochMs: 200,
+          ),
         ],
       );
       final back = WorkoutSession.fromJson(session.toJson());
       expect(back.sets.single.reps, 12);
       expect(back.sets.single.weightKg, 20);
+      expect(back.sets.single.durationSecs, 45);
+      expect(back.sets.single.restSecs, 72);
+    });
+
+    test('legacy SetLog without duration/rest decodes to null', () {
+      final legacy = {'ex': 'e1', 'reps': 10, 'ts': 5};
+      final back = SetLog.fromJson(legacy);
+      expect(back.durationSecs, isNull);
+      expect(back.restSecs, isNull);
     });
   });
 
@@ -176,8 +201,8 @@ void main() {
     });
   });
 
-  group('estimatedRoutineMinutes', () {
-    test('sets × (60 s work + rest), rounded to minutes', () {
+  group('estimatedRoutineSeconds', () {
+    test('sets × (60 s work + rest)', () {
       const exercise = SportExercise(
         id: 'e1',
         name: 'Squat',
@@ -196,14 +221,14 @@ void main() {
           ),
         ],
       );
-      // 3 × (60 + 60) = 360 s = 6 min (no past sessions → additive estimate).
-      expect(estimatedRoutineMinutes(routine, [exercise], const []), 6);
+      // 3 × (60 + 60) = 360 s (no past sessions → additive estimate).
+      expect(estimatedRoutineSeconds(routine, [exercise], const []), 360);
     });
 
     test('averages past session durations once the routine has been run', () {
       const routine = SportRoutine(id: 'r1', name: 'Legs', items: []);
       final sessions = [
-        // 10 min and 20 min → average 15 min (ignores the additive estimate).
+        // 10 min and 20 min → average 900 s (ignores the additive estimate).
         WorkoutSession(
           id: 's1',
           routineId: 'r1',
@@ -217,7 +242,7 @@ void main() {
           sets: const [SetLog(exerciseId: 'e1', reps: 5, atEpochMs: 1200000)],
         ),
       ];
-      expect(estimatedRoutineMinutes(routine, const [], sessions), 15);
+      expect(estimatedRoutineSeconds(routine, const [], sessions), 900);
     });
   });
 
@@ -475,6 +500,20 @@ void main() {
       runner.dispose();
     });
 
+    test('records set duration on every set and rest after a completed rest', () {
+      final runner = WorkoutRunner(routineWithRest(30), [exercise]);
+      runner.completeSet();
+      // The just-logged set carries a (wall-clock) duration…
+      expect(runner.lastLoggedSet?.durationSecs, isNotNull);
+      expect(runner.lastLoggedSet?.restSecs, isNull);
+      expect(runner.phase, WorkoutPhase.resting);
+      runner.skipRest();
+      // …and once the rest ends, the actual rest is stamped onto it.
+      expect(runner.lastLoggedSet?.restSecs, isNotNull);
+      expect(runner.lastLoggedSet!.restSecs! >= 0, isTrue);
+      runner.dispose();
+    });
+
     test('jumpTo switches exercise and resets to its first set', () {
       final runner = WorkoutRunner(routineWithRest(0, exercises: 3), [
         exercise,
@@ -484,6 +523,29 @@ void main() {
       expect(runner.setNumber, 1);
       expect(runner.phase, WorkoutPhase.exercising);
       runner.dispose();
+    });
+  });
+
+  group('mergedActivities', () {
+    WorkoutSession session(int ms) =>
+        WorkoutSession(id: '$ms', routineId: 'r', startedAtMs: ms, sets: const []);
+    CardioTraining training(int ms) => CardioTraining(
+      id: '$ms',
+      type: CardioType.walk,
+      startMs: ms,
+      endMs: ms + 1,
+      track: const [],
+      distanceM: 0,
+    );
+
+    test('interleaves routines and trainings newest first', () {
+      final merged = mergedActivities(
+        [session(100), session(300)],
+        [training(200), training(400)],
+      );
+      expect(merged.map((entry) => entry.startMs).toList(), [400, 300, 200, 100]);
+      expect(merged.first.training, isNotNull);
+      expect(merged[1].session, isNotNull);
     });
   });
 }

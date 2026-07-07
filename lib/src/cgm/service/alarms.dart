@@ -31,15 +31,24 @@ const String _trainingRejectAction = 'training_reject';
 /// watchdog tick, and the UI re-reads pending on its next resume.
 @pragma('vm:entry-point')
 void trainingNotificationAction(NotificationResponse response) {
-  final id = response.payload;
-  if (id == null || id.isEmpty) {
+  final payload = response.payload;
+  if (payload == null || payload.isEmpty) {
+    return;
+  }
+  // Payload is "id\nwritableFilePath" (see notifyTrainingDetected). The path is
+  // resolved in the plugin-capable service isolate because this bare action-tap
+  // isolate can't resolve its own writable temp dir (see SportStore).
+  final newline = payload.indexOf('\n');
+  final id = newline < 0 ? payload : payload.substring(0, newline);
+  final filePath = newline < 0 ? null : payload.substring(newline + 1);
+  if (id.isEmpty) {
     return;
   }
   const store = SportStore();
   if (response.actionId == _trainingConfirmAction) {
-    store.recordTrainingDecision('confirm', id);
+    store.recordTrainingDecision('confirm', id, filePath: filePath);
   } else if (response.actionId == _trainingRejectAction) {
-    store.recordTrainingDecision('reject', id);
+    store.recordTrainingDecision('reject', id, filePath: filePath);
   }
 }
 
@@ -75,7 +84,8 @@ class G7AlarmManager {
   final AudioPlayer _player = AudioPlayer(playerId: 'insulink_alarm');
   final ServiceStrings _strings = ServiceStrings();
   G7AlarmLevel _last = G7AlarmLevel.none;
-  AdvisoryLevel _lastAdvisory = AdvisoryLevel.none;
+  bool _lowAdvisoryArmed = true;
+  bool _highAdvisoryArmed = true;
 
   /// Notification id for the sensor-expiry warning (kept clear of the glucose
   /// alarm ids, which use [G7AlarmLevel.index] 0–4).
@@ -94,11 +104,25 @@ class G7AlarmManager {
   static const _advisoryId = 104;
 
   /// How many minutes ahead the advisory projects the current value + trend.
-  static const _advisoryHorizonMin = 20;
+  /// Kept deliberately short so the pre-warning fires only when the low/high is
+  /// genuinely imminent, not on every distant projection.
+  static const _advisoryHorizonMin = 15;
 
   /// Grams of fast carbs per glucose tablet ("Plättchen"), for the hypo
   /// countermeasure's tablet-count conversion.
   static const _gramsPerTablet = 6;
+
+  /// How far above the low line / below the high line the rescue countermeasure
+  /// aims to bring glucose back to. A modest safe buffer — NOT the middle of the
+  /// target range — so the suggested carbs stay small (over-treating a predicted
+  /// low, when it may not even fully materialise, is worse than a small top-up).
+  static const _rescueTargetMarginMgdl = 20;
+
+  /// How far glucose must recover past the alarm line before an advisory re-arms
+  /// (rise above `low + margin` / fall below `high - margin`). Until then a
+  /// forecast wobbling around the threshold cannot re-fire the same episode's
+  /// pre-warning — it shows once, then only again after a real recovery.
+  static const _advisoryRearmMarginMgdl = 30;
 
   /// A cached backend prediction older than this is ignored — only the UI
   /// isolate refreshes it, so with the app closed it goes stale and the advisory
@@ -218,10 +242,13 @@ class G7AlarmManager {
   /// suggest a countermeasure: insulin units for a predicted high, grams of fast
   /// carbs (plus a tablet count) for a predicted low. The forecast is driven
   /// primarily by the current value + trend projected [_advisoryHorizonMin] min
-  /// ahead; a fresh backend prediction curve refines it when available. Edge-
-  /// triggered on [_lastAdvisory] like [check], with its own toggle; suppressed
-  /// while glucose is already out of range (the real alarm owns that) and while
-  /// silent. Settings are read fresh so changes apply without a service restart.
+  /// ahead; a fresh backend prediction curve refines it when available. Fires
+  /// ONCE per episode: after a low/high pre-warning it is disarmed and only
+  /// re-arms once glucose has genuinely recovered ([_rearmAdvisories]) — a
+  /// forecast wobbling around the threshold does not nag repeatedly. Has its own
+  /// toggle; suppressed while glucose is already out of range (the real alarm
+  /// owns that) and while silent. Settings are read fresh so changes apply
+  /// without a service restart.
   Future<void> checkAdvisory(int? mgdl, double trendPerMin) async {
     if (mgdl == null) {
       return;
@@ -230,17 +257,20 @@ class G7AlarmManager {
       return;
     }
     final glucose = await ProfileGlucoseState.load();
+    _rearmAdvisories(mgdl, glucose);
     final forecast = await _forecast(mgdl, trendPerMin);
     final level = advisoryLevelFor(
       mgdl,
       forecast,
       (low: glucose.low, high: glucose.high),
     );
-    if (level == _lastAdvisory) {
+    if (level == AdvisoryLevel.none) {
       return;
     }
-    _lastAdvisory = level;
-    if (level == AdvisoryLevel.none) {
+    if (level == AdvisoryLevel.low && !_lowAdvisoryArmed) {
+      return;
+    }
+    if (level == AdvisoryLevel.high && !_highAdvisoryArmed) {
       return;
     }
     if (await ProfileSilentState.load()) {
@@ -248,6 +278,25 @@ class G7AlarmManager {
     }
     await _showAdvisory(level, await _advisoryBody(level, forecast, glucose));
     await _playAdvisorySound();
+    if (level == AdvisoryLevel.low) {
+      _lowAdvisoryArmed = false;
+    } else {
+      _highAdvisoryArmed = false;
+    }
+  }
+
+  /// Re-arm an advisory once the actual glucose has recovered clearly past the
+  /// alarm line (risen above `low + margin`, or fallen below `high - margin`).
+  /// This is the "erst wenn wieder gestiegen" guard: after one pre-warning the
+  /// zone stays disarmed until a real recovery, so a forecast oscillating around
+  /// the threshold can't re-fire the same low/high episode again and again.
+  void _rearmAdvisories(int mgdl, ProfileGlucoseState glucose) {
+    if (mgdl >= glucose.low + _advisoryRearmMarginMgdl) {
+      _lowAdvisoryArmed = true;
+    }
+    if (mgdl <= glucose.high - _advisoryRearmMarginMgdl) {
+      _highAdvisoryArmed = true;
+    }
   }
 
   /// Decide the advisory zone. Pure and static so it can be unit-tested without
@@ -320,11 +369,10 @@ class G7AlarmManager {
     ProfileGlucoseState glucose,
   ) async {
     final bolus = await ProfileBolusState.load();
-    final target = ((glucose.targetLow + glucose.targetHigh) / 2).round();
     if (level == AdvisoryLevel.low) {
       final grams = bolus.suggestedRescueCarbs(
         glucoseMgdl: forecast.low.round(),
-        targetMgdl: target,
+        targetMgdl: glucose.low + _rescueTargetMarginMgdl,
       );
       final tablets = (grams / _gramsPerTablet).ceil();
       return _strings.formatAll('alarm.advisory.low_body', [
@@ -332,6 +380,7 @@ class G7AlarmManager {
         tablets,
       ]);
     }
+    final target = ((glucose.targetLow + glucose.targetHigh) / 2).round();
     final units = bolus.suggestedBolus(
       carbs: 0,
       glucoseMgdl: forecast.high.round(),
@@ -649,7 +698,9 @@ class G7AlarmManager {
       title: await _strings.get('sport.detect_notification.title'),
       body: body,
       notificationDetails: NotificationDetails(android: await _trainingChannel()),
-      payload: training.id,
+      // Carry the writable hand-off path so the action-tap isolate writes where
+      // the drain reads (see trainingNotificationAction / SportStore).
+      payload: '${training.id}\n${const SportStore().decisionFilePath}',
     );
   }
 

@@ -12,6 +12,7 @@ class WorkoutSnapshot {
   final WorkoutPhase phase;
   final int setStartedAtMs;
   final int? restEndsAtMs;
+  final int? restStartedAtMs;
   final int pausedTotalMs;
   final int currentReps;
   final double currentWeight;
@@ -25,6 +26,7 @@ class WorkoutSnapshot {
     required this.phase,
     required this.setStartedAtMs,
     required this.restEndsAtMs,
+    required this.restStartedAtMs,
     required this.pausedTotalMs,
     required this.currentReps,
     required this.currentWeight,
@@ -39,6 +41,7 @@ class WorkoutSnapshot {
     'phase': phase.name,
     'setStarted': setStartedAtMs,
     'restEnds': restEndsAtMs,
+    'restStarted': restStartedAtMs,
     'paused': pausedTotalMs,
     'reps': currentReps,
     'weight': currentWeight,
@@ -54,6 +57,7 @@ class WorkoutSnapshot {
         phase: WorkoutPhase.values.byName(json['phase'] as String),
         setStartedAtMs: json['setStarted'] as int,
         restEndsAtMs: json['restEnds'] as int?,
+        restStartedAtMs: json['restStarted'] as int?,
         pausedTotalMs: json['paused'] as int,
         currentReps: json['reps'] as int,
         currentWeight: (json['weight'] as num).toDouble(),

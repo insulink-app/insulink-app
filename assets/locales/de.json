@@ -292,12 +292,12 @@
   "pump": {
     "label": "Pumpe"
   },
-  "fitbit": {
-    "label": "Fitbit",
+  "google_health": {
+    "label": "Google Health",
     "connect": "Verbinden",
     "disconnect": "Trennen",
-    "disconnect_confirm": "Fitbit wirklich trennen? Die Fitbit-Boxen werden dann ausgeblendet.",
-    "hint": "Verbindet Fitbit über Google Health. Die Fitbit-App muss installiert sein und ihre Daten mit Health Connect synchronisieren.",
+    "disconnect_confirm": "Google Health wirklich trennen? Die Boxen werden dann ausgeblendet.",
+    "hint": "Koppelt die Google-Health-App (Health Connect). Deine Wearable-App muss installiert sein und ihre Daten dorthin synchronisieren.",
     "denied": "Zugriff auf Google Health verweigert.",
     "unavailable": "Google Health (Health Connect) ist nicht verfügbar.",
     "resting_hr": "Ruhepuls",
@@ -308,7 +308,19 @@
       "connected": "Verbunden",
       "disconnected": "Nicht verbunden",
       "source": "Über Google Health"
-    }
+    },
+    "detail": {
+      "empty": "Noch keine Daten. Google Health synchronisieren."
+    },
+    "sleep_stage": {
+      "_": "Schlafphasen",
+      "deep": "Tiefschlaf",
+      "rem": "REM",
+      "light": "Leichtschlaf",
+      "awake": "Wach"
+    },
+    "hr_min": "Min",
+    "hr_max": "Max"
   },
   "devices": {
     "label": "Geräte"
@@ -327,6 +339,10 @@
     },
     "copy": "Kopieren",
     "copy_suffix": " (Kopie)",
+    "activities": {
+      "_": "Aktivitäten",
+      "empty": "Noch keine Aktivitäten aufgezeichnet."
+    },
     "activity": {
       "steps": "Schritte",
       "distance": "Distanz",
@@ -433,6 +449,7 @@
       "deleted_routine": "Gelöschte Routine",
       "sets": "# Sätze",
       "duration": "Dauer",
+      "rest": "Pause",
       "set_n": "Satz #",
       "resume": "Training fortsetzen",
       "delete_confirm": "Dieses Protokoll wirklich löschen?",

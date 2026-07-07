@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/fitbit/fitbit_models.dart';
+import 'package:insulink/src/google_health/google_health_models.dart';
 
 void main() {
-  test('FitbitDay round-trips through JSON, keeping nulls out', () {
-    const day = FitbitDay(dateKey: '2026-07-04', restingHr: 58, sleepMinutes: 440);
-    final back = FitbitDay.fromJson(day.toJson());
+  test('GoogleHealthDay round-trips through JSON, keeping nulls out', () {
+    const day = GoogleHealthDay(dateKey: '2026-07-04', restingHr: 58, sleepMinutes: 440);
+    final back = GoogleHealthDay.fromJson(day.toJson());
     expect(back.dateKey, '2026-07-04');
     expect(back.restingHr, 58);
     expect(back.sleepMinutes, 440);

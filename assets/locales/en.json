@@ -292,12 +292,12 @@
   "pump": {
     "label": "Pump"
   },
-  "fitbit": {
-    "label": "Fitbit",
+  "google_health": {
+    "label": "Google Health",
     "connect": "Connect",
     "disconnect": "Disconnect",
-    "disconnect_confirm": "Really disconnect Fitbit? Its boxes will then be hidden.",
-    "hint": "Connects Fitbit through Google Health. The Fitbit app must be installed and syncing its data to Health Connect.",
+    "disconnect_confirm": "Really disconnect Google Health? Its boxes will then be hidden.",
+    "hint": "Couples the Google Health app (Health Connect). Your wearable's app must be installed and syncing its data there.",
     "denied": "Access to Google Health was denied.",
     "unavailable": "Google Health (Health Connect) is not available.",
     "resting_hr": "Resting HR",
@@ -308,7 +308,19 @@
       "connected": "Connected",
       "disconnected": "Not connected",
       "source": "Via Google Health"
-    }
+    },
+    "detail": {
+      "empty": "No data yet. Sync Google Health."
+    },
+    "sleep_stage": {
+      "_": "Sleep phases",
+      "deep": "Deep",
+      "rem": "REM",
+      "light": "Light",
+      "awake": "Awake"
+    },
+    "hr_min": "Min",
+    "hr_max": "Max"
   },
   "devices": {
     "label": "Devices"
@@ -327,6 +339,10 @@
     },
     "copy": "Copy",
     "copy_suffix": " (copy)",
+    "activities": {
+      "_": "Activities",
+      "empty": "No activities logged yet."
+    },
     "activity": {
       "steps": "Steps",
       "distance": "Distance",
@@ -433,6 +449,7 @@
       "deleted_routine": "Deleted routine",
       "sets": "# sets",
       "duration": "Duration",
+      "rest": "Rest",
       "set_n": "Set #",
       "resume": "Resume workout",
       "delete_confirm": "Delete this log entry?",

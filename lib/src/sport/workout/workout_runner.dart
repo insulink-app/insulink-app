@@ -31,6 +31,7 @@ class WorkoutRunner extends ChangeNotifier {
   double _currentWeight;
   DateTime _setStartedAt;
   DateTime? _restEndsAt;
+  DateTime? _restStartedAt;
   Duration _pausedTotal;
   DateTime? _pausedAt;
   final List<SetLog> _sets = [];
@@ -58,6 +59,7 @@ class WorkoutRunner extends ChangeNotifier {
          resume?.setStartedAtMs ?? DateTime.now().millisecondsSinceEpoch,
        ),
        _restEndsAt = _dateOrNull(resume?.restEndsAtMs),
+       _restStartedAt = _dateOrNull(resume?.restStartedAtMs),
        _pausedTotal = Duration(milliseconds: resume?.pausedTotalMs ?? 0) {
     if (resume != null) {
       _sets.addAll(resume.sets);
@@ -167,13 +169,9 @@ class WorkoutRunner extends ChangeNotifier {
     if (_sets.isEmpty) {
       return;
     }
-    final last = _sets.last;
-    _sets[_sets.length - 1] = SetLog(
-      exerciseId: last.exerciseId,
-      reps: reps ?? last.reps,
-      seconds: last.seconds,
-      weightKg: weightKg ?? last.weightKg,
-      atEpochMs: last.atEpochMs,
+    _sets[_sets.length - 1] = _sets.last.copyWith(
+      reps: reps,
+      weightKg: weightKg,
     );
     notifyListeners();
     _persist();
@@ -199,6 +197,9 @@ class WorkoutRunner extends ChangeNotifier {
     _pausedTotal += delta;
     _setStartedAt = _setStartedAt.add(delta);
     _restEndsAt = _restEndsAt?.add(delta);
+    // Shift the rest start forward too, so the logged rest excludes paused spans
+    // (same trick as [_setStartedAt] for the set stopwatch).
+    _restStartedAt = _restStartedAt?.add(delta);
     _pausedAt = null;
     notifyListeners();
     _persist();
@@ -263,9 +264,23 @@ class WorkoutRunner extends ChangeNotifier {
         reps: isTimed ? null : _currentReps,
         seconds: isTimed ? elapsed.inSeconds : null,
         weightKg: isWeighted ? _currentWeight : null,
+        durationSecs: elapsed.inSeconds,
         atEpochMs: DateTime.now().millisecondsSinceEpoch,
       ),
     );
+  }
+
+  /// On leaving a rest, stamp the rest actually taken onto the set it followed
+  /// (the last logged set). No-op when no rest was active (e.g. a zero-rest
+  /// advance or a jump straight from exercising).
+  void _recordRestForLastSet() {
+    final startedAt = _restStartedAt;
+    if (startedAt == null || _sets.isEmpty) {
+      return;
+    }
+    final rest = DateTime.now().difference(startedAt);
+    _sets[_sets.length - 1] = _sets.last.copyWith(restSecs: rest.inSeconds);
+    _restStartedAt = null;
   }
 
   /// Advances setIndex/exerciseIndex. false when nothing follows.
@@ -284,12 +299,14 @@ class WorkoutRunner extends ChangeNotifier {
 
   void _enterResting(int seconds) {
     _phase = WorkoutPhase.resting;
-    _restEndsAt = DateTime.now().add(Duration(seconds: seconds));
+    _restStartedAt = DateTime.now();
+    _restEndsAt = _restStartedAt!.add(Duration(seconds: seconds));
     notifyListeners();
     _persist();
   }
 
   void _enterExercising() {
+    _recordRestForLastSet();
     _phase = WorkoutPhase.exercising;
     _restEndsAt = null;
     _setStartedAt = DateTime.now();
@@ -332,6 +349,7 @@ class WorkoutRunner extends ChangeNotifier {
         phase: _phase,
         setStartedAtMs: _setStartedAt.millisecondsSinceEpoch,
         restEndsAtMs: _restEndsAt?.millisecondsSinceEpoch,
+        restStartedAtMs: _restStartedAt?.millisecondsSinceEpoch,
         pausedTotalMs: _pausedTotal.inMilliseconds,
         currentReps: _currentReps,
         currentWeight: _currentWeight,

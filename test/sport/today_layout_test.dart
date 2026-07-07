@@ -2,13 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 
 void main() {
-  test('visible() hides Fitbit tiles until connected and respects hidden set', () {
+  test('visible() hides Google Health tiles until connected and respects hidden set', () {
     final layout = TodayLayoutState(
       [TodayTile.steps, TodayTile.restingHr, TodayTile.weight, TodayTile.spo2],
       {TodayTile.spo2},
     );
 
-    // Not connected: Fitbit tiles filtered out, order + hidden preserved.
+    // Not connected: Google Health tiles filtered out, order + hidden preserved.
     expect(layout.visible(false), [TodayTile.steps, TodayTile.weight]);
 
     // Connected: restingHr appears in its slot; spo2 stays hidden.
