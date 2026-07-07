@@ -1,4 +1,5 @@
 import '../../cgm/protocol/device_info.dart';
+import 'sensor_format.dart';
 
 /// One labelled group of sensor attributes (status / device / session / battery)
 /// with its already-formatted rows (label → value).
@@ -55,9 +56,9 @@ class SensorAttributes {
     if (lastUpdate != null) {
       _add(rows, 'sensor.field.last_reading', _dateTimeWithSeconds(lastUpdate));
     }
-    _add(rows, 'sensor.field.started', _dateTime(sensorStart));
+    _add(rows, 'sensor.field.started', formatSensorDateTime(sensorStart));
     _add(rows, 'sensor.field.expires', _expiry());
-    _add(rows, 'sensor.field.age', _duration(_effectiveAge));
+    _add(rows, 'sensor.field.age', formatSensorDuration(_effectiveAge));
     _addCalibration(rows);
     return rows;
   }
@@ -93,8 +94,8 @@ class SensorAttributes {
 
   List<MapEntry<String, String>> _session() {
     final rows = <MapEntry<String, String>>[];
-    _add(rows, 'sensor.field.session', _duration(info.sessionLengthSec));
-    _add(rows, 'sensor.field.warmup', _duration(info.warmupSec));
+    _add(rows, 'sensor.field.session', formatSensorDuration(info.sessionLengthSec));
+    _add(rows, 'sensor.field.warmup', formatSensorDuration(info.warmupSec));
     _add(rows, 'sensor.field.max_days', info.maxLifetimeDays?.toString());
     return rows;
   }
@@ -131,7 +132,7 @@ class SensorAttributes {
     final remainingLabel = remaining.isNegative
         ? localize('sensor.value.expired')
         : 'in ${remaining.inDays}d ${remaining.inHours % 24}h';
-    return '${_dateTime(expiry)} ($remainingLabel)';
+    return '${formatSensorDateTime(expiry)} ($remainingLabel)';
   }
 
   int? get _effectiveAge {
@@ -147,37 +148,12 @@ class SensorAttributes {
   String? _hex(int? value) =>
       value != null ? '0x${value.toRadixString(16)}' : null;
 
-  String _duration(int? secs) {
-    if (secs == null) {
-      return '—';
-    }
-    final days = secs ~/ 86400;
-    final hours = (secs % 86400) ~/ 3600;
-    final minutes = (secs % 3600) ~/ 60;
-    if (days > 0) {
-      return '${days}d ${hours}h';
-    }
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    }
-    return '${minutes}m';
-  }
-
-  String _dateTime(DateTime? time) {
-    if (time == null) {
-      return '—';
-    }
-    return '${_two(time.day)}.${_two(time.month)} '
-        '${_two(time.hour)}:${_two(time.minute)}';
-  }
-
-  /// Like [_dateTime] but with seconds, for the precise last-reception time.
+  /// Like [formatSensorDateTime] but with seconds, for the precise last-reception
+  /// time.
   String _dateTimeWithSeconds(DateTime? time) {
     if (time == null) {
       return '—';
     }
-    return '${_dateTime(time)}:${_two(time.second)}';
+    return '${formatSensorDateTime(time)}:${twoDigits(time.second)}';
   }
-
-  String _two(int value) => value.toString().padLeft(2, '0');
 }

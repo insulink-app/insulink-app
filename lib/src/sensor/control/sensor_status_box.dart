@@ -2,15 +2,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../cgm/cgm_connection.dart';
 import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
+import '../../localization/locales.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import 'sensor_life_bar.dart';
 import 'sensor_session_controls.dart';
-
-/// Standard G7 lifetime (10 days + 12 h grace), used when the sensor hasn't
-/// reported its own session length yet.
-const int _defaultSessionLengthSec = 907200;
 
 /// Box shown once paired: connection status header plus the session controls.
 /// While [searching] (connected but no reading yet) the header shows a spinner.
@@ -27,7 +25,8 @@ class SensorStatusBox extends StatelessWidget {
   bool get _connected => controller.connected;
 
   /// Best-effort session length: the sensor's reported value, else its max
-  /// lifetime, else the standard G7 lifetime — so the life bar always renders.
+  /// lifetime, else the active sensor's nominal lifetime (G7 ~10 d, Libre 3
+  /// 14 d) — so the life bar always renders with the right total.
   int get _sessionLengthSec {
     final info = controller.info;
     if (info.sessionLengthSec != null) {
@@ -36,7 +35,7 @@ class SensorStatusBox extends StatelessWidget {
     if (info.maxLifetimeDays != null) {
       return info.maxLifetimeDays! * 86400;
     }
-    return _defaultSessionLengthSec;
+    return controller.sensorType.sessionLengthSec;
   }
 
   @override
@@ -113,13 +112,15 @@ class SensorStatusBox extends StatelessWidget {
     );
   }
 
+  /// The sensor type is the headline (prominent), with connection state + the
+  /// live value on the dimmed line below.
   Widget _titles(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         LocaleText(
-          _titleKey,
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+          _typeKey,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 2),
         _subtitle(context),
@@ -127,7 +128,11 @@ class SensorStatusBox extends StatelessWidget {
     );
   }
 
-  String get _titleKey {
+  String get _typeKey => controller.sensorType == SensorType.abbottLibre3
+      ? 'sensor.type.libre3'
+      : 'sensor.type.g7';
+
+  String get _statusKey {
     if (searching) {
       return 'sensor.status.searching';
     }
@@ -138,19 +143,12 @@ class SensorStatusBox extends StatelessWidget {
 
   Widget _subtitle(BuildContext context) {
     final dimmed = TextStyle(fontSize: 13, color: Colors.grey[500]);
-    if (searching) {
-      return LocaleText('sensor.searching.hint', style: dimmed);
-    }
+    final status = Locales.string(context, _statusKey);
     if (_connected && controller.currentMgdl != null) {
       final glucose = context.watch<ProfileGlucoseState>();
-      return Text(
-        glucose.formatWithUnit(controller.currentMgdl!),
-        style: dimmed,
-      );
+      final value = glucose.formatWithUnit(controller.currentMgdl!);
+      return Text('$status · $value', style: dimmed);
     }
-    final key = controller.hasSensor
-        ? 'sensor.status.paired'
-        : 'sensor.status.unpaired';
-    return LocaleText(key, style: dimmed);
+    return Text(status, style: dimmed);
   }
 }

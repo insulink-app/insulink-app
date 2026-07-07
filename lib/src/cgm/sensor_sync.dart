@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
+import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/request/request.dart';
 
@@ -14,10 +15,6 @@ import 'package:insulink/src/request/request.dart';
 /// changes (e.g. a re-pair rotates the session key). [fetchCurrent] runs in the
 /// UI isolate, where [Request] can refresh an expired token.
 class SensorSync {
-  // Fallback G7 lifetime (10 days + 12 h grace) when the sensor hasn't reported
-  // its session length yet — same fallback the expiry warning uses.
-  static const _fallbackLifetimeSec = 907200;
-
   /// Register or update the current sensor. Idempotent and cheap: it only POSTs
   /// on the first complete identity and whenever that identity changes.
   Future<void> sync(CgmStore store) async {
@@ -38,13 +35,20 @@ class SensorSync {
   }
 
   /// The identity + sensor-info blob the backend stores opaquely and we decode on
-  /// restore. Carries everything the sensor page shows (the full [G7DeviceInfo],
-  /// session start and algorithm state) on top of the reconnect identity. Null
-  /// until the sensor is fully paired (pairing code + BLE id + session key).
+  /// restore, tagged with `sensor_type` so the restore side knows which reconnect
+  /// identity it holds. Null until the sensor is fully paired.
   // ponytail: the dedup keys on the whole blob, so a slowly-drifting field
   // (battery voltage) can trigger an update each reconnect — fine, it's one
   // small POST; split static vs volatile fields only if it proves chatty.
   String? _data(CgmStore store, String key) {
+    return store.sensorType == SensorType.abbottLibre3
+        ? _libreData(store, key)
+        : _g7Data(store, key);
+  }
+
+  /// G7 identity: pairing code + BLE id + J-PAKE session key, plus the full
+  /// [G7DeviceInfo] the sensor page shows.
+  String? _g7Data(CgmStore store, String key) {
     final pairingCode = store.pairingCode;
     final deviceId = store.deviceId(key);
     final sessionKey = store.sessionKeyHex(key);
@@ -58,6 +62,7 @@ class SensorSync {
     final info = store.loadInfo(key);
     final latest = store.loadLatest(key);
     return jsonEncode({
+      'sensor_type': store.sensorType.wireKey,
       'resolved_key': key,
       'pairing_code': pairingCode,
       'device_id': deviceId,
@@ -68,13 +73,36 @@ class SensorSync {
     });
   }
 
-  /// Epoch-ms the sensor session ends — start plus its reported lifetime.
+  /// Libre 3 identity: the NFC-derived MAC (+ BLE PIN and cached auth key) that
+  /// let a fresh install reconnect without re-scanning the sensor.
+  String? _libreData(CgmStore store, String key) {
+    final mac = store.libreMac(key);
+    if (mac == null || mac.isEmpty) {
+      return null;
+    }
+    final pin = store.librePinHex(key);
+    final authKey = store.libreAuthKeyHex(key);
+    final start = store.loadSensorStart(key);
+    final latest = store.loadLatest(key);
+    return jsonEncode({
+      'sensor_type': store.sensorType.wireKey,
+      'resolved_key': key,
+      'libre_mac': mac,
+      'libre_pin': ?pin,
+      'libre_auth': ?authKey,
+      if (start != null) 'sensor_start': start.millisecondsSinceEpoch,
+      if (latest != null) 'state': latest['state'],
+    });
+  }
+
+  /// Epoch-ms the sensor session ends — start plus its reported lifetime, else
+  /// the active sensor's nominal lifetime (G7 ~10 d, Libre 3 14 d).
   int _expiresAt(CgmStore store, String key) {
     final start =
         store.loadSensorStart(key)?.millisecondsSinceEpoch ??
         DateTime.now().millisecondsSinceEpoch;
-    final lifetimeSec =
-        store.loadInfo(key)?.sessionLengthSec ?? _fallbackLifetimeSec;
+    final lifetimeSec = store.loadInfo(key)?.sessionLengthSec ??
+        store.sensorType.sessionLengthSec;
     return start + lifetimeSec * 1000;
   }
 
@@ -129,10 +157,14 @@ class SensorSync {
       final blob = jsonDecode(data) as Map<String, dynamic>;
       return SensorRestore(
         sensorId: '$id',
+        sensorType: SensorType.fromWireKey(blob['sensor_type'] as String?),
         resolvedKey: blob['resolved_key'] as String,
-        pairingCode: blob['pairing_code'] as String,
-        deviceId: blob['device_id'] as String,
-        sessionKeyHex: blob['session_key'] as String,
+        pairingCode: blob['pairing_code'] as String?,
+        deviceId: blob['device_id'] as String?,
+        sessionKeyHex: blob['session_key'] as String?,
+        libreMac: blob['libre_mac'] as String?,
+        librePinHex: blob['libre_pin'] as String?,
+        libreAuthKeyHex: blob['libre_auth'] as String?,
         infoJson: blob['info'] as Map<String, dynamic>?,
         sensorStartMs: (blob['sensor_start'] as num?)?.toInt(),
       );
@@ -154,23 +186,37 @@ class SensorSync {
 }
 
 /// A backend sensor decoded into everything the local store needs to reconnect
-/// without re-pairing.
+/// without re-pairing. [sensorType] selects which identity fields are populated:
+/// the G7 ([pairingCode]/[deviceId]/[sessionKeyHex]) or the Libre 3
+/// ([libreMac]/[librePinHex]/[libreAuthKeyHex]).
 class SensorRestore {
   const SensorRestore({
     required this.sensorId,
+    required this.sensorType,
     required this.resolvedKey,
-    required this.pairingCode,
-    required this.deviceId,
-    required this.sessionKeyHex,
+    this.pairingCode,
+    this.deviceId,
+    this.sessionKeyHex,
+    this.libreMac,
+    this.librePinHex,
+    this.libreAuthKeyHex,
     this.infoJson,
     this.sensorStartMs,
   });
 
   final String sensorId;
+  final SensorType sensorType;
   final String resolvedKey;
-  final String pairingCode;
-  final String deviceId;
-  final String sessionKeyHex;
+
+  // G7 identity.
+  final String? pairingCode;
+  final String? deviceId;
+  final String? sessionKeyHex;
+
+  // Libre 3 identity.
+  final String? libreMac;
+  final String? librePinHex;
+  final String? libreAuthKeyHex;
 
   /// The sensor page info ([G7DeviceInfo] JSON) + session start, so the page
   /// populates immediately on restore instead of waiting for a reconnect.

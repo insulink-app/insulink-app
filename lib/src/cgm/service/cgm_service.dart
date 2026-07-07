@@ -204,10 +204,11 @@ class CgmTaskHandler extends TaskHandler {
       alarms.checkAdvisory(reading.glucoseMgDl, reading.trendMgDlPerMin);
     }
     SensorSync().sync(store);
-    // Fall back to the standard G7 lifetime (10 days + 12 h grace) when the
-    // sensor hasn't reported its own session length.
+    // Fall back to the active sensor's nominal lifetime when the connection
+    // hasn't reported its own session length (else the halftime/expiry reminders
+    // fire on the G7 schedule for a Libre 3).
     final key = store.resolvedKey ?? _serial;
-    final lifetime = _conn?.sessionLengthSec ?? 907200;
+    final lifetime = _conn?.sessionLengthSec ?? store.sensorType.sessionLengthSec;
     alarms.checkExpiry(
       store: store,
       key: key,
@@ -223,9 +224,11 @@ class CgmTaskHandler extends TaskHandler {
     FlutterForegroundTask.sendDataToMain({
       't': 'reading',
       'mgdl': reading.glucoseMgDl,
+      'pred': reading.predictedMgDl,
       'trendTenths': reading.trendTenths,
       'state': reading.state,
       'secs': reading.secsSinceStart,
+      'tempC': reading.temperatureCentiC,
     });
   }
 

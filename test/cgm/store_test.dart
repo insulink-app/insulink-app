@@ -20,14 +20,17 @@ void main() {
     expect(store.loadReadings('nope'), isEmpty);
   });
 
-  test('saveReadings keeps only the most recent ~300 points', () async {
+  test('saveReadings keeps only the most recent 24 h by time', () async {
     final store = await CgmStore.open();
-    final many = {for (var index = 0; index < 400; index++) index * 300: 100};
+    // 48 h of 5-min points; only the last 24 h (relative to the newest key)
+    // should survive, regardless of point count/cadence.
+    final many = {for (var index = 0; index <= 576; index++) index * 300: 100};
     await store.saveReadings('serialA', many);
     final loaded = store.loadReadings('serialA');
-    expect(loaded, hasLength(300));
-    // The newest key survives, the oldest is dropped.
-    expect(loaded.containsKey(399 * 300), isTrue);
+    final newest = 576 * 300;
+    expect(loaded.containsKey(newest), isTrue);
+    expect(loaded.containsKey(newest - 24 * 3600), isTrue);
+    expect(loaded.containsKey(newest - 24 * 3600 - 300), isFalse);
     expect(loaded.containsKey(0), isFalse);
   });
 

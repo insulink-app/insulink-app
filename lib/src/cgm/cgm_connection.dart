@@ -4,16 +4,30 @@ import 'dart:typed_data';
 /// isolate knows which [CgmConnection] strategy to build and the pairing UI
 /// knows which flow to show.
 enum SensorType {
-  dexcomG7('dexcom_g7', 'DEXCOM_G7'),
-  abbottLibre3('abbott_libre3', 'ABBOTT_LIBRE3');
+  dexcomG7('dexcom_g7', 'DEXCOM_G7', 300, 907200),
+  abbottLibre3('abbott_libre3', 'ABBOTT_LIBRE3', 60, 1209600);
 
-  const SensorType(this.wireKey, this.backendType);
+  const SensorType(
+    this.wireKey,
+    this.backendType,
+    this.readingIntervalSec,
+    this.sessionLengthSec,
+  );
 
   /// Stable string stored in [CgmStore].
   final String wireKey;
 
   /// The value the backend's `SensorType` enum expects.
   final String backendType;
+
+  /// Nominal seconds between live readings (G7 ~5 min, Libre 3 ~1 min) — drives
+  /// the overview "next reading" countdown.
+  final int readingIntervalSec;
+
+  /// Nominal session length (G7 = 10 d + 12 h grace, Libre 3 = 14 d) — the
+  /// fallback for the expiry/halftime reminders when the sensor hasn't reported
+  /// its own length. Halftime fires at half of this.
+  final int sessionLengthSec;
 
   /// Resolve a persisted [wireKey] back to a type, defaulting to the Dexcom G7
   /// (the original, only sensor — so existing installs keep working).
@@ -41,6 +55,7 @@ class CgmReading {
     required this.predictedMgDl,
     required this.trendTenths,
     required this.state,
+    this.temperatureCentiC,
     this.raw,
   });
 
@@ -58,6 +73,10 @@ class CgmReading {
   /// Raw sensor state/status byte (Dexcom algorithm state, or Libre patch
   /// status). Displayed and cached; its meaning is sensor-specific.
   final int state;
+
+  /// Sensor body temperature in 1/100 °C, when the sensor reports it (Libre 3
+  /// includes it in each one-minute reading; null for the G7).
+  final int? temperatureCentiC;
   final Uint8List? raw;
 
   double get trendMgDlPerMin => trendTenths / 10.0;

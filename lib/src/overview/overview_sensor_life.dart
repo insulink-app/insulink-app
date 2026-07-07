@@ -8,9 +8,6 @@ import 'package:provider/provider.dart';
 class OverviewSensorLife extends StatelessWidget {
   const OverviewSensorLife({super.key});
 
-  /// Standard G7 session length (~10.5 d incl. grace) — the last-resort default.
-  static const int _defaultSessionLengthSec = 907200;
-
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
@@ -26,7 +23,8 @@ class OverviewSensorLife extends StatelessWidget {
   }
 
   /// Best-effort session length: the sensor's reported value, else its max
-  /// lifetime, else the standard G7 lifetime — so the bar always renders.
+  /// lifetime, else the active sensor's nominal lifetime (G7 ~10 d, Libre 3
+  /// 14 d) — so the bar always renders with the right total.
   int _sessionLength(CgmController controller) {
     final info = controller.info;
     if (info.sessionLengthSec != null) {
@@ -35,6 +33,6 @@ class OverviewSensorLife extends StatelessWidget {
     if (info.maxLifetimeDays != null) {
       return info.maxLifetimeDays! * 86400;
     }
-    return _defaultSessionLengthSec;
+    return controller.sensorType.sessionLengthSec;
   }
 }

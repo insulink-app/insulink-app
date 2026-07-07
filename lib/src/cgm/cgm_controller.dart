@@ -287,9 +287,10 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       age: 0,
       sequence: 0,
       glucoseMgDl: map['mgdl'] as int?,
-      predictedMgDl: 0,
+      predictedMgDl: map['pred'] as int? ?? 0,
       trendTenths: map[trendKey] as int? ?? 0,
       state: map['state'] as int? ?? 0,
+      temperatureCentiC: map['tempC'] as int?,
     );
   }
 
@@ -577,6 +578,10 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     return _store?.sessionKey(key) != null;
   }
 
+  /// The Libre 3's BLE MAC from NFC activation (the sensor's stable address),
+  /// shown on the sensor info page. Null for the G7 or before activation.
+  String? get libreMac => _store?.libreMac(_key);
+
   /// The key cached data is stored under: the resolved key set by the read
   /// pipeline, falling back to the user serial (covers the brief window before
   /// the pipeline has resolved one).
@@ -788,11 +793,24 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     if (store == null) {
       return;
     }
-    await store.saveIdentity(serial: '', pairingCode: restore.pairingCode);
+    await store.saveSensorType(restore.sensorType);
+    await store.saveIdentity(serial: '', pairingCode: restore.pairingCode ?? '');
     await store.saveResolvedKey(restore.resolvedKey);
-    await store.saveDeviceId(restore.resolvedKey, restore.deviceId);
-    await store.saveSessionKeyHex(restore.resolvedKey, restore.sessionKeyHex);
     await store.saveBackendSensorId(restore.resolvedKey, restore.sensorId);
+    if (restore.sensorType == SensorType.abbottLibre3) {
+      await _restoreLibreIdentity(store, restore);
+    } else {
+      await _restoreG7Identity(store, restore);
+    }
+    code.text = restore.pairingCode ?? '';
+    _restoreFromCache(store);
+    notifyListeners();
+    await start();
+  }
+
+  Future<void> _restoreG7Identity(CgmStore store, SensorRestore restore) async {
+    await store.saveDeviceId(restore.resolvedKey, restore.deviceId!);
+    await store.saveSessionKeyHex(restore.resolvedKey, restore.sessionKeyHex!);
     final infoJson = restore.infoJson;
     if (infoJson != null) {
       final start = restore.sensorStartMs;
@@ -802,10 +820,31 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
         start == null ? null : DateTime.fromMillisecondsSinceEpoch(start),
       );
     }
-    code.text = restore.pairingCode;
-    _restoreFromCache(store);
-    notifyListeners();
-    await start();
+  }
+
+  Future<void> _restoreLibreIdentity(
+    CgmStore store,
+    SensorRestore restore,
+  ) async {
+    if (restore.libreMac != null) {
+      await store.saveLibreMac(restore.resolvedKey, restore.libreMac!);
+    }
+    if (restore.librePinHex != null) {
+      await store.saveLibrePinHex(restore.resolvedKey, restore.librePinHex!);
+    }
+    if (restore.libreAuthKeyHex != null) {
+      await store.saveLibreAuthKeyHex(
+        restore.resolvedKey,
+        restore.libreAuthKeyHex!,
+      );
+    }
+    final start = restore.sensorStartMs;
+    if (start != null) {
+      await store.saveSensorStart(
+        restore.resolvedKey,
+        DateTime.fromMillisecondsSinceEpoch(start),
+      );
+    }
   }
 
   Future<void> _startService() async {

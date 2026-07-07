@@ -45,8 +45,11 @@ class _OverviewTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lastUpdate = context.watch<CgmController>().lastUpdate;
-    return OverviewUpdate(lastUpdate: lastUpdate);
+    final controller = context.watch<CgmController>();
+    return OverviewUpdate(
+      lastUpdate: controller.lastUpdate,
+      intervalSec: controller.sensorType.readingIntervalSec,
+    );
   }
 }
 

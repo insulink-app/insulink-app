@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:insulink/src/sensor/control/sensor_control_box.dart';
+import 'package:insulink/src/sensor/info/libre3_sensor_info.dart';
 import 'package:insulink/src/sensor/info/sensor_info.dart';
 import 'package:insulink/src/sensor/sensor_log_panel.dart';
 import 'package:provider/provider.dart';
@@ -157,17 +159,32 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
                 ),
               ),
               const SizedBox(height: 12),
-              SensorInfo(
-                info: controller.info,
-                sensorStart: controller.sensorStart,
-                state: controller.latest?.state,
-                age: controller.latest?.secsSinceStart,
-                lastUpdate: controller.lastUpdate,
-              ),
+              _sensorInfo(controller),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// The G7 info page reads a [G7DeviceInfo]; the Libre 3 has its own builder
+  /// (activation MAC, session clock, plus the one-minute reading's predicted
+  /// glucose / trend / temperature).
+  Widget _sensorInfo(CgmController controller) {
+    if (controller.sensorType == SensorType.abbottLibre3) {
+      return Libre3SensorInfo(
+        mac: controller.libreMac,
+        sensorStart: controller.sensorStart,
+        lastUpdate: controller.lastUpdate,
+        latest: controller.latest,
+      );
+    }
+    return SensorInfo(
+      info: controller.info,
+      sensorStart: controller.sensorStart,
+      state: controller.latest?.state,
+      age: controller.latest?.secsSinceStart,
+      lastUpdate: controller.lastUpdate,
     );
   }
 

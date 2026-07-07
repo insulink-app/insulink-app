@@ -135,6 +135,18 @@ class CgmStore {
   Future<void> saveLibreAuthKey(String key, Uint8List authKey) =>
       _set(_kLibreAuth(key), _encodeHex(authKey));
 
+  // Hex passthroughs for the backend sensor blob (SensorSync) — the values are
+  // already stored as hex, so avoid a decode/re-encode round trip.
+  String? librePinHex(String key) => _cache[_kLibrePin(key)];
+
+  Future<void> saveLibrePinHex(String key, String hex) =>
+      _set(_kLibrePin(key), hex);
+
+  String? libreAuthKeyHex(String key) => _cache[_kLibreAuth(key)];
+
+  Future<void> saveLibreAuthKeyHex(String key, String hex) =>
+      _set(_kLibreAuth(key), hex);
+
   static String _encodeHex(Uint8List bytes) =>
       bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
 
@@ -241,11 +253,19 @@ class CgmStore {
 
   /// Cache recent glucose history (keyed by seconds-since-session-start) so the
   /// chart can show something immediately on the next launch. Keeps the most
-  /// recent ~300 points (≈24 h at 5-min cadence).
+  /// recent 24 h by time — cadence-independent, so the Libre 3's 1-min stream
+  /// gets the same backlog window as the G7's 5-min one (a fixed point count
+  /// would give the Libre only ~5 h).
+  static const int _readingsWindowSec = 24 * 3600;
+
   Future<void> saveReadings(String serial, Map<int, int> byTime) async {
-    final keys = byTime.keys.toList()..sort();
-    final recent = keys.length > 300 ? keys.sublist(keys.length - 300) : keys;
-    final capped = {for (final key in recent) key: byTime[key]!};
+    final cutoff = byTime.keys.isEmpty
+        ? 0
+        : byTime.keys.reduce((a, b) => a > b ? a : b) - _readingsWindowSec;
+    final capped = {
+      for (final entry in byTime.entries)
+        if (entry.key >= cutoff) entry.key: entry.value,
+    };
     await _set(_kReadings(serial), _encodeIntMap(capped));
   }
 
@@ -312,6 +332,13 @@ class CgmStore {
     final ms = int.tryParse(_cache[_kStart(serial)] ?? '');
     return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
   }
+
+  /// Persist just the session start. The G7 carries it via [saveInfo], but the
+  /// Libre 3 has no [G7DeviceInfo] — and without a stored start the headline
+  /// reads a cached value as stale (grey) and the stale-recovery restarts the
+  /// service on every launch.
+  Future<void> saveSensorStart(String serial, DateTime start) =>
+      _set(_kStart(serial), start.millisecondsSinceEpoch.toString());
 
   static String _kExpiryNotified(String serial) => 'g7.expiry_notified.$serial';
 

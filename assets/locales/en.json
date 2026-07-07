@@ -184,7 +184,8 @@
       "session": "SESSION",
       "battery": "BATTERY",
       "empty": "no sensor info yet",
-      "title": "Sensor data"
+      "title": "Sensor data",
+      "live": "Live reading"
     },
     "disconnect": "Disconnect",
     "status": {
@@ -254,7 +255,10 @@
       "max_days": "Max days",
       "voltage": "Voltage",
       "runtime": "Runtime",
-      "temperature": "Temperature"
+      "temperature": "Temperature",
+      "mac": "Address",
+      "predicted": "Predicted",
+      "trend": "Trend"
     },
     "value": {
       "expired": "expired",

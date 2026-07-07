@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/overview/update/overview_clock_painter.dart';
 
 /// Compact "next reading" indicator: an animated clock whose ring fills as the
-/// next ~5-minute G7 reading approaches, with a short m:ss countdown. Replaces
+/// next reading approaches (cadence per [intervalSec] — ~5 min on the G7, ~1 min
+/// on the Libre 3), with a short m:ss countdown. Replaces
 /// the verbose last/next-update text — the absolute last-reception time now
 /// lives on the sensor page.
 class OverviewUpdate extends StatefulWidget {
-  const OverviewUpdate({super.key, required this.lastUpdate});
+  const OverviewUpdate({
+    super.key,
+    required this.lastUpdate,
+    required this.intervalSec,
+  });
 
   final DateTime? lastUpdate;
+
+  /// Nominal seconds between readings for the active sensor (see
+  /// [SensorType.readingIntervalSec]).
+  final int intervalSec;
 
   @override
   State<OverviewUpdate> createState() => _OverviewUpdateState();
@@ -16,8 +26,6 @@ class OverviewUpdate extends StatefulWidget {
 
 class _OverviewUpdateState extends State<OverviewUpdate>
     with SingleTickerProviderStateMixin {
-  /// G7 EGV cadence — a new value roughly every 5 minutes.
-  static const _intervalSec = 300;
 
   /// Drives the rotating clock hands so the indicator always looks "alive";
   /// also serves as the once-per-frame tick that refreshes the countdown.
@@ -82,8 +90,8 @@ class _OverviewUpdateState extends State<OverviewUpdate>
       return (progress: 0, color: Colors.grey, value: '—');
     }
     final elapsed = DateTime.now().difference(last);
-    final remaining = const Duration(seconds: _intervalSec) - elapsed;
-    final progress = (elapsed.inSeconds / _intervalSec).clamp(0.0, 1.0);
+    final remaining = Duration(seconds: widget.intervalSec) - elapsed;
+    final progress = (elapsed.inSeconds / widget.intervalSec).clamp(0.0, 1.0);
     if (remaining.isNegative) {
       return (
         progress: progress,

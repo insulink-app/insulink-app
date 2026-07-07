@@ -184,7 +184,8 @@
       "session": "SITZUNG",
       "battery": "BATTERIE",
       "empty": "Noch keine Sensordaten",
-      "title": "Sensordaten"
+      "title": "Sensordaten",
+      "live": "Aktuelle Messung"
     },
     "disconnect": "Trennen",
     "status": {
@@ -254,7 +255,10 @@
       "max_days": "Max. Tage",
       "voltage": "Spannung",
       "runtime": "Laufzeit",
-      "temperature": "Temperatur"
+      "temperature": "Temperatur",
+      "mac": "Adresse",
+      "predicted": "Prognose",
+      "trend": "Trend"
     },
     "value": {
       "expired": "abgelaufen",

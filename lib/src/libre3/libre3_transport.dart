@@ -371,6 +371,44 @@ class Libre3Transport {
     }
   }
 
+  /// Ask the patch to replay its stored history from [fromLifeCount] (minutes
+  /// since activation) onward, so a gap left by a disconnect is filled from the
+  /// sensor's own buffer. Replies arrive on the (already-subscribed) historic
+  /// channel and land in [historicStream].
+  ///
+  /// ponytail: HARDWARE-UNVERIFIED — the Patch Control command framing below is a
+  /// best-effort guess, NOT captured from a real Libre 3. A wrong write here can
+  /// make the sensor drop the link, so the caller only fires it when there is an
+  /// actual gap to fill (never on a healthy continuous stream). Confirm the
+  /// opcode + argument layout against a Juggluco/DiaBLE BLE-HCI capture, fix
+  /// [_backfillCommand], then remove this warning.
+  Future<void> requestBackfill(int fromLifeCount) async {
+    final control = _patchControl;
+    if (control == null) {
+      _log('Libre 3 backfill: no patch-control characteristic bound');
+      return;
+    }
+    final command = _backfillCommand(fromLifeCount);
+    _log('Libre 3 backfill: writing patch-control ${_hex(command)}');
+    try {
+      await control.write(command, withoutResponse: false);
+      _log('Libre 3 backfill: patch-control write ok');
+    } catch (error) {
+      _log('Libre 3 backfill: patch-control write FAILED ($error)');
+    }
+  }
+
+  /// The (unverified) Patch Control payload: a one-byte "request historic"
+  /// opcode followed by the little-endian start life count.
+  static List<int> _backfillCommand(int fromLifeCount) => [
+        _patchControlBackfillOpcode,
+        fromLifeCount & 0xFF,
+        (fromLifeCount >> 8) & 0xFF,
+      ];
+
+  /// ponytail: placeholder opcode — replace with the value from a real capture.
+  static const int _patchControlBackfillOpcode = 0x01;
+
   /// Reassemble the data notifications before decrypting. At MTU 23 a reading
   /// (~35 B encrypted) arrives split across several ≤20-byte notifications, so a
   /// single fragment never MAC-verifies. AES-CCM only authenticates the COMPLETE
