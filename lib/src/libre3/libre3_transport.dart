@@ -33,6 +33,9 @@ class Libre3Transport {
   BluetoothCharacteristic? _historic;
   BluetoothCharacteristic? _patchStatus;
   BluetoothCharacteristic? _patchControl;
+  BluetoothCharacteristic? _clinicalData;
+  BluetoothCharacteristic? _eventLog;
+  BluetoothCharacteristic? _factoryData;
 
   final _glucoseRx = StreamController<Uint8List>.broadcast();
   final _historicRx = StreamController<Uint8List>.broadcast();
@@ -130,6 +133,12 @@ class Libre3Transport {
         _patchStatus = characteristic;
       case Libre3Uuids.patchControl:
         _patchControl = characteristic;
+      case Libre3Uuids.clinicalData:
+        _clinicalData = characteristic;
+      case Libre3Uuids.eventLog:
+        _eventLog = characteristic;
+      case Libre3Uuids.factoryData:
+        _factoryData = characteristic;
     }
   }
 
@@ -348,27 +357,57 @@ class Libre3Transport {
     }
   }
 
+  /// Enable notifications on the FULL data-service set, in the documented order
+  /// (`docs/LIBRE3.md`: PATCH_CONTROL → … → GLUCOSE → PATCH_STATUS, status last).
+  /// The Libre withheld its historic stream while only a subset was subscribed;
+  /// the sensor likely gates delivery on the complete notify set. glucose (ch3)
+  /// and historic (ch4) go through the AES-CCM decrypt; the rest are OBSERVE-ONLY
+  /// (raw-logged) because their channel/format is unknown — if the missed data
+  /// actually rides one of them, the log reveals which.
   Future<void> _enableDataChannels() async {
-    if (_patchControl != null) {
-      await _subscribe(_patchControl!, (_) {});
-    }
+    await _observe(_patchControl, 'patchControl');
     if (_historic != null) {
-      await _subscribe(_historic!, (data) => _decryptInto(
+      await _subscribeLogged(_historic!, 'historic', (data) => _decryptInto(
             Libre3Uuids.decryptHistoric,
             data,
             _historicRx,
           ));
     }
-    if (_patchStatus != null) {
-      await _subscribe(_patchStatus!, (_) {});
-    }
+    await _observe(_clinicalData, 'clinicalData');
+    await _observe(_eventLog, 'eventLog');
+    await _observe(_factoryData, 'factoryData');
     if (_oneMinute != null) {
-      await _subscribe(_oneMinute!, (data) => _decryptInto(
+      await _subscribeLogged(_oneMinute!, 'glucose', (data) => _decryptInto(
             Libre3Uuids.decryptGlucose,
             data,
             _glucoseRx,
           ));
     }
+    await _observe(_patchStatus, 'patchStatus');
+  }
+
+  /// Subscribe an observe-only characteristic: log every notification's raw hex
+  /// (we don't know its decrypt channel), so a silent historic stream that
+  /// actually surfaces here becomes visible on-device.
+  Future<void> _observe(BluetoothCharacteristic? characteristic, String name) async {
+    if (characteristic == null) {
+      return;
+    }
+    await _subscribeLogged(
+      characteristic,
+      name,
+      (data) => _log('Libre 3 $name notify: ${_hex(data)}'),
+    );
+  }
+
+  /// [_subscribe] plus a log line confirming the characteristic was notify-enabled.
+  Future<void> _subscribeLogged(
+    BluetoothCharacteristic characteristic,
+    String name,
+    void Function(List<int>) onData,
+  ) async {
+    await _subscribe(characteristic, onData);
+    _log('Libre 3 enabled notify: $name (${characteristic.uuid.str})');
   }
 
   /// Ask the patch to replay its stored history from [fromLifeCount] (minutes

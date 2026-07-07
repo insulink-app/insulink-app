@@ -170,7 +170,12 @@ Data service `089810CC-EF89-11E9-81B4-2A2AE2DBCCE4`:
 | Patch Status (notify) | `08981482` |
 | One-Minute Reading (notify) | `0898177A` |
 | Historical Data (notify) | `0898195A` |
-| Factory Data | `08981D24` |
+| Clinical Data (notify) | `08981AB8` |
+| Event Log (notify) | `08981BEE` |
+| Factory Data (notify) | `08981D24` |
+
+**All seven are notify-enabled at connect** — the sensor appears to withhold its
+streams until the full set is subscribed (see "Historic / backfill" below).
 
 Security service `0898203A-EF89-11E9-81B4-2A2AE2DBCCE4`:
 
@@ -241,7 +246,7 @@ is delegated to the `Libre3Crypto` bridge (Juggluco's `Natives.processint`
 | `0x08` → COMMAND | challenge sent | — |
 | CHALLENGE → 67 B | 60-B enc + 7-B nonce | `decryptChallenge(nonce, enc60)` → `[r2‖r1‖kEnc(16)‖ivEnc(8)]` (`processbar 8`) |
 | `0x09` → COMMAND | generate session keys | `exportAuthKey()` (`processbar 9`, cache kAuth) |
-| enable data chars | PATCH_CONTROL→…→GLUCOSE→PATCH_STATUS | `initCipher(kEnc, ivEnc)` |
+| enable data chars | PATCH_CONTROL→HISTORIC→CLINICAL→EVENTLOG→FACTORY→GLUCOSE→PATCH_STATUS (status last) | `initCipher(kEnc, ivEnc)` |
 
 After the handshake, each data notification is decrypted with
 `decrypt(channelId, payload)` (`intDecrypt`: 3 = glucose, 4 = historic,
@@ -311,13 +316,74 @@ bytes the user drops in (see that folder's README).
 > implications (the same ones Juggluco carries). This was an explicit, accepted
 > project decision.
 
+## Historic / backfill (gap-fill) — investigation status
+
+**The problem:** the Libre streams one value/minute on One-Minute (`0898177A`,
+decrypt channel 3). When the BLE link drops for a few minutes, those minutes are
+lost from the live stream. Filling that gap from the **sensor's own buffer** is
+what "backlog"/backfill means. As of this writing it **does not work** — after a
+gap only the current value resumes; the historic characteristic `0898195A`
+(channel 4) has **never been observed firing a single notification** on real
+hardware.
+
+Two separate things are often confused — keep them distinct:
+
+- **In-memory history persistence (DONE).** `Libre3Connection` seeds `_byTime`
+  from the store once per process (`_historyLoaded`), persists `sensorStart`
+  (`_anchorSensorStart`/`saveSensorStart`), and the store caps readings by a **24 h
+  time window** (`saveReadings`, cadence-independent — a fixed point count gave the
+  1-min Libre only ~5 h). This keeps the chart across reconnects/restarts. It is
+  **NOT** sensor-buffer gap-fill — it only re-shows data we already received.
+- **Sensor-buffer gap-fill (NOT working).** Retrieving the missed minutes from the
+  patch. This is the open item below.
+
+### What we know (on-device, confirmed)
+
+- **The full data-characteristic notify set must be enabled.** The data service
+  (`089810CC`) has **seven** characteristics; the transport used to enable only
+  four. `clinicalData 08981AB8`, `eventLog 08981BEE`, `factoryData 08981D24` were
+  declared in `Libre3Uuids` but never `_bind()`'d or `setNotifyValue`'d. Now all
+  seven are enabled, in the documented order (PATCH_CONTROL → historic → clinical →
+  eventLog → factory → GLUCOSE → PATCH_STATUS, status last). All seven return
+  `GATT_SUCCESS`.
+- **What pushes automatically:** glucose (ch3, every minute) and **patchStatus**
+  (`08981482`, decrypt channel 2 — pushes once at connect, e.g.
+  `c4db6eca…0100`). Observe-only raw logging is wired on patchControl/patchStatus/
+  clinical/event/factory to catch anything.
+- **What does NOT push (so far):** `historic 0898195A`, clinical, eventLog,
+  factory — silent in every (short, seconds-to-~2-min) window captured. Not yet
+  conclusive: historic may fire only at 5-min life-count boundaries, so a
+  **15-min continuous window** is needed to rule out push-based delivery.
+- **The active Patch Control request is a dead end without a capture.** A guessed
+  3-byte command `[0x01, lifeCountLE16]` written to `08981338` is **length-rejected**
+  by the sensor (`GATT_INVALID_ATTRIBUTE_LENGTH`, code 13) → the characteristic
+  validates a **fixed length** we don't know. It's disabled behind
+  `Libre3Connection._activeBackfillWrite = false`; `_backfillDiagnostic` keeps the
+  gap logging on. Do **not** blind-guess more bytes — a wrong write can drop the link.
+
+### The one decisive open test
+
+Keep the app connected ~15 min (spans several 5-min boundaries) and watch for
+`ch4 frag` / `historic notification` / `clinicalData|eventLog|factoryData notify`:
+
+- **Any fires** → historic is **push-based**; wire that channel's decode
+  (`_onHistoric` + `parseHistorical` already exist for `0898195A`; the others need
+  their decrypt channel identified). Then verify the `parseHistorical` 5-min stride
+  (still marked unconfirmed).
+- **15 min of silence** → historic is **request-based**, and the only path is the
+  correct Patch Control command from a **Juggluco `Libre3GattCallback` read or a
+  BLE-HCI capture** (its byte layout AND fixed length). The `GATT_INVALID_ATTRIBUTE_LENGTH`
+  is a useful fingerprint: once the reference length is known it's a one-liner in
+  `Libre3Transport._backfillCommand`.
+
 ## Implementation status
 
 | Piece | State |
 |---|---|
 | Sensor abstraction (`CgmConnection`/`CgmReading`/`CgmTiming`, per-type service dispatch) | ✅ done, G7 unchanged, tested |
 | NFC activation (`Libre3Activation`) | ✅ end-to-end on a real sensor — re-ported byte-for-byte from Juggluco (mfg `0x7A` from UID, command on `patchInfo[17]`, `crc16Activation` + `nfc2` response KAT-verified, numeric account, non-zero fallback). Sensor accepts the command and returns MAC/PIN. |
-| Glucose decode (`Libre3GlucoseCodec`) | ✅ one-minute reading tested; historical stride to confirm |
+| Glucose decode (`Libre3GlucoseCodec`) | ✅ one-minute reading tested (incl. temperature); historical stride to confirm |
+| Historic / backfill (gap-fill from sensor buffer) | ⛔ NOT working — `0898195A` never observed firing; see "Historic / backfill" above. In-memory history persistence across reconnects IS done (not the same thing). |
 | Backend `ABBOTT_LIBRE3` type | ✅ wired (`SensorType.backendType`) |
 | BLE transport + handshake (`Libre3Transport`) | ✅ code ported from Juggluco; fragment framing + event order need on-device check |
 | `Libre3Connection` (`CgmConnection`) + service dispatch | ✅ wired — the service builds it for `SensorType.abbottLibre3` |

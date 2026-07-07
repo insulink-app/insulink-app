@@ -18,7 +18,7 @@ import 'package:provider/provider.dart';
 final ValueNotifier<int> appTab = ValueNotifier<int>(0);
 
 /// Tab index of the analysis page within [AppPageState.pageBodies].
-const int kAnalysisTabIndex = 2;
+const int kAnalysisTabIndex = 3;
 
 class AppPage extends StatefulWidget {
   final int? initialPageIndex;
