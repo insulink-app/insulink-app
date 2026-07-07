@@ -1,16 +1,19 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../../g7/g7_controller.dart';
+import '../../cgm/cgm_connection.dart';
+import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
+import 'libre3_pairing_fields.dart';
 import 'pairing_qr_scanner.dart';
+import 'sensor_type_selector.dart';
 
 /// Box shown when no sensor is set up yet: enter the pairing code and connect.
 class SensorPairingForm extends StatelessWidget {
   const SensorPairingForm({super.key, required this.controller});
 
-  final G7Controller controller;
+  final CgmController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -27,12 +30,25 @@ class SensorPairingForm extends StatelessWidget {
         children: [
           _header(scheme),
           const SizedBox(height: 16),
-          _codeRow(context),
-          const SizedBox(height: 12),
-          _connectButton(),
+          SensorTypeSelector(controller: controller),
+          const SizedBox(height: 16),
+          ..._pairingFields(context),
         ],
       ),
     );
+  }
+
+  /// The fields for the selected sensor: the G7 pairing-code row + connect
+  /// button, or the Libre 3 NFC activation fields.
+  List<Widget> _pairingFields(BuildContext context) {
+    if (controller.sensorType == SensorType.abbottLibre3) {
+      return [Libre3PairingFields(controller: controller)];
+    }
+    return [
+      _codeRow(context),
+      const SizedBox(height: 12),
+      _connectButton(),
+    ];
   }
 
   Widget _header(ColorScheme scheme) {

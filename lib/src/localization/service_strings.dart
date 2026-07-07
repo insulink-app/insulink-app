@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Resolves localized strings OUTSIDE the widget tree — for the foreground
-/// service isolate and [G7Controller], which have no [BuildContext] and, in a
+/// service isolate and [CgmController], which have no [BuildContext] and, in a
 /// freshly-spawned isolate, no initialized [Locales] state either.
 ///
 /// Reads the persisted language directly from secure storage (the same
@@ -55,5 +55,16 @@ class ServiceStrings {
   Future<String> format(String key, Object value) async {
     final template = await get(key);
     return template.replaceFirst('#', '$value');
+  }
+
+  /// Like [format] but for a template with multiple placeholders: `#` → first
+  /// value, `##` → second, `###` → third. Replaced longest-first so a `##` is
+  /// not clobbered by the `#` pass — the same convention `Locales` uses.
+  Future<String> formatAll(String key, List<Object> values) async {
+    var text = await get(key);
+    for (var index = values.length - 1; index >= 0; index--) {
+      text = text.replaceAll('#' * (index + 1), '${values[index]}');
+    }
+    return text;
   }
 }

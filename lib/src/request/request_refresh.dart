@@ -37,6 +37,14 @@ class RequestRefresh {
     }
     var responseBody = jsonDecode(response.body);
     if (responseBody["success"] == false) {
+      // A concurrent refresh (the other isolate) may have already rotated the
+      // token out from under us — the server then rejects OUR now-stale one. If
+      // the stored token changed since we read it, that other refresh succeeded:
+      // retry the original request with the fresh token instead of logging out.
+      final current = await storage.read(key: "refresh_token") ?? "";
+      if (current != refreshToken && current != "") {
+        return true;
+      }
       await RequestReset().reset(context);
       return false;
     }

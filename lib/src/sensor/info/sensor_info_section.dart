@@ -1,6 +1,35 @@
 import 'package:flutter/material.dart';
 
 import '../../localization/locale_text.dart';
+import 'sensor_attributes.dart';
+
+/// Renders a list of [SensorSection]s as stacked [SensorInfoSection] cards, or
+/// the "empty" placeholder when there is nothing to show. Shared by the G7
+/// ([SensorInfo]) and Libre 3 ([Libre3SensorInfo]) info pages.
+class SensorSectionList extends StatelessWidget {
+  const SensorSectionList({super.key, required this.sections});
+
+  final List<SensorSection> sections;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sections.isEmpty) {
+      return Center(child: LocaleText('sensor.info.empty'));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < sections.length; index++) ...[
+          if (index > 0) const SizedBox(height: 12),
+          SensorInfoSection(
+            titleKey: sections[index].titleKey,
+            items: sections[index].items,
+          ),
+        ],
+      ],
+    );
+  }
+}
 
 /// A titled card listing one [_SensorInfoRow] per value.
 class SensorInfoSection extends StatelessWidget {

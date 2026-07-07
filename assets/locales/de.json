@@ -82,6 +82,9 @@
       "network": "Verbindung fehlgeschlagen. Bitte versuche es erneut."
     }
   },
+  "connection": {
+    "logout": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
+  },
   "overview": {
     "label": "Übersicht",
     "chart": {
@@ -117,8 +120,8 @@
       "dismiss": "Nicht jetzt"
     }
   },
-  "statistics": {
-    "label": "Statistik",
+  "analysis": {
+    "label": "Analyse",
     "tab": {
       "ranges": "Bereiche",
       "history": "Verlauf",
@@ -181,7 +184,8 @@
       "session": "SITZUNG",
       "battery": "BATTERIE",
       "empty": "Noch keine Sensordaten",
-      "title": "Sensordaten"
+      "title": "Sensordaten",
+      "live": "Aktuelle Messung"
     },
     "disconnect": "Trennen",
     "status": {
@@ -198,7 +202,20 @@
       "title": "Sensor koppeln",
       "hint": "Kopplungscode eingeben zum Verbinden",
       "scan": "Code scannen",
-      "scan_hint": "Richte die Kamera auf den Code auf der Sensorverpackung."
+      "scan_hint": "Richte die Kamera auf den Code auf der Sensorverpackung.",
+      "libre": {
+        "title": "Libre 3 aktivieren",
+        "hint": "Halte den Sensor zum Aktivieren an die Rückseite deines Handys (NFC).",
+        "activate": "Sensor scannen (NFC)",
+        "account": "LibreView-Konto-ID (optional)",
+        "account_hint": "Leer lassen ist okay. Für die Übernahme eines bereits aktivierten Sensors die numerische LibreView-Konto-ID eintragen.",
+        "scanning": "Halte den Sensor an dein Handy…",
+        "failed": "NFC-Scan fehlgeschlagen — bitte erneut versuchen.",
+        "done": "Sensor gescannt",
+        "cancel": "Scan abbrechen",
+        "connecting": "Verbinde mit Sensor…",
+        "connected": "Verbunden — empfange Glukose"
+      }
     },
     "life": {
       "title": "Haltbarkeit",
@@ -208,7 +225,9 @@
     },
     "control": {
       "end_session": "Sitzung beenden",
+      "end_session_confirm": "Beenden",
       "stop_sensor": "Sensor stoppen",
+      "stop_sensor_confirm": "Stopp",
       "end_session_title": "Sitzung beenden?",
       "end_session_body": "Das Auslesen wird gestoppt. Die Kopplung bleibt erhalten – du kannst dich später wieder verbinden.",
       "stop_sensor_title": "Sensor stoppen?",
@@ -236,7 +255,10 @@
       "max_days": "Max. Tage",
       "voltage": "Spannung",
       "runtime": "Laufzeit",
-      "temperature": "Temperatur"
+      "temperature": "Temperatur",
+      "mac": "Adresse",
+      "predicted": "Prognose",
+      "trend": "Trend"
     },
     "value": {
       "expired": "abgelaufen",
@@ -260,6 +282,11 @@
       "session_failed": "Sitzung fehlgeschlagen",
       "temporary_issue": "vorübergehendes Problem",
       "sensor_declining": "Sensor lässt nach"
+    },
+    "type": {
+      "_": "Sensortyp",
+      "g7": "Dexcom G7",
+      "libre3": "FreeStyle Libre 3"
     }
   },
   "pump": {
@@ -285,6 +312,10 @@
   },
   "devices": {
     "label": "Geräte"
+  },
+  "nutrition": {
+    "label": "Ernährung",
+    "placeholder": "Bald verfügbar"
   },
   "sport": {
     "label": "Sport",
@@ -358,7 +389,7 @@
       "seconds": "Sekunden",
       "weight": "Gewicht",
       "rest": "Pause",
-      "est_duration": "ca. # Min."
+      "est_duration": "ca. #"
     },
     "workout": {
       "exercise": "Übung",
@@ -404,13 +435,23 @@
       "duration": "Dauer",
       "set_n": "Satz #",
       "resume": "Training fortsetzen",
-      "delete_confirm": "Dieses Protokoll wirklich löschen?"
+      "delete_confirm": "Dieses Protokoll wirklich löschen?",
+      "edit_set": "Satz bearbeiten",
+      "add_set": "Satz hinzufügen",
+      "delete_set_confirm": "Diesen Satz wirklich löschen?"
+    },
+    "calendar": {
+      "_": "Kalender",
+      "routine": "Routine",
+      "training": "Training",
+      "empty": "Keine Aktivitäten an diesem Tag."
     },
     "trainings": {
       "_": "Trainings",
       "walk": "Gehen",
       "jog": "Joggen",
       "bike": "Radfahren",
+      "change_type": "Typ ändern",
       "duration": "Dauer",
       "distance": "Strecke",
       "speed": "Tempo",
@@ -437,6 +478,14 @@
       "body": "# · # Min. – bestätigen?",
       "confirm": "Bestätigen",
       "reject": "Verwerfen"
+    },
+    "goals": {
+      "_": "Ziele",
+      "steps": "Schrittziel",
+      "distance": "Streckenziel",
+      "calories": "Kalorienziel",
+      "weight": "Gewichtsziel",
+      "note": "Jede Box füllt sich, je näher du dem Tagesziel kommst. Das Gewichtsziel erscheint als Linie im Gewichtsdiagramm."
     }
   },
   "profile": {
@@ -506,6 +555,9 @@
     "training": {
       "description": "Benachrichtigen, wenn ein Training erkannt wurde"
     },
+    "advisory": {
+      "description": "Vorwarnen und Gegenmaßnahme vorschlagen"
+    },
     "alarmsound": {
       "description": "Alarmton bei hohem/niedrigem Zucker abspielen"
     },
@@ -545,7 +597,8 @@
       "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose ablauf halbzeit halbwertszeit sensor training",
       "silent": "stumm lautlos ruhe stören nicht dnd",
       "developer": "entwickler debug logs erweitert protokoll",
-      "prediction": "vorhersage prognose forecast zukunft trend verlauf minuten"
+      "prediction": "vorhersage prognose forecast zukunft trend verlauf minuten",
+      "sport_goals": "sport ziele tagesziele schritte strecke kalorien"
     },
     "prediction": {
       "_": "Vorhersage",
@@ -592,7 +645,17 @@
       "training_detected": {
         "name": "Training erkannt",
         "desc": "Hinweis, wenn automatisch ein Training erkannt wurde."
+      },
+      "advisory": {
+        "name": "Vorwarnung",
+        "desc": "Frühwarnung mit Gegenmaßnahme bei drohendem Über-/Unterzucker."
       }
+    },
+    "advisory": {
+      "low_title": "Unterzucker droht",
+      "low_body": "Iss ca. # g schnelle KH (## Plättchen).",
+      "high_title": "Überzucker droht",
+      "high_body": "Erwäge ca. # Einheiten Insulin."
     },
     "low": {
       "title": "Zucker niedrig"

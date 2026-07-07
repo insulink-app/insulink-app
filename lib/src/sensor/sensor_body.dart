@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_connection.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:insulink/src/sensor/control/sensor_control_box.dart';
+import 'package:insulink/src/sensor/info/libre3_sensor_info.dart';
 import 'package:insulink/src/sensor/info/sensor_info.dart';
 import 'package:insulink/src/sensor/sensor_log_panel.dart';
 import 'package:provider/provider.dart';
@@ -90,7 +92,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
 
   /// Copy the whole log (chronological) to the clipboard and confirm via a
   /// snackbar.
-  Future<void> _copyLog(BuildContext context, G7Controller controller) async {
+  Future<void> _copyLog(BuildContext context, CgmController controller) async {
     final message = Locales.string(
       context,
       'sensor.log_copied',
@@ -106,7 +108,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<G7Controller>();
+    final controller = context.watch<CgmController>();
     final showLog = context.watch<ProfileDeveloperState>().enabled;
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureBox());
     return Scaffold(
@@ -129,7 +131,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
 
   /// The connection box stays pinned at the top; the attribute list scrolls
   /// underneath it and the box fades out to free up the room it occupies.
-  Widget _pinnedScrollArea(G7Controller controller) {
+  Widget _pinnedScrollArea(CgmController controller) {
     return Stack(
       children: [
         Positioned.fill(child: _scrollContent(controller)),
@@ -138,7 +140,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
     );
   }
 
-  Widget _scrollContent(G7Controller controller) {
+  Widget _scrollContent(CgmController controller) {
     return NotificationListener<ScrollEndNotification>(
       onNotification: (_) => _snapScroll(),
       child: SingleChildScrollView(
@@ -157,13 +159,7 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
                 ),
               ),
               const SizedBox(height: 12),
-              SensorInfo(
-                info: controller.info,
-                sensorStart: controller.sensorStart,
-                state: controller.latest?.state,
-                age: controller.latest?.secsSinceStart,
-                lastUpdate: controller.lastUpdate,
-              ),
+              _sensorInfo(controller),
             ],
           ),
         ),
@@ -171,7 +167,28 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
     );
   }
 
-  Widget _pinnedBox(G7Controller controller) {
+  /// The G7 info page reads a [G7DeviceInfo]; the Libre 3 has its own builder
+  /// (activation MAC, session clock, plus the one-minute reading's predicted
+  /// glucose / trend / temperature).
+  Widget _sensorInfo(CgmController controller) {
+    if (controller.sensorType == SensorType.abbottLibre3) {
+      return Libre3SensorInfo(
+        mac: controller.libreMac,
+        sensorStart: controller.sensorStart,
+        lastUpdate: controller.lastUpdate,
+        latest: controller.latest,
+      );
+    }
+    return SensorInfo(
+      info: controller.info,
+      sensorStart: controller.sensorStart,
+      state: controller.latest?.state,
+      age: controller.latest?.secsSinceStart,
+      lastUpdate: controller.lastUpdate,
+    );
+  }
+
+  Widget _pinnedBox(CgmController controller) {
     return Positioned(
       top: 0,
       left: 0,

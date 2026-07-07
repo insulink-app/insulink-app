@@ -41,6 +41,24 @@ android {
             )
         }
     }
+
+    // liblibre3bridge.so — the dlopen shim to Abbott's Libre 3 crypto blob. The
+    // Abbott .so is resolved at runtime, so this compiles without it (see
+    // src/main/cpp/libre3bridge.cpp and jniLibs/README.md).
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
+    }
+
+    // The prebuilt Libre 3 blobs are WhiteCryption-protected/packed — don't let
+    // the NDK strip them (it corrupts them and errors on the non-standard ELF).
+    packaging {
+        jniLibs {
+            keepDebugSymbols += "**/liblibre3extension.so"
+            keepDebugSymbols += "**/libinit.so"
+        }
+    }
 }
 
 kotlin {

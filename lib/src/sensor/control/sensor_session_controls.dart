@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../alert/alert.dart';
-import '../../g7/g7_controller.dart';
+import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
 
 /// The two session buttons under the status header: end the current reading
@@ -11,7 +11,7 @@ import '../../localization/locale_text.dart';
 class SensorSessionControls extends StatelessWidget {
   const SensorSessionControls({super.key, required this.controller});
 
-  final G7Controller controller;
+  final CgmController controller;
 
   bool get _connected => controller.connected;
 
@@ -61,7 +61,7 @@ class SensorSessionControls extends StatelessWidget {
       context,
       titleKey: 'sensor.control.end_session_title',
       bodyKey: 'sensor.control.end_session_body',
-      confirmKey: 'sensor.control.end_session',
+      confirmKey: 'sensor.control.end_session_confirm',
       onConfirm: () => controller.disconnect(),
     );
   }
@@ -71,7 +71,7 @@ class SensorSessionControls extends StatelessWidget {
       context,
       titleKey: 'sensor.control.stop_sensor_title',
       bodyKey: 'sensor.control.stop_sensor_body',
-      confirmKey: 'sensor.control.stop_sensor',
+      confirmKey: 'sensor.control.stop_sensor_confirm',
       destructive: true,
       onConfirm: () => controller.forgetSensor(),
     );

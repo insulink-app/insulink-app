@@ -4,7 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
@@ -157,7 +157,7 @@ class _OverviewChartState extends State<OverviewChart>
     );
     final bars = series.buildBars();
     // Dashed forecast line extending past the latest reading (when enabled).
-    final controller = context.watch<G7Controller>();
+    final controller = context.watch<CgmController>();
     final prediction = _addPredictionBar(
       bars,
       controller,
@@ -217,7 +217,7 @@ class _OverviewChartState extends State<OverviewChart>
   /// hoverable. No forecast / no session clock → nothing added, 0 / empty.
   ({double futureHours, List<FlSpot> touchSpots}) _addPredictionBar(
     List<LineChartBarData> bars,
-    G7Controller controller,
+    CgmController controller,
     List<MapEntry<int, int>> entries,
     int latestSecs,
     double shift,
@@ -231,13 +231,20 @@ class _OverviewChartState extends State<OverviewChart>
     }
     final baseSecs = base.difference(start).inSeconds;
     final anchor = FlSpot(shift, glucose.toDisplay(entries.last.value));
+    // Only points still ahead of the latest reading. A stale forecast (base
+    // older than the newest reading because a refresh failed) otherwise draws
+    // its early points to the LEFT of x=0, overlapping the real readings.
     final future = [
       for (final point in curve)
-        FlSpot(
-          (baseSecs + point.offsetMin * 60 - latestSecs) / 3600.0 + shift,
-          glucose.toDisplay(point.mgdl),
-        ),
+        if (baseSecs + point.offsetMin * 60 > latestSecs)
+          FlSpot(
+            (baseSecs + point.offsetMin * 60 - latestSecs) / 3600.0 + shift,
+            glucose.toDisplay(point.mgdl),
+          ),
     ];
+    if (future.isEmpty) {
+      return (futureHours: 0, touchSpots: const <FlSpot>[]);
+    }
     bars.add(_predictionBar([anchor, ...future]));
     final lastSecs = baseSecs + curve.last.offsetMin * 60;
     return (
@@ -246,23 +253,29 @@ class _OverviewChartState extends State<OverviewChart>
     );
   }
 
-  /// The forecast line: STRAIGHT (not curved) so it doesn't overshoot into a
-  /// squished wiggle when the 30–60 min horizon is compressed into the right
-  /// sliver of a wide (12/24 h) window, with a dot on the final point so that
-  /// short stub stays legible.
+  /// The forecast line: a smooth curve with a dot on the final point so the
+  /// short stub stays legible. Overshoot-prevention is deliberately OFF here —
+  /// it clamps the spline flat at turning points (which is what stopped the
+  /// curve looking smooth); the gently-varying forecast values don't overshoot
+  /// enough to matter.
   LineChartBarData _predictionBar(List<FlSpot> spots) {
-    final color = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5);
+    final scheme = Theme.of(context).colorScheme;
+    final lineColor = scheme.onSurface.withValues(alpha: 0.5);
+    final dotColor = HSLColor.fromColor(
+      scheme.onSurface,
+    ).withLightness(0.6).toColor();
     return LineChartBarData(
       spots: spots,
-      isCurved: false,
+      isCurved: true,
+      curveSmoothness: 0.4,
       barWidth: 2.5,
-      color: color,
       dashArray: const [6, 5],
+      color: lineColor,
       dotData: FlDotData(
         show: true,
         checkToShowDot: (spot, bar) => spot.x == bar.spots.last.x,
         getDotPainter: (spot, _, _, _) =>
-            FlDotCirclePainter(radius: 3, color: color, strokeWidth: 0),
+            FlDotCirclePainter(radius: 3.5, color: dotColor, strokeWidth: 0),
       ),
     );
   }

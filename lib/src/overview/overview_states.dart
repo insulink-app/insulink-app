@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:insulink/src/base/page.dart';
+import 'package:insulink/src/devices/devices_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:provider/provider.dart';
@@ -142,7 +142,7 @@ class EmptyView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () => appTab.value = kDevicesTabIndex,
+              onPressed: () => openDevicesPage(context),
               icon: const Icon(CupertinoIcons.drop_fill, size: 18),
               label: LocaleText('overview.empty.action'),
               style: FilledButton.styleFrom(

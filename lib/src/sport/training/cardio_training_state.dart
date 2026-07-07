@@ -187,6 +187,17 @@ class CardioTrainingState extends ChangeNotifier {
     await _saveTrainings();
   }
 
+  /// Change the type (walk/jog/bike) of an existing training after the fact.
+  Future<void> changeTrainingType(String id, CardioType type) async {
+    final index = _trainings.indexWhere((training) => training.id == id);
+    if (index < 0) {
+      return;
+    }
+    _trainings[index] = _trainings[index].withType(type);
+    notifyListeners();
+    await _saveTrainings();
+  }
+
   Future<void> removeTraining(String id) async {
     _trainings.removeWhere((training) => training.id == id);
     notifyListeners();

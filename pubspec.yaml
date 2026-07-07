@@ -53,6 +53,11 @@ dependencies:
   url_launcher: ^6.3.2
   http: ^1.6.0
   mobile_scanner: ^7.2.0
+  # NFC (ISO 15693) — activates a FreeStyle Libre 3 sensor, which then streams
+  # over BLE like the G7. Only used by the Libre 3 pairing flow. flutter_nfc_kit
+  # (not nfc_manager 3.x) because it targets a recent compileSdk and exposes raw
+  # ISO 15693 transceive for the Abbott custom commands.
+  flutter_nfc_kit: ^3.6.0
   pedometer: ^4.2.0
   flutter_activity_recognition: ^4.0.0
   health: ^13.0.0
@@ -60,6 +65,7 @@ dependencies:
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
   wakelock_plus: ^1.6.1
+  pointycastle: ^4.0.0
 
 # health (Health Connect) deckelt device_info_plus auf <13, nutzt davon aber nur
 # `androidInfo.id` — über 12↔13 identisch. device_info_plus 12.x wendet noch das

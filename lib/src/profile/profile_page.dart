@@ -19,6 +19,7 @@ import 'package:insulink/src/profile/notifications/profile_notification_toggle.d
 import 'package:insulink/src/profile/prediction/profile_prediction_horizon.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_toggle.dart';
 import 'package:insulink/src/profile/silent/profile_silent_toggle.dart';
+import 'package:insulink/src/sport/activity/sport_goals_editor.dart';
 import 'package:insulink/src/profile/theme/profile_theme_selection.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -89,6 +90,12 @@ class _ProfilePageState extends State<ProfilePage> {
       children: () => const [ProfileBodySelection()],
     ),
     (
+      titleKey: "sport.goals",
+      icon: Icons.flag_outlined,
+      searchKey: "profile.search.sport_goals",
+      children: () => const [SportGoalsEditor()],
+    ),
+    (
       titleKey: "profile.notification",
       icon: Icons.notifications_outlined,
       searchKey: "profile.search.notification",
@@ -104,6 +111,8 @@ class _ProfilePageState extends State<ProfilePage> {
         NotificationToggle(NotificationSetting.halftime),
         SizedBox(height: 10),
         NotificationToggle(NotificationSetting.training),
+        SizedBox(height: 10),
+        NotificationToggle(NotificationSetting.advisory),
         SizedBox(height: 10),
         ProfileAlarmSoundToggle(),
       ],

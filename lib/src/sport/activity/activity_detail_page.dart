@@ -6,6 +6,7 @@ import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_range_selector.dart';
+import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
 
 /// History overview of a daily metric (steps/distance/calories) from the
@@ -64,7 +65,11 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final archive = context.watch<SportActivityState>().activityArchiveWithToday;
+    final sport = context.watch<SportState>();
+    final archive = context.watch<SportActivityState>().activityArchiveWithToday(
+      sport.strideCm,
+      sport.latestWeight?.kg ?? 70,
+    );
     final ranged = _inRange(archive);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(

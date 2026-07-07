@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/g7/protocol/device_info.dart';
-import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/cgm/protocol/device_info.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sensor/info/sensor_attributes.dart';
 import 'package:insulink/src/sensor/info/sensor_info_section.dart';
@@ -36,21 +35,6 @@ class SensorInfo extends StatelessWidget {
       lastUpdate: lastUpdate,
       localize: (key) => Locales.string(context, key),
     ).build();
-
-    if (sections.isEmpty) {
-      return Center(child: LocaleText('sensor.info.empty'));
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var index = 0; index < sections.length; index++) ...[
-          if (index > 0) const SizedBox(height: 12),
-          SensorInfoSection(
-            titleKey: sections[index].titleKey,
-            items: sections[index].items,
-          ),
-        ],
-      ],
-    );
+    return SensorSectionList(sections: sections);
   }
 }

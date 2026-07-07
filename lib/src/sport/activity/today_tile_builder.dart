@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/fitbit/fitbit_models.dart';
 import 'package:insulink/src/fitbit/fitbit_state.dart';
 import 'package:insulink/src/sport/activity/activity_detail_page.dart';
+import 'package:insulink/src/sport/activity/activity_estimate.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/activity/sport_summary_tile.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
@@ -47,9 +48,10 @@ class TodayTileBuilder {
 
   double get _distanceKm =>
       activity.importedDistanceKm ??
-      activity.todaySteps * sport.strideCm / 100000;
+      estimatedDistanceKm(activity.todaySteps, sport.strideCm);
 
-  double get _calories => activity.importedCalories ?? _distanceKm * _weightKg * 0.9;
+  double get _calories =>
+      activity.importedCalories ?? estimatedCalories(_distanceKm, _weightKg);
 
   SportSummaryTile build(BuildContext context, TodayTile tile) {
     final icon = todayTileIcon(tile);
@@ -60,6 +62,7 @@ class TodayTileBuilder {
           icon: icon,
           labelKey: label,
           value: sportInt(activity.todaySteps),
+          progress: activity.todaySteps / sport.stepsGoal,
           onTap: () => _detail(context, ActivityMetric.steps),
         );
       case TodayTile.distance:
@@ -68,6 +71,7 @@ class TodayTileBuilder {
           labelKey: label,
           value: sportDecimal(_distanceKm, 2),
           unit: 'km',
+          progress: _distanceKm / sport.distanceGoalKm,
           onTap: () => _detail(context, ActivityMetric.distance),
         );
       case TodayTile.calories:
@@ -76,6 +80,7 @@ class TodayTileBuilder {
           labelKey: label,
           value: sportInt(_calories.round()),
           unit: 'kcal',
+          progress: _calories / sport.caloriesGoal,
           onTap: () => _detail(context, ActivityMetric.calories),
         );
       case TodayTile.weight:

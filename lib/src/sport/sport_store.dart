@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -31,6 +32,10 @@ class SportStore {
   static const _activityLogCap = 500;
   static const _kStride = 'sport.stride_cm';
   static const _kHeight = 'sport.height_cm';
+  static const _kStepsGoal = 'sport.steps_goal';
+  static const _kDistanceGoal = 'sport.distance_goal_m';
+  static const _kCaloriesGoal = 'sport.calories_goal';
+  static const _kWeightGoal = 'sport.weight_goal_kg';
   static const _kStepsBaselineDate = 'sport.steps_baseline_date';
   static const _kStepsBaselineCounter = 'sport.steps_baseline_counter';
   static const _kDetectWatermark = 'sport.detect_watermark';
@@ -43,6 +48,17 @@ class SportStore {
 
   /// Default body height in cm (for the BMI), until the user adjusts it.
   static const defHeightCm = 175;
+
+  /// Default daily goals (steps, distance in metres, calories in kcal) — the
+  /// classic 10k steps and rough matching distance/burn, until the user tunes
+  /// them. Distance is stored in metres so it steps cleanly without float drift.
+  static const defStepsGoal = 10000;
+  static const defDistanceGoalM = 7000;
+  static const defCaloriesGoal = 500;
+
+  /// Default weight goal in kg — shown as a target line on the weight graph, not
+  /// as a box fill (a weight goal isn't a "more is better" progress).
+  static const defWeightGoalKg = 70.0;
 
   final FlutterSecureStorage _storage;
 
@@ -129,6 +145,53 @@ class SportStore {
     final pending = await loadPendingTrainings()
       ..removeWhere((training) => training.id == id);
     await savePendingTrainings(pending);
+  }
+
+  /// The decision hand-off file. The `flutter_local_notifications` action-tap
+  /// handler runs in a bare background isolate that has NO `flutter_secure_storage`
+  /// (the plugin's own engine never registers it), so it can't mutate the pending
+  /// list directly. It appends the decision here instead — plain `dart:io`, needs
+  /// no plugin channel — and the service isolate (which does have secure storage)
+  /// drains it via [applyTrainingDecisions]. Both isolates share one process, so
+  /// [Directory.systemTemp] resolves to the same app-private dir in each.
+  File get _decisionFile =>
+      File('${Directory.systemTemp.path}/insulink_training_decisions');
+
+  /// Record a Confirm/Reject notification tap. Synchronous + plugin-free so it
+  /// completes before the ephemeral action isolate is torn down. [action] is
+  /// `confirm` or `reject`; drained later by [applyTrainingDecisions].
+  void recordTrainingDecision(String action, String id) {
+    // ponytail: systemTemp is the app cache dir — if the OS clears it between the
+    // tap and the next drain the decision is lost (card reappears), acceptable for
+    // a user-repeatable action; move to the documents dir if it ever matters.
+    _decisionFile.writeAsStringSync(
+      '$action:$id\n',
+      mode: FileMode.append,
+      flush: true,
+    );
+  }
+
+  /// Apply every decision buffered by [recordTrainingDecision], then clear the
+  /// file. Runs in the service isolate on the watchdog tick; no-op (one cheap
+  /// existence check) when nothing is pending.
+  Future<void> applyTrainingDecisions() async {
+    final file = _decisionFile;
+    if (!await file.exists()) {
+      return;
+    }
+    final lines = await file.readAsLines();
+    await file.delete();
+    for (final line in lines) {
+      final parts = line.split(':');
+      if (parts.length != 2) {
+        continue;
+      }
+      if (parts[0] == 'confirm') {
+        await confirmPendingTraining(parts[1]);
+      } else if (parts[0] == 'reject') {
+        await rejectPendingTraining(parts[1]);
+      }
+    }
   }
 
   Future<List<DailyActivity>> loadActivityArchive() async =>
@@ -226,6 +289,33 @@ class SportStore {
 
   Future<void> saveHeightCm(int cm) =>
       _storage.write(key: _kHeight, value: '$cm');
+
+  Future<int> loadStepsGoal() async =>
+      int.tryParse(await _storage.read(key: _kStepsGoal) ?? '') ?? defStepsGoal;
+
+  Future<void> saveStepsGoal(int steps) =>
+      _storage.write(key: _kStepsGoal, value: '$steps');
+
+  Future<int> loadDistanceGoalM() async =>
+      int.tryParse(await _storage.read(key: _kDistanceGoal) ?? '') ??
+      defDistanceGoalM;
+
+  Future<void> saveDistanceGoalM(int metres) =>
+      _storage.write(key: _kDistanceGoal, value: '$metres');
+
+  Future<int> loadCaloriesGoal() async =>
+      int.tryParse(await _storage.read(key: _kCaloriesGoal) ?? '') ??
+      defCaloriesGoal;
+
+  Future<void> saveCaloriesGoal(int kcal) =>
+      _storage.write(key: _kCaloriesGoal, value: '$kcal');
+
+  Future<double> loadWeightGoalKg() async =>
+      double.tryParse(await _storage.read(key: _kWeightGoal) ?? '') ??
+      defWeightGoalKg;
+
+  Future<void> saveWeightGoalKg(double kg) =>
+      _storage.write(key: _kWeightGoal, value: '$kg');
 
   /// The midnight reference point of the cumulative step counter: date +
   /// counter, from which "steps today" is derived.

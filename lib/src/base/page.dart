@@ -2,27 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/header.dart';
 import 'package:insulink/src/base/navigator.dart';
 import 'package:insulink/src/base/page_body.dart';
-import 'package:insulink/src/devices/devices_body.dart';
 import 'package:insulink/src/injection/injection_button.dart';
+import 'package:insulink/src/nutrition/nutrition_body.dart';
 import 'package:insulink/src/overview/overview_body.dart';
 import 'package:insulink/src/sport/sport_body.dart';
 import 'package:insulink/src/sport/training/cardio_recording_page.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
-import 'package:insulink/src/statistics/statistics_body.dart';
+import 'package:insulink/src/analysis/analysis_body.dart';
 import 'package:provider/provider.dart';
 
 /// Lets any page request a tab switch (e.g. the overview's empty state linking
 /// to the devices page). The value is the index into [AppPageState.pageBodies].
 final ValueNotifier<int> appTab = ValueNotifier<int>(0);
 
-/// Tab index of the statistics page within [AppPageState.pageBodies].
-const int kStatisticsTabIndex = 2;
-
-/// Tab index of the devices page (Sensor + Pump) within
-/// [AppPageState.pageBodies].
-const int kDevicesTabIndex = 3;
+/// Tab index of the analysis page within [AppPageState.pageBodies].
+const int kAnalysisTabIndex = 3;
 
 class AppPage extends StatefulWidget {
   final int? initialPageIndex;
@@ -37,8 +33,8 @@ class AppPageState extends State<AppPage> {
   final List<AppPageBody> pageBodies = [
     OverviewBody(),
     SportBody(),
-    StatisticsBody(),
-    DevicesBody(),
+    NutritionBody(),
+    AnalysisBody(),
   ];
   int _selectedIndex = 0;
 

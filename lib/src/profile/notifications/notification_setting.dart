@@ -27,6 +27,10 @@ class NotificationSetting {
     'training_detected_alert',
     'profile.training.description',
   );
+  static const advisory = NotificationSetting(
+    'predictive_advisory_alert',
+    'profile.advisory.description',
+  );
 
   Future<bool> load() async =>
       (await const FlutterSecureStorage().read(key: storageKey)) != 'false';

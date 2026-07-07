@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// horizon (30 or 60 min). Persisted in secure storage.
 ///
 /// Provided above the page tree (see `main.dart`) so the profile widgets and the
-/// [G7Controller] observe the same value. The controller reads it fresh via
+/// [CgmController] observe the same value. The controller reads it fresh via
 /// [load] each time it fetches, so a change takes effect without a restart.
 class ProfilePredictionState extends ChangeNotifier {
   static const _kEnabled = 'prediction_enabled';

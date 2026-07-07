@@ -74,6 +74,19 @@ class ProfileBolusState extends ChangeNotifier {
     return suggestion > 0 ? suggestion : 0;
   }
 
+  /// Grams of fast carbs to raise [glucoseMgdl] up to [targetMgdl]. Derived from
+  /// the same two factors: 1 unit covers [carbFactor] g AND lowers glucose by
+  /// [correctionFactor] mg/dL, so [carbFactor] g ≈ raises glucose by
+  /// [correctionFactor] mg/dL. One-sided (0 at/above target).
+  double suggestedRescueCarbs({
+    required int glucoseMgdl,
+    required int targetMgdl,
+  }) {
+    final rise = targetMgdl - glucoseMgdl;
+    final grams = rise * _carbFactor / _correctionFactor;
+    return grams > 0 ? grams : 0;
+  }
+
   // ---- Persistence ----
 
   static int _readInt(String? raw, int fallback) =>

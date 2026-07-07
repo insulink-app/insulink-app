@@ -6,6 +6,7 @@ import 'package:insulink/src/sport/logbook/workout_log_page.dart';
 import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/routines/routine_editor_page.dart';
 import 'package:insulink/src/sport/sport_add_tile.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_menu.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
@@ -173,11 +174,15 @@ class RoutinesSection extends StatelessWidget {
     if (routine.items.isEmpty) {
       return count;
     }
-    final minutes = estimatedRoutineMinutes(routine, training.exercises);
+    final minutes = estimatedRoutineMinutes(
+      routine,
+      training.exercises,
+      training.sessions,
+    );
     final duration = Locales.string(
       context,
       'sport.routines.est_duration',
-      params: ['$minutes'],
+      params: [sportMinutes(minutes)],
     );
     return '$count · $duration';
   }

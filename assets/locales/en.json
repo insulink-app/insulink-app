@@ -82,6 +82,9 @@
       "network": "Connection failed. Please try again."
     }
   },
+  "connection": {
+    "logout": "Your session has expired. Please sign in again."
+  },
   "overview": {
     "label": "Overview",
     "chart": {
@@ -117,8 +120,8 @@
       "dismiss": "Not now"
     }
   },
-  "statistics": {
-    "label": "Statistics",
+  "analysis": {
+    "label": "Analysis",
     "tab": {
       "ranges": "Ranges",
       "history": "History",
@@ -181,7 +184,8 @@
       "session": "SESSION",
       "battery": "BATTERY",
       "empty": "no sensor info yet",
-      "title": "Sensor data"
+      "title": "Sensor data",
+      "live": "Live reading"
     },
     "disconnect": "Disconnect",
     "status": {
@@ -198,7 +202,20 @@
       "title": "Pair sensor",
       "hint": "Enter the pairing code to connect",
       "scan": "Scan code",
-      "scan_hint": "Point the camera at the code on the sensor packaging."
+      "scan_hint": "Point the camera at the code on the sensor packaging.",
+      "libre": {
+        "title": "Activate Libre 3",
+        "hint": "Hold the sensor to the back of your phone to activate it via NFC.",
+        "activate": "Scan sensor (NFC)",
+        "account": "LibreView account ID (optional)",
+        "account_hint": "Leave blank for a fresh sensor. To take over an already-activated sensor, enter its numeric LibreView account ID.",
+        "scanning": "Hold the sensor to your phone…",
+        "failed": "NFC scan failed — try again.",
+        "done": "Sensor scanned",
+        "cancel": "Cancel scan",
+        "connecting": "Connecting to sensor…",
+        "connected": "Connected — receiving glucose"
+      }
     },
     "life": {
       "title": "Durability",
@@ -208,7 +225,9 @@
     },
     "control": {
       "end_session": "End session",
+      "end_session_confirm": "End",
       "stop_sensor": "Stop sensor",
+      "stop_sensor_confirm": "Stop",
       "end_session_title": "End session?",
       "end_session_body": "Reading will stop. The pairing is kept — you can reconnect later.",
       "stop_sensor_title": "Stop sensor?",
@@ -236,7 +255,10 @@
       "max_days": "Max days",
       "voltage": "Voltage",
       "runtime": "Runtime",
-      "temperature": "Temperature"
+      "temperature": "Temperature",
+      "mac": "Address",
+      "predicted": "Predicted",
+      "trend": "Trend"
     },
     "value": {
       "expired": "expired",
@@ -260,6 +282,11 @@
       "session_failed": "session failed",
       "temporary_issue": "temporary issue",
       "sensor_declining": "sensor declining"
+    },
+    "type": {
+      "_": "Sensor type",
+      "g7": "Dexcom G7",
+      "libre3": "FreeStyle Libre 3"
     }
   },
   "pump": {
@@ -285,6 +312,10 @@
   },
   "devices": {
     "label": "Devices"
+  },
+  "nutrition": {
+    "label": "Nutrition",
+    "placeholder": "Coming soon"
   },
   "sport": {
     "label": "Sport",
@@ -358,7 +389,7 @@
       "seconds": "Seconds",
       "weight": "Weight",
       "rest": "Rest",
-      "est_duration": "~# min"
+      "est_duration": "~#"
     },
     "workout": {
       "exercise": "Exercise",
@@ -404,13 +435,23 @@
       "duration": "Duration",
       "set_n": "Set #",
       "resume": "Resume workout",
-      "delete_confirm": "Delete this log entry?"
+      "delete_confirm": "Delete this log entry?",
+      "edit_set": "Edit set",
+      "add_set": "Add set",
+      "delete_set_confirm": "Delete this set?"
+    },
+    "calendar": {
+      "_": "Calendar",
+      "routine": "Routine",
+      "training": "Training",
+      "empty": "No activities on this day."
     },
     "trainings": {
       "_": "Trainings",
       "walk": "Walk",
       "jog": "Jog",
       "bike": "Cycle",
+      "change_type": "Change type",
       "duration": "Duration",
       "distance": "Distance",
       "speed": "Speed",
@@ -437,6 +478,14 @@
       "body": "# · # min – confirm?",
       "confirm": "Confirm",
       "reject": "Reject"
+    },
+    "goals": {
+      "_": "Goals",
+      "steps": "Steps goal",
+      "distance": "Distance goal",
+      "calories": "Calories goal",
+      "weight": "Weight goal",
+      "note": "Each box fills up as you approach its daily goal. The weight goal shows as a line on the weight graph."
     }
   },
   "profile": {
@@ -506,6 +555,9 @@
     "training": {
       "description": "Notify when a training was detected"
     },
+    "advisory": {
+      "description": "Pre-warn and suggest a countermeasure"
+    },
     "alarmsound": {
       "description": "Play alarm sound for high/low glucose"
     },
@@ -545,7 +597,8 @@
       "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training",
       "silent": "silent mute quiet do not disturb dnd",
       "developer": "developer debug logs advanced",
-      "prediction": "prediction forecast future trend minutes"
+      "prediction": "prediction forecast future trend minutes",
+      "sport_goals": "sport goals daily steps distance calories targets"
     },
     "prediction": {
       "_": "Prediction",
@@ -592,7 +645,17 @@
       "training_detected": {
         "name": "Training detected",
         "desc": "Notice when a training was detected automatically."
+      },
+      "advisory": {
+        "name": "Advance warning",
+        "desc": "Early warning with a countermeasure before a predicted high/low."
       }
+    },
+    "advisory": {
+      "low_title": "Low glucose ahead",
+      "low_body": "Eat about # g fast carbs (## tablets).",
+      "high_title": "High glucose ahead",
+      "high_body": "Consider about # units of insulin."
     },
     "low": {
       "title": "Glucose low"

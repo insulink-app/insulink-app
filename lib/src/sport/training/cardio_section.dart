@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/calendar/sport_calendar_page.dart';
 import 'package:insulink/src/sport/training/cardio_log_page.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_recording_page.dart';
@@ -22,9 +23,24 @@ class CardioSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        LocaleText(
-          'sport.trainings',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            LocaleText(
+              'sport.trainings',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.calendar_month, size: 20),
+              tooltip: Locales.string(context, 'sport.calendar'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SportCalendarPage(),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         if (state.activeTraining != null) ...[
@@ -146,8 +162,17 @@ class CardioSection extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: TextButton(
                   onPressed: () => state.rejectDetected(training.id),
+                  style: TextButton.styleFrom(
+                    foregroundColor: scheme.onSurface.withValues(alpha: 0.75),
+                    backgroundColor: scheme.onSurface.withValues(alpha: 0.06),
+                    minimumSize: const Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   child: LocaleText('sport.detect_notification.reject'),
                 ),
               ),
@@ -155,6 +180,13 @@ class CardioSection extends StatelessWidget {
               Expanded(
                 child: FilledButton(
                   onPressed: () => state.confirmDetected(training.id),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   child: LocaleText('sport.detect_notification.confirm'),
                 ),
               ),

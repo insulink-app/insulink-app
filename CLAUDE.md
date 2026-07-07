@@ -4,10 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A from-scratch **Dexcom G7 BLE reader** (Flutter + Rust). It reimplements the
-G7's proprietary pairing/authentication and reads live + historical glucose,
-without the official app. GPL-3.0; derivative of [Juggluco](https://github.com/j-kaltes/Juggluco).
-Interoperability/research project — not a medical device.
+A from-scratch **CGM BLE reader** (Flutter + Rust) for two sensors: the **Dexcom
+G7** (fully working) and the **FreeStyle Libre 3** (in progress — see
+`docs/LIBRE3.md`). It reimplements each sensor's proprietary pairing/auth and
+reads live + historical glucose without the official apps. GPL-3.0; derivative of
+[Juggluco](https://github.com/j-kaltes/Juggluco). Interoperability/research
+project — not a medical device.
+
+The two sensors share everything above the wire layer via a `CgmConnection`
+strategy (`lib/src/cgm/cgm_connection.dart`): both decoders emit a `CgmReading`,
+and the controller/store/service/chart/stats/alarms are sensor-agnostic. The
+active sensor is `CgmStore.sensorType`; the service isolate builds the matching
+`CgmConnection` (`G7Connection` today, `Libre3Connection` once the Libre BLE
+handshake lands). Per-sensor watchdog cadence is `CgmTiming`. The Libre 3 wire
+code lives in `lib/src/libre3/` (NFC activation + glucose decode done; BLE
+security handshake is vendor-blob-gated — `docs/LIBRE3.md`).
 
 ## Commands
 
@@ -87,10 +98,11 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
   state class AND its editor widgets). **Do NOT create type-layer folders** like
   `state/`, `widgets/`, `models/`, `services/` or `controllers/`. The top level
   is already feature-based (`overview/`, `sensor/`, `statistics/`, `profile/`,
-  `injection/`, `g7/` = the Dexcom device); cross-cutting shared code lives in
-  `base/` (shared widgets/primitives), `localization/`, `theme/`. Within a large
-  feature, subfolders are themselves features/sub-domains (e.g. `g7/protocol/`,
-  `profile/notifications/`), never technical layers.
+  `injection/`, `cgm/` = the shared CGM read pipeline + the Dexcom G7 wire code
+  under `cgm/protocol/`, `libre3/` = the FreeStyle Libre 3 wire code); cross-cutting
+  shared code lives in `base/` (shared widgets/primitives), `localization/`,
+  `theme/`. Within a large feature, subfolders are themselves features/sub-domains
+  (e.g. `cgm/protocol/`, `profile/notifications/`), never technical layers.
 - **Document accumulated knowledge as individual markdown files under `docs/`** —
   one focused topic per file, rather than letting it pile up only in code.
 
@@ -108,15 +120,18 @@ Two layers, bridged by flutter_rust_bridge (FRB):
   against vectors captured from Juggluco's compiled reference; treat them as the
   contract — if you touch `jpake.rs`, keep them green.
 
-The `lib/src/g7/` module is grouped into subfolders by concern:
+The `lib/src/cgm/` module is grouped into subfolders by concern:
 `protocol/` (the wire/codec/handshake/pipeline core — `uuids`, `opcodes`,
 `display_certs`, `ble_transport`, `auth_session`, `device_info`, `glucose`,
 `connection`), `service/` (the background foreground-service host + alarms —
-`ble_service`, `alarms`), and at the root the persistence (`store.dart`) and the
-UI controller (`g7_controller.dart`). The `protocol/` files are the fragile,
-byte-exact core — relocate them if needed, but don't restructure their logic.
+`cgm_service`, `alarms`), and at the root the persistence (`cgm_store.dart`), the
+UI controller (`cgm_controller.dart`) and the sensor-agnostic contract
+(`cgm_connection.dart` — `CgmConnection`/`CgmReading`/`CgmTiming`/`SensorType`).
+The `protocol/` files hold the **Dexcom G7** wire code and are the fragile,
+byte-exact core — relocate them if needed, but don't restructure their logic. The
+**FreeStyle Libre 3** wire code is the sibling `lib/src/libre3/` folder.
 
-### The handshake (`lib/src/g7/protocol/auth_session.dart`)
+### The handshake (`lib/src/cgm/protocol/auth_session.dart`)
 
 GATT (service `f8083532-…`): control `…3534`, auth `…3535`, backfill `…3536`,
 J-PAKE/cert bulk `…3538` (see `uuids.dart`). Two paths:
@@ -142,7 +157,7 @@ Handshake gotchas (learned the hard way):
    the derived session key is wrong → the AES key-confirmation fails. The real
    cause is almost always **connecting to the WRONG sensor** (a neighbour's G7,
    or an old one, that advertised first) — the stored key / pairing code don't
-   match it. Fixed by **device pinning**: `G7Store.deviceId(serial)` stores the
+   match it. Fixed by **device pinning**: `CgmStore.deviceId(serial)` stores the
    paired sensor's BLE remoteId and `scanForSensor(wantedId:)` matches ONLY that
    device. (A corrupted/misaligned J-PAKE round can cause it too — hence
    `clearJpakeBuffer()` before each `run()`.) `G7HandshakeException` marks it as
@@ -167,11 +182,11 @@ dies when the activity is destroyed, so the whole read pipeline runs in a
   cached `BluetoothDevice.fromId(deviceId)`, no scan) — see "Reconnect path" in
   gotcha #4 below; scanning is only for first pairing, the first connect of each
   process, and the fallback. It only depends on the already widget-free layers (`BleTransport`,
-  `G7AuthSession`, codecs, `G7Store`) and reports out via callbacks
+  `G7AuthSession`, codecs, `CgmStore`) and reports out via callbacks
   (`onLog`/`onReading`/`onUpdate`/`onConnectionState`). It used to live inline
   in `_ReaderPageState`.
-- `ble_service.dart`: the `@pragma('vm:entry-point') startCallback` +
-  `G7TaskHandler` that runs `G7Connection` inside the service isolate. It
+- `cgm_service.dart`: the `@pragma('vm:entry-point') startCallback` +
+  `CgmTaskHandler` that runs `G7Connection` inside the service isolate. It
   **must `await RustLib.init()` again** (fresh isolate ⇒ fresh Rust core),
   also re-inits the alarm manager + store (fresh isolate), updates the
   notification text with the latest value, pushes updates to the UI with
@@ -187,7 +202,7 @@ dies when the activity is destroyed, so the whole read pipeline runs in a
   whole service (fresh isolate + Rust core + BLE stack). Health is measured by
   **time-since-last-reading, not BLE connection state** (which is normally
   "disconnected" between the G7's 5-min deliveries).
-- The UI layer is in `g7_controller.dart` (`G7Controller`), not `main.dart`
+- The UI layer is in `cgm_controller.dart` (`CgmController`), not `main.dart`
   — see "App / UI layer" below. `flutter_blue_plus` works in the service
   isolate because FFT registers plugins on its background engine.
 
@@ -198,9 +213,9 @@ Load-bearing background gotchas (don't regress):
    (via `permission_handler`) and aborts BEFORE `startService` if denied —
    otherwise native `startForeground` throws `SecurityException` and the service
    sticky-restarts in a loop.
-2. **Cross-isolate store cache**: `G7Store` is backed by `flutter_secure_storage`
+2. **Cross-isolate store cache**: `CgmStore` is backed by `flutter_secure_storage`
    but serves synchronous getters from an in-memory cache loaded via `readAll()`.
-   That cache is per-isolate, so the UI must `G7Store.reload()` (a fresh
+   That cache is per-isolate, so the UI must `CgmStore.reload()` (a fresh
    `readAll()`) to see the service's writes (done on the `update` ping and on
    resume).
 3. Manifest needs `FOREGROUND_SERVICE_CONNECTED_DEVICE` + `POST_NOTIFICATIONS` +
@@ -255,15 +270,15 @@ Load-bearing background gotchas (don't regress):
 The UI is a multi-page app (overview, sensor, statistics, profile, plus
 injection/pump stubs) under `base/navigator.dart`, NOT the old single reader
 page. `main.dart` is a thin shell: it sets up `MultiProvider` (theme, locale,
-glucose/bolus/silent profile state, and `G7Controller`) and `MaterialApp`
+glucose/bolus/silent profile state, and `CgmController`) and `MaterialApp`
 (`home: AppPage`).
 
-- **`g7_controller.dart` (`G7Controller`)** is the UI isolate's viewer + remote
+- **`cgm_controller.dart` (`CgmController`)** is the UI isolate's viewer + remote
   control for the read pipeline — a `ChangeNotifier` provided above the page
   tree so overview/sensor/statistics all observe the same data. It owns the
   pairing-code field, the live/cached reading, the current-session chart data
   (`byTime`), device info, the log, and service start/stop. The BLE work itself
-  runs in the service isolate (`ble_service.dart`); this class just mirrors it.
+  runs in the service isolate (`cgm_service.dart`); this class just mirrors it.
   - **Stale-recovery on launch/resume** (`_recoverIfStale`): `isRunningService`
     can read "running" while the hosting isolate is frozen, so the real signal
     is time-since-last-data. No fresh data within `_staleAfter` (12 min) ⇒
@@ -303,11 +318,11 @@ glucose/bolus/silent profile state, and `G7Controller`) and `MaterialApp`
 
 - **Statistics** (`statistics/`) read the long-term archive, not the current
   session — see `archiveSince` / `archiveRange` under Data + persistence. Default
-  window is 14 d (`G7Controller.statsWindow`, clinical AGP).
+  window is 14 d (`CgmController.statsWindow`, clinical AGP).
 
-### Alarms & notifications (`g7/service/alarms.dart`)
+### Alarms & notifications (`cgm/service/alarms.dart`)
 
-`G7AlarmManager` runs in the **service isolate** (alongside `G7TaskHandler`) so
+`G7AlarmManager` runs in the **service isolate** (alongside `CgmTaskHandler`) so
 alarms fire with the app closed. `init()` must be called once per isolate
 (mirrors `RustLib.init()`).
 
@@ -326,7 +341,7 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - **DnD bypass is load-bearing and order-sensitive**: the channels set
   `channelBypassDnd: true`, but that's silently ignored unless "Do Not Disturb
   access" was granted **BEFORE the channels are created**. So `ensureDndAccess()`
-  runs from the UI isolate in `G7Controller.start()`, before the service isolate
+  runs from the UI isolate in `CgmController.start()`, before the service isolate
   posts its first alarm.
 - Urgent levels add `fullScreenIntent` + `category: alarm`. Non-glucose warnings
   (connection-lost after 15 min, sensor-expiry within final 24 h) use a plain
@@ -358,7 +373,7 @@ alarms fire with the app closed. `init()` must be called once per isolate
   dexTime(LE32) ‖ CRC16`, unverified for G7). The G7 is factory-calibrated and
   works fully without it; a verified BLE-HCI capture is needed before sending it.
 - **Two glucose stores, different time bases.** The per-sensor `loadReadings`
-  history (`G7Controller.byTime`) is keyed by **seconds-since-session-start**,
+  history (`CgmController.byTime`) is keyed by **seconds-since-session-start**,
   capped, and reset on a new sensor — it's the current-session overview chart.
   Separately, `archiveAddAll`/`archiveRange` keep a **long-term archive keyed by
   absolute epoch-minute** (`millisecondsSinceEpoch ~/ 60000`, bucketed per day)
@@ -366,7 +381,7 @@ alarms fire with the app closed. `init()` must be called once per isolate
   page (`archiveSince(window)`). Writes are serialized through `_archiveGate`.
   `forgetSensor` clears the current session but KEEPS the archive, so statistics
   survive a sensor change.
-- `store.dart` (flutter_secure_storage, synchronous getters served from an
+- `cgm_store.dart` (flutter_secure_storage, synchronous getters served from an
   in-memory cache loaded via `readAll()` on `open()`/`reload()`): per-**serial**
   keys for session key,
   glucose history, device info, sensor start, the expiry-notified flag, and the
@@ -421,8 +436,11 @@ alarms fire with the app closed. `init()` must be called once per isolate
 ## Reference
 
 `docs/` holds the per-topic knowledge files (one focused subject each):
-- `docs/PROTOCOL.md` — full byte-level protocol spec + source citations
-  (Juggluco, DiaBLE, G7SensorKit, xDrip).
+- `docs/PROTOCOL.md` — full byte-level **Dexcom G7** protocol spec + source
+  citations (Juggluco, DiaBLE, G7SensorKit, xDrip).
+- `docs/LIBRE3.md` — **FreeStyle Libre 3** protocol (NFC activation, BLE GATT,
+  security handshake), the vendor-blob bridge design + legal caveat, and the
+  implementation status (what's done vs. hardware-gated).
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
 

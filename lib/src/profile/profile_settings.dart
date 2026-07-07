@@ -68,6 +68,10 @@ class ProfileSettings {
       // where SportState reads them.
       "sport.stride_cm": "${await sport.loadStrideCm()}",
       "sport.height_cm": "${await sport.loadHeightCm()}",
+      "sport.steps_goal": "${await sport.loadStepsGoal()}",
+      "sport.distance_goal_m": "${await sport.loadDistanceGoalM()}",
+      "sport.calories_goal": "${await sport.loadCaloriesGoal()}",
+      "sport.weight_goal_kg": "${await sport.loadWeightGoalKg()}",
       // Box layouts (which boxes + order) of the Today grid and the overview,
       // so they survive logout/login.
       TodayLayoutState.key: await TodayLayoutState.loadRaw(),

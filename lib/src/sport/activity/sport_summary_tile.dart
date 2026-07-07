@@ -11,6 +11,7 @@ class SportSummaryTile extends StatelessWidget {
     required this.value,
     this.unit,
     this.onTap,
+    this.progress,
   });
 
   final IconData icon;
@@ -18,6 +19,11 @@ class SportSummaryTile extends StatelessWidget {
   final String value;
   final String? unit;
   final VoidCallback? onTap;
+
+  /// Optional daily-goal progress in 0..1. When set, the box background fills
+  /// from the left in proportion to how close today is to the goal (brighter
+  /// once reached).
+  final double? progress;
 
   @override
   Widget build(BuildContext context) {
@@ -28,19 +34,40 @@ class SportSummaryTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: scheme.primary.withValues(alpha: 0.12)),
       ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _iconBadge(scheme),
-              const SizedBox(width: 12),
-              Expanded(child: _text(context, scheme)),
-            ],
-          ),
+        child: Stack(
+          children: [
+            if (progress != null) _fill(scheme),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _iconBadge(scheme),
+                  const SizedBox(width: 12),
+                  Expanded(child: _text(context, scheme)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The proportional background fill, anchored to the left edge and filling the
+  /// full tile height.
+  Widget _fill(ColorScheme scheme) {
+    final value = progress!.clamp(0.0, 1.0);
+    final reached = value >= 1.0;
+    return Positioned.fill(
+      child: FractionallySizedBox(
+        alignment: Alignment.centerLeft,
+        widthFactor: value,
+        child: ColoredBox(
+          color: scheme.primary.withValues(alpha: reached ? 0.22 : 0.13),
         ),
       ),
     );

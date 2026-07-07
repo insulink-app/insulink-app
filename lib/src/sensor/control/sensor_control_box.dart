@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../../g7/g7_controller.dart';
+import '../../cgm/cgm_controller.dart';
 import 'sensor_pairing_form.dart';
 import 'sensor_status_box.dart';
 
@@ -9,7 +9,7 @@ import 'sensor_status_box.dart';
 class SensorControlBox extends StatelessWidget {
   const SensorControlBox({super.key, required this.controller});
 
-  final G7Controller controller;
+  final CgmController controller;
 
   bool get _unpaired =>
       !controller.hasSensor && !controller.connected && !controller.busy;

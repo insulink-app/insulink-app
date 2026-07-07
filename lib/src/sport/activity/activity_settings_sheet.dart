@@ -4,6 +4,7 @@ import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/sport/activity/health_import_button.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/activity/sport_goals_editor.dart';
 import 'package:insulink/src/sport/activity/today_layout_button.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
@@ -86,6 +87,13 @@ class _ActivitySettingsSheet extends StatelessWidget {
           'sport.activity.height_note',
           style: TextStyle(fontSize: 12, color: Colors.grey[500]),
         ),
+        const SizedBox(height: 20),
+        LocaleText(
+          'sport.goals',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        const SportGoalsEditor(),
         const SizedBox(height: 20),
         const TodayLayoutButton(),
         const SizedBox(height: 12),

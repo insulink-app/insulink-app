@@ -20,7 +20,7 @@ void main() {
     final de = await loaded('de');
     expect(de.get('alert.ok'), 'OK');
     expect(de.get('profile.glucose.target'), 'Zielbereich');
-    expect(de.get('statistics.range.in_range'), 'Im Zielbereich');
+    expect(de.get('analysis.range.in_range'), 'Im Zielbereich');
   });
 
   test('a `_` self-value resolves to the parent path', () async {
@@ -44,7 +44,7 @@ void main() {
     final en = await loaded('en');
     expect(en.get('alert.ok'), 'OK');
     expect(en.get('profile.glucose'), 'Glucose');
-    expect(en.get('statistics.range.in_range'), 'In Range');
+    expect(en.get('analysis.range.in_range'), 'In Range');
   });
 
   test(

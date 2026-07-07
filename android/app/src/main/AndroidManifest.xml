@@ -63,9 +63,15 @@
     <uses-feature android:name="android.hardware.bluetooth_le"
         android:required="true" />
 
+    <!-- NFC: one scan activates a FreeStyle Libre 3 (it then streams over BLE).
+         required="false" so Dexcom-G7-only phones without NFC still install. -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc"
+        android:required="false" />
+
     <application
         android:label="Insulink"
-        android:name="${applicationName}"
+        android:name=".InsulinkApplication"
         android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
@@ -117,6 +123,14 @@
         <service
             android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
             android:foregroundServiceType="connectedDevice|location"
+            android:exported="false" />
+
+        <!-- flutter_local_notifications: receives the Confirm/Reject action-button
+             taps on the "training detected" notification. The plugin (22.0.1) does
+             NOT declare this in its own manifest, so without it the action broadcast
+             has no component to deliver to and the buttons do nothing. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
             android:exported="false" />
     </application>
     <!-- Required to query activities that can process text, see:

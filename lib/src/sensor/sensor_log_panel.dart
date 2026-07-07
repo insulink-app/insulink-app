@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../g7/g7_controller.dart';
+import '../cgm/cgm_controller.dart';
 import '../localization/locale_text.dart';
 
 /// Scrollable connection log with a copy button. Shown only in developer mode.
@@ -11,7 +11,7 @@ class SensorLogPanel extends StatelessWidget {
     required this.onCopy,
   });
 
-  final G7Controller controller;
+  final CgmController controller;
   final VoidCallback onCopy;
 
   @override

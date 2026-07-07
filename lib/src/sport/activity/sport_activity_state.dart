@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../sport_models.dart';
 import '../sport_store.dart';
 import '../sport_sync.dart';
+import 'activity_estimate.dart';
 import 'step_baseline.dart';
 
 /// Reads today's steps from the hardware step counter (`pedometer`). Its own
@@ -42,11 +43,17 @@ class SportActivityState extends ChangeNotifier {
   /// so the detail pages show today up-to-the-minute instead of only the last
   /// Health sync. A synthetic today entry is injected when there is live data but
   /// no archived one yet.
-  List<DailyActivity> get activityArchiveWithToday {
+  /// [strideCm]/[weightKg] estimate today's distance + calories on a
+  /// pedometer-only day (no Health import), so the detail page's "latest" matches
+  /// the Today box instead of showing a hard 0.
+  List<DailyActivity> activityArchiveWithToday(int strideCm, double weightKg) {
     final todayKey = _paddedTodayKey();
     final patched = [
       for (final day in _archive)
-        if (day.dateKey == todayKey) _patchToday(day) else day,
+        if (day.dateKey == todayKey)
+          _patchToday(day, strideCm, weightKg)
+        else
+          day,
     ];
     final hasToday = patched.any((day) => day.dateKey == todayKey);
     if (!hasToday && _hasLiveToday) {
@@ -58,6 +65,8 @@ class SportActivityState extends ChangeNotifier {
             distanceKm: 0,
             calories: 0,
           ),
+          strideCm,
+          weightKg,
         ),
       );
     }
@@ -69,12 +78,19 @@ class SportActivityState extends ChangeNotifier {
       _importedDistanceKm != null ||
       _importedCalories != null;
 
-  DailyActivity _patchToday(DailyActivity day) => DailyActivity(
-    dateKey: day.dateKey,
-    steps: todaySteps > day.steps ? todaySteps : day.steps,
-    distanceKm: importedDistanceKm ?? day.distanceKm,
-    calories: importedCalories ?? day.calories,
-  );
+  DailyActivity _patchToday(DailyActivity day, int strideCm, double weightKg) {
+    final steps = todaySteps > day.steps ? todaySteps : day.steps;
+    final distance =
+        importedDistanceKm ?? estimatedDistanceKm(steps, strideCm);
+    final calories =
+        importedCalories ?? estimatedCalories(distance, weightKg);
+    return DailyActivity(
+      dateKey: day.dateKey,
+      steps: steps,
+      distanceKm: distance,
+      calories: calories,
+    );
+  }
 
   /// Upsert imported days (by [DailyActivity.dateKey]) and persist.
   Future<void> mergeArchive(List<DailyActivity> days) async {

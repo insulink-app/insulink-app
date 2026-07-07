@@ -5,6 +5,7 @@ import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 import 'package:insulink/src/sport/training/active_training.dart';
+import 'package:insulink/src/sport/training/cardio_detection_runner.dart';
 import 'package:insulink/src/sport/training/cardio_detector.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
@@ -195,8 +196,28 @@ void main() {
           ),
         ],
       );
-      // 3 × (60 + 60) = 360 s = 6 min.
-      expect(estimatedRoutineMinutes(routine, [exercise]), 6);
+      // 3 × (60 + 60) = 360 s = 6 min (no past sessions → additive estimate).
+      expect(estimatedRoutineMinutes(routine, [exercise], const []), 6);
+    });
+
+    test('averages past session durations once the routine has been run', () {
+      const routine = SportRoutine(id: 'r1', name: 'Legs', items: []);
+      final sessions = [
+        // 10 min and 20 min → average 15 min (ignores the additive estimate).
+        WorkoutSession(
+          id: 's1',
+          routineId: 'r1',
+          startedAtMs: 0,
+          sets: const [SetLog(exerciseId: 'e1', reps: 5, atEpochMs: 600000)],
+        ),
+        WorkoutSession(
+          id: 's2',
+          routineId: 'r1',
+          startedAtMs: 0,
+          sets: const [SetLog(exerciseId: 'e1', reps: 5, atEpochMs: 1200000)],
+        ),
+      ];
+      expect(estimatedRoutineMinutes(routine, const [], sessions), 15);
     });
   });
 
@@ -291,6 +312,62 @@ void main() {
       final detected = const CardioDetector().detect(points, log);
       expect(detected.length, 1);
       expect(detected.single.type, CardioType.bike);
+    });
+  });
+
+  group('CardioDetectionRunner windowing', () {
+    // A continuous 19-min jog, one point per minute, ~10 km/h.
+    const base = 1000000000000;
+    const minute = 60000;
+    List<TrackPoint> jog() {
+      final points = <TrackPoint>[];
+      var lat = 52.0;
+      for (var i = 0; i <= 19; i++) {
+        points.add(TrackPoint(lat: lat, lng: 13.0, tMs: base + i * minute));
+        lat += 166 / 111320; // ~166 m/min ≈ 10 km/h
+      }
+      return points;
+    }
+
+    List<TrackPoint> upTo(List<TrackPoint> all, int nowMs) =>
+        [for (final point in all) if (point.tMs <= nowMs) point];
+
+    DateTime at(int ms) => DateTime.fromMillisecondsSinceEpoch(ms);
+
+    test('detects a jog once in full even when scanned every tick mid-activity',
+        () {
+      final runner = CardioDetectionRunner();
+      final all = jog();
+      final endMs = base + 19 * minute;
+
+      // Mid-jog tick: nothing is finalised yet (segment ends < _tail ago) and —
+      // the regression — the watermark does NOT advance, so the ride stays whole.
+      final midNow = base + 10 * minute;
+      final mid = runner.selectDetections(upTo(all, midNow), const [], 0, at(midNow));
+      expect(mid.detected, isEmpty);
+      expect(mid.watermark, 0);
+
+      // 6 min after the jog ended: the full ride finalises as ONE training.
+      final afterNow = endMs + 6 * minute;
+      final done = runner.selectDetections(
+        upTo(all, afterNow),
+        const [],
+        mid.watermark,
+        at(afterNow),
+      );
+      expect(done.detected.length, 1);
+      expect(done.detected.single.type, CardioType.jog);
+      expect(done.detected.single.startMs, base);
+      expect(done.detected.single.endMs, endMs);
+
+      // A later tick does not re-detect it (watermark advanced past it).
+      final again = runner.selectDetections(
+        upTo(all, afterNow + minute),
+        const [],
+        done.watermark,
+        at(afterNow + minute),
+      );
+      expect(again.detected, isEmpty);
     });
   });
 

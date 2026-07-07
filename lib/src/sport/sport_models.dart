@@ -189,6 +189,14 @@ class SetLog {
     required this.atEpochMs,
   });
 
+  SetLog copyWith({int? reps, int? seconds, double? weightKg}) => SetLog(
+    exerciseId: exerciseId,
+    reps: reps ?? this.reps,
+    seconds: seconds ?? this.seconds,
+    weightKg: weightKg ?? this.weightKg,
+    atEpochMs: atEpochMs,
+  );
+
   Map<String, dynamic> toJson() => {
     'ex': exerciseId,
     'reps': reps,
@@ -220,6 +228,13 @@ class WorkoutSession {
     required this.startedAtMs,
     required this.sets,
   });
+
+  WorkoutSession copyWith({List<SetLog>? sets}) => WorkoutSession(
+    id: id,
+    routineId: routineId,
+    startedAtMs: startedAtMs,
+    sets: sets ?? this.sets,
+  );
 
   Map<String, dynamic> toJson() => {
     'id': id,

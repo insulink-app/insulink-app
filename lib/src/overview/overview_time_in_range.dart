@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/statistics/ranges/glucose_band.dart';
+import 'package:insulink/src/analysis/ranges/glucose_band.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 
 /// Compact "time in range" for the overview: a single horizontal stacked bar
-/// over the last 24 h with a small legend. Reuses the statistics band logic.
+/// over the last 24 h with a small legend. Reuses the analysis band logic.
 class OverviewTimeInRange extends StatelessWidget {
   const OverviewTimeInRange({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<G7Controller>();
+    final controller = context.watch<CgmController>();
     final glucose = context.watch<ProfileGlucoseState>();
     final colors = Theme.of(context).extension<GlucoseColors>()!;
 

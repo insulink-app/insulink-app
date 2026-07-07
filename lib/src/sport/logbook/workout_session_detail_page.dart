@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
+import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/logbook/set_editor_sheet.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
 
 /// Detail of a completed routine: header metrics (date, duration, sets) plus the
-/// logged sets per exercise. Deletable via the app bar.
+/// logged sets per exercise. Sets are editable in place (tap to change values,
+/// delete, or add a set per exercise); the whole entry is deletable via the app
+/// bar.
 class WorkoutSessionDetailPage extends StatelessWidget {
   const WorkoutSessionDetailPage({super.key, required this.session});
 
@@ -16,7 +20,13 @@ class WorkoutSessionDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final training = context.watch<TrainingState>();
-    final routine = training.routineById(session.routineId);
+    // Re-read the live session so in-place edits reflect immediately (the passed
+    // one is a snapshot from the log list).
+    final current = training.sessions.firstWhere(
+      (other) => other.id == session.id,
+      orElse: () => session,
+    );
+    final routine = training.routineById(current.routineId);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
@@ -32,7 +42,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
               context,
               messageKey: 'sport.logbook.delete_confirm',
               onConfirm: () {
-                context.read<TrainingState>().removeSession(session.id);
+                context.read<TrainingState>().removeSession(current.id);
                 Navigator.of(context).pop();
               },
             ),
@@ -45,15 +55,19 @@ class WorkoutSessionDetailPage extends StatelessWidget {
         ),
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
         children: [
-          _header(context, scheme),
+          _header(context, scheme, current),
           const SizedBox(height: 24),
-          for (final row in _setRows(context, training)) row,
+          for (final row in _setRows(context, training, current)) row,
         ],
       ),
     );
   }
 
-  Widget _header(BuildContext context, ColorScheme scheme) {
+  Widget _header(
+    BuildContext context,
+    ColorScheme scheme,
+    WorkoutSession session,
+  ) {
     final locale = MaterialLocalizations.of(context);
     final started = DateTime.fromMillisecondsSinceEpoch(session.startedAtMs);
     return Container(
@@ -80,7 +94,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
                 scheme,
                 Icons.timer_outlined,
                 'sport.logbook.duration',
-                _duration(),
+                _duration(session),
               ),
               _stat(
                 context,
@@ -96,7 +110,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
     );
   }
 
-  String _duration() {
+  String _duration(WorkoutSession session) {
     if (session.sets.isEmpty) {
       return '–';
     }
@@ -140,14 +154,24 @@ class WorkoutSessionDetailPage extends StatelessWidget {
     );
   }
 
-  /// The sets grouped by exercise (in log order) as small cards.
-  List<Widget> _setRows(BuildContext context, TrainingState training) {
+  /// The sets grouped by exercise (in log order) as small editable cards, each
+  /// group closed by an "add set" button.
+  List<Widget> _setRows(
+    BuildContext context,
+    TrainingState training,
+    WorkoutSession session,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     final rows = <Widget>[];
     String? lastExercise;
     var setNumber = 0;
-    for (final set in session.sets) {
-      if (set.exerciseId != lastExercise) {
+    for (var index = 0; index < session.sets.length; index += 1) {
+      final set = session.sets[index];
+      final isNewGroup = set.exerciseId != lastExercise;
+      if (isNewGroup && lastExercise != null) {
+        rows.add(_addSetButton(context, scheme, training, session, index - 1));
+      }
+      if (isNewGroup) {
         lastExercise = set.exerciseId;
         setNumber = 0;
         rows.add(
@@ -161,7 +185,18 @@ class WorkoutSessionDetailPage extends StatelessWidget {
         );
       }
       setNumber += 1;
-      rows.add(_setLine(context, scheme, setNumber, set));
+      rows.add(_setLine(context, scheme, training, session, index, setNumber));
+    }
+    if (session.sets.isNotEmpty) {
+      rows.add(
+        _addSetButton(
+          context,
+          scheme,
+          training,
+          session,
+          session.sets.length - 1,
+        ),
+      );
     }
     return rows;
   }
@@ -169,37 +204,118 @@ class WorkoutSessionDetailPage extends StatelessWidget {
   Widget _setLine(
     BuildContext context,
     ColorScheme scheme,
+    TrainingState training,
+    WorkoutSession session,
+    int index,
     int number,
-    SetLog set,
   ) {
+    final set = session.sets[index];
+    final kind = training.exerciseById(set.exerciseId)?.kind ?? ExerciseKind.reps;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: scheme.onSurface.withValues(alpha: 0.04),
+      child: Material(
+        color: scheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              Locales.string(
-                context,
-                'sport.logbook.set_n',
-                params: ['$number'],
-              ),
-              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+          onTap: () => showSetEditorSheet(
+            context,
+            set: set,
+            kind: kind,
+            onChanged: (edited) => _replaceSet(training, session, index, edited),
+          ),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
             ),
-            Text(
-              _value(set),
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+            child: Row(
+              children: [
+                Text(
+                  Locales.string(
+                    context,
+                    'sport.logbook.set_n',
+                    params: ['$number'],
+                  ),
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  _value(set),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(
+                    Icons.close,
+                    size: 18,
+                    color: scheme.onSurface.withValues(alpha: 0.4),
+                  ),
+                  onPressed: () => confirmDelete(
+                    context,
+                    messageKey: 'sport.logbook.delete_set_confirm',
+                    onConfirm: () => _deleteSet(training, session, index),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  Widget _addSetButton(
+    BuildContext context,
+    ColorScheme scheme,
+    TrainingState training,
+    WorkoutSession session,
+    int afterIndex,
+  ) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () => _addSet(training, session, afterIndex),
+        icon: const Icon(Icons.add, size: 18),
+        label: LocaleText('sport.logbook.add_set'),
+      ),
+    );
+  }
+
+  void _replaceSet(
+    TrainingState training,
+    WorkoutSession session,
+    int index,
+    SetLog edited,
+  ) {
+    final sets = [...session.sets]..[index] = edited;
+    training.updateSession(session.copyWith(sets: sets));
+  }
+
+  void _deleteSet(TrainingState training, WorkoutSession session, int index) {
+    final sets = [...session.sets]..removeAt(index);
+    training.updateSession(session.copyWith(sets: sets));
+  }
+
+  /// Adds a set right after [afterIndex], copying that set's values so the new
+  /// row starts from the same reps/weight the user just did.
+  void _addSet(TrainingState training, WorkoutSession session, int afterIndex) {
+    final template = session.sets[afterIndex];
+    final copy = SetLog(
+      exerciseId: template.exerciseId,
+      reps: template.reps,
+      seconds: template.seconds,
+      weightKg: template.weightKg,
+      atEpochMs: template.atEpochMs,
+    );
+    final sets = [...session.sets]..insert(afterIndex + 1, copy);
+    training.updateSession(session.copyWith(sets: sets));
   }
 
   String _value(SetLog set) {

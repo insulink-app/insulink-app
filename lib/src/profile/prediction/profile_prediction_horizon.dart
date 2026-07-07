@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/g7/g7_controller.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +13,7 @@ class ProfilePredictionHorizon extends StatelessWidget {
 
   void _select(BuildContext context, ProfilePredictionState state, int minutes) {
     state.setHorizon(minutes);
-    context.read<G7Controller>().refreshPrediction();
+    context.read<CgmController>().refreshPrediction();
   }
 
   @override

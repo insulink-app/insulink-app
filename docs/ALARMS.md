@@ -56,6 +56,29 @@ Urgent levels additionally set `fullScreenIntent` + `category: alarm`.
 - Connection-lost id `101` (cleared on the next reading via `onReading`).
 - Expiry id `100`, one-shot, **persisted per-sensor** in `G7Store` so it fires
   once even across service/app restarts.
+- Training-detected id `102`, halftime id `103`.
+- Advisory pre-warning id `104`, channel `insulink_alarm_advisory` (silent,
+  DnD-bypassing like the glucose alarms, own tone `alarm_advisory.wav`).
+
+## Predictive advisory pre-warning (`checkAdvisory`)
+
+A pre-warning that fires *before* glucose reaches a low/high zone, with a
+countermeasure. Runs in the service isolate next to `check`, gated by
+`NotificationSetting.advisory` (default ON) and silent mode; edge-triggered on
+its own `AdvisoryLevel` (`none/low/high`).
+
+- **Forecast** (`advisoryLevelFor`, pure/testable): project the current value +
+  trend `_advisoryHorizonMin` (20) min ahead. If predictions are enabled AND the
+  cached `PredictionCache` curve is recent (`_predictionMaxAgeMin`), refine the
+  low/high extreme with it — else fall back to the trend line. Only the UI
+  isolate refreshes the cache, so with the app closed it goes stale and the trend
+  line drives it (by design: value + trend are the primary signal).
+- Suppressed while glucose is *already* out of range — the real low/high alarm
+  owns that; the advisory only pre-warns from in-range.
+- **Countermeasure** reuses `ProfileBolusState`: high → `suggestedBolus(carbs:0,…)`
+  units; low → `suggestedRescueCarbs(…)` grams (÷ 6 g/tablet for the "Plättchen"
+  count), correcting toward the target-range midpoint. The user's correction/carb
+  factors are the calibration knob.
 
 Channel ids, importance and flags are fixed; only the user-facing channel
 name/description are localized. Android freezes a channel's displayed name at
