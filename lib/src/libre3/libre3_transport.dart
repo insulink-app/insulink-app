@@ -221,6 +221,7 @@ class Libre3Transport {
   /// A fully reassembled cert transfer: 140 B = sensor patch cert, 65 B = sensor
   /// ephemeral public key.
   Future<void> _receivedCert() async {
+    _log('Libre 3 received cert transfer ($_rdtLength B)');
     if (_rdtLength == 140) {
       await crypto.setPatchCertificate(_rdtData);
       _commandPhase = 4;
@@ -229,7 +230,7 @@ class Libre3Transport {
       await crypto.setPatchEphemeral(_rdtData);
       await _writeCommand(0x11);
     } else {
-      _fail('unexpected cert length ${_rdtLength}');
+      _fail('unexpected cert length $_rdtLength');
     }
   }
 
@@ -241,7 +242,7 @@ class Libre3Transport {
     } else if (_rdtLength == 67) {
       await _finishChallenge(_rdtData);
     } else {
-      _fail('unexpected challenge length ${_rdtLength}');
+      _fail('unexpected challenge length $_rdtLength');
     }
   }
 
@@ -300,12 +301,31 @@ class Libre3Transport {
         await _writeCommand(0x02);
       case 2:
         _commandPhase = 3;
-        await _sendFramed(_certificateData!, await crypto.appCertificate());
+        final appCert = await crypto.appCertificate();
+        _log('Libre 3 sending app cert (${appCert.length} B)');
+        await _sendFramed(_certificateData!, appCert);
+        await _afterCertWritten();
       case 4:
         _commandPhase = 5;
-        await _sendFramed(_certificateData!, await crypto.generateEphemeralKeys());
+        final ephemeral = _uncompressedPoint(await crypto.generateEphemeralKeys());
+        _log('Libre 3 sending ephemeral (${ephemeral.length} B)');
+        await _sendFramed(_certificateData!, ephemeral);
+        await _afterCertWritten();
       // phases 3 and 5 wait for the next notification.
     }
+  }
+
+  /// The blob emits the ephemeral P-256 public key as a raw 64-byte point (X‖Y).
+  /// The sensor exchanges keys in SEC1 uncompressed form (its own ephemeral is
+  /// 65 B = `0x04‖X‖Y`), so prepend the `0x04` marker to match — without it the
+  /// ECDH key agreement fails and the sensor drops the link after `0x0E`.
+  Uint8List _uncompressedPoint(Uint8List point) {
+    if (point.length != 64) {
+      return point;
+    }
+    return Uint8List(65)
+      ..[0] = 0x04
+      ..setRange(1, 65, point);
   }
 
   /// After a full cert/challenge payload is written, the next command depends on
@@ -351,17 +371,33 @@ class Libre3Transport {
     }
   }
 
+  /// Reassemble the data notifications before decrypting. At MTU 23 a reading
+  /// (~35 B encrypted) arrives split across several ≤20-byte notifications, so a
+  /// single fragment never MAC-verifies. AES-CCM only authenticates the COMPLETE
+  /// ciphertext+tag, which gives a clean boundary rule: append each fragment and
+  /// try to decrypt — a successful MAC means the packet is whole (emit + clear);
+  /// a failure means keep accumulating. The buffer resets past [_maxDataPacket]
+  /// so a lost fragment can't desync the stream forever.
+  static const _maxDataPacket = 60;
+  final Map<int, List<int>> _dataBuffers = {};
+
   Future<void> _decryptInto(
     int channelId,
     List<int> data,
     StreamController<Uint8List> sink,
   ) async {
+    _log('Libre 3 ch$channelId frag: ${_hex(data)}');
+    final buffer = _dataBuffers.putIfAbsent(channelId, () => <int>[])..addAll(data);
     try {
-      final plain = await crypto.decrypt(channelId, Uint8List.fromList(data));
+      final plain = await crypto.decrypt(channelId, Uint8List.fromList(buffer));
+      _log('Libre 3 decrypted ch$channelId: ${buffer.length}→${plain.length} B');
+      buffer.clear();
       sink.add(plain);
-    } catch (_) {
-      // A decrypt failure means the cipher context isn't valid — drop the frame;
-      // the connection watchdog will re-handshake.
+    } catch (error) {
+      if (buffer.length >= _maxDataPacket) {
+        _log('Libre 3 decrypt ch$channelId gave up at ${buffer.length} B: $error');
+        buffer.clear();
+      }
     }
   }
 
@@ -384,6 +420,9 @@ class Libre3Transport {
     }
   }
 
+  String _hex(List<int> bytes) =>
+      bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+
   Future<void> _subscribe(
     BluetoothCharacteristic characteristic,
     void Function(List<int>) onData,
@@ -401,35 +440,5 @@ class Libre3Transport {
     try {
       await device.disconnect();
     } catch (_) {}
-  }
-}
-
-/// Reassembles a security characteristic's fragmented notifications into a byte
-/// buffer, handing out fixed-size slices as the handshake expects them (mirrors
-/// the G7 transport's J-PAKE buffer). ponytail: assumes fragments are the raw
-/// payload bytes back-to-back; if the sensor prefixes a per-fragment length, that
-/// stripping goes here — confirm on-device.
-class _SecBuffer {
-  final List<int> _buf = [];
-  final List<MapEntry<int, Completer<Uint8List>>> _waiters = [];
-
-  void add(List<int> chunk) {
-    _buf.addAll(chunk);
-    while (_waiters.isNotEmpty && _buf.length >= _waiters.first.key) {
-      final waiter = _waiters.removeAt(0);
-      final out = Uint8List.fromList(_buf.sublist(0, waiter.key));
-      _buf.removeRange(0, waiter.key);
-      waiter.value.complete(out);
-    }
-  }
-
-  Future<Uint8List> take(
-    int total, {
-    Duration timeout = const Duration(seconds: 15),
-  }) {
-    final completer = Completer<Uint8List>();
-    _waiters.add(MapEntry(total, completer));
-    add(const []);
-    return completer.future.timeout(timeout);
   }
 }

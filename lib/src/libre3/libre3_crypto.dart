@@ -23,8 +23,8 @@ abstract class Libre3Crypto {
   /// `getAppCertificate()` — the 162-byte app certificate to send the sensor.
   Future<Uint8List> appCertificate();
 
-  /// `processbar(5, …)` — our ephemeral P-256 public key, already framed as
-  /// `[0x04 ‖ ephemeralPublicKey(65)]` for the CERT_DATA write.
+  /// `processbar(5, …)` — our ephemeral P-256 public key as a raw 64-byte point
+  /// (`X ‖ Y`). The transport prepends the `0x04` SEC1 marker before sending.
   Future<Uint8List> generateEphemeralKeys();
 
   /// `setPatchCertificate(cert)` — accept the sensor's 140-byte patch cert.
@@ -115,12 +115,19 @@ class Libre3NativeCrypto implements Libre3Crypto {
     _ivEnc = ivEnc;
   }
 
-  /// Decrypt one data-characteristic payload with AES-128-CCM (see [Libre3Ccm]).
-  ///
-  /// ponytail: the CCM nonce (here `ivEnc`), MAC length (4 bytes) and whether the
-  /// channel id / a per-frame sequence feed the nonce or AAD are the parts to
-  /// confirm against a real sensor — the AES-CCM primitive itself is RFC-3610
-  /// verified. Adjust the nonce/aad/macBits here once captured on-device.
+  /// Per-channel 3-byte nonce discriminator (Juggluco's `bcrypt.cpp`
+  /// `packetDescriptor`, indexed by the `intDecrypt` kind). Only the data
+  /// channels we read are listed: 2 = patch status, 3 = glucose, 4 = historic.
+  static const _packetDescriptor = <int, List<int>>{
+    2: [0x00, 0x00, 0xF0],
+    3: [0x00, 0x0F, 0x00],
+    4: [0x00, 0xF0, 0x00],
+  };
+
+  /// Decrypt one reassembled data packet with AES-128-CCM, byte-exact to
+  /// Juggluco's native `intDecrypt`/`bcrypt`: the packet is
+  /// `ciphertext ‖ tag(4) ‖ sequence(2)`; the 13-byte CCM nonce is
+  /// `sequence(2) ‖ packetDescriptor[channelId](3) ‖ ivEnc(8)`, no AAD, 4-byte MAC.
   @override
   Future<Uint8List> decrypt(int channelId, Uint8List data) async {
     final key = _kEnc;
@@ -128,10 +135,19 @@ class Libre3NativeCrypto implements Libre3Crypto {
     if (key == null || iv == null) {
       throw StateError('initCipher must run before decrypt');
     }
+    final descriptor = _packetDescriptor[channelId];
+    if (descriptor == null || data.length < 7) {
+      throw StateError('unsupported Libre 3 channel $channelId / ${data.length} B');
+    }
+    final bodyLen = data.length - 2;
+    final nonce = Uint8List(13)
+      ..setRange(0, 2, data, bodyLen)
+      ..setRange(2, 5, descriptor)
+      ..setRange(5, 13, iv);
     return Libre3Ccm.decrypt(
       key: key,
-      nonce: iv,
-      ciphertextAndTag: data,
+      nonce: nonce,
+      ciphertextAndTag: Uint8List.sublistView(data, 0, bodyLen),
       macBits: 32,
     );
   }

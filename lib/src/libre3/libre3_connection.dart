@@ -147,8 +147,10 @@ class Libre3Connection implements CgmConnection {
       Uint8List.fromList(plaintext),
     );
     if (reading == null) {
+      _log('Libre 3 one-minute parse failed (${plaintext.length} B)');
       return;
     }
+    _log('Libre 3 reading: ${reading.glucoseMgDl} mg/dL @ ${reading.secsSinceStart}s');
     _latest = reading;
     _sensorStart = DateTime.now().subtract(
       Duration(seconds: reading.secsSinceStart),
