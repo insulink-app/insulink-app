@@ -198,7 +198,9 @@ class _OverviewChartState extends State<OverviewChart>
     final end = start.add(
       Duration(seconds: latestSecs - _panWindows * _rangeHours * 3600),
     );
-    return MaterialLocalizations.of(context).formatMediumDate(end);
+    final l10n = MaterialLocalizations.of(context);
+    final time = l10n.formatTimeOfDay(TimeOfDay.fromDateTime(end));
+    return '${l10n.formatMediumDate(end)}, $time';
   }
 
   Widget _chart(

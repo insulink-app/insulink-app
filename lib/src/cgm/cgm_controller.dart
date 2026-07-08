@@ -128,10 +128,16 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Wider history for the full-screen chart's interval navigation (paging back
   /// through earlier days), same session-relative-seconds keying as [byTime].
+  /// Includes archive data from BEFORE the current session start (keyed by
+  /// negative seconds) so paging back crosses a sensor swap instead of stopping
+  /// at the gap where the new session began.
   SplayTreeMap<int, int> get chartHistory =>
-      _byTimeWithin(const Duration(days: 7));
+      _byTimeWithin(const Duration(days: 7), includePreSession: true);
 
-  SplayTreeMap<int, int> _byTimeWithin(Duration lookback) {
+  SplayTreeMap<int, int> _byTimeWithin(
+    Duration lookback, {
+    bool includePreSession = false,
+  }) {
     final store = _store;
     if (store == null) {
       return _byTime;
@@ -143,13 +149,11 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     final startSecs = start.millisecondsSinceEpoch ~/ 1000;
     final now = DateTime.now();
     final dayAgo = now.subtract(lookback);
+    final from = (!includePreSession && start.isAfter(dayAgo)) ? start : dayAgo;
     final out = SplayTreeMap<int, int>();
-    store.archiveRange(start.isAfter(dayAgo) ? start : dayAgo, now).forEach((
-      epochMin,
-      mgdl,
-    ) {
+    store.archiveRange(from, now).forEach((epochMin, mgdl) {
       final secs = epochMin * 60 - startSecs;
-      if (secs >= 0) {
+      if (includePreSession || secs >= 0) {
         out[secs] = mgdl;
       }
     });
