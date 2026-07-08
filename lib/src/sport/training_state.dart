@@ -43,15 +43,20 @@ class TrainingState extends ChangeNotifier {
   WorkoutSnapshot? get activeWorkout => _activeWorkout;
 
   /// Persist the running workout's snapshot (called by the runner on every
-  /// state change). No [notifyListeners] — the runner owns the live UI.
+  /// state change). Notifies AFTER the write (a later microtask, so it never
+  /// fires inside the runner page's own build frame) so the "resume" banner in
+  /// the activities list appears/updates the moment a workout starts or ends —
+  /// the runner still owns its own live UI.
   Future<void> saveActiveWorkout(WorkoutSnapshot snapshot) async {
     _activeWorkout = snapshot;
     await _store.saveActiveWorkout(snapshot);
+    notifyListeners();
   }
 
   Future<void> clearActiveWorkout() async {
     _activeWorkout = null;
     await _store.clearActiveWorkout();
+    notifyListeners();
   }
 
   SportExercise? exerciseById(String id) {

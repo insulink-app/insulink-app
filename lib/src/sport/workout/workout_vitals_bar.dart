@@ -56,11 +56,14 @@ class _WorkoutVitalsBarState extends State<WorkoutVitalsBar> {
           ListenableBuilder(
             listenable: _monitor,
             builder: (context, _) {
-              final live = _monitor.status == FitbitHrStatus.streaming;
+              // Keep the last known bpm on screen; the Fitbit drops/rescans
+              // between deliveries and status briefly leaves `streaming`, which
+              // otherwise flickered the value back to '–'.
+              final bpm = _monitor.bpm;
               return _reading(
                 Icons.favorite,
-                live ? scheme.error : scheme.onSurface.withValues(alpha: 0.3),
-                live && _monitor.bpm != null ? '${_monitor.bpm} bpm' : '–',
+                bpm != null ? scheme.error : scheme.onSurface.withValues(alpha: 0.3),
+                bpm != null ? '$bpm bpm' : '–',
               );
             },
           ),

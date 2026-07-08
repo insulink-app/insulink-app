@@ -4,6 +4,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/activity_entry.dart';
 import 'package:insulink/src/sport/activity/activity_log_page.dart';
 import 'package:insulink/src/sport/activity/activity_tile.dart';
+import 'package:insulink/src/sport/activity/current_activity_banners.dart';
 import 'package:insulink/src/sport/calendar/sport_calendar_page.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
@@ -45,6 +46,7 @@ class RecentActivitiesSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+        const CurrentActivityBanners(),
         if (recent.isEmpty)
           LocaleText('sport.activities.empty')
         else

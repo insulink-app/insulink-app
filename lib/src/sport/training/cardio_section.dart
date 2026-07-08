@@ -23,10 +23,6 @@ class CardioSection extends StatelessWidget {
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        if (state.activeTraining != null) ...[
-          _resumeBanner(context, state.activeTraining!.type),
-          const SizedBox(height: 12),
-        ],
         for (final pending in state.pendingTrainings)
           _pendingCard(context, state, pending),
         Row(
@@ -38,43 +34,6 @@ class CardioSection extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-
-  /// Banner to jump back into a training that is still recording (e.g. left via
-  /// the back button) — the service keeps recording in the meantime.
-  Widget _resumeBanner(BuildContext context, CardioType type) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: scheme.primary.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => const CardioRecordingPage(resume: true),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Icon(type.icon, color: scheme.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: LocaleText(
-                  'sport.trainings.resume_active',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: scheme.primary,
-                  ),
-                ),
-              ),
-              Icon(Icons.play_arrow_rounded, color: scheme.primary),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

@@ -434,7 +434,8 @@
       "extend": "+60 sec",
       "continue": "Continue",
       "previous_set": "Previous set",
-      "last_time": "Last time: #"
+      "last_time": "Last time: #",
+      "resume_active": "Resume running workout"
     },
     "health": {
       "import": "Import from Google Health",

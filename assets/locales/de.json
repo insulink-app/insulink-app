@@ -434,7 +434,8 @@
       "extend": "+60 Sek.",
       "continue": "Weiter",
       "previous_set": "Vorheriger Satz",
-      "last_time": "Letztes Mal: #"
+      "last_time": "Letztes Mal: #",
+      "resume_active": "Laufendes Workout fortsetzen"
     },
     "health": {
       "import": "Aus Google Health importieren",
