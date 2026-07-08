@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/google_health/fitbit_heart_rate_monitor.dart';
 import 'package:insulink/src/google_health/google_health_detail_page.dart';
 import 'package:insulink/src/google_health/google_health_models.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
@@ -21,7 +22,7 @@ IconData todayTileIcon(TodayTile tile) => switch (tile) {
   TodayTile.weight => Icons.monitor_weight,
   TodayTile.restingHr => Icons.favorite,
   TodayTile.sleep => Icons.bedtime,
-  TodayTile.heartRate => Icons.monitor_heart,
+  TodayTile.heartRate => Icons.favorite,
   TodayTile.spo2 => Icons.air,
 };
 
@@ -108,11 +109,14 @@ class TodayTileBuilder {
           onTap: () => _googleHealthDetail(context, GoogleHealthMetric.sleep),
         );
       case TodayTile.heartRate:
+        final live = health.liveHrMonitor.status == FitbitHrStatus.streaming;
+        final bpm = live ? health.liveHrMonitor.bpm : health.latestHr;
         return SportSummaryTile(
           icon: icon,
           labelKey: label,
-          value: health.latestHr == null ? '–' : sportInt(health.latestHr!),
-          unit: health.latestHr == null ? null : 'bpm',
+          value: bpm == null ? '–' : sportInt(bpm),
+          unit: bpm == null ? null : 'bpm',
+          pulse: live,
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const HeartRatePage()),
           ),

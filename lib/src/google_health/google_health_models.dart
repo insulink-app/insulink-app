@@ -11,12 +11,18 @@ class GoogleHealthDay {
   final int? spo2;
   final SleepStages? sleepStages;
 
+  /// Chronological stage segments of the night (the hypnogram) — only the most
+  /// recent night carries it (older nights keep just the [sleepStages] totals),
+  /// so the archive holds one night of segments, not thirty.
+  final List<SleepSegment>? sleepTimeline;
+
   const GoogleHealthDay({
     required this.dateKey,
     this.restingHr,
     this.sleepMinutes,
     this.spo2,
     this.sleepStages,
+    this.sleepTimeline,
   });
 
   Map<String, dynamic> toJson() => {
@@ -25,6 +31,8 @@ class GoogleHealthDay {
     if (sleepMinutes != null) 'sleep': sleepMinutes,
     if (spo2 != null) 'spo2': spo2,
     if (sleepStages != null) 'stages': sleepStages!.toJson(),
+    if (sleepTimeline != null)
+      'tl': [for (final s in sleepTimeline!) s.toJson()],
   };
 
   factory GoogleHealthDay.fromJson(Map<String, dynamic> json) => GoogleHealthDay(
@@ -35,6 +43,12 @@ class GoogleHealthDay {
     sleepStages: json['stages'] == null
         ? null
         : SleepStages.fromJson(json['stages'] as Map<String, dynamic>),
+    sleepTimeline: json['tl'] == null
+        ? null
+        : [
+            for (final s in json['tl'] as List)
+              SleepSegment.fromJson(s as Map<String, dynamic>),
+          ],
   );
 
   DateTime get date => DateTime.parse(dateKey);
@@ -79,6 +93,36 @@ class SleepStages {
     rem: json['rem'] as int? ?? 0,
     light: json['light'] as int? ?? 0,
     awake: json['awake'] as int? ?? 0,
+  );
+}
+
+/// Which sleep stage a segment is, in Health Connect's stage-record order — the
+/// index also indexes the [SleepStages] fields and the hypnogram lanes.
+enum SleepStage { deep, rem, light, awake }
+
+/// One chronological stretch of a single sleep [stage], `[startMs, endMs)` epoch
+/// ms — the raw material for the hypnogram (when each phase began/ended).
+class SleepSegment {
+  final SleepStage stage;
+  final int startMs;
+  final int endMs;
+
+  const SleepSegment({
+    required this.stage,
+    required this.startMs,
+    required this.endMs,
+  });
+
+  Map<String, dynamic> toJson() => {
+    's': stage.index,
+    'a': startMs,
+    'b': endMs,
+  };
+
+  factory SleepSegment.fromJson(Map<String, dynamic> json) => SleepSegment(
+    stage: SleepStage.values[json['s'] as int],
+    startMs: json['a'] as int,
+    endMs: json['b'] as int,
   );
 }
 

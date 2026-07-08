@@ -276,8 +276,11 @@ class G7AlarmManager {
     if (await ProfileSilentState.load()) {
       return;
     }
-    await _showAdvisory(level, await _advisoryBody(level, forecast, glucose));
-    await _playAdvisorySound();
+    await _showAdvisory(
+      level,
+      await _advisoryBody(level, mgdl, trendPerMin, forecast, glucose),
+    );
+    await _playAdvisorySound(level);
     if (level == AdvisoryLevel.low) {
       _lowAdvisoryArmed = false;
     } else {
@@ -365,9 +368,12 @@ class G7AlarmManager {
   /// range. Low → grams of fast carbs (with a tablet count); high → insulin units.
   Future<String> _advisoryBody(
     AdvisoryLevel level,
+    int mgdl,
+    double trendPerMin,
     ({double low, double high}) forecast,
     ProfileGlucoseState glucose,
   ) async {
+    final line = await _forecastLine(level, mgdl, trendPerMin, forecast, glucose.unit);
     final bolus = await ProfileBolusState.load();
     if (level == AdvisoryLevel.low) {
       final grams = bolus.suggestedRescueCarbs(
@@ -375,10 +381,11 @@ class G7AlarmManager {
         targetMgdl: glucose.low + _rescueTargetMarginMgdl,
       );
       final tablets = (grams / _gramsPerTablet).ceil();
-      return _strings.formatAll('alarm.advisory.low_body', [
+      final suggestion = await _strings.formatAll('alarm.advisory.low_body', [
         grams.ceil(),
         tablets,
       ]);
+      return '$line\n$suggestion';
     }
     final target = ((glucose.targetLow + glucose.targetHigh) / 2).round();
     final units = bolus.suggestedBolus(
@@ -386,7 +393,27 @@ class G7AlarmManager {
       glucoseMgdl: forecast.high.round(),
       targetMgdl: target,
     );
-    return _strings.format('alarm.advisory.high_body', units.toStringAsFixed(1));
+    final suggestion =
+        await _strings.format('alarm.advisory.high_body', units.toStringAsFixed(1));
+    return '$line\n$suggestion';
+  }
+
+  /// The "now → forecast" status line prepended to the advisory body: the
+  /// current value with its trend arrow, and the projected extreme the horizon
+  /// ahead (the low for a predicted low, the high for a predicted high).
+  Future<String> _forecastLine(
+    AdvisoryLevel level,
+    int mgdl,
+    double trendPerMin,
+    ({double low, double high}) forecast,
+    GlucoseUnit unit,
+  ) {
+    final predicted = level == AdvisoryLevel.low ? forecast.low : forecast.high;
+    return _strings.formatAll('alarm.advisory.forecast', [
+      _formatValue(mgdl, unit, trendPerMin),
+      _advisoryHorizonMin,
+      _formatMgdl(predicted.round(), unit),
+    ]);
   }
 
   /// Post the advisory pre-warning notification.
@@ -588,10 +615,14 @@ class G7AlarmManager {
   /// The notification body: the value in the user's chosen unit plus a trend
   /// arrow (same 5 buckets as the overview readout).
   String _formatValue(int mgdl, GlucoseUnit unit, double trendPerMin) {
-    final shown = unit == GlucoseUnit.mmol
+    return '${_formatMgdl(mgdl, unit)} ${trendArrow(trendPerMin)}';
+  }
+
+  /// A glucose value in the user's chosen unit, without a trend arrow.
+  String _formatMgdl(int mgdl, GlucoseUnit unit) {
+    return unit == GlucoseUnit.mmol
         ? '${(mgdl / 18.0182).toStringAsFixed(1)} ${unit.label}'
         : '$mgdl ${unit.label}';
-    return '$shown ${trendArrow(trendPerMin)}';
   }
 
   /// Post the glucose alarm notification for [level] with [body].
@@ -735,9 +766,13 @@ class G7AlarmManager {
   Future<void> _playSound({required bool high}) =>
       _playAsset(high ? 'sounds/alarm_high.wav' : 'sounds/alarm_low.wav');
 
-  /// Play the advisory pre-warning tone — its own sound file, distinct from the
-  /// low/high alarm tones.
-  Future<void> _playAdvisorySound() => _playAsset('sounds/alarm_advisory.wav');
+  /// Play the pre-warning tone for an imminent low/high, one distinct sound per
+  /// direction so the two are audibly distinguishable.
+  Future<void> _playAdvisorySound(AdvisoryLevel level) => _playAsset(
+        level == AdvisoryLevel.low
+            ? 'sounds/alarm_low_soon.wav'
+            : 'sounds/alarm_high_soon.wav',
+      );
 
   /// Play [asset] through the ALARM stream so it sounds regardless of ringer/
   /// notification volume, DnD, or screen state. Best-effort: the notification

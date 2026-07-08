@@ -5,8 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'fitbit_heart_rate_monitor.dart';
 import 'google_health_importer.dart';
 import 'google_health_models.dart';
+import 'google_health_sync.dart';
 
 /// App-wide state for the Google Health integration: whether it is "connected" (Health
 /// Connect read permission granted) and the cached metrics. Self-persists to
@@ -22,12 +24,23 @@ class GoogleHealthState extends ChangeNotifier {
   /// modest — Google Health syncs into Health Connect slowly, so faster only burns battery.
   static const _liveHrEvery = Duration(seconds: 60);
 
+  /// Full-metrics (incl. sleep) re-read cadence while the Sport page is open —
+  /// Health Connect isn't push, so without this the daily metrics only refresh
+  /// on page open and go stale on a long-open page.
+  static const _metricsEvery = Duration(minutes: 5);
+
   bool _connected;
   bool _busy = false;
   List<GoogleHealthDay> _archive;
   int? _latestHr;
   int? _latestHrAtMs;
   Timer? _liveTimer;
+  Timer? _metricsTimer;
+
+  /// Direct-BLE live pulse (a worn Fitbit), started with the Sport page. Its
+  /// ~1 Hz samples are far fresher than Health Connect's slow sync, so they win
+  /// [_applyLiveHr]'s newest-timestamp dedup while it streams.
+  final FitbitHeartRateMonitor _bleMonitor = FitbitHeartRateMonitor();
 
   GoogleHealthState(
     this._connected,
@@ -41,11 +54,17 @@ class GoogleHealthState extends ChangeNotifier {
   /// once when the provider is created (analog to `CgmController.init`).
   void init() {
     FlutterForegroundTask.addTaskDataCallback(_onTaskData);
+    // Live BLE pulse runs app-wide (not page-scoped) so the heart-rate tile on
+    // the overview / sport page shows + animates the real-time value.
+    _bleMonitor.addListener(_onBleHr);
+    _bleMonitor.start();
   }
 
   @override
   void dispose() {
     _liveTimer?.cancel();
+    _metricsTimer?.cancel();
+    _bleMonitor.dispose();
     FlutterForegroundTask.removeTaskDataCallback(_onTaskData);
     super.dispose();
   }
@@ -62,13 +81,25 @@ class GoogleHealthState extends ChangeNotifier {
   /// paths feed [_applyLiveHr], deduplicated by timestamp.
   void startLive() {
     _liveTimer?.cancel();
+    _metricsTimer?.cancel();
     _liveTimer = Timer.periodic(_liveHrEvery, (_) => _pollLiveHr());
+    _metricsTimer = Timer.periodic(_metricsEvery, (_) => refreshIfConnected());
     _pollLiveHr();
   }
 
   void stopLive() {
     _liveTimer?.cancel();
     _liveTimer = null;
+    _metricsTimer?.cancel();
+    _metricsTimer = null;
+  }
+
+  /// Adopts the live BLE sample into [latestHr] and rebuilds observers on every
+  /// monitor change (bpm AND status) so the tile's pulse tracks the live/idle
+  /// state, not just fresh values.
+  void _onBleHr() {
+    _applyLiveHr(_bleMonitor.bpm, _bleMonitor.lastUpdate?.millisecondsSinceEpoch);
+    notifyListeners();
   }
 
   Future<void> _pollLiveHr() async {
@@ -93,6 +124,10 @@ class GoogleHealthState extends ChangeNotifier {
     notifyListeners();
     unawaited(_persist());
   }
+
+  /// The live-BLE Fitbit reader (streams while [startLive] is active). Exposed so
+  /// a page can show its real-time bpm + status directly.
+  FitbitHeartRateMonitor get liveHrMonitor => _bleMonitor;
 
   bool get connected => _connected;
   bool get busy => _busy;
@@ -150,6 +185,7 @@ class GoogleHealthState extends ChangeNotifier {
     final data = await GoogleHealthImporter().import();
     if (data.result == GoogleHealthImportResult.success) {
       _merge(data);
+      GoogleHealthSync().push(_archive);
     }
     _busy = false;
     notifyListeners();
@@ -179,6 +215,30 @@ class GoogleHealthState extends ChangeNotifier {
         'hrAt': _latestHrAtMs,
       }),
     );
+  }
+
+  /// Merges backend-pulled days into the persisted archive (on sign-in), keeping
+  /// the connected flag and latest HR, and any local-only days. The provider
+  /// reads this on its next [load]. Static because the pull runs before/without a
+  /// provider handle (like the other sign-in sync pulls).
+  static Future<void> mergePersisted(List<GoogleHealthDay> days) async {
+    if (days.isEmpty) {
+      return;
+    }
+    final raw = await _storage.read(key: _kData);
+    final map = raw == null
+        ? <String, dynamic>{}
+        : jsonDecode(raw) as Map<String, dynamic>;
+    final byKey = {
+      for (final day in (map['days'] as List? ?? []))
+        (day as Map)['d'] as String: day,
+    };
+    for (final day in days) {
+      byKey[day.dateKey] = day.toJson();
+    }
+    map['days'] = (byKey.values.toList())
+      ..sort((a, b) => (a['d'] as String).compareTo(b['d'] as String));
+    await _storage.write(key: _kData, value: jsonEncode(map));
   }
 
   static Future<GoogleHealthState> load() async {

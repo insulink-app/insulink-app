@@ -338,6 +338,49 @@ void main() {
       expect(detected.length, 1);
       expect(detected.single.type, CardioType.bike);
     });
+
+    // Builds a straight segment of [minutes] moving at [metersPerMin], one point
+    // per minute, tagged throughout with the given activity [kind].
+    ({List<TrackPoint> points, List<ActivitySample> log}) segment(
+      int minutes,
+      double metersPerMin,
+      ActivityKind kind,
+    ) {
+      final points = <TrackPoint>[];
+      var time = 1000000000000;
+      var lat = 52.0;
+      for (var i = 0; i < minutes; i++) {
+        points.add(TrackPoint(lat: lat, lng: 13.0, tMs: time));
+        lat += metersPerMin / 111320;
+        time += 60000;
+      }
+      return (
+        points: points,
+        log: [ActivitySample(tMs: time - 60000 * minutes, kind: kind)],
+      );
+    }
+
+    test('a train mis-tagged as walking is discarded (too fast on foot)', () {
+      // ~60 km/h (1000 m/min) but activity recognition reports WALKING.
+      final train = segment(12, 1000, ActivityKind.walk);
+      expect(const CardioDetector().detect(train.points, train.log), isEmpty);
+    });
+
+    test('a real walk tagged walking stays a walk', () {
+      // ~5 km/h (83 m/min).
+      final walk = segment(14, 83, ActivityKind.walk);
+      final detected = const CardioDetector().detect(walk.points, walk.log);
+      expect(detected.length, 1);
+      expect(detected.single.type, CardioType.walk);
+    });
+
+    test('a fast segment mis-tagged as walking is upgraded, not called walk',
+        () {
+      // ~24 km/h tagged walk → speed overrides to bike (never walk).
+      final fast = segment(14, 400, ActivityKind.walk);
+      final detected = const CardioDetector().detect(fast.points, fast.log);
+      expect(detected.single.type, CardioType.bike);
+    });
   });
 
   group('CardioDetectionRunner windowing', () {

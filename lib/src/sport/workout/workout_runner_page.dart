@@ -8,6 +8,7 @@ import 'package:insulink/src/sport/workout/workout_exercise_view.dart';
 import 'package:insulink/src/sport/workout/workout_rest_view.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
 import 'package:insulink/src/sport/workout/workout_snapshot.dart';
+import 'package:insulink/src/sport/workout/workout_vitals_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -65,17 +66,24 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
       builder: (context, _) => Scaffold(
         appBar: _appBar(context),
         body: SafeArea(
-          child: _runner.phase == WorkoutPhase.resting
-              ? WorkoutRestView(
-                  runner: _runner,
-                  onJump: _showJump,
-                  onFinish: () => _confirmFinish(context),
-                )
-              : WorkoutExerciseView(
-                  runner: _runner,
-                  onJump: _showJump,
-                  onFinish: () => _confirmFinish(context),
-                ),
+          child: Column(
+            children: [
+              const WorkoutVitalsBar(),
+              Expanded(
+                child: _runner.phase == WorkoutPhase.resting
+                    ? WorkoutRestView(
+                        runner: _runner,
+                        onJump: _showJump,
+                        onFinish: () => _confirmFinish(context),
+                      )
+                    : WorkoutExerciseView(
+                        runner: _runner,
+                        onJump: _showJump,
+                        onFinish: () => _confirmFinish(context),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

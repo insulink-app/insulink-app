@@ -89,7 +89,8 @@
     "label": "Übersicht",
     "chart": {
       "empty": "Noch keine Messwerte",
-      "hour": "# Uhr"
+      "hour": "# Uhr",
+      "now": "Jetzt"
     },
     "time_in_range": "Zeit im Zielbereich",
     "time_in_range_window": "Letzte 24h",
@@ -314,13 +315,20 @@
     },
     "sleep_stage": {
       "_": "Schlafphasen",
+      "timeline": "Schlafverlauf",
       "deep": "Tiefschlaf",
       "rem": "REM",
       "light": "Leichtschlaf",
       "awake": "Wach"
     },
     "hr_min": "Min",
-    "hr_max": "Max"
+    "hr_max": "Max",
+    "hr_zones": {
+      "title": "Pulszonen",
+      "elevated": "Erhöht ab",
+      "high": "Hoch ab",
+      "save": "Speichern"
+    }
   },
   "devices": {
     "label": "Geräte"
@@ -672,7 +680,8 @@
       "low_title": "Unterzucker droht",
       "low_body": "Iss ca. # g schnelle KH (## Plättchen).",
       "high_title": "Überzucker droht",
-      "high_body": "Erwäge ca. # Einheiten Insulin."
+      "high_body": "Erwäge ca. # Einheiten Insulin.",
+      "forecast": "Jetzt #, in ## min ~#"
     },
     "low": {
       "title": "Zucker niedrig"

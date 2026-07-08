@@ -89,7 +89,8 @@
     "label": "Overview",
     "chart": {
       "empty": "no readings yet",
-      "hour": "#:00"
+      "hour": "#:00",
+      "now": "Now"
     },
     "time_in_range": "Time in Range",
     "time_in_range_window": "Last 24 h",
@@ -314,13 +315,20 @@
     },
     "sleep_stage": {
       "_": "Sleep phases",
+      "timeline": "Sleep timeline",
       "deep": "Deep",
       "rem": "REM",
       "light": "Light",
       "awake": "Awake"
     },
     "hr_min": "Min",
-    "hr_max": "Max"
+    "hr_max": "Max",
+    "hr_zones": {
+      "title": "Pulse zones",
+      "elevated": "Elevated from",
+      "high": "High from",
+      "save": "Save"
+    }
   },
   "devices": {
     "label": "Devices"
@@ -672,7 +680,8 @@
       "low_title": "Low glucose ahead",
       "low_body": "Eat about # g fast carbs (## tablets).",
       "high_title": "High glucose ahead",
-      "high_body": "Consider about # units of insulin."
+      "high_body": "Consider about # units of insulin.",
+      "forecast": "Now #, in ## min ~#"
     },
     "low": {
       "title": "Glucose low"

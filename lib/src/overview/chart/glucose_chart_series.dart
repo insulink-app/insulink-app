@@ -15,6 +15,7 @@ class GlucoseChartSeries {
     required this.shift,
     required this.glucose,
     required this.colors,
+    this.windowEnd = 1 << 62,
   });
 
   /// All cached readings (secsSinceStart → mg/dL), oldest first.
@@ -25,6 +26,10 @@ class GlucoseChartSeries {
 
   /// Readings older than this (secsSinceStart) are outside the window.
   final int cutoff;
+
+  /// Readings newer than this (secsSinceStart) are outside the window — only
+  /// below [latestSecs] when the user has paged back to an earlier interval.
+  final int windowEnd;
 
   /// Phase shift so full clock hours land on integer x values.
   final double shift;
@@ -53,7 +58,7 @@ class GlucoseChartSeries {
     int? prevValue;
     double? prevX;
     for (final entry in entries) {
-      if (entry.key < cutoff) {
+      if (entry.key < cutoff || entry.key > windowEnd) {
         continue;
       }
       final x = (entry.key - latestSecs) / 3600.0 + shift;

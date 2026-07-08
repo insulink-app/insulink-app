@@ -17,4 +17,25 @@ void main() {
     expect(formatSleepMinutes(60), '1h 0m');
     expect(formatSleepMinutes(null), '–');
   });
+
+  test('a day with a sleep timeline round-trips through JSON', () {
+    const day = GoogleHealthDay(
+      dateKey: '2026-07-04',
+      sleepMinutes: 100,
+      sleepTimeline: [
+        SleepSegment(stage: SleepStage.light, startMs: 1000, endMs: 2000),
+        SleepSegment(stage: SleepStage.deep, startMs: 2000, endMs: 3500),
+      ],
+    );
+    final back = GoogleHealthDay.fromJson(day.toJson());
+    expect(back.sleepTimeline, hasLength(2));
+    expect(back.sleepTimeline![1].stage, SleepStage.deep);
+    expect(back.sleepTimeline![1].endMs, 3500);
+  });
+
+  test('a day without a timeline keeps the key out of JSON', () {
+    const day = GoogleHealthDay(dateKey: '2026-07-04', sleepMinutes: 100);
+    expect(day.toJson().containsKey('tl'), isFalse);
+    expect(GoogleHealthDay.fromJson(day.toJson()).sleepTimeline, isNull);
+  });
 }

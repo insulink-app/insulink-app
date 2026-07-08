@@ -3,8 +3,10 @@ import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/sport/activity/activity_summary_card.dart';
+import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/recent_activities_section.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
+import 'package:insulink/src/sport/sport_state.dart';
 import 'package:insulink/src/sport/routines/routines_section.dart';
 import 'package:insulink/src/sport/training/cardio_section.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
@@ -43,15 +45,32 @@ class _SportBodyContentState extends State<SportBodyContent> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SportActivityState>().ensureStarted();
+      final activity = context.read<SportActivityState>();
+      activity.ensureStarted();
       // Run the background service so cardio auto-detection works even without a
       // CGM sensor (samplers + detection live in that isolate).
       context.read<CgmController>().ensureDetectionService();
       context.read<CardioTrainingState>().reloadPending();
       _health = context.read<GoogleHealthState>();
-      _health!.refreshIfConnected();
       _health!.startLive();
+      _syncGoogleHealth(context.read<SportState>(), activity);
     });
+  }
+
+  /// Refreshes the Google Health metrics, then — while connected — imports
+  /// today's steps/distance/calories from it (overriding the pedometer estimate).
+  /// The two run SEQUENTIALLY: each does its own `requestAuthorization`, and the
+  /// `health` plugin has a single activity-result channel, so firing both at once
+  /// drops one request. Not connected ⇒ pedometer + estimates stay the source.
+  Future<void> _syncGoogleHealth(
+    SportState sport,
+    SportActivityState activity,
+  ) async {
+    await _health!.refreshIfConnected();
+    if (!mounted || _health!.connected != true) {
+      return;
+    }
+    await HealthImporter().import(sport, activity);
   }
 
   @override

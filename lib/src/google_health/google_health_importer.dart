@@ -63,11 +63,11 @@ class GoogleHealthImporter {
     final resting = await _dailyLast(HealthDataType.RESTING_HEART_RATE, start, now);
     final spo2 = await _dailyLast(HealthDataType.BLOOD_OXYGEN, start, now);
     final sleep = await _sleepMinutes(start, now);
-    final stages = await _sleepStages(start, now);
+    final segments = await _sleepSegments(start, now);
     final latest = await _latestHr(now.subtract(const Duration(days: 1)), now);
     return GoogleHealthImport(
       GoogleHealthImportResult.success,
-      days: _mergeDays(resting, sleep, spo2, stages),
+      days: _mergeDays(resting, sleep, spo2, segments),
       latestHr: latest.hr,
       latestHrAtMs: latest.atMs,
     );
@@ -117,41 +117,52 @@ class GoogleHealthImporter {
     return out;
   }
 
-  // Sleep-stage minutes per wake-day, bucketed [deep, rem, light, awake] by the
-  // record type's position in _stageTypes.
-  Future<Map<String, SleepStages>> _sleepStages(
+  // Chronological stage segments per wake-day (keyed like the other metrics),
+  // read once — the totals AND the hypnogram both derive from these.
+  Future<Map<String, List<SleepSegment>>> _sleepSegments(
     DateTime start,
     DateTime end,
   ) async {
-    final acc = <String, List<int>>{};
+    final byDay = <String, List<SleepSegment>>{};
     try {
       final points = await _health.getHealthDataFromTypes(
         types: _stageTypes,
         startTime: start,
         endTime: end,
       );
-      for (final point in points) {
-        final minutes = point.dateTo.difference(point.dateFrom).inMinutes;
+      for (final point in _health.removeDuplicates(points)) {
         final index = _stageTypes.indexOf(point.type);
-        if (minutes <= 0 || index < 0) {
+        if (index < 0 || !point.dateTo.isAfter(point.dateFrom)) {
           continue;
         }
-        final bucket = acc.putIfAbsent(
-          _dateKey(point.dateTo.toLocal()),
-          () => [0, 0, 0, 0],
-        );
-        bucket[index] += minutes;
+        byDay.putIfAbsent(_dateKey(point.dateTo.toLocal()), () => []).add(
+              SleepSegment(
+                stage: SleepStage.values[index],
+                startMs: point.dateFrom.millisecondsSinceEpoch,
+                endMs: point.dateTo.millisecondsSinceEpoch,
+              ),
+            );
       }
     } catch (_) {/* skip if unavailable */}
-    return {
-      for (final entry in acc.entries)
-        entry.key: SleepStages(
-          deep: entry.value[0],
-          rem: entry.value[1],
-          light: entry.value[2],
-          awake: entry.value[3],
-        ),
-    };
+    for (final segments in byDay.values) {
+      segments.sort((a, b) => a.startMs.compareTo(b.startMs));
+    }
+    return byDay;
+  }
+
+  // Per-stage minute totals of a night, summed from its segments.
+  SleepStages _stageTotals(List<SleepSegment> segments) {
+    final minutes = [0, 0, 0, 0];
+    for (final segment in segments) {
+      minutes[segment.stage.index] +=
+          Duration(milliseconds: segment.endMs - segment.startMs).inMinutes;
+    }
+    return SleepStages(
+      deep: minutes[0],
+      rem: minutes[1],
+      light: minutes[2],
+      awake: minutes[3],
+    );
   }
 
   /// Live HR poll: configures the plugin and returns the newest HEART_RATE
@@ -169,26 +180,28 @@ class GoogleHealthImporter {
     return _latestHr(now.subtract(const Duration(minutes: 15)), now);
   }
 
-  /// All HEART_RATE samples of one calendar day, ascending — the source for the
-  /// intraday pulse curve. Read live (not cached): a full day of per-minute
-  /// samples is large and Health Connect already keeps the history.
-  Future<List<({DateTime at, int bpm})>> intradayHeartRate(DateTime day) async {
+  /// All HEART_RATE samples in `[start, end]`, ascending — the source for the
+  /// intraday pulse curve (a rolling window, so it may cross midnight). Read live
+  /// (not cached): a day of per-minute samples is large and Health Connect
+  /// already keeps the history. [end] is clamped to now (no future samples).
+  Future<List<({DateTime at, int bpm})>> heartRateBetween(
+    DateTime start,
+    DateTime end,
+  ) async {
     try {
       await _health.configure();
     } catch (error) {
       debugPrint('intraday-hr: configure failed: $error');
       return const [];
     }
-    final start = DateTime(day.year, day.month, day.day);
     final now = DateTime.now();
-    final dayEnd = start.add(const Duration(days: 1));
-    final end = dayEnd.isAfter(now) ? now : dayEnd;
+    final clampedEnd = end.isAfter(now) ? now : end;
     final out = <({DateTime at, int bpm})>[];
     try {
       final points = await _health.getHealthDataFromTypes(
         types: [HealthDataType.HEART_RATE],
         startTime: start,
-        endTime: end,
+        endTime: clampedEnd,
       );
       for (final point in _health.removeDuplicates(points)) {
         final value = point.value;
@@ -239,9 +252,16 @@ class GoogleHealthImporter {
     Map<String, int> resting,
     Map<String, int> sleep,
     Map<String, int> spo2,
-    Map<String, SleepStages> stages,
+    Map<String, List<SleepSegment>> segments,
   ) {
-    final keys = {...resting.keys, ...sleep.keys, ...spo2.keys, ...stages.keys};
+    final keys = {
+      ...resting.keys,
+      ...sleep.keys,
+      ...spo2.keys,
+      ...segments.keys,
+    };
+    final latestSleepKey =
+        segments.keys.isEmpty ? null : segments.keys.reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
     final days = [
       for (final key in keys)
         GoogleHealthDay(
@@ -249,7 +269,8 @@ class GoogleHealthImporter {
           restingHr: resting[key],
           sleepMinutes: sleep[key],
           spo2: spo2[key],
-          sleepStages: stages[key],
+          sleepStages: segments[key] == null ? null : _stageTotals(segments[key]!),
+          sleepTimeline: key == latestSleepKey ? segments[key] : null,
         ),
     ];
     days.sort((a, b) => a.dateKey.compareTo(b.dateKey));

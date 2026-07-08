@@ -134,7 +134,7 @@ class CgmTaskHandler extends TaskHandler {
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     _locationTimer ??= Timer.periodic(
-      const Duration(seconds: 10),
+      const Duration(seconds: 4),
       (_) => _locationSampler.tick(),
     );
     _activitySampler.start();

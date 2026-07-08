@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/google_health/google_health_models.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
+import 'package:insulink/src/google_health/sleep_hypnogram.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/activity_bar_chart.dart';
@@ -79,6 +80,10 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
                   const SizedBox(height: 16),
                   _stagesCard(context, scheme, _latestStages(days)!),
                 ],
+                if (_latestTimeline(days) != null) ...[
+                  const SizedBox(height: 16),
+                  _hypnogramCard(context, scheme, _latestTimeline(days)!),
+                ],
                 const SizedBox(height: 20),
                 SportRangeSelector(
                   value: _range,
@@ -112,6 +117,65 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
     }
     final stages = days.last.sleepStages;
     return stages != null && !stages.isEmpty ? stages : null;
+  }
+
+  /// Latest night's chronological stage timeline, or null unless this is the
+  /// sleep page and the most recent day carries it.
+  List<SleepSegment>? _latestTimeline(List<GoogleHealthDay> days) {
+    if (widget.metric != GoogleHealthMetric.sleep) {
+      return null;
+    }
+    final timeline = days.last.sleepTimeline;
+    return timeline != null && timeline.isNotEmpty ? timeline : null;
+  }
+
+  /// The stage → colour map shared by the totals card and the hypnogram.
+  Map<SleepStage, Color> _stageColors(ColorScheme scheme) => {
+    SleepStage.deep: scheme.primary,
+    SleepStage.rem: scheme.tertiary,
+    SleepStage.light: scheme.primary.withValues(alpha: 0.45),
+    SleepStage.awake: scheme.error.withValues(alpha: 0.7),
+  };
+
+  Widget _hypnogramCard(
+    BuildContext context,
+    ColorScheme scheme,
+    List<SleepSegment> timeline,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: scheme.onSurface.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LocaleText(
+            'google_health.sleep_stage.timeline',
+            style: TextStyle(
+              fontSize: 13,
+              color: scheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SleepHypnogram(
+            segments: timeline,
+            colors: _stageColors(scheme),
+            labels: {
+              for (final stage in SleepStage.values)
+                stage: Locales.string(
+                  context,
+                  'google_health.sleep_stage.${stage.name}',
+                ),
+            },
+            axisColor: scheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Deep / REM / Light / Awake, in the display order and colours of the card.

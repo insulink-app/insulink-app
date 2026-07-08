@@ -124,7 +124,14 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// slides out of the chart's own time window. Bounded to the last 24 h (the
   /// widest window the chart offers) so we never build more than a day of points;
   /// before a session start is known, falls back to the cached [_byTime].
-  SplayTreeMap<int, int> get byTime {
+  SplayTreeMap<int, int> get byTime => _byTimeWithin(const Duration(hours: 24));
+
+  /// Wider history for the full-screen chart's interval navigation (paging back
+  /// through earlier days), same session-relative-seconds keying as [byTime].
+  SplayTreeMap<int, int> get chartHistory =>
+      _byTimeWithin(const Duration(days: 7));
+
+  SplayTreeMap<int, int> _byTimeWithin(Duration lookback) {
     final store = _store;
     if (store == null) {
       return _byTime;
@@ -135,7 +142,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     }
     final startSecs = start.millisecondsSinceEpoch ~/ 1000;
     final now = DateTime.now();
-    final dayAgo = now.subtract(const Duration(hours: 24));
+    final dayAgo = now.subtract(lookback);
     final out = SplayTreeMap<int, int>();
     store.archiveRange(start.isAfter(dayAgo) ? start : dayAgo, now).forEach((
       epochMin,

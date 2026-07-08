@@ -1,36 +1,54 @@
 import 'cardio_models.dart';
 
-/// Maps a detected GPS segment to a [CardioType] using the recognised activity
-/// over the segment's time window when available — rejecting a bus/train
-/// (`vehicle`) and confirming a real ride — and falling back to average speed
-/// when no activity data covers the window. Pure and plugin-free so it stays
-/// unit-testable.
+/// Maps a detected GPS segment to a [CardioType], cross-checking the recognised
+/// activity against speed. The OS activity recognition routinely mislabels a
+/// train/tram/bus as `walking` (low vibration, its own low-power sensors), so
+/// speed — the ground truth for what is *impossible on foot* — always wins when
+/// the two disagree: a segment faster than any human-powered mode is discarded
+/// as a vehicle, and an on-foot label over a too-fast segment is upgraded to the
+/// speed-based type (a "walk" at 20 km/h is a vehicle, not a walk). Pure and
+/// plugin-free so it stays unit-testable.
 class CardioActivityClassifier {
   const CardioActivityClassifier();
 
-  /// The training type for a segment, or null to DISCARD it (recognised as a
-  /// vehicle — the bus/train false-positive the speed heuristic can't catch).
+  /// No human-powered mode sustains an average above this (km/h) over a whole
+  /// segment — above it the segment is a vehicle and discarded, whatever the
+  /// activity recognition claims. A brisk downhill amateur cyclist stays well
+  /// under it; a train/car easily clears it.
+  static const _humanPoweredMaxKmh = 30.0;
+
+  /// The training type for a segment, or null to DISCARD it (a vehicle — either
+  /// recognised as one, or too fast to be human-powered).
   CardioType? classify({
     required int startMs,
     required int endMs,
     required double avgKmh,
     required List<ActivitySample> activityLog,
   }) {
-    switch (_dominant(startMs, endMs, activityLog)) {
-      case ActivityKind.vehicle:
-        return null;
-      case ActivityKind.bike:
-        return CardioType.bike;
-      case ActivityKind.run:
-        return CardioType.jog;
-      case ActivityKind.walk:
-        return CardioType.walk;
-      case ActivityKind.still:
-      case ActivityKind.unknown:
-      case null:
-        return _bySpeed(avgKmh);
+    final dominant = _dominant(startMs, endMs, activityLog);
+    if (dominant == ActivityKind.vehicle || avgKmh > _humanPoweredMaxKmh) {
+      return null;
     }
+    final bySpeed = _bySpeed(avgKmh);
+    final byActivity = _onFootType(dominant);
+    if (byActivity == null) {
+      return bySpeed;
+    }
+    // The activity label may up-call speed (a slow uphill ride it knows is a
+    // bike) but never DOWN-call it: a "walk"/"run" tag over a bike-speed segment
+    // is a misread, so the faster of the two wins.
+    return byActivity.index >= bySpeed.index ? byActivity : bySpeed;
   }
+
+  /// The on-foot/bike [CardioType] for an activity kind, or null when the kind
+  /// gives no usable signal (still/unknown/none) so speed decides. Vehicle is
+  /// handled earlier (discard) and never reaches here.
+  CardioType? _onFootType(ActivityKind? kind) => switch (kind) {
+    ActivityKind.bike => CardioType.bike,
+    ActivityKind.run => CardioType.jog,
+    ActivityKind.walk => CardioType.walk,
+    _ => null,
+  };
 
   CardioType _bySpeed(double avgKmh) {
     if (avgKmh > 15) {
