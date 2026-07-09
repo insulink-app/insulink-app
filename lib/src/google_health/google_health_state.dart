@@ -9,6 +9,8 @@ import 'fitbit_heart_rate_monitor.dart';
 import 'google_health_importer.dart';
 import 'google_health_models.dart';
 import 'google_health_sync.dart';
+import 'intraday_pulse_store.dart';
+import 'pulse_sync.dart';
 
 /// App-wide state for the Google Health integration: whether it is "connected" (Health
 /// Connect read permission granted) and the cached metrics. Self-persists to
@@ -41,6 +43,12 @@ class GoogleHealthState extends ChangeNotifier {
   /// ~1 Hz samples are far fresher than Health Connect's slow sync, so they win
   /// [_applyLiveHr]'s newest-timestamp dedup while it streams.
   final FitbitHeartRateMonitor _bleMonitor = FitbitHeartRateMonitor();
+
+  /// Granular intraday pulse archive + its backend sync. The live BLE samples
+  /// are flushed here once a minute so the curve is persisted and mirrored to
+  /// the account (not just held in the monitor's in-memory buffer).
+  static const _pulseStore = IntradayPulseStore();
+  DateTime? _lastPulseFlush;
 
   GoogleHealthState(
     this._connected,
@@ -100,6 +108,28 @@ class GoogleHealthState extends ChangeNotifier {
   void _onBleHr() {
     _applyLiveHr(_bleMonitor.bpm, _bleMonitor.lastUpdate?.millisecondsSinceEpoch);
     notifyListeners();
+    unawaited(_flushLivePulse());
+  }
+
+  /// Persists + syncs the live BLE samples buffered since the last flush, at
+  /// most once a minute (the pulse store buckets to one point per minute, so
+  /// flushing faster only rewrites today's blob for no extra resolution).
+  Future<void> _flushLivePulse() async {
+    final now = DateTime.now();
+    final cutoff = _lastPulseFlush;
+    if (cutoff != null && now.difference(cutoff).inSeconds < 60) {
+      return;
+    }
+    _lastPulseFlush = now;
+    final recent = [
+      for (final sample in _bleMonitor.liveHistory)
+        if (cutoff == null || sample.at.isAfter(cutoff)) sample,
+    ];
+    if (recent.isEmpty) {
+      return;
+    }
+    final touched = await _pulseStore.merge(recent);
+    PulseSync().push(touched);
   }
 
   Future<void> _pollLiveHr() async {

@@ -66,8 +66,8 @@ class CgmTaskHandler extends TaskHandler {
   /// Piggybacks periodic GPS sampling on this already-running foreground service
   /// (flutter_foreground_task hosts only one), independent of the BLE pipeline.
   /// No-ops unless location is permitted — glucose reading never depends on it.
-  final BackgroundLocationSampler _locationSampler =
-      BackgroundLocationSampler();
+  late final BackgroundLocationSampler _locationSampler =
+      BackgroundLocationSampler(onLog: _log);
 
   /// Logs OS activity-recognition changes (cycling vs. in-vehicle) so the cardio
   /// auto-detector can reject bus/train rides. Permission-gated; no-op otherwise.
