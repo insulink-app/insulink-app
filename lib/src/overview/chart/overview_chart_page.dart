@@ -28,7 +28,11 @@ class OverviewChartPage extends StatelessWidget {
           heightFactor: 0.65,
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: OverviewChart(byTime: byTime, sensorStart: sensorStart),
+            child: OverviewChart(
+              byTime: byTime,
+              sensorStart: sensorStart,
+              navigable: true,
+            ),
           ),
         ),
       ),

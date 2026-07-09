@@ -25,7 +25,13 @@ class GlucoseLineChart extends StatelessWidget {
     this.highlightSpot,
     this.pulse = 0,
     this.futureHours = 0,
+    this.panHours = 0,
   });
+
+  /// Hours the visible window is scrolled BACK from the latest reading (0 = the
+  /// live window). Shifts [minX]/[maxX] left without moving the x=0 anchor, so
+  /// the clock-time labels stay correct for the earlier interval.
+  final double panHours;
 
   final List<LineChartBarData> bars;
 
@@ -91,8 +97,8 @@ class GlucoseLineChart extends StatelessWidget {
       LineChartData(
         minY: _minY,
         maxY: _maxY,
-        minX: shift - rangeHours,
-        maxX: shift + futureHours,
+        minX: shift - rangeHours - panHours,
+        maxX: shift + futureHours - panHours,
         gridData: FlGridData(
           show: !minimal,
           drawVerticalLine: false,

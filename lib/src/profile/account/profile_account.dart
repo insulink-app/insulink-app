@@ -20,7 +20,7 @@ class ProfileAccount {
   };
 
   /// Tells the backend to invalidate the session, then wipes ALL local data —
-  /// account secrets, cached glucose/sport/fitbit data, the G7 sensor pairing
+  /// account secrets, cached glucose/sport/Google Health data, the G7 sensor pairing
   /// and the synced settings — so the next account signs in clean. Everything
   /// removed is either re-fetched from the backend (glucose, settings) or
   /// re-paired on device; only [_keepOnLogout] remains. The network call is

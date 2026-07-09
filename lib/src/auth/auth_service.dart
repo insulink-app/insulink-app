@@ -8,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' show Response;
 import 'package:insulink/src/cgm/event_sync.dart';
 import 'package:insulink/src/cgm/glucose_sync.dart';
+import 'package:insulink/src/google_health/google_health_sync.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/sport/sport_sync.dart';
@@ -39,6 +40,9 @@ class AuthService {
     }
     if (error == null && context.mounted) {
       await SportSync().pull(context);
+    }
+    if (error == null && context.mounted) {
+      await GoogleHealthSync().pull(context);
     }
     return error;
   }

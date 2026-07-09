@@ -157,18 +157,25 @@ class SportStore {
   File get _decisionFile =>
       File('${Directory.systemTemp.path}/insulink_training_decisions');
 
+  /// Absolute path of the hand-off file, resolved in a plugin-capable isolate
+  /// (service/UI) and embedded in the notification payload — see
+  /// [recordTrainingDecision]. The bare action-tap isolate can't resolve its own
+  /// writable temp dir reliably (its `TMPDIR` may be unset ⇒ `systemTemp` is a
+  /// non-writable `/tmp`, so the write throws and the decision is lost), so it
+  /// writes to THIS path instead.
+  String get decisionFilePath => _decisionFile.path;
+
   /// Record a Confirm/Reject notification tap. Synchronous + plugin-free so it
   /// completes before the ephemeral action isolate is torn down. [action] is
-  /// `confirm` or `reject`; drained later by [applyTrainingDecisions].
-  void recordTrainingDecision(String action, String id) {
+  /// `confirm` or `reject`; drained later by [applyTrainingDecisions]. [filePath]
+  /// is the writable path from the payload (see [decisionFilePath]); falls back
+  /// to this isolate's own [_decisionFile] only for a legacy payload without one.
+  void recordTrainingDecision(String action, String id, {String? filePath}) {
     // ponytail: systemTemp is the app cache dir — if the OS clears it between the
     // tap and the next drain the decision is lost (card reappears), acceptable for
     // a user-repeatable action; move to the documents dir if it ever matters.
-    _decisionFile.writeAsStringSync(
-      '$action:$id\n',
-      mode: FileMode.append,
-      flush: true,
-    );
+    final file = filePath != null ? File(filePath) : _decisionFile;
+    file.writeAsStringSync('$action:$id\n', mode: FileMode.append, flush: true);
   }
 
   /// Apply every decision buffered by [recordTrainingDecision], then clear the

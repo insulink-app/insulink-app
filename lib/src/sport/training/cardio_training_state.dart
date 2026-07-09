@@ -64,6 +64,11 @@ class CardioTrainingState extends ChangeNotifier {
   /// (or a notification action) may have written — the store is cross-isolate,
   /// so the UI must reload to see writes from the service isolate.
   Future<void> reloadPending() async {
+    // Drain any Confirm/Reject taps buffered by the notification-action isolate
+    // right now (this isolate has secure storage + dart:io), so a decision takes
+    // effect the moment the user opens the tab — not only on the service's next
+    // 30 s watchdog tick.
+    await _store.applyTrainingDecisions();
     _pending = await _store.loadPendingTrainings();
     final trainings = await _store.loadTrainings()
       ..sort((first, second) => first.startMs.compareTo(second.startMs));

@@ -4,8 +4,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/base/hour_range_selector.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -19,6 +21,7 @@ class OverviewChart extends StatefulWidget {
     required this.byTime,
     this.sensorStart,
     this.preview = false,
+    this.navigable = false,
     this.minYmgdl = 0,
     this.maxYmgdl = 300,
   });
@@ -28,6 +31,10 @@ class OverviewChart extends StatefulWidget {
   /// Preview mode (on the overview): hide the range selector and disable touch,
   /// so an outer tap handler can open the full-screen detail page.
   final bool preview;
+
+  /// Full-screen mode: show the interval navigator (prev/next) so the user can
+  /// page back through earlier windows. Off on the preview.
+  final bool navigable;
 
   /// Y-axis bounds in mg/dL — the overview passes adaptive values; the detail
   /// page keeps the full 0–300.
@@ -49,6 +56,10 @@ class _OverviewChartState extends State<OverviewChart>
 
   /// Visible time window in hours (selectable: 6 / 12 / 24). Persisted.
   int _rangeHours = 24;
+
+  /// How many whole windows the view is scrolled BACK from the latest reading
+  /// (0 = live). Reset whenever the range changes.
+  int _panWindows = 0;
 
   /// Drives the latest-reading dot's pulsing halo.
   late final AnimationController _pulse;
@@ -85,7 +96,10 @@ class _OverviewChartState extends State<OverviewChart>
   }
 
   void _setRange(int hours) {
-    setState(() => _rangeHours = hours);
+    setState(() {
+      _rangeHours = hours;
+      _panWindows = 0;
+    });
     _storage.write(key: _kRangeKey, value: '$hours');
   }
 
@@ -122,11 +136,71 @@ class _OverviewChartState extends State<OverviewChart>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(alignment: Alignment.centerLeft, child: _rangeSelector(context)),
-        const SizedBox(height: 40),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            HourRangeSelector(selected: _rangeHours, onChanged: _setRange),
+            if (widget.navigable)
+              Flexible(child: _navigator(context, byTime)),
+          ],
+        ),
+        const SizedBox(height: 24),
         Expanded(child: _chart(byTime, glucose, colors)),
       ],
     );
+  }
+
+  /// Prev/next interval navigator: pages the visible window back through earlier
+  /// days and forward again to the live window (0). Disabled at each end.
+  Widget _navigator(BuildContext context, SplayTreeMap<int, int> byTime) {
+    final latestSecs = byTime.isEmpty ? 0 : byTime.lastKey()!;
+    final oldestSecs = byTime.isEmpty ? 0 : byTime.firstKey()!;
+    final windowStartSecs =
+        latestSecs - (_panWindows + 1) * _rangeHours * 3600;
+    final canGoBack = windowStartSecs > oldestSecs;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.chevron_left, size: 22),
+          onPressed: canGoBack ? () => _pan(1) : null,
+        ),
+        Flexible(
+          child: Text(
+            _navigatorLabel(context),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.chevron_right, size: 22),
+          onPressed: _panWindows > 0 ? () => _pan(-1) : null,
+        ),
+      ],
+    );
+  }
+
+  void _pan(int windows) {
+    setState(() => _panWindows = (_panWindows + windows).clamp(0, 1000));
+  }
+
+  /// "Jetzt" for the live window, else the wall-clock date at the window's end.
+  String _navigatorLabel(BuildContext context) {
+    final start = widget.sensorStart;
+    if (_panWindows == 0 || start == null || widget.byTime.isEmpty) {
+      return Locales.string(context, 'overview.chart.now');
+    }
+    final latestSecs = widget.byTime.lastKey()!;
+    final end = start.add(
+      Duration(seconds: latestSecs - _panWindows * _rangeHours * 3600),
+    );
+    final l10n = MaterialLocalizations.of(context);
+    final time = l10n.formatTimeOfDay(TimeOfDay.fromDateTime(end));
+    return '${l10n.formatMediumDate(end)}, $time';
   }
 
   Widget _chart(
@@ -139,6 +213,10 @@ class _OverviewChartState extends State<OverviewChart>
     // The overview preview always shows 24 h; only the full-screen detail page
     // honours the persisted, user-selectable range.
     final effectiveRange = widget.preview ? 24 : _rangeHours;
+    // Windows scrolled back from the latest reading (the preview never pans).
+    final panWindows = widget.preview ? 0 : _panWindows;
+    final panSecs = panWindows * effectiveRange * 3600;
+    final windowEndSecs = latestSecs - panSecs;
     // Wall-clock time at x == 0 (the latest reading), to label the X axis with
     // real times. x is hours relative to this, so wall(x) = anchor + x hours.
     final anchor = widget.sensorStart?.add(Duration(seconds: latestSecs));
@@ -150,22 +228,26 @@ class _OverviewChartState extends State<OverviewChart>
     final series = GlucoseChartSeries(
       entries: entries,
       latestSecs: latestSecs,
-      cutoff: latestSecs - effectiveRange * 3600,
+      cutoff: windowEndSecs - effectiveRange * 3600,
+      windowEnd: windowEndSecs,
       shift: shift,
       glucose: glucose,
       colors: colors,
     );
     final bars = series.buildBars();
-    // Dashed forecast line extending past the latest reading (when enabled).
+    // Dashed forecast line extending past the latest reading (only in the live
+    // window — a forecast on a past interval makes no sense).
     final controller = context.watch<CgmController>();
-    final prediction = _addPredictionBar(
-      bars,
-      controller,
-      entries,
-      latestSecs,
-      shift,
-      glucose,
-    );
+    final prediction = panWindows > 0
+        ? (futureHours: 0.0, touchSpots: const <FlSpot>[])
+        : _addPredictionBar(
+            bars,
+            controller,
+            entries,
+            latestSecs,
+            shift,
+            glucose,
+          );
     final futureHours = prediction.futureHours;
     // Transparent overlay owning touch — over the REAL readings AND the forecast
     // points, so scrubbing snaps to a single value in either region (not to the
@@ -180,7 +262,7 @@ class _OverviewChartState extends State<OverviewChart>
     // flashes a malformed frame even with a zero-duration animation.
     final predictionCount = controller.predictionCurve?.length ?? 0;
     final key = ValueKey(
-      '$latestSecs-${entries.length}-$effectiveRange-$predictionCount',
+      '$latestSecs-${entries.length}-$effectiveRange-$panWindows-$predictionCount',
     );
     GlucoseLineChart chart(double pulse) => GlucoseLineChart(
       key: key,
@@ -199,6 +281,7 @@ class _OverviewChartState extends State<OverviewChart>
       highlightSpot: widget.preview ? highlightSpot : null,
       pulse: pulse,
       futureHours: futureHours,
+      panHours: panSecs / 3600.0,
     );
     // Only the overview preview pulses; the detail page renders once (no per-
     // frame relayout of the full chart).
@@ -292,46 +375,4 @@ class _OverviewChartState extends State<OverviewChart>
     );
   }
 
-  /// Segmented control to pick the visible time window.
-  Widget _rangeSelector(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: theme.dividerColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final hours in const [24, 12, 6]) _rangeChip(theme, hours),
-        ],
-      ),
-    );
-  }
-
-  Widget _rangeChip(ThemeData theme, int hours) {
-    final selected = _rangeHours == hours;
-    return GestureDetector(
-      onTap: () => _setRange(hours),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected ? theme.colorScheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          '${hours}h',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : theme.colorScheme.onSurface,
-          ),
-        ),
-      ),
-    );
-  }
 }

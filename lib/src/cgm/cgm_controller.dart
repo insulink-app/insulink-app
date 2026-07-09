@@ -124,7 +124,20 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// slides out of the chart's own time window. Bounded to the last 24 h (the
   /// widest window the chart offers) so we never build more than a day of points;
   /// before a session start is known, falls back to the cached [_byTime].
-  SplayTreeMap<int, int> get byTime {
+  SplayTreeMap<int, int> get byTime => _byTimeWithin(const Duration(hours: 24));
+
+  /// Wider history for the full-screen chart's interval navigation (paging back
+  /// through earlier days), same session-relative-seconds keying as [byTime].
+  /// Includes archive data from BEFORE the current session start (keyed by
+  /// negative seconds) so paging back crosses a sensor swap instead of stopping
+  /// at the gap where the new session began.
+  SplayTreeMap<int, int> get chartHistory =>
+      _byTimeWithin(const Duration(days: 7), includePreSession: true);
+
+  SplayTreeMap<int, int> _byTimeWithin(
+    Duration lookback, {
+    bool includePreSession = false,
+  }) {
     final store = _store;
     if (store == null) {
       return _byTime;
@@ -135,14 +148,12 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     }
     final startSecs = start.millisecondsSinceEpoch ~/ 1000;
     final now = DateTime.now();
-    final dayAgo = now.subtract(const Duration(hours: 24));
+    final dayAgo = now.subtract(lookback);
+    final from = (!includePreSession && start.isAfter(dayAgo)) ? start : dayAgo;
     final out = SplayTreeMap<int, int>();
-    store.archiveRange(start.isAfter(dayAgo) ? start : dayAgo, now).forEach((
-      epochMin,
-      mgdl,
-    ) {
+    store.archiveRange(from, now).forEach((epochMin, mgdl) {
       final secs = epochMin * 60 - startSecs;
-      if (secs >= 0) {
+      if (includePreSession || secs >= 0) {
         out[secs] = mgdl;
       }
     });
@@ -730,7 +741,13 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       // serial stays blank and is resolved to the sensor BLE id by the pipeline.
       await _store?.saveIdentity(serial: '', pairingCode: code.text.trim());
       _initForegroundTask();
-      await _startService();
+      // A detection-only service (started by ensureDetectionService) has no
+      // connectedDevice FGS type and a stale empty pairing code, so replace it
+      // with a fresh, sensor-aware isolate rather than reusing it.
+      if (await FlutterForegroundTask.isRunningService) {
+        await FlutterForegroundTask.stopService();
+      }
+      await _startService(forSensor: true);
       await _refreshServiceState();
     } catch (e) {
       _append('ERROR: $e');
@@ -847,10 +864,10 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _startService() async {
+  Future<void> _startService({required bool forSensor}) async {
     final result = await FlutterForegroundTask.startService(
       serviceId: 256,
-      serviceTypes: await _serviceTypes(),
+      serviceTypes: await _serviceTypes(forSensor: forSensor),
       notificationTitle: 'Insulink',
       notificationText: await _strings.get('service.connecting'),
       callback: startCallback,
@@ -862,17 +879,51 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// Service types for the foreground service. `location` is added ONLY when the
-  /// OS location permission is held — the location FGS type requires it at
-  /// `startForeground` (Android 14+), and glucose reading must never depend on
-  /// location. With the type present the service samples GPS in the background
-  /// (see [BackgroundLocationSampler]); without it, only glucose runs.
-  Future<List<ForegroundServiceTypes>> _serviceTypes() async {
-    final types = [ForegroundServiceTypes.connectedDevice];
+  /// Service types for the foreground service. `connectedDevice` (which requires
+  /// a held BLE runtime permission at `startForeground` on Android 14+) is added
+  /// only for a sensor connection; a detection-only service ([forSensor] false)
+  /// omits it so it needs no BLE permission. `location` is added whenever the OS
+  /// location permission is held — it's what lets the service sample GPS in the
+  /// background (see [BackgroundLocationSampler]) and is the sole type of a
+  /// detection-only service. Glucose reading never depends on location.
+  Future<List<ForegroundServiceTypes>> _serviceTypes({
+    required bool forSensor,
+  }) async {
+    final types = <ForegroundServiceTypes>[];
+    if (forSensor) {
+      types.add(ForegroundServiceTypes.connectedDevice);
+    }
     if (await Permission.location.isGranted) {
       types.add(ForegroundServiceTypes.location);
     }
     return types;
+  }
+
+  /// Ensure the background service runs so cardio auto-detection keeps working
+  /// even without a CGM sensor — the GPS/activity samplers and the detection
+  /// scan live in the service isolate (see [CgmTaskHandler]). Called when the
+  /// Sport tab opens. No-op when a sensor is paired (the sensor path already
+  /// runs the service) or the service is already up. Starts a LOCATION-typed
+  /// service WITHOUT prompting — only if location + notifications are already
+  /// granted (both requested in onboarding) — so opening the Sport tab never
+  /// triggers a permission dialog.
+  Future<void> ensureDetectionService() async {
+    if (_busy || hasSensor) {
+      return;
+    }
+    if (await FlutterForegroundTask.isRunningService) {
+      return;
+    }
+    if (!await Permission.location.isGranted) {
+      return;
+    }
+    if (await FlutterForegroundTask.checkNotificationPermission() !=
+        NotificationPermission.granted) {
+      return;
+    }
+    _initForegroundTask();
+    await _startService(forSensor: false);
+    await _refreshServiceState();
   }
 
   /// Fire a test alarm (low or high) so the user can preview the notification +

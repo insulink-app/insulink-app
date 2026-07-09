@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../google_health/google_health_importer.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
@@ -46,6 +48,16 @@ class CgmTaskHandler extends TaskHandler {
   String _serial = '';
   String _pairingCode = '';
 
+  /// Whether an actual CGM sensor is set up, so the BLE pipeline should run. A
+  /// RECONNECTING sensor authenticates with its stored session key / resolved
+  /// BLE id — NOT the pairing code — so the pairing code alone is not a reliable
+  /// "has sensor" signal: Libre 3 never stores one, and a G7's is empty after a
+  /// backend restore. Keying the connect gate on the code alone stopped an
+  /// auto-restarted service (e.g. after an app update) from ever reconnecting.
+  /// A detection-only service (no sensor) has neither a code nor a resolved key.
+  bool get _sensorConfigured =>
+      _pairingCode.isNotEmpty || (_store?.resolvedKey ?? '').isNotEmpty;
+
   /// The Rust J-PAKE core can be initialised exactly once per isolate; guard it
   /// so the watchdog's recovery re-init doesn't re-call `RustLib.init()` (which
   /// throws if already initialised).
@@ -71,6 +83,12 @@ class CgmTaskHandler extends TaskHandler {
   /// log every watchdog tick.
   DateTime? _lastDetectionAt;
   static const _detectEvery = Duration(minutes: 2);
+
+  /// When the live heart-rate poll last ran, and its cadence. Only polls while a
+  /// Google Health is connected; pushes fresh samples to the UI's GoogleHealthState.
+  DateTime? _lastHrPollAt;
+  int? _lastHrPushedAtMs;
+  static const _hrPollEvery = Duration(seconds: 60);
 
   /// Dedicated timer so GPS can be sampled far more often than the ~30s watchdog
   /// (up to every 10s while moving / recording a training). The sampler itself
@@ -116,12 +134,14 @@ class CgmTaskHandler extends TaskHandler {
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     _locationTimer ??= Timer.periodic(
-      const Duration(seconds: 10),
+      const Duration(seconds: 4),
       (_) => _locationSampler.tick(),
     );
     _activitySampler.start();
     unawaited(const SportStore().applyTrainingDecisions());
-    if (await _ensureReady()) {
+    // With no sensor paired the service still runs (samplers + detection above)
+    // but has nothing to connect to, so skip the BLE connect.
+    if (await _ensureReady() && _sensorConfigured) {
       _startConnect();
     }
   }
@@ -256,6 +276,10 @@ class CgmTaskHandler extends TaskHandler {
   void onRepeatEvent(DateTime timestamp) {
     _watchdog();
     _maybeDetectTraining();
+    // ponytail: rides the CGM service (the app's only foreground service), so
+    // background HR runs only while glucose reading is active. Standalone HR
+    // would need its own service — out of scope.
+    _maybePollHeartRate();
     // Apply Confirm/Reject taps buffered by the notification-action isolate,
     // which can't reach secure storage itself (see SportStore.recordTrainingDecision).
     const SportStore().applyTrainingDecisions();
@@ -282,14 +306,47 @@ class CgmTaskHandler extends TaskHandler {
     }
   }
 
+  /// Polls Health Connect for the latest heart rate at most every [_hrPollEvery]
+  /// while a Google Health is connected, and pushes a fresher sample to the UI's
+  /// GoogleHealthState. The connected flag is read fresh from storage — the service
+  /// isolate can't observe the UI's GoogleHealthState.
+  Future<void> _maybePollHeartRate() async {
+    final last = _lastHrPollAt;
+    if (last != null && DateTime.now().difference(last) < _hrPollEvery) {
+      return;
+    }
+    _lastHrPollAt = DateTime.now();
+    if (await const FlutterSecureStorage().read(key: 'google_health.connected') !=
+        'true') {
+      return;
+    }
+    final latest = await GoogleHealthImporter().latestHeartRate();
+    final atMs = latest.atMs;
+    if (latest.hr == null || atMs == null) {
+      return;
+    }
+    if (_lastHrPushedAtMs != null && atMs <= _lastHrPushedAtMs!) {
+      return;
+    }
+    _lastHrPushedAtMs = atMs;
+    FlutterForegroundTask.sendDataToMain({'t': 'hr', 'v': latest.hr, 'at': atMs});
+  }
+
   Future<void> _watchdog() async {
     try {
       // Recover a startup that threw before the pipeline existed.
       if (_conn == null) {
-        if (await _ensureReady()) {
+        if (await _ensureReady() && _sensorConfigured) {
           _log('watchdog: pipeline rebuilt — connecting…');
           _startConnect();
         }
+        return;
+      }
+      // No sensor paired: the service is running only to host background
+      // training auto-detection (driven by onRepeatEvent). Skip all BLE
+      // reconnect/restart escalation — there is nothing to connect to, and a
+      // restart/exit here would needlessly churn (or kill) the detection host.
+      if (!_sensorConfigured) {
         return;
       }
       final connection = _conn!;
@@ -299,7 +356,7 @@ class CgmTaskHandler extends TaskHandler {
       final last = _lastReadingAt;
       if (last != null) {
         _alarms?.checkConnectionLost(
-          sensorLinked: _pairingCode.isNotEmpty,
+          sensorLinked: _sensorConfigured,
           sinceLastReading: DateTime.now().difference(last),
         );
       }

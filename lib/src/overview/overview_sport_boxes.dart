@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/fitbit/fitbit_state.dart';
+import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/activity/reorderable_tile_grid.dart';
@@ -20,8 +20,8 @@ class OverviewSportBoxes extends StatelessWidget {
     final layout = context.watch<OverviewLayoutState>();
     final activity = context.watch<SportActivityState>();
     final sport = context.watch<SportState>();
-    final fitbit = context.watch<FitbitState>();
-    final builder = TodayTileBuilder(activity, sport, fitbit);
+    final health = context.watch<GoogleHealthState>();
+    final builder = TodayTileBuilder(activity, sport, health);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -41,7 +41,7 @@ class OverviewSportBoxes extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         ReorderableTileGrid(
-          tiles: layout.visible(fitbit.connected),
+          tiles: layout.visible(health.connected),
           state: layout,
           tileBuilder: builder.build,
         ),

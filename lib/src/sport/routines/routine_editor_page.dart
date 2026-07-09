@@ -102,7 +102,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
 
   Widget _durationHint(SportRoutine routine) {
     final scheme = Theme.of(context).colorScheme;
-    final minutes = estimatedRoutineMinutes(
+    final seconds = estimatedRoutineSeconds(
       routine,
       _training.exercises,
       _training.sessions,
@@ -121,7 +121,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             Locales.string(
               context,
               'sport.routines.est_duration',
-              params: [sportMinutes(minutes)],
+              params: [sportClock(seconds)],
             ),
             style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
           ),

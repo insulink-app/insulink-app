@@ -89,7 +89,8 @@
     "label": "Overview",
     "chart": {
       "empty": "no readings yet",
-      "hour": "#:00"
+      "hour": "#:00",
+      "now": "Now"
     },
     "time_in_range": "Time in Range",
     "time_in_range_window": "Last 24 h",
@@ -292,22 +293,43 @@
   "pump": {
     "label": "Pump"
   },
-  "fitbit": {
-    "label": "Fitbit",
+  "google_health": {
+    "label": "Google Health",
     "connect": "Connect",
     "disconnect": "Disconnect",
-    "disconnect_confirm": "Really disconnect Fitbit? Its boxes will then be hidden.",
-    "hint": "Connects Fitbit through Google Health. The Fitbit app must be installed and syncing its data to Health Connect.",
+    "disconnect_confirm": "Really disconnect Google Health? Its boxes will then be hidden.",
+    "hint": "Couples the Google Health app (Health Connect). Your wearable's app must be installed and syncing its data there.",
     "denied": "Access to Google Health was denied.",
     "unavailable": "Google Health (Health Connect) is not available.",
     "resting_hr": "Resting HR",
     "sleep": "Sleep",
     "heart_rate": "Heart rate",
     "spo2": "Blood oxygen",
+    "respiratory_rate": "Respiratory rate",
     "status": {
       "connected": "Connected",
       "disconnected": "Not connected",
       "source": "Via Google Health"
+    },
+    "detail": {
+      "empty": "No data yet. Sync Google Health."
+    },
+    "sleep_stage": {
+      "_": "Sleep phases",
+      "timeline": "Sleep timeline",
+      "deep": "Deep",
+      "rem": "REM",
+      "light": "Light",
+      "awake": "Awake",
+      "restless": "Restless"
+    },
+    "hr_min": "Min",
+    "hr_max": "Max",
+    "hr_zones": {
+      "title": "Pulse zones",
+      "elevated": "Elevated from",
+      "high": "High from",
+      "save": "Save"
     }
   },
   "devices": {
@@ -327,6 +349,10 @@
     },
     "copy": "Copy",
     "copy_suffix": " (copy)",
+    "activities": {
+      "_": "Activities",
+      "empty": "No activities logged yet."
+    },
     "activity": {
       "steps": "Steps",
       "distance": "Distance",
@@ -410,7 +436,8 @@
       "extend": "+60 sec",
       "continue": "Continue",
       "previous_set": "Previous set",
-      "last_time": "Last time: #"
+      "last_time": "Last time: #",
+      "resume_active": "Resume running workout"
     },
     "health": {
       "import": "Import from Google Health",
@@ -433,6 +460,7 @@
       "deleted_routine": "Deleted routine",
       "sets": "# sets",
       "duration": "Duration",
+      "rest": "Rest",
       "set_n": "Set #",
       "resume": "Resume workout",
       "delete_confirm": "Delete this log entry?",
@@ -550,7 +578,7 @@
       "description": "Warn when the sensor is about to expire"
     },
     "halftime": {
-      "description": "Remind when the sensor is half used up (day 5)"
+      "description": "Remind when the sensor is half used up"
     },
     "training": {
       "description": "Notify when a training was detected"
@@ -655,7 +683,8 @@
       "low_title": "Low glucose ahead",
       "low_body": "Eat about # g fast carbs (## tablets).",
       "high_title": "High glucose ahead",
-      "high_body": "Consider about # units of insulin."
+      "high_body": "Consider about # units of insulin.",
+      "forecast": "Now #, in ## min ~#"
     },
     "low": {
       "title": "Glucose low"

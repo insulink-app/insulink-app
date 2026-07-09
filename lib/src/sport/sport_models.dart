@@ -173,12 +173,17 @@ class SportRoutine {
   );
 }
 
-/// A logged set: reps OR seconds, optionally weight.
+/// A logged set: reps OR seconds, optionally weight. [durationSecs] is the wall
+/// time actually spent performing the set (pauses excluded); [restSecs] is the
+/// rest actually taken AFTER it before the next set (null for the last set of a
+/// workout and for manually added sets). Both are null on legacy logs.
 class SetLog {
   final String exerciseId;
   final int? reps;
   final int? seconds;
   final double? weightKg;
+  final int? durationSecs;
+  final int? restSecs;
   final int atEpochMs;
 
   const SetLog({
@@ -186,14 +191,24 @@ class SetLog {
     this.reps,
     this.seconds,
     this.weightKg,
+    this.durationSecs,
+    this.restSecs,
     required this.atEpochMs,
   });
 
-  SetLog copyWith({int? reps, int? seconds, double? weightKg}) => SetLog(
+  SetLog copyWith({
+    int? reps,
+    int? seconds,
+    double? weightKg,
+    int? durationSecs,
+    int? restSecs,
+  }) => SetLog(
     exerciseId: exerciseId,
     reps: reps ?? this.reps,
     seconds: seconds ?? this.seconds,
     weightKg: weightKg ?? this.weightKg,
+    durationSecs: durationSecs ?? this.durationSecs,
+    restSecs: restSecs ?? this.restSecs,
     atEpochMs: atEpochMs,
   );
 
@@ -202,6 +217,8 @@ class SetLog {
     'reps': reps,
     'secs': seconds,
     'kg': weightKg,
+    'dur': durationSecs,
+    'rest': restSecs,
     'ts': atEpochMs,
   };
 
@@ -210,6 +227,8 @@ class SetLog {
     reps: json['reps'] as int?,
     seconds: json['secs'] as int?,
     weightKg: (json['kg'] as num?)?.toDouble(),
+    durationSecs: json['dur'] as int?,
+    restSecs: json['rest'] as int?,
     atEpochMs: json['ts'] as int,
   );
 }
