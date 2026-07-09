@@ -340,6 +340,8 @@
     "hydration": {
       "_": "Trinken",
       "settings": "Einstellungen",
+      "log": "Heute getrunken",
+      "log_empty": "Heute noch nichts getrunken",
       "goal_title": "Tagesziel",
       "free": "Frei",
       "free_title": "Menge eingeben",

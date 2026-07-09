@@ -5,12 +5,13 @@ import 'package:insulink/src/nutrition/hydration/drink_add_row.dart';
 import 'package:insulink/src/nutrition/hydration/hydration_settings_sheet.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_models.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
+import 'package:insulink/src/nutrition/hydration/today_drinks_sheet.dart';
 import 'package:provider/provider.dart';
 
 /// Top section of the nutrition page: a "Trinken" header with a settings button
 /// outside the card (room for more settings), then a box with today's intake
-/// against the goal, the one-tap drink picker, and the drinks logged today
-/// (each with its time; tap a chip to remove a mistap).
+/// against the goal, a log button (opens today's drinks to review/remove), and
+/// the one-tap drink picker.
 class HydrationCard extends StatelessWidget {
   const HydrationCard({super.key});
 
@@ -57,7 +58,7 @@ class HydrationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _amount(state, accent),
+          _topRow(context, state, accent),
           const SizedBox(height: 8),
           TrackBar(
             startFraction: 0,
@@ -66,12 +67,24 @@ class HydrationCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           DrinkAddRow(state: state),
-          if (state.todayEntries.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            _todayDrinks(state, accent),
-          ],
         ],
       ),
+    );
+  }
+
+  /// Today's total on the left, the log button (review/remove drinks) on the
+  /// right.
+  Widget _topRow(BuildContext context, NutritionState state, Color accent) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _amount(state, accent)),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.history, size: 22),
+          onPressed: () => showTodayDrinksSheet(context),
+        ),
+      ],
     );
   }
 
@@ -82,35 +95,13 @@ class HydrationCard extends StatelessWidget {
       children: [
         Text(
           '${formatLitres(state.todayMl / 1000)} L',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
         ),
         const SizedBox(width: 6),
         Text(
           '/ ${formatLitres(state.goalLitres)} L',
           style: TextStyle(fontSize: 15, color: Colors.grey[600]),
         ),
-      ],
-    );
-  }
-
-  /// Drinks logged today as removable chips, newest first (tap the × to delete a
-  /// mistap). The logging time is persisted on each entry but not shown.
-  Widget _todayDrinks(NutritionState state, Color accent) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final entry in state.todayEntries.reversed)
-          InputChip(
-            avatar: Icon(iconForKind(entry.kind), size: 18, color: accent),
-            label: Text('${entry.ml} ml'),
-            onDeleted: () => state.removeEntry(entry),
-            backgroundColor: accent.withValues(alpha: 0.06),
-            side: BorderSide.none,
-          ),
       ],
     );
   }

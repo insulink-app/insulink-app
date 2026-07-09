@@ -340,6 +340,8 @@
     "hydration": {
       "_": "Hydration",
       "settings": "Settings",
+      "log": "Drinks today",
+      "log_empty": "Nothing logged today yet",
       "goal_title": "Daily goal",
       "free": "Custom",
       "free_title": "Enter amount",
