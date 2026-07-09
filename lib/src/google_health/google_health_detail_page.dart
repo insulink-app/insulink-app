@@ -28,12 +28,14 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
     GoogleHealthMetric.restingHr => 'google_health.resting_hr',
     GoogleHealthMetric.sleep => 'google_health.sleep',
     GoogleHealthMetric.spo2 => 'google_health.spo2',
+    GoogleHealthMetric.respiratoryRate => 'google_health.respiratory_rate',
   };
 
   String? get _unit => switch (widget.metric) {
     GoogleHealthMetric.restingHr => 'bpm',
     GoogleHealthMetric.sleep => null,
     GoogleHealthMetric.spo2 => '%',
+    GoogleHealthMetric.respiratoryRate => 'rpm',
   };
 
   String _format(double value) => widget.metric == GoogleHealthMetric.sleep

@@ -305,6 +305,7 @@
     "sleep": "Sleep",
     "heart_rate": "Heart rate",
     "spo2": "Blood oxygen",
+    "respiratory_rate": "Respiratory rate",
     "status": {
       "connected": "Connected",
       "disconnected": "Not connected",

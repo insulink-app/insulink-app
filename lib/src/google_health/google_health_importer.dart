@@ -44,6 +44,7 @@ class GoogleHealthImporter {
     HealthDataType.RESTING_HEART_RATE,
     HealthDataType.SLEEP_SESSION,
     HealthDataType.BLOOD_OXYGEN,
+    HealthDataType.RESPIRATORY_RATE,
     ..._stageTypes,
   ];
   static final _read = List.filled(_types.length, HealthDataAccess.READ);
@@ -62,12 +63,14 @@ class GoogleHealthImporter {
     final start = now.subtract(const Duration(days: _historyDays));
     final resting = await _dailyLast(HealthDataType.RESTING_HEART_RATE, start, now);
     final spo2 = await _dailyLast(HealthDataType.BLOOD_OXYGEN, start, now);
+    final respiratory =
+        await _dailyLast(HealthDataType.RESPIRATORY_RATE, start, now);
     final sleep = await _sleepMinutes(start, now);
     final segments = await _sleepSegments(start, now);
     final latest = await _latestHr(now.subtract(const Duration(days: 1)), now);
     return GoogleHealthImport(
       GoogleHealthImportResult.success,
-      days: _mergeDays(resting, sleep, spo2, segments),
+      days: _mergeDays(resting, sleep, spo2, respiratory, segments),
       latestHr: latest.hr,
       latestHrAtMs: latest.atMs,
     );
@@ -86,14 +89,16 @@ class GoogleHealthImporter {
         startTime: start,
         endTime: end,
       );
+      debugPrint('[gh-import] ${type.name}: ${points.length} points');
       for (final point in _health.removeDuplicates(points)) {
         final value = point.value;
         if (value is NumericHealthValue) {
           out[_dateKey(point.dateFrom.toLocal())] = value.numericValue.round();
         }
       }
-    } catch (_) {
+    } catch (error) {
       // ponytail: a type Health Connect can't serve is skipped, others still read.
+      debugPrint('[gh-import] ${type.name} read failed: $error');
     }
     return out;
   }
@@ -252,12 +257,14 @@ class GoogleHealthImporter {
     Map<String, int> resting,
     Map<String, int> sleep,
     Map<String, int> spo2,
+    Map<String, int> respiratory,
     Map<String, List<SleepSegment>> segments,
   ) {
     final keys = {
       ...resting.keys,
       ...sleep.keys,
       ...spo2.keys,
+      ...respiratory.keys,
       ...segments.keys,
     };
     final latestSleepKey =
@@ -269,6 +276,7 @@ class GoogleHealthImporter {
           restingHr: resting[key],
           sleepMinutes: sleep[key],
           spo2: spo2[key],
+          respiratoryRate: respiratory[key],
           sleepStages: segments[key] == null ? null : _stageTotals(segments[key]!),
           sleepTimeline: key == latestSleepKey ? segments[key] : null,
         ),

@@ -20,10 +20,11 @@ IconData todayTileIcon(TodayTile tile) => switch (tile) {
   TodayTile.distance => Icons.straighten,
   TodayTile.calories => Icons.local_fire_department,
   TodayTile.weight => Icons.monitor_weight,
-  TodayTile.restingHr => Icons.favorite,
+  TodayTile.restingHr => Icons.monitor_heart,
   TodayTile.sleep => Icons.bedtime,
   TodayTile.heartRate => Icons.favorite,
-  TodayTile.spo2 => Icons.air,
+  TodayTile.spo2 => Icons.bloodtype,
+  TodayTile.respiratoryRate => Icons.air,
 };
 
 /// Localization key for a Today box label (shared by the grid and the editor).
@@ -36,6 +37,7 @@ String todayTileLabelKey(TodayTile tile) => switch (tile) {
   TodayTile.sleep => 'google_health.sleep',
   TodayTile.heartRate => 'google_health.heart_rate',
   TodayTile.spo2 => 'google_health.spo2',
+  TodayTile.respiratoryRate => 'google_health.respiratory_rate',
 };
 
 /// Builds the [SportSummaryTile] for a Today box from the current sport + Google Health
@@ -124,6 +126,11 @@ class TodayTileBuilder {
       case TodayTile.spo2:
         return _metric(
           context, icon, label, health.latestSpo2, '%', GoogleHealthMetric.spo2,
+        );
+      case TodayTile.respiratoryRate:
+        return _metric(
+          context, icon, label, health.latestRespiratoryRate, 'rpm',
+          GoogleHealthMetric.respiratoryRate,
         );
     }
   }

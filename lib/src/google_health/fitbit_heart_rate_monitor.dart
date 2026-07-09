@@ -31,6 +31,13 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   static final Guid _heartRateService = Guid('180D');
   static final Guid _heartRateMeasurement = Guid('2A37');
 
+  /// Fitbit's private GATT service. A band bonded to this phone (paired via
+  /// Google Health) advertises ONLY this — not 0x180D — and names itself by its
+  /// MAC in hex (e.g. "F46ED6389733"), so it matches neither the name nor the
+  /// 0x180D checks.
+  static final Guid _fitbitPrivateService =
+      Guid('089810cc-ef89-11e9-81b4-2a2ae2dbcce4');
+
   int? bpm;
   DateTime? lastUpdate;
   FitbitHrStatus status = FitbitHrStatus.idle;
@@ -42,7 +49,6 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   final Set<String> _seen = {};
   BluetoothDevice? _device;
   StreamSubscription<List<ScanResult>>? _scanSub;
-  StreamSubscription<bool>? _isScanningSub;
   StreamSubscription<BluetoothConnectionState>? _connSub;
   StreamSubscription<List<int>>? _valueSub;
 
@@ -89,11 +95,44 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
       }
     }
     try {
-      await _scanAndConnect();
+      await _findAndConnect();
     } catch (error) {
       _set(FitbitHrStatus.error, 'Scan failed: $error');
       _running = false;
     }
+  }
+
+  /// The band is bonded to this phone and held in a live connection by Google
+  /// Health, so it does NOT advertise (a connected BLE peripheral stops
+  /// advertising) — scanning finds nothing. So try the OS's already-known
+  /// devices FIRST, connecting directly by id, and only scan as a fallback.
+  Future<void> _findAndConnect() async {
+    final known = await _knownFitbit();
+    if (known != null) {
+      debugPrint('[fitbit-hr] using known device ${known.remoteId.str}');
+      await _connect(known);
+      return;
+    }
+    await _scanAndConnect();
+  }
+
+  /// A Fitbit among the OS's bonded or currently-connected devices, or null. The
+  /// Air names itself by its MAC in hex, so we accept a "fitbit" name OR a bare
+  /// 12-hex-char name (won't match headphones etc.).
+  Future<BluetoothDevice?> _knownFitbit() async {
+    final candidates = <BluetoothDevice>[
+      ...await FlutterBluePlus.bondedDevices,
+      ...await FlutterBluePlus.systemDevices(const []),
+    ];
+    for (final device in candidates) {
+      final name = device.platformName;
+      debugPrint('[fitbit-hr] known device ${device.remoteId.str} ("$name")');
+      if (name.toLowerCase().contains('fitbit') ||
+          RegExp(r'^[0-9A-Fa-f]{12}$').hasMatch(name)) {
+        return device;
+      }
+    }
+    return null;
   }
 
   /// Requests scan/connect permission (granted already if a G7 is set up, but the
@@ -119,10 +158,7 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     _set(FitbitHrStatus.scanning, 'Scanning for your Fitbit…');
     _scanSub?.cancel();
     _scanSub = FlutterBluePlus.onScanResults.listen((results) {
-      for (final result in results) {
-        final name = result.advertisementData.advName;
-        _seen.add(name.isEmpty ? '<no name> ${result.device.remoteId.str}' : name);
-      }
+      _logScan(results);
       final target = _pickTarget(results);
       if (target != null && !_foundTarget) {
         _foundTarget = true;
@@ -131,23 +167,46 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
         _connect(target.device);
       }
     }, onError: (Object error) => _set(FitbitHrStatus.error, 'Scan error: $error'));
-    _isScanningSub?.cancel();
-    _isScanningSub = FlutterBluePlus.isScanning.listen((scanning) {
-      if (!scanning && !_foundTarget && _running) {
-        final seen = _seen.isEmpty ? 'no BLE devices' : _seen.join(', ');
-        _set(FitbitHrStatus.notFound, 'No Fitbit found. Saw: $seen');
-        _running = false;
-      }
-    });
     await FlutterBluePlus.startScan(timeout: const Duration(seconds: 20));
+    // Wait for the scan to actually end (isScanning goes true→false). We must
+    // NOT listen before startScan: isScanning re-emits its last value (false) to
+    // new subscribers, which would fire "not found" instantly.
+    await FlutterBluePlus.isScanning.where((scanning) => !scanning).first;
+    if (!_foundTarget && _running && status == FitbitHrStatus.scanning) {
+      final seen = _seen.isEmpty ? 'no BLE devices' : _seen.join(', ');
+      _set(FitbitHrStatus.notFound, 'No Fitbit found. Saw: $seen');
+      _running = false;
+    }
   }
 
-  /// The first Fitbit by advertised name. We do NOT fall back to "first HR
-  /// device" — another advertiser's GATT may lack 0x180D.
+  void _logScan(List<ScanResult> results) {
+    for (final result in results) {
+      final name = result.advertisementData.advName;
+      final label = name.isEmpty
+          ? '<no name> ${result.device.remoteId.str}'
+          : name;
+      if (_seen.add(label)) {
+        final services = result.advertisementData.serviceUuids
+            .map((uuid) => uuid.str)
+            .join(',');
+        debugPrint('[fitbit-hr] scan saw $label services=[$services]');
+      }
+    }
+  }
+
+  /// The Fitbit by advertised name, else a device advertising 0x180D or the
+  /// Fitbit private service. We do NOT match a bare "air" substring — that hits
+  /// AirPods and the like.
   ScanResult? _pickTarget(List<ScanResult> results) {
     for (final result in results) {
-      final name = result.advertisementData.advName.toLowerCase();
-      if (name.contains('fitbit') || name.contains('air')) {
+      if (result.advertisementData.advName.toLowerCase().contains('fitbit')) {
+        return result;
+      }
+    }
+    for (final result in results) {
+      final advertised = result.advertisementData.serviceUuids;
+      if (advertised.any((uuid) => _matches(uuid, _heartRateService)) ||
+          advertised.any((uuid) => _matches(uuid, _fitbitPrivateService))) {
         return result;
       }
     }
@@ -163,7 +222,7 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
         _foundTarget = false;
         Future.delayed(const Duration(seconds: 2), () {
           if (_running) {
-            _scanAndConnect();
+            _findAndConnect();
           }
         });
       }
@@ -251,7 +310,6 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     _running = false;
     _foundTarget = false;
     await _scanSub?.cancel();
-    await _isScanningSub?.cancel();
     await _valueSub?.cancel();
     await _connSub?.cancel();
     try {

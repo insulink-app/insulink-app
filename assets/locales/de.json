@@ -305,6 +305,7 @@
     "sleep": "Schlaf",
     "heart_rate": "Herzfrequenz",
     "spo2": "Sauerstoff",
+    "respiratory_rate": "Atemfrequenz",
     "status": {
       "connected": "Verbunden",
       "disconnected": "Nicht verbunden",
