@@ -684,7 +684,7 @@
       "low_body": "Eat about # g fast carbs (## tablets).",
       "high_title": "High glucose ahead",
       "high_body": "Consider about # units of insulin.",
-      "forecast": "Now #, in ## min ~#"
+      "forecast": "Now #, in ## min ~###"
     },
     "low": {
       "title": "Glucose low"

@@ -7,10 +7,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Cancel superseded runs on the same ref to save CI minutes.
+# Cancel superseded PR runs to save CI minutes; let every main commit build to
+# completion (cancelling mid-Gradle shows the older commit as a red "failed"
+# run — exit 143 — when it was only superseded).
 concurrency:
   group: build-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   FLUTTER_VERSION: "3.44.2"

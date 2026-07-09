@@ -9,6 +9,7 @@ import 'package:http/http.dart' show Response;
 import 'package:insulink/src/cgm/event_sync.dart';
 import 'package:insulink/src/cgm/glucose_sync.dart';
 import 'package:insulink/src/google_health/google_health_sync.dart';
+import 'package:insulink/src/google_health/pulse_sync.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/sport/sport_sync.dart';
@@ -43,6 +44,9 @@ class AuthService {
     }
     if (error == null && context.mounted) {
       await GoogleHealthSync().pull(context);
+    }
+    if (error == null && context.mounted) {
+      await PulseSync().pull(context);
     }
     return error;
   }

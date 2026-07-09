@@ -43,6 +43,12 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   FitbitHrStatus status = FitbitHrStatus.idle;
   String message = '';
 
+  /// Rolling buffer of live BLE samples (one per ~15 s, last 24 h) so the
+  /// intraday chart can extend past Health Connect's last sync — the Fitbit app
+  /// syncs to Health Connect hours behind the band, so the curve otherwise stops
+  /// well before the live pulse the banner shows.
+  final List<({DateTime at, int bpm})> liveHistory = [];
+
   bool _running = false;
   bool _foundTarget = false;
   bool _triedCacheClear = false;
@@ -293,9 +299,25 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     if (sample == null) {
       return;
     }
+    final now = DateTime.now();
     bpm = sample.bpm;
-    lastUpdate = DateTime.now();
+    lastUpdate = now;
+    _recordLive(sample.bpm, now);
     _set(FitbitHrStatus.streaming, 'Live heart rate.');
+  }
+
+  /// Appends to [liveHistory], thinned to one point per 15 s and pruned to the
+  /// last 24 h (matching the intraday chart's window and resolution).
+  void _recordLive(int bpm, DateTime now) {
+    final last = liveHistory.isEmpty ? null : liveHistory.last.at;
+    if (last != null && now.difference(last).inSeconds < 15) {
+      return;
+    }
+    liveHistory.add((at: now, bpm: bpm));
+    while (liveHistory.isNotEmpty &&
+        now.difference(liveHistory.first.at) > const Duration(hours: 24)) {
+      liveHistory.removeAt(0);
+    }
   }
 
   /// Tolerant Guid compare: flutter_blue_plus may report the 16-bit or the full

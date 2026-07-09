@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -7,6 +5,8 @@ import 'package:insulink/src/base/hour_range_selector.dart';
 import 'package:insulink/src/google_health/fitbit_heart_rate_monitor.dart';
 import 'package:insulink/src/google_health/google_health_importer.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
+import 'package:insulink/src/google_health/intraday_pulse_store.dart';
+import 'package:insulink/src/google_health/pulse_sync.dart';
 import 'package:insulink/src/google_health/heart_rate_chart_series.dart';
 import 'package:insulink/src/google_health/heart_rate_zones.dart';
 import 'package:insulink/src/google_health/heart_rate_zones_sheet.dart';
@@ -30,19 +30,14 @@ class HeartRatePage extends StatefulWidget {
 
 class _HeartRatePageState extends State<HeartRatePage> {
   static const _kRangeKey = 'hr_range_hours';
-  static const _kCurveCacheKey = 'hr_curve_cache';
   static const _storage = FlutterSecureStorage();
+  static const _pulseStore = IntradayPulseStore();
 
-  /// Per-day intraday curve cache, kept across page instances so reopening the
-  /// page (or switching days back) shows the last-loaded curve instantly instead
-  /// of a loader. Persisted to secure storage (see [_persistCache]) so it also
-  /// survives an app relaunch — a background re-read refreshes it. Sleep already
-  /// feels instant because it lives in the persisted archive; this gives pulse
-  /// the same feel.
-  static final Map<DateTime, List<_HrSample>> _cache = {};
-
-  /// Restore-from-storage runs once per process (the cache is static).
-  static bool _restored = false;
+  /// In-process per-day cache of the last curve read from the store, so
+  /// reopening the page (or switching days back) shows it instantly instead of a
+  /// loader while the store/Health-Connect refresh runs. Persistence lives in
+  /// [_pulseStore]; this is only a synchronous shortcut.
+  static final Map<DateTime, List<_HrSample>> _memory = {};
 
   late DateTime _day = _today();
 
@@ -65,7 +60,6 @@ class _HeartRatePageState extends State<HeartRatePage> {
   @override
   void initState() {
     super.initState();
-    _restoreCache();
     _loadRange();
     HeartRateZones.load().then((zones) {
       if (mounted) {
@@ -88,73 +82,41 @@ class _HeartRatePageState extends State<HeartRatePage> {
 
   bool get _isToday => _day == _today();
 
-  /// Always loads the full 24 h ending at [_end]; the 6/12 h views just re-window
-  /// this without re-reading.
+  /// Loads the day's 24 h window ending at [_end]; the 6/12 h views just
+  /// re-window this without re-reading. Shows the in-process [_memory] curve
+  /// instantly if present, then swaps in the refreshed one from [_refresh].
   Future<List<_HrSample>> _load() {
     _end = _isToday ? DateTime.now() : _day.add(const Duration(days: 1));
     final day = _day;
-    final fresh = GoogleHealthImporter()
-        .heartRateBetween(_end.subtract(const Duration(hours: 24)), _end)
-        .then((samples) {
-      _cache[day] = samples;
-      _persistCache();
-      return samples;
-    });
-    final cached = _cache[day];
+    final refreshed = _refresh(day);
+    final cached = _memory[day];
     if (cached == null) {
-      return fresh;
+      return refreshed;
     }
-    // Show cached instantly, swap in the refreshed curve when it lands.
-    fresh.then((samples) {
+    refreshed.then((samples) {
       if (mounted && _day == day) {
-        setState(() => _future = Future.value(samples));
+        setState(() {
+          _future = Future.value(samples);
+        });
       }
     });
     return Future.value(cached);
   }
 
-  /// Loads the persisted curve cache once per process and, if the current day is
-  /// present, swaps it in so a cold reopen shows the last curve instantly instead
-  /// of a loader (the fresh read from [_load] then refreshes it in the
-  /// background).
-  Future<void> _restoreCache() async {
-    if (_restored) {
-      return;
+  /// Ingests fresh Health Connect samples into [_pulseStore] (and syncs them),
+  /// then reads the window back FROM the store — the store, not Health Connect,
+  /// is the source of truth, so the curve also draws from backend-pulled data on
+  /// a device without Health Connect.
+  Future<List<_HrSample>> _refresh(DateTime day) async {
+    final from = _end.subtract(const Duration(hours: 24));
+    final fresh = await GoogleHealthImporter().heartRateBetween(from, _end);
+    if (fresh.isNotEmpty) {
+      final touched = await _pulseStore.merge(fresh);
+      PulseSync().push(touched);
     }
-    _restored = true;
-    final raw = await _storage.read(key: _kCurveCacheKey);
-    if (raw == null) {
-      return;
-    }
-    (jsonDecode(raw) as Map<String, dynamic>).forEach((key, value) {
-      _cache[DateTime.parse(key)] = [
-        for (final sample in value as List)
-          (
-            at: DateTime.fromMillisecondsSinceEpoch(sample['t'] as int),
-            bpm: sample['b'] as int,
-          ),
-      ];
-    });
-    final cached = _cache[_day];
-    if (mounted && cached != null) {
-      setState(() => _future = Future.value(cached));
-    }
-  }
-
-  /// Persists the most recent 7 days of the curve cache to secure storage.
-  Future<void> _persistCache() async {
-    final days = _cache.keys.toList()..sort();
-    final recent = days.length > 7 ? days.sublist(days.length - 7) : days;
-    await _storage.write(
-      key: _kCurveCacheKey,
-      value: jsonEncode({
-        for (final day in recent)
-          day.toIso8601String(): [
-            for (final sample in _cache[day]!)
-              {'t': sample.at.millisecondsSinceEpoch, 'b': sample.bpm},
-          ],
-      }),
-    );
+    final curve = await _pulseStore.rangeCurve(from, _end);
+    _memory[day] = curve;
+    return curve;
   }
 
   Future<void> _loadRange() async {
@@ -293,10 +255,36 @@ class _HeartRatePageState extends State<HeartRatePage> {
   /// Chart X of a time: hours relative to [_wholeHour] (negative = earlier).
   double _xOf(DateTime at) => at.difference(_wholeHour).inSeconds / 3600;
 
-  double get _rightX => _xOf(_end);
+  // For today the right edge rolls to now (captured at build) so live samples
+  // streaming past the load-time [_end] stay on-chart; past days pin to [_end].
+  double get _rightX => _xOf(_isToday ? DateTime.now() : _end);
   double get _leftX => _rightX - _rangeHours;
 
-  Widget _content(BuildContext context, List<_HrSample> samples) {
+  /// Live BLE samples the worn band is streaming now, newer than the freshest
+  /// Health Connect sample — Health Connect lags the band by hours, so this
+  /// bridges the gap to the live pulse. Only for today.
+  List<_HrSample> _mergeLive(BuildContext context, List<_HrSample> hc) {
+    if (!_isToday) {
+      return hc;
+    }
+    final live = context.read<GoogleHealthState>().liveHrMonitor.liveHistory;
+    final cutoff = hc.isEmpty ? null : hc.last.at;
+    final extra = [
+      for (final sample in live)
+        if (cutoff == null || sample.at.isAfter(cutoff)) sample,
+    ];
+    return extra.isEmpty ? hc : [...hc, ...extra];
+  }
+
+  Widget _content(BuildContext context, List<_HrSample> hcSamples) {
+    final monitor = context.read<GoogleHealthState>().liveHrMonitor;
+    return ListenableBuilder(
+      listenable: monitor,
+      builder: (context, _) => _contentBody(context, _mergeLive(context, hcSamples)),
+    );
+  }
+
+  Widget _contentBody(BuildContext context, List<_HrSample> samples) {
     final scheme = Theme.of(context).colorScheme;
     final visible = [
       for (final sample in samples)
