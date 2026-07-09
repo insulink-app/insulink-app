@@ -320,7 +320,8 @@
       "deep": "Deep",
       "rem": "REM",
       "light": "Light",
-      "awake": "Awake"
+      "awake": "Awake",
+      "restless": "Restless"
     },
     "hr_min": "Min",
     "hr_max": "Max",

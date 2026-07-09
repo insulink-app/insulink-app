@@ -12,9 +12,8 @@ class GoogleHealthDay {
   final int? respiratoryRate;
   final SleepStages? sleepStages;
 
-  /// Chronological stage segments of the night (the hypnogram) — only the most
-  /// recent night carries it (older nights keep just the [sleepStages] totals),
-  /// so the archive holds one night of segments, not thirty.
+  /// Chronological stage segments of the night (the hypnogram), kept per night
+  /// so the sleep page can page back through previous nights' timelines.
   final List<SleepSegment>? sleepTimeline;
 
   const GoogleHealthDay({
@@ -75,15 +74,17 @@ class SleepStages {
   final int rem;
   final int light;
   final int awake;
+  final int restless;
 
   const SleepStages({
     this.deep = 0,
     this.rem = 0,
     this.light = 0,
     this.awake = 0,
+    this.restless = 0,
   });
 
-  int get total => deep + rem + light + awake;
+  int get total => deep + rem + light + awake + restless;
   bool get isEmpty => total == 0;
 
   Map<String, dynamic> toJson() => {
@@ -91,6 +92,7 @@ class SleepStages {
     'rem': rem,
     'light': light,
     'awake': awake,
+    if (restless > 0) 'restless': restless,
   };
 
   factory SleepStages.fromJson(Map<String, dynamic> json) => SleepStages(
@@ -98,12 +100,15 @@ class SleepStages {
     rem: json['rem'] as int? ?? 0,
     light: json['light'] as int? ?? 0,
     awake: json['awake'] as int? ?? 0,
+    restless: json['restless'] as int? ?? 0,
   );
 }
 
-/// Which sleep stage a segment is, in Health Connect's stage-record order — the
-/// index also indexes the [SleepStages] fields and the hypnogram lanes.
-enum SleepStage { deep, rem, light, awake }
+/// Which sleep stage a segment is. The [index] is persisted in stored segments
+/// and indexes the [SleepStages] minute buckets, so only APPEND new stages —
+/// never reorder (would corrupt existing archived data). [restless] maps to
+/// Health Connect's AWAKE_IN_BED.
+enum SleepStage { deep, rem, light, awake, restless }
 
 /// One chronological stretch of a single sleep [stage], `[startMs, endMs)` epoch
 /// ms — the raw material for the hypnogram (when each phase began/ended).

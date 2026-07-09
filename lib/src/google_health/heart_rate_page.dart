@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -28,13 +30,19 @@ class HeartRatePage extends StatefulWidget {
 
 class _HeartRatePageState extends State<HeartRatePage> {
   static const _kRangeKey = 'hr_range_hours';
+  static const _kCurveCacheKey = 'hr_curve_cache';
   static const _storage = FlutterSecureStorage();
 
   /// Per-day intraday curve cache, kept across page instances so reopening the
   /// page (or switching days back) shows the last-loaded curve instantly instead
-  /// of a loader. A background re-read refreshes it. Sleep already feels instant
-  /// because it lives in the persisted archive; this gives pulse the same feel.
+  /// of a loader. Persisted to secure storage (see [_persistCache]) so it also
+  /// survives an app relaunch — a background re-read refreshes it. Sleep already
+  /// feels instant because it lives in the persisted archive; this gives pulse
+  /// the same feel.
   static final Map<DateTime, List<_HrSample>> _cache = {};
+
+  /// Restore-from-storage runs once per process (the cache is static).
+  static bool _restored = false;
 
   late DateTime _day = _today();
 
@@ -57,6 +65,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
   @override
   void initState() {
     super.initState();
+    _restoreCache();
     _loadRange();
     HeartRateZones.load().then((zones) {
       if (mounted) {
@@ -88,6 +97,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
         .heartRateBetween(_end.subtract(const Duration(hours: 24)), _end)
         .then((samples) {
       _cache[day] = samples;
+      _persistCache();
       return samples;
     });
     final cached = _cache[day];
@@ -101,6 +111,50 @@ class _HeartRatePageState extends State<HeartRatePage> {
       }
     });
     return Future.value(cached);
+  }
+
+  /// Loads the persisted curve cache once per process and, if the current day is
+  /// present, swaps it in so a cold reopen shows the last curve instantly instead
+  /// of a loader (the fresh read from [_load] then refreshes it in the
+  /// background).
+  Future<void> _restoreCache() async {
+    if (_restored) {
+      return;
+    }
+    _restored = true;
+    final raw = await _storage.read(key: _kCurveCacheKey);
+    if (raw == null) {
+      return;
+    }
+    (jsonDecode(raw) as Map<String, dynamic>).forEach((key, value) {
+      _cache[DateTime.parse(key)] = [
+        for (final sample in value as List)
+          (
+            at: DateTime.fromMillisecondsSinceEpoch(sample['t'] as int),
+            bpm: sample['b'] as int,
+          ),
+      ];
+    });
+    final cached = _cache[_day];
+    if (mounted && cached != null) {
+      setState(() => _future = Future.value(cached));
+    }
+  }
+
+  /// Persists the most recent 7 days of the curve cache to secure storage.
+  Future<void> _persistCache() async {
+    final days = _cache.keys.toList()..sort();
+    final recent = days.length > 7 ? days.sublist(days.length - 7) : days;
+    await _storage.write(
+      key: _kCurveCacheKey,
+      value: jsonEncode({
+        for (final day in recent)
+          day.toIso8601String(): [
+            for (final sample in _cache[day]!)
+              {'t': sample.at.millisecondsSinceEpoch, 'b': sample.bpm},
+          ],
+      }),
+    );
   }
 
   Future<void> _loadRange() async {

@@ -31,12 +31,14 @@ class GoogleHealthImporter {
 
   static const _historyDays = 30;
 
-  /// Sleep-stage types, in the fixed order the accumulator buckets them by.
+  /// Sleep-stage types, in the SAME order as the [SleepStage] enum — the index
+  /// into this list is the stage's enum index. Append only (see [SleepStage]).
   static const _stageTypes = [
     HealthDataType.SLEEP_DEEP,
     HealthDataType.SLEEP_REM,
     HealthDataType.SLEEP_LIGHT,
     HealthDataType.SLEEP_AWAKE,
+    HealthDataType.SLEEP_AWAKE_IN_BED,
   ];
 
   static const _types = [
@@ -157,16 +159,17 @@ class GoogleHealthImporter {
 
   // Per-stage minute totals of a night, summed from its segments.
   SleepStages _stageTotals(List<SleepSegment> segments) {
-    final minutes = [0, 0, 0, 0];
+    final minutes = List.filled(SleepStage.values.length, 0);
     for (final segment in segments) {
       minutes[segment.stage.index] +=
           Duration(milliseconds: segment.endMs - segment.startMs).inMinutes;
     }
     return SleepStages(
-      deep: minutes[0],
-      rem: minutes[1],
-      light: minutes[2],
-      awake: minutes[3],
+      deep: minutes[SleepStage.deep.index],
+      rem: minutes[SleepStage.rem.index],
+      light: minutes[SleepStage.light.index],
+      awake: minutes[SleepStage.awake.index],
+      restless: minutes[SleepStage.restless.index],
     );
   }
 
@@ -267,8 +270,6 @@ class GoogleHealthImporter {
       ...respiratory.keys,
       ...segments.keys,
     };
-    final latestSleepKey =
-        segments.keys.isEmpty ? null : segments.keys.reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
     final days = [
       for (final key in keys)
         GoogleHealthDay(
@@ -278,7 +279,7 @@ class GoogleHealthImporter {
           spo2: spo2[key],
           respiratoryRate: respiratory[key],
           sleepStages: segments[key] == null ? null : _stageTotals(segments[key]!),
-          sleepTimeline: key == latestSleepKey ? segments[key] : null,
+          sleepTimeline: segments[key],
         ),
     ];
     days.sort((a, b) => a.dateKey.compareTo(b.dateKey));

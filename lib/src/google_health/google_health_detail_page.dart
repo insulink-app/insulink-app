@@ -24,6 +24,9 @@ class GoogleHealthDetailPage extends StatefulWidget {
 class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
   SportRange _range = const SportRange.preset(30);
 
+  /// Which night the sleep stages + hypnogram show (`dateKey`); null = latest.
+  String? _selectedNightKey;
+
   String get _labelKey => switch (widget.metric) {
     GoogleHealthMetric.restingHr => 'google_health.resting_hr',
     GoogleHealthMetric.sleep => 'google_health.sleep',
@@ -78,14 +81,7 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
               children: [
                 _header(context, scheme, days),
-                if (_latestStages(days) != null) ...[
-                  const SizedBox(height: 16),
-                  _stagesCard(context, scheme, _latestStages(days)!),
-                ],
-                if (_latestTimeline(days) != null) ...[
-                  const SizedBox(height: 16),
-                  _hypnogramCard(context, scheme, _latestTimeline(days)!),
-                ],
+                ..._sleepSection(context, scheme, days),
                 const SizedBox(height: 20),
                 SportRangeSelector(
                   value: _range,
@@ -111,32 +107,81 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
 
   double _value(GoogleHealthDay day) => day.value(widget.metric)!.toDouble();
 
-  /// Latest night's stage split, or null unless this is the sleep page and the
-  /// most recent day carries stage records.
-  SleepStages? _latestStages(List<GoogleHealthDay> days) {
+  /// The sleep page's stage cards for the selected night, with a day pager —
+  /// empty for non-sleep metrics or when no night carries stage records.
+  List<Widget> _sleepSection(
+    BuildContext context,
+    ColorScheme scheme,
+    List<GoogleHealthDay> days,
+  ) {
     if (widget.metric != GoogleHealthMetric.sleep) {
-      return null;
+      return const [];
     }
-    final stages = days.last.sleepStages;
-    return stages != null && !stages.isEmpty ? stages : null;
+    final nights = [
+      for (final day in days)
+        if (day.sleepStages != null && !day.sleepStages!.isEmpty) day,
+    ];
+    if (nights.isEmpty) {
+      return const [];
+    }
+    final index = _nightIndex(nights);
+    final night = nights[index];
+    return [
+      const SizedBox(height: 16),
+      _nightPager(context, scheme, nights, index),
+      const SizedBox(height: 12),
+      _stagesCard(context, scheme, night.sleepStages!),
+      if (night.sleepTimeline != null && night.sleepTimeline!.isNotEmpty) ...[
+        const SizedBox(height: 16),
+        _hypnogramCard(context, scheme, night.sleepTimeline!),
+      ],
+    ];
   }
 
-  /// Latest night's chronological stage timeline, or null unless this is the
-  /// sleep page and the most recent day carries it.
-  List<SleepSegment>? _latestTimeline(List<GoogleHealthDay> days) {
-    if (widget.metric != GoogleHealthMetric.sleep) {
-      return null;
-    }
-    final timeline = days.last.sleepTimeline;
-    return timeline != null && timeline.isNotEmpty ? timeline : null;
+  /// Index of the selected night in [nights], defaulting to the latest.
+  int _nightIndex(List<GoogleHealthDay> nights) {
+    final found = nights.indexWhere((day) => day.dateKey == _selectedNightKey);
+    return found >= 0 ? found : nights.length - 1;
   }
 
-  /// The stage → colour map shared by the totals card and the hypnogram.
-  Map<SleepStage, Color> _stageColors(ColorScheme scheme) => {
-    SleepStage.deep: scheme.primary,
-    SleepStage.rem: scheme.tertiary,
-    SleepStage.light: scheme.primary.withValues(alpha: 0.45),
-    SleepStage.awake: scheme.error.withValues(alpha: 0.7),
+  /// ‹ date › pager to step through nights (chevrons disabled at the ends).
+  Widget _nightPager(
+    BuildContext context,
+    ColorScheme scheme,
+    List<GoogleHealthDay> nights,
+    int index,
+  ) {
+    void select(int next) =>
+        setState(() => _selectedNightKey = nights[next].dateKey);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_left),
+          onPressed: index > 0 ? () => select(index - 1) : null,
+        ),
+        Text(
+          MaterialLocalizations.of(context).formatMediumDate(nights[index].date),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+        IconButton(
+          icon: const Icon(Icons.chevron_right),
+          onPressed: index < nights.length - 1 ? () => select(index + 1) : null,
+        ),
+      ],
+    );
+  }
+
+  /// Fixed, conventional sleep-stage colours (deep→awake), distinct in both
+  /// light and dark — the single source of truth for the totals card AND the
+  /// hypnogram. Theme-derived colours collided here (primary == tertiary), so
+  /// deep and REM looked identical.
+  static const Map<SleepStage, Color> _stageColors = {
+    SleepStage.deep: Color(0xFF7C4DFF), // violet
+    SleepStage.light: Color(0xFF4FC3F7), // light blue
+    SleepStage.rem: Color(0xFF1DE9B6), // turquoise
+    SleepStage.awake: Color(0xFFEF5350), // light red
+    SleepStage.restless: Color(0xFFF06292), // pink
   };
 
   Widget _hypnogramCard(
@@ -165,7 +210,7 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
           const SizedBox(height: 16),
           SleepHypnogram(
             segments: timeline,
-            colors: _stageColors(scheme),
+            colors: _stageColors,
             labels: {
               for (final stage in SleepStage.values)
                 stage: Locales.string(
@@ -180,27 +225,13 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
     );
   }
 
-  /// Deep / REM / Light / Awake, in the display order and colours of the card.
-  List<({String key, Color color, int minutes})> _stageRows(
-    ColorScheme scheme,
-    SleepStages stages,
-  ) => [
-    (key: 'google_health.sleep_stage.deep', color: scheme.primary, minutes: stages.deep),
-    (
-      key: 'google_health.sleep_stage.rem',
-      color: scheme.tertiary,
-      minutes: stages.rem,
-    ),
-    (
-      key: 'google_health.sleep_stage.light',
-      color: scheme.primary.withValues(alpha: 0.45),
-      minutes: stages.light,
-    ),
-    (
-      key: 'google_health.sleep_stage.awake',
-      color: scheme.error.withValues(alpha: 0.7),
-      minutes: stages.awake,
-    ),
+  /// Stage rows in display order (deepest first), each with its colour + minutes.
+  List<({String key, Color color, int minutes})> _stageRows(SleepStages stages) => [
+    (key: 'google_health.sleep_stage.deep', color: _stageColors[SleepStage.deep]!, minutes: stages.deep),
+    (key: 'google_health.sleep_stage.light', color: _stageColors[SleepStage.light]!, minutes: stages.light),
+    (key: 'google_health.sleep_stage.rem', color: _stageColors[SleepStage.rem]!, minutes: stages.rem),
+    (key: 'google_health.sleep_stage.restless', color: _stageColors[SleepStage.restless]!, minutes: stages.restless),
+    (key: 'google_health.sleep_stage.awake', color: _stageColors[SleepStage.awake]!, minutes: stages.awake),
   ];
 
   Widget _stagesCard(
@@ -208,7 +239,7 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
     ColorScheme scheme,
     SleepStages stages,
   ) {
-    final rows = _stageRows(scheme, stages);
+    final rows = _stageRows(stages);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -242,7 +273,8 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          for (final row in rows) _stageRow(context, scheme, row),
+          for (final row in rows)
+            if (row.minutes > 0) _stageRow(context, scheme, row),
         ],
       ),
     );

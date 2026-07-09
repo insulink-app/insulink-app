@@ -320,7 +320,8 @@
       "deep": "Tiefschlaf",
       "rem": "REM",
       "light": "Leichtschlaf",
-      "awake": "Wach"
+      "awake": "Wach",
+      "restless": "Unruhe"
     },
     "hr_min": "Min",
     "hr_max": "Max",
