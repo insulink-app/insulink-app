@@ -337,7 +337,25 @@
   },
   "nutrition": {
     "label": "Ernährung",
-    "placeholder": "Bald verfügbar"
+    "hydration": {
+      "_": "Trinken",
+      "settings": "Einstellungen",
+      "goal_title": "Tagesziel",
+      "free": "Frei",
+      "free_title": "Menge eingeben",
+      "free_hint": "z. B. 300",
+      "add": "Hinzufügen"
+    },
+    "food": {
+      "_": "Produkte",
+      "empty": "Barcode scannen, um ein Produkt hinzuzufügen",
+      "scan_hint": "Produkt-Barcode in den Rahmen halten",
+      "not_found": "Produkt nicht gefunden",
+      "carbs": "KH",
+      "fat": "Fett",
+      "protein": "Eiweiß",
+      "kcal": "kcal"
+    }
   },
   "sport": {
     "label": "Sport",

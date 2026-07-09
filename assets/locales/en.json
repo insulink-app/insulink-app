@@ -337,7 +337,25 @@
   },
   "nutrition": {
     "label": "Nutrition",
-    "placeholder": "Coming soon"
+    "hydration": {
+      "_": "Hydration",
+      "settings": "Settings",
+      "goal_title": "Daily goal",
+      "free": "Custom",
+      "free_title": "Enter amount",
+      "free_hint": "e.g. 300",
+      "add": "Add"
+    },
+    "food": {
+      "_": "Products",
+      "empty": "Scan a barcode to add a product",
+      "scan_hint": "Point the product barcode into the frame",
+      "not_found": "Product not found",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "protein": "Protein",
+      "kcal": "kcal"
+    }
   },
   "sport": {
     "label": "Sport",

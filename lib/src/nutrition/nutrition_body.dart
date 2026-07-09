@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page_body.dart';
-import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/nutrition/food/food_section.dart';
+import 'package:insulink/src/nutrition/hydration/hydration_card.dart';
 
-/// Placeholder nutrition tab — content lands here later.
+/// Nutrition tab. Hydration tracking up top; more sections land here later.
 class NutritionBody extends AppPageBody {
   NutritionBody({super.key})
     : super(
@@ -14,11 +14,17 @@ class NutritionBody extends AppPageBody {
 
   @override
   Widget content(BuildContext context) {
-    return Center(
-      child: LocaleText(
-        'nutrition.placeholder',
-        style: TextStyle(fontSize: 15, color: Colors.grey[500]),
+    return ListView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
       ),
+      // Bottom padding keeps the centered injection FAB (page.dart) clear.
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 64),
+      children: const [
+        HydrationCard(),
+        SizedBox(height: 28),
+        FoodSection(),
+      ],
     );
   }
 }

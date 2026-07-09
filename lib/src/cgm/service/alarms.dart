@@ -257,8 +257,8 @@ class G7AlarmManager {
       return;
     }
     final glucose = await ProfileGlucoseState.load();
-    _rearmAdvisories(mgdl, glucose);
     final forecast = await _forecast(mgdl, trendPerMin);
+    _rearmAdvisories(forecast, glucose);
     final level = advisoryLevelFor(
       mgdl,
       forecast,
@@ -288,16 +288,19 @@ class G7AlarmManager {
     }
   }
 
-  /// Re-arm an advisory once the actual glucose has recovered clearly past the
-  /// alarm line (risen above `low + margin`, or fallen below `high - margin`).
-  /// This is the "erst wenn wieder gestiegen" guard: after one pre-warning the
-  /// zone stays disarmed until a real recovery, so a forecast oscillating around
-  /// the threshold can't re-fire the same low/high episode again and again.
-  void _rearmAdvisories(int mgdl, ProfileGlucoseState glucose) {
-    if (mgdl >= glucose.low + _advisoryRearmMarginMgdl) {
+  /// Re-arm an advisory once the FORECAST has recovered clearly past the alarm
+  /// line (projected low back above `low + margin`, or projected high back below
+  /// `high - margin`). Keyed on the forecast, not the current value: the advisory
+  /// fires while glucose is still in range, so the current value is usually
+  /// already past the re-arm line at the moment it fires — re-arming on it would
+  /// re-fire the same episode on the very next reading. Waiting for the forecast
+  /// itself to recover is the real "episode over" signal, so a projection that
+  /// keeps threatening (or wobbles around the threshold) can't nag repeatedly.
+  void _rearmAdvisories(({double low, double high}) forecast, ProfileGlucoseState glucose) {
+    if (forecast.low >= glucose.low + _advisoryRearmMarginMgdl) {
       _lowAdvisoryArmed = true;
     }
-    if (mgdl <= glucose.high - _advisoryRearmMarginMgdl) {
+    if (forecast.high <= glucose.high - _advisoryRearmMarginMgdl) {
       _highAdvisoryArmed = true;
     }
   }
