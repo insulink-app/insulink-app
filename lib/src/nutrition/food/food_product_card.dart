@@ -2,38 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 
-/// One stored product: name/brand and its per-100 g macros, with a remove
-/// button.
+/// One stored product: name/brand, its serving/unit, and per-100 g macros. Tap
+/// opens the portion picker; the × removes it.
 class FoodProductCard extends StatelessWidget {
   const FoodProductCard({
     super.key,
     required this.product,
+    required this.onTap,
     required this.onRemove,
   });
 
   final FoodProduct product;
+  final VoidCallback onTap;
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.dividerColor),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: _details(theme)),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: Icon(Icons.close, size: 18, color: Colors.grey[500]),
-            onPressed: onRemove,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: theme.dividerColor),
           ),
-        ],
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _details(theme)),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: Icon(Icons.close, size: 18, color: Colors.grey[500]),
+                onPressed: onRemove,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -48,16 +57,27 @@ class FoodProductCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
-        if (product.brand.isNotEmpty)
-          Text(
-            product.brand,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
+        _subtitle(theme),
         const SizedBox(height: 10),
         _macros(theme),
       ],
+    );
+  }
+
+  /// Brand and/or the reported serving, whichever exist.
+  Widget _subtitle(ThemeData theme) {
+    final parts = [
+      if (product.brand.isNotEmpty) product.brand,
+      if (product.servingLabel.isNotEmpty) product.servingLabel,
+    ];
+    if (parts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Text(
+      parts.join(' · '),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
     );
   }
 

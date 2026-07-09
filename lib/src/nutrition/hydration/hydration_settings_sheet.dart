@@ -3,13 +3,14 @@ import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_models.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
+import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:provider/provider.dart';
 
 /// Hydration settings, in the app's standard editor sheet. Holds the daily goal
 /// (0.25 L steps) for now — more settings land here later.
-Future<void> showHydrationSettingsSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
+Future<void> showHydrationSettingsSheet(BuildContext context) async {
+  await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -18,6 +19,10 @@ Future<void> showHydrationSettingsSheet(BuildContext context) {
       child: const _HydrationSettingsSheet(),
     ),
   );
+  // Sync the (possibly changed) goal to the backend once editing is done.
+  if (context.mounted) {
+    await ProfileSettings().push(context);
+  }
 }
 
 class _HydrationSettingsSheet extends StatelessWidget {

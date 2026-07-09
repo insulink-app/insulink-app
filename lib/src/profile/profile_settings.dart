@@ -13,6 +13,7 @@ import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/nutrition/hydration/nutrition_store.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 
@@ -36,6 +37,7 @@ class ProfileSettings {
     final bolus = await ProfileBolusState.load();
     final prediction = await ProfilePredictionState.load();
     const sport = SportStore();
+    const nutrition = NutritionStore();
     final notifications =
         (await _storage.read(key: "notifications")) != "false";
     return {
@@ -72,6 +74,9 @@ class ProfileSettings {
       "sport.distance_goal_m": "${await sport.loadDistanceGoalM()}",
       "sport.calories_goal": "${await sport.loadCaloriesGoal()}",
       "sport.weight_goal_kg": "${await sport.loadWeightGoalKg()}",
+      // Hydration daily goal (ml) — key matches NutritionStore so pull() writes
+      // it back where NutritionState reads it.
+      NutritionStore.goalKey: "${await nutrition.loadGoalMl()}",
       // Box layouts (which boxes + order) of the Today grid and the overview,
       // so they survive logout/login.
       TodayLayoutState.key: await TodayLayoutState.loadRaw(),

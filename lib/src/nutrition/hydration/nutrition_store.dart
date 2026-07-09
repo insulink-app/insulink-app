@@ -8,7 +8,10 @@ import 'nutrition_models.dart';
 /// drinks. Same shape as [SportStore] — plain JSON blobs in secure storage,
 /// loaded once into the [NutritionState] ChangeNotifier.
 class NutritionStore {
-  static const _kGoal = 'nutrition.water_goal_ml';
+  /// Storage key for the daily goal — public so [ProfileSettings] can sync it to
+  /// the backend and write the server's value straight back here.
+  static const goalKey = 'nutrition.water_goal_ml';
+  static const _kGoal = goalKey;
   static const _kEntries = 'nutrition.water_entries';
   static const _entryCap = 500;
 

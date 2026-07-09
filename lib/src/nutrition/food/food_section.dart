@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/nutrition/food/barcode_scan_page.dart';
+import 'package:insulink/src/nutrition/food/food_editor_sheet.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_product_card.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
@@ -19,8 +20,9 @@ class FoodSection extends StatefulWidget {
 class _FoodSectionState extends State<FoodSection> {
   bool _loading = false;
 
-  /// Scan a barcode, look it up in Open Food Facts, and store the result. Shows
-  /// a message when the product is unknown or the lookup fails.
+  /// Scan a barcode, look it up in Open Food Facts, and open the editor
+  /// pre-filled — so the user can complete missing fields (or fill everything in
+  /// when the barcode is unknown) before saving.
   Future<void> _scan() async {
     final barcode = await scanBarcode(context);
     if (barcode == null || !mounted) {
@@ -32,11 +34,10 @@ class _FoodSectionState extends State<FoodSection> {
       return;
     }
     setState(() => _loading = false);
-    if (product == null) {
-      _toast('nutrition.food.not_found');
-      return;
-    }
-    await context.read<FoodState>().addProduct(product);
+    await showFoodEditor(
+      context,
+      product: product ?? FoodProduct.blank(barcode: barcode),
+    );
   }
 
   Future<FoodProduct?> _lookup(String barcode) async {
@@ -45,12 +46,6 @@ class _FoodSectionState extends State<FoodSection> {
     } catch (_) {
       return null;
     }
-  }
-
-  void _toast(String key) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: LocaleText(key)));
   }
 
   @override
@@ -75,15 +70,27 @@ class _FoodSectionState extends State<FoodSection> {
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         _loading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+            ? const Padding(
+                padding: EdgeInsets.all(10),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               )
-            : IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.qr_code_scanner, size: 22),
-                onPressed: _scan,
+            : Row(
+                children: [
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.add, size: 24),
+                    onPressed: () => showFoodEditor(context),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.qr_code_scanner, size: 22),
+                    onPressed: _scan,
+                  ),
+                ],
               ),
       ],
     );
@@ -98,6 +105,7 @@ class _FoodSectionState extends State<FoodSection> {
             padding: const EdgeInsets.only(bottom: 8),
             child: FoodProductCard(
               product: product,
+              onTap: () => showFoodEditor(context, product: product),
               onRemove: () => state.removeProduct(product),
             ),
           ),
