@@ -61,6 +61,9 @@
     <!-- Let glucose alarms sound through "Do Not Disturb" (user grants DnD access) -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
+    <!-- Biometric confirmation (fingerprint) before delivering a bolus -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
     <uses-feature android:name="android.hardware.bluetooth_le"
         android:required="true" />
 

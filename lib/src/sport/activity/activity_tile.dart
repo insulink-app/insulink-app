@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/activity_entry.dart';
 import 'package:insulink/src/sport/logbook/workout_session_detail_page.dart';
+import 'package:insulink/src/sport/sport_leading_badge.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/cardio_training_tile.dart';
 import 'package:insulink/src/sport/training_state.dart';
@@ -45,7 +46,7 @@ class _RoutineSessionTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
       ),
-      leading: Icon(Icons.event_available, color: scheme.primary),
+      leading: const SportLeadingBadge(icon: Icons.event_available),
       title: Text(
         routine?.name ??
             Locales.string(context, 'sport.logbook.deleted_routine'),

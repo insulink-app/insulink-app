@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 
-/// One stored product: name/brand, its serving/unit, and per-100 g macros. Tap
-/// opens the portion picker; the × removes it.
+/// One stored product: a unit-aware icon badge, name/brand, and its per-100 g
+/// macros as color-coded pills. Tap opens the portion picker; the × removes it.
 class FoodProductCard extends StatelessWidget {
   const FoodProductCard({
     super.key,
@@ -16,28 +16,37 @@ class FoodProductCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onRemove;
 
+  static const _carbsColor = Color(0xFF3B82F6);
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(14),
+      color: scheme.onSurface.withValues(alpha: 0.03),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+          padding: const EdgeInsets.fromLTRB(12, 12, 6, 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: theme.dividerColor),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: scheme.onSurface.withValues(alpha: 0.07)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _details(theme)),
+              _badge(scheme),
+              const SizedBox(width: 12),
+              Expanded(child: _details(scheme)),
               IconButton(
                 visualDensity: VisualDensity.compact,
-                icon: Icon(Icons.close, size: 18, color: Colors.grey[500]),
+                icon: Icon(
+                  Icons.close,
+                  size: 18,
+                  color: scheme.onSurface.withValues(alpha: 0.4),
+                ),
                 onPressed: onRemove,
               ),
             ],
@@ -47,7 +56,27 @@ class FoodProductCard extends StatelessWidget {
     );
   }
 
-  Widget _details(ThemeData theme) {
+  /// A round icon badge tinted with the primary color: a drink glass for `ml`
+  /// products, cutlery for solids.
+  Widget _badge(ColorScheme scheme) {
+    final isDrink = product.unit == 'ml';
+    return Container(
+      width: 44,
+      height: 44,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        isDrink ? Icons.local_drink_rounded : Icons.restaurant_rounded,
+        color: scheme.primary,
+        size: 22,
+      ),
+    );
+  }
+
+  Widget _details(ColorScheme scheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -57,15 +86,13 @@ class FoodProductCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
-        _subtitle(theme),
-        const SizedBox(height: 10),
-        _macros(theme),
+        _subtitle(scheme),
       ],
     );
   }
 
   /// Brand and/or the reported serving, whichever exist.
-  Widget _subtitle(ThemeData theme) {
+  Widget _subtitle(ColorScheme scheme) {
     final parts = [
       if (product.brand.isNotEmpty) product.brand,
       if (product.servingLabel.isNotEmpty) product.servingLabel,
@@ -73,43 +100,46 @@ class FoodProductCard extends StatelessWidget {
     if (parts.isEmpty) {
       return const SizedBox.shrink();
     }
-    return Text(
-      parts.join(' · '),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Text(
+        parts.join(' · '),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 12,
+          color: scheme.onSurface.withValues(alpha: 0.55),
+        ),
+      ),
     );
   }
 
-  Widget _macros(ThemeData theme) {
-    final accent = theme.colorScheme.primary;
-    return Row(
-      children: [
-        _macro('nutrition.food.carbs', product.carbs100g, 'g', accent),
-        _macro('nutrition.food.fat', product.fat100g, 'g', accent),
-        _macro('nutrition.food.protein', product.protein100g, 'g', accent),
-        _macro('nutrition.food.kcal', product.kcal100g, '', accent),
-      ],
-    );
-  }
-
-  Widget _macro(String labelKey, double value, String unit, Color accent) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _pill(String labelKey, double value, String unit, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             '${_format(value)}$unit',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: accent,
+              color: color,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(width: 4),
           LocaleText(
             labelKey,
-            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: color.withValues(alpha: 0.9),
+            ),
           ),
         ],
       ),

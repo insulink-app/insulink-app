@@ -44,9 +44,15 @@ class TrainingMetricsChart extends StatefulWidget {
   State<TrainingMetricsChart> createState() => _TrainingMetricsChartState();
 }
 
-class _TrainingMetricsChartState extends State<TrainingMetricsChart> {
+class _TrainingMetricsChartState extends State<TrainingMetricsChart>
+    with AutomaticKeepAliveClientMixin {
   List<({DateTime at, int bpm})> _heart = const [];
   bool _loading = true;
+
+  // Keep the state alive so scrolling the chart off-screen in the detail
+  // ListView doesn't dispose it and re-run _loadHeart() on scroll-back.
+  @override
+  bool get wantKeepAlive => true;
 
   /// Whole minute the last haptic tick fired for, so scrubbing buzzes at most
   /// once per minute crossed instead of on every (dense) heart-rate sample.
@@ -127,6 +133,7 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final scheme = Theme.of(context).colorScheme;
     final glucose = _glucoseSeries;
     final heart = _heartSeries;

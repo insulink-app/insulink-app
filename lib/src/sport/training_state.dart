@@ -151,6 +151,14 @@ class TrainingState extends ChangeNotifier {
     await _saveRoutines();
   }
 
+  /// Reorders the routine list. [newIndex] is already corrected for the removed
+  /// entry (ReorderableListView.onReorderItem semantics).
+  Future<void> reorderRoutines(int oldIndex, int newIndex) async {
+    _routines.insert(newIndex, _routines.removeAt(oldIndex));
+    notifyListeners();
+    await _saveRoutines();
+  }
+
   /// Copies a routine (fresh routine id, fresh item ids, name + [copySuffix]).
   Future<void> duplicateRoutine(String id, String copySuffix) async {
     final source = routineById(id);

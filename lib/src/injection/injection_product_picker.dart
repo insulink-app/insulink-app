@@ -1,0 +1,198 @@
+import 'package:flutter/material.dart';
+import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/nutrition/food/food_add_actions.dart';
+import 'package:insulink/src/nutrition/food/food_product.dart';
+import 'package:insulink/src/nutrition/food/food_state.dart';
+import 'package:provider/provider.dart';
+
+/// Searchable bottom-sheet list to pick one saved product. Also offers the same
+/// add / search / scan actions as the nutrition page ([FoodAddActions]), so a
+/// product can be created on the spot and then picked. Returns the chosen
+/// [FoodProduct] (or null when dismissed).
+Future<FoodProduct?> pickFoodProduct(BuildContext context) {
+  return showModalBottomSheet<FoodProduct>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => const _ProductPicker(),
+  );
+}
+
+class _ProductPicker extends StatefulWidget {
+  const _ProductPicker();
+
+  @override
+  State<_ProductPicker> createState() => _ProductPickerState();
+}
+
+class _ProductPickerState extends State<_ProductPicker> {
+  final TextEditingController _search = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _search.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  List<FoodProduct> _filtered(List<FoodProduct> products) {
+    final query = _search.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return products;
+    }
+    return [
+      for (final product in products)
+        if ('${product.name} ${product.brand}'.toLowerCase().contains(query))
+          product,
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final products = context.watch<FoodState>().products;
+    final filtered = _filtered(products);
+    return Padding(
+      padding: EdgeInsets.only(top: 12, bottom: bottomInset),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 8, 8),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                Expanded(
+                  child: LocaleText(
+                    'injection.products.pick',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const FoodAddActions(),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: TextField(
+              controller: _search,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText:
+                    Locales.string(context, 'injection.products.search'),
+              ),
+            ),
+          ),
+          if (products.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(28),
+              child: LocaleText('nutrition.food.empty',
+                  textAlign: TextAlign.center),
+            )
+          else if (filtered.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(28),
+              child: LocaleText('injection.products.none',
+                  textAlign: TextAlign.center),
+            )
+          else
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                itemCount: filtered.length,
+                itemBuilder: (context, index) => _tile(filtered[index]),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tile(FoodProduct product) {
+    final scheme = Theme.of(context).colorScheme;
+    final subtitle = [
+      if (product.brand.isNotEmpty) product.brand,
+      Locales.string(context, 'injection.products.carbs_per_100',
+          params: [product.carbs100g.toStringAsFixed(0)]),
+    ].join(' · ');
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: scheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => Navigator.of(context).pop(product),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+            child: Row(
+              children: [
+                _badge(scheme, product.unit == 'ml'),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name.isEmpty ? product.barcode : product.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right,
+                    color: scheme.onSurface.withValues(alpha: 0.3)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _badge(ColorScheme scheme, bool isDrink) {
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        isDrink ? Icons.local_drink_rounded : Icons.restaurant_rounded,
+        color: scheme.primary,
+        size: 20,
+      ),
+    );
+  }
+}

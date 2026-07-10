@@ -351,7 +351,11 @@
     "food": {
       "_": "Products",
       "empty": "Scan a barcode to add a product",
+      "delete_confirm": "Delete this product?",
       "scan_hint": "Point the product barcode into the frame",
+      "search_hint": "Search the product database…",
+      "search_start": "Type at least 2 characters to search",
+      "search_none": "No products found",
       "name": "Name",
       "brand": "Brand",
       "serving_size": "Serving size",
@@ -360,7 +364,9 @@
       "carbs": "Carbs",
       "fat": "Fat",
       "protein": "Protein",
-      "kcal": "kcal"
+      "kcal": "kcal",
+      "show_more": "Show more",
+      "all": "All products"
     }
   },
   "sport": {
@@ -669,9 +675,33 @@
     "title": "Bolus calculator",
     "carbs": "Carbohydrates",
     "glucose": "Current glucose",
+    "carbs_tab": "Carbs",
+    "products_tab": "Products",
     "bolus": {
-      "_": "Suggested bolus",
-      "value": "# U"
+      "_": "Bolus",
+      "value": "# U",
+      "unit": "U"
+    },
+    "products": {
+      "add": "Add product",
+      "empty": "No products selected yet",
+      "total": "Total carbs",
+      "carbs": "carbs",
+      "carbs_per_100": "# g carbs / 100 g",
+      "amount": "Amount",
+      "servings": "Servings",
+      "serving_one": "serving",
+      "confirm": "Add",
+      "search": "Search products",
+      "none": "No matching products",
+      "pick": "Choose product"
+    },
+    "confirm": {
+      "title": "Confirm bolus",
+      "button": "Confirm",
+      "reason": "Confirm your bolus",
+      "success": "Bolus confirmed",
+      "failed": "Authentication failed"
     },
     "next": "Next"
   },
