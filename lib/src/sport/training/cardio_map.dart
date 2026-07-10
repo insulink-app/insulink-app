@@ -13,11 +13,16 @@ class CardioMap extends StatelessWidget {
     this.controller,
     this.live = false,
     this.fallbackCenter,
+    this.highlight,
   });
 
   final List<TrackPoint> points;
   final MapController? controller;
   final bool live;
+
+  /// A position to spotlight on the route (the chart-hover marker) — drawn on
+  /// top of the route in a contrasting color.
+  final LatLng? highlight;
 
   /// Where to center when no route point exists yet (e.g. the last-known
   /// position while a live recording waits for its first fix).
@@ -72,7 +77,7 @@ class CardioMap extends StatelessWidget {
               Polyline(points: route, strokeWidth: 5, color: primary),
             ],
           ),
-        if (route.isNotEmpty)
+        if (live && route.isNotEmpty)
           MarkerLayer(
             markers: [
               Marker(
@@ -89,7 +94,56 @@ class CardioMap extends StatelessWidget {
               ),
             ],
           ),
+        if (!live && route.length >= 2)
+          MarkerLayer(
+            markers: [
+              _badgeMarker(route.first, Icons.play_arrow_rounded),
+              _badgeMarker(route.last, Icons.sports_score_rounded),
+            ],
+          ),
+        if (highlight != null)
+          MarkerLayer(
+            markers: [
+              Marker(
+                point: highlight!,
+                width: 24,
+                height: 24,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
       ],
+    );
+  }
+
+  /// A neutral round start/finish badge — same muted color for both, told apart
+  /// by the icon (▶ = start, checkered flag = finish) so the ends read clearly
+  /// without a loud red/green.
+  Marker _badgeMarker(LatLng point, IconData icon) {
+    return Marker(
+      point: point,
+      width: 30,
+      height: 30,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF37474F),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2.5),
+        ),
+        child: Icon(icon, color: Colors.white, size: 17),
+      ),
     );
   }
 

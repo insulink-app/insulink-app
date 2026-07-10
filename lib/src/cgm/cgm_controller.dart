@@ -289,6 +289,12 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     return store.archiveRange(now.subtract(window), now);
   }
 
+  /// Long-term glucose archive over an explicit `[from, to]` window, keyed by
+  /// epoch-minute — the source for a completed training's glucose overlay.
+  SplayTreeMap<int, int> archiveBetween(DateTime from, DateTime to) {
+    return _store?.archiveRange(from, to) ?? SplayTreeMap<int, int>();
+  }
+
   /// Builds a reading from a persisted/IPC map. The trend field is keyed
   /// differently by the cached headline ('trend') and the live service payload
   /// ('trendTenths'); the other fixed fields aren't carried across.

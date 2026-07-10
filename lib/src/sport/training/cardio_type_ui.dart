@@ -29,3 +29,10 @@ String formatDuration(Duration duration) {
 
 /// Speed as km/h with one decimal.
 String formatSpeed(double kmh) => '${sportDecimal(kmh, 1)} km/h';
+
+/// Pace as M:SS per km (from seconds per km).
+String formatPace(double secPerKm) {
+  final total = secPerKm.round();
+  final seconds = (total % 60).toString().padLeft(2, '0');
+  return '${total ~/ 60}:$seconds /km';
+}
