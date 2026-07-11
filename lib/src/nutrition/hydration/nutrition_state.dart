@@ -10,8 +10,16 @@ class NutritionState extends ChangeNotifier {
   final NutritionStore _store;
   final List<WaterEntry> _entries;
   int _goalMl;
+  int _carbsGoalG;
+  int _proteinGoalG;
 
-  NutritionState(this._store, this._entries, this._goalMl);
+  NutritionState(
+    this._store,
+    this._entries,
+    this._goalMl,
+    this._carbsGoalG,
+    this._proteinGoalG,
+  );
 
   static Future<NutritionState> load() async {
     const store = NutritionStore();
@@ -19,11 +27,22 @@ class NutritionState extends ChangeNotifier {
       store,
       await store.loadEntries(),
       await store.loadGoalMl(),
+      await store.loadCarbsGoalG(),
+      await store.loadProteinGoalG(),
     );
   }
 
   /// Daily goal in litres (stored as ml).
   double get goalLitres => _goalMl / 1000;
+
+  /// Daily carb goal in grams.
+  int get carbsGoalG => _carbsGoalG;
+
+  /// Daily protein goal in grams.
+  int get proteinGoalG => _proteinGoalG;
+
+  /// All logged drinks (for the water history/detail page).
+  List<WaterEntry> get entries => List.unmodifiable(_entries);
 
   /// Drinks logged since local midnight, newest last.
   List<WaterEntry> get todayEntries {
@@ -69,5 +88,25 @@ class NutritionState extends ChangeNotifier {
     _goalMl = ml;
     notifyListeners();
     await _store.saveGoalMl(ml);
+  }
+
+  Future<void> setCarbsGoalG(double grams) async {
+    final rounded = grams.clamp(20, 800).round();
+    if (rounded == _carbsGoalG) {
+      return;
+    }
+    _carbsGoalG = rounded;
+    notifyListeners();
+    await _store.saveCarbsGoalG(rounded);
+  }
+
+  Future<void> setProteinGoalG(double grams) async {
+    final rounded = grams.clamp(10, 400).round();
+    if (rounded == _proteinGoalG) {
+      return;
+    }
+    _proteinGoalG = rounded;
+    notifyListeners();
+    await _store.saveProteinGoalG(rounded);
   }
 }

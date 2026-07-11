@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -24,7 +25,7 @@ class PatternsView extends StatelessWidget {
     // hour-of-day comes straight from the timestamp — no session start needed.
     final pattern = HourlyGlucosePattern(controller.statsArchive).build();
     if (pattern.isEmpty) {
-      return Center(child: LocaleText('analysis.empty'));
+      return const EmptyState(icon: Icons.insights_rounded, titleKey: 'analysis.empty');
     }
 
     return Padding(

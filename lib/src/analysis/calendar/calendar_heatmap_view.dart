@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -20,7 +21,7 @@ class CalendarHeatmapView extends StatelessWidget {
     final colors = Theme.of(context).extension<GlucoseColors>()!;
     final tirByDay = DailyTimeInRange(controller.statsArchive, glucose).build();
     if (tirByDay.isEmpty) {
-      return Center(child: LocaleText('analysis.empty'));
+      return const EmptyState(icon: Icons.insights_rounded, titleKey: 'analysis.empty');
     }
     final days = tirByDay.keys.toList()..sort();
     return SingleChildScrollView(

@@ -12,11 +12,19 @@ class NutritionStore {
   /// the backend and write the server's value straight back here.
   static const goalKey = 'nutrition.water_goal_ml';
   static const _kGoal = goalKey;
+  static const _kCarbsGoal = 'nutrition.carbs_goal_g';
+  static const _kProteinGoal = 'nutrition.protein_goal_g';
   static const _kEntries = 'nutrition.water_entries';
   static const _entryCap = 500;
 
   /// Default daily goal: 2 L.
   static const defGoalMl = 2000;
+
+  /// Default daily carb goal (g).
+  static const defCarbsGoalG = 250;
+
+  /// Default daily protein goal (g).
+  static const defProteinGoalG = 100;
 
   final FlutterSecureStorage _storage;
 
@@ -26,6 +34,19 @@ class NutritionStore {
       int.tryParse(await _storage.read(key: _kGoal) ?? '') ?? defGoalMl;
 
   Future<void> saveGoalMl(int ml) => _storage.write(key: _kGoal, value: '$ml');
+
+  Future<int> loadCarbsGoalG() async =>
+      int.tryParse(await _storage.read(key: _kCarbsGoal) ?? '') ?? defCarbsGoalG;
+
+  Future<void> saveCarbsGoalG(int grams) =>
+      _storage.write(key: _kCarbsGoal, value: '$grams');
+
+  Future<int> loadProteinGoalG() async =>
+      int.tryParse(await _storage.read(key: _kProteinGoal) ?? '') ??
+      defProteinGoalG;
+
+  Future<void> saveProteinGoalG(int grams) =>
+      _storage.write(key: _kProteinGoal, value: '$grams');
 
   Future<List<WaterEntry>> loadEntries() async {
     final raw = await _storage.read(key: _kEntries);

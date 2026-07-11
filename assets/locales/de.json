@@ -337,6 +337,22 @@
   },
   "nutrition": {
     "label": "Ernährung",
+    "today": "Heute",
+    "settings": "Ziele",
+    "carbs_goal": "Kohlenhydrat-Ziel",
+    "protein_goal": "Eiweiß-Ziel",
+    "stats": {
+      "carbs": "Kohlenhydrate",
+      "protein": "Eiweiß",
+      "bolus": "Bolus",
+      "meals": "Mahlzeiten"
+    },
+    "detail": {
+      "latest": "Zuletzt",
+      "average": "Durchschnitt",
+      "total": "Gesamt",
+      "history": "Verlauf"
+    },
     "hydration": {
       "_": "Trinken",
       "settings": "Einstellungen",
@@ -367,6 +383,16 @@
       "kcal": "kcal",
       "show_more": "Mehr anzeigen",
       "all": "Alle Produkte"
+    },
+    "meals": {
+      "_": "Mahlzeiten",
+      "empty": "Noch keine Mahlzeiten",
+      "empty_hint": "Sie erscheinen hier, sobald du einen Bolus abgibst.",
+      "products": "Produkte",
+      "products_count": "# Produkte",
+      "show_more": "Mehr anzeigen",
+      "delete": "Mahlzeit löschen",
+      "delete_confirm": "Diese Mahlzeit löschen?"
     }
   },
   "sport": {
@@ -375,7 +401,8 @@
     "layout": {
       "title": "Boxen anpassen",
       "subtitle": "Boxen ein-/ausblenden und anordnen",
-      "hint": "Wähle, welche Boxen unter „Heute“ erscheinen, und ziehe sie in deine gewünschte Reihenfolge."
+      "hint": "Wähle, welche Boxen unter „Heute“ erscheinen, und ziehe sie in deine gewünschte Reihenfolge.",
+      "search": "Boxen suchen"
     },
     "copy": "Kopieren",
     "copy_suffix": " (Kopie)",

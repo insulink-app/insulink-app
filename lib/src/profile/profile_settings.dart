@@ -14,6 +14,7 @@ import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_store.dart';
+import 'package:insulink/src/nutrition/stats/nutrition_layout_state.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 
@@ -81,6 +82,7 @@ class ProfileSettings {
       // so they survive logout/login.
       TodayLayoutState.key: await TodayLayoutState.loadRaw(),
       OverviewLayoutState.key: await OverviewLayoutState.loadRaw(),
+      NutritionLayoutState.key: await NutritionLayoutState.loadRaw(),
     };
   }
 

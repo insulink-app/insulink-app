@@ -4,6 +4,7 @@ import 'package:insulink/src/injection/injection_product_picker.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
+import 'package:insulink/src/nutrition/meal/meal.dart';
 
 /// One chosen product with its portion in the product's unit; carbs scale from
 /// the per-100 g value.
@@ -14,16 +15,24 @@ class _Item {
   _Item(this.product, this.grams);
 
   double get carbs => product.carbs100g * grams / 100;
+
+  MealEntry toEntry() => MealEntry(
+    name: product.name.isEmpty ? product.barcode : product.name,
+    unit: product.unit,
+    amount: grams,
+    carbs: carbs,
+    protein: product.protein100g * grams / 100,
+  );
 }
 
 /// "Products" carb source: pick products from the food database (searchable) and
-/// set a portion each via the portion sheet; the summed carbs are reported via
-/// [onCarbsChanged] so the sheet feeds them into the same bolus calculation as
-/// the manual field.
+/// set a portion each via the portion sheet; the picked entries are reported via
+/// [onItemsChanged] so the sheet sums their carbs into the same bolus
+/// calculation as the manual field AND can log them with the meal.
 class InjectionProductsTab extends StatefulWidget {
-  const InjectionProductsTab({super.key, required this.onCarbsChanged});
+  const InjectionProductsTab({super.key, required this.onItemsChanged});
 
-  final void Function(double carbs) onCarbsChanged;
+  final void Function(List<MealEntry> items) onItemsChanged;
 
   @override
   State<InjectionProductsTab> createState() => _InjectionProductsTabState();
@@ -36,7 +45,7 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
 
   void _notify() {
     setState(() {});
-    widget.onCarbsChanged(_totalCarbs);
+    widget.onItemsChanged(_items.map((item) => item.toEntry()).toList());
   }
 
   Future<void> _addProduct() async {

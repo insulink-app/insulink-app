@@ -9,10 +9,10 @@ import 'package:insulink/src/devices/devices_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
+import 'package:insulink/src/overview/overview_boxes.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
 import 'package:insulink/src/overview/overview_section.dart';
 import 'package:insulink/src/overview/overview_sensor_life.dart';
-import 'package:insulink/src/overview/overview_sport_boxes.dart';
 import 'package:insulink/src/overview/overview_time_in_range.dart';
 import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_states.dart';
@@ -140,7 +140,7 @@ class _DataView extends StatelessWidget {
           ),
           const SizedBox(height: 16),
         ],
-        const OverviewSportBoxes(),
+        const OverviewBoxes(),
         const SizedBox(height: 48),
       ],
     );

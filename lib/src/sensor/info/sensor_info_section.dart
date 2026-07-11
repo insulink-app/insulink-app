@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/empty_state.dart';
 
 import '../../localization/locale_text.dart';
 import 'sensor_attributes.dart';
@@ -14,7 +15,7 @@ class SensorSectionList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (sections.isEmpty) {
-      return Center(child: LocaleText('sensor.info.empty'));
+      return const EmptyState(icon: Icons.sensors_rounded, titleKey: 'sensor.info.empty');
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

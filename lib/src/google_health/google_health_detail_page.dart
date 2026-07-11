@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/google_health/google_health_models.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/google_health/sleep_hypnogram.dart';
@@ -73,7 +74,7 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
         title: LocaleText(_labelKey),
       ),
       body: days.isEmpty
-          ? Center(child: LocaleText('google_health.detail.empty'))
+          ? const EmptyState(icon: Icons.favorite_rounded, titleKey: 'google_health.detail.empty')
           : ListView(
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),

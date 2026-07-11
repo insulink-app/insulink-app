@@ -14,33 +14,43 @@ extension TodayTileInfo on TodayTile {
 }
 
 /// Shared ordered-visibility model for a personalizable grid of summary boxes —
-/// the Sport "Today" grid and the overview boxes. Subclasses only supply the
-/// storage key + defaults; all order/visibility/persistence logic lives here.
-/// Persisted to secure storage AND the synced settings blob (see
-/// [ProfileSettings]) so an arrangement survives logout/login. Google Health tiles keep
-/// their slot even while disconnected; they are just not rendered.
-abstract class TileLayoutState extends ChangeNotifier {
+/// the Sport "Today" grid, the overview boxes, and the nutrition stats. Generic
+/// over the tile enum [T]; subclasses supply the storage key + defaults, and the
+/// static helpers take the enum's `values` since generic type params can't reach
+/// them. Persisted to secure storage AND the synced settings blob (see
+/// [ProfileSettings]) so an arrangement survives logout/login.
+///
+/// [isConditional] tiles keep their slot but are only rendered when the caller
+/// passes `includeConditional` (the Sport tab's Google Health tiles, hidden while
+/// disconnected).
+abstract class TileLayoutState<T extends Enum> extends ChangeNotifier {
   static const _storage = FlutterSecureStorage();
 
-  final List<TodayTile> _order;
-  final Set<TodayTile> _hidden;
+  final List<T> _order;
+  final Set<T> _hidden;
 
   TileLayoutState(this._order, this._hidden);
 
   /// Secure-storage key (also the key inside the settings blob).
   String get storageKey;
 
-  List<TodayTile> get order => List.unmodifiable(_order);
+  /// Tiles that keep a slot but only render when the caller opts in (default:
+  /// none). Overridden by the Sport layout for its Google Health tiles.
+  bool isConditional(T tile) => false;
 
-  bool isVisible(TodayTile tile) => !_hidden.contains(tile);
+  List<T> get order => List.unmodifiable(_order);
 
-  /// The tiles to render: visible, in order, Google Health tiles only when connected.
-  List<TodayTile> visible(bool googleHealthConnected) => [
+  bool isVisible(T tile) => !_hidden.contains(tile);
+
+  /// The tiles to render: visible, in order, conditional tiles only when
+  /// [includeConditional].
+  List<T> visible(bool includeConditional) => [
     for (final tile in _order)
-      if (!_hidden.contains(tile) && (!tile.isGoogleHealth || googleHealthConnected)) tile,
+      if (!_hidden.contains(tile) && (!isConditional(tile) || includeConditional))
+        tile,
   ];
 
-  Future<void> setVisible(TodayTile tile, bool visible) async {
+  Future<void> setVisible(T tile, bool visible) async {
     if (visible) {
       _hidden.remove(tile);
     } else {
@@ -59,7 +69,7 @@ abstract class TileLayoutState extends ChangeNotifier {
   }
 
   /// Moves [from] to just before [to] — the drag-and-drop reorder on the grid.
-  Future<void> moveTile(TodayTile from, TodayTile to) async {
+  Future<void> moveTile(T from, T to) async {
     if (from == to) {
       return;
     }
@@ -74,7 +84,7 @@ abstract class TileLayoutState extends ChangeNotifier {
     await _storage.write(key: storageKey, value: encode(_order, _hidden));
   }
 
-  static String encode(List<TodayTile> order, Set<TodayTile> hidden) {
+  static String encode<T extends Enum>(List<T> order, Set<T> hidden) {
     return jsonEncode({
       'order': [for (final tile in order) tile.name],
       'hidden': [for (final tile in hidden) tile.name],
@@ -84,24 +94,28 @@ abstract class TileLayoutState extends ChangeNotifier {
   static Future<String?> read(String key) => _storage.read(key: key);
 
   /// The persisted blob for [key] (or the encoded default), for the settings sync.
-  static Future<String> rawFor(String key, Set<TodayTile> defaultHidden) async {
-    return (await _storage.read(key: key)) ??
-        encode(TodayTile.values.toList(), defaultHidden);
+  static Future<String> rawFor<T extends Enum>(
+    String key,
+    List<T> allValues,
+    Set<T> defaultHidden,
+  ) async {
+    return (await _storage.read(key: key)) ?? encode(allValues, defaultHidden);
   }
 
   /// Parses a stored blob into (order, hidden), appending any tiles the blob is
   /// missing (an older layout) so newly added metrics still get a slot.
-  static ({List<TodayTile> order, Set<TodayTile> hidden}) parse(
+  static ({List<T> order, Set<T> hidden}) parse<T extends Enum>(
     String? raw,
-    Set<TodayTile> defaultHidden,
+    List<T> allValues,
+    Set<T> defaultHidden,
   ) {
     if (raw == null) {
-      return (order: TodayTile.values.toList(), hidden: {...defaultHidden});
+      return (order: allValues.toList(), hidden: {...defaultHidden});
     }
     final map = jsonDecode(raw) as Map<String, dynamic>;
-    final order = _tiles(map['order']);
-    final hidden = _tiles(map['hidden']).toSet();
-    for (final tile in TodayTile.values) {
+    final order = _tiles(map['order'], allValues);
+    final hidden = _tiles(map['hidden'], allValues).toSet();
+    for (final tile in allValues) {
       if (!order.contains(tile)) {
         order.add(tile);
         if (defaultHidden.contains(tile)) {
@@ -112,13 +126,13 @@ abstract class TileLayoutState extends ChangeNotifier {
     return (order: order, hidden: hidden);
   }
 
-  static List<TodayTile> _tiles(dynamic names) {
+  static List<T> _tiles<T extends Enum>(dynamic names, List<T> allValues) {
     if (names is! List) {
       return [];
     }
     return [
       for (final name in names)
-        for (final tile in TodayTile.values)
+        for (final tile in allValues)
           if (tile.name == name) tile,
     ];
   }

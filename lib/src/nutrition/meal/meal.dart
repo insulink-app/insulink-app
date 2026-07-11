@@ -1,0 +1,75 @@
+/// One logged meal: primarily its total [carbs], plus the glucose and bolus it
+/// was dosed with and when. [entries] holds the picked products when the bolus
+/// was made over the food database (empty for a manual carb entry).
+class Meal {
+  const Meal({
+    required this.time,
+    required this.carbs,
+    required this.glucoseMgdl,
+    required this.bolus,
+    required this.entries,
+  });
+
+  final DateTime time;
+  final double carbs;
+  final int glucoseMgdl;
+  final double bolus;
+  final List<MealEntry> entries;
+
+  /// Total protein across the logged products (0 for a manual carb entry, which
+  /// carries no product breakdown).
+  double get protein => entries.fold(0, (sum, entry) => sum + entry.protein);
+
+  factory Meal.fromJson(Map<String, dynamic> json) => Meal(
+    time: DateTime.fromMillisecondsSinceEpoch(json['time'] as int),
+    carbs: (json['carbs'] as num).toDouble(),
+    glucoseMgdl: json['glucose'] as int,
+    bolus: (json['bolus'] as num).toDouble(),
+    entries: (json['entries'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+        .map(MealEntry.fromJson)
+        .toList(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'time': time.millisecondsSinceEpoch,
+    'carbs': carbs,
+    'glucose': glucoseMgdl,
+    'bolus': bolus,
+    'entries': entries.map((entry) => entry.toJson()).toList(),
+  };
+}
+
+/// One product portion inside a [Meal]: the product [name], the [amount] in its
+/// [unit] (g/ml), and the [carbs] that portion contributed.
+class MealEntry {
+  const MealEntry({
+    required this.name,
+    required this.unit,
+    required this.amount,
+    required this.carbs,
+    required this.protein,
+  });
+
+  final String name;
+  final String unit;
+  final double amount;
+  final double carbs;
+  final double protein;
+
+  factory MealEntry.fromJson(Map<String, dynamic> json) => MealEntry(
+    name: json['name'] as String,
+    unit: json['unit'] as String? ?? 'g',
+    amount: (json['amount'] as num).toDouble(),
+    carbs: (json['carbs'] as num).toDouble(),
+    protein: (json['protein'] as num?)?.toDouble() ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'unit': unit,
+    'amount': amount,
+    'carbs': carbs,
+    'protein': protein,
+  };
+}

@@ -79,6 +79,15 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
           decoration: InputDecoration(
             border: InputBorder.none,
             hintText: Locales.string(context, 'nutrition.food.search_hint'),
+            suffixIcon: _query.text.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      _query.clear();
+                      _onChanged('');
+                    },
+                  ),
           ),
         ),
       ),

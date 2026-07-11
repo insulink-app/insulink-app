@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/exercises/exercise_editor_sheet.dart';
@@ -33,7 +34,7 @@ class ExercisesPage extends StatelessWidget {
         child: const Icon(Icons.add),
       ),
       body: exercises.isEmpty
-          ? Center(child: LocaleText('sport.exercises.empty'))
+          ? const EmptyState(icon: Icons.fitness_center_rounded, titleKey: 'sport.exercises.empty')
           : onPick == null
           ? _reorderable(context, exercises)
           : _picker(context, exercises),

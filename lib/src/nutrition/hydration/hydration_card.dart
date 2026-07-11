@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/track_bar.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/nutrition/hydration/drink_add_row.dart';
-import 'package:insulink/src/nutrition/hydration/hydration_settings_sheet.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_models.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
 import 'package:insulink/src/nutrition/hydration/today_drinks_sheet.dart';
@@ -30,19 +29,9 @@ class HydrationCard extends StatelessWidget {
   }
 
   Widget _sectionHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        LocaleText(
-          'nutrition.hydration',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.tune, size: 20),
-          onPressed: () => showHydrationSettingsSheet(context),
-        ),
-      ],
+    return LocaleText(
+      'nutrition.hydration',
+      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
     );
   }
 

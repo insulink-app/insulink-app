@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/analysis/history/glucose_history_series.dart';
@@ -26,7 +26,7 @@ class GlucoseHistoryView extends StatelessWidget {
     );
     final spots = series.build();
     if (spots.isEmpty) {
-      return Center(child: LocaleText('analysis.empty'));
+      return const EmptyState(icon: Icons.insights_rounded, titleKey: 'analysis.empty');
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 24, 20, 48),

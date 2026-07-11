@@ -337,6 +337,22 @@
   },
   "nutrition": {
     "label": "Nutrition",
+    "today": "Today",
+    "settings": "Goals",
+    "carbs_goal": "Carb goal",
+    "protein_goal": "Protein goal",
+    "stats": {
+      "carbs": "Carbs",
+      "protein": "Protein",
+      "bolus": "Bolus",
+      "meals": "Meals"
+    },
+    "detail": {
+      "latest": "Latest",
+      "average": "Average",
+      "total": "Total",
+      "history": "History"
+    },
     "hydration": {
       "_": "Hydration",
       "settings": "Settings",
@@ -367,6 +383,16 @@
       "kcal": "kcal",
       "show_more": "Show more",
       "all": "All products"
+    },
+    "meals": {
+      "_": "Meals",
+      "empty": "No meals yet",
+      "empty_hint": "They appear here once you deliver a bolus.",
+      "products": "Products",
+      "products_count": "# products",
+      "show_more": "Show more",
+      "delete": "Delete meal",
+      "delete_confirm": "Delete this meal?"
     }
   },
   "sport": {
@@ -375,7 +401,8 @@
     "layout": {
       "title": "Customize boxes",
       "subtitle": "Show, hide and arrange boxes",
-      "hint": "Choose which boxes appear under Today and drag them into the order you want."
+      "hint": "Choose which boxes appear under Today and drag them into the order you want.",
+      "search": "Search boxes"
     },
     "copy": "Copy",
     "copy_suffix": " (copy)",

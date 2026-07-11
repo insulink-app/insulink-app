@@ -3,6 +3,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/activity/tile_layout_editor.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
+import 'package:insulink/src/sport/activity/today_tile_builder.dart';
 import 'package:provider/provider.dart';
 
 /// Card that opens the "Today" box editor — same visual language as the Health
@@ -39,10 +40,12 @@ class TodayLayoutButton extends StatelessWidget {
     final state = context.read<TodayLayoutState>();
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => TileLayoutEditor(
+        builder: (_) => TileLayoutEditor<TodayTile>(
           state: state,
           titleKey: 'sport.layout.title',
           hintKey: 'sport.layout.hint',
+          icon: todayTileIcon,
+          labelKey: todayTileLabelKey,
         ),
       ),
     );

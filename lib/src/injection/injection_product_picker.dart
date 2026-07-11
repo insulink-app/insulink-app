@@ -96,6 +96,12 @@ class _ProductPickerState extends State<_ProductPicker> {
                 prefixIcon: const Icon(Icons.search),
                 hintText:
                     Locales.string(context, 'injection.products.search'),
+                suffixIcon: _search.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: _search.clear,
+                      ),
               ),
             ),
           ),

@@ -19,40 +19,57 @@ class OffClient {
       'product_name,brands,quantity,serving_size,serving_quantity,'
       'serving_quantity_unit,nutriments';
 
-  // Relevance search host (the classic cgi/search.pl + /api/v2/search are often
-  // rate-limited to a "temporarily unavailable" HTML page; this one is JSON).
-  static const _searchHost = 'search.openfoodfacts.org';
-
   /// Full-text search by [terms], most-relevant first. Returns up to 20 named
   /// products with their per-100 g nutrition; entries without a name are dropped
   /// (the DB has many sparse stubs). Returns empty on any network/format error.
+  ///
+  /// Uses the main host's `/api/v2/search` — the dedicated `search.openfoodfacts.org`
+  /// host and the classic `cgi/search.pl` both routinely 502/503, so this is the
+  /// only reliably-JSON search endpoint.
   Future<List<FoodProduct>> search(String terms) async {
-    final uri = Uri.https(_searchHost, '/search', {
-      'q': terms,
+    // The classic cgi/search.pl is the ONLY endpoint that actually ranks by
+    // relevance — /api/v2/search's `search_terms` is silently ignored (it
+    // returns the whole DB in random order) and search.openfoodfacts.org 502's.
+    final uri = Uri.https('world.openfoodfacts.org', '/cgi/search.pl', {
+      'search_terms': terms,
+      'search_simple': '1',
+      'action': 'process',
+      'json': '1',
       'page_size': '20',
       'fields': 'code,$_fields',
     });
-    try {
-      final response =
-          await http.get(uri, headers: {'User-Agent': _userAgent});
-      if (response.statusCode != 200) {
-        return const [];
+    // cgi/search.pl intermittently 5xx's / times out; retry a few times before
+    // giving up. A 200 with no matches is a real "no results" — only transient
+    // failures (non-200 / exception) are retried.
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        final response = await http
+            .get(uri, headers: {'User-Agent': _userAgent})
+            .timeout(const Duration(seconds: 10));
+        if (response.statusCode == 200) {
+          return _parseSearch(response.body);
+        }
+      } catch (_) {
+        // fall through to the backoff + retry
       }
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final hits = json['hits'];
-      if (hits is! List) {
-        return const [];
-      }
-      return [
-        for (final entry in hits)
-          if (entry is Map<String, dynamic>)
-            if (_parse(entry['code'] as String? ?? '', entry) case final product
-                when product.name.isNotEmpty)
-              product,
-      ];
-    } catch (_) {
+      await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
+    }
+    return const [];
+  }
+
+  List<FoodProduct> _parseSearch(String body) {
+    final json = jsonDecode(body) as Map<String, dynamic>;
+    final products = json['products'];
+    if (products is! List) {
       return const [];
     }
+    return [
+      for (final entry in products)
+        if (entry is Map<String, dynamic>)
+          if (_parse(entry['code'] as String? ?? '', entry) case final product
+              when product.name.isNotEmpty)
+            product,
+    ];
   }
 
   Future<FoodProduct?> lookup(String barcode) async {

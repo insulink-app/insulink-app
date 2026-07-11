@@ -7,6 +7,8 @@ import 'package:insulink/src/injection/injection_confirm_page.dart';
 import 'package:insulink/src/injection/injection_products_tab.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:provider/provider.dart';
@@ -46,7 +48,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// 0 = manual carbs, 1 = products from the food database. Restored from and
   /// persisted to secure storage.
   int _tab = 0;
-  double _productsCarbs = 0;
+  List<MealEntry> _productEntries = const [];
 
   /// Once the user types in the bolus field we stop overwriting it with the
   /// suggestion; [_settingBolus] guards our own programmatic writes.
@@ -99,7 +101,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
 
   double get _carbs {
     if (_tab == 1) {
-      return _productsCarbs;
+      return _productEntries.fold(0, (sum, entry) => sum + entry.carbs);
     }
     return double.tryParse(_carbsController.text.replaceAll(',', '.')) ?? 0;
   }
@@ -137,8 +139,8 @@ class _InjectionSheetState extends State<InjectionSheet> {
     setState(() {});
   }
 
-  void _onProductsCarbs(double carbs) {
-    _productsCarbs = carbs;
+  void _onProductItems(List<MealEntry> items) {
+    _productEntries = items;
     _recompute();
   }
 
@@ -148,8 +150,8 @@ class _InjectionSheetState extends State<InjectionSheet> {
     if (bolus == null || glucose == null) {
       return;
     }
-    final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    final meals = context.read<MealState>();
     final confirmed = await navigator.push<bool>(
       MaterialPageRoute<bool>(
         builder: (_) => InjectionConfirmPage(
@@ -160,6 +162,13 @@ class _InjectionSheetState extends State<InjectionSheet> {
       ),
     );
     if (confirmed == true && mounted) {
+      await meals.addMeal(Meal(
+        time: DateTime.now(),
+        carbs: _carbs,
+        glucoseMgdl: glucose,
+        bolus: bolus,
+        entries: _tab == 1 ? _productEntries : const [],
+      ));
       navigator.pop();
     }
   }
@@ -196,7 +205,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
                 labelKey: 'injection.carbs',
                 suffix: 'g',
               ),
-              InjectionProductsTab(onCarbsChanged: _onProductsCarbs),
+              InjectionProductsTab(onItemsChanged: _onProductItems),
             ],
           ),
           const SizedBox(height: 24),
