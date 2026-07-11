@@ -119,8 +119,9 @@ class SportStore {
   /// Auto-detected trainings awaiting the user's confirm/reject. Kept apart from
   /// [loadTrainings] so the confirmed list (and its backend sync) stays clean and
   /// a misdetection never reaches it.
-  Future<List<CardioTraining>> loadPendingTrainings() async =>
-      (await _loadList(_kPendingTrainings)).map(CardioTraining.fromJson).toList();
+  Future<List<CardioTraining>> loadPendingTrainings() async => (await _loadList(
+    _kPendingTrainings,
+  )).map(CardioTraining.fromJson).toList();
 
   Future<void> savePendingTrainings(List<CardioTraining> trainings) =>
       _saveList(_kPendingTrainings, trainings.map((t) => t.toJson()).toList());
@@ -135,7 +136,8 @@ class SportStore {
       return;
     }
     final confirmed = pending.removeAt(index);
-    final trainings = await loadTrainings()..add(confirmed);
+    final trainings = await loadTrainings()
+      ..add(confirmed);
     await saveTrainings(trainings);
     await savePendingTrainings(pending);
   }

@@ -17,9 +17,14 @@ class GoogleHealthMetricList extends StatelessWidget {
         _row('google_health.resting_hr', _fmt(health.todayRestingHr, 'bpm')),
         _row('google_health.heart_rate', _fmt(health.latestHr, 'bpm')),
         _row('google_health.spo2', _fmt(health.latestSpo2, '%')),
-        _row('google_health.respiratory_rate',
-            _fmt(health.latestRespiratoryRate, 'rpm')),
-        _row('google_health.sleep', formatSleepMinutes(health.lastSleepMinutes)),
+        _row(
+          'google_health.respiratory_rate',
+          _fmt(health.latestRespiratoryRate, 'rpm'),
+        ),
+        _row(
+          'google_health.sleep',
+          formatSleepMinutes(health.lastSleepMinutes),
+        ),
       ],
     );
   }

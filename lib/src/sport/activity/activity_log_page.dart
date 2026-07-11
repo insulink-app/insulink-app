@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/activity_entry.dart';
@@ -46,7 +47,10 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
         ],
       ),
       body: entries.isEmpty
-          ? Center(child: LocaleText('sport.logbook.empty'))
+          ? const EmptyState(
+              icon: Icons.event_note_rounded,
+              titleKey: 'sport.logbook.empty',
+            )
           : ListView(
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),
@@ -75,9 +79,9 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
     return Padding(
       padding: EdgeInsets.only(top: first ? 0 : 20, bottom: 8),
       child: Text(
-        MaterialLocalizations.of(context).formatFullDate(
-          DateTime.fromMillisecondsSinceEpoch(startMs),
-        ),
+        MaterialLocalizations.of(
+          context,
+        ).formatFullDate(DateTime.fromMillisecondsSinceEpoch(startMs)),
         style: TextStyle(
           fontWeight: FontWeight.w700,
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),

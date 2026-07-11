@@ -76,7 +76,10 @@ class SensorTypeSelector extends StatelessWidget {
               child: Text(
                 Locales.string(context, labelKey),
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontWeight: FontWeight.w600, color: foreground),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: foreground,
+                ),
               ),
             ),
           ],

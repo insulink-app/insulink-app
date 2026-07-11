@@ -35,8 +35,9 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   /// Google Health) advertises ONLY this — not 0x180D — and names itself by its
   /// MAC in hex (e.g. "F46ED6389733"), so it matches neither the name nor the
   /// 0x180D checks.
-  static final Guid _fitbitPrivateService =
-      Guid('089810cc-ef89-11e9-81b4-2a2ae2dbcce4');
+  static final Guid _fitbitPrivateService = Guid(
+    '089810cc-ef89-11e9-81b4-2a2ae2dbcce4',
+  );
 
   int? bpm;
   DateTime? lastUpdate;
@@ -163,16 +164,20 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     _seen.clear();
     _set(FitbitHrStatus.scanning, 'Scanning for your Fitbit…');
     _scanSub?.cancel();
-    _scanSub = FlutterBluePlus.onScanResults.listen((results) {
-      _logScan(results);
-      final target = _pickTarget(results);
-      if (target != null && !_foundTarget) {
-        _foundTarget = true;
-        _scanSub?.cancel();
-        FlutterBluePlus.stopScan();
-        _connect(target.device);
-      }
-    }, onError: (Object error) => _set(FitbitHrStatus.error, 'Scan error: $error'));
+    _scanSub = FlutterBluePlus.onScanResults.listen(
+      (results) {
+        _logScan(results);
+        final target = _pickTarget(results);
+        if (target != null && !_foundTarget) {
+          _foundTarget = true;
+          _scanSub?.cancel();
+          FlutterBluePlus.stopScan();
+          _connect(target.device);
+        }
+      },
+      onError: (Object error) =>
+          _set(FitbitHrStatus.error, 'Scan error: $error'),
+    );
     await FlutterBluePlus.startScan(timeout: const Duration(seconds: 20));
     // Wait for the scan to actually end (isScanning goes true→false). We must
     // NOT listen before startScan: isScanning re-emits its last value (false) to

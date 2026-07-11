@@ -337,7 +337,63 @@
   },
   "nutrition": {
     "label": "Ernährung",
-    "placeholder": "Bald verfügbar"
+    "today": "Heute",
+    "settings": "Ziele",
+    "carbs_goal": "Kohlenhydrat-Ziel",
+    "protein_goal": "Eiweiß-Ziel",
+    "stats": {
+      "carbs": "Kohlenhydrate",
+      "protein": "Eiweiß",
+      "bolus": "Bolus",
+      "meals": "Mahlzeiten"
+    },
+    "detail": {
+      "latest": "Zuletzt",
+      "average": "Durchschnitt",
+      "total": "Gesamt",
+      "history": "Verlauf"
+    },
+    "hydration": {
+      "_": "Trinken",
+      "settings": "Einstellungen",
+      "log": "Heute getrunken",
+      "log_empty": "Heute noch nichts getrunken",
+      "goal_title": "Tagesziel",
+      "free": "Frei",
+      "free_title": "Menge eingeben",
+      "free_hint": "z. B. 300",
+      "add": "Hinzufügen"
+    },
+    "food": {
+      "_": "Produkte",
+      "empty": "Barcode scannen, um ein Produkt hinzuzufügen",
+      "delete_confirm": "Dieses Produkt löschen?",
+      "scan_hint": "Produkt-Barcode in den Rahmen halten",
+      "search_hint": "Produktdatenbank durchsuchen…",
+      "search_start": "Mindestens 2 Zeichen eingeben",
+      "search_none": "Keine Produkte gefunden",
+      "name": "Name",
+      "brand": "Marke",
+      "serving_size": "Portionsgröße",
+      "serving_label": "Portionsbeschreibung",
+      "per_100": "Nährwerte pro 100 #",
+      "carbs": "KH",
+      "fat": "Fett",
+      "protein": "Eiweiß",
+      "kcal": "kcal",
+      "show_more": "Mehr anzeigen",
+      "all": "Alle Produkte"
+    },
+    "meals": {
+      "_": "Mahlzeiten",
+      "empty": "Noch keine Mahlzeiten",
+      "empty_hint": "Sie erscheinen hier, sobald du einen Bolus abgibst.",
+      "products": "Produkte",
+      "products_count": "# Produkte",
+      "show_more": "Mehr anzeigen",
+      "delete": "Mahlzeit löschen",
+      "delete_confirm": "Diese Mahlzeit löschen?"
+    }
   },
   "sport": {
     "label": "Sport",
@@ -345,7 +401,8 @@
     "layout": {
       "title": "Boxen anpassen",
       "subtitle": "Boxen ein-/ausblenden und anordnen",
-      "hint": "Wähle, welche Boxen unter „Heute“ erscheinen, und ziehe sie in deine gewünschte Reihenfolge."
+      "hint": "Wähle, welche Boxen unter „Heute“ erscheinen, und ziehe sie in deine gewünschte Reihenfolge.",
+      "search": "Boxen suchen"
     },
     "copy": "Kopieren",
     "copy_suffix": " (Kopie)",
@@ -494,6 +551,12 @@
       "avg_speed": "Ø-Tempo",
       "delete_confirm": "Dieses Training wirklich löschen?",
       "no_route": "Keine Route aufgezeichnet",
+      "metrics": "Zeitlicher Verlauf",
+      "no_metrics": "Keine Glukose- oder Herzfrequenzdaten",
+      "glucose": "Glukose",
+      "heart_rate": "Herzfrequenz",
+      "splits": "Tempo pro Kilometer",
+      "km_label": "km #",
       "location_denied": "Standort-Berechtigung fehlt – Training kann nicht aufgezeichnet werden.",
       "detected": "automatisch",
       "detected_prompt": "Training erkannt – stimmt das?",
@@ -639,9 +702,33 @@
     "title": "Bolusrechner",
     "carbs": "Kohlenhydrate",
     "glucose": "Aktueller Glukosewert",
+    "carbs_tab": "Kohlenhydrate",
+    "products_tab": "Produkte",
     "bolus": {
-      "_": "Empfohlener Bolus",
-      "value": "# E"
+      "_": "Bolus",
+      "value": "# E",
+      "unit": "E"
+    },
+    "products": {
+      "add": "Produkt hinzufügen",
+      "empty": "Noch keine Produkte gewählt",
+      "total": "KH gesamt",
+      "carbs": "KH",
+      "carbs_per_100": "# g KH / 100 g",
+      "amount": "Menge",
+      "servings": "Portionen",
+      "serving_one": "Portion",
+      "confirm": "Hinzufügen",
+      "search": "Produkte suchen",
+      "none": "Keine passenden Produkte",
+      "pick": "Produkt wählen"
+    },
+    "confirm": {
+      "title": "Bolus bestätigen",
+      "button": "Bestätigen",
+      "reason": "Bolus mit Fingerabdruck bestätigen",
+      "success": "Bolus bestätigt",
+      "failed": "Authentifizierung fehlgeschlagen"
     },
     "next": "Weiter"
   },

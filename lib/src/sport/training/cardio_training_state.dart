@@ -17,7 +17,12 @@ class CardioTrainingState extends ChangeNotifier {
   List<CardioTraining> _pending;
   ActiveTraining? _active;
 
-  CardioTrainingState(this._store, this._trainings, this._pending, this._active);
+  CardioTrainingState(
+    this._store,
+    this._trainings,
+    this._pending,
+    this._active,
+  );
 
   static Future<CardioTrainingState> load() async {
     const store = SportStore();

@@ -72,10 +72,9 @@ class HeartRateChartSeries {
     }
     final segColors = [
       for (var index = 0; index < _spots.length - 1; index++)
-        zones.colors[
-            _zoneIdx[index] > _zoneIdx[index + 1]
-                ? _zoneIdx[index]
-                : _zoneIdx[index + 1]],
+        zones.colors[_zoneIdx[index] > _zoneIdx[index + 1]
+            ? _zoneIdx[index]
+            : _zoneIdx[index + 1]],
     ];
     final bars = <LineChartBarData>[];
     var runStart = 0;

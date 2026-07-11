@@ -3,6 +3,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/training/cardio_detail_page.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
+import 'package:insulink/src/sport/sport_leading_badge.dart';
 
 /// One recorded training as a tappable list tile (type, date, distance,
 /// duration). Shared by the sport home section and the full trainings log.
@@ -30,7 +31,7 @@ class CardioTrainingTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
       ),
-      leading: Icon(training.type.icon, color: scheme.primary),
+      leading: SportLeadingBadge(icon: training.type.icon),
       title: Text(
         Locales.string(context, training.type.labelKey),
         style: const TextStyle(fontWeight: FontWeight.w600),

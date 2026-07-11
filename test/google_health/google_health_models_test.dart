@@ -3,7 +3,11 @@ import 'package:insulink/src/google_health/google_health_models.dart';
 
 void main() {
   test('GoogleHealthDay round-trips through JSON, keeping nulls out', () {
-    const day = GoogleHealthDay(dateKey: '2026-07-04', restingHr: 58, sleepMinutes: 440);
+    const day = GoogleHealthDay(
+      dateKey: '2026-07-04',
+      restingHr: 58,
+      sleepMinutes: 440,
+    );
     final back = GoogleHealthDay.fromJson(day.toJson());
     expect(back.dateKey, '2026-07-04');
     expect(back.restingHr, 58);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -18,7 +19,10 @@ class AverageView extends StatelessWidget {
     // Long-term archive (spans sensor swaps), not the current-session cache.
     final values = controller.statsArchive.values.toList();
     if (values.isEmpty) {
-      return Center(child: LocaleText('analysis.empty'));
+      return const EmptyState(
+        icon: Icons.insights_rounded,
+        titleKey: 'analysis.empty',
+      );
     }
     final stats = GlucoseSummary(values, glucose).build();
 

@@ -43,9 +43,9 @@ class OverviewTimeInRange extends StatelessWidget {
               'overview.time_in_range_window',
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withValues(
-                  alpha: 0.5,
-                ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -81,9 +81,7 @@ class OverviewTimeInRange extends StatelessWidget {
   /// the left, its percentage on the right.
   Widget _legend(BuildContext context, List<GlucoseBand> bands) {
     return Column(
-      children: [
-        for (final band in bands.reversed) _row(context, band),
-      ],
+      children: [for (final band in bands.reversed) _row(context, band)],
     );
   }
 
@@ -102,10 +100,7 @@ class OverviewTimeInRange extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          LocaleText(
-            band.labelKey,
-            style: const TextStyle(fontSize: 14),
-          ),
+          LocaleText(band.labelKey, style: const TextStyle(fontSize: 14)),
           const SizedBox(width: 8),
           Text(
             band.rangeLabel,

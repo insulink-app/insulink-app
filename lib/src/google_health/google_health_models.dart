@@ -37,22 +37,23 @@ class GoogleHealthDay {
       'tl': [for (final s in sleepTimeline!) s.toJson()],
   };
 
-  factory GoogleHealthDay.fromJson(Map<String, dynamic> json) => GoogleHealthDay(
-    dateKey: json['d'] as String,
-    restingHr: json['rhr'] as int?,
-    sleepMinutes: json['sleep'] as int?,
-    spo2: json['spo2'] as int?,
-    respiratoryRate: json['rr'] as int?,
-    sleepStages: json['stages'] == null
-        ? null
-        : SleepStages.fromJson(json['stages'] as Map<String, dynamic>),
-    sleepTimeline: json['tl'] == null
-        ? null
-        : [
-            for (final s in json['tl'] as List)
-              SleepSegment.fromJson(s as Map<String, dynamic>),
-          ],
-  );
+  factory GoogleHealthDay.fromJson(Map<String, dynamic> json) =>
+      GoogleHealthDay(
+        dateKey: json['d'] as String,
+        restingHr: json['rhr'] as int?,
+        sleepMinutes: json['sleep'] as int?,
+        spo2: json['spo2'] as int?,
+        respiratoryRate: json['rr'] as int?,
+        sleepStages: json['stages'] == null
+            ? null
+            : SleepStages.fromJson(json['stages'] as Map<String, dynamic>),
+        sleepTimeline: json['tl'] == null
+            ? null
+            : [
+                for (final s in json['tl'] as List)
+                  SleepSegment.fromJson(s as Map<String, dynamic>),
+              ],
+      );
 
   DateTime get date => DateTime.parse(dateKey);
 
@@ -123,11 +124,7 @@ class SleepSegment {
     required this.endMs,
   });
 
-  Map<String, dynamic> toJson() => {
-    's': stage.index,
-    'a': startMs,
-    'b': endMs,
-  };
+  Map<String, dynamic> toJson() => {'s': stage.index, 'a': startMs, 'b': endMs};
 
   factory SleepSegment.fromJson(Map<String, dynamic> json) => SleepSegment(
     stage: SleepStage.values[json['s'] as int],

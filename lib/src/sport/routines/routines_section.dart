@@ -6,6 +6,7 @@ import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/routines/routine_editor_page.dart';
 import 'package:insulink/src/sport/sport_add_tile.dart';
 import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/sport/sport_leading_badge.dart';
 import 'package:insulink/src/sport/sport_menu.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
@@ -35,15 +36,23 @@ class RoutinesSection extends StatelessWidget {
               icon: const Icon(Icons.fitness_center, size: 20),
               tooltip: Locales.string(context, 'sport.exercises'),
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const ExercisesPage(),
-                ),
+                MaterialPageRoute<void>(builder: (_) => const ExercisesPage()),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        for (final routine in routines) _routineCard(context, routine),
+        ReorderableListView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          proxyDecorator: (child, index, animation) =>
+              Material(color: Colors.transparent, child: child),
+          onReorderItem: (oldIndex, newIndex) =>
+              context.read<TrainingState>().reorderRoutines(oldIndex, newIndex),
+          children: [
+            for (final routine in routines) _routineCard(context, routine),
+          ],
+        ),
         SportAddTile(
           labelKey: 'sport.routines.new',
           onTap: () => _create(context),
@@ -70,6 +79,7 @@ class RoutinesSection extends StatelessWidget {
     final training = context.read<TrainingState>();
     final hasItems = routine.items.isNotEmpty;
     return Padding(
+      key: ValueKey(routine.id),
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: scheme.onSurface.withValues(alpha: 0.04),
@@ -85,7 +95,7 @@ class RoutinesSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
             child: Row(
               children: [
-                _leadingBadge(scheme),
+                const SportLeadingBadge(icon: Icons.fitness_center),
                 const SizedBox(width: 14),
                 Expanded(
                   child: _titleBlock(context, routine, training, scheme),
@@ -104,17 +114,6 @@ class RoutinesSection extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _leadingBadge(ColorScheme scheme) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(Icons.fitness_center, size: 20, color: scheme.primary),
     );
   }
 

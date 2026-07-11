@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_range_selector.dart';
@@ -48,7 +49,10 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
         child: const Icon(Icons.add),
       ),
       body: weights.isEmpty
-          ? Center(child: LocaleText('sport.weight.empty'))
+          ? const EmptyState(
+              icon: Icons.monitor_weight_rounded,
+              titleKey: 'sport.weight.empty',
+            )
           : ListView(
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),

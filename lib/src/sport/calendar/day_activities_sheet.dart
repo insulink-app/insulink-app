@@ -22,7 +22,9 @@ Future<void> showDayActivitiesSheet(BuildContext context, DateTime day) {
     builder: (_) => MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: context.read<TrainingState>()),
-        ChangeNotifierProvider.value(value: context.read<CardioTrainingState>()),
+        ChangeNotifierProvider.value(
+          value: context.read<CardioTrainingState>(),
+        ),
       ],
       child: _DayActivitiesSheet(day: day),
     ),
@@ -44,10 +46,7 @@ class _DayActivitiesSheet extends StatelessWidget {
     final cardio = context.watch<CardioTrainingState>();
     final entries = [
       for (final entry in mergedActivities(training.sessions, cardio.trainings))
-        if (_isSameDay(
-          DateTime.fromMillisecondsSinceEpoch(entry.startMs),
-          day,
-        ))
+        if (_isSameDay(DateTime.fromMillisecondsSinceEpoch(entry.startMs), day))
           entry,
     ];
     return Container(
@@ -95,7 +94,8 @@ class _DayActivitiesSheet extends StatelessWidget {
       context,
       color: calendarRoutineColor(Theme.of(context).colorScheme),
       icon: Icons.fitness_center,
-      title: routine?.name ??
+      title:
+          routine?.name ??
           Locales.string(context, 'sport.logbook.deleted_routine'),
       time: DateTime.fromMillisecondsSinceEpoch(session.startedAtMs),
       onTap: () => Navigator.of(context).push(
@@ -114,7 +114,9 @@ class _DayActivitiesSheet extends StatelessWidget {
       title: Locales.string(context, ride.type.labelKey),
       time: DateTime.fromMillisecondsSinceEpoch(ride.startMs),
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => CardioDetailPage(training: ride)),
+        MaterialPageRoute<void>(
+          builder: (_) => CardioDetailPage(training: ride),
+        ),
       ),
     );
   }
@@ -158,9 +160,9 @@ class _DayActivitiesSheet extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  MaterialLocalizations.of(context).formatTimeOfDay(
-                    TimeOfDay.fromDateTime(time),
-                  ),
+                  MaterialLocalizations.of(
+                    context,
+                  ).formatTimeOfDay(TimeOfDay.fromDateTime(time)),
                   style: TextStyle(
                     color: scheme.onSurface.withValues(alpha: 0.6),
                   ),

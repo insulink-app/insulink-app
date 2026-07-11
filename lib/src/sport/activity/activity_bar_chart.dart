@@ -38,7 +38,9 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
   Widget build(BuildContext context) {
     final days = widget.days;
     final locale = MaterialLocalizations.of(context);
-    final maxY = days.map(widget.value).fold<double>(0, (a, b) => a > b ? a : b);
+    final maxY = days
+        .map(widget.value)
+        .fold<double>(0, (a, b) => a > b ? a : b);
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,

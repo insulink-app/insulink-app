@@ -337,7 +337,63 @@
   },
   "nutrition": {
     "label": "Nutrition",
-    "placeholder": "Coming soon"
+    "today": "Today",
+    "settings": "Goals",
+    "carbs_goal": "Carb goal",
+    "protein_goal": "Protein goal",
+    "stats": {
+      "carbs": "Carbs",
+      "protein": "Protein",
+      "bolus": "Bolus",
+      "meals": "Meals"
+    },
+    "detail": {
+      "latest": "Latest",
+      "average": "Average",
+      "total": "Total",
+      "history": "History"
+    },
+    "hydration": {
+      "_": "Hydration",
+      "settings": "Settings",
+      "log": "Drinks today",
+      "log_empty": "Nothing logged today yet",
+      "goal_title": "Daily goal",
+      "free": "Custom",
+      "free_title": "Enter amount",
+      "free_hint": "e.g. 300",
+      "add": "Add"
+    },
+    "food": {
+      "_": "Products",
+      "empty": "Scan a barcode to add a product",
+      "delete_confirm": "Delete this product?",
+      "scan_hint": "Point the product barcode into the frame",
+      "search_hint": "Search the product database…",
+      "search_start": "Type at least 2 characters to search",
+      "search_none": "No products found",
+      "name": "Name",
+      "brand": "Brand",
+      "serving_size": "Serving size",
+      "serving_label": "Serving description",
+      "per_100": "Nutrition per 100 #",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "protein": "Protein",
+      "kcal": "kcal",
+      "show_more": "Show more",
+      "all": "All products"
+    },
+    "meals": {
+      "_": "Meals",
+      "empty": "No meals yet",
+      "empty_hint": "They appear here once you deliver a bolus.",
+      "products": "Products",
+      "products_count": "# products",
+      "show_more": "Show more",
+      "delete": "Delete meal",
+      "delete_confirm": "Delete this meal?"
+    }
   },
   "sport": {
     "label": "Sport",
@@ -345,7 +401,8 @@
     "layout": {
       "title": "Customize boxes",
       "subtitle": "Show, hide and arrange boxes",
-      "hint": "Choose which boxes appear under Today and drag them into the order you want."
+      "hint": "Choose which boxes appear under Today and drag them into the order you want.",
+      "search": "Search boxes"
     },
     "copy": "Copy",
     "copy_suffix": " (copy)",
@@ -494,6 +551,12 @@
       "avg_speed": "Avg speed",
       "delete_confirm": "Delete this training?",
       "no_route": "No route recorded",
+      "metrics": "Trends over time",
+      "no_metrics": "No glucose or heart-rate data",
+      "glucose": "Glucose",
+      "heart_rate": "Heart rate",
+      "splits": "Pace per kilometre",
+      "km_label": "km #",
       "location_denied": "Location permission missing – training can't be recorded.",
       "detected": "automatic",
       "detected_prompt": "Training detected – is that right?",
@@ -639,9 +702,33 @@
     "title": "Bolus calculator",
     "carbs": "Carbohydrates",
     "glucose": "Current glucose",
+    "carbs_tab": "Carbs",
+    "products_tab": "Products",
     "bolus": {
-      "_": "Suggested bolus",
-      "value": "# U"
+      "_": "Bolus",
+      "value": "# U",
+      "unit": "U"
+    },
+    "products": {
+      "add": "Add product",
+      "empty": "No products selected yet",
+      "total": "Total carbs",
+      "carbs": "carbs",
+      "carbs_per_100": "# g carbs / 100 g",
+      "amount": "Amount",
+      "servings": "Servings",
+      "serving_one": "serving",
+      "confirm": "Add",
+      "search": "Search products",
+      "none": "No matching products",
+      "pick": "Choose product"
+    },
+    "confirm": {
+      "title": "Confirm bolus",
+      "button": "Confirm",
+      "reason": "Confirm your bolus",
+      "success": "Bolus confirmed",
+      "failed": "Authentication failed"
     },
     "next": "Next"
   },

@@ -128,12 +128,33 @@ class TimeInRangeBands {
     final fractions = [for (final count in counts) count / total];
     final percents = _largestRemainderPercents(fractions);
     return [
-      _band('high', colors.high, fractions, percents, counts, 0,
-          '> ${glucose.format(glucose.targetHigh)}'),
-      _band('in_range', colors.inRange, fractions, percents, counts, 1,
-          '${glucose.format(glucose.targetLow)}–${glucose.format(glucose.targetHigh)}'),
-      _band('low', colors.low, fractions, percents, counts, 2,
-          '< ${glucose.format(glucose.targetLow)}'),
+      _band(
+        'high',
+        colors.high,
+        fractions,
+        percents,
+        counts,
+        0,
+        '> ${glucose.format(glucose.targetHigh)}',
+      ),
+      _band(
+        'in_range',
+        colors.inRange,
+        fractions,
+        percents,
+        counts,
+        1,
+        '${glucose.format(glucose.targetLow)}–${glucose.format(glucose.targetHigh)}',
+      ),
+      _band(
+        'low',
+        colors.low,
+        fractions,
+        percents,
+        counts,
+        2,
+        '< ${glucose.format(glucose.targetLow)}',
+      ),
     ];
   }
 

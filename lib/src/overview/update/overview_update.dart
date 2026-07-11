@@ -26,7 +26,6 @@ class OverviewUpdate extends StatefulWidget {
 
 class _OverviewUpdateState extends State<OverviewUpdate>
     with SingleTickerProviderStateMixin {
-
   /// Drives the rotating clock hands so the indicator always looks "alive";
   /// also serves as the once-per-frame tick that refreshes the countdown.
   late final AnimationController _spin = AnimationController(

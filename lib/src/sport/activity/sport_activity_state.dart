@@ -80,10 +80,8 @@ class SportActivityState extends ChangeNotifier {
 
   DailyActivity _patchToday(DailyActivity day, int strideCm, double weightKg) {
     final steps = todaySteps > day.steps ? todaySteps : day.steps;
-    final distance =
-        importedDistanceKm ?? estimatedDistanceKm(steps, strideCm);
-    final calories =
-        importedCalories ?? estimatedCalories(distance, weightKg);
+    final distance = importedDistanceKm ?? estimatedDistanceKm(steps, strideCm);
+    final calories = importedCalories ?? estimatedCalories(distance, weightKg);
     return DailyActivity(
       dateKey: day.dateKey,
       steps: steps,

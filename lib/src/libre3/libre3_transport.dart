@@ -159,13 +159,21 @@ class Libre3Transport {
     _log = log;
     _handshake = Completer<Uint8List>();
     await _subscribe(_securityCommands!, _onCommandResponse);
-    await _subscribe(_certificateData!, (value) => _onSecData(value, _receivedCert));
-    await _subscribe(_challengeData!, (value) => _onSecData(value, _receivedChallenge));
+    await _subscribe(
+      _certificateData!,
+      (value) => _onSecData(value, _receivedCert),
+    );
+    await _subscribe(
+      _challengeData!,
+      (value) => _onSecData(value, _receivedChallenge),
+    );
     await crypto.initKeys(cachedAuthKey, securityVersion);
 
     if (cachedAuthKey != null) {
       _commandPhase = 5;
-      _drive(() => _writeCommand(0x11)); // pre-authorised: straight to challenge
+      _drive(
+        () => _writeCommand(0x11),
+      ); // pre-authorised: straight to challenge
     } else {
       _commandPhase = 1;
       _drive(() => _writeCommand(0x01)); // init security
@@ -316,7 +324,9 @@ class Libre3Transport {
         await _afterCertWritten();
       case 4:
         _commandPhase = 5;
-        final ephemeral = _uncompressedPoint(await crypto.generateEphemeralKeys());
+        final ephemeral = _uncompressedPoint(
+          await crypto.generateEphemeralKeys(),
+        );
         _log('Libre 3 sending ephemeral (${ephemeral.length} B)');
         await _sendFramed(_certificateData!, ephemeral);
         await _afterCertWritten();
@@ -367,21 +377,21 @@ class Libre3Transport {
   Future<void> _enableDataChannels() async {
     await _observe(_patchControl, 'patchControl');
     if (_historic != null) {
-      await _subscribeLogged(_historic!, 'historic', (data) => _decryptInto(
-            Libre3Uuids.decryptHistoric,
-            data,
-            _historicRx,
-          ));
+      await _subscribeLogged(
+        _historic!,
+        'historic',
+        (data) => _decryptInto(Libre3Uuids.decryptHistoric, data, _historicRx),
+      );
     }
     await _observe(_clinicalData, 'clinicalData');
     await _observe(_eventLog, 'eventLog');
     await _observe(_factoryData, 'factoryData');
     if (_oneMinute != null) {
-      await _subscribeLogged(_oneMinute!, 'glucose', (data) => _decryptInto(
-            Libre3Uuids.decryptGlucose,
-            data,
-            _glucoseRx,
-          ));
+      await _subscribeLogged(
+        _oneMinute!,
+        'glucose',
+        (data) => _decryptInto(Libre3Uuids.decryptGlucose, data, _glucoseRx),
+      );
     }
     await _observe(_patchStatus, 'patchStatus');
   }
@@ -389,7 +399,10 @@ class Libre3Transport {
   /// Subscribe an observe-only characteristic: log every notification's raw hex
   /// (we don't know its decrypt channel), so a silent historic stream that
   /// actually surfaces here becomes visible on-device.
-  Future<void> _observe(BluetoothCharacteristic? characteristic, String name) async {
+  Future<void> _observe(
+    BluetoothCharacteristic? characteristic,
+    String name,
+  ) async {
     if (characteristic == null) {
       return;
     }
@@ -440,10 +453,10 @@ class Libre3Transport {
   /// The (unverified) Patch Control payload: a one-byte "request historic"
   /// opcode followed by the little-endian start life count.
   static List<int> _backfillCommand(int fromLifeCount) => [
-        _patchControlBackfillOpcode,
-        fromLifeCount & 0xFF,
-        (fromLifeCount >> 8) & 0xFF,
-      ];
+    _patchControlBackfillOpcode,
+    fromLifeCount & 0xFF,
+    (fromLifeCount >> 8) & 0xFF,
+  ];
 
   /// ponytail: placeholder opcode — replace with the value from a real capture.
   static const int _patchControlBackfillOpcode = 0x01;
@@ -464,15 +477,20 @@ class Libre3Transport {
     StreamController<Uint8List> sink,
   ) async {
     _log('Libre 3 ch$channelId frag: ${_hex(data)}');
-    final buffer = _dataBuffers.putIfAbsent(channelId, () => <int>[])..addAll(data);
+    final buffer = _dataBuffers.putIfAbsent(channelId, () => <int>[])
+      ..addAll(data);
     try {
       final plain = await crypto.decrypt(channelId, Uint8List.fromList(buffer));
-      _log('Libre 3 decrypted ch$channelId: ${buffer.length}→${plain.length} B');
+      _log(
+        'Libre 3 decrypted ch$channelId: ${buffer.length}→${plain.length} B',
+      );
       buffer.clear();
       sink.add(plain);
     } catch (error) {
       if (buffer.length >= _maxDataPacket) {
-        _log('Libre 3 decrypt ch$channelId gave up at ${buffer.length} B: $error');
+        _log(
+          'Libre 3 decrypt ch$channelId gave up at ${buffer.length} B: $error',
+        );
         buffer.clear();
       }
     }

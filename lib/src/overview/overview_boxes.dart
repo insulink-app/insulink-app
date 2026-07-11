@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
+import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
+import 'package:insulink/src/nutrition/meal/meal_state.dart';
+import 'package:insulink/src/nutrition/stats/nutrition_tile_builder.dart';
+import 'package:insulink/src/overview/overview_box.dart';
+import 'package:insulink/src/overview/overview_box_builder.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/activity/reorderable_tile_grid.dart';
@@ -9,19 +14,28 @@ import 'package:insulink/src/sport/activity/today_tile_builder.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
 
-/// Personalizable summary boxes on the overview: the user picks which boxes and
-/// their order (drag to reorder, tune icon to show/hide). Defaults to steps +
-/// weight. Reuses the Sport tab's tile builder, grid and editor.
-class OverviewSportBoxes extends StatelessWidget {
-  const OverviewSportBoxes({super.key});
+/// Personalizable summary boxes on the overview: Sport metrics AND nutrition
+/// boxes in ONE section with a single settings button. The user picks which
+/// boxes and their order (drag to reorder, tune icon to show/hide). Reuses the
+/// shared grid + editor and both tile builders.
+class OverviewBoxes extends StatelessWidget {
+  const OverviewBoxes({super.key});
 
   @override
   Widget build(BuildContext context) {
     final layout = context.watch<OverviewLayoutState>();
-    final activity = context.watch<SportActivityState>();
-    final sport = context.watch<SportState>();
     final health = context.watch<GoogleHealthState>();
-    final builder = TodayTileBuilder(activity, sport, health);
+    final builder = OverviewBoxBuilder(
+      TodayTileBuilder(
+        context.watch<SportActivityState>(),
+        context.watch<SportState>(),
+        health,
+      ),
+      NutritionTileBuilder(
+        context.watch<MealState>(),
+        context.watch<NutritionState>(),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -40,7 +54,7 @@ class OverviewSportBoxes extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        ReorderableTileGrid(
+        ReorderableTileGrid<OverviewBox>(
           tiles: layout.visible(health.connected),
           state: layout,
           tileBuilder: builder.build,
@@ -52,10 +66,12 @@ class OverviewSportBoxes extends StatelessWidget {
   Future<void> _edit(BuildContext context, OverviewLayoutState layout) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => TileLayoutEditor(
+        builder: (_) => TileLayoutEditor<OverviewBox>(
           state: layout,
           titleKey: 'sport.layout.title',
           hintKey: 'sport.layout.hint',
+          icon: overviewBoxIcon,
+          labelKey: overviewBoxLabelKey,
         ),
       ),
     );

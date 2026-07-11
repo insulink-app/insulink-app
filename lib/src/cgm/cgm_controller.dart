@@ -289,6 +289,12 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     return store.archiveRange(now.subtract(window), now);
   }
 
+  /// Long-term glucose archive over an explicit `[from, to]` window, keyed by
+  /// epoch-minute — the source for a completed training's glucose overlay.
+  SplayTreeMap<int, int> archiveBetween(DateTime from, DateTime to) {
+    return _store?.archiveRange(from, to) ?? SplayTreeMap<int, int>();
+  }
+
   /// Builds a reading from a persisted/IPC map. The trend field is keyed
   /// differently by the cached headline ('trend') and the live service payload
   /// ('trendTenths'); the other fixed fields aren't carried across.
@@ -324,7 +330,8 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// prediction setting is on (null when off or unavailable). [predictionBase]
   /// is the reading time the curve is anchored to; each point is that many
   /// minutes ahead of it.
-  final GlucosePredictionFetcher _predictionFetcher = GlucosePredictionFetcher();
+  final GlucosePredictionFetcher _predictionFetcher =
+      GlucosePredictionFetcher();
   final PredictionCache _predictionCache = PredictionCache();
   GlucosePrediction? _prediction;
   List<PredictionPoint>? get predictionCurve => _prediction?.points;
@@ -367,9 +374,12 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       return mgdl != null && at != null ? [(mgdl, at)] : const [];
     }
     final keys = _byTime.keys.toList();
-    final tail = keys.sublist((keys.length - _predictionCatchUp).clamp(0, keys.length));
+    final tail = keys.sublist(
+      (keys.length - _predictionCatchUp).clamp(0, keys.length),
+    );
     return [
-      for (final secs in tail) (_byTime[secs]!, start.add(Duration(seconds: secs))),
+      for (final secs in tail)
+        (_byTime[secs]!, start.add(Duration(seconds: secs))),
     ];
   }
 
@@ -811,7 +821,10 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     await store.saveSensorType(restore.sensorType);
-    await store.saveIdentity(serial: '', pairingCode: restore.pairingCode ?? '');
+    await store.saveIdentity(
+      serial: '',
+      pairingCode: restore.pairingCode ?? '',
+    );
     await store.saveResolvedKey(restore.resolvedKey);
     await store.saveBackendSensorId(restore.resolvedKey, restore.sensorId);
     if (restore.sensorType == SensorType.abbottLibre3) {

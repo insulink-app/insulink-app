@@ -29,7 +29,10 @@ void main() {
       seg(SleepStage.deep, 30, 60),
       seg(SleepStage.rem, 60, 90),
     ], minMs: minMs);
-    expect(smoothed.map((s) => s.stage).toList(),
-        [SleepStage.light, SleepStage.deep, SleepStage.rem]);
+    expect(smoothed.map((s) => s.stage).toList(), [
+      SleepStage.light,
+      SleepStage.deep,
+      SleepStage.rem,
+    ]);
   });
 }

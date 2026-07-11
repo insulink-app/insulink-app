@@ -12,6 +12,7 @@ import 'package:insulink/src/google_health/google_health_sync.dart';
 import 'package:insulink/src/google_health/pulse_sync.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/nutrition/nutrition_sync.dart';
 import 'package:insulink/src/sport/sport_sync.dart';
 
 /// Talks to the backend `/signin/` and `/signup/` endpoints and persists the
@@ -41,6 +42,9 @@ class AuthService {
     }
     if (error == null && context.mounted) {
       await SportSync().pull(context);
+    }
+    if (error == null && context.mounted) {
+      await NutritionSync().pull(context);
     }
     if (error == null && context.mounted) {
       await GoogleHealthSync().pull(context);

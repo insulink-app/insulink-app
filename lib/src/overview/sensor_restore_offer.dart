@@ -55,7 +55,11 @@ class _SensorRestoreOfferState extends State<SensorRestoreOffer> {
 
   /// Which sensor the account has on file: its type and — when known — when it
   /// was started, so the user recognises the sensor before adopting it.
-  Widget _details(BuildContext context, ColorScheme scheme, SensorRestore offer) {
+  Widget _details(
+    BuildContext context,
+    ColorScheme scheme,
+    SensorRestore offer,
+  ) {
     final typeKey = offer.sensorType == SensorType.abbottLibre3
         ? 'sensor.type.libre3'
         : 'sensor.type.g7';

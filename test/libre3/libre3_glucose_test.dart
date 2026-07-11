@@ -64,10 +64,7 @@ void main() {
     });
 
     test('rejects a short packet', () {
-      expect(
-        Libre3GlucoseCodec.parseOneMinuteReading(Uint8List(10)),
-        isNull,
-      );
+      expect(Libre3GlucoseCodec.parseOneMinuteReading(Uint8List(10)), isNull);
     });
   });
 }

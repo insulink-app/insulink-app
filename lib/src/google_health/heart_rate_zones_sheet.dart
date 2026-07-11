@@ -79,7 +79,12 @@ class _HeartRateZonesSheetState extends State<_HeartRateZonesSheet> {
     );
   }
 
-  Widget _row(String labelKey, Color accent, int value, void Function(int) step) {
+  Widget _row(
+    String labelKey,
+    Color accent,
+    int value,
+    void Function(int) step,
+  ) {
     return Row(
       children: [
         Expanded(

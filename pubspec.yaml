@@ -66,6 +66,7 @@ dependencies:
   latlong2: ^0.9.1
   wakelock_plus: ^1.6.1
   pointycastle: ^4.0.0
+  local_auth: ^2.3.0
 
 # health (Health Connect) deckelt device_info_plus auf <13, nutzt davon aber nur
 # `androidInfo.id` — über 12↔13 identisch. device_info_plus 12.x wendet noch das

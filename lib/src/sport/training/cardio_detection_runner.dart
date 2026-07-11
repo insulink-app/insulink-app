@@ -65,7 +65,10 @@ class CardioDetectionRunner {
     }
     final cutoff = now.subtract(_tail).millisecondsSinceEpoch;
     final detected = [
-      for (final training in const CardioDetector().detect(considered, activityLog))
+      for (final training in const CardioDetector().detect(
+        considered,
+        activityLog,
+      ))
         if (training.endMs <= cutoff) training,
     ];
     var newWatermark = watermark;
@@ -102,7 +105,8 @@ class CardioDetectionRunner {
 
   bool _overlaps(CardioTraining candidate, List<CardioTraining> all) {
     for (final other in all) {
-      if (candidate.startMs <= other.endMs && other.startMs <= candidate.endMs) {
+      if (candidate.startMs <= other.endMs &&
+          other.startMs <= candidate.endMs) {
         return true;
       }
     }

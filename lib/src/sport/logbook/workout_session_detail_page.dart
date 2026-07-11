@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/logbook/set_editor_sheet.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
+import 'package:insulink/src/sport/training/training_metrics_chart.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
 
@@ -56,6 +58,8 @@ class WorkoutSessionDetailPage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
         children: [
           _header(context, scheme, current),
+          const SizedBox(height: 20),
+          _metricsChart(context, current),
           const SizedBox(height: 24),
           for (final row in _setRows(context, training, current)) row,
         ],
@@ -107,6 +111,28 @@ class WorkoutSessionDetailPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// The glucose + heart-rate chart over the session span — reused from the
+  /// cardio detail page. No map here, so the hover callback is a no-op (the
+  /// tooltip + haptics still work).
+  Widget _metricsChart(BuildContext context, WorkoutSession session) {
+    final endMs = session.sets.isEmpty
+        ? session.startedAtMs
+        : session.sets.last.atEpochMs;
+    // Pad the query so the chart can show the reading just before/after a short
+    // workout too.
+    const pad = Duration(minutes: 15);
+    final glucose = context.watch<CgmController>().archiveBetween(
+      DateTime.fromMillisecondsSinceEpoch(session.startedAtMs).subtract(pad),
+      DateTime.fromMillisecondsSinceEpoch(endMs).add(pad),
+    );
+    return TrainingMetricsChart(
+      startMs: session.startedAtMs,
+      endMs: endMs,
+      glucose: glucose,
+      onHoverMs: (_) {},
     );
   }
 
@@ -208,7 +234,8 @@ class WorkoutSessionDetailPage extends StatelessWidget {
     int number,
   ) {
     final set = session.sets[index];
-    final kind = training.exerciseById(set.exerciseId)?.kind ?? ExerciseKind.reps;
+    final kind =
+        training.exerciseById(set.exerciseId)?.kind ?? ExerciseKind.reps;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -220,13 +247,16 @@ class WorkoutSessionDetailPage extends StatelessWidget {
             context,
             set: set,
             kind: kind,
-            onChanged: (edited) => _replaceSet(training, session, index, edited),
+            onChanged: (edited) =>
+                _replaceSet(training, session, index, edited),
           ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
+              border: Border.all(
+                color: scheme.onSurface.withValues(alpha: 0.06),
+              ),
             ),
             child: Row(
               children: [

@@ -31,7 +31,8 @@ class HeaderDeviceButton extends StatelessWidget {
                 color: Colors.red,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Theme.of(context).appBarTheme.backgroundColor ??
+                  color:
+                      Theme.of(context).appBarTheme.backgroundColor ??
                       Theme.of(context).scaffoldBackgroundColor,
                   width: 1.5,
                 ),

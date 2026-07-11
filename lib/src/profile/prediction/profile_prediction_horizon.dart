@@ -11,7 +11,11 @@ class ProfilePredictionHorizon extends StatelessWidget {
 
   static const _horizons = [30, 60];
 
-  void _select(BuildContext context, ProfilePredictionState state, int minutes) {
+  void _select(
+    BuildContext context,
+    ProfilePredictionState state,
+    int minutes,
+  ) {
     state.setHorizon(minutes);
     context.read<CgmController>().refreshPrediction();
   }
@@ -21,7 +25,9 @@ class ProfilePredictionHorizon extends StatelessWidget {
     final state = context.watch<ProfilePredictionState>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [for (final minutes in _horizons) _row(context, state, minutes)],
+      children: [
+        for (final minutes in _horizons) _row(context, state, minutes),
+      ],
     );
   }
 

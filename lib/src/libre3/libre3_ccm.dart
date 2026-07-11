@@ -22,12 +22,7 @@ class Libre3Ccm {
     final cipher = CCMBlockCipher(AESEngine())
       ..init(
         false,
-        AEADParameters(
-          KeyParameter(key),
-          macBits,
-          nonce,
-          aad ?? Uint8List(0),
-        ),
+        AEADParameters(KeyParameter(key), macBits, nonce, aad ?? Uint8List(0)),
       );
     return cipher.process(ciphertextAndTag);
   }

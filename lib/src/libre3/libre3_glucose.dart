@@ -31,7 +31,9 @@ class Libre3GlucoseCodec {
     final rate = bytes.getInt16(4, Endian.little);
     final projected = bytes.getUint16(8, Endian.little) ~/ 100;
     final bitfields = data[14];
-    final temperature = data.length >= 21 ? bytes.getUint16(19, Endian.little) : null;
+    final temperature = data.length >= 21
+        ? bytes.getUint16(19, Endian.little)
+        : null;
     return CgmReading(
       secsSinceStart: lifeCount * 60,
       age: 0,

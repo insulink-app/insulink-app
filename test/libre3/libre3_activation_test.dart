@@ -29,15 +29,17 @@ void main() {
       );
       // 4 (time-1) + 4 (account) + 2 (crc) = 10 bytes.
       expect(params.length, 10);
-      final time = params[0] | (params[1] << 8) | (params[2] << 16) |
-          (params[3] << 24);
+      final time =
+          params[0] | (params[1] << 8) | (params[2] << 16) | (params[3] << 24);
       expect(time, 1700000000 - 1);
-      final account = params[4] | (params[5] << 8) | (params[6] << 16) |
-          (params[7] << 24);
+      final account =
+          params[4] | (params[5] << 8) | (params[6] << 16) | (params[7] << 24);
       expect(account, 0x1F416D8D);
       final crc = params[8] | (params[9] << 8);
-      expect(crc, Libre3Activation.crc16Activation(
-          Uint8List.sublistView(params, 0, 8)));
+      expect(
+        crc,
+        Libre3Activation.crc16Activation(Uint8List.sublistView(params, 0, 8)),
+      );
     });
 
     test('parseActivationResponse decodes the real Juggluco nfc2 capture', () {

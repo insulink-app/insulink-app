@@ -257,13 +257,12 @@ class G7AlarmManager {
       return;
     }
     final glucose = await ProfileGlucoseState.load();
-    _rearmAdvisories(mgdl, glucose);
     final forecast = await _forecast(mgdl, trendPerMin);
-    final level = advisoryLevelFor(
-      mgdl,
-      forecast,
-      (low: glucose.low, high: glucose.high),
-    );
+    _rearmAdvisories(forecast, glucose);
+    final level = advisoryLevelFor(mgdl, forecast, (
+      low: glucose.low,
+      high: glucose.high,
+    ));
     if (level == AdvisoryLevel.none) {
       return;
     }
@@ -288,16 +287,22 @@ class G7AlarmManager {
     }
   }
 
-  /// Re-arm an advisory once the actual glucose has recovered clearly past the
-  /// alarm line (risen above `low + margin`, or fallen below `high - margin`).
-  /// This is the "erst wenn wieder gestiegen" guard: after one pre-warning the
-  /// zone stays disarmed until a real recovery, so a forecast oscillating around
-  /// the threshold can't re-fire the same low/high episode again and again.
-  void _rearmAdvisories(int mgdl, ProfileGlucoseState glucose) {
-    if (mgdl >= glucose.low + _advisoryRearmMarginMgdl) {
+  /// Re-arm an advisory once the FORECAST has recovered clearly past the alarm
+  /// line (projected low back above `low + margin`, or projected high back below
+  /// `high - margin`). Keyed on the forecast, not the current value: the advisory
+  /// fires while glucose is still in range, so the current value is usually
+  /// already past the re-arm line at the moment it fires — re-arming on it would
+  /// re-fire the same episode on the very next reading. Waiting for the forecast
+  /// itself to recover is the real "episode over" signal, so a projection that
+  /// keeps threatening (or wobbles around the threshold) can't nag repeatedly.
+  void _rearmAdvisories(
+    ({double low, double high}) forecast,
+    ProfileGlucoseState glucose,
+  ) {
+    if (forecast.low >= glucose.low + _advisoryRearmMarginMgdl) {
       _lowAdvisoryArmed = true;
     }
-    if (mgdl <= glucose.high - _advisoryRearmMarginMgdl) {
+    if (forecast.high <= glucose.high - _advisoryRearmMarginMgdl) {
       _highAdvisoryArmed = true;
     }
   }
@@ -333,7 +338,8 @@ class G7AlarmManager {
     final linear = mgdl + trendPerMin * _advisoryHorizonMin;
     var low = linear;
     var high = linear;
-    for (final point in await _freshPredictionCurve() ?? const <PredictionPoint>[]) {
+    for (final point
+        in await _freshPredictionCurve() ?? const <PredictionPoint>[]) {
       if (point.offsetMin <= 0 || point.offsetMin > _advisoryHorizonMin) {
         continue;
       }
@@ -373,7 +379,13 @@ class G7AlarmManager {
     ({double low, double high}) forecast,
     ProfileGlucoseState glucose,
   ) async {
-    final line = await _forecastLine(level, mgdl, trendPerMin, forecast, glucose.unit);
+    final line = await _forecastLine(
+      level,
+      mgdl,
+      trendPerMin,
+      forecast,
+      glucose.unit,
+    );
     final bolus = await ProfileBolusState.load();
     if (level == AdvisoryLevel.low) {
       final grams = bolus.suggestedRescueCarbs(
@@ -393,8 +405,10 @@ class G7AlarmManager {
       glucoseMgdl: forecast.high.round(),
       targetMgdl: target,
     );
-    final suggestion =
-        await _strings.format('alarm.advisory.high_body', units.toStringAsFixed(1));
+    final suggestion = await _strings.format(
+      'alarm.advisory.high_body',
+      units.toStringAsFixed(1),
+    );
     return '$line\n$suggestion';
   }
 
@@ -722,13 +736,18 @@ class G7AlarmManager {
     }
     final template = await _strings.get('sport.detect_notification.body');
     final body = template
-        .replaceFirst('#', await _strings.get('sport.trainings.${training.type.name}'))
+        .replaceFirst(
+          '#',
+          await _strings.get('sport.trainings.${training.type.name}'),
+        )
         .replaceFirst('#', '${training.duration.inMinutes}');
     await _plugin.show(
       id: _trainingDetectedId,
       title: await _strings.get('sport.detect_notification.title'),
       body: body,
-      notificationDetails: NotificationDetails(android: await _trainingChannel()),
+      notificationDetails: NotificationDetails(
+        android: await _trainingChannel(),
+      ),
       // Carry the writable hand-off path so the action-tap isolate writes where
       // the drain reads (see trainingNotificationAction / SportStore).
       payload: '${training.id}\n${const SportStore().decisionFilePath}',
@@ -769,10 +788,10 @@ class G7AlarmManager {
   /// Play the pre-warning tone for an imminent low/high, one distinct sound per
   /// direction so the two are audibly distinguishable.
   Future<void> _playAdvisorySound(AdvisoryLevel level) => _playAsset(
-        level == AdvisoryLevel.low
-            ? 'sounds/alarm_low_soon.wav'
-            : 'sounds/alarm_high_soon.wav',
-      );
+    level == AdvisoryLevel.low
+        ? 'sounds/alarm_low_soon.wav'
+        : 'sounds/alarm_high_soon.wav',
+  );
 
   /// Play [asset] through the ALARM stream so it sounds regardless of ringer/
   /// notification volume, DnD, or screen state. Best-effort: the notification

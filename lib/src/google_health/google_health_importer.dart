@@ -63,10 +63,17 @@ class GoogleHealthImporter {
     }
     final now = DateTime.now();
     final start = now.subtract(const Duration(days: _historyDays));
-    final resting = await _dailyLast(HealthDataType.RESTING_HEART_RATE, start, now);
+    final resting = await _dailyLast(
+      HealthDataType.RESTING_HEART_RATE,
+      start,
+      now,
+    );
     final spo2 = await _dailyLast(HealthDataType.BLOOD_OXYGEN, start, now);
-    final respiratory =
-        await _dailyLast(HealthDataType.RESPIRATORY_RATE, start, now);
+    final respiratory = await _dailyLast(
+      HealthDataType.RESPIRATORY_RATE,
+      start,
+      now,
+    );
     final sleep = await _sleepMinutes(start, now);
     final segments = await _sleepSegments(start, now);
     final latest = await _latestHr(now.subtract(const Duration(days: 1)), now);
@@ -120,7 +127,9 @@ class GoogleHealthImporter {
           out[_dateKey(point.dateTo.toLocal())] = minutes;
         }
       }
-    } catch (_) {/* skip if unavailable */}
+    } catch (_) {
+      /* skip if unavailable */
+    }
     return out;
   }
 
@@ -142,7 +151,9 @@ class GoogleHealthImporter {
         if (index < 0 || !point.dateTo.isAfter(point.dateFrom)) {
           continue;
         }
-        byDay.putIfAbsent(_dateKey(point.dateTo.toLocal()), () => []).add(
+        byDay
+            .putIfAbsent(_dateKey(point.dateTo.toLocal()), () => [])
+            .add(
               SleepSegment(
                 stage: SleepStage.values[index],
                 startMs: point.dateFrom.millisecondsSinceEpoch,
@@ -150,7 +161,9 @@ class GoogleHealthImporter {
               ),
             );
       }
-    } catch (_) {/* skip if unavailable */}
+    } catch (_) {
+      /* skip if unavailable */
+    }
     for (final segments in byDay.values) {
       segments.sort((a, b) => a.startMs.compareTo(b.startMs));
     }
@@ -161,8 +174,9 @@ class GoogleHealthImporter {
   SleepStages _stageTotals(List<SleepSegment> segments) {
     final minutes = List.filled(SleepStage.values.length, 0);
     for (final segment in segments) {
-      minutes[segment.stage.index] +=
-          Duration(milliseconds: segment.endMs - segment.startMs).inMinutes;
+      minutes[segment.stage.index] += Duration(
+        milliseconds: segment.endMs - segment.startMs,
+      ).inMinutes;
     }
     return SleepStages(
       deep: minutes[SleepStage.deep.index],
@@ -214,7 +228,10 @@ class GoogleHealthImporter {
       for (final point in _health.removeDuplicates(points)) {
         final value = point.value;
         if (value is NumericHealthValue) {
-          out.add((at: point.dateFrom.toLocal(), bpm: value.numericValue.round()));
+          out.add((
+            at: point.dateFrom.toLocal(),
+            bpm: value.numericValue.round(),
+          ));
         }
       }
     } catch (error) {
@@ -278,7 +295,9 @@ class GoogleHealthImporter {
           sleepMinutes: sleep[key],
           spo2: spo2[key],
           respiratoryRate: respiratory[key],
-          sleepStages: segments[key] == null ? null : _stageTotals(segments[key]!),
+          sleepStages: segments[key] == null
+              ? null
+              : _stageTotals(segments[key]!),
           sleepTimeline: segments[key],
         ),
     ];

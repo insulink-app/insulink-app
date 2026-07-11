@@ -164,7 +164,9 @@ class Libre3Connection implements CgmConnection {
       _log('Libre 3 one-minute parse failed (${plaintext.length} B)');
       return;
     }
-    _log('Libre 3 reading: ${reading.glucoseMgDl} mg/dL @ ${reading.secsSinceStart}s');
+    _log(
+      'Libre 3 reading: ${reading.glucoseMgDl} mg/dL @ ${reading.secsSinceStart}s',
+    );
     // The newest point we already hold BEFORE this reading — the backfill start
     // (so we only pull the gap we missed, not the whole buffer).
     final priorMax = _byTime.isEmpty ? null : _byTime.lastKey();
@@ -211,17 +213,22 @@ class Libre3Connection implements CgmConnection {
     }
     final liveLifeCount = liveSecs ~/ 60;
     final gated = backfillStartLifeCount(liveSecs, priorMax);
-    final from = gated ??
+    final from =
+        gated ??
         (_backfillDiagnostic
             ? (liveLifeCount - 60 < 0 ? 0 : liveLifeCount - 60)
             : null);
     if (from == null) {
-      _log('Libre 3 backfill: skipped (no gap; live $liveLifeCount, '
-          'prior ${priorMax == null ? '—' : priorMax ~/ 60})');
+      _log(
+        'Libre 3 backfill: skipped (no gap; live $liveLifeCount, '
+        'prior ${priorMax == null ? '—' : priorMax ~/ 60})',
+      );
       return;
     }
-    _log('Libre 3 backfill: would request from life count $from '
-        '(live $liveLifeCount, prior ${priorMax == null ? '—' : priorMax ~/ 60})');
+    _log(
+      'Libre 3 backfill: would request from life count $from '
+      '(live $liveLifeCount, prior ${priorMax == null ? '—' : priorMax ~/ 60})',
+    );
     if (_activeBackfillWrite) {
       transport.requestBackfill(from);
     } else {
@@ -251,8 +258,9 @@ class Libre3Connection implements CgmConnection {
     if (gapMinutes < _minBackfillGapMin) {
       return null;
     }
-    final span =
-        gapMinutes > _maxBackfillMinutes ? _maxBackfillMinutes : gapMinutes;
+    final span = gapMinutes > _maxBackfillMinutes
+        ? _maxBackfillMinutes
+        : gapMinutes;
     final from = liveLifeCount - span;
     return from < 0 ? 0 : from;
   }
@@ -261,8 +269,10 @@ class Libre3Connection implements CgmConnection {
     final records = Libre3GlucoseCodec.parseHistorical(
       Uint8List.fromList(plaintext),
     );
-    _log('Libre 3 historic notification: ${plaintext.length} B → '
-        '${records.length} record(s)');
+    _log(
+      'Libre 3 historic notification: ${plaintext.length} B → '
+      '${records.length} record(s)',
+    );
     if (records.isEmpty) {
       return;
     }
@@ -279,7 +289,9 @@ class Libre3Connection implements CgmConnection {
   /// jitter the start ±60 s and smear the archive's absolute timestamps. Re-anchor
   /// only on a large jump (a swapped sensor / session reset).
   void _anchorSensorStart(int secsSinceStart) {
-    final candidate = DateTime.now().subtract(Duration(seconds: secsSinceStart));
+    final candidate = DateTime.now().subtract(
+      Duration(seconds: secsSinceStart),
+    );
     final current = _sensorStart ?? store.loadSensorStart(_key);
     if (current == null ||
         current.difference(candidate).abs() > const Duration(minutes: 5)) {

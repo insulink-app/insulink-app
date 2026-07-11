@@ -101,7 +101,12 @@ class TodayTileBuilder {
         );
       case TodayTile.restingHr:
         return _metric(
-          context, icon, label, health.todayRestingHr, 'bpm', GoogleHealthMetric.restingHr,
+          context,
+          icon,
+          label,
+          health.todayRestingHr,
+          'bpm',
+          GoogleHealthMetric.restingHr,
         );
       case TodayTile.sleep:
         return SportSummaryTile(
@@ -125,11 +130,20 @@ class TodayTileBuilder {
         );
       case TodayTile.spo2:
         return _metric(
-          context, icon, label, health.latestSpo2, '%', GoogleHealthMetric.spo2,
+          context,
+          icon,
+          label,
+          health.latestSpo2,
+          '%',
+          GoogleHealthMetric.spo2,
         );
       case TodayTile.respiratoryRate:
         return _metric(
-          context, icon, label, health.latestRespiratoryRate, 'rpm',
+          context,
+          icon,
+          label,
+          health.latestRespiratoryRate,
+          'rpm',
           GoogleHealthMetric.respiratoryRate,
         );
     }
@@ -154,13 +168,17 @@ class TodayTileBuilder {
 
   void _detail(BuildContext context, ActivityMetric metric) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => ActivityDetailPage(metric: metric)),
+      MaterialPageRoute<void>(
+        builder: (_) => ActivityDetailPage(metric: metric),
+      ),
     );
   }
 
   void _googleHealthDetail(BuildContext context, GoogleHealthMetric metric) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => GoogleHealthDetailPage(metric: metric)),
+      MaterialPageRoute<void>(
+        builder: (_) => GoogleHealthDetailPage(metric: metric),
+      ),
     );
   }
 }

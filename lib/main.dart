@@ -18,6 +18,10 @@ import 'package:insulink/src/profile/language/profile_language_state.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/theme/profile_theme_state.dart';
+import 'package:insulink/src/nutrition/food/food_state.dart';
+import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
+import 'package:insulink/src/nutrition/meal/meal_state.dart';
+import 'package:insulink/src/nutrition/stats/nutrition_layout_state.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_state.dart';
@@ -41,6 +45,10 @@ typedef AppPreferences = ({
   GoogleHealthState health,
   TodayLayoutState todayLayout,
   OverviewLayoutState overviewLayout,
+  NutritionState nutrition,
+  FoodState food,
+  MealState meals,
+  NutritionLayoutState nutritionLayout,
 });
 
 Future<void> main() async {
@@ -129,6 +137,10 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.health..init()),
         ChangeNotifierProvider(create: (_) => prefs.todayLayout),
         ChangeNotifierProvider(create: (_) => prefs.overviewLayout),
+        ChangeNotifierProvider(create: (_) => prefs.nutrition),
+        ChangeNotifierProvider(create: (_) => prefs.food),
+        ChangeNotifierProvider(create: (_) => prefs.meals),
+        ChangeNotifierProvider(create: (_) => prefs.nutritionLayout),
         // Step counter — only started when the Sport tab is opened
         // (ensureStarted), not here, to avoid forcing the permission/stream at
         // app start.
@@ -185,6 +197,10 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       health: await GoogleHealthState.load(),
       todayLayout: await TodayLayoutState.load(),
       overviewLayout: await OverviewLayoutState.load(),
+      nutrition: await NutritionState.load(),
+      food: await FoodState.load(),
+      meals: await MealState.load(),
+      nutritionLayout: await NutritionLayoutState.load(),
     );
   }
 }

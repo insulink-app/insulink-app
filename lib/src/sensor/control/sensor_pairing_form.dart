@@ -44,11 +44,7 @@ class SensorPairingForm extends StatelessWidget {
     if (controller.sensorType == SensorType.abbottLibre3) {
       return [Libre3PairingFields(controller: controller)];
     }
-    return [
-      _codeRow(context),
-      const SizedBox(height: 12),
-      _connectButton(),
-    ];
+    return [_codeRow(context), const SizedBox(height: 12), _connectButton()];
   }
 
   Widget _header(ColorScheme scheme) {
