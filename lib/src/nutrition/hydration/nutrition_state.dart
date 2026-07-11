@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../nutrition_sync.dart';
 import 'nutrition_models.dart';
 import 'nutrition_store.dart';
 
@@ -8,7 +9,7 @@ import 'nutrition_store.dart';
 /// persist.
 class NutritionState extends ChangeNotifier {
   final NutritionStore _store;
-  final List<WaterEntry> _entries;
+  final List<DrinkEntry> _entries;
   int _goalMl;
   int _carbsGoalG;
   int _proteinGoalG;
@@ -42,10 +43,10 @@ class NutritionState extends ChangeNotifier {
   int get proteinGoalG => _proteinGoalG;
 
   /// All logged drinks (for the water history/detail page).
-  List<WaterEntry> get entries => List.unmodifiable(_entries);
+  List<DrinkEntry> get entries => List.unmodifiable(_entries);
 
   /// Drinks logged since local midnight, newest last.
-  List<WaterEntry> get todayEntries {
+  List<DrinkEntry> get todayEntries {
     final since = _midnightMs();
     return _entries.where((entry) => entry.atEpochMs >= since).toList();
   }
@@ -64,7 +65,7 @@ class NutritionState extends ChangeNotifier {
 
   Future<void> addDrink(int ml, String kind) async {
     _entries.add(
-      WaterEntry(
+      DrinkEntry(
         atEpochMs: DateTime.now().millisecondsSinceEpoch,
         ml: ml,
         kind: kind,
@@ -72,12 +73,14 @@ class NutritionState extends ChangeNotifier {
     );
     notifyListeners();
     await _store.saveEntries(_entries);
+    NutritionSync().pushDrinks();
   }
 
-  Future<void> removeEntry(WaterEntry entry) async {
+  Future<void> removeEntry(DrinkEntry entry) async {
     _entries.remove(entry);
     notifyListeners();
     await _store.saveEntries(_entries);
+    NutritionSync().pushDrinks();
   }
 
   Future<void> setGoalLitres(double litres) async {

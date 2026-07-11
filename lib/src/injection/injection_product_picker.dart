@@ -121,7 +121,7 @@ class _ProductPickerState extends State<_ProductPicker> {
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 itemCount: filtered.length,
                 itemBuilder: (context, index) => _tile(filtered[index]),
               ),

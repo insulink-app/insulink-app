@@ -68,7 +68,7 @@ class _TodayDrinksSheet extends StatelessWidget {
   Widget _list(
     ThemeData theme,
     NutritionState state,
-    List<WaterEntry> entries,
+    List<DrinkEntry> entries,
   ) {
     final accent = theme.colorScheme.primary;
     return ListView.separated(

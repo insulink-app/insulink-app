@@ -49,6 +49,7 @@ class MealEntry {
     required this.amount,
     required this.carbs,
     required this.protein,
+    this.servingSize,
   });
 
   final String name;
@@ -57,12 +58,21 @@ class MealEntry {
   final double carbs;
   final double protein;
 
+  /// The product's serving size in [unit] (absent when the product declares no
+  /// serving). Lets the detail view show how many servings this portion is.
+  final double? servingSize;
+
+  /// Number of servings this portion represents, or null when the product has
+  /// no declared serving size.
+  double? get servings => (servingSize ?? 0) > 0 ? amount / servingSize! : null;
+
   factory MealEntry.fromJson(Map<String, dynamic> json) => MealEntry(
     name: json['name'] as String,
     unit: json['unit'] as String? ?? 'g',
     amount: (json['amount'] as num).toDouble(),
     carbs: (json['carbs'] as num).toDouble(),
     protein: (json['protein'] as num?)?.toDouble() ?? 0,
+    servingSize: (json['serving'] as num?)?.toDouble(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -71,5 +81,6 @@ class MealEntry {
     'amount': amount,
     'carbs': carbs,
     'protein': protein,
+    'serving': servingSize,
   };
 }

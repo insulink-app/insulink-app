@@ -12,8 +12,12 @@ class NutritionStore {
   /// the backend and write the server's value straight back here.
   static const goalKey = 'nutrition.water_goal_ml';
   static const _kGoal = goalKey;
-  static const _kCarbsGoal = 'nutrition.carbs_goal_g';
-  static const _kProteinGoal = 'nutrition.protein_goal_g';
+  /// Public so [ProfileSettings] can sync the carb/protein goals to the backend
+  /// and write the server's value straight back here.
+  static const carbsGoalKey = 'nutrition.carbs_goal_g';
+  static const proteinGoalKey = 'nutrition.protein_goal_g';
+  static const _kCarbsGoal = carbsGoalKey;
+  static const _kProteinGoal = proteinGoalKey;
   static const _kEntries = 'nutrition.water_entries';
   static const _entryCap = 500;
 
@@ -48,19 +52,19 @@ class NutritionStore {
   Future<void> saveProteinGoalG(int grams) =>
       _storage.write(key: _kProteinGoal, value: '$grams');
 
-  Future<List<WaterEntry>> loadEntries() async {
+  Future<List<DrinkEntry>> loadEntries() async {
     final raw = await _storage.read(key: _kEntries);
     if (raw == null || raw.isEmpty) {
       return [];
     }
     return (jsonDecode(raw) as List)
         .cast<Map<String, dynamic>>()
-        .map(WaterEntry.fromJson)
+        .map(DrinkEntry.fromJson)
         .toList();
   }
 
   /// Persist the entries, capped to the most recent [_entryCap].
-  Future<void> saveEntries(List<WaterEntry> entries) {
+  Future<void> saveEntries(List<DrinkEntry> entries) {
     final capped = entries.length > _entryCap
         ? entries.sublist(entries.length - _entryCap)
         : entries;

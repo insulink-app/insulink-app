@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../nutrition_sync.dart';
 import 'meal.dart';
 import 'meal_store.dart';
 
@@ -47,11 +48,13 @@ class MealState extends ChangeNotifier {
     }
     notifyListeners();
     await _store.saveMeals(_meals);
+    NutritionSync().pushMeals();
   }
 
   Future<void> removeMeal(Meal meal) async {
     _meals.remove(meal);
     notifyListeners();
     await _store.saveMeals(_meals);
+    NutritionSync().pushMeals();
   }
 }

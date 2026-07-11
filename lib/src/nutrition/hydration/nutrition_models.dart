@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 /// One logged drink: when it was drunk, how much (ml), and which preset
 /// ([kind]) so the today list can render the matching icon.
-class WaterEntry {
-  const WaterEntry({
+class DrinkEntry {
+  const DrinkEntry({
     required this.atEpochMs,
     required this.ml,
     required this.kind,
@@ -13,7 +13,7 @@ class WaterEntry {
   final int ml;
   final String kind;
 
-  factory WaterEntry.fromJson(Map<String, dynamic> json) => WaterEntry(
+  factory DrinkEntry.fromJson(Map<String, dynamic> json) => DrinkEntry(
     atEpochMs: json['at'] as int,
     ml: json['ml'] as int,
     kind: json['kind'] as String? ?? 'free',

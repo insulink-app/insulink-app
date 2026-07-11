@@ -164,7 +164,7 @@ class MealDetailSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${_amount(entry.amount)} ${entry.unit}',
+                    _entrySubtitle(context, entry),
                     style: TextStyle(
                       fontSize: 12,
                       color: scheme.onSurface.withValues(alpha: 0.6),
@@ -199,6 +199,20 @@ class MealDetailSheet extends StatelessWidget {
         style: const TextStyle(color: Colors.redAccent),
       ),
     );
+  }
+
+  /// The amount in the product's unit, prefixed with the serving count when the
+  /// product declares a serving size (e.g. "2 Portionen · 60 g").
+  String _entrySubtitle(BuildContext context, MealEntry entry) {
+    final amount = '${_amount(entry.amount)} ${entry.unit}';
+    final servings = entry.servings;
+    if (servings == null) {
+      return amount;
+    }
+    final label = servings == 1
+        ? Locales.string(context, 'injection.products.serving_one')
+        : Locales.string(context, 'injection.products.servings');
+    return '${_amount(servings)} $label · $amount';
   }
 
   String _amount(double value) => value % 1 == 0

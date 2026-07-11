@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../nutrition_sync.dart';
 import 'food_product.dart';
 import 'food_store.dart';
 
@@ -30,11 +31,13 @@ class FoodState extends ChangeNotifier {
     _products.add(product);
     notifyListeners();
     await _store.saveProducts(_products);
+    NutritionSync().pushProducts();
   }
 
   Future<void> removeProduct(FoodProduct product) async {
     _products.removeWhere((existing) => existing.barcode == product.barcode);
     notifyListeners();
     await _store.saveProducts(_products);
+    NutritionSync().pushProducts();
   }
 }

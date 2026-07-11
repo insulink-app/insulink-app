@@ -75,9 +75,11 @@ class ProfileSettings {
       "sport.distance_goal_m": "${await sport.loadDistanceGoalM()}",
       "sport.calories_goal": "${await sport.loadCaloriesGoal()}",
       "sport.weight_goal_kg": "${await sport.loadWeightGoalKg()}",
-      // Hydration daily goal (ml) — key matches NutritionStore so pull() writes
-      // it back where NutritionState reads it.
+      // Nutrition goals — keys match NutritionStore so pull() writes them back
+      // where NutritionState reads them.
       NutritionStore.goalKey: "${await nutrition.loadGoalMl()}",
+      NutritionStore.carbsGoalKey: "${await nutrition.loadCarbsGoalG()}",
+      NutritionStore.proteinGoalKey: "${await nutrition.loadProteinGoalG()}",
       // Box layouts (which boxes + order) of the Today grid and the overview,
       // so they survive logout/login.
       TodayLayoutState.key: await TodayLayoutState.loadRaw(),
