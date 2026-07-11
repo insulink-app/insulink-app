@@ -21,7 +21,10 @@ class CalendarHeatmapView extends StatelessWidget {
     final colors = Theme.of(context).extension<GlucoseColors>()!;
     final tirByDay = DailyTimeInRange(controller.statsArchive, glucose).build();
     if (tirByDay.isEmpty) {
-      return const EmptyState(icon: Icons.insights_rounded, titleKey: 'analysis.empty');
+      return const EmptyState(
+        icon: Icons.insights_rounded,
+        titleKey: 'analysis.empty',
+      );
     }
     final days = tirByDay.keys.toList()..sort();
     return SingleChildScrollView(

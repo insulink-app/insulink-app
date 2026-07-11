@@ -27,9 +27,7 @@ class HourRangeSelector extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final hours in options) _chip(theme, hours),
-        ],
+        children: [for (final hours in options) _chip(theme, hours)],
       ),
     );
   }

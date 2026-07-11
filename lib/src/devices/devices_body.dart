@@ -12,9 +12,9 @@ import 'package:provider/provider.dart';
 /// Reached from the header device button and the overview shortcuts, now that
 /// devices is no longer a bottom-navigation tab.
 void openDevicesPage(BuildContext context) {
-  Navigator.of(context).push(
-    MaterialPageRoute<void>(builder: (_) => const DevicesPage()),
-  );
+  Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const DevicesPage()));
 }
 
 /// The devices page as a standalone route, with its own header + back button.

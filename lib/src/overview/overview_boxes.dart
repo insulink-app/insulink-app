@@ -46,8 +46,9 @@ class OverviewBoxes extends StatelessWidget {
             icon: Icon(
               Icons.tune,
               size: 20,
-              color:
-                  Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
             onPressed: () => _edit(context, layout),
           ),

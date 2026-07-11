@@ -140,8 +140,7 @@ class _OverviewChartState extends State<OverviewChart>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             HourRangeSelector(selected: _rangeHours, onChanged: _setRange),
-            if (widget.navigable)
-              Flexible(child: _navigator(context, byTime)),
+            if (widget.navigable) Flexible(child: _navigator(context, byTime)),
           ],
         ),
         const SizedBox(height: 24),
@@ -155,8 +154,7 @@ class _OverviewChartState extends State<OverviewChart>
   Widget _navigator(BuildContext context, SplayTreeMap<int, int> byTime) {
     final latestSecs = byTime.isEmpty ? 0 : byTime.lastKey()!;
     final oldestSecs = byTime.isEmpty ? 0 : byTime.firstKey()!;
-    final windowStartSecs =
-        latestSecs - (_panWindows + 1) * _rangeHours * 3600;
+    final windowStartSecs = latestSecs - (_panWindows + 1) * _rangeHours * 3600;
     final canGoBack = windowStartSecs > oldestSecs;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -374,5 +372,4 @@ class _OverviewChartState extends State<OverviewChart>
       dotData: const FlDotData(show: false),
     );
   }
-
 }

@@ -13,11 +13,7 @@ class TrainingStatsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: [
-        _tiles(context),
-        const SizedBox(height: 12),
-        _times(context),
-      ],
+      children: [_tiles(context), const SizedBox(height: 12), _times(context)],
     );
   }
 
@@ -25,18 +21,30 @@ class TrainingStatsPanel extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _tile(context, Icons.straighten_rounded,
-              'sport.trainings.distance', formatDistanceKm(training.distanceM)),
+          child: _tile(
+            context,
+            Icons.straighten_rounded,
+            'sport.trainings.distance',
+            formatDistanceKm(training.distanceM),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _tile(context, Icons.timer_outlined,
-              'sport.trainings.duration', formatDuration(training.duration)),
+          child: _tile(
+            context,
+            Icons.timer_outlined,
+            'sport.trainings.duration',
+            formatDuration(training.duration),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _tile(context, Icons.speed_rounded,
-              'sport.trainings.avg_speed', formatSpeed(training.avgSpeedKmh)),
+          child: _tile(
+            context,
+            Icons.speed_rounded,
+            'sport.trainings.avg_speed',
+            formatSpeed(training.avgSpeedKmh),
+          ),
         ),
       ],
     );

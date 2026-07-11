@@ -234,7 +234,8 @@ class WorkoutSessionDetailPage extends StatelessWidget {
     int number,
   ) {
     final set = session.sets[index];
-    final kind = training.exerciseById(set.exerciseId)?.kind ?? ExerciseKind.reps;
+    final kind =
+        training.exerciseById(set.exerciseId)?.kind ?? ExerciseKind.reps;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -246,13 +247,16 @@ class WorkoutSessionDetailPage extends StatelessWidget {
             context,
             set: set,
             kind: kind,
-            onChanged: (edited) => _replaceSet(training, session, index, edited),
+            onChanged: (edited) =>
+                _replaceSet(training, session, index, edited),
           ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
+              border: Border.all(
+                color: scheme.onSurface.withValues(alpha: 0.06),
+              ),
             ),
             child: Row(
               children: [

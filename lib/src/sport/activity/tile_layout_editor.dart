@@ -55,9 +55,10 @@ class _TileLayoutEditorState<T extends Enum>
     }
     return [
       for (final tile in widget.state.order)
-        if (Locales.string(context, widget.labelKey(tile))
-            .toLowerCase()
-            .contains(query))
+        if (Locales.string(
+          context,
+          widget.labelKey(tile),
+        ).toLowerCase().contains(query))
           tile,
     ];
   }

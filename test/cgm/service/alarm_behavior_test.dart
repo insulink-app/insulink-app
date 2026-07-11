@@ -135,12 +135,15 @@ void main() {
           .toList();
     }
 
-    test('escalating within an out-of-range spell logs only one event', () async {
-      await alarms.check(60, -1.0); // low warning → new event
-      await alarms.check(50, -1.0); // urgent low → same spell, no new event
-      await alarms.check(60, 1.0); // back to warning → still the same spell
-      expect(await eventTypes(), ['glucose_low']);
-    });
+    test(
+      'escalating within an out-of-range spell logs only one event',
+      () async {
+        await alarms.check(60, -1.0); // low warning → new event
+        await alarms.check(50, -1.0); // urgent low → same spell, no new event
+        await alarms.check(60, 1.0); // back to warning → still the same spell
+        expect(await eventTypes(), ['glucose_low']);
+      },
+    );
 
     test('a fresh event only after glucose recovered into range', () async {
       await alarms.check(60, -1.0); // low → event
@@ -234,15 +237,18 @@ void main() {
       expect(notifications.shown, [103]);
     });
 
-    test('never fires deep into the second half, even if not yet notified', () async {
-      final store = await CgmStore.open();
-      await alarms.checkHalftime(
-        store: store,
-        key: 'SERIAL',
-        sessionLengthSec: session,
-        secsSinceStart: half + 3 * 86400, // day 8 → outside the window
-      );
-      expect(notifications.shown, isEmpty);
-    });
+    test(
+      'never fires deep into the second half, even if not yet notified',
+      () async {
+        final store = await CgmStore.open();
+        await alarms.checkHalftime(
+          store: store,
+          key: 'SERIAL',
+          sessionLengthSec: session,
+          secsSinceStart: half + 3 * 86400, // day 8 → outside the window
+        );
+        expect(notifications.shown, isEmpty);
+      },
+    );
   });
 }

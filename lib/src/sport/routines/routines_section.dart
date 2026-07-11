@@ -36,9 +36,7 @@ class RoutinesSection extends StatelessWidget {
               icon: const Icon(Icons.fitness_center, size: 20),
               tooltip: Locales.string(context, 'sport.exercises'),
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const ExercisesPage(),
-                ),
+                MaterialPageRoute<void>(builder: (_) => const ExercisesPage()),
               ),
             ),
           ],
@@ -119,7 +117,7 @@ class RoutinesSection extends StatelessWidget {
     );
   }
 
-Widget _titleBlock(
+  Widget _titleBlock(
     BuildContext context,
     SportRoutine routine,
     TrainingState training,

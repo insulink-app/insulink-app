@@ -26,7 +26,10 @@ class GlucoseHistoryView extends StatelessWidget {
     );
     final spots = series.build();
     if (spots.isEmpty) {
-      return const EmptyState(icon: Icons.insights_rounded, titleKey: 'analysis.empty');
+      return const EmptyState(
+        icon: Icons.insights_rounded,
+        titleKey: 'analysis.empty',
+      );
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 24, 20, 48),

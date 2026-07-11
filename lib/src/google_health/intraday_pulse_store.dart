@@ -25,9 +25,10 @@ class IntradayPulseStore {
     final byDay = <String, List<PulseSample>>{};
     for (final sample in samples) {
       final local = sample.at.toLocal();
-      byDay
-          .putIfAbsent(_dayKey(local), () => [])
-          .add((at: local, bpm: sample.bpm));
+      byDay.putIfAbsent(_dayKey(local), () => []).add((
+        at: local,
+        bpm: sample.bpm,
+      ));
     }
     for (final entry in byDay.entries) {
       final buckets = await _readBuckets(entry.key)
@@ -127,7 +128,8 @@ class IntradayPulseStore {
     return raw == null ? [] : (jsonDecode(raw) as List).cast<String>();
   }
 
-  String _dayKey(DateTime day) => '${day.year}-${_two(day.month)}-${_two(day.day)}';
+  String _dayKey(DateTime day) =>
+      '${day.year}-${_two(day.month)}-${_two(day.day)}';
   String _two(int value) => value.toString().padLeft(2, '0');
   int _minute(DateTime at) => at.millisecondsSinceEpoch ~/ 60000;
 }

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 
-/// One stored product: a unit-aware icon badge, name/brand, and its per-100 g
-/// macros as color-coded pills. Tap opens the portion picker; the × removes it.
+/// One stored product: a unit-aware icon badge with its name, brand and reported
+/// serving. Tap opens the portion picker; the × removes it.
 class FoodProductCard extends StatelessWidget {
   const FoodProductCard({
     super.key,
@@ -15,8 +14,6 @@ class FoodProductCard extends StatelessWidget {
   final FoodProduct product;
   final VoidCallback onTap;
   final VoidCallback onRemove;
-
-  static const _carbsColor = Color(0xFF3B82F6);
 
   @override
   Widget build(BuildContext context) {
@@ -112,46 +109,5 @@ class FoodProductCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _pill(String labelKey, double value, String unit, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '${_format(value)}$unit',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 4),
-          LocaleText(
-            labelKey,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: color.withValues(alpha: 0.9),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Grams/kcal with at most one decimal, trailing zero trimmed (12.0 → "12").
-  String _format(double value) {
-    var text = value.toStringAsFixed(1);
-    if (text.endsWith('.0')) {
-      text = text.substring(0, text.length - 2);
-    }
-    return text.replaceAll('.', ',');
   }
 }

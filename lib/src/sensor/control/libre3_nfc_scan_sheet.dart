@@ -127,7 +127,10 @@ class _Libre3NfcScanSheetState extends State<Libre3NfcScanSheet>
           SizedBox(
             width: 16,
             height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, color: _scheme.primary),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: _scheme.primary,
+            ),
           ),
         const SizedBox(width: 10),
         LocaleText(

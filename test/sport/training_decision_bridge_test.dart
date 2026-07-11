@@ -13,18 +13,19 @@ void main() {
   FlutterSecureStorage.setMockInitialValues({});
 
   const store = SportStore();
-  final decisionFile =
-      File('${Directory.systemTemp.path}/insulink_training_decisions');
+  final decisionFile = File(
+    '${Directory.systemTemp.path}/insulink_training_decisions',
+  );
 
   CardioTraining training(String id) => CardioTraining(
-        id: id,
-        type: CardioType.bike,
-        startMs: 1000,
-        endMs: 2000,
-        track: const [],
-        distanceM: 500,
-        detected: true,
-      );
+    id: id,
+    type: CardioType.bike,
+    startMs: 1000,
+    endMs: 2000,
+    track: const [],
+    distanceM: 500,
+    detected: true,
+  );
 
   setUp(() async {
     FlutterSecureStorage.setMockInitialValues({});

@@ -169,7 +169,9 @@ class _HeartRatePageState extends State<HeartRatePage> {
                 }
                 final samples = snapshot.data ?? const [];
                 if (samples.isEmpty) {
-                  return Center(child: LocaleText('google_health.detail.empty'));
+                  return Center(
+                    child: LocaleText('google_health.detail.empty'),
+                  );
                 }
                 return _content(context, samples);
               },
@@ -193,30 +195,35 @@ class _HeartRatePageState extends State<HeartRatePage> {
           onTap: monitor.isRunning ? null : monitor.start,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-          margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.favorite,
-                color: live ? scheme.error : scheme.onSurface.withValues(alpha: 0.3),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                live && monitor.bpm != null ? '${monitor.bpm}' : '–',
-                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(width: 6),
-              const Padding(
-                padding: EdgeInsets.only(top: 6),
-                child: Text('bpm', style: TextStyle(fontSize: 14)),
-              ),
-            ],
-          ),
+            margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.favorite,
+                  color: live
+                      ? scheme.error
+                      : scheme.onSurface.withValues(alpha: 0.3),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  live && monitor.bpm != null ? '${monitor.bpm}' : '–',
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Text('bpm', style: TextStyle(fontSize: 14)),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -280,7 +287,8 @@ class _HeartRatePageState extends State<HeartRatePage> {
     final monitor = context.read<GoogleHealthState>().liveHrMonitor;
     return ListenableBuilder(
       listenable: monitor,
-      builder: (context, _) => _contentBody(context, _mergeLive(context, hcSamples)),
+      builder: (context, _) =>
+          _contentBody(context, _mergeLive(context, hcSamples)),
     );
   }
 
@@ -301,9 +309,13 @@ class _HeartRatePageState extends State<HeartRatePage> {
       ),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),
       children: [
-        _statsRow(context, scheme, avg.round(),
-            bpms.reduce((a, b) => a < b ? a : b),
-            bpms.reduce((a, b) => a > b ? a : b)),
+        _statsRow(
+          context,
+          scheme,
+          avg.round(),
+          bpms.reduce((a, b) => a < b ? a : b),
+          bpms.reduce((a, b) => a > b ? a : b),
+        ),
         const SizedBox(height: 20),
         Align(
           alignment: Alignment.centerLeft,
@@ -340,7 +352,12 @@ class _HeartRatePageState extends State<HeartRatePage> {
     );
   }
 
-  Widget _stat(BuildContext context, ColorScheme scheme, String labelKey, int value) {
+  Widget _stat(
+    BuildContext context,
+    ColorScheme scheme,
+    String labelKey,
+    int value,
+  ) {
     return Column(
       children: [
         Text(
@@ -410,7 +427,11 @@ class _HeartRatePageState extends State<HeartRatePage> {
       final current = buckets[index];
       buckets[index] = current == null
           ? (x: x, y: sample.bpm.toDouble(), count: 1)
-          : (x: current.x + x, y: current.y + sample.bpm, count: current.count + 1);
+          : (
+              x: current.x + x,
+              y: current.y + sample.bpm,
+              count: current.count + 1,
+            );
     }
     final indices = buckets.keys.toList()..sort();
     return [

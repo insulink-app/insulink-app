@@ -62,7 +62,9 @@ class _WorkoutVitalsBarState extends State<WorkoutVitalsBar> {
               final bpm = _monitor.bpm;
               return _reading(
                 Icons.favorite,
-                bpm != null ? scheme.error : scheme.onSurface.withValues(alpha: 0.3),
+                bpm != null
+                    ? scheme.error
+                    : scheme.onSurface.withValues(alpha: 0.3),
                 bpm != null ? '$bpm bpm' : '–',
               );
             },
@@ -78,7 +80,10 @@ class _WorkoutVitalsBarState extends State<WorkoutVitalsBar> {
       children: [
         Icon(icon, color: color, size: 22),
         const SizedBox(width: 8),
-        Text(text, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+        ),
       ],
     );
   }

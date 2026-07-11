@@ -77,7 +77,9 @@ class GlucosePredictionFetcher {
     if (json['success'] != true || json['curve'] is! List) {
       return null;
     }
-    final base = DateTime.fromMillisecondsSinceEpoch(json['generated_at'] as int);
+    final base = DateTime.fromMillisecondsSinceEpoch(
+      json['generated_at'] as int,
+    );
     final points = [
       for (final item in json['curve'] as List)
         PredictionPoint(

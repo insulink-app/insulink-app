@@ -58,8 +58,7 @@ class BackgroundLocationSampler {
         return;
       }
       final last = _lastSampledAt;
-      if (last != null &&
-          DateTime.now().difference(last) < _interval) {
+      if (last != null && DateTime.now().difference(last) < _interval) {
         return;
       }
       _lastSampledAt = DateTime.now();
@@ -95,15 +94,16 @@ class BackgroundLocationSampler {
     if (!await _ready()) {
       return;
     }
-    _stream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 0,
-      ),
-    ).listen(
-      _onStreamFix,
-      onError: (Object error) => _onLog('location stream error: $error'),
-    );
+    _stream =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 0,
+          ),
+        ).listen(
+          _onStreamFix,
+          onError: (Object error) => _onLog('location stream error: $error'),
+        );
     _onLog('location: recording stream started');
   }
 
@@ -161,7 +161,8 @@ class BackgroundLocationSampler {
     if (prev == null) {
       return isPlausibleFix(accuracyM: fix.accuracy);
     }
-    final seconds = fix.timestamp.difference(prev.timestamp).inMilliseconds /
+    final seconds =
+        fix.timestamp.difference(prev.timestamp).inMilliseconds /
         Duration.millisecondsPerSecond;
     final meters = Geolocator.distanceBetween(
       prev.latitude,

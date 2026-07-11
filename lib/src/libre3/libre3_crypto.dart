@@ -137,7 +137,9 @@ class Libre3NativeCrypto implements Libre3Crypto {
     }
     final descriptor = _packetDescriptor[channelId];
     if (descriptor == null || data.length < 7) {
-      throw StateError('unsupported Libre 3 channel $channelId / ${data.length} B');
+      throw StateError(
+        'unsupported Libre 3 channel $channelId / ${data.length} B',
+      );
     }
     final bodyLen = data.length - 2;
     final nonce = Uint8List(13)

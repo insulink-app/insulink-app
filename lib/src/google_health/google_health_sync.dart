@@ -23,7 +23,9 @@ class GoogleHealthSync {
   Future<void> _send(List<GoogleHealthDay> archive) async {
     await Request.post(
       url: '/health/days/sync/',
-      body: {'days': [for (final day in archive) day.toJson()]},
+      body: {
+        'days': [for (final day in archive) day.toJson()],
+      },
     ).send(null);
   }
 

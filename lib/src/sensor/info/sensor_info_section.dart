@@ -15,7 +15,10 @@ class SensorSectionList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (sections.isEmpty) {
-      return const EmptyState(icon: Icons.sensors_rounded, titleKey: 'sensor.info.empty');
+      return const EmptyState(
+        icon: Icons.sensors_rounded,
+        titleKey: 'sensor.info.empty',
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

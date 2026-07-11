@@ -39,7 +39,9 @@ class _RoutineSessionTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final locale = MaterialLocalizations.of(context);
     final started = DateTime.fromMillisecondsSinceEpoch(session.startedAtMs);
-    final routine = context.read<TrainingState>().routineById(session.routineId);
+    final routine = context.read<TrainingState>().routineById(
+      session.routineId,
+    );
     return ListTile(
       tileColor: scheme.onSurface.withValues(alpha: 0.04),
       shape: RoundedRectangleBorder(

@@ -82,7 +82,11 @@ class _FreeDrinkSheetState extends State<_FreeDrinkSheet> {
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       cursorColor: accent,
-      style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: accent),
+      style: TextStyle(
+        fontSize: 30,
+        fontWeight: FontWeight.bold,
+        color: accent,
+      ),
       onChanged: (_) => setState(() {}),
       onSubmitted: (_) => _submit(),
       decoration: InputDecoration(
@@ -94,7 +98,10 @@ class _FreeDrinkSheetState extends State<_FreeDrinkSheet> {
         ),
         filled: true,
         fillColor: accent.withValues(alpha: 0.08),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,

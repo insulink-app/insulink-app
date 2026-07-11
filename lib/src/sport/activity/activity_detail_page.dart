@@ -67,10 +67,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
   @override
   Widget build(BuildContext context) {
     final sport = context.watch<SportState>();
-    final archive = context.watch<SportActivityState>().activityArchiveWithToday(
-      sport.strideCm,
-      sport.latestWeight?.kg ?? 70,
-    );
+    final archive = context
+        .watch<SportActivityState>()
+        .activityArchiveWithToday(sport.strideCm, sport.latestWeight?.kg ?? 70);
     final ranged = _inRange(archive);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
@@ -79,7 +78,10 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
         title: LocaleText(_labelKey),
       ),
       body: archive.isEmpty
-          ? const EmptyState(icon: Icons.insights_rounded, titleKey: 'sport.activity.detail.empty')
+          ? const EmptyState(
+              icon: Icons.insights_rounded,
+              titleKey: 'sport.activity.detail.empty',
+            )
           : ListView(
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),

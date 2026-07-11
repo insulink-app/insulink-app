@@ -321,13 +321,16 @@ void main() {
       expect(detected.length, 2);
     });
 
-    test('a vehicle-tagged fast segment is discarded (bus/train, not bike)', () {
-      final points = ride(12, 0, 12);
-      final log = [
-        ActivitySample(tMs: points.first.tMs, kind: ActivityKind.vehicle),
-      ];
-      expect(const CardioDetector().detect(points, log), isEmpty);
-    });
+    test(
+      'a vehicle-tagged fast segment is discarded (bus/train, not bike)',
+      () {
+        final points = ride(12, 0, 12);
+        final log = [
+          ActivitySample(tMs: points.first.tMs, kind: ActivityKind.vehicle),
+        ];
+        expect(const CardioDetector().detect(points, log), isEmpty);
+      },
+    );
 
     test('a bike-tagged fast segment stays a bike ride', () {
       final points = ride(12, 0, 12);
@@ -374,13 +377,15 @@ void main() {
       expect(detected.single.type, CardioType.walk);
     });
 
-    test('a fast segment mis-tagged as walking is upgraded, not called walk',
-        () {
-      // ~24 km/h tagged walk → speed overrides to bike (never walk).
-      final fast = segment(14, 400, ActivityKind.walk);
-      final detected = const CardioDetector().detect(fast.points, fast.log);
-      expect(detected.single.type, CardioType.bike);
-    });
+    test(
+      'a fast segment mis-tagged as walking is upgraded, not called walk',
+      () {
+        // ~24 km/h tagged walk → speed overrides to bike (never walk).
+        final fast = segment(14, 400, ActivityKind.walk);
+        final detected = const CardioDetector().detect(fast.points, fast.log);
+        expect(detected.single.type, CardioType.bike);
+      },
+    );
   });
 
   group('CardioDetectionRunner windowing', () {
@@ -397,46 +402,55 @@ void main() {
       return points;
     }
 
-    List<TrackPoint> upTo(List<TrackPoint> all, int nowMs) =>
-        [for (final point in all) if (point.tMs <= nowMs) point];
+    List<TrackPoint> upTo(List<TrackPoint> all, int nowMs) => [
+      for (final point in all)
+        if (point.tMs <= nowMs) point,
+    ];
 
     DateTime at(int ms) => DateTime.fromMillisecondsSinceEpoch(ms);
 
-    test('detects a jog once in full even when scanned every tick mid-activity',
-        () {
-      final runner = CardioDetectionRunner();
-      final all = jog();
-      final endMs = base + 19 * minute;
+    test(
+      'detects a jog once in full even when scanned every tick mid-activity',
+      () {
+        final runner = CardioDetectionRunner();
+        final all = jog();
+        final endMs = base + 19 * minute;
 
-      // Mid-jog tick: nothing is finalised yet (segment ends < _tail ago) and —
-      // the regression — the watermark does NOT advance, so the ride stays whole.
-      final midNow = base + 10 * minute;
-      final mid = runner.selectDetections(upTo(all, midNow), const [], 0, at(midNow));
-      expect(mid.detected, isEmpty);
-      expect(mid.watermark, 0);
+        // Mid-jog tick: nothing is finalised yet (segment ends < _tail ago) and —
+        // the regression — the watermark does NOT advance, so the ride stays whole.
+        final midNow = base + 10 * minute;
+        final mid = runner.selectDetections(
+          upTo(all, midNow),
+          const [],
+          0,
+          at(midNow),
+        );
+        expect(mid.detected, isEmpty);
+        expect(mid.watermark, 0);
 
-      // 6 min after the jog ended: the full ride finalises as ONE training.
-      final afterNow = endMs + 6 * minute;
-      final done = runner.selectDetections(
-        upTo(all, afterNow),
-        const [],
-        mid.watermark,
-        at(afterNow),
-      );
-      expect(done.detected.length, 1);
-      expect(done.detected.single.type, CardioType.jog);
-      expect(done.detected.single.startMs, base);
-      expect(done.detected.single.endMs, endMs);
+        // 6 min after the jog ended: the full ride finalises as ONE training.
+        final afterNow = endMs + 6 * minute;
+        final done = runner.selectDetections(
+          upTo(all, afterNow),
+          const [],
+          mid.watermark,
+          at(afterNow),
+        );
+        expect(done.detected.length, 1);
+        expect(done.detected.single.type, CardioType.jog);
+        expect(done.detected.single.startMs, base);
+        expect(done.detected.single.endMs, endMs);
 
-      // A later tick does not re-detect it (watermark advanced past it).
-      final again = runner.selectDetections(
-        upTo(all, afterNow + minute),
-        const [],
-        done.watermark,
-        at(afterNow + minute),
-      );
-      expect(again.detected, isEmpty);
-    });
+        // A later tick does not re-detect it (watermark advanced past it).
+        final again = runner.selectDetections(
+          upTo(all, afterNow + minute),
+          const [],
+          done.watermark,
+          at(afterNow + minute),
+        );
+        expect(again.detected, isEmpty);
+      },
+    );
   });
 
   group('ActiveTraining', () {
@@ -543,19 +557,22 @@ void main() {
       runner.dispose();
     });
 
-    test('records set duration on every set and rest after a completed rest', () {
-      final runner = WorkoutRunner(routineWithRest(30), [exercise]);
-      runner.completeSet();
-      // The just-logged set carries a (wall-clock) duration…
-      expect(runner.lastLoggedSet?.durationSecs, isNotNull);
-      expect(runner.lastLoggedSet?.restSecs, isNull);
-      expect(runner.phase, WorkoutPhase.resting);
-      runner.skipRest();
-      // …and once the rest ends, the actual rest is stamped onto it.
-      expect(runner.lastLoggedSet?.restSecs, isNotNull);
-      expect(runner.lastLoggedSet!.restSecs! >= 0, isTrue);
-      runner.dispose();
-    });
+    test(
+      'records set duration on every set and rest after a completed rest',
+      () {
+        final runner = WorkoutRunner(routineWithRest(30), [exercise]);
+        runner.completeSet();
+        // The just-logged set carries a (wall-clock) duration…
+        expect(runner.lastLoggedSet?.durationSecs, isNotNull);
+        expect(runner.lastLoggedSet?.restSecs, isNull);
+        expect(runner.phase, WorkoutPhase.resting);
+        runner.skipRest();
+        // …and once the rest ends, the actual rest is stamped onto it.
+        expect(runner.lastLoggedSet?.restSecs, isNotNull);
+        expect(runner.lastLoggedSet!.restSecs! >= 0, isTrue);
+        runner.dispose();
+      },
+    );
 
     test('jumpTo switches exercise and resets to its first set', () {
       final runner = WorkoutRunner(routineWithRest(0, exercises: 3), [
@@ -570,8 +587,12 @@ void main() {
   });
 
   group('mergedActivities', () {
-    WorkoutSession session(int ms) =>
-        WorkoutSession(id: '$ms', routineId: 'r', startedAtMs: ms, sets: const []);
+    WorkoutSession session(int ms) => WorkoutSession(
+      id: '$ms',
+      routineId: 'r',
+      startedAtMs: ms,
+      sets: const [],
+    );
     CardioTraining training(int ms) => CardioTraining(
       id: '$ms',
       type: CardioType.walk,
@@ -586,7 +607,12 @@ void main() {
         [session(100), session(300)],
         [training(200), training(400)],
       );
-      expect(merged.map((entry) => entry.startMs).toList(), [400, 300, 200, 100]);
+      expect(merged.map((entry) => entry.startMs).toList(), [
+        400,
+        300,
+        200,
+        100,
+      ]);
       expect(merged.first.training, isNotNull);
       expect(merged[1].session, isNotNull);
     });

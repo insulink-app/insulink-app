@@ -41,7 +41,9 @@ class _NutritionDetailPageState extends State<NutritionDetailPage> {
     final byDay = <DateTime, double>{};
     if (_tile == NutritionTile.water) {
       for (final entry in hydration.entries) {
-        final day = _dayOf(DateTime.fromMillisecondsSinceEpoch(entry.atEpochMs));
+        final day = _dayOf(
+          DateTime.fromMillisecondsSinceEpoch(entry.atEpochMs),
+        );
         byDay[day] = (byDay[day] ?? 0) + entry.ml / 1000;
       }
     } else {
@@ -73,7 +75,9 @@ class _NutritionDetailPageState extends State<NutritionDetailPage> {
     return [
       for (final day in all)
         if ((from == null ||
-                !day.date.isBefore(DateTime(from.year, from.month, from.day))) &&
+                !day.date.isBefore(
+                  DateTime(from.year, from.month, from.day),
+                )) &&
             (to == null || day.date.isBefore(to)))
           day,
     ];
@@ -177,8 +181,10 @@ class _NutritionDetailPageState extends State<NutritionDetailPage> {
             children: [
               Text(
                 _format(latest),
-                style:
-                    const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (_unit != null) ...[
                 const SizedBox(width: 6),
@@ -198,10 +204,20 @@ class _NutritionDetailPageState extends State<NutritionDetailPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _stat(context, scheme, Icons.timeline_rounded,
-                  'nutrition.detail.average', avg),
-              _stat(context, scheme, Icons.functions_rounded,
-                  'nutrition.detail.total', total),
+              _stat(
+                context,
+                scheme,
+                Icons.timeline_rounded,
+                'nutrition.detail.average',
+                avg,
+              ),
+              _stat(
+                context,
+                scheme,
+                Icons.functions_rounded,
+                'nutrition.detail.total',
+                total,
+              ),
             ],
           ),
         ],

@@ -41,8 +41,10 @@ class HeartRateZones {
   /// high).
   HeartRateZones copyWith({int? elevated, int? high}) {
     final nextHigh = (high ?? this.high).clamp(minBpm + _gap, maxBpm);
-    final nextElevated =
-        (elevated ?? this.elevated).clamp(minBpm, nextHigh - _gap);
+    final nextElevated = (elevated ?? this.elevated).clamp(
+      minBpm,
+      nextHigh - _gap,
+    );
     return HeartRateZones(elevated: nextElevated, high: nextHigh);
   }
 
@@ -54,7 +56,6 @@ class HeartRateZones {
   static Future<HeartRateZones> load() async {
     final elevated = int.tryParse(await _storage.read(key: _kElevated) ?? '');
     final high = int.tryParse(await _storage.read(key: _kHigh) ?? '');
-    return const HeartRateZones()
-        .copyWith(elevated: elevated, high: high);
+    return const HeartRateZones().copyWith(elevated: elevated, high: high);
   }
 }

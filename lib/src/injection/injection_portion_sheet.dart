@@ -38,13 +38,14 @@ class _PortionSheet extends StatefulWidget {
 }
 
 class _PortionSheetState extends State<_PortionSheet> {
-  late final double? _serving =
-      (widget.product.servingSize ?? 0) > 0 ? widget.product.servingSize : null;
+  late final double? _serving = (widget.product.servingSize ?? 0) > 0
+      ? widget.product.servingSize
+      : null;
 
   late final TextEditingController _input = TextEditingController(
-    text: _fmt(_serving == null
-        ? widget.initialGrams
-        : widget.initialGrams / _serving),
+    text: _fmt(
+      _serving == null ? widget.initialGrams : widget.initialGrams / _serving,
+    ),
   );
 
   @override
@@ -122,8 +123,9 @@ class _PortionSheetState extends State<_PortionSheet> {
           _carbsRow(scheme),
           const SizedBox(height: 24),
           FilledButton(
-            onPressed:
-                _grams <= 0 ? null : () => Navigator.of(context).pop(_grams),
+            onPressed: _grams <= 0
+                ? null
+                : () => Navigator.of(context).pop(_grams),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(50),
             ),
@@ -160,7 +162,7 @@ class _PortionSheetState extends State<_PortionSheet> {
     final label = widget.product.servingLabel.isNotEmpty
         ? widget.product.servingLabel
         : '1 ${Locales.string(context, 'injection.products.serving_one')}'
-            ' = ${_fmt(_serving!)} ${widget.product.unit}';
+              ' = ${_fmt(_serving!)} ${widget.product.unit}';
     return '$label · ≈ ${_grams.toStringAsFixed(0)} ${widget.product.unit}';
   }
 

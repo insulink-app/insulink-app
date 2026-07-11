@@ -31,29 +31,37 @@ List<KmSplit> kmSplits(List<TrackPoint> track) {
     final prev = track[index - 1];
     final curr = track[index];
     final segStart = cumDist;
-    final segDist =
-        Geolocator.distanceBetween(prev.lat, prev.lng, curr.lat, curr.lng);
+    final segDist = Geolocator.distanceBetween(
+      prev.lat,
+      prev.lng,
+      curr.lat,
+      curr.lng,
+    );
     cumDist += segDist;
     while (cumDist >= boundaryDist + 1000) {
       final target = boundaryDist + 1000;
       final into = segDist == 0 ? 0.0 : (target - segStart) / segDist;
       final crossMs = prev.tMs + (curr.tMs - prev.tMs) * into;
-      splits.add(KmSplit(
-        index: splits.length + 1,
-        km: 1.0,
-        time: Duration(milliseconds: (crossMs - boundaryMs).round()),
-      ));
+      splits.add(
+        KmSplit(
+          index: splits.length + 1,
+          km: 1.0,
+          time: Duration(milliseconds: (crossMs - boundaryMs).round()),
+        ),
+      );
       boundaryDist = target;
       boundaryMs = crossMs;
     }
   }
   final leftover = cumDist - boundaryDist;
   if (leftover > 50) {
-    splits.add(KmSplit(
-      index: splits.length + 1,
-      km: leftover / 1000,
-      time: Duration(milliseconds: (track.last.tMs - boundaryMs).round()),
-    ));
+    splits.add(
+      KmSplit(
+        index: splits.length + 1,
+        km: leftover / 1000,
+        time: Duration(milliseconds: (track.last.tMs - boundaryMs).round()),
+      ),
+    );
   }
   return splits;
 }

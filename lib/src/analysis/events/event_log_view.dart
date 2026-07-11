@@ -17,7 +17,10 @@ class EventLogView extends StatelessWidget {
     final events = context.watch<CgmController>().statsEvents;
     final glucose = context.watch<ProfileGlucoseState>();
     if (events.isEmpty) {
-      return const EmptyState(icon: Icons.event_note_rounded, titleKey: 'analysis.events.empty');
+      return const EmptyState(
+        icon: Icons.event_note_rounded,
+        titleKey: 'analysis.events.empty',
+      );
     }
     return Center(
       child: ConstrainedBox(

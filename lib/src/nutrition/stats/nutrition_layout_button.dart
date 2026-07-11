@@ -27,8 +27,10 @@ class NutritionLayoutButton extends StatelessWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration:
-                    BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(
                   Icons.dashboard_customize_rounded,
                   color: scheme.onPrimary,
@@ -44,7 +46,9 @@ class NutritionLayoutButton extends StatelessWidget {
                     LocaleText(
                       'sport.layout.title',
                       style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     LocaleText(

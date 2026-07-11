@@ -64,8 +64,11 @@ class TrainingSplitsPanel extends StatelessWidget {
   ) {
     final label = split.km < 1
         ? formatDistanceKm(split.km * 1000)
-        : Locales.string(context, 'sport.trainings.km_label',
-            params: ['${split.index}']);
+        : Locales.string(
+            context,
+            'sport.trainings.km_label',
+            params: ['${split.index}'],
+          );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(

@@ -121,8 +121,12 @@ class _SportCalendarSectionState extends State<SportCalendarSection> {
     final cells = <Widget>[
       for (var blank = 0; blank < leading; blank += 1) const SizedBox(),
       for (var day = 1; day <= daysInMonth; day += 1)
-        _dayCell(context, day, routineDays.contains(day),
-            trainingDays.contains(day)),
+        _dayCell(
+          context,
+          day,
+          routineDays.contains(day),
+          trainingDays.contains(day),
+        ),
     ];
     return GridView.count(
       crossAxisCount: 7,
@@ -147,9 +151,9 @@ class _SportCalendarSectionState extends State<SportCalendarSection> {
       borderRadius: BorderRadius.circular(10),
       onTap: tappable
           ? () => showDayActivitiesSheet(
-                context,
-                DateTime(_month.year, _month.month, day),
-              )
+              context,
+              DateTime(_month.year, _month.month, day),
+            )
           : null,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -181,10 +185,10 @@ class _SportCalendarSectionState extends State<SportCalendarSection> {
   }
 
   Widget _dot(Color color) => Container(
-        width: 6,
-        height: 6,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      );
+    width: 6,
+    height: 6,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
 
   Widget _legend(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -193,11 +197,17 @@ class _SportCalendarSectionState extends State<SportCalendarSection> {
       children: [
         _dot(calendarRoutineColor(scheme)),
         const SizedBox(width: 6),
-        LocaleText('sport.calendar.routine', style: const TextStyle(fontSize: 12)),
+        LocaleText(
+          'sport.calendar.routine',
+          style: const TextStyle(fontSize: 12),
+        ),
         const SizedBox(width: 20),
         _dot(calendarTrainingColor),
         const SizedBox(width: 6),
-        LocaleText('sport.calendar.training', style: const TextStyle(fontSize: 12)),
+        LocaleText(
+          'sport.calendar.training',
+          style: const TextStyle(fontSize: 12),
+        ),
       ],
     );
   }

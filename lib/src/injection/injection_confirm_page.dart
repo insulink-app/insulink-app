@@ -39,9 +39,9 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       return;
     }
     setState(() => _authenticating = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: LocaleText('injection.confirm.failed')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: LocaleText('injection.confirm.failed')));
   }
 
   @override
@@ -145,11 +145,19 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       ),
       child: Column(
         children: [
-          _row(context, Icons.restaurant_rounded, 'injection.carbs',
-              '${widget.carbs.toStringAsFixed(0)} g'),
+          _row(
+            context,
+            Icons.restaurant_rounded,
+            'injection.carbs',
+            '${widget.carbs.toStringAsFixed(0)} g',
+          ),
           Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
-          _row(context, Icons.bloodtype_rounded, 'injection.glucose',
-              '${widget.glucoseMgdl} mg/dL'),
+          _row(
+            context,
+            Icons.bloodtype_rounded,
+            'injection.glucose',
+            '${widget.glucoseMgdl} mg/dL',
+          ),
         ],
       ),
     );
@@ -189,8 +197,11 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.fingerprint,
-            size: 16, color: scheme.onSurface.withValues(alpha: 0.5)),
+        Icon(
+          Icons.fingerprint,
+          size: 16,
+          color: scheme.onSurface.withValues(alpha: 0.5),
+        ),
         const SizedBox(width: 6),
         Flexible(
           child: LocaleText(

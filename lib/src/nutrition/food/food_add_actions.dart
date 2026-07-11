@@ -30,9 +30,9 @@ Future<void> scanAndEditProduct(BuildContext context) async {
 
 /// Opens the product-database search page.
 void openFoodSearch(BuildContext context) {
-  Navigator.of(context).push(
-    MaterialPageRoute<void>(builder: (_) => const FoodSearchPage()),
-  );
+  Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const FoodSearchPage()));
 }
 
 /// The three ways to add a product — manual, database search, barcode scan —

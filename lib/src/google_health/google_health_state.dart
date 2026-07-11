@@ -106,7 +106,10 @@ class GoogleHealthState extends ChangeNotifier {
   /// monitor change (bpm AND status) so the tile's pulse tracks the live/idle
   /// state, not just fresh values.
   void _onBleHr() {
-    _applyLiveHr(_bleMonitor.bpm, _bleMonitor.lastUpdate?.millisecondsSinceEpoch);
+    _applyLiveHr(
+      _bleMonitor.bpm,
+      _bleMonitor.lastUpdate?.millisecondsSinceEpoch,
+    );
     notifyListeners();
     unawaited(_flushLivePulse());
   }

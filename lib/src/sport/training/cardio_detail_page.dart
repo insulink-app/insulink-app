@@ -183,10 +183,7 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
     if (splits.isEmpty) {
       return const [];
     }
-    return [
-      const SizedBox(height: 12),
-      TrainingSplitsPanel(splits: splits),
-    ];
+    return [const SizedBox(height: 12), TrainingSplitsPanel(splits: splits)];
   }
 
   Widget _metricsChart(BuildContext context, CardioTraining training) {

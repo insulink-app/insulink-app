@@ -228,7 +228,8 @@ class CgmTaskHandler extends TaskHandler {
     // hasn't reported its own session length (else the halftime/expiry reminders
     // fire on the G7 schedule for a Libre 3).
     final key = store.resolvedKey ?? _serial;
-    final lifetime = _conn?.sessionLengthSec ?? store.sensorType.sessionLengthSec;
+    final lifetime =
+        _conn?.sessionLengthSec ?? store.sensorType.sessionLengthSec;
     alarms.checkExpiry(
       store: store,
       key: key,
@@ -316,7 +317,9 @@ class CgmTaskHandler extends TaskHandler {
       return;
     }
     _lastHrPollAt = DateTime.now();
-    if (await const FlutterSecureStorage().read(key: 'google_health.connected') !=
+    if (await const FlutterSecureStorage().read(
+          key: 'google_health.connected',
+        ) !=
         'true') {
       return;
     }
@@ -329,7 +332,11 @@ class CgmTaskHandler extends TaskHandler {
       return;
     }
     _lastHrPushedAtMs = atMs;
-    FlutterForegroundTask.sendDataToMain({'t': 'hr', 'v': latest.hr, 'at': atMs});
+    FlutterForegroundTask.sendDataToMain({
+      't': 'hr',
+      'v': latest.hr,
+      'at': atMs,
+    });
   }
 
   Future<void> _watchdog() async {
@@ -379,7 +386,8 @@ class CgmTaskHandler extends TaskHandler {
         final lastRestart = _store?.lastServiceRestartAt;
         final restartedRecently =
             lastRestart != null &&
-            DateTime.now().difference(lastRestart) < _timing.processRestartAfter;
+            DateTime.now().difference(lastRestart) <
+                _timing.processRestartAfter;
         if (restartedRecently) {
           _log(
             'watchdog: still no data after a service restart — native BLE '
@@ -432,7 +440,8 @@ class CgmTaskHandler extends TaskHandler {
 
       // Connected but silent past the stale window ⇒ a half-open link that will
       // never deliver — drop it so the next tick reconnects cleanly.
-      if (last != null && DateTime.now().difference(last) > _timing.staleAfter) {
+      if (last != null &&
+          DateTime.now().difference(last) > _timing.staleAfter) {
         _log('watchdog: link stale — forcing reconnect');
         await connection.dispose();
       }

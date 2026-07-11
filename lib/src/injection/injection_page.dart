@@ -59,8 +59,9 @@ class _InjectionSheetState extends State<InjectionSheet> {
   void initState() {
     super.initState();
     final current = context.read<CgmController>().currentMgdl;
-    _glucoseController =
-        TextEditingController(text: current != null ? '$current' : '');
+    _glucoseController = TextEditingController(
+      text: current != null ? '$current' : '',
+    );
     _carbsController.addListener(_recompute);
     _glucoseController.addListener(_recompute);
     _bolusController.addListener(_onBolusEdited);
@@ -116,8 +117,8 @@ class _InjectionSheetState extends State<InjectionSheet> {
     }
     final bolus = context.read<ProfileBolusState>();
     final glucoseState = context.read<ProfileGlucoseState>();
-    final target =
-        ((glucoseState.targetLow + glucoseState.targetHigh) / 2).round();
+    final target = ((glucoseState.targetLow + glucoseState.targetHigh) / 2)
+        .round();
     return bolus.suggestedBolus(
       carbs: _carbs,
       glucoseMgdl: glucose,
@@ -162,13 +163,15 @@ class _InjectionSheetState extends State<InjectionSheet> {
       ),
     );
     if (confirmed == true && mounted) {
-      await meals.addMeal(Meal(
-        time: DateTime.now(),
-        carbs: _carbs,
-        glucoseMgdl: glucose,
-        bolus: bolus,
-        entries: _tab == 1 ? _productEntries : const [],
-      ));
+      await meals.addMeal(
+        Meal(
+          time: DateTime.now(),
+          carbs: _carbs,
+          glucoseMgdl: glucose,
+          bolus: bolus,
+          entries: _tab == 1 ? _productEntries : const [],
+        ),
+      );
       navigator.pop();
     }
   }
@@ -314,8 +317,7 @@ class _NumberField extends StatelessWidget {
         // Only the bolus field overrides the theme fill; leave the others to
         // inherit the app's default filled style (passing false would strip it).
         filled: highlight ? true : null,
-        fillColor:
-            highlight ? scheme.primary.withValues(alpha: 0.06) : null,
+        fillColor: highlight ? scheme.primary.withValues(alpha: 0.06) : null,
       ),
     );
   }

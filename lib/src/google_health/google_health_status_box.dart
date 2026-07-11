@@ -77,7 +77,10 @@ class GoogleHealthStatusBox extends StatelessWidget {
                 health.connected
                     ? 'google_health.status.connected'
                     : 'google_health.status.disconnected',
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 2),
               LocaleText(

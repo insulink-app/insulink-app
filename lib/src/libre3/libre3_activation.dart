@@ -156,7 +156,11 @@ class Libre3Activation {
         : _cmdActivate;
     final response = await _customCommand(code, parameters);
     try {
-      throwIfNfcError('command 0x${code.toRadixString(16)}', parameters, response);
+      throwIfNfcError(
+        'command 0x${code.toRadixString(16)}',
+        parameters,
+        response,
+      );
     } on StateError catch (error) {
       throw StateError('${error.message} · patchInfo=${hex(patchInfo)}');
     }
@@ -219,8 +223,11 @@ class Libre3Activation {
     final view = ByteData.view(out.buffer);
     view.setUint32(0, (activationTimeSec - 1) & 0xFFFFFFFF, Endian.little);
     view.setUint32(4, account & 0xFFFFFFFF, Endian.little);
-    view.setUint16(8, crc16Activation(Uint8List.sublistView(out, 0, 8)),
-        Endian.little);
+    view.setUint16(
+      8,
+      crc16Activation(Uint8List.sublistView(out, 0, 8)),
+      Endian.little,
+    );
     return out;
   }
 

@@ -12,6 +12,7 @@ class NutritionStore {
   /// the backend and write the server's value straight back here.
   static const goalKey = 'nutrition.water_goal_ml';
   static const _kGoal = goalKey;
+
   /// Public so [ProfileSettings] can sync the carb/protein goals to the backend
   /// and write the server's value straight back here.
   static const carbsGoalKey = 'nutrition.carbs_goal_g';
@@ -40,7 +41,8 @@ class NutritionStore {
   Future<void> saveGoalMl(int ml) => _storage.write(key: _kGoal, value: '$ml');
 
   Future<int> loadCarbsGoalG() async =>
-      int.tryParse(await _storage.read(key: _kCarbsGoal) ?? '') ?? defCarbsGoalG;
+      int.tryParse(await _storage.read(key: _kCarbsGoal) ?? '') ??
+      defCarbsGoalG;
 
   Future<void> saveCarbsGoalG(int grams) =>
       _storage.write(key: _kCarbsGoal, value: '$grams');

@@ -14,7 +14,14 @@ void main() {
 
   test('RR intervals decoded to ms, energy-expended skipped', () {
     // flags 0x18: energy-expended (2 bytes) + RR present. 1024 units => 1000 ms.
-    final sample = HeartRateMeasurement.parse([0x18, 60, 0xFF, 0xFF, 0x00, 0x04]);
+    final sample = HeartRateMeasurement.parse([
+      0x18,
+      60,
+      0xFF,
+      0xFF,
+      0x00,
+      0x04,
+    ]);
     expect(sample?.bpm, 60);
     expect(sample?.rrIntervalsMs, [1000]);
   });

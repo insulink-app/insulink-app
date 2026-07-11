@@ -54,8 +54,11 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
     if (picked == null || !mounted) {
       return;
     }
-    final grams =
-        await showPortionSheet(context, picked, picked.servingSize ?? 100);
+    final grams = await showPortionSheet(
+      context,
+      picked,
+      picked.servingSize ?? 100,
+    );
     if (grams == null || !mounted) {
       return;
     }
@@ -150,8 +153,11 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
                 ),
                 IconButton(
                   visualDensity: VisualDensity.compact,
-                  icon: Icon(Icons.close,
-                      size: 18, color: scheme.onSurface.withValues(alpha: 0.4)),
+                  icon: Icon(
+                    Icons.close,
+                    size: 18,
+                    color: scheme.onSurface.withValues(alpha: 0.4),
+                  ),
                   onPressed: () => _remove(item),
                 ),
               ],

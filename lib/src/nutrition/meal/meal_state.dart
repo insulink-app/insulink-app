@@ -32,11 +32,9 @@ class MealState extends ChangeNotifier {
 
   int get todayCount => todayMeals.length;
 
-  double get todayCarbs =>
-      todayMeals.fold(0, (sum, meal) => sum + meal.carbs);
+  double get todayCarbs => todayMeals.fold(0, (sum, meal) => sum + meal.carbs);
 
-  double get todayBolus =>
-      todayMeals.fold(0, (sum, meal) => sum + meal.bolus);
+  double get todayBolus => todayMeals.fold(0, (sum, meal) => sum + meal.bolus);
 
   double get todayProtein =>
       todayMeals.fold(0, (sum, meal) => sum + meal.protein);

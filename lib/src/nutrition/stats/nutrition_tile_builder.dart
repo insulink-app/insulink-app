@@ -20,10 +20,8 @@ class NutritionTileBuilder {
     final labelKey = nutritionTileLabelKey(tile);
     final icon = nutritionTileIcon(tile);
     void openDetail() => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => NutritionDetailPage(tile: tile),
-          ),
-        );
+      MaterialPageRoute<void>(builder: (_) => NutritionDetailPage(tile: tile)),
+    );
     switch (tile) {
       case NutritionTile.carbs:
         return SportSummaryTile(

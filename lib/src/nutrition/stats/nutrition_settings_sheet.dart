@@ -47,8 +47,7 @@ class _NutritionSettingsSheet extends StatelessWidget {
           labelKey: 'nutrition.carbs_goal',
           valueText: '${state.carbsGoalG} g',
           accent: accent,
-          onMinus: () =>
-              state.setCarbsGoalG(state.carbsGoalG - _carbsStep),
+          onMinus: () => state.setCarbsGoalG(state.carbsGoalG - _carbsStep),
           onPlus: () => state.setCarbsGoalG(state.carbsGoalG + _carbsStep),
           valueChild: SportEditableNumber(
             valueText: '${state.carbsGoalG} g',

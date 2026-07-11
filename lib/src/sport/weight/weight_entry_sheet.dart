@@ -70,13 +70,7 @@ class _WeightEntrySheetState extends State<_WeightEntrySheet> {
       return;
     }
     setState(() {
-      _at = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
+      _at = DateTime(date.year, date.month, date.day, time.hour, time.minute);
     });
   }
 

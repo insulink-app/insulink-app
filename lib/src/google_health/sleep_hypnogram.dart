@@ -33,11 +33,8 @@ List<SleepSegment> mergeShortSleepSegments(
   return merged;
 }
 
-SleepSegment _extendedTo(SleepSegment segment, int endMs) => SleepSegment(
-  stage: segment.stage,
-  startMs: segment.startMs,
-  endMs: endMs,
-);
+SleepSegment _extendedTo(SleepSegment segment, int endMs) =>
+    SleepSegment(stage: segment.stage, startMs: segment.startMs, endMs: endMs);
 
 /// A hypnogram: the night's sleep stages drawn on a time axis — one lane per
 /// stage (awake on top, deep at the bottom, the conventional depth order) with a
@@ -143,8 +140,14 @@ class SleepHypnogram extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_hhmm(start), style: TextStyle(fontSize: 11, color: axisColor)),
-              Text(_hhmm(end), style: TextStyle(fontSize: 11, color: axisColor)),
+              Text(
+                _hhmm(start),
+                style: TextStyle(fontSize: 11, color: axisColor),
+              ),
+              Text(
+                _hhmm(end),
+                style: TextStyle(fontSize: 11, color: axisColor),
+              ),
             ],
           ),
         ),
@@ -193,11 +196,9 @@ class _HypnogramPainter extends CustomPainter {
     _paintBars(canvas, size, span, laneHeight);
   }
 
-  double _x(int ms, Size size, double span) =>
-      (ms - start) / span * size.width;
+  double _x(int ms, Size size, double span) => (ms - start) / span * size.width;
 
-  double _laneCenter(int lane, double laneHeight) =>
-      (lane + 0.5) * laneHeight;
+  double _laneCenter(int lane, double laneHeight) => (lane + 0.5) * laneHeight;
 
   /// A faint full-width rounded track behind each lane, like a progress bar's
   /// unfilled groove — the coloured bars sit on top of it.

@@ -65,9 +65,9 @@ class FoodSection extends StatelessWidget {
 
   Widget _showMore(BuildContext context) {
     return TextButton(
-      onPressed: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const FoodProductsPage()),
-      ),
+      onPressed: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const FoodProductsPage())),
       child: LocaleText('nutrition.food.show_more'),
     );
   }

@@ -57,7 +57,9 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
       for (final day in archive)
         if (day.value(widget.metric) != null &&
             (from == null ||
-                !day.date.isBefore(DateTime(from.year, from.month, from.day))) &&
+                !day.date.isBefore(
+                  DateTime(from.year, from.month, from.day),
+                )) &&
             (to == null || day.date.isBefore(to)))
           day,
     ];
@@ -74,7 +76,10 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
         title: LocaleText(_labelKey),
       ),
       body: days.isEmpty
-          ? const EmptyState(icon: Icons.favorite_rounded, titleKey: 'google_health.detail.empty')
+          ? const EmptyState(
+              icon: Icons.favorite_rounded,
+              titleKey: 'google_health.detail.empty',
+            )
           : ListView(
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),
@@ -162,7 +167,9 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
           onPressed: index > 0 ? () => select(index - 1) : null,
         ),
         Text(
-          MaterialLocalizations.of(context).formatMediumDate(nights[index].date),
+          MaterialLocalizations.of(
+            context,
+          ).formatMediumDate(nights[index].date),
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         IconButton(
@@ -227,12 +234,34 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
   }
 
   /// Stage rows in display order (deepest first), each with its colour + minutes.
-  List<({String key, Color color, int minutes})> _stageRows(SleepStages stages) => [
-    (key: 'google_health.sleep_stage.deep', color: _stageColors[SleepStage.deep]!, minutes: stages.deep),
-    (key: 'google_health.sleep_stage.light', color: _stageColors[SleepStage.light]!, minutes: stages.light),
-    (key: 'google_health.sleep_stage.rem', color: _stageColors[SleepStage.rem]!, minutes: stages.rem),
-    (key: 'google_health.sleep_stage.restless', color: _stageColors[SleepStage.restless]!, minutes: stages.restless),
-    (key: 'google_health.sleep_stage.awake', color: _stageColors[SleepStage.awake]!, minutes: stages.awake),
+  List<({String key, Color color, int minutes})> _stageRows(
+    SleepStages stages,
+  ) => [
+    (
+      key: 'google_health.sleep_stage.deep',
+      color: _stageColors[SleepStage.deep]!,
+      minutes: stages.deep,
+    ),
+    (
+      key: 'google_health.sleep_stage.light',
+      color: _stageColors[SleepStage.light]!,
+      minutes: stages.light,
+    ),
+    (
+      key: 'google_health.sleep_stage.rem',
+      color: _stageColors[SleepStage.rem]!,
+      minutes: stages.rem,
+    ),
+    (
+      key: 'google_health.sleep_stage.restless',
+      color: _stageColors[SleepStage.restless]!,
+      minutes: stages.restless,
+    ),
+    (
+      key: 'google_health.sleep_stage.awake',
+      color: _stageColors[SleepStage.awake]!,
+      minutes: stages.awake,
+    ),
   ];
 
   Widget _stagesCard(
@@ -317,7 +346,11 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
     );
   }
 
-  Widget _header(BuildContext context, ColorScheme scheme, List<GoogleHealthDay> days) {
+  Widget _header(
+    BuildContext context,
+    ColorScheme scheme,
+    List<GoogleHealthDay> days,
+  ) {
     final avg = days.map(_value).reduce((a, b) => a + b) / days.length;
     final latest = _value(days.last);
     return Container(
@@ -398,7 +431,11 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
     );
   }
 
-  Widget _dayRow(BuildContext context, ColorScheme scheme, GoogleHealthDay day) {
+  Widget _dayRow(
+    BuildContext context,
+    ColorScheme scheme,
+    GoogleHealthDay day,
+  ) {
     final locale = MaterialLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

@@ -10,7 +10,11 @@ import 'package:provider/provider.dart';
 class ProfilePredictionToggle extends StatelessWidget {
   const ProfilePredictionToggle({super.key});
 
-  void _onChanged(BuildContext context, ProfilePredictionState state, bool value) {
+  void _onChanged(
+    BuildContext context,
+    ProfilePredictionState state,
+    bool value,
+  ) {
     state.setEnabled(value);
     context.read<CgmController>().refreshPrediction();
   }

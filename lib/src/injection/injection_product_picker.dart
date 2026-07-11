@@ -94,8 +94,7 @@ class _ProductPickerState extends State<_ProductPicker> {
               controller: _search,
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
-                hintText:
-                    Locales.string(context, 'injection.products.search'),
+                hintText: Locales.string(context, 'injection.products.search'),
                 suffixIcon: _search.text.isEmpty
                     ? null
                     : IconButton(
@@ -108,14 +107,18 @@ class _ProductPickerState extends State<_ProductPicker> {
           if (products.isEmpty)
             Padding(
               padding: const EdgeInsets.all(28),
-              child: LocaleText('nutrition.food.empty',
-                  textAlign: TextAlign.center),
+              child: LocaleText(
+                'nutrition.food.empty',
+                textAlign: TextAlign.center,
+              ),
             )
           else if (filtered.isEmpty)
             Padding(
               padding: const EdgeInsets.all(28),
-              child: LocaleText('injection.products.none',
-                  textAlign: TextAlign.center),
+              child: LocaleText(
+                'injection.products.none',
+                textAlign: TextAlign.center,
+              ),
             )
           else
             Flexible(
@@ -135,8 +138,11 @@ class _ProductPickerState extends State<_ProductPicker> {
     final scheme = Theme.of(context).colorScheme;
     final subtitle = [
       if (product.brand.isNotEmpty) product.brand,
-      Locales.string(context, 'injection.products.carbs_per_100',
-          params: [product.carbs100g.toStringAsFixed(0)]),
+      Locales.string(
+        context,
+        'injection.products.carbs_per_100',
+        params: [product.carbs100g.toStringAsFixed(0)],
+      ),
     ].join(' · ');
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -175,8 +181,10 @@ class _ProductPickerState extends State<_ProductPicker> {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right,
-                    color: scheme.onSurface.withValues(alpha: 0.3)),
+                Icon(
+                  Icons.chevron_right,
+                  color: scheme.onSurface.withValues(alpha: 0.3),
+                ),
               ],
             ),
           ),

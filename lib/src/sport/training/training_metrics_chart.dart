@@ -182,8 +182,14 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
             child: (!_loading && empty)
                 ? Center(child: LocaleText('sport.trainings.no_metrics'))
                 : LineChart(
-                    _data(scheme, glucose, heart, glucoseColor, heartColor,
-                        _rangeX(glucose, heart)),
+                    _data(
+                      scheme,
+                      glucose,
+                      heart,
+                      glucoseColor,
+                      heartColor,
+                      _rangeX(glucose, heart),
+                    ),
                   ),
           ),
         ],
@@ -349,8 +355,14 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
         tooltipBorderRadius: BorderRadius.circular(8),
         getTooltipItems: (spots) => [
           for (var index = 0; index < spots.length; index++)
-            _tooltipItem(context, scheme, spots[index], glucose, heart,
-                showTime: index == spots.length - 1),
+            _tooltipItem(
+              context,
+              scheme,
+              spots[index],
+              glucose,
+              heart,
+              showTime: index == spots.length - 1,
+            ),
         ],
       ),
     );

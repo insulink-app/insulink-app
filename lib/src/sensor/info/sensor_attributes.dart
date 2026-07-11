@@ -94,7 +94,11 @@ class SensorAttributes {
 
   List<MapEntry<String, String>> _session() {
     final rows = <MapEntry<String, String>>[];
-    _add(rows, 'sensor.field.session', formatSensorDuration(info.sessionLengthSec));
+    _add(
+      rows,
+      'sensor.field.session',
+      formatSensorDuration(info.sessionLengthSec),
+    );
     _add(rows, 'sensor.field.warmup', formatSensorDuration(info.warmupSec));
     _add(rows, 'sensor.field.max_days', info.maxLifetimeDays?.toString());
     return rows;

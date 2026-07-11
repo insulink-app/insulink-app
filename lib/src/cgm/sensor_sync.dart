@@ -101,7 +101,8 @@ class SensorSync {
     final start =
         store.loadSensorStart(key)?.millisecondsSinceEpoch ??
         DateTime.now().millisecondsSinceEpoch;
-    final lifetimeSec = store.loadInfo(key)?.sessionLengthSec ??
+    final lifetimeSec =
+        store.loadInfo(key)?.sessionLengthSec ??
         store.sensorType.sessionLengthSec;
     return start + lifetimeSec * 1000;
   }

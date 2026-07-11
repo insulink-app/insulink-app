@@ -35,10 +35,7 @@ class _WeightChartState extends State<WeightChart> {
       for (final entry in weights) FlSpot(entry.atEpochMs.toDouble(), entry.kg),
     ];
     final goal = widget.goalKg;
-    final values = [
-      for (final entry in weights) entry.kg,
-      ?goal,
-    ];
+    final values = [for (final entry in weights) entry.kg, ?goal];
     final minKg = values.reduce((a, b) => a < b ? a : b);
     final maxKg = values.reduce((a, b) => a > b ? a : b);
     final pad = (maxKg - minKg) < 1 ? 1.0 : (maxKg - minKg) * 0.2;
@@ -87,7 +84,11 @@ class _WeightChartState extends State<WeightChart> {
           label: HorizontalLineLabel(
             show: true,
             alignment: Alignment.bottomLeft,
-            style: TextStyle(fontSize: 10, color: accent, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 10,
+              color: accent,
+              fontWeight: FontWeight.w600,
+            ),
             labelResolver: (_) => '${goal.toStringAsFixed(1)} kg',
           ),
         ),
@@ -102,8 +103,9 @@ class _WeightChartState extends State<WeightChart> {
       touchTooltipData: LineTouchTooltipData(
         getTooltipColor: (_) => theme.colorScheme.inverseSurface,
         tooltipBorderRadius: BorderRadius.circular(8),
-        getTooltipItems: (spots) =>
-            [for (final spot in spots) _tooltipItem(context, spot)],
+        getTooltipItems: (spots) => [
+          for (final spot in spots) _tooltipItem(context, spot),
+        ],
       ),
       getTouchedSpotIndicator: (barData, indexes) => [
         for (final _ in indexes)

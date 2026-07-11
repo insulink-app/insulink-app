@@ -31,18 +31,37 @@ class _FoodEditorSheet extends StatefulWidget {
 class _FoodEditorSheetState extends State<_FoodEditorSheet> {
   late final _name = TextEditingController(text: widget.product.name);
   late final _brand = TextEditingController(text: widget.product.brand);
-  late final _serving = TextEditingController(text: _numText(widget.product.servingSize));
-  late final _servingLabel = TextEditingController(text: widget.product.servingLabel);
-  late final _carbs = TextEditingController(text: _numText(widget.product.carbs100g));
-  late final _fat = TextEditingController(text: _numText(widget.product.fat100g));
-  late final _protein = TextEditingController(text: _numText(widget.product.protein100g));
-  late final _kcal = TextEditingController(text: _numText(widget.product.kcal100g));
+  late final _serving = TextEditingController(
+    text: _numText(widget.product.servingSize),
+  );
+  late final _servingLabel = TextEditingController(
+    text: widget.product.servingLabel,
+  );
+  late final _carbs = TextEditingController(
+    text: _numText(widget.product.carbs100g),
+  );
+  late final _fat = TextEditingController(
+    text: _numText(widget.product.fat100g),
+  );
+  late final _protein = TextEditingController(
+    text: _numText(widget.product.protein100g),
+  );
+  late final _kcal = TextEditingController(
+    text: _numText(widget.product.kcal100g),
+  );
   late String _unit = widget.product.unit;
 
   @override
   void dispose() {
     for (final controller in [
-      _name, _brand, _serving, _servingLabel, _carbs, _fat, _protein, _kcal,
+      _name,
+      _brand,
+      _serving,
+      _servingLabel,
+      _carbs,
+      _fat,
+      _protein,
+      _kcal,
     ]) {
       controller.dispose();
     }
@@ -96,7 +115,12 @@ class _FoodEditorSheetState extends State<_FoodEditorSheet> {
             _field('nutrition.food.name', _name),
             _field('nutrition.food.brand', _brand),
             _unitSelector(theme),
-            _field('nutrition.food.serving_size', _serving, number: true, suffix: _unit),
+            _field(
+              'nutrition.food.serving_size',
+              _serving,
+              number: true,
+              suffix: _unit,
+            ),
             _field('nutrition.food.serving_label', _servingLabel),
             const SizedBox(height: 16),
             LocaleText(
@@ -111,7 +135,12 @@ class _FoodEditorSheetState extends State<_FoodEditorSheet> {
             const SizedBox(height: 14),
             _field('nutrition.food.carbs', _carbs, number: true, suffix: 'g'),
             _field('nutrition.food.fat', _fat, number: true, suffix: 'g'),
-            _field('nutrition.food.protein', _protein, number: true, suffix: 'g'),
+            _field(
+              'nutrition.food.protein',
+              _protein,
+              number: true,
+              suffix: 'g',
+            ),
             _field('nutrition.food.kcal', _kcal, number: true, suffix: 'kcal'),
             const SizedBox(height: 16),
             FilledButton(
@@ -193,7 +222,9 @@ class _FoodEditorSheetState extends State<_FoodEditorSheet> {
           selectedBackgroundColor: accent,
           selectedForegroundColor: theme.colorScheme.onPrimary,
           side: BorderSide(color: theme.dividerColor),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         segments: const [
           ButtonSegment(value: 'g', label: Text('g')),

@@ -46,7 +46,9 @@ class PulseSync {
   /// Adopts the account's pulse samples into the local store on sign-in, so a
   /// returning device can redraw the full curve without Health Connect.
   Future<void> pull(BuildContext context) async {
-    final response = await Request.get(url: '/health/pulse/find/').send(context);
+    final response = await Request.get(
+      url: '/health/pulse/find/',
+    ).send(context);
     if (response == null) {
       return;
     }

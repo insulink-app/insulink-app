@@ -44,7 +44,10 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
       return;
     }
     setState(() => _loading = true);
-    _debounce = Timer(const Duration(milliseconds: 400), () => _run(value.trim()));
+    _debounce = Timer(
+      const Duration(milliseconds: 400),
+      () => _run(value.trim()),
+    );
   }
 
   Future<void> _run(String terms) async {
@@ -118,8 +121,11 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
     final scheme = Theme.of(context).colorScheme;
     final subtitleParts = [
       if (product.brand.isNotEmpty) product.brand,
-      Locales.string(context, 'injection.products.carbs_per_100',
-          params: [product.carbs100g.toStringAsFixed(0)]),
+      Locales.string(
+        context,
+        'injection.products.carbs_per_100',
+        params: [product.carbs100g.toStringAsFixed(0)],
+      ),
     ];
     return ListTile(
       leading: Icon(
@@ -146,7 +152,9 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
           key,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.5),
           ),
         ),
       ),

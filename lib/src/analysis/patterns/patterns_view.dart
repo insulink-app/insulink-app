@@ -25,7 +25,10 @@ class PatternsView extends StatelessWidget {
     // hour-of-day comes straight from the timestamp — no session start needed.
     final pattern = HourlyGlucosePattern(controller.statsArchive).build();
     if (pattern.isEmpty) {
-      return const EmptyState(icon: Icons.insights_rounded, titleKey: 'analysis.empty');
+      return const EmptyState(
+        icon: Icons.insights_rounded,
+        titleKey: 'analysis.empty',
+      );
     }
 
     return Padding(

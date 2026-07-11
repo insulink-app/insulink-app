@@ -68,7 +68,11 @@ class Libre3Attributes {
     return sections.where((section) => section.items.isNotEmpty).toList();
   }
 
-  void _add(List<MapEntry<String, String>> into, String labelKey, String? value) {
+  void _add(
+    List<MapEntry<String, String>> into,
+    String labelKey,
+    String? value,
+  ) {
     if (value != null && value.isNotEmpty) {
       into.add(MapEntry(localize(labelKey), value));
     }
@@ -95,7 +99,11 @@ class Libre3Attributes {
       _add(rows, 'sensor.field.predicted', '${reading.predictedMgDl} mg/dL');
     }
     _add(rows, 'sensor.field.trend', _trend(reading.trendMgDlPerMin));
-    _add(rows, 'sensor.field.temperature', _temperature(reading.temperatureCentiC));
+    _add(
+      rows,
+      'sensor.field.temperature',
+      _temperature(reading.temperatureCentiC),
+    );
     return rows;
   }
 
@@ -111,7 +119,10 @@ class Libre3Attributes {
         localize('sensor.field.session'),
         formatSensorDuration(_sessionLengthSec),
       ),
-      MapEntry(localize('sensor.field.warmup'), formatSensorDuration(_warmupSec)),
+      MapEntry(
+        localize('sensor.field.warmup'),
+        formatSensorDuration(_warmupSec),
+      ),
     ];
   }
 

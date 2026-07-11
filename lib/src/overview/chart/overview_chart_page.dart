@@ -7,11 +7,7 @@ import 'package:insulink/src/overview/chart/overview_chart.dart';
 /// Full-screen glucose chart, opened by tapping the overview preview. Shows the
 /// interactive chart (range selector + scrub tooltip) with room to breathe.
 class OverviewChartPage extends StatelessWidget {
-  const OverviewChartPage({
-    super.key,
-    required this.byTime,
-    this.sensorStart,
-  });
+  const OverviewChartPage({super.key, required this.byTime, this.sensorStart});
 
   final SplayTreeMap<int, int> byTime;
   final DateTime? sensorStart;

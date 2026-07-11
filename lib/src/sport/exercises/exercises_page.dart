@@ -34,7 +34,10 @@ class ExercisesPage extends StatelessWidget {
         child: const Icon(Icons.add),
       ),
       body: exercises.isEmpty
-          ? const EmptyState(icon: Icons.fitness_center_rounded, titleKey: 'sport.exercises.empty')
+          ? const EmptyState(
+              icon: Icons.fitness_center_rounded,
+              titleKey: 'sport.exercises.empty',
+            )
           : onPick == null
           ? _reorderable(context, exercises)
           : _picker(context, exercises),

@@ -72,7 +72,10 @@ class MealDetailSheet extends StatelessWidget {
             children: [
               TextSpan(
                 text: ' g ${Locales.string(context, 'nutrition.food.carbs')}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -81,10 +84,9 @@ class MealDetailSheet extends StatelessWidget {
           mealTimeLabel(meal.time),
           style: TextStyle(
             fontSize: 14,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ],
@@ -102,11 +104,19 @@ class MealDetailSheet extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _statRow(context, Icons.bloodtype_rounded, 'injection.glucose',
-              '${meal.glucoseMgdl} mg/dL'),
+          _statRow(
+            context,
+            Icons.bloodtype_rounded,
+            'injection.glucose',
+            '${meal.glucoseMgdl} mg/dL',
+          ),
           Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
-          _statRow(context, Icons.water_drop_rounded, 'injection.bolus',
-              '${meal.bolus.toStringAsFixed(1)} E'),
+          _statRow(
+            context,
+            Icons.water_drop_rounded,
+            'injection.bolus',
+            '${meal.bolus.toStringAsFixed(1)} E',
+          ),
         ],
       ),
     );

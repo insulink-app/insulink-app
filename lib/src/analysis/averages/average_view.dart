@@ -19,7 +19,10 @@ class AverageView extends StatelessWidget {
     // Long-term archive (spans sensor swaps), not the current-session cache.
     final values = controller.statsArchive.values.toList();
     if (values.isEmpty) {
-      return const EmptyState(icon: Icons.insights_rounded, titleKey: 'analysis.empty');
+      return const EmptyState(
+        icon: Icons.insights_rounded,
+        titleKey: 'analysis.empty',
+      );
     }
     final stats = GlucoseSummary(values, glucose).build();
 

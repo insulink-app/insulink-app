@@ -5,7 +5,17 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// A configurable summary box. The first four are always available; the rest
 /// come from a connected Google Health (via Health Connect).
-enum TodayTile { steps, distance, calories, weight, restingHr, sleep, heartRate, spo2, respiratoryRate }
+enum TodayTile {
+  steps,
+  distance,
+  calories,
+  weight,
+  restingHr,
+  sleep,
+  heartRate,
+  spo2,
+  respiratoryRate,
+}
 
 extension TodayTileInfo on TodayTile {
   /// Whether this tile's data comes from a Google Health (only rendered while one is
@@ -46,7 +56,8 @@ abstract class TileLayoutState<T extends Enum> extends ChangeNotifier {
   /// [includeConditional].
   List<T> visible(bool includeConditional) => [
     for (final tile in _order)
-      if (!_hidden.contains(tile) && (!isConditional(tile) || includeConditional))
+      if (!_hidden.contains(tile) &&
+          (!isConditional(tile) || includeConditional))
         tile,
   ];
 

@@ -49,7 +49,10 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
         child: const Icon(Icons.add),
       ),
       body: weights.isEmpty
-          ? const EmptyState(icon: Icons.monitor_weight_rounded, titleKey: 'sport.weight.empty')
+          ? const EmptyState(
+              icon: Icons.monitor_weight_rounded,
+              titleKey: 'sport.weight.empty',
+            )
           : ListView(
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),

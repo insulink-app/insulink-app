@@ -22,7 +22,10 @@ class TimeInRangeView extends StatelessWidget {
     // Long-term archive (spans sensor swaps), not the current-session cache.
     final values = controller.statsArchive.values;
     if (values.isEmpty) {
-      return const EmptyState(icon: Icons.insights_rounded, titleKey: 'analysis.empty');
+      return const EmptyState(
+        icon: Icons.insights_rounded,
+        titleKey: 'analysis.empty',
+      );
     }
     final bands = TimeInRangeBands(
       values: values,
