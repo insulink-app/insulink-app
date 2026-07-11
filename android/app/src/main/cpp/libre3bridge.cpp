@@ -161,7 +161,7 @@ bool ensureLoaded() {
 extern "C" {
 
 JNIEXPORT jint JNICALL
-Java_de_lukasbreuer_insulink_Libre3SecurityPlugin_processInt(
+Java_de_insulink_Libre3SecurityPlugin_processInt(
     JNIEnv *env, jclass clazz, jint command, jbyteArray a, jbyteArray b) {
   if (!ensureLoaded()) {
     return -1;
@@ -170,7 +170,7 @@ Java_de_lukasbreuer_insulink_Libre3SecurityPlugin_processInt(
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_de_lukasbreuer_insulink_Libre3SecurityPlugin_processBar(
+Java_de_insulink_Libre3SecurityPlugin_processBar(
     JNIEnv *env, jclass clazz, jint command, jbyteArray nonce, jbyteArray data) {
   if (!ensureLoaded()) {
     return nullptr;

@@ -1,4 +1,4 @@
-package de.lukasbreuer.insulink
+package de.insulink
 
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel

@@ -1,4 +1,4 @@
-package de.lukasbreuer.insulink
+package de.insulink
 
 import android.app.Application
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskLifecycleListener

@@ -1,4 +1,4 @@
-package de.lukasbreuer.insulink
+package de.insulink
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine

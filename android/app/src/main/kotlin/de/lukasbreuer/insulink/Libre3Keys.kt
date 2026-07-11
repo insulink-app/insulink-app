@@ -1,4 +1,4 @@
-package de.lukasbreuer.insulink
+package de.insulink
 
 // FreeStyle Libre 3 embedded key material, ported verbatim from Juggluco's GPL
 // KEYSCrypto.java (LIBRE3_APP_CERTIFICATES_B / LIBRE3_APP_PRIVATE_KEYS). The app

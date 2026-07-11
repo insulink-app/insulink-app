@@ -9,8 +9,8 @@ class EnvironmentOptions {
 }
 
 enum InsulinkEnvironment {
-  production("insulink.de", "insulink.lukasbreuer.de"),
-  staging("insulink.de", "insulink.lukasbreuer.de");
+  production("insulink.de", "api.insulink.de"),
+  staging("insulink.de", "api.insulink.de");
 
   const InsulinkEnvironment(this._domain, this._endpoint);
 
