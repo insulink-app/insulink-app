@@ -7,6 +7,7 @@ import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/profile/profile_topic_page.dart';
 import 'package:insulink/src/profile/notifications/profile_alarm_sound_toggle.dart';
 import 'package:insulink/src/profile/body/profile_body_selection.dart';
+import 'package:insulink/src/profile/basal/profile_basal_selection.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_selection.dart';
 import 'package:insulink/src/profile/notifications/profile_connection_toggle.dart';
 import 'package:insulink/src/profile/developer/profile_developer_toggle.dart';
@@ -82,6 +83,12 @@ class _ProfilePageState extends State<ProfilePage> {
       icon: Icons.medication_outlined,
       searchKey: "profile.search.bolus",
       children: () => const [ProfileBolusSelection()],
+    ),
+    (
+      titleKey: "profile.basal",
+      icon: Icons.show_chart,
+      searchKey: "profile.search.basal",
+      children: () => const [ProfileBasalSelection()],
     ),
     (
       titleKey: "profile.body",

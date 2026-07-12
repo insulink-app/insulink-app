@@ -677,6 +677,19 @@
         "value": "1 U / # g"
       }
     },
+    "basal": {
+      "_": "Basal rate",
+      "total": "# U / day",
+      "generate": "Auto-generate curve",
+      "daily_total": "Daily amount",
+      "apply": "Apply",
+      "add_peak": "Add maximum",
+      "peak_hour": "Hour of the maximum",
+      "name": "Profile name",
+      "add_profile": "Add profile",
+      "new_title": "New basal profile",
+      "delete_title": "Delete profile?"
+    },
     "search": {
       "_": "Search settings",
       "empty": "No setting found",
@@ -684,6 +697,7 @@
       "theme": "theme appearance light dark color mode display",
       "glucose": "glucose sugar unit target thresholds alarm mmol mgdl",
       "bolus": "bolus insulin correction carbs factor",
+      "basal": "basal rate profile curve omnipod pod insulin hour",
       "body": "body metrics stride length height bmi weight steps distance",
       "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training",
       "silent": "silent mute quiet do not disturb dnd",
