@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/profile/basal/profile_basal_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -51,6 +52,7 @@ class ProfileSettings {
       "glucose_urgent_high": "${glucose.urgentHigh}",
       "bolus_correction_factor": "${bolus.correctionFactor}",
       "bolus_carb_factor": "${bolus.carbFactor}",
+      "basal_profiles": await ProfileBasalState.loadRaw(),
       "notifications": "$notifications",
       "alarm_sound": "${await ProfileAlarmSoundState().load()}",
       "connection_lost_alert": "${await ProfileConnectionState().load()}",

@@ -677,6 +677,19 @@
         "value": "1 E / # g"
       }
     },
+    "basal": {
+      "_": "Basalrate",
+      "total": "# E / Tag",
+      "generate": "Kurve automatisch erzeugen",
+      "daily_total": "Tagesmenge",
+      "apply": "Anwenden",
+      "add_peak": "Maximum hinzufügen",
+      "peak_hour": "Stunde des Maximums",
+      "name": "Profilname",
+      "add_profile": "Profil hinzufügen",
+      "new_title": "Neues Basalprofil",
+      "delete_title": "Profil löschen?"
+    },
     "search": {
       "_": "Einstellungen suchen",
       "empty": "Keine Einstellung gefunden",
@@ -684,6 +697,7 @@
       "theme": "design darstellung hell dunkel farbe modus erscheinungsbild",
       "glucose": "glukose zucker einheit zielbereich grenzwerte alarm mmol mgdl",
       "bolus": "bolus insulin korrektur kohlenhydrate faktor",
+      "basal": "basalrate basal profil kurve omnipod pod insulin stunde",
       "body": "körpermaße schrittlänge körpergröße größe bmi gewicht schritte distanz",
       "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose ablauf halbzeit halbwertszeit sensor training",
       "silent": "stumm lautlos ruhe stören nicht dnd",
