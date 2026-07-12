@@ -49,9 +49,13 @@ class MealEntry {
     required this.amount,
     required this.carbs,
     required this.protein,
+    this.barcode = '',
     this.servingSize,
   });
 
+  /// The source product's barcode, so a logged entry can reopen its product.
+  /// Empty for older entries logged before this was stored.
+  final String barcode;
   final String name;
   final String unit;
   final double amount;
@@ -67,6 +71,7 @@ class MealEntry {
   double? get servings => (servingSize ?? 0) > 0 ? amount / servingSize! : null;
 
   factory MealEntry.fromJson(Map<String, dynamic> json) => MealEntry(
+    barcode: json['barcode'] as String? ?? '',
     name: json['name'] as String,
     unit: json['unit'] as String? ?? 'g',
     amount: (json['amount'] as num).toDouble(),
@@ -76,6 +81,7 @@ class MealEntry {
   );
 
   Map<String, dynamic> toJson() => {
+    'barcode': barcode,
     'name': name,
     'unit': unit,
     'amount': amount,

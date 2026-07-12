@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -11,8 +12,8 @@ import 'package:provider/provider.dart';
 
 /// Full-screen editor for one basal-rate profile. Works on a local copy of the
 /// profile: rename it, tap/drag a bar to set an hour, or shape a curve from a
-/// daily total plus movable maxima. The copy is written back to
-/// [ProfileBasalState] on leave (so a slider drag doesn't spam secure storage).
+/// daily total plus movable maxima. Nothing is persisted until the user taps the
+/// explicit Save button; leaving with unsaved edits prompts save-or-discard.
 class BasalEditor extends StatefulWidget {
   const BasalEditor({super.key, required this.index});
 
@@ -33,18 +34,29 @@ class _BasalEditorState extends State<BasalEditor> {
   );
   int _selectedHour = 8;
 
+  /// Set by any edit; drives the save-or-discard prompt on leave.
+  bool _dirty = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _name.addListener(() => _dirty = true);
+  }
+
   double get _totalUnits =>
       double.tryParse(_total.text.replaceAll(',', '.')) ?? 0;
 
   void _setHour(int hour, double rate) {
     setState(() {
       _selectedHour = hour;
+      _dirty = true;
       _profile.setHour(hour, rate);
     });
   }
 
   void _regenerate() {
     setState(() {
+      _dirty = true;
       _profile.dailyTotal = _totalUnits;
       _profile.regenerate();
     });
@@ -55,13 +67,32 @@ class _BasalEditorState extends State<BasalEditor> {
     _regenerate();
   }
 
-  void _leave() {
+  /// Commits the local copy to [ProfileBasalState] and leaves the editor.
+  void _save() {
     final name = _name.text.trim();
     if (name.isNotEmpty) {
       _profile.name = name;
     }
     _state.updateProfile(widget.index, _profile);
     Navigator.pop(context);
+  }
+
+  /// Back action: leave straight away when nothing changed, otherwise ask to
+  /// save or discard.
+  void _onBack() {
+    if (!_dirty) {
+      Navigator.pop(context);
+      return;
+    }
+    Alert(
+      icon: Icons.save_outlined,
+      description: 'profile.basal.unsaved',
+      cancelButton: true,
+      cancelButtonText: 'profile.basal.discard',
+      confirmButtonText: 'profile.basal.save',
+      callback: _save,
+      cancelCallback: () => Navigator.pop(context),
+    ).show(context);
   }
 
   @override
@@ -77,7 +108,7 @@ class _BasalEditorState extends State<BasalEditor> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
-          _leave();
+          _onBack();
         }
       },
       child: Scaffold(
@@ -85,7 +116,7 @@ class _BasalEditorState extends State<BasalEditor> {
           surfaceTintColor: Colors.transparent,
           leading: IconButton(
             icon: const Icon(CupertinoIcons.arrow_left),
-            onPressed: _leave,
+            onPressed: _onBack,
           ),
           title: LocaleText('profile.basal'),
         ),
@@ -106,9 +137,19 @@ class _BasalEditorState extends State<BasalEditor> {
             _card(child: _hourStepper()),
             const SizedBox(height: 16),
             _card(child: _generator()),
+            const SizedBox(height: 24),
+            _saveButton(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _saveButton() {
+    return FilledButton(
+      onPressed: _save,
+      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+      child: LocaleText('profile.basal.save'),
     );
   }
 

@@ -26,7 +26,15 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
   final BiometricAuth _auth = BiometricAuth();
   bool _authenticating = false;
 
+  /// Whether this bolus needs biometric confirmation. A zero bolus (carbs-only
+  /// logging) is confirmed with a plain tap.
+  bool get _needsAuth => widget.bolus > 0;
+
   Future<void> _confirm() async {
+    if (!_needsAuth) {
+      Navigator.of(context).pop(true);
+      return;
+    }
     setState(() => _authenticating = true);
     final ok = await _auth.confirm(
       Locales.string(context, 'injection.confirm.reason'),
@@ -62,7 +70,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
               const SizedBox(height: 24),
               _details(context),
               const Spacer(),
-              _hint(context),
+              if (_needsAuth) _hint(context),
               const SizedBox(height: 14),
               FilledButton.icon(
                 onPressed: _authenticating ? null : _confirm,
@@ -72,7 +80,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.fingerprint),
+                    : Icon(_needsAuth ? Icons.fingerprint : Icons.check),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
                 ),

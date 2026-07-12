@@ -688,7 +688,10 @@
       "name": "Profile name",
       "add_profile": "Add profile",
       "new_title": "New basal profile",
-      "delete_title": "Delete profile?"
+      "delete_title": "Delete profile?",
+      "save": "Save",
+      "discard": "Discard",
+      "unsaved": "Save changes?"
     },
     "search": {
       "_": "Search settings",
