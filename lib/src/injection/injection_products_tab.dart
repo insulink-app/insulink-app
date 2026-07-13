@@ -17,6 +17,7 @@ class _Item {
   double get carbs => product.carbs100g * grams / 100;
 
   MealEntry toEntry() => MealEntry(
+    barcode: product.barcode,
     name: product.name.isEmpty ? product.barcode : product.name,
     unit: product.unit,
     amount: grams,

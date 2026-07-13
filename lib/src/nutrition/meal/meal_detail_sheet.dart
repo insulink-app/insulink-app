@@ -3,6 +3,9 @@ import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/nutrition/food/food_editor_sheet.dart';
+import 'package:insulink/src/nutrition/food/food_product.dart';
+import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/nutrition/meal/meal_time.dart';
@@ -152,45 +155,74 @@ class MealDetailSheet extends StatelessWidget {
 
   Widget _entryRow(BuildContext context, MealEntry entry) {
     final scheme = Theme.of(context).colorScheme;
+    final product = _findProduct(context, entry);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-        decoration: BoxDecoration(
-          color: scheme.onSurface.withValues(alpha: 0.04),
+      child: Material(
+        color: scheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
           borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+          onTap: product == null
+              ? null
+              : () => showFoodEditor(context, product: product),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _entrySubtitle(context, entry),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _entrySubtitle(context, entry),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.onSurface.withValues(alpha: 0.6),
+                ),
+                Text(
+                  '${entry.carbs.toStringAsFixed(0)} g',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if (product != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Icon(
+                      Icons.chevron_right,
+                      color: scheme.onSurface.withValues(alpha: 0.3),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
-            Text(
-              '${entry.carbs.toStringAsFixed(0)} g',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  /// The still-saved product an [entry] came from (matched by barcode), or null
+  /// when it was a manual entry or the product has since been deleted.
+  FoodProduct? _findProduct(BuildContext context, MealEntry entry) {
+    if (entry.barcode.isEmpty) {
+      return null;
+    }
+    for (final product in context.read<FoodState>().products) {
+      if (product.barcode == entry.barcode) {
+        return product;
+      }
+    }
+    return null;
   }
 
   Widget _deleteButton(BuildContext context) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -62,6 +63,15 @@ class _PortionSheetState extends State<_PortionSheet> {
 
   double get _count => double.tryParse(_input.text.replaceAll(',', '.')) ?? 0;
 
+  /// One tap on the +/- stepper: a whole serving, or a 10 g/ml step when the
+  /// product has no serving size.
+  double get _step => _serving == null ? 10 : 1;
+
+  void _bump(double delta) {
+    final next = (_count + delta).clamp(0.0, double.infinity);
+    _input.text = _fmt(next);
+  }
+
   /// The amount in grams/ml — [_count] servings times the serving size, or the
   /// raw amount when there is no serving.
   double get _grams => _serving == null ? _count : _count * _serving;
@@ -92,22 +102,43 @@ class _PortionSheetState extends State<_PortionSheet> {
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
-          TextField(
-            controller: _input,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-            ],
-            decoration: InputDecoration(
-              labelText: Locales.string(
-                context,
-                _serving == null
-                    ? 'injection.products.amount'
-                    : 'injection.products.servings',
+          Row(
+            children: [
+              CircleIconButton(
+                icon: Icons.remove,
+                accent: scheme.primary,
+                onTap: () => _bump(-_step),
               ),
-              suffixText: _serving == null ? widget.product.unit : null,
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _input,
+                  autofocus: true,
+                  textAlign: TextAlign.center,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: Locales.string(
+                      context,
+                      _serving == null
+                          ? 'injection.products.amount'
+                          : 'injection.products.servings',
+                    ),
+                    suffixText: _serving == null ? widget.product.unit : null,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              CircleIconButton(
+                icon: Icons.add,
+                accent: scheme.primary,
+                onTap: () => _bump(_step),
+              ),
+            ],
           ),
           if (_serving != null) ...[
             const SizedBox(height: 8),

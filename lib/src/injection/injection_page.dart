@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/injection/injection_confirm_page.dart';
@@ -27,9 +26,9 @@ Future<void> showInjectionSheet(BuildContext context) {
   );
 }
 
-/// Carbs (manual OR summed from picked products) + current glucose → the
-/// suggested, still-editable bolus. Glucose is handled in mg/dL throughout to
-/// match the configured factors.
+/// Carbs (a manual amount PLUS the ones summed from picked products) + current
+/// glucose → the suggested, still-editable bolus. Glucose is handled in mg/dL
+/// throughout to match the configured factors.
 class InjectionSheet extends StatefulWidget {
   const InjectionSheet({super.key});
 
@@ -38,16 +37,12 @@ class InjectionSheet extends StatefulWidget {
 }
 
 class _InjectionSheetState extends State<InjectionSheet> {
-  static const _storage = FlutterSecureStorage();
-  static const _kTab = 'injection_carb_tab';
-
   final _carbsController = TextEditingController();
   final _bolusController = TextEditingController();
   late final TextEditingController _glucoseController;
 
-  /// 0 = manual carbs, 1 = products from the food database. Restored from and
-  /// persisted to secure storage.
-  int _tab = 0;
+  /// Products picked from the food database; their carbs add to the manual
+  /// [_carbsController] amount.
   List<MealEntry> _productEntries = const [];
 
   /// Once the user types in the bolus field we stop overwriting it with the
@@ -65,17 +60,9 @@ class _InjectionSheetState extends State<InjectionSheet> {
     _carbsController.addListener(_recompute);
     _glucoseController.addListener(_recompute);
     _bolusController.addListener(_onBolusEdited);
-    _loadTab();
     // Prefill the suggestion from the prefilled glucose (listeners don't fire for
     // the initial text); after the first frame so setState is legal.
     WidgetsBinding.instance.addPostFrameCallback((_) => _recompute());
-  }
-
-  Future<void> _loadTab() async {
-    final stored = int.tryParse(await _storage.read(key: _kTab) ?? '');
-    if (mounted && (stored == 0 || stored == 1)) {
-      setState(() => _tab = stored!);
-    }
   }
 
   @override
@@ -94,18 +81,13 @@ class _InjectionSheetState extends State<InjectionSheet> {
     setState(() {});
   }
 
-  void _selectTab(int tab) {
-    setState(() => _tab = tab);
-    _storage.write(key: _kTab, value: '$tab');
-    _recompute();
-  }
+  double get _manualCarbs =>
+      double.tryParse(_carbsController.text.replaceAll(',', '.')) ?? 0;
 
-  double get _carbs {
-    if (_tab == 1) {
-      return _productEntries.fold(0, (sum, entry) => sum + entry.carbs);
-    }
-    return double.tryParse(_carbsController.text.replaceAll(',', '.')) ?? 0;
-  }
+  double get _productCarbs =>
+      _productEntries.fold(0, (sum, entry) => sum + entry.carbs);
+
+  double get _carbs => _manualCarbs + _productCarbs;
 
   int? get _glucose => int.tryParse(_glucoseController.text);
 
@@ -169,7 +151,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
           carbs: _carbs,
           glucoseMgdl: glucose,
           bolus: bolus,
-          entries: _tab == 1 ? _productEntries : const [],
+          entries: _productEntries,
         ),
       );
       navigator.pop();
@@ -197,20 +179,18 @@ class _InjectionSheetState extends State<InjectionSheet> {
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
-          _tabs(),
-          const SizedBox(height: 24),
-          IndexedStack(
-            index: _tab,
-            sizing: StackFit.loose,
-            children: [
-              _NumberField(
-                controller: _carbsController,
-                labelKey: 'injection.carbs',
-                suffix: 'g',
-              ),
-              InjectionProductsTab(onItemsChanged: _onProductItems),
-            ],
+          _NumberField(
+            controller: _carbsController,
+            labelKey: 'injection.carbs',
+            suffix: 'g',
           ),
+          const SizedBox(height: 20),
+          LocaleText(
+            'injection.products_tab',
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 10),
+          InjectionProductsTab(onItemsChanged: _onProductItems),
           const SizedBox(height: 24),
           _NumberField(
             controller: _glucoseController,
@@ -237,51 +217,6 @@ class _InjectionSheetState extends State<InjectionSheet> {
     );
   }
 
-  /// iOS-style segmented control matching the app's other switches
-  /// (e.g. the glucose-unit selector).
-  Widget _tabs() {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.dividerColor),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _segment(theme, 0, 'injection.carbs_tab')),
-          Expanded(child: _segment(theme, 1, 'injection.products_tab')),
-        ],
-      ),
-    );
-  }
-
-  Widget _segment(ThemeData theme, int tab, String labelKey) {
-    final selected = _tab == tab;
-    return GestureDetector(
-      onTap: () => _selectTab(tab),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? theme.colorScheme.onSurface : Colors.transparent,
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: LocaleText(
-          labelKey,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: selected
-                ? theme.colorScheme.surface
-                : theme.colorScheme.onSurface,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _NumberField extends StatelessWidget {

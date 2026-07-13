@@ -688,7 +688,10 @@
       "name": "Profilname",
       "add_profile": "Profil hinzufügen",
       "new_title": "Neues Basalprofil",
-      "delete_title": "Profil löschen?"
+      "delete_title": "Profil löschen?",
+      "save": "Speichern",
+      "discard": "Verwerfen",
+      "unsaved": "Änderungen speichern?"
     },
     "search": {
       "_": "Einstellungen suchen",

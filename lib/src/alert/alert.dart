@@ -22,6 +22,7 @@ class Alert extends StatefulWidget {
   final Color? confirmButtonColor;
   final bool Function()? confirmButtonEnabled;
   final Function()? callback;
+  final Function()? cancelCallback;
 
   const Alert({
     super.key,
@@ -37,6 +38,7 @@ class Alert extends StatefulWidget {
     this.confirmButtonColor,
     this.confirmButtonEnabled,
     this.callback,
+    this.cancelCallback,
   });
 
   @override
@@ -207,7 +209,10 @@ class AlertState extends State<Alert> {
     return SizedBox(
       width: double.infinity,
       child: FilledButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          Navigator.pop(context);
+          widget.cancelCallback?.call();
+        },
         style: FilledButton.styleFrom(
           backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.06),
           foregroundColor:
