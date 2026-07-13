@@ -4,6 +4,7 @@ import 'package:insulink/src/sport/calendar/day_activities_sheet.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Dot colour for logged routines on the sport calendar (brand colour).
 Color calendarRoutineColor(ColorScheme scheme) => scheme.primary;
@@ -71,7 +72,7 @@ class _SportCalendarSectionState extends State<SportCalendarSection> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          icon: const Icon(Icons.chevron_left),
+          icon: const Icon(PhosphorIconsRegular.caretLeft),
           onPressed: () => _step(-1),
         ),
         Text(
@@ -79,7 +80,7 @@ class _SportCalendarSectionState extends State<SportCalendarSection> {
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         IconButton(
-          icon: const Icon(Icons.chevron_right),
+          icon: const Icon(PhosphorIconsRegular.caretRight),
           // No stepping into the future — there are no activities there.
           onPressed: atCurrent ? null : () => _step(1),
         ),

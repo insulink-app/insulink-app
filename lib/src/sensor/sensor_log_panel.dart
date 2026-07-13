@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../cgm/cgm_controller.dart';
 import '../localization/locale_text.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Scrollable connection log with a copy button. Shown only in developer mode.
 class SensorLogPanel extends StatelessWidget {
@@ -43,7 +44,7 @@ class SensorLogPanel extends StatelessWidget {
   Widget _copyButton() {
     return TextButton.icon(
       onPressed: onCopy,
-      icon: const Icon(Icons.copy, size: 16),
+      icon: const Icon(PhosphorIconsRegular.copy, size: 16),
       label: LocaleText('sensor.copy'),
       style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 8),

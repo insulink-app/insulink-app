@@ -5,6 +5,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Chronological log of notable events over the selected analysis window:
 /// glucose lows/highs, signal loss, and sensor swap/stop. Reads the store-backed
@@ -18,7 +19,7 @@ class EventLogView extends StatelessWidget {
     final glucose = context.watch<ProfileGlucoseState>();
     if (events.isEmpty) {
       return const EmptyState(
-        icon: Icons.event_note_rounded,
+        icon: PhosphorIconsRegular.calendarBlank,
         titleKey: 'analysis.events.empty',
       );
     }
@@ -128,18 +129,18 @@ class _EventStyle {
     switch (type) {
       case 'glucose_low':
       case 'glucose_low_urgent':
-        return _EventStyle(Icons.arrow_downward, colors.low);
+        return _EventStyle(PhosphorIconsRegular.arrowDown, colors.low);
       case 'glucose_high':
       case 'glucose_high_urgent':
-        return _EventStyle(Icons.arrow_upward, colors.high);
+        return _EventStyle(PhosphorIconsRegular.arrowUp, colors.high);
       case 'signal_loss':
-        return _EventStyle(Icons.wifi_off, scheme.onSurface);
+        return _EventStyle(PhosphorIconsRegular.wifiSlash, scheme.onSurface);
       case 'new_sensor':
-        return _EventStyle(Icons.add_circle_outline, colors.inRange);
+        return _EventStyle(PhosphorIconsRegular.plusCircle, colors.inRange);
       case 'sensor_stopped':
-        return _EventStyle(Icons.stop_circle_outlined, scheme.onSurface);
+        return _EventStyle(PhosphorIconsRegular.stopCircle, scheme.onSurface);
       default:
-        return _EventStyle(Icons.circle, scheme.onSurface);
+        return _EventStyle(PhosphorIconsFill.circle, scheme.onSurface);
     }
   }
 }

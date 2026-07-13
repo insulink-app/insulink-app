@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/tile_layout_state.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Lets the user pick which summary boxes are shown and drag them into the order
 /// they prefer. Works on any [TileLayoutState] (the Today grid, the overview, the
@@ -101,12 +102,12 @@ class _TileLayoutEditorState<T extends Enum>
         controller: _query,
         decoration: InputDecoration(
           isDense: true,
-          prefixIcon: const Icon(Icons.search),
+          prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
           hintText: Locales.string(context, 'sport.layout.search'),
           suffixIcon: _query.text.isEmpty
               ? null
               : IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(PhosphorIconsRegular.x),
                   onPressed: _query.clear,
                 ),
         ),
@@ -147,7 +148,7 @@ class _TileLayoutEditorState<T extends Enum>
             ),
             const SizedBox(width: 4),
             if (draggable)
-              const Icon(Icons.drag_handle, color: Colors.grey)
+              const Icon(PhosphorIconsRegular.dotsSixVertical, color: Colors.grey)
             else
               const SizedBox(width: 24),
           ],

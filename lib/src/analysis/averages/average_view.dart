@@ -5,6 +5,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/analysis/averages/glucose_summary.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Summary glucose statistics over the cached history: average, GMI (estimated
 /// HbA1c), variability (CV), standard deviation and the extremes.
@@ -20,7 +21,7 @@ class AverageView extends StatelessWidget {
     final values = controller.statsArchive.values.toList();
     if (values.isEmpty) {
       return const EmptyState(
-        icon: Icons.insights_rounded,
+        icon: PhosphorIconsRegular.chartLineUp,
         titleKey: 'analysis.empty',
       );
     }

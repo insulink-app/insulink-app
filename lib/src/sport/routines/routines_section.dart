@@ -12,6 +12,7 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// "Routines" section of the sport home page: list of routines (tap = edit, play
 /// = start), plus access to the exercise library and "+ Routine".
@@ -33,7 +34,7 @@ class RoutinesSection extends StatelessWidget {
             ),
             IconButton(
               visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.fitness_center, size: 20),
+              icon: const Icon(PhosphorIconsRegular.barbell, size: 20),
               tooltip: Locales.string(context, 'sport.exercises'),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const ExercisesPage()),
@@ -95,7 +96,7 @@ class RoutinesSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
             child: Row(
               children: [
-                const SportLeadingBadge(icon: Icons.fitness_center),
+                const SportLeadingBadge(icon: PhosphorIconsRegular.barbell),
                 const SizedBox(width: 14),
                 Expanded(
                   child: _titleBlock(context, routine, training, scheme),
@@ -189,7 +190,7 @@ class RoutinesSection extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(9),
           child: Icon(
-            Icons.play_arrow_rounded,
+            PhosphorIconsFill.play,
             size: 24,
             color: scheme.onPrimary,
           ),

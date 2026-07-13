@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// OpenStreetMap map with the training route as a polyline. [live] keeps the map
 /// viewport controlled by the caller (recenter while recording); otherwise it
@@ -97,8 +98,8 @@ class CardioMap extends StatelessWidget {
         if (!live && route.length >= 2)
           MarkerLayer(
             markers: [
-              _badgeMarker(route.first, Icons.play_arrow_rounded),
-              _badgeMarker(route.last, Icons.sports_score_rounded),
+              _badgeMarker(route.first, PhosphorIconsFill.play),
+              _badgeMarker(route.last, PhosphorIconsRegular.flagCheckered),
             ],
           ),
         if (highlight != null)

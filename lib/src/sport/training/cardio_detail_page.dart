@@ -15,6 +15,7 @@ import 'package:insulink/src/sport/training/training_splits_panel.dart';
 import 'package:insulink/src/sport/training/training_stats_panel.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Detail view of a training: the route as a framed map window, the stat tiles
 /// and, at the bottom, a glucose + heart-rate chart over the training. Scrubbing
@@ -89,7 +90,7 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
         title: LocaleText(training.type.labelKey),
         actions: [
           PopupMenuButton<CardioType>(
-            icon: const Icon(Icons.edit_outlined),
+            icon: const Icon(PhosphorIconsRegular.pencilSimple),
             tooltip: Locales.string(context, 'sport.trainings.change_type'),
             onSelected: (type) => state.changeTrainingType(training.id, type),
             itemBuilder: (context) => [
@@ -107,7 +108,7 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(PhosphorIconsRegular.trash),
             onPressed: () => confirmDelete(
               context,
               messageKey: 'sport.trainings.delete_confirm',

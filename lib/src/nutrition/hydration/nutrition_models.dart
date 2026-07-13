@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One logged drink: when it was drunk, how much (ml), and which preset
 /// ([kind]) so the today list can render the matching icon.
@@ -35,10 +36,10 @@ class DrinkPreset {
 }
 
 const List<DrinkPreset> drinkPresets = [
-  DrinkPreset('glass', 250, Icons.local_cafe, '250 ml'),
-  DrinkPreset('small_bottle', 700, Icons.liquor, '0,7 L'),
-  DrinkPreset('sodastream', 840, Icons.liquor, '840 ml'),
-  DrinkPreset('large_bottle', 1000, Icons.liquor, '1 L'),
+  DrinkPreset('glass', 250, PhosphorIconsRegular.coffee, '250 ml'),
+  DrinkPreset('small_bottle', 700, PhosphorIconsRegular.wine, '0,7 L'),
+  DrinkPreset('sodastream', 840, PhosphorIconsRegular.wine, '840 ml'),
+  DrinkPreset('large_bottle', 1000, PhosphorIconsRegular.wine, '1 L'),
 ];
 
 /// Icon for a stored entry's [kind]; free-input entries fall back to a drop.
@@ -48,7 +49,7 @@ IconData iconForKind(String kind) {
       return preset.icon;
     }
   }
-  return Icons.water_drop;
+  return PhosphorIconsRegular.drop;
 }
 
 /// Litres with up to two decimals, German comma, trailing zeros trimmed

@@ -3,6 +3,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/glucose_range_bar.dart';
 import 'package:insulink/src/profile/glucose/glucose_range_editor_sheet.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// A tappable summary of one low/high range — label, current values and a band
 /// visualization. Opens [GlucoseRangeEditorSheet] on tap.
@@ -101,7 +102,7 @@ class GlucoseRangeCard extends StatelessWidget {
           ),
         ),
         Icon(
-          Icons.chevron_right,
+          PhosphorIconsRegular.caretRight,
           color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
         ),
       ],

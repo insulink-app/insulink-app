@@ -11,6 +11,7 @@ import 'package:insulink/src/sport/workout/workout_snapshot.dart';
 import 'package:insulink/src/sport/workout/workout_vitals_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Live execution of a routine: total time, progress, pause, per-set stopwatch
 /// and the rest countdown. Drives a [WorkoutRunner], persists a resumable
@@ -93,7 +94,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
   /// sets. Reachable from both the exercising and resting phases.
   void _confirmFinish(BuildContext context) {
     Alert(
-      icon: Icons.flag_rounded,
+      icon: PhosphorIconsFill.flag,
       iconColor: Theme.of(context).colorScheme.primary,
       description: 'sport.workout.finish_confirm',
       cancelButton: true,
@@ -109,7 +110,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
       title: Text(widget.routine.name),
       actions: [
         IconButton(
-          icon: Icon(_runner.isPaused ? Icons.play_arrow : Icons.pause),
+          icon: Icon(_runner.isPaused ? PhosphorIconsFill.play : PhosphorIconsRegular.pause),
           tooltip: Locales.string(
             context,
             _runner.isPaused ? 'sport.workout.resume' : 'sport.workout.pause',
@@ -157,7 +158,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
             for (var index = 0; index < widget.routine.items.length; index++)
               ListTile(
                 leading: index == _runner.exerciseIndex
-                    ? const Icon(Icons.play_arrow)
+                    ? const Icon(PhosphorIconsFill.play)
                     : const SizedBox(width: 24),
                 title: Text(
                   training

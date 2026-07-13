@@ -5,6 +5,7 @@ import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Branded card that syncs the last ~90 days of Google Health data
 /// (steps/distance/calories into the archive, weight into the history) — with
@@ -70,7 +71,7 @@ class _HealthImportButtonState extends State<HealthImportButton> {
       width: 44,
       height: 44,
       decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
-      child: Icon(Icons.favorite_rounded, color: scheme.onPrimary, size: 22),
+      child: Icon(PhosphorIconsFill.heart, color: scheme.onPrimary, size: 22),
     );
   }
 
@@ -103,6 +104,6 @@ class _HealthImportButtonState extends State<HealthImportButton> {
         child: CircularProgressIndicator(strokeWidth: 2),
       );
     }
-    return Icon(Icons.sync_rounded, color: scheme.primary);
+    return Icon(PhosphorIconsRegular.arrowsClockwise, color: scheme.primary);
   }
 }

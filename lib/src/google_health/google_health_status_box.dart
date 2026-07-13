@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/google_health/google_health_importer.dart';
@@ -6,6 +5,7 @@ import 'package:insulink/src/google_health/google_health_metric_list.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Connection box for the Google Health device page, styled like the sensor's status
 /// box: an icon badge + status, the latest metrics when connected, and a
@@ -63,7 +63,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
             color: accent.withValues(alpha: 0.15),
           ),
           child: Icon(
-            health.connected ? Icons.watch : Icons.watch_off,
+            health.connected ? PhosphorIconsRegular.watch : PhosphorIconsRegular.watch,
             size: 30,
             color: accent,
           ),
@@ -107,7 +107,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
     if (health.connected) {
       return OutlinedButton.icon(
         onPressed: () => _confirmDisconnect(context),
-        icon: const Icon(Icons.link_off, size: 20),
+        icon: const Icon(PhosphorIconsRegular.linkBreak, size: 20),
         label: LocaleText('google_health.disconnect'),
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.redAccent,
@@ -118,7 +118,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
     }
     return FilledButton.tonalIcon(
       onPressed: () => _connect(context),
-      icon: const Icon(Icons.link, size: 20),
+      icon: const Icon(PhosphorIconsRegular.link, size: 20),
       label: LocaleText('google_health.connect'),
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
     );
@@ -126,7 +126,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
 
   void _confirmDisconnect(BuildContext context) {
     Alert(
-      icon: CupertinoIcons.exclamationmark_triangle,
+      icon: PhosphorIconsRegular.warning,
       iconColor: Colors.redAccent,
       description: 'google_health.disconnect_confirm',
       cancelButton: true,

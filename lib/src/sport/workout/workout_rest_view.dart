@@ -6,6 +6,7 @@ import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The resting phase: countdown (overtime once past 0, no auto-advance/tone),
 /// the previous set's reps/weight still editable, and the extend/continue
@@ -106,7 +107,7 @@ class WorkoutRestView extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Icon(Icons.swap_horiz_rounded, size: 18, color: scheme.primary),
+            Icon(PhosphorIconsRegular.arrowsLeftRight, size: 18, color: scheme.primary),
           ],
         ),
       ),
@@ -153,7 +154,7 @@ class WorkoutRestView extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         CircleIconButton(
-          icon: Icons.remove,
+          icon: PhosphorIconsRegular.minus,
           accent: scheme.primary,
           onTap: () =>
               runner.updateLastSet(weightKg: (weight - 2.5).clamp(0, 999)),
@@ -167,7 +168,7 @@ class WorkoutRestView extends StatelessWidget {
           ),
         ),
         CircleIconButton(
-          icon: Icons.add,
+          icon: PhosphorIconsRegular.plus,
           accent: scheme.primary,
           onTap: () =>
               runner.updateLastSet(weightKg: (weight + 2.5).clamp(0, 999)),
@@ -187,7 +188,7 @@ class WorkoutRestView extends StatelessWidget {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () => runner.extendRest(60),
-            icon: const Icon(Icons.more_time_rounded, size: 20),
+            icon: const Icon(PhosphorIconsRegular.clock, size: 20),
             label: LocaleText('sport.workout.extend'),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(56),
@@ -202,7 +203,7 @@ class WorkoutRestView extends StatelessWidget {
         Expanded(
           child: FilledButton.icon(
             onPressed: runner.skipRest,
-            icon: const Icon(Icons.arrow_forward_rounded, size: 20),
+            icon: const Icon(PhosphorIconsRegular.arrowRight, size: 20),
             label: LocaleText('sport.workout.continue'),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(56),

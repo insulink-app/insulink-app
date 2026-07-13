@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 enum _SportRowAction { copy, delete }
 
@@ -26,7 +27,7 @@ class SportRowMenu extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final menu = PopupMenuButton<_SportRowAction>(
       icon: Icon(
-        Icons.more_vert,
+        PhosphorIconsRegular.dotsThreeVertical,
         color: scheme.onSurface.withValues(alpha: 0.55),
       ),
       tooltip: '',
@@ -39,14 +40,14 @@ class SportRowMenu extends StatelessWidget {
         _item(
           context,
           _SportRowAction.copy,
-          Icons.copy_rounded,
+          PhosphorIconsRegular.copy,
           'sport.copy',
           scheme.onSurface,
         ),
         _item(
           context,
           _SportRowAction.delete,
-          Icons.delete_outline_rounded,
+          PhosphorIconsRegular.trash,
           'alert.delete',
           scheme.error,
         ),

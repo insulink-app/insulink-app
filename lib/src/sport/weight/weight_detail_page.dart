@@ -9,6 +9,7 @@ import 'package:insulink/src/sport/weight/weight_current_card.dart';
 import 'package:insulink/src/sport/weight/weight_entry_row.dart';
 import 'package:insulink/src/sport/weight/weight_entry_sheet.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Weight history: current value + range metrics, chart with range picker and
 /// the entries (newest first). "+" opens the sheet.
@@ -46,11 +47,11 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
       floatingActionButton: FloatingActionButton(
         heroTag: 'weight-add',
         onPressed: () => showWeightEntrySheet(context),
-        child: const Icon(Icons.add),
+        child: const Icon(PhosphorIconsRegular.plus),
       ),
       body: weights.isEmpty
           ? const EmptyState(
-              icon: Icons.monitor_weight_rounded,
+              icon: PhosphorIconsRegular.scales,
               titleKey: 'sport.weight.empty',
             )
           : ListView(

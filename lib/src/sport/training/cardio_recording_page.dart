@@ -13,6 +13,7 @@ import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 enum _Phase { countdown, recording }
 
@@ -215,7 +216,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
 
   void _confirmStop() {
     Alert(
-      icon: Icons.stop_circle_rounded,
+      icon: PhosphorIconsRegular.stopCircle,
       iconColor: Colors.red.shade700,
       description: 'sport.trainings.stop_confirm',
       cancelButton: true,
@@ -260,7 +261,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
         actions: [
           if (active != null)
             IconButton(
-              icon: Icon(active.isPaused ? Icons.play_arrow : Icons.pause),
+              icon: Icon(active.isPaused ? PhosphorIconsFill.play : PhosphorIconsRegular.pause),
               tooltip: Locales.string(
                 context,
                 active.isPaused
@@ -357,7 +358,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.red.shade700,
               ),
-              icon: const Icon(Icons.stop_rounded, size: 28),
+              icon: const Icon(PhosphorIconsFill.stop, size: 28),
               label: LocaleText(
                 'sport.trainings.stop',
                 style: const TextStyle(

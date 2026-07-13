@@ -7,6 +7,7 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/cardio_training_tile.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One logged activity — a routine session or an endurance training — as a
 /// tappable list tile. Shared by the home activities list and the logbook.
@@ -48,7 +49,7 @@ class _RoutineSessionTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
       ),
-      leading: const SportLeadingBadge(icon: Icons.event_available),
+      leading: const SportLeadingBadge(icon: PhosphorIconsRegular.calendarCheck),
       title: Text(
         routine?.name ??
             Locales.string(context, 'sport.logbook.deleted_routine'),

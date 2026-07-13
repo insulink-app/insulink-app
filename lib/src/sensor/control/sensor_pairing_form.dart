@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../cgm/cgm_connection.dart';
@@ -8,6 +7,7 @@ import '../../localization/locales.dart';
 import 'libre3_pairing_fields.dart';
 import 'pairing_qr_scanner.dart';
 import 'sensor_type_selector.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Box shown when no sensor is set up yet: enter the pairing code and connect.
 class SensorPairingForm extends StatelessWidget {
@@ -66,7 +66,7 @@ class SensorPairingForm extends StatelessWidget {
         color: scheme.onSurface.withValues(alpha: 0.08),
       ),
       child: Icon(
-        CupertinoIcons.drop,
+        PhosphorIconsRegular.drop,
         size: 32,
         color: scheme.onSurface.withValues(alpha: 0.7),
       ),
@@ -124,7 +124,7 @@ class SensorPairingForm extends StatelessWidget {
             padding: EdgeInsets.zero,
             backgroundColor: scheme.onSurface.withValues(alpha: 0.12),
           ),
-          child: const Icon(Icons.qr_code_scanner, size: 26),
+          child: const Icon(PhosphorIconsRegular.qrCode, size: 26),
         ),
       ),
     );
@@ -140,7 +140,7 @@ class SensorPairingForm extends StatelessWidget {
   Widget _connectButton() {
     return FilledButton.icon(
       onPressed: controller.busy ? null : controller.start,
-      icon: const Icon(Icons.bluetooth_searching, size: 20),
+      icon: const Icon(PhosphorIconsRegular.bluetooth, size: 20),
       label: LocaleText(
         controller.busy ? 'overview.connecting' : 'overview.connect',
       ),

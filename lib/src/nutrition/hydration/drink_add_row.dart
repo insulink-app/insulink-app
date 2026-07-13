@@ -4,6 +4,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/hydration/free_drink_sheet.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_models.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The one-tap drink picker: the size presets (smallest→largest) followed by a
 /// free amount entry. Each is an icon over a single-line amount, so the buttons
@@ -26,7 +27,7 @@ class DrinkAddRow extends StatelessWidget {
           ),
         _button(
           context,
-          Icons.add,
+          PhosphorIconsRegular.plus,
           Locales.string(context, 'nutrition.hydration.free'),
           () => _free(context),
         ),

@@ -4,6 +4,7 @@ import 'package:insulink/src/google_health/fitbit_heart_rate_monitor.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Compact live-vitals strip for the running routine: current glucose (from the
 /// G7 pipeline) and live pulse (from the worn Fitbit). Kicks off the BLE pulse
@@ -49,7 +50,7 @@ class _WorkoutVitalsBarState extends State<WorkoutVitalsBar> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _reading(
-            Icons.water_drop,
+            PhosphorIconsRegular.drop,
             scheme.primary,
             mgdl == null ? '–' : glucose.formatWithUnit(mgdl),
           ),
@@ -61,7 +62,7 @@ class _WorkoutVitalsBarState extends State<WorkoutVitalsBar> {
               // otherwise flickered the value back to '–'.
               final bpm = _monitor.bpm;
               return _reading(
-                Icons.favorite,
+                PhosphorIconsFill.heart,
                 bpm != null
                     ? scheme.error
                     : scheme.onSurface.withValues(alpha: 0.3),

@@ -1,40 +1,40 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:insulink/src/devices/device_row.dart';
+import 'package:insulink/src/connections/connection_row.dart';
 import 'package:insulink/src/google_health/google_health_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// Opens the devices page (Sensor + Pump + Google Health) on top of the current tab.
+/// Opens the connections page (Sensor + Pump + Google Health) on top of the current tab.
 /// Reached from the header device button and the overview shortcuts, now that
-/// devices is no longer a bottom-navigation tab.
-void openDevicesPage(BuildContext context) {
+/// connections is no longer a bottom-navigation tab.
+void openConnectionsPage(BuildContext context) {
   Navigator.of(
     context,
-  ).push(MaterialPageRoute<void>(builder: (_) => const DevicesPage()));
+  ).push(MaterialPageRoute<void>(builder: (_) => const ConnectionsPage()));
 }
 
-/// The devices page as a standalone route, with its own header + back button.
-class DevicesPage extends StatelessWidget {
-  const DevicesPage({super.key});
+/// The connections page as a standalone route, with its own header + back button.
+class ConnectionsPage extends StatelessWidget {
+  const ConnectionsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
-        title: LocaleText('devices.label'),
+        title: LocaleText('connections.label'),
       ),
-      body: const DevicesBodyContent(),
+      body: const ConnectionsBodyContent(),
     );
   }
 }
 
-class DevicesBodyContent extends StatelessWidget {
-  const DevicesBodyContent({super.key});
+class ConnectionsBodyContent extends StatelessWidget {
+  const ConnectionsBodyContent({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +42,8 @@ class DevicesBodyContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       children: [
-        DeviceRow(
-          icon: CupertinoIcons.drop_fill,
+        ConnectionRow(
+          icon: PhosphorIconsFill.drop,
           labelKey: "sensor.label",
           page: const SensorBodyContent(),
           // The sensor's only notification is the "no sensor" attention dot,
@@ -51,14 +51,14 @@ class DevicesBodyContent extends StatelessWidget {
           notify: !hasSensor,
         ),
         const SizedBox(height: 14),
-        DeviceRow(
-          icon: CupertinoIcons.today_fill,
+        ConnectionRow(
+          icon: PhosphorIconsFill.calendarBlank,
           labelKey: "pump.label",
           page: const PumpBodyContent(),
         ),
         const SizedBox(height: 14),
-        DeviceRow(
-          icon: Icons.watch,
+        ConnectionRow(
+          icon: PhosphorIconsRegular.watch,
           labelKey: "google_health.label",
           page: const GoogleHealthBodyContent(),
         ),

@@ -9,6 +9,7 @@ import 'package:insulink/src/sport/activity/activity_bar_chart.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_range_selector.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// History overview of a daily Google Health metric (resting HR / sleep / SpO2) from the
 /// persistent Health archive — the Google Health analogue of [ActivityDetailPage]:
@@ -77,7 +78,7 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
       ),
       body: days.isEmpty
           ? const EmptyState(
-              icon: Icons.favorite_rounded,
+              icon: PhosphorIconsFill.heart,
               titleKey: 'google_health.detail.empty',
             )
           : ListView(
@@ -163,7 +164,7 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          icon: const Icon(Icons.chevron_left),
+          icon: const Icon(PhosphorIconsRegular.caretLeft),
           onPressed: index > 0 ? () => select(index - 1) : null,
         ),
         Text(
@@ -173,7 +174,7 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         IconButton(
-          icon: const Icon(Icons.chevron_right),
+          icon: const Icon(PhosphorIconsRegular.caretRight),
           onPressed: index < nights.length - 1 ? () => select(index + 1) : null,
         ),
       ],
@@ -381,7 +382,7 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Icon(Icons.timeline_rounded, size: 16, color: scheme.primary),
+              Icon(PhosphorIconsRegular.chartLine, size: 16, color: scheme.primary),
               const SizedBox(width: 6),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -5,6 +5,7 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_card.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Full meal log: every logged meal as a tile, newest first, grouped by day.
 /// Reached from the "Show more" button in [MealSection].
@@ -21,7 +22,7 @@ class MealLogPage extends StatelessWidget {
       ),
       body: meals.isEmpty
           ? const EmptyState(
-              icon: Icons.restaurant_menu_rounded,
+              icon: PhosphorIconsRegular.forkKnife,
               titleKey: 'nutrition.meals.empty',
               subtitleKey: 'nutrition.meals.empty_hint',
             )

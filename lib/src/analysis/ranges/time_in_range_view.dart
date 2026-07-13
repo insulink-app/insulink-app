@@ -6,6 +6,7 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/analysis/ranges/glucose_band.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Dexcom-style "time in ranges": a single vertical stacked bar whose segments
 /// are sized by the share of readings in each glucose band, with the band name,
@@ -23,7 +24,7 @@ class TimeInRangeView extends StatelessWidget {
     final values = controller.statsArchive.values;
     if (values.isEmpty) {
       return const EmptyState(
-        icon: Icons.insights_rounded,
+        icon: PhosphorIconsRegular.chartLineUp,
         titleKey: 'analysis.empty',
       );
     }

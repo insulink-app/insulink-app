@@ -5,6 +5,7 @@ import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Asks for a portion and previews the resulting carbs live. When the product
 /// declares a serving size the input is a **number of servings** (the natural
@@ -105,7 +106,7 @@ class _PortionSheetState extends State<_PortionSheet> {
           Row(
             children: [
               CircleIconButton(
-                icon: Icons.remove,
+                icon: PhosphorIconsRegular.minus,
                 accent: scheme.primary,
                 onTap: () => _bump(-_step),
               ),
@@ -134,7 +135,7 @@ class _PortionSheetState extends State<_PortionSheet> {
               ),
               const SizedBox(width: 12),
               CircleIconButton(
-                icon: Icons.add,
+                icon: PhosphorIconsRegular.plus,
                 accent: scheme.primary,
                 onTap: () => _bump(_step),
               ),

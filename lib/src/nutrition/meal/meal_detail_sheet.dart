@@ -10,6 +10,7 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/nutrition/meal/meal_time.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Opens the details of a logged [meal]: carbs / glucose / bolus, and — when the
 /// bolus was dosed over the food database — the products that made it up.
@@ -109,14 +110,14 @@ class MealDetailSheet extends StatelessWidget {
         children: [
           _statRow(
             context,
-            Icons.bloodtype_rounded,
+            PhosphorIconsRegular.drop,
             'injection.glucose',
             '${meal.glucoseMgdl} mg/dL',
           ),
           Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
           _statRow(
             context,
-            Icons.water_drop_rounded,
+            PhosphorIconsRegular.drop,
             'injection.bolus',
             '${meal.bolus.toStringAsFixed(1)} E',
           ),
@@ -199,7 +200,7 @@ class MealDetailSheet extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(left: 6),
                     child: Icon(
-                      Icons.chevron_right,
+                      PhosphorIconsRegular.caretRight,
                       color: scheme.onSurface.withValues(alpha: 0.3),
                     ),
                   ),
@@ -235,7 +236,7 @@ class MealDetailSheet extends StatelessWidget {
           Navigator.of(context).pop();
         },
       ),
-      icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+      icon: const Icon(PhosphorIconsRegular.trash, size: 20, color: Colors.redAccent),
       label: LocaleText(
         'nutrition.meals.delete',
         style: const TextStyle(color: Colors.redAccent),

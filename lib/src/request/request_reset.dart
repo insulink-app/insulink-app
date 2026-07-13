@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 class RequestReset {
   /// Clears the session and sends the user back to the auth gate.
@@ -26,7 +27,7 @@ class RequestReset {
     }
     Alert(
       description: "connection.logout",
-      icon: CupertinoIcons.exclamationmark_triangle,
+      icon: PhosphorIconsRegular.warning,
       callback: () {
         Navigator.pushReplacement(
           context,

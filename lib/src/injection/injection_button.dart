@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/injection_page.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 class InjectionButton extends StatefulWidget {
   const InjectionButton({super.key});
@@ -58,7 +58,7 @@ class _InjectionButtonState extends State<InjectionButton>
             ),
             shape: CircleBorder(),
             child: Icon(
-              CupertinoIcons.eyedropper,
+              PhosphorIconsRegular.syringe,
               size: 35,
               color: Colors.white,
             ),

@@ -6,6 +6,7 @@ import 'package:insulink/src/nutrition/hydration/nutrition_models.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
 import 'package:insulink/src/nutrition/hydration/today_drinks_sheet.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Top section of the nutrition page: a "Trinken" header with a settings button
 /// outside the card (room for more settings), then a box with today's intake
@@ -70,7 +71,7 @@ class HydrationCard extends StatelessWidget {
         Expanded(child: _amount(state, accent)),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.history, size: 22),
+          icon: const Icon(PhosphorIconsRegular.clockCounterClockwise, size: 22),
           onPressed: () => showTodayDrinksSheet(context),
         ),
       ],

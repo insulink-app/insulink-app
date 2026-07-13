@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Uniform "add" tile for the sport area: full width, rounded primary-tint
 /// background, "+" icon + label. Stands out clearly from the grey data cards and
@@ -9,7 +10,7 @@ class SportAddTile extends StatelessWidget {
     super.key,
     required this.labelKey,
     required this.onTap,
-    this.icon = Icons.add,
+    this.icon = PhosphorIconsRegular.plus,
   });
 
   final String labelKey;

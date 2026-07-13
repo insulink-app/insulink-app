@@ -5,6 +5,7 @@ import 'package:insulink/src/nutrition/meal/meal_card.dart';
 import 'package:insulink/src/nutrition/meal/meal_log_page.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The meal log on the nutrition page: the three most recent meals as tiles
 /// (matching the sport activity list), with a "Show more" into the full log
@@ -50,7 +51,7 @@ class MealSection extends StatelessWidget {
 
   Widget _empty(BuildContext context) {
     return const EmptyState(
-      icon: Icons.restaurant_menu_rounded,
+      icon: PhosphorIconsRegular.forkKnife,
       titleKey: 'nutrition.meals.empty',
       subtitleKey: 'nutrition.meals.empty_hint',
     );

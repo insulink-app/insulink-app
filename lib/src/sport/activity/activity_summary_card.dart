@@ -8,6 +8,7 @@ import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/activity/today_tile_builder.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// "Today" section: a grid of summary boxes the user can configure (which boxes
 /// and their order — see [TodayLayoutState]) and reorder by dragging. Steps are
@@ -54,7 +55,7 @@ class ActivitySummaryCard extends StatelessWidget {
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.tune, size: 20),
+          icon: const Icon(PhosphorIconsRegular.slidersHorizontal, size: 20),
           onPressed: () => showActivitySettingsSheet(context),
         ),
       ],

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/devices/devices_body.dart';
+import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -142,7 +142,7 @@ class EmptyView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () => openDevicesPage(context),
+              onPressed: () => openConnectionsPage(context),
               icon: const Icon(PhosphorIconsFill.drop, size: 18),
               label: LocaleText('overview.empty.action'),
               style: FilledButton.styleFrom(

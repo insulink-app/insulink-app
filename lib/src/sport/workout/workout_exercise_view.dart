@@ -7,6 +7,7 @@ import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The exercising phase: header (tap to jump), stopwatch, rep/weight inputs, the
 /// "last time" comparison and the complete/finish buttons.
@@ -149,7 +150,7 @@ class WorkoutExerciseView extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         CircleIconButton(
-          icon: Icons.remove,
+          icon: PhosphorIconsRegular.minus,
           accent: scheme.primary,
           onTap: () => runner.adjustWeight(-2.5),
         ),
@@ -162,7 +163,7 @@ class WorkoutExerciseView extends StatelessWidget {
           ),
         ),
         CircleIconButton(
-          icon: Icons.add,
+          icon: PhosphorIconsRegular.plus,
           accent: scheme.primary,
           onTap: () => runner.adjustWeight(2.5),
         ),

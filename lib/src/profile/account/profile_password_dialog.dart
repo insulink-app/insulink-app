@@ -1,9 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/alert/loader_alert.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/account/profile_account.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Current + new password prompt that forwards the change to the backend. The
 /// password is never stored on device. Shown from the account card.
@@ -14,7 +14,7 @@ class ProfilePasswordDialog {
     final current = TextEditingController();
     final next = TextEditingController();
     Alert(
-      icon: CupertinoIcons.lock,
+      icon: PhosphorIconsRegular.lock,
       content: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         child: _PasswordFields(current: current, next: next),
@@ -91,9 +91,9 @@ class _PasswordFieldsState extends State<_PasswordFields> {
       obscureText: _obscure,
       textInputAction: TextInputAction.done,
       decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.lock),
+        prefixIcon: const Icon(PhosphorIconsRegular.lock),
         suffixIcon: IconButton(
-          icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+          icon: Icon(_obscure ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash),
           onPressed: () => setState(() => _obscure = !_obscure),
           tooltip: Locales.string(context, "profile.account.show_password"),
         ),

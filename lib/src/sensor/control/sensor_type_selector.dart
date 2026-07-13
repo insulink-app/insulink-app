@@ -1,9 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../cgm/cgm_connection.dart';
 import '../../cgm/cgm_controller.dart';
 import '../../localization/locales.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Segmented control for the CGM the pairing form should set up (Dexcom G7 vs
 /// FreeStyle Libre 3). The selected segment slides/fades in via an
@@ -29,7 +29,7 @@ class SensorTypeSelector extends StatelessWidget {
               context,
               SensorType.dexcomG7,
               'sensor.type.g7',
-              CupertinoIcons.drop_fill,
+              PhosphorIconsFill.drop,
             ),
           ),
           Expanded(
@@ -37,7 +37,7 @@ class SensorTypeSelector extends StatelessWidget {
               context,
               SensorType.abbottLibre3,
               'sensor.type.libre3',
-              Icons.sensors_rounded,
+              PhosphorIconsRegular.broadcast,
             ),
           ),
         ],

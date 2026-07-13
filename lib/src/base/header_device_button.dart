@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:insulink/src/devices/devices_body.dart';
+import 'package:insulink/src/connections/connections_body.dart';
 import 'package:provider/provider.dart';
 
-/// Header shortcut to the devices page, with a red dot when a device needs
+/// Header shortcut to the connections page, with a red dot when a device needs
 /// attention (currently: no sensor paired).
 class HeaderDeviceButton extends StatelessWidget {
   const HeaderDeviceButton({super.key});
@@ -18,7 +18,7 @@ class HeaderDeviceButton extends StatelessWidget {
         IconButton(
           icon: const Icon(PhosphorIconsRegular.plug, size: 30),
           color: const Color(0xFFB3B3B3),
-          onPressed: () => openDevicesPage(context),
+          onPressed: () => openConnectionsPage(context),
         ),
         if (needsAttention)
           Positioned(

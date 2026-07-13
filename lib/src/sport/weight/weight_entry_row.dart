@@ -3,6 +3,7 @@ import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Small pill badge for the weight change (green = lost, orange = gained). Also
 /// used in the header of the weight page.
@@ -25,7 +26,7 @@ class WeightDeltaChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            up ? Icons.arrow_upward : Icons.arrow_downward,
+            up ? PhosphorIconsRegular.arrowUp : PhosphorIconsRegular.arrowDown,
             size: 12,
             color: color,
           ),
@@ -98,7 +99,7 @@ class WeightEntryRow extends StatelessWidget {
           ),
           if (delta != null && delta != 0) WeightDeltaChip(delta: delta),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20),
+            icon: const Icon(PhosphorIconsRegular.trash, size: 20),
             onPressed: () => confirmDelete(
               context,
               messageKey: 'sport.weight.delete_confirm',

@@ -332,8 +332,8 @@
       "save": "Save"
     }
   },
-  "devices": {
-    "label": "Devices"
+  "connections": {
+    "label": "Connections"
   },
   "nutrition": {
     "label": "Nutrition",

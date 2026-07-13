@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One stored product: a unit-aware icon badge with its name, brand and reported
 /// serving. Tap opens the portion picker; the × removes it.
@@ -40,7 +41,7 @@ class FoodProductCard extends StatelessWidget {
               IconButton(
                 visualDensity: VisualDensity.compact,
                 icon: Icon(
-                  Icons.close,
+                  PhosphorIconsRegular.x,
                   size: 18,
                   color: scheme.onSurface.withValues(alpha: 0.4),
                 ),
@@ -66,7 +67,7 @@ class FoodProductCard extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Icon(
-        isDrink ? Icons.local_drink_rounded : Icons.restaurant_rounded,
+        isDrink ? PhosphorIconsRegular.drop : PhosphorIconsRegular.forkKnife,
         color: scheme.primary,
         size: 22,
       ),

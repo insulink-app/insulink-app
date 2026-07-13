@@ -5,6 +5,7 @@ import 'package:insulink/src/nutrition/stats/nutrition_tile.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/activity/tile_layout_editor.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Card inside the nutrition settings sheet that opens the box-layout editor
 /// (show/hide + reorder the stats boxes). Mirrors the Sport tab's layout button.
@@ -32,7 +33,7 @@ class NutritionLayoutButton extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  Icons.dashboard_customize_rounded,
+                  PhosphorIconsRegular.squaresFour,
                   color: scheme.onPrimary,
                   size: 22,
                 ),
@@ -62,7 +63,7 @@ class NutritionLayoutButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Icon(Icons.chevron_right_rounded, color: scheme.primary),
+              Icon(PhosphorIconsRegular.caretRight, color: scheme.primary),
             ],
           ),
         ),

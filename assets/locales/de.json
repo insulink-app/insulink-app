@@ -332,8 +332,8 @@
       "save": "Speichern"
     }
   },
-  "devices": {
-    "label": "Geräte"
+  "connections": {
+    "label": "Verbindungen"
   },
   "nutrition": {
     "label": "Ernährung",

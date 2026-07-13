@@ -8,6 +8,7 @@ import 'package:insulink/src/sport/calendar/sport_calendar_page.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Shared logbook of every logged activity — routines and endurance trainings
 /// merged, newest first, grouped by day. Revealed a chunk at a time. A calendar
@@ -36,7 +37,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
         title: LocaleText('sport.logbook'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month),
+            icon: const Icon(PhosphorIconsRegular.calendarBlank),
             tooltip: Locales.string(context, 'sport.calendar'),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -48,7 +49,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
       ),
       body: entries.isEmpty
           ? const EmptyState(
-              icon: Icons.event_note_rounded,
+              icon: PhosphorIconsRegular.calendarBlank,
               titleKey: 'sport.logbook.empty',
             )
           : ListView(

@@ -8,6 +8,7 @@ import 'package:insulink/src/nutrition/stats/nutrition_tile.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_tile_builder.dart';
 import 'package:insulink/src/sport/activity/reorderable_tile_grid.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Top of the nutrition page: today's summary boxes (carbs / protein / bolus /
 /// water / meals), mirroring the Sport tab's "Today" grid — drag to reorder,
@@ -47,7 +48,7 @@ class NutritionStatsSection extends StatelessWidget {
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.tune, size: 20),
+          icon: const Icon(PhosphorIconsRegular.slidersHorizontal, size: 20),
           onPressed: () => showNutritionSettingsSheet(context),
         ),
       ],

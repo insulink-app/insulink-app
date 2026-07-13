@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The stat tiles (distance / duration / average speed) and the start/end times
 /// of a completed training — the numeric summary under the route map.
@@ -23,7 +24,7 @@ class TrainingStatsPanel extends StatelessWidget {
         Expanded(
           child: _tile(
             context,
-            Icons.straighten_rounded,
+            PhosphorIconsRegular.ruler,
             'sport.trainings.distance',
             formatDistanceKm(training.distanceM),
           ),
@@ -32,7 +33,7 @@ class TrainingStatsPanel extends StatelessWidget {
         Expanded(
           child: _tile(
             context,
-            Icons.timer_outlined,
+            PhosphorIconsRegular.timer,
             'sport.trainings.duration',
             formatDuration(training.duration),
           ),
@@ -41,7 +42,7 @@ class TrainingStatsPanel extends StatelessWidget {
         Expanded(
           child: _tile(
             context,
-            Icons.speed_rounded,
+            PhosphorIconsRegular.gauge,
             'sport.trainings.avg_speed',
             formatSpeed(training.avgSpeedKmh),
           ),

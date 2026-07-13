@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../sport_format.dart';
 import 'cardio_models.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Icon + localization key per [CardioType] — shared by the section, recording
 /// and detail pages so the mapping lives in one place.
 extension CardioTypeUi on CardioType {
   IconData get icon => switch (this) {
-    CardioType.walk => Icons.directions_walk,
-    CardioType.jog => Icons.directions_run,
-    CardioType.bike => Icons.directions_bike,
+    CardioType.walk => PhosphorIconsRegular.personSimpleWalk,
+    CardioType.jog => PhosphorIconsRegular.personSimpleRun,
+    CardioType.bike => PhosphorIconsRegular.bicycle,
   };
 
   String get labelKey => 'sport.trainings.$name';
