@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/analysis/averages/average_view.dart';
@@ -14,8 +14,8 @@ class AnalysisBody extends AppPageBody {
   AnalysisBody({super.key})
     : super(
         name: "analysis.label",
-        unselectedIcon: CupertinoIcons.chart_pie,
-        selectedIcon: CupertinoIcons.chart_pie_fill,
+        unselectedIcon: PhosphorIconsRegular.chartPieSlice,
+        selectedIcon: PhosphorIconsFill.chartPieSlice,
       );
 
   @override

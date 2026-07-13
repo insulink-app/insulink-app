@@ -1,6 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/profile/profile_page.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 class HeaderAccountButton extends StatefulWidget
     implements PreferredSizeWidget {
@@ -17,7 +17,7 @@ class _HeaderAccountButtonState extends State<HeaderAccountButton> {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(CupertinoIcons.person_crop_circle_fill, size: 40),
+      icon: const Icon(PhosphorIconsFill.userCircle, size: 40),
       color: const Color(0xFFB3B3B3),
       onPressed: () {
         Navigator.push(

@@ -1,6 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/devices/devices_body.dart';
 import 'package:provider/provider.dart';
 
@@ -16,7 +16,7 @@ class HeaderDeviceButton extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         IconButton(
-          icon: const Icon(CupertinoIcons.device_phone_portrait, size: 34),
+          icon: const Icon(PhosphorIconsRegular.plug, size: 30),
           color: const Color(0xFFB3B3B3),
           onPressed: () => openDevicesPage(context),
         ),

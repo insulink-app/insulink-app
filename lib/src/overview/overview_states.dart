@@ -1,8 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/devices/devices_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
 /// Prominent, tappable indicator shown on the overview while silent mode mutes
@@ -26,7 +26,7 @@ class SilentBanner extends StatelessWidget {
           child: Row(
             children: [
               const Icon(
-                Icons.notifications_off_rounded,
+                PhosphorIconsRegular.bellSlash,
                 color: accent,
                 size: 22,
               ),
@@ -123,7 +123,7 @@ class EmptyView extends StatelessWidget {
                 color: scheme.primary,
               ),
               child: Icon(
-                CupertinoIcons.drop,
+                PhosphorIconsRegular.drop,
                 size: 44,
                 color: scheme.onPrimary,
               ),
@@ -143,7 +143,7 @@ class EmptyView extends StatelessWidget {
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => openDevicesPage(context),
-              icon: const Icon(CupertinoIcons.drop_fill, size: 18),
+              icon: const Icon(PhosphorIconsFill.drop, size: 18),
               label: LocaleText('overview.empty.action'),
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),

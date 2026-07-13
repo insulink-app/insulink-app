@@ -2,9 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
-/// Compact current-glucose readout with a Cupertino trend arrow.
+/// Compact current-glucose readout with a Phosphor trend arrow.
 class OverviewCurrentValue extends StatelessWidget {
   const OverviewCurrentValue({
     super.key,
@@ -20,22 +21,22 @@ class OverviewCurrentValue extends StatelessWidget {
   /// the synced archive) — shown grey so it reads as not-live.
   final bool stale;
 
-  /// Cupertino arrow for the per-minute trend (5 directional buckets; the exact
+  /// Phosphor arrow for the per-minute trend (5 directional buckets; the exact
   /// rate is shown as text alongside).
   IconData _arrow(double perMin) {
     if (perMin >= 2) {
-      return CupertinoIcons.arrow_up;
+      return PhosphorIconsRegular.arrowUp;
     }
     if (perMin >= 1) {
-      return CupertinoIcons.arrow_up_right;
+      return PhosphorIconsRegular.arrowUpRight;
     }
     if (perMin > -1) {
-      return CupertinoIcons.arrow_right;
+      return PhosphorIconsRegular.arrowRight;
     }
     if (perMin > -2) {
-      return CupertinoIcons.arrow_down_right;
+      return PhosphorIconsRegular.arrowDownRight;
     }
-    return CupertinoIcons.arrow_down;
+    return PhosphorIconsRegular.arrowDown;
   }
 
   Color _color(int mgdl, ProfileGlucoseState glucose, GlucoseColors colors) {
