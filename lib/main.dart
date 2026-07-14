@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -77,11 +78,10 @@ class InsulinkApp extends StatefulWidget {
 }
 
 class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
-  /// Loaded ONCE here, never in `build()`. Recreating the future on every root
-  /// rebuild would reset the [FutureBuilder] to "waiting" (a blank frame =
-  /// flicker) and tear down + rebuild the whole provider tree — re-running
-  /// `CgmController.init()` → `start()` → the foreground service/scan in a loop.
-  late Future<AppPreferences> _preferences;
+  /// Null until the first load finishes — that is the only time the app has
+  /// nothing to render. A [_reload] KEEPS the previous value on screen while it
+  /// re-reads, so adopting pulled settings never flashes back to the splash.
+  AppPreferences? _preferences;
 
   @override
   void initState() {
@@ -91,13 +91,24 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    _preferences = _loadPreferences();
+    _start();
   }
 
-  void _reload() {
-    setState(() {
-      _preferences = _loadPreferences();
-    });
+  /// Render from local storage FIRST, then sync. The account pull used to sit in
+  /// front of the first frame, which put a cold DNS+TLS handshake plus 14 round
+  /// trips between the splash and the app.
+  Future<void> _start() async {
+    await _reload();
+    await _pullAccount();
+  }
+
+  Future<void> _reload() async {
+    final preferences = await _loadPreferences();
+    if (mounted) {
+      setState(() {
+        _preferences = preferences;
+      });
+    }
   }
 
   @override
@@ -106,16 +117,28 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  /// The state that does NOT come from [AppPreferences] lives above the loading
+  /// point: it survives a [_reload], and it starts during the splash instead of
+  /// after it. Keeping [CgmController] up here is load-bearing — a rebuilt one
+  /// starts with an empty restart cooldown and can fire a back-to-back service
+  /// restart, which trips Android's scan throttle (~30 min without devices, see
+  /// CLAUDE.md).
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<AppPreferences>(
-      future: _preferences,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const SizedBox.shrink();
-        }
-        return _providers(snapshot.data!);
-      },
+    final preferences = _preferences;
+    return MultiProvider(
+      providers: [
+        // Step counter — only started when the Sport tab is opened
+        // (ensureStarted), not here, to avoid forcing the permission/stream at
+        // app start.
+        ChangeNotifierProvider(create: (_) => SportActivityState()),
+        // Shared G7 read pipeline + service control, observed by the overview
+        // and sensor pages.
+        ChangeNotifierProvider(create: (_) => CgmController()..init()),
+      ],
+      child: preferences == null
+          ? const _SplashHold()
+          : _providers(preferences),
     );
   }
 
@@ -145,13 +168,6 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.food),
         ChangeNotifierProvider(create: (_) => prefs.meals),
         ChangeNotifierProvider(create: (_) => prefs.nutritionLayout),
-        // Step counter — only started when the Sport tab is opened
-        // (ensureStarted), not here, to avoid forcing the permission/stream at
-        // app start.
-        ChangeNotifierProvider(create: (_) => SportActivityState()),
-        // Shared G7 read pipeline + service control, observed by the overview
-        // and sensor pages.
-        ChangeNotifierProvider(create: (_) => CgmController()..init()),
       ],
       child: _AppLifecycle(
         child: Consumer<ProfileThemeState>(
@@ -177,34 +193,32 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
     );
   }
 
-  /// How long a cold start waits for the account pull before rendering with
-  /// whatever is stored locally. The requests run concurrently, so this is one
-  /// round trip plus the cold DNS+TLS handshake — but each request retries for
-  /// up to ~33 s when offline, so it MUST be time-boxed or a launch without
-  /// network would sit on a blank frame for minutes.
-  // ponytail: one fixed budget, not a "did the network change" check. Raise it
-  // if slow connections routinely miss the pull.
-  static const _syncBudget = Duration(seconds: 4);
-
-  /// Adopts the account's server-side data BEFORE the preferences are read, so
-  /// the state objects below are built from the pulled values. Deliberately not
-  /// done via [reload] after startup: that rebuilds the provider tree, and a
-  /// second [CgmController] starts with an empty restart cooldown and can kick
-  /// off a back-to-back service restart — Android's scan throttle then returns
-  /// no devices for ~30 min (see CLAUDE.md).
+  /// Adopts what the account holds server-side (settings changed on the web
+  /// panel or another device) AFTER the app is already on screen. It takes as
+  /// long as it takes — no time budget, because nothing waits for it.
   ///
-  /// Never throws: this runs inside the future the whole app renders from, so a
-  /// malformed response propagating out of here would fail the [FutureBuilder]
-  /// and leave the app dead on a blank frame. A failed sync must only mean
-  /// "start with local data". Timing out is the same story — the pulls keep
-  /// running into storage and are picked up on the next start.
-  Future<void> _pullAccount(FlutterSecureStorage storage) async {
-    final token = await storage.read(key: "authentication_token") ?? "";
-    if (token.isEmpty) {
+  /// Every branch writes into the same secure storage the preferences are read
+  /// from, so comparing storage across the pull says whether anything actually
+  /// arrived: an unchanged account — the normal cold start — leaves the running
+  /// tree untouched, and only a real change costs a [_reload].
+  ///
+  /// Never throws: a failed sync must only mean "keep the local data", and the
+  /// next start retries.
+  Future<void> _pullAccount() async {
+    const storage = FlutterSecureStorage();
+    if ((await storage.read(key: "authentication_token") ?? "").isEmpty) {
       return;
     }
     try {
-      await AccountSync().pullAll(null).timeout(_syncBudget, onTimeout: () {});
+      final before = await storage.readAll();
+      await AccountSync().pullAll(null);
+      // ponytail: whole-storage compare, not per-branch change flags. A glucose
+      // reading landing from the service isolate mid-pull rebuilds needlessly —
+      // harmless, and ~1 launch in 100. Narrow it to the pulled keys only if
+      // that rebuild ever becomes visible.
+      if (!mapEquals(before, await storage.readAll())) {
+        await _reload();
+      }
     } catch (exception) {
       debugPrint("account sync skipped: $exception");
     }
@@ -212,7 +226,6 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
 
   Future<AppPreferences> _loadPreferences() async {
     const storage = FlutterSecureStorage();
-    await _pullAccount(storage);
     final language =
         await storage.read(key: "language") ??
         PlatformDispatcher.instance.locale.languageCode;
@@ -240,6 +253,29 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       food: await FoodState.load(),
       meals: await MealState.load(),
       nutritionLayout: await NutritionLayoutState.load(),
+    );
+  }
+}
+
+/// Fills the screen while the preferences load. Flutter tears the native splash
+/// down as soon as it paints its FIRST frame, so an empty widget there is a
+/// visible black flash between splash and app. Painting the scaffold background
+/// makes that frame indistinguishable from the app that follows.
+///
+/// The persisted theme is exactly what is still being loaded, so this goes by
+/// the OS brightness — the same fallback `_loadPreferences` uses when no theme
+/// is stored.
+class _SplashHold extends StatelessWidget {
+  const _SplashHold();
+
+  @override
+  Widget build(BuildContext context) {
+    final dark =
+        PlatformDispatcher.instance.platformBrightness == Brightness.dark;
+    return ColoredBox(
+      color: dark
+          ? AppTheme.dark.scaffoldBackgroundColor
+          : AppTheme.light.scaffoldBackgroundColor,
     );
   }
 }
