@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../profile/glucose/profile_glucose_state.dart';
+
 /// Semantic glucose colours, shared across the app via the global [ThemeData]
 /// so the profile range editors and the overview (headline value + chart) stay
 /// in sync. Read with `Theme.of(context).extension<GlucoseColors>()!`.
@@ -44,6 +46,17 @@ class GlucoseColors extends ThemeExtension<GlucoseColors> {
     low: Color(0xFFFF453A),
     high: Color(0xFFFFB23E),
   );
+
+  /// The colour for a single reading, by the user's target band.
+  Color forValue(int mgdl, ProfileGlucoseState glucose) {
+    if (mgdl < glucose.targetLow) {
+      return low;
+    }
+    if (mgdl > glucose.targetHigh) {
+      return high;
+    }
+    return inRange;
+  }
 
   @override
   GlucoseColors copyWith({Color? inRange, Color? low, Color? high}) {

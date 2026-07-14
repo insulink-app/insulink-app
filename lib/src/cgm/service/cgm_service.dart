@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../google_health/google_health_importer.dart';
+import '../../google_health/pulse_sync.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
@@ -89,6 +90,10 @@ class CgmTaskHandler extends TaskHandler {
   DateTime? _lastHrPollAt;
   int? _lastHrPushedAtMs;
   static const _hrPollEvery = Duration(seconds: 60);
+  // A background Health Connect sample lags more than the main isolate's 1 Hz
+  // BLE reading, so the relay tolerates more age than GoogleHealthState's 5 s
+  // before it counts a value as too stale to pass to the panel as live.
+  static const _liveRelayMaxAge = Duration(minutes: 3);
 
   /// Dedicated timer so GPS can be sampled far more often than the ~30s watchdog
   /// (up to every 10s while moving / recording a training). The sampler itself
@@ -337,6 +342,19 @@ class CgmTaskHandler extends TaskHandler {
       'v': latest.hr,
       'at': atMs,
     });
+    // Also relay to the account's live-pulse cache so the web panel's workout
+    // vitals keep updating while the app is backgrounded / the screen is off /
+    // the app was swiped away — the main isolate's BLE relay is frozen then, but
+    // this foreground-service isolate keeps running. Guarded on freshness so a
+    // stale Health Connect sample is not passed off as live.
+    // ponytail: background cadence is the 60 s HR poll, not the 1 Hz the BLE
+    // relay manages in the foreground — enough for a vitals bar, and streaming
+    // BLE from this isolate would be a far bigger change. Bump _hrPollEvery (or
+    // host the band here) if a workout needs tighter background resolution.
+    if (DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(atMs)) <
+        _liveRelayMaxAge) {
+      PulseSync().pushLive(latest.hr!);
+    }
   }
 
   Future<void> _watchdog() async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
@@ -34,6 +35,12 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     super.initState();
     // Keep the screen on during the workout (timer/rests stay readable).
     WakelockPlus.enable();
+    // Make sure the foreground service is up for the whole workout, even one
+    // opened straight from the web panel without visiting the Sport page: it is
+    // what relays live bpm to the panel while the app is backgrounded or the
+    // screen is off (see CgmTaskHandler._maybePollHeartRate). Idempotent, and a
+    // no-op when a CGM sensor already runs the service.
+    context.read<CgmController>().ensureDetectionService();
     final training = context.read<TrainingState>();
     // This device drives the workout for as long as this page is up: the
     // account's copy is only watched for the workout ENDING elsewhere, never

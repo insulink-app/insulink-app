@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/cgm/glucose_trend_icon.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
-import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
 /// Compact current-glucose readout with a Phosphor trend arrow.
@@ -21,34 +21,6 @@ class OverviewCurrentValue extends StatelessWidget {
   /// the synced archive) — shown grey so it reads as not-live.
   final bool stale;
 
-  /// Phosphor arrow for the per-minute trend (5 directional buckets; the exact
-  /// rate is shown as text alongside).
-  IconData _arrow(double perMin) {
-    if (perMin >= 2) {
-      return PhosphorIconsRegular.arrowUp;
-    }
-    if (perMin >= 1) {
-      return PhosphorIconsRegular.arrowUpRight;
-    }
-    if (perMin > -1) {
-      return PhosphorIconsRegular.arrowRight;
-    }
-    if (perMin > -2) {
-      return PhosphorIconsRegular.arrowDownRight;
-    }
-    return PhosphorIconsRegular.arrowDown;
-  }
-
-  Color _color(int mgdl, ProfileGlucoseState glucose, GlucoseColors colors) {
-    if (mgdl < glucose.targetLow) {
-      return colors.low;
-    }
-    if (mgdl > glucose.targetHigh) {
-      return colors.high;
-    }
-    return colors.inRange;
-  }
-
   @override
   Widget build(BuildContext context) {
     final glucose = context.watch<ProfileGlucoseState>();
@@ -62,7 +34,7 @@ class OverviewCurrentValue extends StatelessWidget {
     // low/high zone, so it clearly reads as not-live.
     final color = (value == null || stale)
         ? Colors.grey
-        : _color(value, glucose, colors);
+        : colors.forValue(value, glucose);
     final hasTrend = value != null && trendPerMin != null;
 
     return Row(
@@ -93,9 +65,8 @@ class OverviewCurrentValue extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (hasTrend) ...[
-              Icon(_arrow(trendPerMin!), size: 52, color: color),
-            ],
+            if (hasTrend)
+              GlucoseTrendIcon(perMin: trendPerMin!, color: color, size: 52),
             if (hasTrend)
               Text(
                 '${glucose.formatTrend(trendPerMin!)}/min',
