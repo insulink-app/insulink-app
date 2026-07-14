@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -23,6 +22,7 @@ import 'package:insulink/src/profile/silent/profile_silent_toggle.dart';
 import 'package:insulink/src/sport/activity/sport_goals_editor.dart';
 import 'package:insulink/src/profile/theme/profile_theme_selection.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One profile topic in the overview: title, icon, search synonyms and the
 /// settings widgets shown on its sub-page.
@@ -62,49 +62,49 @@ class _ProfilePageState extends State<ProfilePage> {
   List<ProfileTopic> get _topics => [
     (
       titleKey: "profile.language",
-      icon: Icons.language,
+      icon: PhosphorIconsRegular.translate,
       searchKey: "profile.search.language",
       children: () => const [ProfileLanguageSelection()],
     ),
     (
       titleKey: "profile.theme",
-      icon: Icons.palette_outlined,
+      icon: PhosphorIconsRegular.palette,
       searchKey: "profile.search.theme",
       children: () => const [ProfileThemeSelection()],
     ),
     (
       titleKey: "profile.glucose",
-      icon: Icons.water_drop_outlined,
+      icon: PhosphorIconsRegular.drop,
       searchKey: "profile.search.glucose",
       children: () => const [ProfileGlucoseSelection()],
     ),
     (
       titleKey: "profile.bolus",
-      icon: Icons.medication_outlined,
+      icon: PhosphorIconsRegular.pill,
       searchKey: "profile.search.bolus",
       children: () => const [ProfileBolusSelection()],
     ),
     (
       titleKey: "profile.basal",
-      icon: Icons.show_chart,
+      icon: PhosphorIconsRegular.chartLine,
       searchKey: "profile.search.basal",
       children: () => const [ProfileBasalSelection()],
     ),
     (
       titleKey: "profile.body",
-      icon: Icons.straighten_outlined,
+      icon: PhosphorIconsRegular.ruler,
       searchKey: "profile.search.body",
       children: () => const [ProfileBodySelection()],
     ),
     (
       titleKey: "sport.goals",
-      icon: Icons.flag_outlined,
+      icon: PhosphorIconsRegular.flag,
       searchKey: "profile.search.sport_goals",
       children: () => const [SportGoalsEditor()],
     ),
     (
       titleKey: "profile.notification",
-      icon: Icons.notifications_outlined,
+      icon: PhosphorIconsRegular.bell,
       searchKey: "profile.search.notification",
       children: () => const [
         ProfileNotificationToggle(),
@@ -126,7 +126,7 @@ class _ProfilePageState extends State<ProfilePage> {
     ),
     (
       titleKey: "profile.prediction",
-      icon: Icons.timeline,
+      icon: PhosphorIconsRegular.chartLine,
       searchKey: "profile.search.prediction",
       children: () => const [
         ProfilePredictionToggle(),
@@ -136,13 +136,13 @@ class _ProfilePageState extends State<ProfilePage> {
     ),
     (
       titleKey: "profile.silent",
-      icon: Icons.notifications_off_outlined,
+      icon: PhosphorIconsRegular.bellSlash,
       searchKey: "profile.search.silent",
       children: () => const [ProfileSilentToggle()],
     ),
     (
       titleKey: "profile.developer",
-      icon: Icons.code,
+      icon: PhosphorIconsRegular.code,
       searchKey: "profile.search.developer",
       children: () => const [ProfileDeveloperToggle()],
     ),
@@ -182,7 +182,7 @@ class _ProfilePageState extends State<ProfilePage> {
         appBar: AppBar(
           surfaceTintColor: Colors.transparent,
           leading: IconButton(
-            icon: const Icon(CupertinoIcons.arrow_left),
+            icon: const Icon(PhosphorIconsRegular.arrowLeft),
             onPressed: _leave,
           ),
           title: LocaleText("profile.label"),
@@ -210,11 +210,11 @@ class _ProfilePageState extends State<ProfilePage> {
       controller: _search,
       decoration: InputDecoration(
         hintText: Locales.string(context, "profile.search"),
-        prefixIcon: const Icon(Icons.search),
+        prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
         suffixIcon: _query.isEmpty
             ? null
             : IconButton(
-                icon: const Icon(Icons.close),
+                icon: const Icon(PhosphorIconsRegular.x),
                 onPressed: _search.clear,
               ),
       ),
@@ -269,7 +269,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 Icon(
-                  CupertinoIcons.chevron_right,
+                  PhosphorIconsRegular.caretRight,
                   size: 18,
                   color: scheme.onSurface.withValues(alpha: 0.4),
                 ),

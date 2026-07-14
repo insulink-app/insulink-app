@@ -4,6 +4,7 @@ import 'package:insulink/src/config/environment_options.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// First-launch screen: the user must accept the terms and privacy policy
 /// before anything else. Persisted via [onAccepted] so it only ever shows once.
@@ -181,7 +182,7 @@ class _LegalPageState extends State<LegalPage> {
         ),
         minimumSize: WidgetStateProperty.all(const Size(double.infinity, 0)),
       ),
-      icon: const Icon(Icons.arrow_forward, color: Colors.white, size: 25),
+      icon: const Icon(PhosphorIconsRegular.arrowRight, color: Colors.white, size: 25),
       label: LocaleText(
         "legal.continue",
         style: const TextStyle(

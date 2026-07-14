@@ -9,6 +9,7 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/training_metrics_chart.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Detail of a completed routine: header metrics (date, duration, sets) plus the
 /// logged sets per exercise. Sets are editable in place (tap to change values,
@@ -39,7 +40,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(PhosphorIconsRegular.trash),
             onPressed: () => confirmDelete(
               context,
               messageKey: 'sport.logbook.delete_confirm',
@@ -96,14 +97,14 @@ class WorkoutSessionDetailPage extends StatelessWidget {
               _stat(
                 context,
                 scheme,
-                Icons.timer_outlined,
+                PhosphorIconsRegular.timer,
                 'sport.logbook.duration',
                 _duration(session),
               ),
               _stat(
                 context,
                 scheme,
-                Icons.repeat_rounded,
+                PhosphorIconsRegular.repeat,
                 'sport.routines.sets',
                 '${session.sets.length}',
               ),
@@ -296,7 +297,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   icon: Icon(
-                    Icons.close,
+                    PhosphorIconsRegular.x,
                     size: 18,
                     color: scheme.onSurface.withValues(alpha: 0.4),
                   ),
@@ -325,7 +326,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
         onPressed: () => _addSet(training, session, afterIndex),
-        icon: const Icon(Icons.add, size: 18),
+        icon: const Icon(PhosphorIconsRegular.plus, size: 18),
         label: LocaleText('sport.logbook.add_set'),
       ),
     );

@@ -13,18 +13,19 @@ import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:insulink/src/sport/weight/weight_detail_page.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Icon for a Today box (shared by the grid and the layout editor).
 IconData todayTileIcon(TodayTile tile) => switch (tile) {
-  TodayTile.steps => Icons.directions_walk,
-  TodayTile.distance => Icons.straighten,
-  TodayTile.calories => Icons.local_fire_department,
-  TodayTile.weight => Icons.monitor_weight,
-  TodayTile.restingHr => Icons.monitor_heart,
-  TodayTile.sleep => Icons.bedtime,
-  TodayTile.heartRate => Icons.favorite,
-  TodayTile.spo2 => Icons.bloodtype,
-  TodayTile.respiratoryRate => Icons.air,
+  TodayTile.steps => PhosphorIconsRegular.personSimpleWalk,
+  TodayTile.distance => PhosphorIconsRegular.ruler,
+  TodayTile.calories => PhosphorIconsRegular.fire,
+  TodayTile.weight => PhosphorIconsRegular.scales,
+  TodayTile.restingHr => PhosphorIconsRegular.heartbeat,
+  TodayTile.sleep => PhosphorIconsRegular.moon,
+  TodayTile.heartRate => PhosphorIconsFill.heart,
+  TodayTile.spo2 => PhosphorIconsRegular.drop,
+  TodayTile.respiratoryRate => PhosphorIconsRegular.wind,
 };
 
 /// Localization key for a Today box label (shared by the grid and the editor).

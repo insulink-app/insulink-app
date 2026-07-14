@@ -7,6 +7,7 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/analysis/calendar/daily_time_in_range.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Calendar heatmap of daily time-in-range: one cell per day (Mon–Sun grid),
 /// traffic-light coloured by how much of the day was in target. Reads the
@@ -22,7 +23,7 @@ class CalendarHeatmapView extends StatelessWidget {
     final tirByDay = DailyTimeInRange(controller.statsArchive, glucose).build();
     if (tirByDay.isEmpty) {
       return const EmptyState(
-        icon: Icons.insights_rounded,
+        icon: PhosphorIconsRegular.chartLineUp,
         titleKey: 'analysis.empty',
       );
     }

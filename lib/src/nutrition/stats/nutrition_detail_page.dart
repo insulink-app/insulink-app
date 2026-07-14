@@ -10,6 +10,7 @@ import 'package:insulink/src/nutrition/stats/nutrition_tile.dart';
 import 'package:insulink/src/sport/activity/activity_bar_chart.dart';
 import 'package:insulink/src/sport/sport_range_selector.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One day's aggregated value of a nutrition box.
 class _NutritionDay {
@@ -114,7 +115,7 @@ class _NutritionDetailPageState extends State<NutritionDetailPage> {
       ),
       body: all.isEmpty
           ? const EmptyState(
-              icon: Icons.insights_rounded,
+              icon: PhosphorIconsRegular.chartLineUp,
               titleKey: 'nutrition.meals.empty',
               subtitleKey: 'nutrition.meals.empty_hint',
             )
@@ -207,14 +208,14 @@ class _NutritionDetailPageState extends State<NutritionDetailPage> {
               _stat(
                 context,
                 scheme,
-                Icons.timeline_rounded,
+                PhosphorIconsRegular.chartLine,
                 'nutrition.detail.average',
                 avg,
               ),
               _stat(
                 context,
                 scheme,
-                Icons.functions_rounded,
+                PhosphorIconsRegular.function,
                 'nutrition.detail.total',
                 total,
               ),

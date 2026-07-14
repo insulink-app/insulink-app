@@ -8,6 +8,7 @@ import 'package:insulink/src/analysis/patterns/hourly_glucose_pattern.dart';
 import 'package:insulink/src/analysis/patterns/pattern_chart.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// "Patterns": average glucose by hour-of-day across the long-term archive, so
 /// recurring daily highs/lows stand out. A neutral median-style line with a
@@ -26,7 +27,7 @@ class PatternsView extends StatelessWidget {
     final pattern = HourlyGlucosePattern(controller.statsArchive).build();
     if (pattern.isEmpty) {
       return const EmptyState(
-        icon: Icons.insights_rounded,
+        icon: PhosphorIconsRegular.chartLineUp,
         titleKey: 'analysis.empty',
       );
     }

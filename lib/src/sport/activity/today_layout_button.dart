@@ -5,6 +5,7 @@ import 'package:insulink/src/sport/activity/tile_layout_editor.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/activity/today_tile_builder.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Card that opens the "Today" box editor — same visual language as the Health
 /// import card it sits next to (tinted badge, title + subtitle, trailing icon).
@@ -28,7 +29,7 @@ class TodayLayoutButton extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(child: _text(scheme)),
               const SizedBox(width: 10),
-              Icon(Icons.chevron_right_rounded, color: scheme.primary),
+              Icon(PhosphorIconsRegular.caretRight, color: scheme.primary),
             ],
           ),
         ),
@@ -60,7 +61,7 @@ class TodayLayoutButton extends StatelessWidget {
       height: 44,
       decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
       child: Icon(
-        Icons.dashboard_customize_rounded,
+        PhosphorIconsRegular.squaresFour,
         color: scheme.onPrimary,
         size: 22,
       ),

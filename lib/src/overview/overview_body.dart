@@ -1,11 +1,10 @@
 import 'dart:math' as math;
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
-import 'package:insulink/src/devices/devices_body.dart';
+import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
@@ -18,14 +17,15 @@ import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_states.dart';
 import 'package:insulink/src/overview/sensor_restore_offer.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
 class OverviewBody extends AppPageBody {
   OverviewBody({super.key})
     : super(
         name: "overview.label",
-        unselectedIcon: CupertinoIcons.square_grid_2x2,
-        selectedIcon: CupertinoIcons.square_grid_2x2_fill,
+        unselectedIcon: PhosphorIconsRegular.squaresFour,
+        selectedIcon: PhosphorIconsFill.squaresFour,
       );
 
   @override
@@ -135,7 +135,7 @@ class _DataView extends StatelessWidget {
         if (controller.sensorStart != null) ...[
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => openDevicesPage(context),
+            onTap: () => openConnectionsPage(context),
             child: const OverviewSection(child: OverviewSensorLife()),
           ),
           const SizedBox(height: 16),
@@ -197,7 +197,7 @@ class _ChartPreview extends StatelessWidget {
         ),
         const Spacer(),
         Icon(
-          Icons.chevron_right,
+          PhosphorIconsRegular.caretRight,
           size: 20,
           color: scheme.onSurface.withValues(alpha: 0.4),
         ),

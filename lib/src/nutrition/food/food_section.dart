@@ -8,6 +8,7 @@ import 'package:insulink/src/nutrition/food/food_product_card.dart';
 import 'package:insulink/src/nutrition/food/food_products_page.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Product database section: the products the user added, each with its
 /// per-100 g nutrition, plus add / search / scan actions (see [FoodAddActions]).
@@ -85,7 +86,7 @@ class FoodSection extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(Icons.qr_code_scanner, size: 32, color: Colors.grey[500]),
+            Icon(PhosphorIconsRegular.qrCode, size: 32, color: Colors.grey[500]),
             const SizedBox(height: 10),
             LocaleText(
               'nutrition.food.empty',

@@ -9,6 +9,7 @@ import 'package:insulink/src/sport/calendar/sport_calendar_page.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// "Activities" section of the sport home page: the three most recent logged
 /// activities (routines + trainings merged) with a calendar shortcut and a
@@ -35,7 +36,7 @@ class RecentActivitiesSection extends StatelessWidget {
             ),
             IconButton(
               visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.calendar_month, size: 20),
+              icon: const Icon(PhosphorIconsRegular.calendarBlank, size: 20),
               tooltip: Locales.string(context, 'sport.calendar'),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(

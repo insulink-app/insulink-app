@@ -1,9 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../alert/alert.dart';
 import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The two session buttons under the status header: end the current reading
 /// session, or fully forget the sensor. Both are guarded by a confirmation
@@ -31,7 +31,7 @@ class SensorSessionControls extends StatelessWidget {
   Widget _endSessionButton(BuildContext context, ColorScheme scheme) {
     return FilledButton.tonalIcon(
       onPressed: _connected ? () => _endSession(context) : null,
-      icon: const Icon(Icons.stop_circle_outlined, size: 20),
+      icon: const Icon(PhosphorIconsRegular.stopCircle, size: 20),
       label: LocaleText('sensor.control.end_session'),
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(46),
@@ -46,7 +46,7 @@ class SensorSessionControls extends StatelessWidget {
       onPressed: (_connected || controller.hasSensor)
           ? () => _stopSensor(context)
           : null,
-      icon: const Icon(Icons.link_off, size: 20),
+      icon: const Icon(PhosphorIconsRegular.linkBreak, size: 20),
       label: LocaleText('sensor.control.stop_sensor'),
       style: OutlinedButton.styleFrom(
         foregroundColor: Colors.redAccent,
@@ -86,7 +86,7 @@ class SensorSessionControls extends StatelessWidget {
     bool destructive = false,
   }) {
     Alert(
-      icon: CupertinoIcons.exclamationmark_triangle,
+      icon: PhosphorIconsRegular.warning,
       iconColor: destructive ? Colors.redAccent : null,
       content: _confirmContent(titleKey, bodyKey),
       cancelButton: true,

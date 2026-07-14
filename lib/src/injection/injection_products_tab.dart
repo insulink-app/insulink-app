@@ -5,6 +5,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One chosen product with its portion in the product's unit; carbs scale from
 /// the per-100 g value.
@@ -100,7 +101,7 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
     final scheme = Theme.of(context).colorScheme;
     return OutlinedButton.icon(
       onPressed: _addProduct,
-      icon: const Icon(Icons.add_rounded, size: 20),
+      icon: const Icon(PhosphorIconsRegular.plus, size: 20),
       label: LocaleText('injection.products.add'),
       style: OutlinedButton.styleFrom(
         foregroundColor: scheme.primary,
@@ -155,7 +156,7 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   icon: Icon(
-                    Icons.close,
+                    PhosphorIconsRegular.x,
                     size: 18,
                     color: scheme.onSurface.withValues(alpha: 0.4),
                   ),

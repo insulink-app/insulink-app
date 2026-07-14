@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
@@ -10,14 +10,15 @@ import 'package:insulink/src/sport/sport_state.dart';
 import 'package:insulink/src/sport/routines/routines_section.dart';
 import 'package:insulink/src/sport/training/cardio_section.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
 class SportBody extends AppPageBody {
   SportBody({super.key})
     : super(
         name: "sport.label",
-        unselectedIcon: CupertinoIcons.sportscourt,
-        selectedIcon: CupertinoIcons.sportscourt_fill,
+        unselectedIcon: PhosphorIconsRegular.courtBasketball,
+        selectedIcon: PhosphorIconsFill.courtBasketball,
       );
 
   @override

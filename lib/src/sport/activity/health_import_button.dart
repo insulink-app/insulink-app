@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/google_health/health_permissions.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Branded card that syncs the last ~90 days of Google Health data
 /// (steps/distance/calories into the archive, weight into the history) — with
@@ -19,11 +21,15 @@ class HealthImportButton extends StatefulWidget {
 class _HealthImportButtonState extends State<HealthImportButton> {
   bool _busy = false;
 
+  /// Asks before importing: this is an explicit tap, so a prompt is what the
+  /// user just requested — unlike the Sport page's import-on-open, which stays
+  /// silent (see [HealthPermissions]).
   Future<void> _run() async {
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
     final sport = context.read<SportState>();
     final activity = context.read<SportActivityState>();
+    await HealthPermissions().request();
     final result = await HealthImporter().import(sport, activity);
     if (!mounted) {
       return;
@@ -70,7 +76,7 @@ class _HealthImportButtonState extends State<HealthImportButton> {
       width: 44,
       height: 44,
       decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
-      child: Icon(Icons.favorite_rounded, color: scheme.onPrimary, size: 22),
+      child: Icon(PhosphorIconsFill.heart, color: scheme.onPrimary, size: 22),
     );
   }
 
@@ -103,6 +109,6 @@ class _HealthImportButtonState extends State<HealthImportButton> {
         child: CircularProgressIndicator(strokeWidth: 2),
       );
     }
-    return Icon(Icons.sync_rounded, color: scheme.primary);
+    return Icon(PhosphorIconsRegular.arrowsClockwise, color: scheme.primary);
   }
 }

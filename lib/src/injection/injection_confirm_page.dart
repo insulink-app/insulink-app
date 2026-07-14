@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/biometric_auth.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Confirmation step before a bolus is delivered: a summary of carbs, glucose
 /// and the (possibly edited) bolus, confirmed with the device biometric. Pops
@@ -80,7 +81,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Icon(_needsAuth ? Icons.fingerprint : Icons.check),
+                    : Icon(_needsAuth ? PhosphorIconsRegular.fingerprint : PhosphorIconsRegular.check),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
                 ),
@@ -105,7 +106,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       ),
       child: Column(
         children: [
-          Icon(Icons.water_drop_rounded, color: scheme.primary, size: 30),
+          Icon(PhosphorIconsRegular.syringe, color: scheme.primary, size: 30),
           const SizedBox(height: 10),
           LocaleText(
             'injection.bolus',
@@ -155,14 +156,14 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
         children: [
           _row(
             context,
-            Icons.restaurant_rounded,
+            PhosphorIconsRegular.forkKnife,
             'injection.carbs',
             '${widget.carbs.toStringAsFixed(0)} g',
           ),
           Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
           _row(
             context,
-            Icons.bloodtype_rounded,
+            PhosphorIconsRegular.syringe,
             'injection.glucose',
             '${widget.glucoseMgdl} mg/dL',
           ),
@@ -206,7 +207,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          Icons.fingerprint,
+          PhosphorIconsRegular.fingerprint,
           size: 16,
           color: scheme.onSurface.withValues(alpha: 0.5),
         ),

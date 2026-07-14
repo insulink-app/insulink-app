@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One labelled value with – / + buttons that step by the configured mg/dL step.
 class GlucoseStepperRow extends StatelessWidget {
@@ -29,11 +30,11 @@ class GlucoseStepperRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(child: _label(theme)),
-        CircleIconButton(icon: Icons.remove, accent: accent, onTap: onMinus),
+        CircleIconButton(icon: PhosphorIconsRegular.minus, accent: accent, onTap: onMinus),
         const SizedBox(width: 10),
         _value(),
         const SizedBox(width: 10),
-        CircleIconButton(icon: Icons.add, accent: accent, onTap: onPlus),
+        CircleIconButton(icon: PhosphorIconsRegular.plus, accent: accent, onTap: onPlus),
       ],
     );
   }

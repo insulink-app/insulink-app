@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/day_section_header.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -8,6 +9,7 @@ import 'package:insulink/src/sport/calendar/sport_calendar_page.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Shared logbook of every logged activity — routines and endurance trainings
 /// merged, newest first, grouped by day. Revealed a chunk at a time. A calendar
@@ -36,7 +38,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
         title: LocaleText('sport.logbook'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month),
+            icon: const Icon(PhosphorIconsRegular.calendarBlank),
             tooltip: Locales.string(context, 'sport.calendar'),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -48,7 +50,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
       ),
       body: entries.isEmpty
           ? const EmptyState(
-              icon: Icons.event_note_rounded,
+              icon: PhosphorIconsRegular.calendarBlank,
               titleKey: 'sport.logbook.empty',
             )
           : ListView(
@@ -59,7 +61,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
               children: [
                 for (var index = 0; index < visible.length; index++) ...[
                   if (_startsNewDay(visible, index))
-                    _dayHeader(context, visible[index].startMs, index == 0),
+                    DaySectionHeader(
+                      day: DateTime.fromMillisecondsSinceEpoch(
+                        visible[index].startMs,
+                      ),
+                      first: index == 0,
+                    ),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: ActivityTile(entry: visible[index], showDate: false),
@@ -72,21 +79,6 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   ),
               ],
             ),
-    );
-  }
-
-  Widget _dayHeader(BuildContext context, int startMs, bool first) {
-    return Padding(
-      padding: EdgeInsets.only(top: first ? 0 : 20, bottom: 8),
-      child: Text(
-        MaterialLocalizations.of(
-          context,
-        ).formatFullDate(DateTime.fromMillisecondsSinceEpoch(startMs)),
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-        ),
-      ),
     );
   }
 

@@ -69,23 +69,22 @@ class NutritionSync {
 
   // ---- pull all on sign-in ----
 
-  /// Adopts the account's nutrition data into the local stores (on sign-in), so a
-  /// returning device shows its full history. Each collection is replaced with
-  /// the server's, which is the source of truth at sign-in.
-  Future<void> pull(BuildContext context) async {
-    await _pullMeals(context);
-    if (!context.mounted) {
-      return;
-    }
-    await _pullDrinks(context);
-    if (!context.mounted) {
-      return;
-    }
-    await _pullProducts(context);
+  /// Adopts the account's nutrition data into the local stores (on sign-in and on
+  /// every cold start), so a returning device shows its full history. Each
+  /// collection is replaced with the server's, which is the source of truth.
+  ///
+  /// The three fetches run concurrently — they write separate collections, and a
+  /// cold start waits on this (see [AccountSync]).
+  Future<void> pull(BuildContext? context) async {
+    await Future.wait([
+      _pullMeals(context),
+      _pullDrinks(context),
+      _pullProducts(context),
+    ]);
   }
 
   Future<List<dynamic>?> _fetch(
-    BuildContext context,
+    BuildContext? context,
     String url,
     String key,
   ) async {
@@ -100,7 +99,7 @@ class NutritionSync {
     return body[key] as List<dynamic>;
   }
 
-  Future<void> _pullMeals(BuildContext context) async {
+  Future<void> _pullMeals(BuildContext? context) async {
     final list = await _fetch(context, '/nutrition/meals/find/', 'meals');
     if (list == null) {
       return;
@@ -110,7 +109,7 @@ class NutritionSync {
     ]);
   }
 
-  Future<void> _pullDrinks(BuildContext context) async {
+  Future<void> _pullDrinks(BuildContext? context) async {
     final list = await _fetch(context, '/nutrition/drinks/find/', 'drinks');
     if (list == null) {
       return;
@@ -120,7 +119,7 @@ class NutritionSync {
     ]);
   }
 
-  Future<void> _pullProducts(BuildContext context) async {
+  Future<void> _pullProducts(BuildContext? context) async {
     final list = await _fetch(context, '/nutrition/products/find/', 'products');
     if (list == null) {
       return;

@@ -1,10 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/profile_toggle_row.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Settings toggle for [ProfileSilentState]. Observes the provider so it stays
 /// in sync with the overview indicator (which can also turn it off).
@@ -21,7 +21,7 @@ class ProfileSilentToggle extends StatelessWidget {
     }
     // Switching ON: confirm via a danger-styled alert before muting alarms.
     Alert(
-      icon: CupertinoIcons.exclamationmark_triangle_fill,
+      icon: PhosphorIconsFill.warning,
       iconColor: Colors.red,
       content: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),

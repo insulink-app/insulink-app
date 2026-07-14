@@ -6,6 +6,7 @@ import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Resume banners shown at the top of the "Activities" list for anything still
 /// in progress (a paused strength workout, a recording cardio training) so the
@@ -32,7 +33,7 @@ class CurrentActivityBanners extends StatelessWidget {
         if (routine != null)
           _banner(
             context,
-            Icons.fitness_center,
+            PhosphorIconsRegular.barbell,
             'sport.workout.resume_active',
             () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -86,7 +87,7 @@ class CurrentActivityBanners extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(Icons.play_arrow_rounded, color: scheme.primary),
+                Icon(PhosphorIconsFill.play, color: scheme.primary),
               ],
             ),
           ),

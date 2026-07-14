@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/base/circle_icon_button.dart';
@@ -9,6 +8,7 @@ import 'package:insulink/src/profile/basal/basal_peak_row.dart';
 import 'package:insulink/src/profile/basal/basal_profile.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Full-screen editor for one basal-rate profile. Works on a local copy of the
 /// profile: rename it, tap/drag a bar to set an hour, or shape a curve from a
@@ -85,7 +85,7 @@ class _BasalEditorState extends State<BasalEditor> {
       return;
     }
     Alert(
-      icon: Icons.save_outlined,
+      icon: PhosphorIconsRegular.floppyDisk,
       description: 'profile.basal.unsaved',
       cancelButton: true,
       cancelButtonText: 'profile.basal.discard',
@@ -115,7 +115,7 @@ class _BasalEditorState extends State<BasalEditor> {
         appBar: AppBar(
           surfaceTintColor: Colors.transparent,
           leading: IconButton(
-            icon: const Icon(CupertinoIcons.arrow_left),
+            icon: const Icon(PhosphorIconsRegular.arrowLeft),
             onPressed: _onBack,
           ),
           title: LocaleText('profile.basal'),
@@ -159,7 +159,7 @@ class _BasalEditorState extends State<BasalEditor> {
       textCapitalization: TextCapitalization.sentences,
       decoration: InputDecoration(
         labelText: Locales.string(context, 'profile.basal.name'),
-        prefixIcon: const Icon(Icons.label_outline),
+        prefixIcon: const Icon(PhosphorIconsRegular.tag),
       ),
     );
   }
@@ -195,7 +195,7 @@ class _BasalEditorState extends State<BasalEditor> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         CircleIconButton(
-          icon: Icons.remove,
+          icon: PhosphorIconsRegular.minus,
           accent: accent,
           onTap: () => _setHour(
             _selectedHour,
@@ -219,7 +219,7 @@ class _BasalEditorState extends State<BasalEditor> {
           ],
         ),
         CircleIconButton(
-          icon: Icons.add,
+          icon: PhosphorIconsRegular.plus,
           accent: accent,
           onTap: () => _setHour(
             _selectedHour,
@@ -238,7 +238,7 @@ class _BasalEditorState extends State<BasalEditor> {
       children: [
         Row(
           children: [
-            Icon(Icons.auto_graph, size: 20, color: accent),
+            Icon(PhosphorIconsRegular.chartLineUp, size: 20, color: accent),
             const SizedBox(width: 8),
             LocaleText(
               'profile.basal.generate',
@@ -266,7 +266,7 @@ class _BasalEditorState extends State<BasalEditor> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _addPeak,
-            icon: const Icon(Icons.add),
+            icon: const Icon(PhosphorIconsRegular.plus),
             label: LocaleText('profile.basal.add_peak'),
             style: OutlinedButton.styleFrom(
               foregroundColor: accent,

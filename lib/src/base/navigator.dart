@@ -178,7 +178,7 @@ class _AppNavigatorState extends State<AppNavigator> {
           isSelected ? body.selectedIcon : body.unselectedIcon,
           size: 30,
           color: isSelected
-              ? Color.lerp(textColor, primaryColor, 0.8)
+              ? Color.lerp(textColor, primaryColor, 0.9)
               : textColor.withValues(alpha: 0.6),
         ),
       ),

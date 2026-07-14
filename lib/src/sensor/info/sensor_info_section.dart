@@ -3,6 +3,7 @@ import 'package:insulink/src/base/empty_state.dart';
 
 import '../../localization/locale_text.dart';
 import 'sensor_attributes.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Renders a list of [SensorSection]s as stacked [SensorInfoSection] cards, or
 /// the "empty" placeholder when there is nothing to show. Shared by the G7
@@ -16,7 +17,7 @@ class SensorSectionList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (sections.isEmpty) {
       return const EmptyState(
-        icon: Icons.sensors_rounded,
+        icon: PhosphorIconsRegular.broadcast,
         titleKey: 'sensor.info.empty',
       );
     }

@@ -6,6 +6,7 @@ import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
+import 'package:insulink/src/sport/workout/workout_snapshot.dart';
 
 /// Mirrors the user's sport data to their backend account and pulls it back on
 /// sign-in. Split by domain, one endpoint pair per collection (like the glucose
@@ -19,6 +20,7 @@ import 'package:insulink/src/sport/training/cardio_models.dart';
 /// keeps deletes/edits/reorders correct without per-item endpoints.
 class SportSync {
   static const _store = SportStore();
+  static const _activeWorkoutKey = 'active-workout';
   static final Map<String, Timer> _timers = {};
 
   // ---- push (debounced per collection) ----
@@ -29,9 +31,13 @@ class SportSync {
   void pushWorkouts() => _debounce('workouts', _sendWorkouts);
   void pushTrainings() => _debounce('trainings', _sendTrainings);
 
-  void _debounce(String key, Future<void> Function() send) {
+  void _debounce(
+    String key,
+    Future<void> Function() send, {
+    Duration delay = const Duration(seconds: 3),
+  }) {
     _timers[key]?.cancel();
-    _timers[key] = Timer(const Duration(seconds: 3), send);
+    _timers[key] = Timer(delay, send);
   }
 
   /// Cancels any armed pushes — for tests, so a mutation's debounce timer does
@@ -112,33 +118,81 @@ class SportSync {
     });
   }
 
+  // ---- active workout (the running workout, shared across devices) ----
+
+  /// Mirrors the running workout's snapshot to the account so another device can
+  /// take it over mid-set — the web panel follows a workout started here by
+  /// polling this, and the app resumes one started there. Debounced tighter than
+  /// the collection pushes: a follower showing the set before last is confusing,
+  /// and a snapshot is small.
+  void pushActiveWorkout(WorkoutSnapshot snapshot) => _debounce(
+    _activeWorkoutKey,
+    () => _sendActiveWorkout(snapshot),
+    delay: const Duration(seconds: 1),
+  );
+
+  Future<void> _sendActiveWorkout(WorkoutSnapshot snapshot) =>
+      _post('/sport/workout/active/sync/', {'workout': snapshot.toJson()});
+
+  /// Ends the shared workout. Disarms any pending push first — a snapshot timer
+  /// firing after the clear would resurrect the finished workout on every other
+  /// device.
+  Future<void> clearActiveWorkout() async {
+    _timers.remove(_activeWorkoutKey)?.cancel();
+    await _post('/sport/workout/active/clear/', {});
+  }
+
+  /// The account's running workout, or null when none is running (also null when
+  /// the request fails, so a sign-in offline simply resumes nothing).
+  Future<WorkoutSnapshot?> pullActiveWorkout(BuildContext? context) async {
+    final response = await Request.get(
+      url: '/sport/workout/active/find/',
+    ).send(context);
+    if (response == null) {
+      return null;
+    }
+    final body = jsonDecode(response.body);
+    if (body['success'] != true || body['workout'] is! Map) {
+      return null;
+    }
+    return WorkoutSnapshot.fromJson(
+      (body['workout'] as Map).cast<String, dynamic>(),
+    );
+  }
+
   // ---- pull all on sign-in ----
 
-  /// Adopts the account's sport data into the local store (on sign-in), so a
-  /// returning device shows its full history. Each collection is replaced with
-  /// the server's, which is the source of truth at sign-in.
-  Future<void> pull(BuildContext context) async {
-    await _pullMeasurements(context);
-    if (!context.mounted) {
+  /// Adopts the account's sport data into the local store (on sign-in and on
+  /// every cold start), so a returning device shows its full history. Each
+  /// collection is replaced with the server's, which is the source of truth.
+  ///
+  /// The six fetches run concurrently — they write separate collections, and a
+  /// cold start waits on this (see [AccountSync]).
+  Future<void> pull(BuildContext? context) async {
+    await Future.wait([
+      _pullMeasurements(context),
+      _pullExercises(context),
+      _pullRoutines(context),
+      _pullWorkouts(context),
+      _pullTrainings(context),
+      _pullActiveWorkout(context),
+    ]);
+  }
+
+  /// Adopts the account's running workout into the store, so a routine started
+  /// on another device (or in the web panel) is offered for resume here. Runs
+  /// before the provider tree reloads, like the collection pulls.
+  Future<void> _pullActiveWorkout(BuildContext? context) async {
+    final snapshot = await pullActiveWorkout(context);
+    if (snapshot == null) {
+      await _store.clearActiveWorkout();
       return;
     }
-    await _pullExercises(context);
-    if (!context.mounted) {
-      return;
-    }
-    await _pullRoutines(context);
-    if (!context.mounted) {
-      return;
-    }
-    await _pullWorkouts(context);
-    if (!context.mounted) {
-      return;
-    }
-    await _pullTrainings(context);
+    await _store.saveActiveWorkout(snapshot);
   }
 
   Future<List<dynamic>?> _fetch(
-    BuildContext context,
+    BuildContext? context,
     String url,
     String key,
   ) async {
@@ -153,7 +207,7 @@ class SportSync {
     return body[key] as List<dynamic>;
   }
 
-  Future<void> _pullMeasurements(BuildContext context) async {
+  Future<void> _pullMeasurements(BuildContext? context) async {
     final entries = await _fetch(
       context,
       '/sport/measurements/find/',
@@ -205,7 +259,7 @@ class SportSync {
     ];
   }
 
-  Future<void> _pullExercises(BuildContext context) async {
+  Future<void> _pullExercises(BuildContext? context) async {
     final list = await _fetch(context, '/sport/exercises/find/', 'exercises');
     if (list == null) {
       return;
@@ -213,7 +267,7 @@ class SportSync {
     await _store.saveExercises(_decode(list, SportExercise.fromJson));
   }
 
-  Future<void> _pullRoutines(BuildContext context) async {
+  Future<void> _pullRoutines(BuildContext? context) async {
     final list = await _fetch(context, '/sport/routines/find/', 'routines');
     if (list == null) {
       return;
@@ -221,7 +275,7 @@ class SportSync {
     await _store.saveRoutines(_decode(list, SportRoutine.fromJson));
   }
 
-  Future<void> _pullWorkouts(BuildContext context) async {
+  Future<void> _pullWorkouts(BuildContext? context) async {
     final list = await _fetch(context, '/sport/workouts/find/', 'workouts');
     if (list == null) {
       return;
@@ -229,7 +283,7 @@ class SportSync {
     await _store.saveSessions(_decode(list, WorkoutSession.fromJson));
   }
 
-  Future<void> _pullTrainings(BuildContext context) async {
+  Future<void> _pullTrainings(BuildContext? context) async {
     final list = await _fetch(context, '/sport/trainings/find/', 'trainings');
     if (list == null) {
       return;

@@ -11,6 +11,7 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Edit a routine: name, ordered exercise list (reorder by holding), add
 /// exercise, and start the workout.
@@ -66,7 +67,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
         title: LocaleText('sport.routines.edit'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(PhosphorIconsRegular.trash),
             onPressed: () => confirmDelete(
               context,
               messageKey: 'sport.routines.delete_confirm',
@@ -112,7 +113,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       child: Row(
         children: [
           Icon(
-            Icons.schedule,
+            PhosphorIconsRegular.clock,
             size: 16,
             color: scheme.onSurface.withValues(alpha: 0.6),
           ),
@@ -138,7 +139,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       child: SizedBox(
         height: 64,
         child: FilledButton.icon(
-          icon: const Icon(Icons.play_arrow_rounded, size: 34),
+          icon: const Icon(PhosphorIconsFill.play, size: 34),
           label: LocaleText(
             'sport.routines.start',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -220,14 +221,14 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
           border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
         ),
         child: ListTile(
-          leading: const Icon(Icons.drag_handle),
+          leading: const Icon(PhosphorIconsRegular.dotsSixVertical),
           title: Text(
             exercise?.name ?? '—',
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           subtitle: Text(_summary(item, exercise)),
           trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20),
+            icon: const Icon(PhosphorIconsRegular.trash, size: 20),
             onPressed: () => confirmDelete(
               context,
               messageKey: 'sport.routines.item_delete_confirm',

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
@@ -176,8 +177,42 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
     );
   }
 
+  /// How long a cold start waits for the account pull before rendering with
+  /// whatever is stored locally. The requests run concurrently, so this is one
+  /// round trip plus the cold DNS+TLS handshake — but each request retries for
+  /// up to ~33 s when offline, so it MUST be time-boxed or a launch without
+  /// network would sit on a blank frame for minutes.
+  // ponytail: one fixed budget, not a "did the network change" check. Raise it
+  // if slow connections routinely miss the pull.
+  static const _syncBudget = Duration(seconds: 4);
+
+  /// Adopts the account's server-side data BEFORE the preferences are read, so
+  /// the state objects below are built from the pulled values. Deliberately not
+  /// done via [reload] after startup: that rebuilds the provider tree, and a
+  /// second [CgmController] starts with an empty restart cooldown and can kick
+  /// off a back-to-back service restart — Android's scan throttle then returns
+  /// no devices for ~30 min (see CLAUDE.md).
+  ///
+  /// Never throws: this runs inside the future the whole app renders from, so a
+  /// malformed response propagating out of here would fail the [FutureBuilder]
+  /// and leave the app dead on a blank frame. A failed sync must only mean
+  /// "start with local data". Timing out is the same story — the pulls keep
+  /// running into storage and are picked up on the next start.
+  Future<void> _pullAccount(FlutterSecureStorage storage) async {
+    final token = await storage.read(key: "authentication_token") ?? "";
+    if (token.isEmpty) {
+      return;
+    }
+    try {
+      await AccountSync().pullAll(null).timeout(_syncBudget, onTimeout: () {});
+    } catch (exception) {
+      debugPrint("account sync skipped: $exception");
+    }
+  }
+
   Future<AppPreferences> _loadPreferences() async {
     const storage = FlutterSecureStorage();
+    await _pullAccount(storage);
     final language =
         await storage.read(key: "language") ??
         PlatformDispatcher.instance.locale.languageCode;

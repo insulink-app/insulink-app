@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Selected time window of a sport detail page: a preset (days), "All" or a
 /// custom date range. Pure value class; the pages filter their data with it.
@@ -78,7 +79,7 @@ class SportRangeSelector extends StatelessWidget {
                 context,
                 selected: value.custom != null,
                 onTap: () => _pickCustom(context),
-                child: const Icon(Icons.date_range, size: 18),
+                child: const Icon(PhosphorIconsRegular.calendarBlank, size: 18),
               ),
             ),
           ],

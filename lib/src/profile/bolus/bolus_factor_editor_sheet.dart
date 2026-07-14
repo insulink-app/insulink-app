@@ -4,6 +4,7 @@ import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/bolus/bolus_fill_bar.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Focused editor for one bolus factor: a fill preview, a [Slider] for quick
 /// adjustment, and a stepper for precise control. Lives in a modal bottom sheet
@@ -90,7 +91,7 @@ class _BolusFactorEditorSheetState extends State<BolusFactorEditorSheet> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         CircleIconButton(
-          icon: Icons.remove,
+          icon: PhosphorIconsRegular.minus,
           accent: accent,
           onTap: () => _apply(_value - widget.step),
         ),
@@ -103,7 +104,7 @@ class _BolusFactorEditorSheetState extends State<BolusFactorEditorSheet> {
           ),
         ),
         CircleIconButton(
-          icon: Icons.add,
+          icon: PhosphorIconsRegular.plus,
           accent: accent,
           onTap: () => _apply(_value + widget.step),
         ),

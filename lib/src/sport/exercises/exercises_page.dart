@@ -7,6 +7,7 @@ import 'package:insulink/src/sport/sport_menu.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Exercise library. Dual-use: without [onPick] for managing (tap = edit,
 /// drag = reorder), with [onPick] as a picker when adding to a routine.
@@ -31,11 +32,11 @@ class ExercisesPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         heroTag: 'exercise-add',
         onPressed: () => showExerciseEditorSheet(context),
-        child: const Icon(Icons.add),
+        child: const Icon(PhosphorIconsRegular.plus),
       ),
       body: exercises.isEmpty
           ? const EmptyState(
-              icon: Icons.fitness_center_rounded,
+              icon: PhosphorIconsRegular.barbell,
               titleKey: 'sport.exercises.empty',
             )
           : onPick == null
@@ -77,7 +78,7 @@ class ExercisesPage extends StatelessWidget {
         leading: ReorderableDragStartListener(
           index: index,
           child: Icon(
-            Icons.drag_handle,
+            PhosphorIconsRegular.dotsSixVertical,
             color: Theme.of(
               context,
             ).colorScheme.onSurface.withValues(alpha: 0.4),
@@ -103,7 +104,7 @@ class ExercisesPage extends StatelessWidget {
       child: _tile(
         context,
         exercise,
-        trailing: const Icon(Icons.chevron_right),
+        trailing: const Icon(PhosphorIconsRegular.caretRight),
         onTap: () {
           onPick!(exercise);
           Navigator.of(context).pop();

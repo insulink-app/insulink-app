@@ -3,6 +3,7 @@ import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Forecast-horizon picker: two tappable rows (30 / 60 min) with a check on the
 /// active one — the same list style as the language picker.
@@ -63,7 +64,7 @@ class ProfilePredictionHorizon extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (selected) Icon(Icons.check_rounded, color: scheme.primary),
+                if (selected) Icon(PhosphorIconsRegular.check, color: scheme.primary),
               ],
             ),
           ),

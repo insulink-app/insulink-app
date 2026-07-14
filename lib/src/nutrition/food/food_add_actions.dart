@@ -4,6 +4,7 @@ import 'package:insulink/src/nutrition/food/food_editor_sheet.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_search_page.dart';
 import 'package:insulink/src/nutrition/food/off_client.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Scans a barcode, looks it up in the product database, and opens the editor
 /// pre-filled so the user can complete/adjust before saving. An unknown barcode
@@ -49,17 +50,17 @@ class FoodAddActions extends StatelessWidget {
       children: [
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add, size: 24),
+          icon: const Icon(PhosphorIconsRegular.plus, size: 24),
           onPressed: () => showFoodEditor(context),
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.search, size: 24),
+          icon: const Icon(PhosphorIconsRegular.magnifyingGlass, size: 24),
           onPressed: () => openFoodSearch(context),
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.qr_code_scanner, size: 22),
+          icon: const Icon(PhosphorIconsRegular.qrCode, size: 22),
           onPressed: () => scanAndEditProduct(context),
         ),
       ],

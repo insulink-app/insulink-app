@@ -5,6 +5,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/glucose_range_bar.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Focused editor for one range: a band preview, a [RangeSlider] for quick
 /// adjustment, and per-thumb steppers for precise control. Lives in a modal
@@ -91,7 +92,7 @@ class _GlucoseRangeEditorSheetState extends State<GlucoseRangeEditorSheet> {
   Widget _testButton() {
     return OutlinedButton.icon(
       onPressed: widget.onTest,
-      icon: const Icon(Icons.notifications_active_outlined, size: 18),
+      icon: const Icon(PhosphorIconsRegular.bellRinging, size: 18),
       label: LocaleText('profile.glucose.test_alarm'),
       style: OutlinedButton.styleFrom(
         foregroundColor: widget.accent,

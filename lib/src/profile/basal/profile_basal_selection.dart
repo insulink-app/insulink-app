@@ -6,6 +6,7 @@ import 'package:insulink/src/profile/basal/basal_bar_chart.dart';
 import 'package:insulink/src/profile/basal/basal_editor.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Lists the user's basal-rate profiles: each is a card with a radio to make it
 /// the active profile, its name + daily total, and a preview of its curve.
@@ -23,7 +24,7 @@ class ProfileBasalSelection extends StatelessWidget {
     final state = context.read<ProfileBasalState>();
     final controller = TextEditingController();
     Alert(
-      icon: Icons.add_rounded,
+      icon: PhosphorIconsRegular.plus,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -95,7 +96,7 @@ class _AddProfileButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.add_rounded, size: 20, color: accent),
+              Icon(PhosphorIconsRegular.plus, size: 20, color: accent),
               const SizedBox(width: 8),
               LocaleText(
                 'profile.basal.add_profile',
@@ -122,7 +123,7 @@ class _ProfileCard extends StatelessWidget {
     final state = context.read<ProfileBasalState>();
     Alert(
       type: AlertType.error,
-      icon: Icons.delete_outline,
+      icon: PhosphorIconsRegular.trash,
       description: 'profile.basal.delete_title',
       cancelButton: true,
       confirmButtonText: 'alert.delete',
@@ -162,8 +163,8 @@ class _ProfileCard extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       active
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
+                          ? PhosphorIconsFill.circle
+                          : PhosphorIconsRegular.circle,
                       color: active
                           ? theme.colorScheme.primary
                           : theme.colorScheme.onSurface.withValues(alpha: 0.4),
@@ -197,11 +198,11 @@ class _ProfileCard extends StatelessWidget {
                   ),
                   if (state.profiles.length > 1)
                     IconButton(
-                      icon: const Icon(Icons.delete_outline),
+                      icon: const Icon(PhosphorIconsRegular.trash),
                       onPressed: () => _confirmDelete(context),
                     ),
                   Icon(
-                    Icons.chevron_right,
+                    PhosphorIconsRegular.caretRight,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
                 ],

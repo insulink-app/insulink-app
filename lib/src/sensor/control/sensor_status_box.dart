@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +8,7 @@ import '../../localization/locales.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import 'sensor_life_bar.dart';
 import 'sensor_session_controls.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Box shown once paired: connection status header plus the session controls.
 /// While [searching] (connected but no reading yet) the header shows a spinner.
@@ -105,8 +105,8 @@ class SensorStatusBox extends StatelessWidget {
   Widget _stateIcon(Color accent) {
     return Icon(
       _connected
-          ? CupertinoIcons.dot_radiowaves_left_right
-          : CupertinoIcons.drop,
+          ? PhosphorIconsRegular.broadcast
+          : PhosphorIconsRegular.drop,
       size: 32,
       color: accent,
     );

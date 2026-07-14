@@ -12,6 +12,7 @@ import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Lists the routines and endurance trainings logged on [day], each tappable to
 /// its detail page. Opened from a day cell on the sport calendar.
@@ -93,7 +94,7 @@ class _DayActivitiesSheet extends StatelessWidget {
     return _tile(
       context,
       color: calendarRoutineColor(Theme.of(context).colorScheme),
-      icon: Icons.fitness_center,
+      icon: PhosphorIconsRegular.barbell,
       title:
           routine?.name ??
           Locales.string(context, 'sport.logbook.deleted_routine'),

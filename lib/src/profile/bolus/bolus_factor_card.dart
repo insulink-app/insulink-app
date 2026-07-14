@@ -3,6 +3,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/bolus/bolus_factor_editor_sheet.dart';
 import 'package:insulink/src/profile/bolus/bolus_fill_bar.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// A tappable summary of one bolus factor — label, current value and a fill
 /// visualization. Opens [BolusFactorEditorSheet] on tap.
@@ -92,7 +93,7 @@ class BolusFactorCard extends StatelessWidget {
           ),
         ),
         Icon(
-          Icons.chevron_right,
+          PhosphorIconsRegular.caretRight,
           color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
         ),
       ],

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/day_section_header.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_card.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Full meal log: every logged meal as a tile, newest first, grouped by day.
 /// Reached from the "Show more" button in [MealSection].
@@ -21,7 +23,7 @@ class MealLogPage extends StatelessWidget {
       ),
       body: meals.isEmpty
           ? const EmptyState(
-              icon: Icons.restaurant_menu_rounded,
+              icon: PhosphorIconsRegular.forkKnife,
               titleKey: 'nutrition.meals.empty',
               subtitleKey: 'nutrition.meals.empty_hint',
             )
@@ -33,7 +35,7 @@ class MealLogPage extends StatelessWidget {
               children: [
                 for (var index = 0; index < meals.length; index++) ...[
                   if (_startsNewDay(meals, index))
-                    _dayHeader(context, meals[index].time, index == 0),
+                    DaySectionHeader(day: meals[index].time, first: index == 0),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: MealCard(meal: meals[index], showDate: false),
@@ -41,19 +43,6 @@ class MealLogPage extends StatelessWidget {
                 ],
               ],
             ),
-    );
-  }
-
-  Widget _dayHeader(BuildContext context, DateTime day, bool first) {
-    return Padding(
-      padding: EdgeInsets.only(top: first ? 0 : 20, bottom: 8),
-      child: Text(
-        MaterialLocalizations.of(context).formatFullDate(day),
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-        ),
-      ),
     );
   }
 

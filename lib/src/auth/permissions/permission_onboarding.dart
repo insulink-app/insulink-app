@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:insulink/src/auth/permissions/permission_step.dart';
 import 'package:insulink/src/cgm/service/alarms.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One explained permission the user is walked through before sign-in.
 typedef PermissionRequest = ({
@@ -33,7 +34,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
 
   static final List<PermissionRequest> _permissions = [
     (
-      icon: Icons.bluetooth,
+      icon: PhosphorIconsRegular.bluetooth,
       titleKey: 'permission.bluetooth.title',
       bodyKey: 'permission.bluetooth.body',
       request: () async {
@@ -45,7 +46,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       },
     ),
     (
-      icon: Icons.notifications_active,
+      icon: PhosphorIconsFill.bellRinging,
       titleKey: 'permission.notification.title',
       bodyKey: 'permission.notification.body',
       request: () async {
@@ -53,7 +54,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       },
     ),
     (
-      icon: Icons.do_not_disturb_off,
+      icon: PhosphorIconsRegular.prohibit,
       titleKey: 'permission.dnd.title',
       bodyKey: 'permission.dnd.body',
       request: () async {
@@ -63,7 +64,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       },
     ),
     (
-      icon: Icons.directions_walk,
+      icon: PhosphorIconsRegular.personSimpleWalk,
       titleKey: 'permission.activity.title',
       bodyKey: 'permission.activity.body',
       request: () async {
@@ -71,7 +72,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       },
     ),
     (
-      icon: Icons.battery_charging_full,
+      icon: PhosphorIconsRegular.batteryCharging,
       titleKey: 'permission.battery.title',
       bodyKey: 'permission.battery.body',
       request: () async {

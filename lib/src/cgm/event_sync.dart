@@ -68,7 +68,7 @@ class EventSync {
 
   /// Pull the account's stored events into the local log (on sign-in), so a fresh
   /// install shows the full analysis event history.
-  Future<void> pullHistory(BuildContext context) async {
+  Future<void> pullHistory(BuildContext? context) async {
     final response = await Request.get(url: '/event/history/').send(context);
     if (response == null) {
       return;

@@ -14,6 +14,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 typedef _HrSample = ({DateTime at, int bpm});
 
@@ -150,7 +151,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
         title: LocaleText('google_health.heart_rate'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.tune),
+            icon: const Icon(PhosphorIconsRegular.slidersHorizontal),
             tooltip: Locales.string(context, 'google_health.hr_zones.title'),
             onPressed: _editZones,
           ),
@@ -204,7 +205,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
             child: Row(
               children: [
                 Icon(
-                  Icons.favorite,
+                  PhosphorIconsFill.heart,
                   color: live
                       ? scheme.error
                       : scheme.onSurface.withValues(alpha: 0.3),
@@ -238,7 +239,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left),
+            icon: const Icon(PhosphorIconsRegular.caretLeft),
             onPressed: () => _shift(-1),
           ),
           Text(
@@ -246,7 +247,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right),
+            icon: const Icon(PhosphorIconsRegular.caretRight),
             onPressed: _isToday ? null : () => _shift(1),
           ),
         ],

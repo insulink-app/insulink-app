@@ -4,6 +4,7 @@ import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/basal/basal_profile.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One row of the curve generator: a single [BasalPeak] with buttons to shift
 /// its hour left/right (or type it directly), a slider for its height, and a
@@ -28,7 +29,7 @@ class BasalPeakRow extends StatelessWidget {
   void _typeHour(BuildContext context) {
     final controller = TextEditingController(text: '${peak.hour.round()}');
     Alert(
-      icon: Icons.schedule,
+      icon: PhosphorIconsRegular.clock,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -65,7 +66,7 @@ class BasalPeakRow extends StatelessWidget {
     return Row(
       children: [
         CircleIconButton(
-          icon: Icons.chevron_left,
+          icon: PhosphorIconsRegular.caretLeft,
           accent: accent,
           onTap: () => _shift(-1),
         ),
@@ -92,7 +93,7 @@ class BasalPeakRow extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         CircleIconButton(
-          icon: Icons.chevron_right,
+          icon: PhosphorIconsRegular.caretRight,
           accent: accent,
           onTap: () => _shift(1),
         ),
@@ -111,7 +112,7 @@ class BasalPeakRow extends StatelessWidget {
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.delete_outline),
+          icon: const Icon(PhosphorIconsRegular.trash),
           onPressed: onDelete,
         ),
       ],

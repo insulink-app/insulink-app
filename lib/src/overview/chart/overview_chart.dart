@@ -12,6 +12,7 @@ import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
 /// fl_chart line graph of glucose vs. time (hours, 0 = latest reading).
@@ -162,7 +163,7 @@ class _OverviewChartState extends State<OverviewChart>
       children: [
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.chevron_left, size: 22),
+          icon: const Icon(PhosphorIconsRegular.caretLeft, size: 22),
           onPressed: canGoBack ? () => _pan(1) : null,
         ),
         Flexible(
@@ -175,7 +176,7 @@ class _OverviewChartState extends State<OverviewChart>
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.chevron_right, size: 22),
+          icon: const Icon(PhosphorIconsRegular.caretRight, size: 22),
           onPressed: _panWindows > 0 ? () => _pan(-1) : null,
         ),
       ],

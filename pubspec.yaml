@@ -67,11 +67,7 @@ dependencies:
   wakelock_plus: ^1.6.1
   pointycastle: ^4.0.0
   local_auth: ^2.3.0
-
-# health (Health Connect) deckelt device_info_plus auf <13, nutzt davon aber nur
-# `androidInfo.id` — über 12↔13 identisch. device_info_plus 12.x wendet noch das
-# alte (selbst angewandte) Kotlin-Gradle-Plugin an und baut unter Flutters
-# Built-in-Kotlin nicht; 13.x ist migriert. Daher das Override auf 13.x.
+  phosphoricons_flutter: ^1.0.0
 dependency_overrides:
   device_info_plus: ^13.2.0
 

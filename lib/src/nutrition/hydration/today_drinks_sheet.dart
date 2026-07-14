@@ -4,6 +4,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_models.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Bottom sheet listing today's logged drinks (newest first, with their time),
 /// each removable — so the box itself stays clean.
@@ -83,7 +84,7 @@ class _TodayDrinksSheet extends StatelessWidget {
           title: Text('${entry.ml} ml'),
           subtitle: Text(_time(entry.atEpochMs)),
           trailing: IconButton(
-            icon: Icon(Icons.delete_outline, color: Colors.grey[500]),
+            icon: Icon(PhosphorIconsRegular.trash, color: Colors.grey[500]),
             onPressed: () => state.removeEntry(entry),
           ),
         );

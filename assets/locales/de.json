@@ -1,5 +1,7 @@
 {
   "date": {
+    "today": "Heute",
+    "yesterday": "Gestern",
     "weekday": {
       "1": "Mo",
       "2": "Di",
@@ -332,8 +334,8 @@
       "save": "Speichern"
     }
   },
-  "devices": {
-    "label": "Geräte"
+  "connections": {
+    "label": "Verbindungen"
   },
   "nutrition": {
     "label": "Ernährung",
@@ -494,7 +496,9 @@
       "continue": "Weiter",
       "previous_set": "Vorheriger Satz",
       "last_time": "Letztes Mal: #",
-      "resume_active": "Laufendes Workout fortsetzen"
+      "resume_active": "Laufendes Workout fortsetzen",
+      "ended_elsewhere": "Dieses Training wurde auf einem anderen Gerät beendet.",
+      "ended_elsewhere_confirm": "Verstanden"
     },
     "health": {
       "import": "Aus Google Health importieren",

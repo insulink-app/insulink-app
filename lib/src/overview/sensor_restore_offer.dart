@@ -5,6 +5,7 @@ import 'package:insulink/src/cgm/sensor_sync.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sensor/info/sensor_format.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
 /// Shown on the overview when no sensor is set up locally but the account has
@@ -74,7 +75,7 @@ class _SensorRestoreOfferState extends State<SensorRestoreOffer> {
     return Row(
       children: [
         Icon(
-          Icons.sensors_rounded,
+          PhosphorIconsRegular.broadcast,
           size: 16,
           color: scheme.onSurface.withValues(alpha: 0.55),
         ),
@@ -109,7 +110,7 @@ class _SensorRestoreOfferState extends State<SensorRestoreOffer> {
           children: [
             Row(
               children: [
-                Icon(Icons.cloud_download_outlined, color: scheme.primary),
+                Icon(PhosphorIconsRegular.cloudArrowDown, color: scheme.primary),
                 const SizedBox(width: 10),
                 Expanded(
                   child: LocaleText(

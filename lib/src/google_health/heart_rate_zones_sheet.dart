@@ -4,6 +4,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 
 import 'heart_rate_zones.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Bottom sheet to adjust the two pulse-zone thresholds (green→orange,
 /// orange→red) with – / + steppers. Returns the saved [HeartRateZones], or null
@@ -94,7 +95,7 @@ class _HeartRateZonesSheetState extends State<_HeartRateZonesSheet> {
           ),
         ),
         CircleIconButton(
-          icon: Icons.remove,
+          icon: PhosphorIconsRegular.minus,
           accent: accent,
           onTap: () => step(-_step),
         ),
@@ -107,7 +108,7 @@ class _HeartRateZonesSheetState extends State<_HeartRateZonesSheet> {
           ),
         ),
         CircleIconButton(
-          icon: Icons.add,
+          icon: PhosphorIconsRegular.plus,
           accent: accent,
           onTap: () => step(_step),
         ),

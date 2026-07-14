@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/theme/profile_theme_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 class ProfileThemeSelection extends StatelessWidget {
   const ProfileThemeSelection({super.key});
@@ -19,14 +20,14 @@ class ProfileThemeSelection extends StatelessWidget {
           _buildThemeButton(
             themeState,
             ThemeMode.light,
-            Icons.light_mode,
+            PhosphorIconsRegular.sun,
             "profile.theme.light",
             context,
           ),
           _buildThemeButton(
             themeState,
             ThemeMode.dark,
-            Icons.dark_mode,
+            PhosphorIconsRegular.moon,
             "profile.theme.dark",
             context,
           ),

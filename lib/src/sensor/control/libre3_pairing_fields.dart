@@ -4,6 +4,7 @@ import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
 import 'libre3_nfc_scan_sheet.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Libre 3 pairing: an optional LibreView account id (for taking over a sensor
 /// Abbott's app already activated) and an NFC "scan sensor" button that runs
@@ -105,7 +106,7 @@ class _Libre3PairingFieldsState extends State<Libre3PairingFields> {
         const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: _busy ? null : _activate,
-          icon: const Icon(Icons.nfc, size: 20),
+          icon: const Icon(PhosphorIconsRegular.scan, size: 20),
           label: LocaleText(
             _busy ? 'sensor.pair.libre.scanning' : 'sensor.pair.libre.activate',
           ),

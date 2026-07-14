@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Preset windows offered alongside the custom range, in days.
 const _presets = [1, 3, 7, 30, 90];
@@ -42,7 +43,7 @@ class AnalysisRangeSelector extends StatelessWidget {
                   context,
                   selected: isCustom,
                   onTap: () => _pickCustom(context, controller),
-                  child: const Icon(Icons.date_range, size: 18),
+                  child: const Icon(PhosphorIconsRegular.calendarBlank, size: 18),
                 ),
               ),
             ],

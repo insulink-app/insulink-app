@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// A configurable nutrition summary box.
 enum NutritionTile { carbs, protein, bolus, water, meals }
 
 /// Icon for a nutrition box (grid + layout editor).
 IconData nutritionTileIcon(NutritionTile tile) => switch (tile) {
-  NutritionTile.carbs => Icons.restaurant_rounded,
-  NutritionTile.protein => Icons.egg_alt_rounded,
-  NutritionTile.bolus => Icons.water_drop_rounded,
-  NutritionTile.water => Icons.local_drink_rounded,
-  NutritionTile.meals => Icons.restaurant_menu_rounded,
+  NutritionTile.carbs => PhosphorIconsRegular.grains,
+  NutritionTile.protein => PhosphorIconsRegular.egg,
+  NutritionTile.bolus => PhosphorIconsRegular.syringe,
+  NutritionTile.water => PhosphorIconsRegular.drop,
+  NutritionTile.meals => PhosphorIconsRegular.forkKnife,
 };
 
 /// Localization key for a nutrition box label (grid + editor).

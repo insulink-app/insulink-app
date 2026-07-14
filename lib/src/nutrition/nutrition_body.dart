@@ -1,17 +1,18 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/nutrition/food/food_section.dart';
 import 'package:insulink/src/nutrition/hydration/hydration_card.dart';
 import 'package:insulink/src/nutrition/meal/meal_section.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_stats_section.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Nutrition tab. Hydration tracking up top; more sections land here later.
 class NutritionBody extends AppPageBody {
   NutritionBody({super.key})
     : super(
         name: "nutrition.label",
-        unselectedIcon: CupertinoIcons.cart,
-        selectedIcon: CupertinoIcons.cart_fill,
+        unselectedIcon: PhosphorIconsRegular.forkKnife,
+        selectedIcon: PhosphorIconsFill.forkKnife,
       );
 
   @override

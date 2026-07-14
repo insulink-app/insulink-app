@@ -11,6 +11,7 @@ import 'package:insulink/src/sport/workout/workout_snapshot.dart';
 import 'package:insulink/src/sport/workout/workout_vitals_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Live execution of a routine: total time, progress, pause, per-set stopwatch
 /// and the rest countdown. Drives a [WorkoutRunner], persists a resumable
@@ -34,6 +35,11 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     // Keep the screen on during the workout (timer/rests stay readable).
     WakelockPlus.enable();
     final training = context.read<TrainingState>();
+    // This device drives the workout for as long as this page is up: the
+    // account's copy is only watched for the workout ENDING elsewhere, never
+    // applied over the set in progress.
+    training.driveActiveWorkout(true);
+    training.addListener(_onTrainingChanged);
     _runner =
         WorkoutRunner(
             widget.routine,
@@ -52,9 +58,35 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
           };
   }
 
+  /// The workout was ended somewhere else (the web panel, another phone). Say so
+  /// and close — carrying on would log a session the user already finished.
+  ///
+  /// Closes first and tells afterwards, against the navigator's own context: the
+  /// alert is itself a route, so popping while it is up would only dismiss the
+  /// alert and leave the runner sitting on a workout that no longer exists.
+  void _onTrainingChanged() {
+    final training = context.read<TrainingState>();
+    if (!mounted || !training.endedElsewhere) {
+      return;
+    }
+    training.acknowledgeEndedElsewhere();
+    final navigator = Navigator.of(context);
+    final iconColor = Theme.of(context).colorScheme.primary;
+    navigator.pop();
+    Alert(
+      icon: PhosphorIconsFill.flag,
+      iconColor: iconColor,
+      description: 'sport.workout.ended_elsewhere',
+      confirmButtonText: 'sport.workout.ended_elsewhere_confirm',
+    ).show(navigator.context);
+  }
+
   @override
   void dispose() {
     WakelockPlus.disable();
+    context.read<TrainingState>()
+      ..removeListener(_onTrainingChanged)
+      ..driveActiveWorkout(false);
     _runner.dispose();
     super.dispose();
   }
@@ -93,7 +125,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
   /// sets. Reachable from both the exercising and resting phases.
   void _confirmFinish(BuildContext context) {
     Alert(
-      icon: Icons.flag_rounded,
+      icon: PhosphorIconsFill.flag,
       iconColor: Theme.of(context).colorScheme.primary,
       description: 'sport.workout.finish_confirm',
       cancelButton: true,
@@ -109,7 +141,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
       title: Text(widget.routine.name),
       actions: [
         IconButton(
-          icon: Icon(_runner.isPaused ? Icons.play_arrow : Icons.pause),
+          icon: Icon(_runner.isPaused ? PhosphorIconsFill.play : PhosphorIconsRegular.pause),
           tooltip: Locales.string(
             context,
             _runner.isPaused ? 'sport.workout.resume' : 'sport.workout.pause',
@@ -157,7 +189,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
             for (var index = 0; index < widget.routine.items.length; index++)
               ListTile(
                 leading: index == _runner.exerciseIndex
-                    ? const Icon(Icons.play_arrow)
+                    ? const Icon(PhosphorIconsFill.play)
                     : const SizedBox(width: 24),
                 title: Text(
                   training

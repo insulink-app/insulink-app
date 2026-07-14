@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Which stage of the Libre 3 NFC flow the [Libre3NfcScanSheet] is showing.
 enum Libre3ScanPhase { scanning, success }
@@ -122,7 +123,7 @@ class _Libre3NfcScanSheetState extends State<Libre3NfcScanSheet>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (live)
-          Icon(Icons.check_circle, size: 18, color: _scheme.primary)
+          Icon(PhosphorIconsRegular.checkCircle, size: 18, color: _scheme.primary)
         else
           SizedBox(
             width: 16,
@@ -200,7 +201,7 @@ class _Libre3NfcScanSheetState extends State<Libre3NfcScanSheet>
           shape: BoxShape.circle,
           color: _scheme.primary.withValues(alpha: 0.14),
         ),
-        child: Icon(Icons.check_rounded, size: 46, color: _scheme.primary),
+        child: Icon(PhosphorIconsRegular.check, size: 46, color: _scheme.primary),
       ),
     );
   }
@@ -229,7 +230,7 @@ class _Libre3NfcScanSheetState extends State<Libre3NfcScanSheet>
             shape: BoxShape.circle,
             color: _scheme.primary.withValues(alpha: 0.12),
           ),
-          child: Icon(Icons.nfc, size: 38, color: _scheme.primary),
+          child: Icon(PhosphorIconsRegular.scan, size: 38, color: _scheme.primary),
         ),
       ),
     );

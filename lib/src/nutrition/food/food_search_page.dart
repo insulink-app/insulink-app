@@ -6,6 +6,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/food/food_editor_sheet.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/off_client.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Full-text search of the public Open Food Facts database. Typing runs a
 /// debounced query; tapping a result opens the editor pre-filled so the user can
@@ -85,7 +86,7 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
             suffixIcon: _query.text.isEmpty
                 ? null
                 : IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(PhosphorIconsRegular.x),
                     onPressed: () {
                       _query.clear();
                       _onChanged('');
@@ -130,8 +131,8 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
     return ListTile(
       leading: Icon(
         product.unit == 'ml'
-            ? Icons.local_drink_rounded
-            : Icons.restaurant_rounded,
+            ? PhosphorIconsRegular.drop
+            : PhosphorIconsRegular.forkKnife,
         color: scheme.primary,
       ),
       title: Text(product.name, maxLines: 1, overflow: TextOverflow.ellipsis),

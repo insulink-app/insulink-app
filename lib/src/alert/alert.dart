@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 enum AlertType { success, error, neutral }
 
@@ -235,9 +236,9 @@ class AlertState extends State<Alert> {
       return widget.icon!;
     }
     return switch (widget.type) {
-      AlertType.success => Icons.check_circle_rounded,
-      AlertType.error => Icons.error_rounded,
-      _ => Icons.info_rounded,
+      AlertType.success => PhosphorIconsRegular.checkCircle,
+      AlertType.error => PhosphorIconsRegular.warningCircle,
+      _ => PhosphorIconsRegular.info,
     };
   }
 

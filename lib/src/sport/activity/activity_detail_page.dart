@@ -9,6 +9,7 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_range_selector.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// History overview of a daily metric (steps/distance/calories) from the
 /// persistent Health archive — analogous to the weight page: header metrics, a
@@ -79,7 +80,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
       ),
       body: archive.isEmpty
           ? const EmptyState(
-              icon: Icons.insights_rounded,
+              icon: PhosphorIconsRegular.chartLineUp,
               titleKey: 'sport.activity.detail.empty',
             )
           : ListView(
@@ -171,14 +172,14 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
               _stat(
                 context,
                 scheme,
-                Icons.timeline_rounded,
+                PhosphorIconsRegular.chartLine,
                 'sport.activity.detail.average',
                 avg,
               ),
               _stat(
                 context,
                 scheme,
-                Icons.functions_rounded,
+                PhosphorIconsRegular.function,
                 'sport.activity.detail.total',
                 total,
               ),

@@ -5,6 +5,7 @@ import 'package:insulink/src/nutrition/food/food_add_actions.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Searchable bottom-sheet list to pick one saved product. Also offers the same
 /// add / search / scan actions as the nutrition page ([FoodAddActions]), so a
@@ -71,7 +72,7 @@ class _ProductPickerState extends State<_ProductPicker> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(PhosphorIconsRegular.arrowLeft),
                   tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
@@ -93,12 +94,12 @@ class _ProductPickerState extends State<_ProductPicker> {
             child: TextField(
               controller: _search,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
                 hintText: Locales.string(context, 'injection.products.search'),
                 suffixIcon: _search.text.isEmpty
                     ? null
                     : IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(PhosphorIconsRegular.x),
                         onPressed: _search.clear,
                       ),
               ),
@@ -182,7 +183,7 @@ class _ProductPickerState extends State<_ProductPicker> {
                   ),
                 ),
                 Icon(
-                  Icons.chevron_right,
+                  PhosphorIconsRegular.caretRight,
                   color: scheme.onSurface.withValues(alpha: 0.3),
                 ),
               ],
@@ -203,7 +204,7 @@ class _ProductPickerState extends State<_ProductPicker> {
         shape: BoxShape.circle,
       ),
       child: Icon(
-        isDrink ? Icons.local_drink_rounded : Icons.restaurant_rounded,
+        isDrink ? PhosphorIconsRegular.drop : PhosphorIconsRegular.forkKnife,
         color: scheme.primary,
         size: 20,
       ),

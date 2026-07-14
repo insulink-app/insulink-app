@@ -1,7 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../alert/alert.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Shows a delete confirmation. [messageKey] is the localization key of the
 /// prompt; [onConfirm] runs only when the user chooses "Delete". Shared by all
@@ -12,7 +12,7 @@ void confirmDelete(
   required VoidCallback onConfirm,
 }) {
   Alert(
-    icon: CupertinoIcons.delete,
+    icon: PhosphorIconsRegular.trash,
     iconColor: Colors.redAccent,
     description: messageKey,
     cancelButton: true,

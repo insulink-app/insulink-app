@@ -1,16 +1,16 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// A large, card-styled device row: tinted icon badge, bold label, an attention
-/// dot when needed, and a chevron. Tapping opens [page] as a [DeviceSubPage].
-class DeviceRow extends StatelessWidget {
+/// dot when needed, and a chevron. Tapping opens [page] as a [ConnectionSubPage].
+class ConnectionRow extends StatelessWidget {
   final IconData icon;
   final String labelKey;
   final Widget page;
   final bool notify;
 
-  const DeviceRow({
+  const ConnectionRow({
     super.key,
     required this.icon,
     required this.labelKey,
@@ -29,7 +29,7 @@ class DeviceRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => DeviceSubPage(title: label, body: page),
+            builder: (_) => ConnectionSubPage(title: label, body: page),
           ),
         ),
         child: Container(
@@ -71,7 +71,7 @@ class DeviceRow extends StatelessWidget {
                 const SizedBox(width: 12),
               ],
               Icon(
-                CupertinoIcons.chevron_right,
+                PhosphorIconsRegular.caretRight,
                 size: 18,
                 color: scheme.onSurface.withValues(alpha: 0.4),
               ),
@@ -84,11 +84,11 @@ class DeviceRow extends StatelessWidget {
 }
 
 /// A device page shown on top of the Devices tab, with a back button.
-class DeviceSubPage extends StatelessWidget {
+class ConnectionSubPage extends StatelessWidget {
   final String title;
   final Widget body;
 
-  const DeviceSubPage({super.key, required this.title, required this.body});
+  const ConnectionSubPage({super.key, required this.title, required this.body});
 
   @override
   Widget build(BuildContext context) {

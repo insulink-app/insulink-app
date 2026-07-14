@@ -6,6 +6,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Input sheet for a new weight entry (kg + timestamp, defaulting to now).
 Future<void> showWeightEntrySheet(BuildContext context) {
@@ -148,7 +149,7 @@ class _TimeRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(Icons.schedule, size: 20, color: scheme.primary),
+              Icon(PhosphorIconsRegular.clock, size: 20, color: scheme.primary),
               const SizedBox(width: 12),
               LocaleText(
                 'sport.weight.time',
@@ -163,7 +164,7 @@ class _TimeRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(Icons.edit, size: 16, color: scheme.onSurfaceVariant),
+              Icon(PhosphorIconsRegular.pencilSimple, size: 16, color: scheme.onSurfaceVariant),
             ],
           ),
         ),

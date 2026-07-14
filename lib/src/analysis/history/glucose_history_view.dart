@@ -7,6 +7,7 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/analysis/history/glucose_history_series.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Glucose over time across the selected window: a mean line bucketed by the
 /// adaptive X-axis (hours / weekdays / days-of-month / months). Reads the
@@ -27,7 +28,7 @@ class GlucoseHistoryView extends StatelessWidget {
     final spots = series.build();
     if (spots.isEmpty) {
       return const EmptyState(
-        icon: Icons.insights_rounded,
+        icon: PhosphorIconsRegular.chartLineUp,
         titleKey: 'analysis.empty',
       );
     }

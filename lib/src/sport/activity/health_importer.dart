@@ -26,14 +26,19 @@ class HealthImporter {
   /// One day, in seconds — the aggregation bucket size.
   static const _dayInterval = 86400;
 
-  static const _types = [
+  /// Public so [HealthPermissions] can request these together with the Google
+  /// Health metrics — one prompt instead of two disjoint ones.
+  static const types = [
     HealthDataType.STEPS,
     HealthDataType.DISTANCE_DELTA,
     HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.WEIGHT,
   ];
-  static final _read = List.filled(_types.length, HealthDataAccess.READ);
+  static final _read = List.filled(types.length, HealthDataAccess.READ);
 
+  /// Reads what has ALREADY been granted — never prompts, so opening the Sport
+  /// page (which imports on open) cannot pop a dialog. Asking is
+  /// [HealthPermissions]' job, from the connect button or the manual import.
   Future<HealthImportResult> import(
     SportState sport,
     SportActivityState activity,
@@ -41,13 +46,11 @@ class HealthImporter {
     await _health.configure();
     if (await _health.getHealthConnectSdkStatus() !=
         HealthConnectSdkStatus.sdkAvailable) {
-      await _health.installHealthConnect();
       return HealthImportResult.unavailable;
     }
-    if (!await _health.requestAuthorization(_types, permissions: _read)) {
+    if (await _health.hasPermissions(types, permissions: _read) != true) {
       return HealthImportResult.denied;
     }
-    await _ensureHistoryAccess();
     final now = DateTime.now();
     final start = now.subtract(const Duration(days: _historyDays));
     final archive = await _dailyArchive(start, now);
@@ -55,15 +58,6 @@ class HealthImporter {
     _applyToday(activity, archive, now);
     await sport.mergeWeights(await _weights(start, now));
     return HealthImportResult.success;
-  }
-
-  /// Requests the "read past data" permission (needed for anything older than 30
-  /// days). Best-effort: if it isn't granted, older reads simply return nothing.
-  Future<void> _ensureHistoryAccess() async {
-    if (await _health.isHealthDataHistoryAvailable() &&
-        !await _health.isHealthDataHistoryAuthorized()) {
-      await _health.requestHealthDataHistoryAuthorization();
-    }
   }
 
   /// Also apply today to the "Today" tiles (overrides the pedometer estimate).
