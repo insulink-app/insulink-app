@@ -35,6 +35,11 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     // Keep the screen on during the workout (timer/rests stay readable).
     WakelockPlus.enable();
     final training = context.read<TrainingState>();
+    // This device drives the workout for as long as this page is up: the
+    // account's copy is only watched for the workout ENDING elsewhere, never
+    // applied over the set in progress.
+    training.driveActiveWorkout(true);
+    training.addListener(_onTrainingChanged);
     _runner =
         WorkoutRunner(
             widget.routine,
@@ -53,9 +58,35 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
           };
   }
 
+  /// The workout was ended somewhere else (the web panel, another phone). Say so
+  /// and close — carrying on would log a session the user already finished.
+  ///
+  /// Closes first and tells afterwards, against the navigator's own context: the
+  /// alert is itself a route, so popping while it is up would only dismiss the
+  /// alert and leave the runner sitting on a workout that no longer exists.
+  void _onTrainingChanged() {
+    final training = context.read<TrainingState>();
+    if (!mounted || !training.endedElsewhere) {
+      return;
+    }
+    training.acknowledgeEndedElsewhere();
+    final navigator = Navigator.of(context);
+    final iconColor = Theme.of(context).colorScheme.primary;
+    navigator.pop();
+    Alert(
+      icon: PhosphorIconsFill.flag,
+      iconColor: iconColor,
+      description: 'sport.workout.ended_elsewhere',
+      confirmButtonText: 'sport.workout.ended_elsewhere_confirm',
+    ).show(navigator.context);
+  }
+
   @override
   void dispose() {
     WakelockPlus.disable();
+    context.read<TrainingState>()
+      ..removeListener(_onTrainingChanged)
+      ..driveActiveWorkout(false);
     _runner.dispose();
     super.dispose();
   }

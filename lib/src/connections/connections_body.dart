@@ -52,7 +52,7 @@ class ConnectionsBodyContent extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         ConnectionRow(
-          icon: PhosphorIconsFill.calendarBlank,
+          icon: PhosphorIconsFill.syringe,
           labelKey: "pump.label",
           page: const PumpBodyContent(),
         ),

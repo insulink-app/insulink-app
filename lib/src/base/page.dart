@@ -29,7 +29,7 @@ class AppPage extends StatefulWidget {
   State<AppPage> createState() => AppPageState();
 }
 
-class AppPageState extends State<AppPage> {
+class AppPageState extends State<AppPage> with WidgetsBindingObserver {
   final List<AppPageBody> pageBodies = [
     OverviewBody(),
     SportBody(),
@@ -38,13 +38,51 @@ class AppPageState extends State<AppPage> {
   ];
   int _selectedIndex = 0;
 
+  /// The workout whose runner this shell has already opened, identified by its
+  /// start. Without it every [TrainingState] change would push another runner —
+  /// including after the user deliberately backed out of one that is still
+  /// paused and running.
+  int? _openedWorkoutStartedAt;
+
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialPageIndex ?? 0;
     appTab.value = _selectedIndex;
     appTab.addListener(_onExternalTab);
+    WidgetsBinding.instance.addObserver(this);
+    context.read<TrainingState>().addListener(_onTrainingChanged);
+    _watchActiveWorkout();
     WidgetsBinding.instance.addPostFrameCallback((_) => _resumeActive());
+  }
+
+  /// Follows the account's workout only while the user is actually in the app —
+  /// polling every few seconds through a night in the background would be pure
+  /// waste. Resuming re-checks immediately, so coming back to the phone after
+  /// starting a routine in the panel shows it at once.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _watchActiveWorkout();
+      return;
+    }
+    if (state == AppLifecycleState.paused) {
+      context.read<TrainingState>().stopWatchingActiveWorkout();
+    }
+  }
+
+  void _watchActiveWorkout() {
+    context.read<TrainingState>().watchActiveWorkout();
+  }
+
+  /// A workout appeared (or changed) on the account — most likely started in the
+  /// web panel. Open it, so the phone lands on the running routine instead of
+  /// making the user find it.
+  void _onTrainingChanged() {
+    if (!mounted) {
+      return;
+    }
+    _openActiveWorkout();
   }
 
   /// Reopen anything that was still running when the app was last closed, so it
@@ -55,23 +93,33 @@ class AppPageState extends State<AppPage> {
     if (!mounted) {
       return;
     }
-    _resumeActiveWorkout();
+    _openActiveWorkout();
     _resumeActiveTraining();
   }
 
-  /// Reopen a workout that was still running. A snapshot whose routine no longer
-  /// exists is cleared.
-  void _resumeActiveWorkout() {
+  /// Opens the runner for the account's running workout, once per workout.
+  ///
+  /// A snapshot whose routine is not here is left alone rather than cleared: the
+  /// routine is far more likely to be a sync still in flight than one genuinely
+  /// deleted, and clearing now ends the workout on every device — including the
+  /// panel the user is standing in front of. An unmatched snapshot shows no
+  /// banner and opens no runner, so leaving it costs nothing.
+  void _openActiveWorkout() {
     final training = context.read<TrainingState>();
     final snapshot = training.activeWorkout;
     if (snapshot == null) {
+      _openedWorkoutStartedAt = null;
+      return;
+    }
+    if (training.drivingActiveWorkout ||
+        snapshot.startedAtMs == _openedWorkoutStartedAt) {
       return;
     }
     final routine = training.routineById(snapshot.routineId);
     if (routine == null) {
-      training.clearActiveWorkout();
       return;
     }
+    _openedWorkoutStartedAt = snapshot.startedAtMs;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => WorkoutRunnerPage(routine: routine, resume: snapshot),
@@ -93,7 +141,11 @@ class AppPageState extends State<AppPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     appTab.removeListener(_onExternalTab);
+    context.read<TrainingState>()
+      ..removeListener(_onTrainingChanged)
+      ..stopWatchingActiveWorkout();
     super.dispose();
   }
 

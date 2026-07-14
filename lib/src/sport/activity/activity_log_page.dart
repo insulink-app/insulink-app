@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/day_section_header.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -60,7 +61,12 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
               children: [
                 for (var index = 0; index < visible.length; index++) ...[
                   if (_startsNewDay(visible, index))
-                    _dayHeader(context, visible[index].startMs, index == 0),
+                    DaySectionHeader(
+                      day: DateTime.fromMillisecondsSinceEpoch(
+                        visible[index].startMs,
+                      ),
+                      first: index == 0,
+                    ),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: ActivityTile(entry: visible[index], showDate: false),
@@ -73,21 +79,6 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   ),
               ],
             ),
-    );
-  }
-
-  Widget _dayHeader(BuildContext context, int startMs, bool first) {
-    return Padding(
-      padding: EdgeInsets.only(top: first ? 0 : 20, bottom: 8),
-      child: Text(
-        MaterialLocalizations.of(
-          context,
-        ).formatFullDate(DateTime.fromMillisecondsSinceEpoch(startMs)),
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-        ),
-      ),
     );
   }
 

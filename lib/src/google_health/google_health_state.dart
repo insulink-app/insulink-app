@@ -9,6 +9,7 @@ import 'fitbit_heart_rate_monitor.dart';
 import 'google_health_importer.dart';
 import 'google_health_models.dart';
 import 'google_health_sync.dart';
+import 'health_permissions.dart';
 import 'intraday_pulse_store.dart';
 import 'pulse_sync.dart';
 
@@ -30,6 +31,11 @@ class GoogleHealthState extends ChangeNotifier {
   /// Health Connect isn't push, so without this the daily metrics only refresh
   /// on page open and go stale on a long-open page.
   static const _metricsEvery = Duration(minutes: 5);
+
+  /// How recently the band must have delivered for its bpm to count as live and
+  /// be relayed. A few beats' grace over the band's ~1 Hz, so a short BLE hiccup
+  /// does not blink the panel's reading out.
+  static const _liveRelayMaxAge = Duration(seconds: 5);
 
   bool _connected;
   bool _busy = false;
@@ -111,7 +117,28 @@ class GoogleHealthState extends ChangeNotifier {
       _bleMonitor.lastUpdate?.millisecondsSinceEpoch,
     );
     notifyListeners();
+    _relayLivePulse();
     unawaited(_flushLivePulse());
+  }
+
+  /// Relays the current bpm to the account so the user's other devices (the web
+  /// panel's workout vitals bar) can show it a second later.
+  ///
+  /// Only a genuinely fresh reading is relayed: [_onBleHr] also fires on status
+  /// changes, and re-sending the last bpm then would keep refreshing the
+  /// server's cache with a value the band never delivered — a disconnected band
+  /// would look live on the panel forever. Going quiet is the signal that lets
+  /// the cache expire.
+  void _relayLivePulse() {
+    final bpm = _bleMonitor.bpm;
+    final at = _bleMonitor.lastUpdate;
+    if (bpm == null || at == null) {
+      return;
+    }
+    if (DateTime.now().difference(at) > _liveRelayMaxAge) {
+      return;
+    }
+    PulseSync().pushLive(bpm);
   }
 
   /// Persists + syncs the live BLE samples buffered since the last flush, at
@@ -183,7 +210,12 @@ class GoogleHealthState extends ChangeNotifier {
 
   /// Grants Health Connect access + pulls the metrics; only marks connected on
   /// success (so a denied/unavailable result leaves the app unchanged).
+  ///
+  /// This is where the user asked to be asked: the prompt covers EVERY type the
+  /// app reads, including the Sport page's steps/distance/calories/weight, so
+  /// nothing pops up later on. The import right after reports the outcome.
   Future<GoogleHealthImportResult> connect() async {
+    await HealthPermissions().request();
     final data = await _run();
     if (data.result == GoogleHealthImportResult.success) {
       _connected = true;

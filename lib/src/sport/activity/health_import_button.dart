@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/google_health/health_permissions.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/health_importer.dart';
@@ -20,11 +21,15 @@ class HealthImportButton extends StatefulWidget {
 class _HealthImportButtonState extends State<HealthImportButton> {
   bool _busy = false;
 
+  /// Asks before importing: this is an explicit tap, so a prompt is what the
+  /// user just requested — unlike the Sport page's import-on-open, which stays
+  /// silent (see [HealthPermissions]).
   Future<void> _run() async {
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
     final sport = context.read<SportState>();
     final activity = context.read<SportActivityState>();
+    await HealthPermissions().request();
     final result = await HealthImporter().import(sport, activity);
     if (!mounted) {
       return;

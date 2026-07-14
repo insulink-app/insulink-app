@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import 'sport_models.dart';
@@ -10,11 +13,19 @@ import 'workout/workout_snapshot.dart';
 /// focused. Pattern: static [load], mutators mutate → [notifyListeners] →
 /// persist.
 class TrainingState extends ChangeNotifier {
+  /// How often the account is asked whether the workout changed elsewhere. Fast
+  /// enough that picking the phone up after starting a routine in the panel
+  /// shows it straight away, slow enough to cost nothing.
+  static const _watchEvery = Duration(seconds: 5);
+
   final SportStore _store;
   final List<SportExercise> _exercises;
   final List<SportRoutine> _routines;
   final List<WorkoutSession> _sessions;
   WorkoutSnapshot? _activeWorkout;
+  Timer? _watchTimer;
+  bool _driving = false;
+  bool _endedElsewhere = false;
 
   TrainingState(
     this._store,
@@ -46,17 +57,103 @@ class TrainingState extends ChangeNotifier {
   /// state change). Notifies AFTER the write (a later microtask, so it never
   /// fires inside the runner page's own build frame) so the "resume" banner in
   /// the activities list appears/updates the moment a workout starts or ends —
-  /// the runner still owns its own live UI.
+  /// the runner still owns its own live UI. Also mirrors the snapshot to the
+  /// account, so the web panel can follow or take the workout over.
   Future<void> saveActiveWorkout(WorkoutSnapshot snapshot) async {
     _activeWorkout = snapshot;
     await _store.saveActiveWorkout(snapshot);
+    SportSync().pushActiveWorkout(snapshot);
     notifyListeners();
   }
 
   Future<void> clearActiveWorkout() async {
     _activeWorkout = null;
+    _endedElsewhere = false;
+    await _store.clearActiveWorkout();
+    unawaited(SportSync().clearActiveWorkout());
+    notifyListeners();
+  }
+
+  // ---- following the account's workout across devices ----
+
+  /// Whether the workout this device had open was ended somewhere else (the web
+  /// panel, another phone). The runner page reads this to say so and close;
+  /// [acknowledgeEndedElsewhere] clears it once it has.
+  bool get endedElsewhere => _endedElsewhere;
+
+  /// Whether this device currently drives the workout (its runner is open).
+  bool get drivingActiveWorkout => _driving;
+
+  /// Marks this device as the one driving the workout — set while the runner
+  /// page is open. The watcher then stops adopting the account's copy: it is
+  /// this device's own push coming back a few seconds stale, and applying it
+  /// would yank the user out of the set they are in the middle of. Ending is
+  /// still followed, because that must reach every device.
+  void driveActiveWorkout(bool driving) {
+    _driving = driving;
+  }
+
+  /// Follows the account's running workout, so a routine started or ended in the
+  /// web panel reaches this device without a restart. Idempotent; pulls once
+  /// immediately so returning to the app shows the truth at once rather than
+  /// after the first tick.
+  void watchActiveWorkout() {
+    _watchTimer?.cancel();
+    _watchTimer = Timer.periodic(_watchEvery, (_) => _followActiveWorkout());
+    unawaited(_followActiveWorkout());
+  }
+
+  void stopWatchingActiveWorkout() {
+    _watchTimer?.cancel();
+    _watchTimer = null;
+  }
+
+  Future<void> _followActiveWorkout() async {
+    final remote = await SportSync().pullActiveWorkout(null);
+    if (remote == null) {
+      await _adoptEndedWorkout();
+      return;
+    }
+    if (_driving || _matchesActive(remote)) {
+      return;
+    }
+    _activeWorkout = remote;
+    await _store.saveActiveWorkout(remote);
+    notifyListeners();
+  }
+
+  /// The account has no workout: whatever this device still shows is over.
+  /// Flagged only when this device had it open, so the banner just disappearing
+  /// stays silent while a runner mid-set gets told.
+  Future<void> _adoptEndedWorkout() async {
+    if (_activeWorkout == null) {
+      return;
+    }
+    _activeWorkout = null;
+    _endedElsewhere = _driving;
     await _store.clearActiveWorkout();
     notifyListeners();
+  }
+
+  void acknowledgeEndedElsewhere() {
+    _endedElsewhere = false;
+  }
+
+  /// Compared by their JSON so an unchanged poll does not rebuild the tree every
+  /// few seconds. [WorkoutSnapshot] is a plain value object without `==`, and
+  /// giving it one only for this would be the longer way round.
+  bool _matchesActive(WorkoutSnapshot remote) {
+    final local = _activeWorkout;
+    if (local == null) {
+      return false;
+    }
+    return jsonEncode(local.toJson()) == jsonEncode(remote.toJson());
+  }
+
+  @override
+  void dispose() {
+    _watchTimer?.cancel();
+    super.dispose();
   }
 
   SportExercise? exerciseById(String id) {

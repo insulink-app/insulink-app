@@ -105,7 +105,7 @@ class ProfileSettings {
   /// Loads the account's saved settings and writes them into local storage so a
   /// returning user adopts the settings stored against their account. Caller
   /// must rebuild the app afterwards for the in-memory state to pick them up.
-  Future<void> pull(BuildContext context) async {
+  Future<void> pull(BuildContext? context) async {
     final response = await Request.get(
       url: "/user/settings/find/",
     ).send(context);

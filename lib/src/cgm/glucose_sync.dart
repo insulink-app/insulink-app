@@ -172,7 +172,7 @@ class GlucoseSync {
   }
 
   /// Pull the account's stored readings into the local archive (on sign-in).
-  Future<void> pullHistory(BuildContext context) async {
+  Future<void> pullHistory(BuildContext? context) async {
     final response = await Request.get(url: "/glucose/history/").send(context);
     if (response == null) {
       return;

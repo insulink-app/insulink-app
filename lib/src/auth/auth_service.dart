@@ -6,14 +6,9 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' show Response;
-import 'package:insulink/src/cgm/event_sync.dart';
-import 'package:insulink/src/cgm/glucose_sync.dart';
-import 'package:insulink/src/google_health/google_health_sync.dart';
-import 'package:insulink/src/google_health/pulse_sync.dart';
+import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
-import 'package:insulink/src/nutrition/nutrition_sync.dart';
-import 'package:insulink/src/sport/sport_sync.dart';
 
 /// Talks to the backend `/signin/` and `/signup/` endpoints and persists the
 /// returned tokens. Each method returns `null` on success, or a localization
@@ -32,25 +27,7 @@ class AuthService {
     ).send(context);
     final error = await _handle(response, "auth.error.invalid");
     if (error == null && context.mounted) {
-      await ProfileSettings().pull(context);
-    }
-    if (error == null && context.mounted) {
-      await GlucoseSync().pullHistory(context);
-    }
-    if (error == null && context.mounted) {
-      await EventSync().pullHistory(context);
-    }
-    if (error == null && context.mounted) {
-      await SportSync().pull(context);
-    }
-    if (error == null && context.mounted) {
-      await NutritionSync().pull(context);
-    }
-    if (error == null && context.mounted) {
-      await GoogleHealthSync().pull(context);
-    }
-    if (error == null && context.mounted) {
-      await PulseSync().pull(context);
+      await AccountSync().pullAll(context);
     }
     return error;
   }

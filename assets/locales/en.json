@@ -1,5 +1,7 @@
 {
   "date": {
+    "today": "Today",
+    "yesterday": "Yesterday",
     "weekday": {
       "1": "Mon",
       "2": "Tue",
@@ -494,7 +496,9 @@
       "continue": "Continue",
       "previous_set": "Previous set",
       "last_time": "Last time: #",
-      "resume_active": "Resume running workout"
+      "resume_active": "Resume running workout",
+      "ended_elsewhere": "This workout was finished on another device.",
+      "ended_elsewhere_confirm": "Got it"
     },
     "health": {
       "import": "Import from Google Health",

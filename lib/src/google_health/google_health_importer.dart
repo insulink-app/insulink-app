@@ -41,7 +41,9 @@ class GoogleHealthImporter {
     HealthDataType.SLEEP_AWAKE_IN_BED,
   ];
 
-  static const _types = [
+  /// Public so [HealthPermissions] can request these together with the activity
+  /// types — one prompt instead of two disjoint ones.
+  static const types = [
     HealthDataType.HEART_RATE,
     HealthDataType.RESTING_HEART_RATE,
     HealthDataType.SLEEP_SESSION,
@@ -49,16 +51,18 @@ class GoogleHealthImporter {
     HealthDataType.RESPIRATORY_RATE,
     ..._stageTypes,
   ];
-  static final _read = List.filled(_types.length, HealthDataAccess.READ);
+  static final _read = List.filled(types.length, HealthDataAccess.READ);
 
+  /// Reads what has ALREADY been granted — never prompts. The Sport page
+  /// refreshes these on open and every 5 min, so prompting here would ambush the
+  /// user; asking is [HealthPermissions]' job, from the connect button.
   Future<GoogleHealthImport> import() async {
     await _health.configure();
     if (await _health.getHealthConnectSdkStatus() !=
         HealthConnectSdkStatus.sdkAvailable) {
-      await _health.installHealthConnect();
       return const GoogleHealthImport(GoogleHealthImportResult.unavailable);
     }
-    if (!await _health.requestAuthorization(_types, permissions: _read)) {
+    if (await _health.hasPermissions(types, permissions: _read) != true) {
       return const GoogleHealthImport(GoogleHealthImportResult.denied);
     }
     final now = DateTime.now();

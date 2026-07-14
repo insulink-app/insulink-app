@@ -31,7 +31,7 @@ class GoogleHealthSync {
 
   /// Adopts the account's health days into local storage on sign-in. Merged, not
   /// clobbered, so the connected flag and any locally-newer days survive.
-  Future<void> pull(BuildContext context) async {
+  Future<void> pull(BuildContext? context) async {
     final response = await Request.get(url: '/health/days/find/').send(context);
     if (response == null) {
       return;
