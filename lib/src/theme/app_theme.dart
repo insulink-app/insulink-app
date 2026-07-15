@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 
 /// The app's light and dark Material 3 themes. Kept out of `main.dart` so the
@@ -24,13 +25,53 @@ class AppTheme {
       ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(shape: _buttonShape),
       );
-  static final OutlinedButtonThemeData _outlinedButtons =
-      OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(shape: _buttonShape),
-      );
-  static final TextButtonThemeData _textButtons = TextButtonThemeData(
-    style: TextButton.styleFrom(shape: _buttonShape),
-  );
+
+  /// [OutlinedButton] draws its label in `colorScheme.primary` and its rim in
+  /// `colorScheme.outline`. Neither default works on the dark theme: the accent
+  /// that fills a button well is too dark to read as text on a dark surface, and
+  /// an unset `outline` falls back to white. Both are passed in per theme rather
+  /// than bent globally, so the fill accent stays as it is. Null keeps the
+  /// Material default (the light theme needs no correction).
+  static OutlinedButtonThemeData _outlinedButtonsFor({
+    Color? foreground,
+    Color? rim,
+  }) {
+    return OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        shape: _buttonShape,
+        foregroundColor: foreground,
+        side: rim == null ? null : BorderSide(color: rim),
+      ),
+    );
+  }
+
+  /// [TextButton]s ("Mehr anzeigen" and friends) have the same defect Material
+  /// hands [OutlinedButton]: the label is drawn in `colorScheme.primary`, a
+  /// colour tuned to be a FILL behind white text, which manages only ~4:1 as a
+  /// label on a dark surface. Pass the accent on dark; null keeps the Material
+  /// default, which the light theme needs no correction to.
+  static TextButtonThemeData _textButtonsFor([Color? foreground]) {
+    return TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: _buttonShape,
+        foregroundColor: foreground,
+      ),
+    );
+  }
+
+  /// [IconButton]s stay plain: no face, no rim, no accent. A tinted square face
+  /// was tried to mark them as pressable and read as clutter on every app bar
+  /// and dense row, and tinting the glyph made routine actions shout.
+  ///
+  /// Pass the theme's `onSurface`. It must be stated rather than left out:
+  /// Material resolves an icon button's foreground to `onSurfaceVariant`, which
+  /// this app deliberately sets to a muted tone for DECORATION — so omitting
+  /// this would hand every control the colour that means "just information".
+  static IconButtonThemeData _iconButtonsFor(Color foreground) {
+    return IconButtonThemeData(
+      style: IconButton.styleFrom(foregroundColor: foreground),
+    );
+  }
 
   /// Modern, filled, borderless text fields with a soft rounded shape — the
   /// focused state gets a thin primary ring. One place styles every [TextField]
@@ -62,11 +103,13 @@ class AppTheme {
       // chips/date-pickers stop tinting turquoise.
       secondary: lightPrimary,
       surface: const Color(0xFFE8E8E8),
+      onSurfaceVariant: const Color(0xFF5A6070),
     ),
     filledButtonTheme: _filledButtons,
     elevatedButtonTheme: _elevatedButtons,
-    outlinedButtonTheme: _outlinedButtons,
-    textButtonTheme: _textButtons,
+    outlinedButtonTheme: _outlinedButtonsFor(),
+    textButtonTheme: _textButtonsFor(),
+    iconButtonTheme: _iconButtonsFor(Colors.black),
     inputDecorationTheme: _inputTheme(const Color(0xFFECECEC), lightPrimary),
     appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFFAFAFA)),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -74,10 +117,53 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: const Color(0xFFFAFAFA),
     dividerColor: Colors.black12,
-    extensions: const [GlucoseColors.standard],
+    extensions: [
+      GlucoseColors.standard,
+      AccentColors(onSurface: lightPrimary),
+    ],
   );
 
-  static final Color darkPrimary = Colors.indigoAccent;
+  /// Indigo with a little saturation taken off. The light theme can carry the
+  /// fully saturated brand accent, but on the dark background that same hue at
+  /// ~99% saturation reads as harsh neon — ~85% keeps it vivid while letting it
+  /// sit ON the surface instead of glowing off it.
+  ///
+  /// This is tuned as a FILL (a button with white text on top). It is too dark
+  /// to double as a foreground on a dark surface — see [darkAccent].
+  static final Color darkPrimary = Color(0xFF5A73F2);
+
+  /// A light tone of [darkPrimary], for drawing the accent ON a dark surface
+  /// (outlined-button labels) rather than filling with it. Same hue, so the two
+  /// read as one brand colour; light enough to clear 7:1 against the surface,
+  /// where [darkPrimary] itself only manages ~4:1.
+  static final Color darkAccent = Color(0xFF93A6FF);
+
+  /// Dark surfaces take their hue from the insulink website's palette (`--bg`,
+  /// `--surface`, `--surface-2`, `--border` in its `style.css`) so app and site
+  /// stay related, but they are lifted a step and pulled well down in saturation:
+  /// the site's near-black, strongly blue values make the accent glare on a phone
+  /// held at arm's length in the dark, and leave too little separation for cards
+  /// to read as cards. The result is grey with a blue lean, not blue-grey.
+  static const Color _darkBg = Color(0xFF15181D);
+  static const Color _darkSurface = Color(0xFF1F232A);
+  static const Color _darkSurfaceRaised = Color(0xFF2A2F38);
+
+  /// Kept close to [_darkSurface] on purpose: it is both the divider colour and
+  /// the box border ([OverviewSection]), and a border much lighter than the fill
+  /// draws a hard ring around every card. The boxes separate via their fill.
+  static const Color _darkBorder = Color(0xFF2B3038);
+
+  /// Border colour for outlined controls. Set explicitly because [ColorScheme]
+  /// falls back to `onBackground` (white) when it is omitted, which rims every
+  /// [OutlinedButton] in glaring white.
+  static const Color _darkOutline = Color(0xFF464D5A);
+
+  /// Foreground for anything that informs rather than invites a tap: the glyphs
+  /// next to a statistic, secondary labels, units. The app reads the brand
+  /// colour as "you can touch this", so decoration must NOT wear it — and
+  /// [ColorScheme] otherwise resolves `onSurfaceVariant` to plain white, which
+  /// gives a decorative glyph the same weight as the value it annotates.
+  static const Color _darkMuted = Color(0xFFA6AEBF);
 
   static final ThemeData dark = ThemeData(
     useMaterial3: true,
@@ -86,20 +172,29 @@ class AppTheme {
       primary: darkPrimary,
       onPrimary: onPrimary,
       secondary: darkPrimary,
-      surface: const Color(0xFF1E1E1E),
-      surfaceContainerHighest: const Color(0xFF2A2A2A),
+      surface: _darkSurface,
+      surfaceContainerHighest: _darkSurfaceRaised,
+      outline: _darkOutline,
+      onSurfaceVariant: _darkMuted,
     ),
     filledButtonTheme: _filledButtons,
     elevatedButtonTheme: _elevatedButtons,
-    outlinedButtonTheme: _outlinedButtons,
-    textButtonTheme: _textButtons,
-    inputDecorationTheme: _inputTheme(const Color(0xFF2A2A2A), darkPrimary),
-    appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1B1B1B)),
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: Color(0xFF2A2A2A),
+    outlinedButtonTheme: _outlinedButtonsFor(
+      foreground: darkAccent,
+      rim: darkPrimary.withValues(alpha: 0.55),
     ),
-    scaffoldBackgroundColor: const Color(0xFF1B1B1B),
-    dividerColor: const Color(0xFF3B3B3B),
-    extensions: const [GlucoseColors.standard],
+    textButtonTheme: _textButtonsFor(darkAccent),
+    iconButtonTheme: _iconButtonsFor(Colors.white),
+    inputDecorationTheme: _inputTheme(_darkSurfaceRaised, darkPrimary),
+    appBarTheme: const AppBarTheme(backgroundColor: _darkBg),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: _darkSurface,
+    ),
+    scaffoldBackgroundColor: _darkBg,
+    dividerColor: _darkBorder,
+    extensions: [
+      GlucoseColors.standard,
+      AccentColors(onSurface: darkAccent),
+    ],
   );
 }

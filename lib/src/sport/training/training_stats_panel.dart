@@ -67,7 +67,7 @@ class TrainingStatsPanel extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(icon, color: scheme.primary, size: 22),
+          Icon(icon, color: scheme.onSurfaceVariant, size: 22),
           const SizedBox(height: 8),
           Text(
             value,

@@ -182,11 +182,15 @@ class _LegalPageState extends State<LegalPage> {
         ),
         minimumSize: WidgetStateProperty.all(const Size(double.infinity, 0)),
       ),
-      icon: const Icon(PhosphorIconsRegular.arrowRight, color: Colors.white, size: 25),
+      icon: Icon(
+        PhosphorIconsRegular.arrowRight,
+        color: theme.colorScheme.onPrimary,
+        size: 25,
+      ),
       label: LocaleText(
         "legal.continue",
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: theme.colorScheme.onPrimary,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),

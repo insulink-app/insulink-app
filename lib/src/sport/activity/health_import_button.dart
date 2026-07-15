@@ -5,6 +5,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_state.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -75,8 +76,11 @@ class _HealthImportButtonState extends State<HealthImportButton> {
     return Container(
       width: 44,
       height: 44,
-      decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
-      child: Icon(PhosphorIconsFill.heart, color: scheme.onPrimary, size: 22),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(PhosphorIconsFill.heart, color: scheme.onSurfaceVariant, size: 22),
     );
   }
 
@@ -109,6 +113,6 @@ class _HealthImportButtonState extends State<HealthImportButton> {
         child: CircularProgressIndicator(strokeWidth: 2),
       );
     }
-    return Icon(PhosphorIconsRegular.arrowsClockwise, color: scheme.primary);
+    return Icon(PhosphorIconsRegular.arrowsClockwise, color: context.accent);
   }
 }

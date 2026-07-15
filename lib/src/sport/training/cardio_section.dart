@@ -60,7 +60,7 @@ class CardioSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(training.type.icon, color: scheme.primary),
+              Icon(training.type.icon, color: scheme.onSurfaceVariant),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

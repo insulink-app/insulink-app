@@ -5,12 +5,16 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 enum NutritionTile { carbs, protein, bolus, water, meals }
 
 /// Icon for a nutrition box (grid + layout editor).
+///
+/// Bold weight, unlike the rest of the app: a summary box carries its glyph
+/// bare, with no badge behind it, so the thin Regular stroke washes out against
+/// the box's tint. The heavier stroke gives it presence without a louder colour.
 IconData nutritionTileIcon(NutritionTile tile) => switch (tile) {
-  NutritionTile.carbs => PhosphorIconsRegular.grains,
-  NutritionTile.protein => PhosphorIconsRegular.egg,
-  NutritionTile.bolus => PhosphorIconsRegular.syringe,
-  NutritionTile.water => PhosphorIconsRegular.drop,
-  NutritionTile.meals => PhosphorIconsRegular.forkKnife,
+  NutritionTile.carbs => PhosphorIconsBold.grains,
+  NutritionTile.protein => PhosphorIconsBold.egg,
+  NutritionTile.bolus => PhosphorIconsBold.syringe,
+  NutritionTile.water => PhosphorIconsBold.drop,
+  NutritionTile.meals => PhosphorIconsBold.forkKnife,
 };
 
 /// Localization key for a nutrition box label (grid + editor).

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 
-/// A single summary "box": icon badge + label + big value (optional unit),
-/// tappable. Used both in the Sport tab's activity card and on the overview.
+/// A single summary "box": glyph + label + big value (optional unit), tappable.
+/// Used both in the Sport tab's activity card and on the overview.
 class SportSummaryTile extends StatelessWidget {
   const SportSummaryTile({
     super.key,
@@ -21,8 +22,8 @@ class SportSummaryTile extends StatelessWidget {
   final String? unit;
   final VoidCallback? onTap;
 
-  /// When true the icon badge beats like a heartbeat (used by the heart-rate
-  /// tile while a live BLE pulse is streaming).
+  /// When true the glyph beats like a heartbeat (used by the heart-rate tile
+  /// while a live BLE pulse is streaming).
   final bool pulse;
 
   /// Optional daily-goal progress in 0..1. When set, the box background fills
@@ -50,7 +51,7 @@ class SportSummaryTile extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _iconBadge(scheme),
+                  _glyph(context),
                   const SizedBox(width: 12),
                   Expanded(child: _text(context, scheme)),
                 ],
@@ -78,17 +79,20 @@ class SportSummaryTile extends StatelessWidget {
     );
   }
 
-  Widget _iconBadge(ColorScheme scheme) {
-    Widget glyph = Icon(icon, size: 20, color: scheme.onPrimary);
+  /// The tile's glyph, deliberately bare — no badge behind it.
+  ///
+  /// This tile is itself the control: its tinted face, border and progress fill
+  /// already say "press me". A badge inside it adds a second, competing shape —
+  /// filled it looked like a button parked on a button, neutral it punched a
+  /// grey hole through the tint. So the glyph carries itself instead: sized to
+  /// hold its own against the 28px value beside it, and weighted with the
+  /// accent. The fixed slot keeps every tile's text in one column.
+  Widget _glyph(BuildContext context) {
+    Widget glyph = Icon(icon, size: 26, color: context.accent);
     if (pulse) {
       glyph = _HeartbeatBadge(child: glyph);
     }
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
-      child: Center(child: glyph),
-    );
+    return SizedBox(width: 34, height: 40, child: Center(child: glyph));
   }
 
   Widget _text(BuildContext context, ColorScheme scheme) {

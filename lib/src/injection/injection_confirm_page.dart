@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/biometric_auth.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Confirmation step before a bolus is delivered: a summary of carbs, glucose
@@ -106,7 +107,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       ),
       child: Column(
         children: [
-          Icon(PhosphorIconsRegular.syringe, color: scheme.primary, size: 30),
+          Icon(PhosphorIconsRegular.syringe, color: context.accent, size: 30),
           const SizedBox(height: 10),
           LocaleText(
             'injection.bolus',
@@ -123,7 +124,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
               style: TextStyle(
                 fontSize: 46,
                 fontWeight: FontWeight.bold,
-                color: scheme.primary,
+                color: context.accent,
                 height: 1,
               ),
               children: [
@@ -132,7 +133,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
-                    color: scheme.primary.withValues(alpha: 0.7),
+                    color: context.accent.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -183,7 +184,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: scheme.primary),
+          Icon(icon, size: 20, color: scheme.onSurfaceVariant),
           const SizedBox(width: 12),
           Expanded(
             child: LocaleText(

@@ -16,16 +16,21 @@ import 'package:insulink/src/sport/weight/weight_detail_page.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Icon for a Today box (shared by the grid and the layout editor).
+///
+/// Bold weight, unlike the rest of the app: a summary box carries its glyph
+/// bare, with no badge behind it, so the thin Regular stroke washes out against
+/// the box's tint. The heavier stroke gives it presence without a louder colour.
+/// The live heart stays Fill — it beats, and a solid shape reads at a glance.
 IconData todayTileIcon(TodayTile tile) => switch (tile) {
-  TodayTile.steps => PhosphorIconsRegular.personSimpleWalk,
-  TodayTile.distance => PhosphorIconsRegular.ruler,
-  TodayTile.calories => PhosphorIconsRegular.fire,
-  TodayTile.weight => PhosphorIconsRegular.scales,
-  TodayTile.restingHr => PhosphorIconsRegular.heartbeat,
-  TodayTile.sleep => PhosphorIconsRegular.moon,
+  TodayTile.steps => PhosphorIconsBold.personSimpleWalk,
+  TodayTile.distance => PhosphorIconsBold.ruler,
+  TodayTile.calories => PhosphorIconsBold.fire,
+  TodayTile.weight => PhosphorIconsBold.scales,
+  TodayTile.restingHr => PhosphorIconsBold.heartbeat,
+  TodayTile.sleep => PhosphorIconsBold.moon,
   TodayTile.heartRate => PhosphorIconsFill.heart,
-  TodayTile.spo2 => PhosphorIconsRegular.drop,
-  TodayTile.respiratoryRate => PhosphorIconsRegular.wind,
+  TodayTile.spo2 => PhosphorIconsBold.drop,
+  TodayTile.respiratoryRate => PhosphorIconsBold.wind,
 };
 
 /// Localization key for a Today box label (shared by the grid and the editor).

@@ -4,6 +4,7 @@ import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/activity/tile_layout_editor.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/activity/today_tile_builder.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -29,7 +30,7 @@ class TodayLayoutButton extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(child: _text(scheme)),
               const SizedBox(width: 10),
-              Icon(PhosphorIconsRegular.caretRight, color: scheme.primary),
+              Icon(PhosphorIconsRegular.caretRight, color: context.accent),
             ],
           ),
         ),
@@ -59,10 +60,13 @@ class TodayLayoutButton extends StatelessWidget {
     return Container(
       width: 44,
       height: 44,
-      decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        shape: BoxShape.circle,
+      ),
       child: Icon(
         PhosphorIconsRegular.squaresFour,
-        color: scheme.onPrimary,
+        color: scheme.onSurfaceVariant,
         size: 22,
       ),
     );

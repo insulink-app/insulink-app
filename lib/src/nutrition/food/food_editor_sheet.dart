@@ -146,18 +146,14 @@ class _FoodEditorSheetState extends State<_FoodEditorSheet> {
             FilledButton(
               onPressed: _save,
               style: FilledButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: LocaleText(
+              child: const LocaleText(
                 'alert.done',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],

@@ -54,8 +54,9 @@ class FoodProductCard extends StatelessWidget {
     );
   }
 
-  /// A round icon badge tinted with the primary color: a drink glass for `ml`
-  /// products, cutlery for solids.
+  /// A round, neutral icon badge saying what the product is: a drink glass for
+  /// `ml` products, cutlery for solids. Neutral and round on purpose — it names
+  /// the row, it is not something to press.
   Widget _badge(ColorScheme scheme) {
     final isDrink = product.unit == 'ml';
     return Container(
@@ -63,12 +64,12 @@ class FoodProductCard extends StatelessWidget {
       height: 44,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.12),
+        color: scheme.surfaceContainerHighest,
         shape: BoxShape.circle,
       ),
       child: Icon(
         isDrink ? PhosphorIconsRegular.drop : PhosphorIconsRegular.forkKnife,
-        color: scheme.primary,
+        color: scheme.onSurfaceVariant,
         size: 22,
       ),
     );

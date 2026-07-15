@@ -200,12 +200,12 @@ class _ProductPickerState extends State<_ProductPicker> {
       height: 40,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.12),
+        color: scheme.surfaceContainerHighest,
         shape: BoxShape.circle,
       ),
       child: Icon(
         isDrink ? PhosphorIconsRegular.drop : PhosphorIconsRegular.forkKnife,
-        color: scheme.primary,
+        color: scheme.onSurfaceVariant,
         size: 20,
       ),
     );

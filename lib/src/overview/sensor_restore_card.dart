@@ -62,7 +62,7 @@ class SensorRestoreCard extends StatelessWidget {
     );
   }
 
-  /// Title + identity line behind the same soft circular icon badge the empty
+  /// Title + identity line behind the same filled circular icon badge the empty
   /// states use. The icon says what the button will do: adopt from the cloud, or
   /// hold the phone against the sensor.
   Widget _header(BuildContext context, ColorScheme scheme) {
@@ -74,14 +74,10 @@ class SensorRestoreCard extends StatelessWidget {
           height: 42,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: scheme.primary.withValues(alpha: 0.08),
+            color: scheme.surfaceContainerHighest,
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            _icon,
-            size: 21,
-            color: scheme.primary.withValues(alpha: 0.7),
-          ),
+          child: Icon(_icon, size: 21, color: scheme.onSurfaceVariant),
         ),
         const SizedBox(width: 12),
         Expanded(

@@ -44,10 +44,10 @@ class ConnectionRow extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: scheme.primary,
+                  color: scheme.surfaceContainerHighest,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: scheme.onPrimary, size: 26),
+                child: Icon(icon, color: scheme.onSurfaceVariant, size: 26),
               ),
               const SizedBox(width: 16),
               Expanded(

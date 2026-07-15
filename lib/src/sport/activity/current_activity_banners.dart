@@ -5,6 +5,7 @@ import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -76,18 +77,18 @@ class CurrentActivityBanners extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(icon, color: scheme.primary),
+                Icon(icon, color: context.accent),
                 const SizedBox(width: 12),
                 Expanded(
                   child: LocaleText(
                     labelKey,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: scheme.primary,
+                      color: context.accent,
                     ),
                   ),
                 ),
-                Icon(PhosphorIconsFill.play, color: scheme.primary),
+                Icon(PhosphorIconsFill.play, color: context.accent),
               ],
             ),
           ),

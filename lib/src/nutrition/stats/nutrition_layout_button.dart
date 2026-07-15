@@ -4,6 +4,7 @@ import 'package:insulink/src/nutrition/stats/nutrition_layout_state.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_tile.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/activity/tile_layout_editor.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -29,12 +30,12 @@ class NutritionLayoutButton extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: scheme.primary,
+                  color: scheme.surfaceContainerHighest,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   PhosphorIconsRegular.squaresFour,
-                  color: scheme.onPrimary,
+                  color: scheme.onSurfaceVariant,
                   size: 22,
                 ),
               ),
@@ -63,7 +64,7 @@ class NutritionLayoutButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Icon(PhosphorIconsRegular.caretRight, color: scheme.primary),
+              Icon(PhosphorIconsRegular.caretRight, color: context.accent),
             ],
           ),
         ),

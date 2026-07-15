@@ -199,7 +199,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
   ) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: scheme.primary),
+        Icon(icon, size: 16, color: scheme.onSurfaceVariant),
         const SizedBox(width: 6),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
