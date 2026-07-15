@@ -6,11 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/base/hour_range_selector.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
+import 'package:insulink/src/cgm/glucose_prediction.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
+import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
@@ -237,8 +239,13 @@ class _OverviewChartState extends State<OverviewChart>
     // Dashed forecast line extending past the latest reading (only in the live
     // window — a forecast on a past interval makes no sense).
     final controller = context.watch<CgmController>();
+    final showBand = context.watch<ProfilePredictionState>().band;
     final prediction = panWindows > 0
-        ? (futureHours: 0.0, touchSpots: const <FlSpot>[])
+        ? (
+            futureHours: 0.0,
+            touchSpots: const <FlSpot>[],
+            band: null as BetweenBarsData?,
+          )
         : _addPredictionBar(
             bars,
             controller,
@@ -246,6 +253,7 @@ class _OverviewChartState extends State<OverviewChart>
             latestSecs,
             shift,
             glucose,
+            showBand,
           );
     final futureHours = prediction.futureHours;
     // Transparent overlay owning touch — over the REAL readings AND the forecast
@@ -260,12 +268,16 @@ class _OverviewChartState extends State<OverviewChart>
     // instead of tweening between structurally-different bar lists — that lerp
     // flashes a malformed frame even with a zero-duration animation.
     final predictionCount = controller.predictionCurve?.length ?? 0;
+    // The band adds two bars, so toggling it changes the bar structure — it has
+    // to take part in the key or fl_chart tweens between mismatched lists.
     final key = ValueKey(
-      '$latestSecs-${entries.length}-$effectiveRange-$panWindows-$predictionCount',
+      '$latestSecs-${entries.length}-$effectiveRange-$panWindows'
+      '-$predictionCount-${prediction.band != null}',
     );
     GlucoseLineChart chart(double pulse) => GlucoseLineChart(
       key: key,
       bars: bars,
+      betweenBars: [if (prediction.band != null) prediction.band!],
       touchBarIndex: _touchBarIndex,
       shift: shift,
       rangeHours: effectiveRange,
@@ -293,45 +305,113 @@ class _OverviewChartState extends State<OverviewChart>
     );
   }
 
-  /// Appends the dashed forecast bar (anchored at the latest reading) and
-  /// returns how many hours it extends past it (so the X axis can widen to fit)
-  /// plus the future points, which the touch overlay also covers so they're
-  /// hoverable. No forecast / no session clock → nothing added, 0 / empty.
-  ({double futureHours, List<FlSpot> touchSpots}) _addPredictionBar(
+  /// Appends the dashed forecast bar (anchored at the latest reading), and the
+  /// two invisible band edges under it when the band overlay is on. Returns how
+  /// many hours the forecast extends past the latest reading (so the X axis can
+  /// widen to fit), the future points — which the touch overlay also covers so
+  /// they're hoverable — and the band fill, if any. No forecast / no session
+  /// clock → nothing added, 0 / empty.
+  ///
+  /// The band edges go in BEFORE the mean line so the fill paints under it.
+  ({double futureHours, List<FlSpot> touchSpots, BetweenBarsData? band})
+  _addPredictionBar(
     List<LineChartBarData> bars,
     CgmController controller,
     List<MapEntry<int, int>> entries,
     int latestSecs,
     double shift,
     ProfileGlucoseState glucose,
+    bool showBand,
   ) {
     final curve = controller.predictionCurve;
     final base = controller.predictionBase;
     final start = widget.sensorStart;
     if (curve == null || base == null || start == null || entries.isEmpty) {
-      return (futureHours: 0, touchSpots: const <FlSpot>[]);
+      return (futureHours: 0, touchSpots: const <FlSpot>[], band: null);
     }
     final baseSecs = base.difference(start).inSeconds;
     final anchor = FlSpot(shift, glucose.toDisplay(entries.last.value));
-    // Only points still ahead of the latest reading. A stale forecast (base
-    // older than the newest reading because a refresh failed) otherwise draws
-    // its early points to the LEFT of x=0, overlapping the real readings.
-    final future = [
-      for (final point in curve)
-        if (baseSecs + point.offsetMin * 60 > latestSecs)
-          FlSpot(
-            (baseSecs + point.offsetMin * 60 - latestSecs) / 3600.0 + shift,
-            glucose.toDisplay(point.mgdl),
-          ),
-    ];
-    if (future.isEmpty) {
-      return (futureHours: 0, touchSpots: const <FlSpot>[]);
+    final spots = _predictionSpots(curve, baseSecs, latestSecs, shift, glucose);
+    if (spots.mean.isEmpty) {
+      return (futureHours: 0, touchSpots: const <FlSpot>[], band: null);
     }
-    bars.add(_predictionBar([anchor, ...future]));
+    final band = showBand ? _addBandBars(bars, spots, anchor) : null;
+    bars.add(_predictionBar([anchor, ...spots.mean]));
     final lastSecs = baseSecs + curve.last.offsetMin * 60;
     return (
       futureHours: ((lastSecs - latestSecs) / 3600.0).clamp(0.0, 24.0),
-      touchSpots: future,
+      touchSpots: spots.mean,
+      band: band,
+    );
+  }
+
+  /// The forecast curve as chart spots: the mean line plus its q10/q90 edges.
+  ///
+  /// Only points still ahead of the latest reading. A stale forecast (base older
+  /// than the newest reading because a refresh failed) otherwise draws its early
+  /// points to the LEFT of x=0, overlapping the real readings. A point whose
+  /// model served no band collapses its edges onto the mean, so a pre-band model
+  /// simply draws no band rather than a broken one.
+  ({List<FlSpot> mean, List<FlSpot> low, List<FlSpot> high, bool hasBand})
+  _predictionSpots(
+    List<PredictionPoint> curve,
+    int baseSecs,
+    int latestSecs,
+    double shift,
+    ProfileGlucoseState glucose,
+  ) {
+    final mean = <FlSpot>[];
+    final low = <FlSpot>[];
+    final high = <FlSpot>[];
+    var hasBand = false;
+    for (final point in curve) {
+      final secs = baseSecs + point.offsetMin * 60;
+      if (secs <= latestSecs) {
+        continue;
+      }
+      final x = (secs - latestSecs) / 3600.0 + shift;
+      mean.add(FlSpot(x, glucose.toDisplay(point.mgdl)));
+      low.add(FlSpot(x, glucose.toDisplay(point.lo ?? point.mgdl)));
+      high.add(FlSpot(x, glucose.toDisplay(point.hi ?? point.mgdl)));
+      hasBand = hasBand || point.lo != null || point.hi != null;
+    }
+    return (mean: mean, low: low, high: high, hasBand: hasBand);
+  }
+
+  /// Append the two invisible band-edge bars and return the fill between them,
+  /// or null when the curve carries no bounds at all (a pre-band model). Both
+  /// edges start at [anchor] so the band opens from the current reading instead
+  /// of appearing out of nowhere at the first forecast point.
+  BetweenBarsData? _addBandBars(
+    List<LineChartBarData> bars,
+    ({List<FlSpot> mean, List<FlSpot> low, List<FlSpot> high, bool hasBand})
+    spots,
+    FlSpot anchor,
+  ) {
+    if (!spots.hasBand) {
+      return null;
+    }
+    final scheme = Theme.of(context).colorScheme;
+    bars.add(_bandEdgeBar([anchor, ...spots.low]));
+    bars.add(_bandEdgeBar([anchor, ...spots.high]));
+    return BetweenBarsData(
+      fromIndex: bars.length - 2,
+      toIndex: bars.length - 1,
+      color: scheme.onSurface.withValues(alpha: 0.12),
+    );
+  }
+
+  /// An invisible band edge: it exists only to bound the fill, so it carries no
+  /// stroke of its own. Curve settings mirror [_predictionBar] — a differently
+  /// smoothed edge would drift away from the mean line it wraps.
+  LineChartBarData _bandEdgeBar(List<FlSpot> spots) {
+    return LineChartBarData(
+      spots: spots,
+      isCurved: true,
+      curveSmoothness: 0.4,
+      barWidth: 0,
+      color: Colors.transparent,
+      dotData: const FlDotData(show: false),
     );
   }
 

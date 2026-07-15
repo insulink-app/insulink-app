@@ -107,7 +107,11 @@ class WorkoutRestView extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Icon(PhosphorIconsRegular.arrowsLeftRight, size: 18, color: scheme.primary),
+            Icon(
+              PhosphorIconsRegular.arrowsLeftRight,
+              size: 18,
+              color: scheme.primary,
+            ),
           ],
         ),
       ),

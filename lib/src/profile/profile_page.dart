@@ -9,13 +9,17 @@ import 'package:insulink/src/profile/body/profile_body_selection.dart';
 import 'package:insulink/src/profile/basal/profile_basal_selection.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_selection.dart';
 import 'package:insulink/src/profile/notifications/profile_connection_toggle.dart';
+import 'package:insulink/src/profile/developer/developer_log_panel.dart';
 import 'package:insulink/src/profile/developer/profile_developer_toggle.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_selection.dart';
 import 'package:insulink/src/profile/language/profile_language_selection.dart';
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
+import 'package:insulink/src/profile/notifications/notification_threshold.dart';
+import 'package:insulink/src/profile/notifications/notification_threshold_card.dart';
 import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_notification_toggle.dart';
+import 'package:insulink/src/profile/prediction/profile_prediction_band_toggle.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_horizon.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_toggle.dart';
 import 'package:insulink/src/profile/silent/profile_silent_toggle.dart';
@@ -122,6 +126,14 @@ class _ProfilePageState extends State<ProfilePage> {
         NotificationToggle(NotificationSetting.advisory),
         SizedBox(height: 10),
         ProfileAlarmSoundToggle(),
+        SizedBox(height: 10),
+        NotificationToggle(NotificationSetting.podExpiry),
+        SizedBox(height: 10),
+        NotificationThresholdCard(NotificationThreshold.podExpiry),
+        SizedBox(height: 10),
+        NotificationToggle(NotificationSetting.podInsulin),
+        SizedBox(height: 10),
+        NotificationThresholdCard(NotificationThreshold.podInsulin),
       ],
     ),
     (
@@ -130,6 +142,7 @@ class _ProfilePageState extends State<ProfilePage> {
       searchKey: "profile.search.prediction",
       children: () => const [
         ProfilePredictionToggle(),
+        ProfilePredictionBandToggle(),
         SizedBox(height: 10),
         ProfilePredictionHorizon(),
       ],
@@ -144,7 +157,11 @@ class _ProfilePageState extends State<ProfilePage> {
       titleKey: "profile.developer",
       icon: PhosphorIconsRegular.code,
       searchKey: "profile.search.developer",
-      children: () => const [ProfileDeveloperToggle()],
+      children: () => const [
+        ProfileDeveloperToggle(),
+        Spacer(),
+        DeveloperLogPanel(),
+      ],
     ),
   ];
 

@@ -119,8 +119,14 @@
     "restore": {
       "title": "Vorherigen Sensor verwenden?",
       "body": "In deinem Konto ist ein Sensor hinterlegt. Übernimm ihn, um ohne erneutes Koppeln weiterzulesen.",
+      "body_scan": "In deinem Konto ist ein Sensor hinterlegt. Halte dein Handy kurz an den Sensor, um ihn zu übernehmen und weiterzulesen.",
       "use": "Verwenden",
+      "scan": "Scannen",
       "dismiss": "Nicht jetzt"
+    },
+    "active_insulin": {
+      "_": "Aktives Insulin",
+      "until": "Noch aktiv bis #"
     }
   },
   "analysis": {
@@ -216,8 +222,7 @@
         "failed": "NFC-Scan fehlgeschlagen — bitte erneut versuchen.",
         "done": "Sensor gescannt",
         "cancel": "Scan abbrechen",
-        "connecting": "Verbinde mit Sensor…",
-        "connected": "Verbunden — empfange Glukose"
+        "connecting": "Verbinde mit Sensor…"
       }
     },
     "life": {
@@ -679,6 +684,14 @@
       "carb": {
         "_": "Mahlzeitenfaktor",
         "value": "1 E / # g"
+      },
+      "max": {
+        "_": "Maximaler Bolus",
+        "value": "max. # E"
+      },
+      "duration": {
+        "_": "Insulindauer",
+        "value": "# h"
       }
     },
     "basal": {
@@ -703,10 +716,10 @@
       "language": "sprache deutsch englisch flagge",
       "theme": "design darstellung hell dunkel farbe modus erscheinungsbild",
       "glucose": "glukose zucker einheit zielbereich grenzwerte alarm mmol mgdl",
-      "bolus": "bolus insulin korrektur kohlenhydrate faktor",
+      "bolus": "bolus insulin korrektur kohlenhydrate faktor maximum maximaler grenze dauer wirkdauer aktives",
       "basal": "basalrate basal profil kurve omnipod pod insulin stunde",
       "body": "körpermaße schrittlänge körpergröße größe bmi gewicht schritte distanz",
-      "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose ablauf halbzeit halbwertszeit sensor training",
+      "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose ablauf halbzeit halbwertszeit sensor training pod pumpe insulin restmenge",
       "silent": "stumm lautlos ruhe stören nicht dnd",
       "developer": "entwickler debug logs erweitert protokoll",
       "prediction": "vorhersage prognose forecast zukunft trend verlauf minuten",
@@ -715,20 +728,37 @@
     "prediction": {
       "_": "Vorhersage",
       "description": "Blutzuckervorhersage anzeigen",
+      "band": "Unsicherheitsbereich anzeigen",
       "min_30": "30 Minuten",
       "min_60": "60 Minuten"
+    },
+    "pod_expiry": {
+      "description": "Warnen, wenn der Pod bald abläuft",
+      "threshold": {
+        "_": "Vorlaufzeit vor Pod-Ablauf",
+        "value": "# h vorher"
+      }
+    },
+    "pod_insulin": {
+      "description": "Warnen, wenn der Pod wenig Insulin hat",
+      "threshold": {
+        "_": "Restmenge im Pod",
+        "value": "unter # E"
+      }
     }
   },
   "injection": {
     "title": "Bolusrechner",
     "carbs": "Kohlenhydrate",
     "glucose": "Aktueller Glukosewert",
+    "active_insulin": "Aktives Insulin: # E bereits abgezogen",
     "carbs_tab": "Kohlenhydrate",
     "products_tab": "Produkte",
     "bolus": {
       "_": "Bolus",
       "value": "# E",
-      "unit": "E"
+      "unit": "E",
+      "exceeds_max": "Über dem Maximum von # E"
     },
     "products": {
       "add": "Produkt hinzufügen",

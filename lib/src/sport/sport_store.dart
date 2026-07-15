@@ -183,13 +183,20 @@ class SportStore {
   /// Apply every decision buffered by [recordTrainingDecision], then clear the
   /// file. Runs in the service isolate on the watchdog tick; no-op (one cheap
   /// existence check) when nothing is pending.
-  Future<void> applyTrainingDecisions() async {
+  ///
+  /// Returns whether a CONFIRM was applied — i.e. whether the confirmed list
+  /// changed and the caller must push it to the account. This store only
+  /// persists; a confirm that never reaches the backend is silently wiped by the
+  /// next pull (which replaces the local list with the server's). A reject only
+  /// drops a pending entry, and pending is device-local — nothing to push.
+  Future<bool> applyTrainingDecisions() async {
     final file = _decisionFile;
     if (!await file.exists()) {
-      return;
+      return false;
     }
     final lines = await file.readAsLines();
     await file.delete();
+    var confirmedAny = false;
     for (final line in lines) {
       final parts = line.split(':');
       if (parts.length != 2) {
@@ -197,10 +204,12 @@ class SportStore {
       }
       if (parts[0] == 'confirm') {
         await confirmPendingTraining(parts[1]);
+        confirmedAny = true;
       } else if (parts[0] == 'reject') {
         await rejectPendingTraining(parts[1]);
       }
     }
+    return confirmedAny;
   }
 
   Future<List<DailyActivity>> loadActivityArchive() async =>

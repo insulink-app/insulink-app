@@ -87,6 +87,10 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       await store.saveResolvedKey(key);
       await store.saveLibreMac(key, result.bleMac);
       await store.saveLibrePin(key, result.blePin);
+      await store.clearLibreAuthKey(key);
+      _append(
+        'Libre 3 activated: ${result.bleMac} pin ${store.librePinHex(key)}',
+      );
       await store.saveIdentity(serial: '', pairingCode: '');
       code.text = '';
       onActivated?.call();
@@ -337,8 +341,13 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   List<PredictionPoint>? get predictionCurve => _prediction?.points;
   DateTime? get predictionBase => _prediction?.base;
 
-  /// Fetch a fresh forecast and update the overlay. Fire-and-forget. Called on
-  /// every new reading and when the setting changes.
+  /// Fetch a fresh forecast and update the overlay. Fire-and-forget.
+  ///
+  /// Only for the events the service isolate cannot see: opening the app, and
+  /// the user changing the setting (both want an answer NOW rather than at the
+  /// next reading). The steady 5-minutely refresh belongs to the service isolate
+  /// — see `CgmTaskHandler._refreshPrediction` — because it is the only one alive
+  /// while the phone sleeps; this class then just adopts its cache.
   ///
   /// A disabled setting clears the overlay (and its cache); a FAILED request
   /// keeps the last good forecast, so a transient network error doesn't blank
@@ -642,11 +651,26 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
           _byTime[secs] = mgdl;
         }
         notifyListeners();
-        // A new reading means the backend has fresh data to forecast from.
-        unawaited(refreshPrediction());
+      // The service isolate fetches the forecast (it is the only one alive while
+      // the phone sleeps) and pings once the cache holds a fresh one — so the UI
+      // only mirrors it, exactly as it mirrors the store.
+      case 'prediction':
+        unawaited(_adoptCachedPrediction());
       case 'update':
         _reloadFromStore();
     }
+  }
+
+  /// Show whatever forecast the service isolate last cached. Unlike
+  /// [refreshPrediction] this never hits the network — a null cache means the
+  /// setting is off or nothing has been fetched yet, and clearing is correct.
+  Future<void> _adoptCachedPrediction() async {
+    final cached = await _predictionCache.load();
+    if (_disposed) {
+      return;
+    }
+    _prediction = cached;
+    notifyListeners();
   }
 
   /// Re-read everything the service persisted (history, info, sensor start).
@@ -813,12 +837,18 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Adopt the sensor the backend has on file (offered on a fresh install when
-  /// no sensor is set up locally): restore its identity into the store so the
-  /// pipeline can reconnect without re-pairing, then start reading.
-  Future<void> restoreSensor(SensorRestore restore) async {
+  /// no sensor is set up locally): restore its identity into the store, then
+  /// start reading.
+  ///
+  /// The G7 reconnects straight from the restored identity. A Libre 3 CANNOT:
+  /// its BLE PIN is reissued on every NFC scan and the sensor honours only the
+  /// latest one, so this restores the recognisable parts (type, MAC, session
+  /// start) and does NOT start the service — the caller sends the user through
+  /// [activateLibre3] for a fresh PIN. Returns whether reading has started.
+  Future<bool> restoreSensor(SensorRestore restore) async {
     final store = _store;
     if (store == null) {
-      return;
+      return false;
     }
     await store.saveSensorType(restore.sensorType);
     await store.saveIdentity(
@@ -835,7 +865,11 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     code.text = restore.pairingCode ?? '';
     _restoreFromCache(store);
     notifyListeners();
+    if (restore.sensorType == SensorType.abbottLibre3) {
+      return false;
+    }
     await start();
+    return true;
   }
 
   Future<void> _restoreG7Identity(CgmStore store, SensorRestore restore) async {
@@ -858,15 +892,6 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   ) async {
     if (restore.libreMac != null) {
       await store.saveLibreMac(restore.resolvedKey, restore.libreMac!);
-    }
-    if (restore.librePinHex != null) {
-      await store.saveLibrePinHex(restore.resolvedKey, restore.librePinHex!);
-    }
-    if (restore.libreAuthKeyHex != null) {
-      await store.saveLibreAuthKeyHex(
-        restore.resolvedKey,
-        restore.libreAuthKeyHex!,
-      );
     }
     final start = restore.sensorStartMs;
     if (start != null) {

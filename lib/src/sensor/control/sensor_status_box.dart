@@ -104,9 +104,7 @@ class SensorStatusBox extends StatelessWidget {
 
   Widget _stateIcon(Color accent) {
     return Icon(
-      _connected
-          ? PhosphorIconsRegular.broadcast
-          : PhosphorIconsRegular.drop,
+      _connected ? PhosphorIconsRegular.broadcast : PhosphorIconsRegular.drop,
       size: 32,
       color: accent,
     );

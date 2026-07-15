@@ -135,17 +135,13 @@ class CgmStore {
   Future<void> saveLibreAuthKey(String key, Uint8List authKey) =>
       _set(_kLibreAuth(key), _encodeHex(authKey));
 
-  // Hex passthroughs for the backend sensor blob (SensorSync) — the values are
-  // already stored as hex, so avoid a decode/re-encode round trip.
+  Future<void> clearLibreAuthKey(String key) => _remove(_kLibreAuth(key));
+
+  /// The PIN in its stored hex form, for the activation log line that makes a
+  /// rotated PIN visible (see docs/LIBRE3.md § "The BLE PIN rotates"). Neither
+  /// the PIN nor the kAuth leaves the device: both are dead the next time anyone
+  /// scans the sensor, so [SensorSync] does not ship them.
   String? librePinHex(String key) => _cache[_kLibrePin(key)];
-
-  Future<void> saveLibrePinHex(String key, String hex) =>
-      _set(_kLibrePin(key), hex);
-
-  String? libreAuthKeyHex(String key) => _cache[_kLibreAuth(key)];
-
-  Future<void> saveLibreAuthKeyHex(String key, String hex) =>
-      _set(_kLibreAuth(key), hex);
 
   static String _encodeHex(Uint8List bytes) =>
       bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
@@ -188,6 +184,11 @@ class CgmStore {
 
   /// Forget a sensor entirely: drop its session key + all cached data, plus the
   /// resolved key and identity, so the app no longer auto-reconnects to it.
+  ///
+  /// Keeps [sensorType]: it is the user's CHOICE of sensor, not part of the
+  /// pairing. Whoever wore a Libre 3 pairs another Libre 3 next, so the pairing
+  /// form should reopen on the type they last picked instead of snapping back to
+  /// the G7 default.
   Future<void> clearSensor(String key) async {
     for (final sensorKey in [
       _kKey(key),
@@ -207,7 +208,6 @@ class CgmStore {
     await _remove(_kResolved);
     await _remove(_kSerial);
     await _remove(_kCode);
-    await _remove(_kSensorType);
   }
 
   // The BLE remoteId of the physical sensor paired for this serial. Lets the

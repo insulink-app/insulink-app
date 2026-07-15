@@ -33,6 +33,19 @@ class NutritionState extends ChangeNotifier {
     );
   }
 
+  /// Re-read the store into THIS instance, so a pull that replaced the stored
+  /// drinks/goals reaches the UI. See [MealState.reload].
+  Future<void> reload() async {
+    final fresh = await NutritionState.load();
+    _entries
+      ..clear()
+      ..addAll(fresh._entries);
+    _goalMl = fresh._goalMl;
+    _carbsGoalG = fresh._carbsGoalG;
+    _proteinGoalG = fresh._proteinGoalG;
+    notifyListeners();
+  }
+
   /// Daily goal in litres (stored as ml).
   double get goalLitres => _goalMl / 1000;
 

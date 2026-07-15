@@ -4,7 +4,9 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../injection/active_insulin.dart';
 import '../../localization/service_strings.dart';
+import '../../nutrition/meal/meal_store.dart';
 import '../../profile/bolus/profile_bolus_state.dart';
 import '../../profile/notifications/notification_setting.dart';
 import '../../profile/notifications/profile_alarm_sound_state.dart';
@@ -59,6 +61,40 @@ enum G7AlarmLevel { none, lowWarning, lowUrgent, highWarning, highUrgent }
 /// Predictive advisory zone: glucose is currently in range but forecast to
 /// cross the low or high threshold within the advisory horizon.
 enum AdvisoryLevel { none, low, high }
+
+/// What the advisory expects over its horizon. [low]/[high] are the EXPECTED
+/// extremes — the forecast curve's mean points, blended with the trend line.
+/// [bandLow] is the same low extreme but taking each point's conformal q10 bound
+/// where the model served one.
+///
+/// The two exist side by side because the low pre-warning and everything after
+/// it want different questions answered. Whether to warn at all is "could this
+/// go low?", and the mean answers it badly: an L2 point forecast is the
+/// conditional mean, so it is correctly shrunk toward the middle and barely ever
+/// dips below the low line (the backend measures 1.9% recall of <70 at 60 min,
+/// against 47.5% at q10 — see its `BAND_QUANTILES`). So [bandLow] drives the low
+/// trigger AND its re-arm: both sides of that hysteresis must read the same
+/// signal, or a band trigger that re-arms on the mean nags every reading.
+///
+/// Sizing the rescue carbs and naming a number in the notification are the other
+/// question — "what will most likely happen?" — and there the pessimistic tail
+/// would over-treat a low that may never materialise (the very thing
+/// [_rescueTargetMarginMgdl] exists to avoid). Those keep reading [low].
+///
+/// The high side deliberately has no band equivalent, even though the mean misses
+/// highs just as badly (4.3% recall of >180, against 50.2% at q90). Two reasons,
+/// neither about the dose itself — that is now just the current-value correction
+/// (see [_advisoryBody]), so a false high advisory only ever suggests what the
+/// calculator would suggest anyway.
+///
+/// The reason is noise: a rise past `high` after a meal is normal and expected,
+/// so a q90 trigger would fire at nearly every meal, and an advisory nobody reads
+/// protects nobody. Stacking used to be a second reason; it no longer is, since
+/// [ProfileBolusState.suggestedBolus] now subtracts the insulin-on-board
+/// [ActiveInsulin] reads off the meal log.
+///
+/// Sensitivity is what the low side needs; the high side needs specificity.
+typedef AdvisoryForecast = ({double low, double high, double bandLow});
 
 /// Watches live EGV readings and raises local notifications when glucose
 /// crosses into a low/high zone. Runs inside the foreground-service isolate
@@ -259,10 +295,10 @@ class G7AlarmManager {
     final glucose = await ProfileGlucoseState.load();
     final forecast = await _forecast(mgdl, trendPerMin);
     _rearmAdvisories(forecast, glucose);
-    final level = advisoryLevelFor(mgdl, forecast, (
-      low: glucose.low,
-      high: glucose.high,
-    ));
+    final level = advisoryLevelFor(mgdl, (
+      low: forecast.bandLow,
+      high: forecast.high,
+    ), (low: glucose.low, high: glucose.high));
     if (level == AdvisoryLevel.none) {
       return;
     }
@@ -295,11 +331,17 @@ class G7AlarmManager {
   /// re-fire the same episode on the very next reading. Waiting for the forecast
   /// itself to recover is the real "episode over" signal, so a projection that
   /// keeps threatening (or wobbles around the threshold) can't nag repeatedly.
+  ///
+  /// Each side re-arms on the SAME quantity that triggers it — the low on
+  /// [AdvisoryForecast.bandLow], the high on [AdvisoryForecast.high]. Mixing them
+  /// would break the hysteresis: a low that triggers on the band but re-arms on
+  /// the (higher) mean would re-arm while the band still threatens, and fire again
+  /// on the very next reading.
   void _rearmAdvisories(
-    ({double low, double high}) forecast,
+    AdvisoryForecast forecast,
     ProfileGlucoseState glucose,
   ) {
-    if (forecast.low >= glucose.low + _advisoryRearmMarginMgdl) {
+    if (forecast.bandLow >= glucose.low + _advisoryRearmMarginMgdl) {
       _lowAdvisoryArmed = true;
     }
     if (forecast.high <= glucose.high - _advisoryRearmMarginMgdl) {
@@ -331,13 +373,16 @@ class G7AlarmManager {
   /// Forecast the glucose extremes [_advisoryHorizonMin] min ahead. The trend
   /// line is the always-available base; a fresh cached prediction curve nudges
   /// the extremes toward whichever direction warns earlier.
-  Future<({double low, double high})> _forecast(
-    int mgdl,
-    double trendPerMin,
-  ) async {
+  ///
+  /// [AdvisoryForecast.low]/[AdvisoryForecast.high] are the EXPECTED extremes
+  /// (the curve's mean points); [AdvisoryForecast.bandLow] additionally lets each
+  /// point contribute its q10 band bound instead of its mean, and is what the low
+  /// pre-warning triggers on — see the typedef for why only the low side.
+  Future<AdvisoryForecast> _forecast(int mgdl, double trendPerMin) async {
     final linear = mgdl + trendPerMin * _advisoryHorizonMin;
     var low = linear;
     var high = linear;
+    var bandLow = linear;
     for (final point
         in await _freshPredictionCurve() ?? const <PredictionPoint>[]) {
       if (point.offsetMin <= 0 || point.offsetMin > _advisoryHorizonMin) {
@@ -345,8 +390,9 @@ class G7AlarmManager {
       }
       low = math.min(low, point.mgdl.toDouble());
       high = math.max(high, point.mgdl.toDouble());
+      bandLow = math.min(bandLow, (point.lo ?? point.mgdl).toDouble());
     }
-    return (low: low, high: high);
+    return (low: low, high: high, bandLow: bandLow);
   }
 
   /// The cached prediction points, but only when predictions are enabled and the
@@ -372,11 +418,25 @@ class G7AlarmManager {
   /// The advisory body: the localized suggestion plus a concrete countermeasure
   /// derived from the user's bolus factors and the midpoint of their target
   /// range. Low → grams of fast carbs (with a tablet count); high → insulin units.
+  ///
+  /// The two sides answer different questions on purpose.
+  ///
+  /// Carbs are a RESCUE, so they size off where glucose is heading
+  /// ([AdvisoryForecast.low], the expected dip — never the band, whose tail would
+  /// over-treat a low that may not materialise).
+  ///
+  /// Insulin is a CORRECTION, so it sizes off [mgdl] — where glucose is NOW — and
+  /// is therefore exactly the dose [InjectionPage] would suggest for the same
+  /// reading with no carbs entered. Both go through [ProfileBolusState.suggestedBolus]
+  /// against [ProfileGlucoseState.targetMid], so the two screens cannot disagree.
+  /// Dosing off the predicted PEAK (what this used to do) always exceeded the
+  /// calculator, because the advisory only fires while the peak is still ahead of
+  /// the current value.
   Future<String> _advisoryBody(
     AdvisoryLevel level,
     int mgdl,
     double trendPerMin,
-    ({double low, double high}) forecast,
+    AdvisoryForecast forecast,
     ProfileGlucoseState glucose,
   ) async {
     final line = await _forecastLine(
@@ -399,17 +459,27 @@ class G7AlarmManager {
       ]);
       return '$line\n$suggestion';
     }
-    final target = ((glucose.targetLow + glucose.targetHigh) / 2).round();
     final units = bolus.suggestedBolus(
       carbs: 0,
-      glucoseMgdl: forecast.high.round(),
-      targetMgdl: target,
+      glucoseMgdl: mgdl,
+      targetMgdl: glucose.targetMid,
+      iobUnits: await _activeInsulin(bolus),
     );
     final suggestion = await _strings.format(
       'alarm.advisory.high_body',
       units.toStringAsFixed(1),
     );
     return '$line\n$suggestion';
+  }
+
+  /// Units still active from earlier boluses, straight from the meal log's store.
+  ///
+  /// This isolate has no providers, so it cannot reach `MealState` the way the
+  /// injection sheet does — [MealStore] is the shared bottom layer both sit on,
+  /// and reading it fresh per advisory is what keeps the two suggestions equal.
+  Future<double> _activeInsulin(ProfileBolusState bolus) async {
+    final meals = await const MealStore().loadMeals();
+    return ActiveInsulin(bolus.insulinDuration).units(meals);
   }
 
   /// The "now → forecast" status line prepended to the advisory body: the
@@ -419,7 +489,7 @@ class G7AlarmManager {
     AdvisoryLevel level,
     int mgdl,
     double trendPerMin,
-    ({double low, double high}) forecast,
+    AdvisoryForecast forecast,
     GlucoseUnit unit,
   ) {
     final predicted = level == AdvisoryLevel.low ? forecast.low : forecast.high;

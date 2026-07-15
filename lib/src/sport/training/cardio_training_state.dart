@@ -73,7 +73,7 @@ class CardioTrainingState extends ChangeNotifier {
     // right now (this isolate has secure storage + dart:io), so a decision takes
     // effect the moment the user opens the tab — not only on the service's next
     // 30 s watchdog tick.
-    await _store.applyTrainingDecisions();
+    final confirmed = await _store.applyTrainingDecisions();
     _pending = await _store.loadPendingTrainings();
     final trainings = await _store.loadTrainings()
       ..sort((first, second) => first.startMs.compareTo(second.startMs));
@@ -81,6 +81,11 @@ class CardioTrainingState extends ChangeNotifier {
       ..clear()
       ..addAll(trainings);
     notifyListeners();
+    // A notification-confirmed training only exists locally until this fires —
+    // the next pull would replace it with the account's list, which never saw it.
+    if (confirmed) {
+      SportSync().pushTrainings();
+    }
   }
 
   /// The live training being recorded, or null when none is running.

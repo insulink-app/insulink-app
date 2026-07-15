@@ -112,9 +112,27 @@ class WeightCurrentCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _stat(context, scheme, PhosphorIconsRegular.arrowDown, 'sport.weight.min', min),
-        _stat(context, scheme, PhosphorIconsRegular.chartLine, 'sport.weight.avg', avg),
-        _stat(context, scheme, PhosphorIconsRegular.arrowUp, 'sport.weight.max', max),
+        _stat(
+          context,
+          scheme,
+          PhosphorIconsRegular.arrowDown,
+          'sport.weight.min',
+          min,
+        ),
+        _stat(
+          context,
+          scheme,
+          PhosphorIconsRegular.chartLine,
+          'sport.weight.avg',
+          avg,
+        ),
+        _stat(
+          context,
+          scheme,
+          PhosphorIconsRegular.arrowUp,
+          'sport.weight.max',
+          max,
+        ),
       ],
     );
   }

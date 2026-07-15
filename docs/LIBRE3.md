@@ -85,6 +85,35 @@ with. A *fresh* sensor is activated under whatever account number is sent; to
 adopt a sensor Abbott's app already activated, pass that LibreView account's
 number (Juggluco: *Settings → Exchange data → LibreView → Get account ID*).
 
+<a name="pin-rotation"></a>
+### The BLE PIN rotates on every NFC scan (measured — don't try to persist it)
+
+**Each NFC scan of the same sensor returns a NEW BLE PIN, and the sensor honours
+only the most recently issued one.** Measured on a real sensor (`…97:33`): a PIN
+restored from our backend was `aa6064bd`, an immediate re-scan of that same
+sensor returned `7e725938`.
+
+The symptom of using a stale PIN is **not** an error code — the whole handshake
+runs perfectly (app cert 162 B → patch cert 140 B → ephemeral 65 B → challenge
+23 B), and then the sensor **terminates the link** the moment it gets our
+`enc(r1‖r2‖pin)` (`status=19 REMOTE_USER_TERMINATED`, surfacing as a downstream
+`writeCharacteristic … Device is disconnected`). It looks exactly like a crypto
+bug in the blob. It isn't.
+
+Consequences, both implemented:
+- **A Libre 3 cannot be restored from stored credentials** — not from our
+  backend, not from a device backup. Juggluco has the same constraint: every new
+  device needs its own scan. `SensorSync._libreData` therefore ships only the MAC
+  + session info (no PIN, no kAuth — a stale secret on the server buys nothing),
+  and the restore offer (`sensor_restore_offer.dart`) sends the user straight
+  into the NFC scan sheet (`Libre3ScanFlow`).
+- The cached **kAuth dies with the PIN it was derived from**, so a re-scan clears
+  it (`CgmController.activateLibre3`), and a rejected pre-authorised handshake
+  falls back once to the full cert exchange (`Libre3Connection._handshake`).
+- A missing PIN now fails loudly (`Libre3Transport._respondToChallenge`); it used
+  to be sent as four zero bytes, which the sensor rejects identically to a stale
+  one — an indistinguishable failure that cost real debugging time.
+
 <a name="manufacturer-byte"></a>
 > ⚠️ Manufacturer byte: Android reports the ISO 15693 UID LSB-first (the `0xE0`
 > tag byte LAST), so the IC manufacturer code is `uid[6]` — the byte before

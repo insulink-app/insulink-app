@@ -20,6 +20,17 @@ class MealState extends ChangeNotifier {
     return MealState(store, await store.loadMeals());
   }
 
+  /// Re-read the store into THIS instance, so a pull that replaced the stored
+  /// meals reaches the UI. Reuses [load] and adopts its list rather than reading
+  /// the store twice; the provider keeps this instance, so listeners just rebuild.
+  Future<void> reload() async {
+    final fresh = await MealState.load();
+    _meals
+      ..clear()
+      ..addAll(fresh._meals);
+    notifyListeners();
+  }
+
   /// Meals newest first.
   List<Meal> get meals => _meals.reversed.toList();
 

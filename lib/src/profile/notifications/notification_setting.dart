@@ -32,6 +32,18 @@ class NotificationSetting {
     'profile.advisory.description',
   );
 
+  /// Pod lifetime/reservoir warnings. Their thresholds are the matching
+  /// [NotificationThreshold]s. Nothing fires on them yet — no pod is connected;
+  /// the pump feature reads both once it is.
+  static const podExpiry = NotificationSetting(
+    'pod_expiry_alert',
+    'profile.pod_expiry.description',
+  );
+  static const podInsulin = NotificationSetting(
+    'pod_insulin_alert',
+    'profile.pod_insulin.description',
+  );
+
   Future<bool> load() async =>
       (await const FlutterSecureStorage().read(key: storageKey)) != 'false';
 

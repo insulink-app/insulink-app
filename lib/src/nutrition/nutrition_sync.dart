@@ -21,6 +21,10 @@ class NutritionSync {
   static const _productStore = FoodStore();
   static final Map<String, Timer> _timers = {};
 
+  /// Collections whose local change has not reached the backend yet — the
+  /// debounce is still armed, or its POST is in flight. See [localWins].
+  static final Set<String> _unsent = {};
+
   // ---- push (debounced per collection) ----
 
   void pushMeals() => _debounce('meals', _sendMeals);
@@ -29,8 +33,24 @@ class NutritionSync {
 
   void _debounce(String key, Future<void> Function() send) {
     _timers[key]?.cancel();
-    _timers[key] = Timer(const Duration(seconds: 3), send);
+    _unsent.add(key);
+    _timers[key] = Timer(const Duration(seconds: 3), () async {
+      try {
+        await send();
+      } finally {
+        _unsent.remove(key);
+      }
+    });
   }
+
+  /// Whether the local copy of [collection] must win over a pull response.
+  ///
+  /// Mirrors `SportSync.localWins`, and matters more here: [pull] now runs on
+  /// every entry to the nutrition tab, so a meal logged seconds ago is regularly
+  /// still queued (3 s debounce) when the account's answer — which never saw it —
+  /// comes back to replace the local list.
+  @visibleForTesting
+  bool localWins(String collection) => _unsent.contains(collection);
 
   /// Cancels any armed pushes — for tests, so a mutation's debounce timer does
   /// not outlive the test as a pending timer.
@@ -40,6 +60,7 @@ class NutritionSync {
       timer.cancel();
     }
     _timers.clear();
+    _unsent.clear();
   }
 
   Future<void> _post(String url, Map<String, Object> body) async {
@@ -83,13 +104,18 @@ class NutritionSync {
     ]);
   }
 
+  /// GETs [url] and returns its [key] list, or null when there is nothing safe to
+  /// adopt — an unusable response, or one the server answered without a local
+  /// change it hasn't been told about yet ([localWins] on [collection]). Every
+  /// caller already skips its overwrite on null, so the guard lives here.
   Future<List<dynamic>?> _fetch(
     BuildContext? context,
     String url,
     String key,
+    String collection,
   ) async {
     final response = await Request.get(url: url).send(context);
-    if (response == null) {
+    if (response == null || localWins(collection)) {
       return null;
     }
     final body = jsonDecode(response.body);
@@ -100,7 +126,12 @@ class NutritionSync {
   }
 
   Future<void> _pullMeals(BuildContext? context) async {
-    final list = await _fetch(context, '/nutrition/meals/find/', 'meals');
+    final list = await _fetch(
+      context,
+      '/nutrition/meals/find/',
+      'meals',
+      'meals',
+    );
     if (list == null) {
       return;
     }
@@ -110,7 +141,12 @@ class NutritionSync {
   }
 
   Future<void> _pullDrinks(BuildContext? context) async {
-    final list = await _fetch(context, '/nutrition/drinks/find/', 'drinks');
+    final list = await _fetch(
+      context,
+      '/nutrition/drinks/find/',
+      'drinks',
+      'drinks',
+    );
     if (list == null) {
       return;
     }
@@ -120,7 +156,12 @@ class NutritionSync {
   }
 
   Future<void> _pullProducts(BuildContext? context) async {
-    final list = await _fetch(context, '/nutrition/products/find/', 'products');
+    final list = await _fetch(
+      context,
+      '/nutrition/products/find/',
+      'products',
+      'products',
+    );
     if (list == null) {
       return;
     }

@@ -23,6 +23,25 @@ void main() {
     });
   });
 
+  group('ProfileGlucoseState.targetMid', () {
+    test('is the middle of the target range', () {
+      expect(state(GlucoseUnit.mgdl).targetMid, 125);
+    });
+
+    test('rounds an odd span to a whole mg/dL', () {
+      final glucose = ProfileGlucoseState(
+        unit: GlucoseUnit.mgdl,
+        targetLow: 70,
+        targetHigh: 175,
+        urgentLow: 55,
+        low: 70,
+        high: 180,
+        urgentHigh: 250,
+      );
+      expect(glucose.targetMid, 123);
+    });
+  });
+
   group('ProfileGlucoseState display', () {
     test('mg/dL passes values through unchanged', () {
       final glucose = state(GlucoseUnit.mgdl);

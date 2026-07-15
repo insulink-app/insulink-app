@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/track_bar.dart';
 
 /// A track (min..max) filled from the start up to [value].
-class BolusFillBar extends StatelessWidget {
-  const BolusFillBar({
+class SettingFillBar extends StatelessWidget {
+  const SettingFillBar({
     super.key,
     required this.value,
     required this.min,

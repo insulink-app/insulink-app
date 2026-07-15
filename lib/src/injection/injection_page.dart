@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
+import 'package:insulink/src/injection/active_insulin.dart';
 import 'package:insulink/src/injection/injection_confirm_page.dart';
 import 'package:insulink/src/injection/injection_products_tab.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -91,6 +92,17 @@ class _InjectionSheetState extends State<InjectionSheet> {
 
   int? get _glucose => int.tryParse(_glucoseController.text);
 
+  /// Units still active from earlier boluses, read from the meal log.
+  ///
+  /// Deliberately `read`, not `watch`: [_suggested] reaches this from the field
+  /// listeners, which run OUTSIDE build, where watch throws. Nothing is lost —
+  /// this sheet is the only way to log a dose, so the meal log cannot change
+  /// while it is open.
+  double get _activeInsulin {
+    final duration = context.read<ProfileBolusState>().insulinDuration;
+    return ActiveInsulin(duration).units(context.read<MealState>().meals);
+  }
+
   /// Suggested bolus in units, or null while glucose is empty/invalid.
   double? get _suggested {
     final glucose = _glucose;
@@ -99,17 +111,24 @@ class _InjectionSheetState extends State<InjectionSheet> {
     }
     final bolus = context.read<ProfileBolusState>();
     final glucoseState = context.read<ProfileGlucoseState>();
-    final target = ((glucoseState.targetLow + glucoseState.targetHigh) / 2)
-        .round();
     return bolus.suggestedBolus(
       carbs: _carbs,
       glucoseMgdl: glucose,
-      targetMgdl: target,
+      targetMgdl: glucoseState.targetMid,
+      iobUnits: _activeInsulin,
     );
   }
 
   double? get _bolus =>
       double.tryParse(_bolusController.text.replaceAll(',', '.'));
+
+  int get _maxBolus => context.read<ProfileBolusState>().maxBolus;
+
+  /// Whether the entered bolus is above the user's configured maximum. The
+  /// suggestion is deliberately NOT capped to it: silently rewriting the number
+  /// would hide the conflict, so an over-max value blocks the sheet instead and
+  /// the user lowers it themselves.
+  bool get _exceedsMax => (_bolus ?? 0) > _maxBolus;
 
   /// Recompute the suggestion; overwrite the bolus field only while the user
   /// hasn't edited it themselves.
@@ -130,7 +149,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
   Future<void> _next() async {
     final bolus = _bolus;
     final glucose = _glucose;
-    if (bolus == null || glucose == null) {
+    if (bolus == null || glucose == null || bolus > _maxBolus) {
       return;
     }
     final navigator = Navigator.of(context);
@@ -198,15 +217,25 @@ class _InjectionSheetState extends State<InjectionSheet> {
             suffix: 'mg/dL',
           ),
           const SizedBox(height: 24),
+          _activeInsulinNote(),
           _NumberField(
             controller: _bolusController,
             labelKey: 'injection.bolus',
             suffix: Locales.string(context, 'injection.bolus.unit'),
             highlight: true,
+            errorText: _exceedsMax
+                ? Locales.string(
+                    context,
+                    'injection.bolus.exceeds_max',
+                    params: ['$_maxBolus'],
+                  )
+                : null,
           ),
           const SizedBox(height: 24),
           FilledButton(
-            onPressed: (_bolus == null || _glucose == null) ? null : _next,
+            onPressed: (_bolus == null || _glucose == null || _exceedsMax)
+                ? null
+                : _next,
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(50),
             ),
@@ -217,6 +246,30 @@ class _InjectionSheetState extends State<InjectionSheet> {
     );
   }
 
+  /// States the active insulin the suggestion below was reduced by, so the number
+  /// in the bolus field is never an unexplained one. Hidden while nothing is
+  /// active: "0.0 U on board" carries no information and would only make the
+  /// sheet look busier.
+  Widget _activeInsulinNote() {
+    final units = _activeInsulin;
+    if (units <= 0) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        Locales.string(
+          context,
+          'injection.active_insulin',
+          params: [units.toStringAsFixed(1)],
+        ),
+        style: TextStyle(
+          fontSize: 13,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+      ),
+    );
+  }
 }
 
 class _NumberField extends StatelessWidget {
@@ -225,12 +278,14 @@ class _NumberField extends StatelessWidget {
     required this.labelKey,
     required this.suffix,
     this.highlight = false,
+    this.errorText,
   });
 
   final TextEditingController controller;
   final String labelKey;
   final String suffix;
   final bool highlight;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -249,6 +304,7 @@ class _NumberField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: Locales.string(context, labelKey),
         suffixText: suffix,
+        errorText: errorText,
         // Only the bolus field overrides the theme fill; leave the others to
         // inherit the app's default filled style (passing false would strip it).
         filled: highlight ? true : null,

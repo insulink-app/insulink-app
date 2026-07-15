@@ -1,31 +1,33 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../../cgm/cgm_controller.dart';
+import '../../base/grab_handle.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
-import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'libre3_scan_icons.dart';
 
 /// Which stage of the Libre 3 NFC flow the [Libre3NfcScanSheet] is showing.
 enum Libre3ScanPhase { scanning, success }
 
 /// Bottom sheet for the Libre 3 NFC flow. While [phase] is `scanning` it shows a
 /// pulsing ring animation prompting the user to hold the sensor to the phone;
-/// once activation succeeds the caller flips [phase] to `success` and the sheet
-/// confirms it, then tracks the background BLE connection live. Dismissed by the
-/// caller, the drag handle, the scrim, the cancel button ([onCancel]) or the
-/// done button ([onClose]).
+/// once activation succeeds the caller flips [phase] to `success`, the sheet
+/// confirms it with a check mark and then closes ITSELF ([onClose]) — the scan is
+/// done, so making the user acknowledge it would be a click that waits on
+/// nothing. What happens next (BLE scan → handshake → first reading) is the
+/// overview's job: it shows its searching state until a value lands. Also
+/// dismissed by the caller, the drag handle, the scrim or cancel ([onCancel]).
 class Libre3NfcScanSheet extends StatefulWidget {
   const Libre3NfcScanSheet({
     super.key,
     required this.phase,
-    required this.controller,
     required this.onCancel,
     required this.onClose,
   });
 
   final ValueListenable<Libre3ScanPhase> phase;
-  final CgmController controller;
   final VoidCallback onCancel;
   final VoidCallback onClose;
 
@@ -33,30 +35,52 @@ class Libre3NfcScanSheet extends StatefulWidget {
   State<Libre3NfcScanSheet> createState() => _Libre3NfcScanSheetState();
 }
 
-class _Libre3NfcScanSheetState extends State<Libre3NfcScanSheet>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1600),
-  )..repeat();
+class _Libre3NfcScanSheetState extends State<Libre3NfcScanSheet> {
+  /// How long the check mark stays up before the sheet closes itself: long
+  /// enough to read and register as confirmation (the animation alone runs
+  /// 340 ms), short enough that it never feels like waiting.
+  static const _successLinger = Duration(milliseconds: 2500);
+
+  Timer? _autoClose;
 
   @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    widget.phase.addListener(_onPhase);
+  }
+
+  void _onPhase() {
+    if (widget.phase.value == Libre3ScanPhase.success) {
+      _autoClose ??= Timer(_successLinger, widget.onClose);
+    }
   }
 
   @override
+  void dispose() {
+    widget.phase.removeListener(_onPhase);
+    _autoClose?.cancel();
+    super.dispose();
+  }
+
+  /// The sheet draws its own full-width surface (the route is transparent), like
+  /// [EditorSheet] does for the settings editors.
+  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: _scheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+      child: SafeArea(
+        top: false,
         child: ValueListenableBuilder<Libre3ScanPhase>(
           valueListenable: widget.phase,
           builder: (context, phase, _) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _grabber(),
+              const GrabHandle(),
               const SizedBox(height: 28),
               if (phase == Libre3ScanPhase.scanning)
                 ..._scanning()
@@ -71,77 +95,39 @@ class _Libre3NfcScanSheetState extends State<Libre3NfcScanSheet>
 
   ColorScheme get _scheme => Theme.of(context).colorScheme;
 
-  Widget _grabber() {
-    return Container(
-      width: 36,
-      height: 4,
-      decoration: BoxDecoration(
-        color: _scheme.onSurface.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(2),
-      ),
-    );
-  }
-
   List<Widget> _scanning() {
     return [
-      _pulsingIcon(),
-      const SizedBox(height: 32),
-      LocaleText(
-        'sensor.pair.libre.title',
-        style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
-      ),
+      const Libre3PulsingIcon(),
+      const SizedBox(height: 28),
+      _title('sensor.pair.libre.title'),
       const SizedBox(height: 8),
       _subtitle('sensor.pair.libre.scanning'),
-      const SizedBox(height: 28),
-      _button('sensor.pair.libre.cancel', widget.onCancel, filled: false),
+      const SizedBox(height: 30),
+      _cancelButton(),
     ];
   }
 
+  /// The confirmation the sheet closes on: check mark, what happened, and what
+  /// the app does next. No button — [_successLinger] closes it. The trailing gap
+  /// stands in for the cancel button, so the sheet keeps its height and the
+  /// content doesn't jump when the phase flips.
   List<Widget> _success() {
     return [
-      _checkIcon(),
-      const SizedBox(height: 32),
-      LocaleText(
-        'sensor.pair.libre.done',
-        style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 14),
-      AnimatedBuilder(
-        animation: widget.controller,
-        builder: (context, _) => _connectionStatus(),
-      ),
+      const Libre3CheckIcon(),
       const SizedBox(height: 28),
-      _button('alert.done', widget.onClose, filled: true),
+      _title('sensor.pair.libre.done'),
+      const SizedBox(height: 8),
+      _subtitle('sensor.pair.libre.connecting'),
+      const SizedBox(height: 30),
+      const SizedBox(height: 46),
     ];
   }
 
-  /// Live BLE status shown under the success confirmation: a spinner while the
-  /// background service is still handshaking, a green check once glucose streams.
-  Widget _connectionStatus() {
-    final live = widget.controller.latestIsLive;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (live)
-          Icon(PhosphorIconsRegular.checkCircle, size: 18, color: _scheme.primary)
-        else
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: _scheme.primary,
-            ),
-          ),
-        const SizedBox(width: 10),
-        LocaleText(
-          live ? 'sensor.pair.libre.connected' : 'sensor.pair.libre.connecting',
-          style: TextStyle(
-            fontSize: 14,
-            color: _scheme.onSurface.withValues(alpha: 0.7),
-          ),
-        ),
-      ],
+  Widget _title(String key) {
+    return LocaleText(
+      key,
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
     );
   }
 
@@ -156,97 +142,23 @@ class _Libre3NfcScanSheetState extends State<Libre3NfcScanSheet>
     );
   }
 
-  Widget _button(String key, VoidCallback onTap, {required bool filled}) {
-    final child = SizedBox(
-      width: double.infinity,
-      child: filled
-          ? FilledButton(
-              onPressed: onTap,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-              ),
-              child: Text(Locales.string(context, key)),
-            )
-          : TextButton(
-              onPressed: onTap,
-              style: TextButton.styleFrom(
-                foregroundColor: _scheme.onSurface.withValues(alpha: 0.75),
-                backgroundColor: _scheme.onSurface.withValues(alpha: 0.06),
-                minimumSize: const Size.fromHeight(46),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                textStyle: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              child: Text(Locales.string(context, key)),
-            ),
-    );
-    return child;
-  }
-
-  /// A check mark that scales+fades in once, marking the switch to success.
-  Widget _checkIcon() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 340),
-      curve: Curves.easeOutBack,
-      builder: (context, value, child) => Transform.scale(
-        scale: value,
-        child: Opacity(opacity: value.clamp(0.0, 1.0), child: child),
-      ),
-      child: Container(
-        width: 84,
-        height: 84,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: _scheme.primary.withValues(alpha: 0.14),
-        ),
-        child: Icon(PhosphorIconsRegular.check, size: 46, color: _scheme.primary),
-      ),
-    );
-  }
-
-  /// An NFC icon wrapped in two rings that expand and fade outward on a loop.
-  Widget _pulsingIcon() {
+  /// The only button left in the sheet: aborting the scan. The success view
+  /// needs none — it closes itself.
+  Widget _cancelButton() {
     return SizedBox(
-      width: 140,
-      height: 140,
-      child: AnimatedBuilder(
-        animation: _pulse,
-        builder: (context, child) {
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              _ring(_pulse.value),
-              _ring((_pulse.value + 0.5) % 1.0),
-              child!,
-            ],
-          );
-        },
-        child: Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: _scheme.primary.withValues(alpha: 0.12),
+      width: double.infinity,
+      child: TextButton(
+        onPressed: widget.onCancel,
+        style: TextButton.styleFrom(
+          foregroundColor: _scheme.onSurface.withValues(alpha: 0.75),
+          backgroundColor: _scheme.onSurface.withValues(alpha: 0.06),
+          minimumSize: const Size.fromHeight(46),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(PhosphorIconsRegular.scan, size: 38, color: _scheme.primary),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
-      ),
-    );
-  }
-
-  Widget _ring(double progress) {
-    final size = 72.0 + progress * 68.0;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: _scheme.primary.withValues(alpha: (1 - progress) * 0.4),
-          width: 2,
-        ),
+        child: Text(Locales.string(context, 'sensor.pair.libre.cancel')),
       ),
     );
   }

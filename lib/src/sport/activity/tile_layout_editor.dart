@@ -148,7 +148,10 @@ class _TileLayoutEditorState<T extends Enum>
             ),
             const SizedBox(width: 4),
             if (draggable)
-              const Icon(PhosphorIconsRegular.dotsSixVertical, color: Colors.grey)
+              const Icon(
+                PhosphorIconsRegular.dotsSixVertical,
+                color: Colors.grey,
+              )
             else
               const SizedBox(width: 24),
           ],

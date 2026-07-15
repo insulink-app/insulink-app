@@ -23,6 +23,10 @@ class SportSync {
   static const _activeWorkoutKey = 'active-workout';
   static final Map<String, Timer> _timers = {};
 
+  /// Collections whose local change has not reached the backend yet — the
+  /// debounce is still armed, or its POST is in flight. See [_localWins].
+  static final Set<String> _unsent = {};
+
   // ---- push (debounced per collection) ----
 
   void pushMeasurements() => _debounce('measurements', _sendMeasurements);
@@ -37,8 +41,28 @@ class SportSync {
     Duration delay = const Duration(seconds: 3),
   }) {
     _timers[key]?.cancel();
-    _timers[key] = Timer(delay, send);
+    _unsent.add(key);
+    _timers[key] = Timer(delay, () async {
+      try {
+        await send();
+      } finally {
+        _unsent.remove(key);
+      }
+    });
   }
+
+  /// Whether the local copy of [collection] must win over a pull response.
+  ///
+  /// True while a local change is still on its way up: the server answered
+  /// without it, and the pulls REPLACE the local collection, so adopting that
+  /// answer silently reverts the user's edit — exactly how a just-confirmed
+  /// training disappears again. The push that follows makes the server agree.
+  ///
+  /// ponytail: one flag, no per-item versions. A response that overtakes a push
+  /// which already completed still clobbers, but only on this device and only
+  /// until the next pull — the server has the change by then.
+  @visibleForTesting
+  bool localWins(String collection) => _unsent.contains(collection);
 
   /// Cancels any armed pushes — for tests, so a mutation's debounce timer does
   /// not outlive the test as a pending timer.
@@ -48,6 +72,7 @@ class SportSync {
       timer.cancel();
     }
     _timers.clear();
+    _unsent.clear();
   }
 
   Future<void> _post(String url, Map<String, Object> body) async {
@@ -139,6 +164,8 @@ class SportSync {
   /// device.
   Future<void> clearActiveWorkout() async {
     _timers.remove(_activeWorkoutKey)?.cancel();
+    // Cancelling skips the timer's `finally`, so drop the flag by hand.
+    _unsent.remove(_activeWorkoutKey);
     await _post('/sport/workout/active/clear/', {});
   }
 
@@ -191,13 +218,19 @@ class SportSync {
     await _store.saveActiveWorkout(snapshot);
   }
 
+  /// GETs [url] and returns its [key] list, or null when there is nothing safe to
+  /// adopt — an unusable response, or one the server answered without a local
+  /// change it hasn't been told about yet ([localWins] on [collection]). Every
+  /// caller already skips its overwrite on null, so the guard lives here rather
+  /// than in each of them.
   Future<List<dynamic>?> _fetch(
     BuildContext? context,
     String url,
     String key,
+    String collection,
   ) async {
     final response = await Request.get(url: url).send(context);
-    if (response == null) {
+    if (response == null || localWins(collection)) {
       return null;
     }
     final body = jsonDecode(response.body);
@@ -212,6 +245,7 @@ class SportSync {
       context,
       '/sport/measurements/find/',
       'entries',
+      'measurements',
     );
     if (entries == null) {
       return;
@@ -260,7 +294,12 @@ class SportSync {
   }
 
   Future<void> _pullExercises(BuildContext? context) async {
-    final list = await _fetch(context, '/sport/exercises/find/', 'exercises');
+    final list = await _fetch(
+      context,
+      '/sport/exercises/find/',
+      'exercises',
+      'exercises',
+    );
     if (list == null) {
       return;
     }
@@ -268,7 +307,12 @@ class SportSync {
   }
 
   Future<void> _pullRoutines(BuildContext? context) async {
-    final list = await _fetch(context, '/sport/routines/find/', 'routines');
+    final list = await _fetch(
+      context,
+      '/sport/routines/find/',
+      'routines',
+      'routines',
+    );
     if (list == null) {
       return;
     }
@@ -276,7 +320,12 @@ class SportSync {
   }
 
   Future<void> _pullWorkouts(BuildContext? context) async {
-    final list = await _fetch(context, '/sport/workouts/find/', 'workouts');
+    final list = await _fetch(
+      context,
+      '/sport/workouts/find/',
+      'workouts',
+      'workouts',
+    );
     if (list == null) {
       return;
     }
@@ -284,7 +333,12 @@ class SportSync {
   }
 
   Future<void> _pullTrainings(BuildContext? context) async {
-    final list = await _fetch(context, '/sport/trainings/find/', 'trainings');
+    final list = await _fetch(
+      context,
+      '/sport/trainings/find/',
+      'trainings',
+      'trainings',
+    );
     if (list == null) {
       return;
     }

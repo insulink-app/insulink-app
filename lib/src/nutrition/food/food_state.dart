@@ -18,6 +18,16 @@ class FoodState extends ChangeNotifier {
     return FoodState(store, await store.loadProducts());
   }
 
+  /// Re-read the store into THIS instance, so a pull that replaced the stored
+  /// products reaches the UI. See [MealState.reload].
+  Future<void> reload() async {
+    final fresh = await FoodState.load();
+    _products
+      ..clear()
+      ..addAll(fresh._products);
+    notifyListeners();
+  }
+
   /// Products newest first (most recently scanned on top).
   List<FoodProduct> get products => _products.reversed.toList();
 

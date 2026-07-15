@@ -86,7 +86,11 @@ class FoodSection extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(PhosphorIconsRegular.qrCode, size: 32, color: Colors.grey[500]),
+            Icon(
+              PhosphorIconsRegular.qrCode,
+              size: 32,
+              color: Colors.grey[500],
+            ),
             const SizedBox(height: 10),
             LocaleText(
               'nutrition.food.empty',

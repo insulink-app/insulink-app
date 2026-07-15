@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
-import 'libre3_nfc_scan_sheet.dart';
+import 'libre3_scan_flow.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Libre 3 pairing: an optional LibreView account id (for taking over a sensor
@@ -30,55 +30,13 @@ class _Libre3PairingFieldsState extends State<Libre3PairingFields> {
 
   Future<void> _activate() async {
     setState(() => _busy = true);
-    final navigator = Navigator.of(context);
-    final phase = ValueNotifier(Libre3ScanPhase.scanning);
-    var finished = false;
-    var cancelled = false;
-    showModalBottomSheet<void>(
-      context: context,
-      constraints: const BoxConstraints(maxWidth: double.infinity),
-      builder: (_) => Libre3NfcScanSheet(
-        phase: phase,
-        controller: widget.controller,
-        onCancel: navigator.maybePop,
-        onClose: navigator.maybePop,
-      ),
-    ).whenComplete(() {
-      if (!finished) {
-        cancelled = true;
-        widget.controller.cancelLibre3Scan();
-        if (mounted) {
-          setState(() => _busy = false);
-        }
-      }
-      phase.dispose();
-    });
-    final error = await widget.controller.activateLibre3(
+    await Libre3ScanFlow(
+      controller: widget.controller,
       accountId: _account.text.trim(),
-      // Flip to the success/connecting view as soon as the NFC read lands, not
-      // after the slower BLE service start.
-      onActivated: () {
-        if (!cancelled) {
-          phase.value = Libre3ScanPhase.success;
-        }
-      },
-    );
-    finished = true;
-    if (!mounted || cancelled) {
-      return;
+    ).run(context);
+    if (mounted) {
+      setState(() => _busy = false);
     }
-    setState(() => _busy = false);
-    if (error == null) {
-      return;
-    }
-    navigator.pop();
-    final message = Locales.string(context, 'sensor.pair.libre.failed');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$message\n$error'),
-        duration: const Duration(seconds: 6),
-      ),
-    );
   }
 
   @override

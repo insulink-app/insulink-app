@@ -8,6 +8,7 @@ import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
+import 'package:insulink/src/overview/overview_active_insulin.dart';
 import 'package:insulink/src/overview/overview_boxes.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
 import 'package:insulink/src/overview/overview_section.dart';
@@ -126,6 +127,7 @@ class _DataView extends StatelessWidget {
         const SizedBox(height: 28),
         OverviewSection(child: _ChartPreview(controller: controller)),
         const SizedBox(height: 16),
+        const OverviewActiveInsulin(),
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => appTab.value = kAnalysisTabIndex,

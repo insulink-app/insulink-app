@@ -148,7 +148,11 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
       title: Text(widget.routine.name),
       actions: [
         IconButton(
-          icon: Icon(_runner.isPaused ? PhosphorIconsFill.play : PhosphorIconsRegular.pause),
+          icon: Icon(
+            _runner.isPaused
+                ? PhosphorIconsFill.play
+                : PhosphorIconsRegular.pause,
+          ),
           tooltip: Locales.string(
             context,
             _runner.isPaused ? 'sport.workout.resume' : 'sport.workout.pause',

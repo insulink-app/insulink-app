@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:insulink/src/sensor/control/sensor_control_box.dart';
 import 'package:insulink/src/sensor/info/libre3_sensor_info.dart';
 import 'package:insulink/src/sensor/info/sensor_info.dart';
-import 'package:insulink/src/sensor/sensor_log_panel.dart';
 import 'package:provider/provider.dart';
 
 /// The sensor device page, shown inside the Devices tab (see [DevicesBody]).
@@ -90,41 +86,14 @@ class _SensorBodyContentState extends State<SensorBodyContent> {
     });
   }
 
-  /// Copy the whole log (chronological) to the clipboard and confirm via a
-  /// snackbar.
-  Future<void> _copyLog(BuildContext context, CgmController controller) async {
-    final message = Locales.string(
-      context,
-      'sensor.log_copied',
-      params: ['${controller.log.length}'],
-    );
-    await Clipboard.setData(ClipboardData(text: controller.logText));
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
-    final showLog = context.watch<ProfileDeveloperState>().enabled;
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureBox());
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: _pinnedScrollArea(controller)),
-            if (showLog)
-              SensorLogPanel(
-                controller: controller,
-                onCopy: () => _copyLog(context, controller),
-              ),
-          ],
-        ),
+        child: _pinnedScrollArea(controller),
       ),
     );
   }

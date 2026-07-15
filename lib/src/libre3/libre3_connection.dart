@@ -114,7 +114,6 @@ class Libre3Connection implements CgmConnection {
       _byTime.addAll(store.loadReadings(key));
     }
 
-    Libre3Transport? transport;
     try {
       _log('scanning for Libre 3 $mac…');
       final device = await Libre3Transport.scanForMac(mac, log: _log);
@@ -122,37 +121,72 @@ class Libre3Connection implements CgmConnection {
         _log('Libre 3 not found');
         return;
       }
-      transport = Libre3Transport(
-        device: device,
-        crypto: crypto,
-        blePin: store.librePin(key),
-      );
-      await transport.connectAndBind(log: _log);
-      final authKey = await transport.runHandshake(
-        cachedAuthKey: store.libreAuthKey(key),
-        log: _log,
-      );
-      await store.saveLibreAuthKey(key, authKey);
-
-      final boundTransport = transport;
-      _glucoseSub = boundTransport.glucoseStream.listen(_onGlucose);
-      _historicSub = boundTransport.historicStream.listen(_onHistoric);
-      _connSub = boundTransport.device.connectionState.listen((state) {
+      final transport = await _handshake(device, key);
+      if (transport == null) {
+        return;
+      }
+      _glucoseSub = transport.glucoseStream.listen(_onGlucose);
+      _historicSub = transport.historicStream.listen(_onHistoric);
+      _connSub = transport.device.connectionState.listen((state) {
         if (state == BluetoothConnectionState.disconnected) {
           _log('Libre 3 link dropped');
           onConnectionState?.call(false);
         }
       });
-
       _transport = transport;
-      transport = null;
       onConnectionState?.call(true);
       _log('Libre 3 connected — streaming');
     } catch (error) {
       _log('ERROR: $error');
-      await transport?.dispose();
     } finally {
       _connecting = false;
+    }
+  }
+
+  /// Handshake with the cached kAuth (fast, pre-authorised path) and fall back to
+  /// the full cert exchange once if the sensor rejects it — a cached key it no
+  /// longer honours (observed after a reinstall + backend restore: the sensor
+  /// terminates the link on our challenge response) would otherwise fail every
+  /// reconnect forever. The key is dropped so the next attempt goes full directly.
+  Future<Libre3Transport?> _handshake(
+    BluetoothDevice device,
+    String key,
+  ) async {
+    final cached = store.libreAuthKey(key);
+    final transport = await _tryHandshake(device, key, cached);
+    if (transport != null || cached == null) {
+      return transport;
+    }
+    _log('Libre 3 pre-authorised handshake failed — retrying full pairing');
+    await store.clearLibreAuthKey(key);
+    await Future<void>.delayed(const Duration(seconds: 2));
+    return _tryHandshake(device, key, null);
+  }
+
+  /// One connect + handshake attempt ([cachedAuthKey] null = full cert exchange).
+  /// Returns the live transport, or null after tearing a failed attempt down.
+  Future<Libre3Transport?> _tryHandshake(
+    BluetoothDevice device,
+    String key,
+    Uint8List? cachedAuthKey,
+  ) async {
+    final transport = Libre3Transport(
+      device: device,
+      crypto: crypto,
+      blePin: store.librePin(key),
+    );
+    try {
+      await transport.connectAndBind(log: _log);
+      final authKey = await transport.runHandshake(
+        cachedAuthKey: cachedAuthKey,
+        log: _log,
+      );
+      await store.saveLibreAuthKey(key, authKey);
+      return transport;
+    } catch (error) {
+      _log('ERROR: $error');
+      await transport.dispose();
+      return null;
     }
   }
 

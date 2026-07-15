@@ -58,6 +58,18 @@ class _AuthGateState extends State<AuthGate> {
     }
   }
 
+  /// Sign-in succeeded: reload the app from the preferences the sign-in pull
+  /// just wrote for this account.
+  ///
+  /// That reload is what advances this gate — it REMOUNTS the tree below it, so
+  /// a fresh [_AuthGateState] runs [_load] again and finds the token [AuthService]
+  /// just stored. This state is never told about the sign-in directly, so the
+  /// remount is load-bearing: a reload that merely rebuilds leaves the token
+  /// [initState] read (empty) in place and strands the user on the login page.
+  void _onAuthenticated() {
+    InsulinkApp.reload(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -70,7 +82,7 @@ class _AuthGateState extends State<AuthGate> {
       return PermissionOnboarding(onDone: _finishOnboarding);
     }
     if (!_authenticated) {
-      return AuthPage(onAuthenticated: () => InsulinkApp.reload(context));
+      return AuthPage(onAuthenticated: _onAuthenticated);
     }
     return const AppPage();
   }

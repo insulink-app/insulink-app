@@ -60,6 +60,11 @@ class ProfileGlucoseState extends ChangeNotifier {
   GlucoseUnit get unit => _unit;
   int get targetLow => _targetLow;
   int get targetHigh => _targetHigh;
+
+  /// The middle of the target range — what a correction dose aims at. Lives here
+  /// so the injection sheet and the predictive advisory cannot drift apart on
+  /// what "target" means; they must suggest the same units for the same glucose.
+  int get targetMid => ((_targetLow + _targetHigh) / 2).round();
   int get urgentLow => _urgentLow;
   int get low => _low;
   int get high => _high;

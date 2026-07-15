@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/profile/bolus/bolus_factor_editor_sheet.dart';
-import 'package:insulink/src/profile/bolus/bolus_fill_bar.dart';
+import 'package:insulink/src/base/setting_value_editor_sheet.dart';
+import 'package:insulink/src/base/setting_fill_bar.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// A tappable summary of one bolus factor — label, current value and a fill
-/// visualization. Opens [BolusFactorEditorSheet] on tap.
-class BolusFactorCard extends StatelessWidget {
-  const BolusFactorCard({
+/// A tappable summary of one integer setting — label, current value and a fill
+/// visualization. Opens [SettingValueEditorSheet] on tap. Shared by every
+/// numeric profile setting (bolus factors, pod thresholds, …).
+class SettingValueCard extends StatelessWidget {
+  const SettingValueCard({
     super.key,
     required this.labelKey,
     required this.valueKey,
@@ -28,7 +29,7 @@ class BolusFactorCard extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => BolusFactorEditorSheet(
+      builder: (_) => SettingValueEditorSheet(
         labelKey: labelKey,
         valueKey: valueKey,
         value: value,
@@ -61,7 +62,7 @@ class BolusFactorCard extends StatelessWidget {
             children: [
               _header(context, theme, accent),
               const SizedBox(height: 12),
-              BolusFillBar(value: value, min: min, max: max, color: accent),
+              SettingFillBar(value: value, min: min, max: max, color: accent),
             ],
           ),
         ),
