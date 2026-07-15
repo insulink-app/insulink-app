@@ -87,12 +87,11 @@ enum AdvisoryLevel { none, low, high }
 /// (see [_advisoryBody]), so a false high advisory only ever suggests what the
 /// calculator would suggest anyway.
 ///
-/// First, noise: a rise past `high` after a meal is normal and expected, so a q90
-/// trigger would fire at nearly every meal, and an advisory nobody reads protects
-/// nobody. Second, [ProfileBolusState.suggestedBolus] still does not subtract
-/// insulin-on-board (`ActiveInsulin` exists, but only feeds the overview readout),
-/// so repeated high advisories can still prompt stacked corrections. Revisit the
-/// q90 trigger once IOB reaches the calculator.
+/// The reason is noise: a rise past `high` after a meal is normal and expected,
+/// so a q90 trigger would fire at nearly every meal, and an advisory nobody reads
+/// protects nobody. Stacking used to be a second reason; it no longer is, since
+/// [ProfileBolusState.suggestedBolus] now subtracts the insulin-on-board
+/// [ActiveInsulin] reads off the meal log.
 ///
 /// Sensitivity is what the low side needs; the high side needs specificity.
 typedef AdvisoryForecast = ({double low, double high, double bandLow});
