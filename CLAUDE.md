@@ -347,10 +347,12 @@ The load-bearing parts (regressing any of these is a visible bug):
   On light both are the same indigo. Don't "simplify" them back into one, and
   don't lighten `primary` into the M3 light-primary/dark-onPrimary pattern — that
   was tried and reverted (it recolours every filled button).
-- **Three foreground tones**: `onSurface` = text + `IconButton`s; `context.accent`
-  = interactive affordances carrying the brand; `onSurfaceVariant` = anything that
-  only informs. **Never give decoration the accent** — that split is what makes a
-  control distinguishable from a glyph.
+- **Three foreground tones**: `onSurface` = text + **bare controls** (`IconButton`,
+  `TextButton` — no container of their own, so no tint); `context.accent` =
+  affordances that carry the brand and have a shape to carry it (outlined-button
+  labels, chevrons, tappable banners, summary-tile glyphs); `onSurfaceVariant` =
+  anything that only informs. **Never give decoration the accent** — that split is
+  what makes a control distinguishable from a glyph.
 - **Shape says affordance**: a neutral filled circle is a row's *identity* badge
   and is never pressable; a bare glyph is information (or a tile that is itself
   the control); a filled rounded-rect with a label is the button. Tinted square
@@ -364,6 +366,15 @@ The load-bearing parts (regressing any of these is a visible bug):
 - **A local `styleFrom` silently beats the theme.** Pass only genuinely local
   values (size, shape) — this is why one page's `OutlinedButton` ignored a global
   fix for a whole round.
+- **No `SnackBar`s** — all were removed and none come back. They cover content,
+  time out whether or not they were read, and appear away from what the user
+  touched. Pick per site: a **standing condition** (denied permission) goes into
+  the state and is rendered by the UI that shows state (`connectFailure`); a
+  **dead end that must be answered** gets the app's `Alert` (`alert/alert.dart`);
+  a plain **confirmation** goes ON the control that was pressed (icon/label →
+  checkmark for ~2 s, `Timer` cancelled in `dispose`). A success often needs no
+  message — the page behind it already changed. Safety-relevant failures (bolus)
+  are **sticky, never timed**. Details + all five replacements: `docs/DESIGN.md`.
 
 ### Alarms & notifications (`cgm/service/alarms.dart`)
 

@@ -28,6 +28,11 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
   final BiometricAuth _auth = BiometricAuth();
   bool _authenticating = false;
 
+  /// Set when the biometric check was declined or failed. Deliberately sticky:
+  /// this page gates a bolus, so "it didn't work" has to stay on screen next to
+  /// the retry until the user acts on it, rather than time out on its own.
+  bool _failed = false;
+
   /// Whether this bolus needs biometric confirmation. A zero bolus (carbs-only
   /// logging) is confirmed with a plain tap.
   bool get _needsAuth => widget.bolus > 0;
@@ -37,7 +42,10 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       Navigator.of(context).pop(true);
       return;
     }
-    setState(() => _authenticating = true);
+    setState(() {
+      _authenticating = true;
+      _failed = false;
+    });
     final ok = await _auth.confirm(
       Locales.string(context, 'injection.confirm.reason'),
     );
@@ -48,10 +56,10 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       Navigator.of(context).pop(true);
       return;
     }
-    setState(() => _authenticating = false);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: LocaleText('injection.confirm.failed')));
+    setState(() {
+      _authenticating = false;
+      _failed = true;
+    });
   }
 
   @override
@@ -72,7 +80,10 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
               const SizedBox(height: 24),
               _details(context),
               const Spacer(),
-              if (_needsAuth) _hint(context),
+              if (_failed)
+                _failure(context)
+              else if (_needsAuth)
+                _hint(context),
               const SizedBox(height: 14),
               FilledButton.icon(
                 onPressed: _authenticating ? null : _confirm,
@@ -202,6 +213,31 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Takes the hint's place once the biometric check fails, in the error colour:
+  /// same spot, directly above the button that is now a retry, so the reason the
+  /// bolus did not go through is impossible to miss and does not disappear.
+  Widget _failure(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(PhosphorIconsRegular.warning, size: 16, color: scheme.error),
+        const SizedBox(width: 6),
+        Flexible(
+          child: LocaleText(
+            'injection.confirm.failed',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: scheme.error,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

@@ -66,9 +66,15 @@ button into light-indigo-with-dark-text, which is not the product's look.
 
 | Tone | Token | Means |
 |---|---|---|
-| Full | `onSurface` (white / black) | Primary text, and `IconButton`s — controls at full strength |
-| Accent | `context.accent` | Interactive affordances that carry the brand: text/outlined-button labels, chevrons, tappable banners, summary-tile glyphs |
+| Full | `onSurface` (white / black) | Primary text, and **bare controls** — `IconButton` and `TextButton` — at full strength |
+| Accent | `context.accent` | Interactive affordances that carry the brand: outlined-button labels, chevrons, tappable banners, summary-tile glyphs |
 | Muted | `onSurfaceVariant` (`#A6AEBF` / `#5A6070`) | Anything that only informs: glyphs beside a statistic, secondary labels, units |
+
+A control **without a container of its own** (`IconButton`, `TextButton`) takes
+the Full tone, not the accent: tinting it made routine actions shout, and the
+light accent read as washed-out as a label. A control that *has* a container
+(`OutlinedButton`'s rim, a tinted card) can carry the accent, because the accent
+then belongs to a shape rather than floating in the text.
 
 The load-bearing half is **muted vs. everything else**. Before this split, a
 decorative glyph and a control looked identical, and users could not tell what
@@ -137,6 +143,45 @@ every card.
   `nutritionTileIcon`, which are `Bold`. Those glyphs are drawn bare with no badge
   behind them, where a thin stroke washes out. Weight, not colour, is the lever
   for "make it clearer without making it louder".
+
+## Notices: no snackbars
+
+**Do not add a `SnackBar`.** They were all removed (2026-07-15) and none should
+come back. A snackbar is one gesture for five different situations: it covers the
+content, it times out whether or not it was read, and it appears far from whatever
+the user just touched.
+
+Replacing them is not a search-and-replace — each site gets the vessel its own
+message needs. Three questions decide it:
+
+1. **Is it an event, or a standing condition?** A denied permission or a missing
+   Health Connect stays true until the user changes something in system settings.
+   That is *state*: it belongs in the UI that shows state, and it must survive
+   leaving and reopening the page. `GoogleHealthState.connectFailure` is the
+   pattern — the state records it, the status box renders it in place of its hint.
+2. **Must it be read and answered?** Then it waits for the user: use `Alert`
+   (`lib/src/alert/alert.dart`, `AlertType.error`), which the app already has.
+   That's for dead ends carrying information the user needs in order to act — a
+   failed NFC activation with the driver's error text, a denied import.
+3. **Otherwise it is a confirmation, and it belongs ON the control** the user just
+   pressed — nothing to read, nothing to dismiss, and the page stays uncovered.
+   Swap the button's own icon/label for a checkmark on a `Timer` (~2 s) and revert;
+   cancel the timer in `dispose`. See `_CopyLogButton` (`developer_log_panel.dart`).
+
+Two more rules that fell out of doing it:
+
+- **A success often needs no message at all.** After the health import, the
+  numbers on the page behind the card have already changed — that IS the feedback.
+  The card only nods with a checkmark.
+- **Safety-relevant failures are sticky, never timed.** The bolus confirmation's
+  biometric failure replaces the hint above the button in `colorScheme.error` and
+  stays until the user retries (`injection_confirm_page.dart`). A bolus that did
+  not go through must not be reported by something that disappears on its own.
+
+Where the five went: `injection_confirm_page` (sticky inline error),
+`libre3_scan_flow` (`Alert`), `google_health_status_box` (state, rendered inline),
+`health_import_button` (checkmark on success / `Alert` on failure),
+`developer_log_panel` (self-confirming button).
 
 ## Reference contrast values (dark)
 

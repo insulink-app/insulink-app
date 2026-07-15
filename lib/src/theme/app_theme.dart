@@ -45,12 +45,14 @@ class AppTheme {
     );
   }
 
-  /// [TextButton]s ("Mehr anzeigen" and friends) have the same defect Material
-  /// hands [OutlinedButton]: the label is drawn in `colorScheme.primary`, a
-  /// colour tuned to be a FILL behind white text, which manages only ~4:1 as a
-  /// label on a dark surface. Pass the accent on dark; null keeps the Material
-  /// default, which the light theme needs no correction to.
-  static TextButtonThemeData _textButtonsFor([Color? foreground]) {
+  /// [TextButton]s ("Mehr anzeigen" and friends) carry no colour — the same call
+  /// as [_iconButtonsFor], and for the same reason: a bare control reads better
+  /// at full strength than tinted. Pass the theme's `onSurface`.
+  ///
+  /// A value must be passed either way. Material draws the label in
+  /// `colorScheme.primary`, which is tuned to be a FILL behind white text and
+  /// manages only ~4:1 as a label on a dark surface.
+  static TextButtonThemeData _textButtonsFor(Color foreground) {
     return TextButtonThemeData(
       style: TextButton.styleFrom(
         shape: _buttonShape,
@@ -134,7 +136,7 @@ class AppTheme {
     filledButtonTheme: _filledButtons,
     elevatedButtonTheme: _elevatedButtons,
     outlinedButtonTheme: _outlinedButtonsFor(),
-    textButtonTheme: _textButtonsFor(),
+    textButtonTheme: _textButtonsFor(Colors.black),
     iconButtonTheme: _iconButtonsFor(Colors.black),
     inputDecorationTheme: _inputTheme(const Color(0xFFECECEC), lightPrimary),
     appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFFAFAFA)),
@@ -211,7 +213,7 @@ class AppTheme {
       foreground: darkAccent,
       rim: darkPrimary.withValues(alpha: 0.55),
     ),
-    textButtonTheme: _textButtonsFor(darkAccent),
+    textButtonTheme: _textButtonsFor(Colors.white),
     iconButtonTheme: _iconButtonsFor(Colors.white),
     inputDecorationTheme: _inputTheme(_darkSurfaceRaised, darkPrimary),
     appBarTheme: const AppBarTheme(backgroundColor: _darkBg),

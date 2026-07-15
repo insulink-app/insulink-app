@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
@@ -11,22 +12,6 @@ import 'package:provider/provider.dart';
 /// settings section, and only while developer mode is on.
 class DeveloperLogPanel extends StatelessWidget {
   const DeveloperLogPanel({super.key});
-
-  /// Copy the whole log (chronological) to the clipboard and confirm via a
-  /// snackbar.
-  Future<void> _copyLog(BuildContext context, CgmController controller) async {
-    final message = Locales.string(
-      context,
-      'sensor.log_copied',
-      params: ['${controller.log.length}'],
-    );
-    await Clipboard.setData(ClipboardData(text: controller.logText));
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,21 +42,8 @@ class DeveloperLogPanel extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        if (controller.log.isNotEmpty) _copyButton(context, controller),
+        if (controller.log.isNotEmpty) _CopyLogButton(controller: controller),
       ],
-    );
-  }
-
-  Widget _copyButton(BuildContext context, CgmController controller) {
-    return TextButton.icon(
-      onPressed: () => _copyLog(context, controller),
-      icon: const Icon(PhosphorIconsRegular.copy, size: 16),
-      label: LocaleText('sensor.copy'),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        minimumSize: const Size(0, 32),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
     );
   }
 
@@ -92,6 +64,69 @@ class DeveloperLogPanel extends StatelessWidget {
           controller.log.join('\n'),
           style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
         ),
+      ),
+    );
+  }
+}
+
+/// The log's copy action, which confirms itself: on tap it swaps its own icon
+/// and label for a checkmark and the copied-line count, then reverts.
+///
+/// The confirmation belongs ON the control because that is where the user is
+/// looking and what they just touched — nothing has to be read or dismissed, and
+/// the panel underneath stays uncovered.
+class _CopyLogButton extends StatefulWidget {
+  const _CopyLogButton({required this.controller});
+
+  final CgmController controller;
+
+  @override
+  State<_CopyLogButton> createState() => _CopyLogButtonState();
+}
+
+class _CopyLogButtonState extends State<_CopyLogButton> {
+  static const _confirmFor = Duration(seconds: 2);
+
+  Timer? _revert;
+  int? _copied;
+
+  @override
+  void dispose() {
+    _revert?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _copy() async {
+    final lines = widget.controller.log.length;
+    await Clipboard.setData(ClipboardData(text: widget.controller.logText));
+    if (!mounted) {
+      return;
+    }
+    setState(() => _copied = lines);
+    _revert?.cancel();
+    _revert = Timer(_confirmFor, () {
+      if (mounted) {
+        setState(() => _copied = null);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final done = _copied != null;
+    return TextButton.icon(
+      onPressed: _copy,
+      icon: Icon(
+        done ? PhosphorIconsRegular.check : PhosphorIconsRegular.copy,
+        size: 16,
+      ),
+      label: done
+          ? LocaleText('sensor.log_copied', params: ['$_copied'])
+          : LocaleText('sensor.copy'),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(0, 32),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }

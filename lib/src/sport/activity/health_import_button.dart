@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/google_health/health_permissions.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_state.dart';
@@ -20,14 +22,33 @@ class HealthImportButton extends StatefulWidget {
 }
 
 class _HealthImportButtonState extends State<HealthImportButton> {
+  static const _confirmFor = Duration(seconds: 2);
+
   bool _busy = false;
+
+  /// Set briefly after a successful import, to swap the trailing glyph for a
+  /// checkmark.
+  bool _imported = false;
+
+  Timer? _revert;
+
+  @override
+  void dispose() {
+    _revert?.cancel();
+    super.dispose();
+  }
 
   /// Asks before importing: this is an explicit tap, so a prompt is what the
   /// user just requested — unlike the Sport page's import-on-open, which stays
   /// silent (see [HealthPermissions]).
+  ///
+  /// The two outcomes are reported differently, because they ask different
+  /// things of the user. Success needs no words: the numbers on the page behind
+  /// this card have just changed, so the card only nods with a checkmark. A
+  /// denial or a missing Health Connect is a dead end that has to be explained
+  /// and acknowledged, so it gets a modal.
   Future<void> _run() async {
     setState(() => _busy = true);
-    final messenger = ScaffoldMessenger.of(context);
     final sport = context.read<SportState>();
     final activity = context.read<SportActivityState>();
     await HealthPermissions().request();
@@ -36,16 +57,27 @@ class _HealthImportButtonState extends State<HealthImportButton> {
       return;
     }
     setState(() => _busy = false);
-    messenger.showSnackBar(
-      SnackBar(content: Text(Locales.string(context, _messageKey(result)))),
-    );
+    if (result == HealthImportResult.success) {
+      _confirm();
+      return;
+    }
+    Alert(
+      type: AlertType.error,
+      description: result == HealthImportResult.denied
+          ? 'sport.health.denied'
+          : 'sport.health.unavailable',
+    ).show(context);
   }
 
-  String _messageKey(HealthImportResult result) => switch (result) {
-    HealthImportResult.success => 'sport.health.imported',
-    HealthImportResult.denied => 'sport.health.denied',
-    HealthImportResult.unavailable => 'sport.health.unavailable',
-  };
+  void _confirm() {
+    setState(() => _imported = true);
+    _revert?.cancel();
+    _revert = Timer(_confirmFor, () {
+      if (mounted) {
+        setState(() => _imported = false);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +148,9 @@ class _HealthImportButtonState extends State<HealthImportButton> {
         height: 20,
         child: CircularProgressIndicator(strokeWidth: 2),
       );
+    }
+    if (_imported) {
+      return Icon(PhosphorIconsRegular.check, color: context.accent);
     }
     return Icon(PhosphorIconsRegular.arrowsClockwise, color: context.accent);
   }

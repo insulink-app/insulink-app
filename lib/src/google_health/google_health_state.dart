@@ -208,6 +208,15 @@ class GoogleHealthState extends ChangeNotifier {
     return null;
   }
 
+  /// Why the last [connect] did not go through, or null after a success.
+  ///
+  /// Kept here rather than reported as a one-off event because it is not one: a
+  /// denied permission or a missing Health Connect is a STANDING condition of
+  /// the integration, true until the user changes something in the system
+  /// settings. The status box renders it in place of its generic hint.
+  GoogleHealthImportResult? get connectFailure => _connectFailure;
+  GoogleHealthImportResult? _connectFailure;
+
   /// Grants Health Connect access + pulls the metrics; only marks connected on
   /// success (so a denied/unavailable result leaves the app unchanged).
   ///
@@ -217,15 +226,19 @@ class GoogleHealthState extends ChangeNotifier {
   Future<GoogleHealthImportResult> connect() async {
     await HealthPermissions().request();
     final data = await _run();
-    if (data.result == GoogleHealthImportResult.success) {
+    final ok = data.result == GoogleHealthImportResult.success;
+    if (ok) {
       _connected = true;
       await _persist();
     }
+    _connectFailure = ok ? null : data.result;
+    notifyListeners();
     return data.result;
   }
 
   Future<void> disconnect() async {
     _connected = false;
+    _connectFailure = null;
     await _storage.write(key: _kConnected, value: 'false');
     notifyListeners();
   }
