@@ -31,7 +31,10 @@ class SportGoalsEditor extends StatelessWidget {
         const SizedBox(height: 12),
         LocaleText(
           'sport.goals.note',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

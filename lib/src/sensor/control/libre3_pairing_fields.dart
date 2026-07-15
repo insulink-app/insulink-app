@@ -46,7 +46,10 @@ class _Libre3PairingFieldsState extends State<Libre3PairingFields> {
       children: [
         LocaleText(
           'sensor.pair.libre.hint',
-          style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+          style: TextStyle(
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 12),
         TextField(

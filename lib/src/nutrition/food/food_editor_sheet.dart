@@ -129,7 +129,7 @@ class _FoodEditorSheetState extends State<_FoodEditorSheet> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 14),

@@ -382,7 +382,11 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Icon(PhosphorIconsRegular.chartLine, size: 16, color: scheme.primary),
+              Icon(
+                PhosphorIconsRegular.chartLine,
+                size: 16,
+                color: scheme.primary,
+              ),
               const SizedBox(width: 6),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

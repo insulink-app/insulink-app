@@ -38,7 +38,10 @@ class ActivitySummaryCard extends StatelessWidget {
           const SizedBox(height: 10),
           LocaleText(
             'sport.activity.permission',
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ],

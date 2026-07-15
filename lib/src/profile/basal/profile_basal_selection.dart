@@ -15,9 +15,9 @@ class ProfileBasalSelection extends StatelessWidget {
   const ProfileBasalSelection({super.key});
 
   void _open(BuildContext context, int index) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => BasalEditor(index: index)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => BasalEditor(index: index)));
   }
 
   void _add(BuildContext context) {
@@ -183,9 +183,11 @@ class _ProfileCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          Locales.string(context, 'profile.basal.total', params: [
-                            profile.total.toStringAsFixed(2),
-                          ]),
+                          Locales.string(
+                            context,
+                            'profile.basal.total',
+                            params: [profile.total.toStringAsFixed(2)],
+                          ),
                           style: TextStyle(
                             fontSize: 13,
                             color: theme.colorScheme.onSurface.withValues(

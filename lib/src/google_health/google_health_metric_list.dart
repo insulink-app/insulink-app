@@ -14,14 +14,20 @@ class GoogleHealthMetricList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _row('google_health.resting_hr', _fmt(health.todayRestingHr, 'bpm')),
-        _row('google_health.heart_rate', _fmt(health.latestHr, 'bpm')),
-        _row('google_health.spo2', _fmt(health.latestSpo2, '%')),
         _row(
+          context,
+          'google_health.resting_hr',
+          _fmt(health.todayRestingHr, 'bpm'),
+        ),
+        _row(context, 'google_health.heart_rate', _fmt(health.latestHr, 'bpm')),
+        _row(context, 'google_health.spo2', _fmt(health.latestSpo2, '%')),
+        _row(
+          context,
           'google_health.respiratory_rate',
           _fmt(health.latestRespiratoryRate, 'rpm'),
         ),
         _row(
+          context,
           'google_health.sleep',
           formatSleepMinutes(health.lastSleepMinutes),
         ),
@@ -31,13 +37,18 @@ class GoogleHealthMetricList extends StatelessWidget {
 
   String _fmt(int? value, String unit) => value == null ? '–' : '$value $unit';
 
-  Widget _row(String labelKey, String value) {
+  Widget _row(BuildContext context, String labelKey, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          LocaleText(labelKey, style: TextStyle(color: Colors.grey[500])),
+          LocaleText(
+            labelKey,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),

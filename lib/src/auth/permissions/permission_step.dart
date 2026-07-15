@@ -44,7 +44,7 @@ class PermissionStep extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
-              color: Colors.grey[500],
+              color: scheme.onSurfaceVariant,
               height: 1.4,
             ),
           ),

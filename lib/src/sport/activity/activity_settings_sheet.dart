@@ -80,12 +80,18 @@ class _ActivitySettingsSheet extends StatelessWidget {
         const SizedBox(height: 12),
         LocaleText(
           'sport.activity.estimate_note',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 6),
         LocaleText(
           'sport.activity.height_note',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 20),
         LocaleText(

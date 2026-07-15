@@ -37,7 +37,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
             const SizedBox(height: 14),
             LocaleText(
               'google_health.hint',
-              style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
             ),
           ],
           const SizedBox(height: 16),
@@ -63,7 +63,9 @@ class GoogleHealthStatusBox extends StatelessWidget {
             color: accent.withValues(alpha: 0.15),
           ),
           child: Icon(
-            health.connected ? PhosphorIconsRegular.watch : PhosphorIconsRegular.watch,
+            health.connected
+                ? PhosphorIconsRegular.watch
+                : PhosphorIconsRegular.watch,
             size: 30,
             color: accent,
           ),
@@ -85,7 +87,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
               const SizedBox(height: 2),
               LocaleText(
                 'google_health.status.source',
-                style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
               ),
             ],
           ),

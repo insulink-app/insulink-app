@@ -93,7 +93,9 @@ class _PasswordFieldsState extends State<_PasswordFields> {
       decoration: InputDecoration(
         prefixIcon: const Icon(PhosphorIconsRegular.lock),
         suffixIcon: IconButton(
-          icon: Icon(_obscure ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash),
+          icon: Icon(
+            _obscure ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
+          ),
           onPressed: () => setState(() => _obscure = !_obscure),
           tooltip: Locales.string(context, "profile.account.show_password"),
         ),

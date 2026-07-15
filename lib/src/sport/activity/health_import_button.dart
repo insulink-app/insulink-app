@@ -80,7 +80,11 @@ class _HealthImportButtonState extends State<HealthImportButton> {
         color: scheme.surfaceContainerHighest,
         shape: BoxShape.circle,
       ),
-      child: Icon(PhosphorIconsFill.heart, color: scheme.onSurfaceVariant, size: 22),
+      child: Icon(
+        PhosphorIconsFill.heart,
+        color: scheme.onSurfaceVariant,
+        size: 22,
+      ),
     );
   }
 

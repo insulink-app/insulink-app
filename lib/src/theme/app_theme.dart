@@ -93,6 +93,29 @@ class AppTheme {
 
   static final Color lightPrimary = Colors.indigo;
 
+  /// The light theme's surface ladder. It mirrors the dark one rung for rung,
+  /// but steps DOWNWARD: here the page is the brightest thing on screen, so each
+  /// level that sits ON it goes a shade deeper. That is why "raised" is darker
+  /// than the box it sits in — the inverse of the dark theme, and the same way
+  /// Material 3's own light scheme is built.
+  ///
+  /// [_lightSurfaceRaised] is what badges are made of. It MUST differ from
+  /// [_lightSurface]: leaving it unset resolves it to `surface`, i.e. exactly the
+  /// colour of the box the badge sits in, and every badge in the app vanishes.
+  static const Color _lightSurface = Color(0xFFE8E8E8);
+  static const Color _lightSurfaceHigh = Color(0xFFE1E4E9);
+  static const Color _lightSurfaceRaised = Color(0xFFD8DCE3);
+
+  /// Rim for outlined controls. Set for the same reason as [_darkOutline]: left
+  /// out, [ColorScheme] resolves `outline` to `onBackground` — pure black here,
+  /// which puts a hard rule around every [OutlinedButton].
+  static const Color _lightOutline = Color(0xFFB4B9C2);
+
+  /// The light counterpart of [_darkMuted] — the tone for glyphs and labels that
+  /// only inform. Darker than it looks it should be: this sits on a near-white
+  /// page, where anything lighter stops being readable.
+  static const Color _lightMuted = Color(0xFF5A6070);
+
   static final ThemeData light = ThemeData(
     useMaterial3: true,
     primaryColor: Colors.black,
@@ -102,8 +125,11 @@ class AppTheme {
       // ponytail: default secondary is teal — align it to the indigo brand so
       // chips/date-pickers stop tinting turquoise.
       secondary: lightPrimary,
-      surface: const Color(0xFFE8E8E8),
-      onSurfaceVariant: const Color(0xFF5A6070),
+      surface: _lightSurface,
+      surfaceContainerHigh: _lightSurfaceHigh,
+      surfaceContainerHighest: _lightSurfaceRaised,
+      outline: _lightOutline,
+      onSurfaceVariant: _lightMuted,
     ),
     filledButtonTheme: _filledButtons,
     elevatedButtonTheme: _elevatedButtons,
@@ -146,6 +172,7 @@ class AppTheme {
   /// to read as cards. The result is grey with a blue lean, not blue-grey.
   static const Color _darkBg = Color(0xFF15181D);
   static const Color _darkSurface = Color(0xFF1F232A);
+  static const Color _darkSurfaceHigh = Color(0xFF242933);
   static const Color _darkSurfaceRaised = Color(0xFF2A2F38);
 
   /// Kept close to [_darkSurface] on purpose: it is both the divider colour and
@@ -173,6 +200,7 @@ class AppTheme {
       onPrimary: onPrimary,
       secondary: darkPrimary,
       surface: _darkSurface,
+      surfaceContainerHigh: _darkSurfaceHigh,
       surfaceContainerHighest: _darkSurfaceRaised,
       outline: _darkOutline,
       onSurfaceVariant: _darkMuted,

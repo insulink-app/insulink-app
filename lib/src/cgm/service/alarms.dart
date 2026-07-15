@@ -295,10 +295,11 @@ class G7AlarmManager {
     final glucose = await ProfileGlucoseState.load();
     final forecast = await _forecast(mgdl, trendPerMin);
     _rearmAdvisories(forecast, glucose);
-    final level = advisoryLevelFor(mgdl, (
-      low: forecast.bandLow,
-      high: forecast.high,
-    ), (low: glucose.low, high: glucose.high));
+    final level = advisoryLevelFor(
+      mgdl,
+      (low: forecast.bandLow, high: forecast.high),
+      (low: glucose.low, high: glucose.high),
+    );
     if (level == AdvisoryLevel.none) {
       return;
     }

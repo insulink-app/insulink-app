@@ -28,7 +28,7 @@ class SensorPairingForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _header(scheme),
+          _header(context, scheme),
           const SizedBox(height: 16),
           SensorTypeSelector(controller: controller),
           const SizedBox(height: 16),
@@ -47,12 +47,12 @@ class SensorPairingForm extends StatelessWidget {
     return [_codeRow(context), const SizedBox(height: 12), _connectButton()];
   }
 
-  Widget _header(ColorScheme scheme) {
+  Widget _header(BuildContext context, ColorScheme scheme) {
     return Row(
       children: [
         _dropIcon(scheme),
         const SizedBox(width: 14),
-        Expanded(child: _titles()),
+        Expanded(child: _titles(context)),
       ],
     );
   }
@@ -73,7 +73,7 @@ class SensorPairingForm extends StatelessWidget {
     );
   }
 
-  Widget _titles() {
+  Widget _titles(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -84,7 +84,10 @@ class SensorPairingForm extends StatelessWidget {
         const SizedBox(height: 2),
         LocaleText(
           'sensor.pair.hint',
-          style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+          style: TextStyle(
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

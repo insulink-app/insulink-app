@@ -82,7 +82,11 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Icon(_needsAuth ? PhosphorIconsRegular.fingerprint : PhosphorIconsRegular.check),
+                    : Icon(
+                        _needsAuth
+                            ? PhosphorIconsRegular.fingerprint
+                            : PhosphorIconsRegular.check,
+                      ),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
                 ),

@@ -82,7 +82,11 @@ class _LegalPageState extends State<LegalPage> {
         LocaleText(
           "legal.subtitle",
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 15, color: Colors.grey[600], height: 1.5),
+          style: TextStyle(
+            fontSize: 15,
+            color: theme.colorScheme.onSurfaceVariant,
+            height: 1.5,
+          ),
         ),
       ],
     );
@@ -118,7 +122,10 @@ class _LegalPageState extends State<LegalPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(5),
               ),
-              side: BorderSide(color: Colors.grey[400]!, width: 1.5),
+              side: BorderSide(
+                color: theme.colorScheme.onSurfaceVariant,
+                width: 1.5,
+              ),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,
             ),
@@ -131,7 +138,10 @@ class _LegalPageState extends State<LegalPage> {
   }
 
   Widget _consentText(ThemeData theme) {
-    final plain = TextStyle(fontSize: 13, color: Colors.grey[700]);
+    final plain = TextStyle(
+      fontSize: 13,
+      color: theme.colorScheme.onSurfaceVariant,
+    );
     final link = TextStyle(
       fontSize: 13,
       color: theme.colorScheme.primary,

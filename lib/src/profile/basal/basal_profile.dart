@@ -80,7 +80,8 @@ class BasalProfile {
     var value = _baseline;
     for (final peak in peaks) {
       final dist = _circularDist(hour, peak.hour);
-      value += peak.weight * exp(-(dist * dist) / (2 * _peakWidth * _peakWidth));
+      value +=
+          peak.weight * exp(-(dist * dist) / (2 * _peakWidth * _peakWidth));
     }
     return value;
   }

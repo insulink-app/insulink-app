@@ -84,7 +84,10 @@ class _TileLayoutEditorState<T extends Enum>
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
                 child: LocaleText(
                   widget.hintKey,
-                  style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               Expanded(child: _list(context, tiles, filtering)),

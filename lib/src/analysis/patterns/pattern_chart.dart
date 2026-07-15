@@ -37,7 +37,7 @@ class PatternChart extends StatelessWidget {
           horizontalInterval: _yInterval,
         ),
         borderData: FlBorderData(show: false),
-        titlesData: _titles(),
+        titlesData: _titles(context),
         extraLinesData: _targetLines(),
         lineTouchData: const LineTouchData(enabled: false),
         lineBarsData: _bars(onSurface),
@@ -53,7 +53,7 @@ class PatternChart extends StatelessWidget {
     );
   }
 
-  FlTitlesData _titles() {
+  FlTitlesData _titles(BuildContext context) {
     return FlTitlesData(
       topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -62,7 +62,7 @@ class PatternChart extends StatelessWidget {
           showTitles: true,
           reservedSize: 36,
           interval: _yInterval,
-          getTitlesWidget: (value, _) => _axisLabel(_formatY(value)),
+          getTitlesWidget: (value, _) => _axisLabel(context, _formatY(value)),
         ),
       ),
       bottomTitles: AxisTitles(
@@ -70,7 +70,8 @@ class PatternChart extends StatelessWidget {
           showTitles: true,
           reservedSize: 24,
           interval: 6,
-          getTitlesWidget: (value, _) => _axisLabel('${value.toInt()}'),
+          getTitlesWidget: (value, _) =>
+              _axisLabel(context, '${value.toInt()}'),
         ),
       ),
     );
@@ -80,8 +81,13 @@ class PatternChart extends StatelessWidget {
       ? value.toStringAsFixed(0)
       : '${value.toInt()}';
 
-  Widget _axisLabel(String text) =>
-      Text(text, style: const TextStyle(fontSize: 10, color: Colors.grey));
+  Widget _axisLabel(BuildContext context, String text) => Text(
+    text,
+    style: TextStyle(
+      fontSize: 10,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    ),
+  );
 
   ExtraLinesData _targetLines() {
     return ExtraLinesData(

@@ -43,7 +43,10 @@ class AnalysisRangeSelector extends StatelessWidget {
                   context,
                   selected: isCustom,
                   onTap: () => _pickCustom(context, controller),
-                  child: const Icon(PhosphorIconsRegular.calendarBlank, size: 18),
+                  child: const Icon(
+                    PhosphorIconsRegular.calendarBlank,
+                    size: 18,
+                  ),
                 ),
               ),
             ],

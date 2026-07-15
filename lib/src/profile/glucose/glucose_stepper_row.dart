@@ -30,11 +30,19 @@ class GlucoseStepperRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(child: _label(theme)),
-        CircleIconButton(icon: PhosphorIconsRegular.minus, accent: accent, onTap: onMinus),
+        CircleIconButton(
+          icon: PhosphorIconsRegular.minus,
+          accent: accent,
+          onTap: onMinus,
+        ),
         const SizedBox(width: 10),
         _value(),
         const SizedBox(width: 10),
-        CircleIconButton(icon: PhosphorIconsRegular.plus, accent: accent, onTap: onPlus),
+        CircleIconButton(
+          icon: PhosphorIconsRegular.plus,
+          accent: accent,
+          onTap: onPlus,
+        ),
       ],
     );
   }

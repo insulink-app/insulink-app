@@ -58,7 +58,7 @@ class _TodayDrinksSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (entries.isEmpty)
-            _empty()
+            _empty(context)
           else
             Flexible(child: _list(theme, state, entries)),
         ],
@@ -84,7 +84,10 @@ class _TodayDrinksSheet extends StatelessWidget {
           title: Text('${entry.ml} ml'),
           subtitle: Text(_time(entry.atEpochMs)),
           trailing: IconButton(
-            icon: Icon(PhosphorIconsRegular.trash, color: Colors.grey[500]),
+            icon: Icon(
+              PhosphorIconsRegular.trash,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             onPressed: () => state.removeEntry(entry),
           ),
         );
@@ -92,13 +95,16 @@ class _TodayDrinksSheet extends StatelessWidget {
     );
   }
 
-  Widget _empty() {
+  Widget _empty(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 24, 12, 24),
       child: LocaleText(
         'nutrition.hydration.log_empty',
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+        style: TextStyle(
+          fontSize: 13,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }

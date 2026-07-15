@@ -76,7 +76,10 @@ class _AuthPageState extends State<AuthPage> {
                 LocaleText(
                   _signUp ? 'auth.subtitle_signup' : 'auth.subtitle_signin',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, color: Colors.grey[500]),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 32),
                 _field(_name, 'auth.name', false),
@@ -115,7 +118,11 @@ class _AuthPageState extends State<AuthPage> {
       decoration: InputDecoration(
         labelText: Locales.string(context, 'auth.password'),
         suffixIcon: IconButton(
-          icon: Icon(_showPassword ? PhosphorIconsRegular.eyeSlash : PhosphorIconsRegular.eye),
+          icon: Icon(
+            _showPassword
+                ? PhosphorIconsRegular.eyeSlash
+                : PhosphorIconsRegular.eye,
+          ),
           onPressed: () => setState(() => _showPassword = !_showPassword),
         ),
       ),

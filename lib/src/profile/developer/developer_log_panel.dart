@@ -51,7 +51,10 @@ class DeveloperLogPanel extends StatelessWidget {
       children: [
         LocaleText(
           'sensor.log',
-          style: TextStyle(color: Colors.grey[400], fontSize: 12),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 12,
+          ),
         ),
         const Spacer(),
         if (controller.log.isNotEmpty) _copyButton(context, controller),

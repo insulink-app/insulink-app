@@ -140,7 +140,10 @@ class SensorStatusBox extends StatelessWidget {
   }
 
   Widget _subtitle(BuildContext context) {
-    final dimmed = TextStyle(fontSize: 13, color: Colors.grey[500]);
+    final dimmed = TextStyle(
+      fontSize: 13,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
     final status = Locales.string(context, _statusKey);
     if (_connected && controller.currentMgdl != null) {
       final glucose = context.watch<ProfileGlucoseState>();
