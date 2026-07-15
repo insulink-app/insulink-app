@@ -5,6 +5,7 @@ import 'package:insulink/src/google_health/google_health_metric_list.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// Connection box for the Google Health device page, styled like the sensor's status
 /// box: an icon badge + status, the latest metrics when connected, and a
@@ -141,9 +142,11 @@ class GoogleHealthStatusBox extends StatelessWidget {
         icon: const Icon(PhosphorIconsRegular.linkBreak, size: 20),
         label: LocaleText('google_health.disconnect'),
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.redAccent,
+          foregroundColor: context.danger,
           minimumSize: const Size.fromHeight(46),
-          side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.4)),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.4),
+          ),
         ),
       );
     }
@@ -160,11 +163,11 @@ class GoogleHealthStatusBox extends StatelessWidget {
   void _confirmDisconnect(BuildContext context) {
     Alert(
       icon: PhosphorIconsRegular.warning,
-      iconColor: Colors.redAccent,
+      iconColor: context.danger,
       description: 'google_health.disconnect_confirm',
       cancelButton: true,
       confirmButtonText: 'google_health.disconnect',
-      confirmButtonColor: Colors.redAccent,
+      confirmButtonColor: Theme.of(context).colorScheme.error,
       callback: health.disconnect,
     ).show(context);
   }

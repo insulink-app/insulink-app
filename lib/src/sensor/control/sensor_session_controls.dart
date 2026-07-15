@@ -4,6 +4,7 @@ import '../../alert/alert.dart';
 import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// The two session buttons under the status header: end the current reading
 /// session, or fully forget the sensor. Both are guarded by a confirmation
@@ -49,9 +50,11 @@ class SensorSessionControls extends StatelessWidget {
       icon: const Icon(PhosphorIconsRegular.linkBreak, size: 20),
       label: LocaleText('sensor.control.stop_sensor'),
       style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.redAccent,
+        foregroundColor: context.danger,
         minimumSize: const Size.fromHeight(46),
-        side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.4)),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.4),
+        ),
       ),
     );
   }
@@ -87,11 +90,13 @@ class SensorSessionControls extends StatelessWidget {
   }) {
     Alert(
       icon: PhosphorIconsRegular.warning,
-      iconColor: destructive ? Colors.redAccent : null,
+      iconColor: destructive ? context.danger : null,
       content: _confirmContent(titleKey, bodyKey),
       cancelButton: true,
       confirmButtonText: confirmKey,
-      confirmButtonColor: destructive ? Colors.redAccent : null,
+      confirmButtonColor: destructive
+          ? Theme.of(context).colorScheme.error
+          : null,
       callback: onConfirm,
     ).show(context);
   }

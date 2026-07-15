@@ -4,6 +4,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
 
 /// Forecast-horizon picker: two tappable rows (30 / 60 min) with a check on the
 /// active one — the same list style as the language picker.
@@ -39,7 +40,7 @@ class ProfilePredictionHorizon extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: selected
-            ? scheme.primary.withValues(alpha: 0.14)
+            ? scheme.tintSelected
             : scheme.onSurface.withValues(alpha: 0.04),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),

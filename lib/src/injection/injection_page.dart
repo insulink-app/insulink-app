@@ -12,6 +12,7 @@ import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
 
 /// Opens the bolus-calculator as a modal bottom sheet. The glucose field is
 /// prefilled with the latest reading from [CgmController] when available.
@@ -308,7 +309,7 @@ class _NumberField extends StatelessWidget {
         // Only the bolus field overrides the theme fill; leave the others to
         // inherit the app's default filled style (passing false would strip it).
         filled: highlight ? true : null,
-        fillColor: highlight ? scheme.primary.withValues(alpha: 0.06) : null,
+        fillColor: highlight ? scheme.tintPanel : null,
       ),
     );
   }

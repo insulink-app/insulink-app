@@ -11,12 +11,15 @@ class NavBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final borderColor =
-        Theme.of(context).appBarTheme.backgroundColor ?? Colors.white;
-    return count == -1 ? _dot(borderColor) : _pill(borderColor);
+        theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface;
+    return count == -1
+        ? _dot(borderColor, theme.colorScheme)
+        : _pill(borderColor, theme.colorScheme);
   }
 
-  Widget _dot(Color borderColor) {
+  Widget _dot(Color borderColor, ColorScheme scheme) {
     return Positioned(
       right: 10,
       top: 0,
@@ -24,7 +27,7 @@ class NavBadge extends StatelessWidget {
         width: 15,
         height: 15,
         decoration: BoxDecoration(
-          color: Colors.red,
+          color: scheme.error,
           shape: BoxShape.circle,
           border: Border.all(color: borderColor, width: 1),
         ),
@@ -32,7 +35,7 @@ class NavBadge extends StatelessWidget {
     );
   }
 
-  Widget _pill(Color borderColor) {
+  Widget _pill(Color borderColor, ColorScheme scheme) {
     return Positioned(
       right: 5,
       top: 0,
@@ -44,14 +47,14 @@ class NavBadge extends StatelessWidget {
             : const EdgeInsets.symmetric(horizontal: 4),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.red,
+          color: scheme.error,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: borderColor, width: 1),
         ),
         child: Text(
           count.toString(),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: scheme.onError,
             fontSize: 14,
             fontWeight: FontWeight.bold,
             height: 1,

@@ -5,6 +5,7 @@ import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
 
 /// Dot colour for logged routines on the sport calendar (brand colour).
 Color calendarRoutineColor(ColorScheme scheme) => scheme.primary;
@@ -164,10 +165,7 @@ class _SportCalendarSectionState extends State<SportCalendarSection> {
             height: 28,
             alignment: Alignment.center,
             decoration: isToday
-                ? BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: scheme.primary.withValues(alpha: 0.15),
-                  )
+                ? BoxDecoration(shape: BoxShape.circle, color: scheme.tintPanel)
                 : null,
             child: Text('$day', style: const TextStyle(fontSize: 13)),
           ),

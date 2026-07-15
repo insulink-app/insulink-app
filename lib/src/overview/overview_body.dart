@@ -62,7 +62,7 @@ class OverviewBodyContent extends StatelessWidget {
     final controller = context.watch<CgmController>();
     final silent = context.watch<ProfileSilentState>().silent;
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         children: [
           if (silent) ...[const SilentBanner(), const SizedBox(height: 12)],
@@ -112,6 +112,7 @@ class _DataView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      padding: const EdgeInsets.only(bottom: 52),
       children: [
         // Still offer the account's stored sensor when none is paired locally —
         // a returning device now shows this data view (synced history) instead of
@@ -143,7 +144,6 @@ class _DataView extends StatelessWidget {
           const SizedBox(height: 16),
         ],
         const OverviewBoxes(),
-        const SizedBox(height: 48),
       ],
     );
   }

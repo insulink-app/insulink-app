@@ -10,6 +10,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/account/profile_account.dart';
 import 'package:insulink/src/profile/account/profile_password_dialog.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// The signed-in account card shown at the top of the profile page: the stored
 /// name (editable) plus a confirm-guarded log-out button.
@@ -50,7 +51,7 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
             icon: PhosphorIconsRegular.signOut,
             labelKey: "profile.account.logout",
             onPressed: _confirmLogout,
-            color: Colors.redAccent,
+            color: context.danger,
           ),
         ],
       ),
@@ -192,7 +193,7 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
       icon: PhosphorIconsRegular.warning,
       cancelButton: true,
       confirmButtonText: "profile.account.logout",
-      confirmButtonColor: Colors.redAccent,
+      confirmButtonColor: Theme.of(context).colorScheme.error,
       callback: _logout,
     ).show(context);
   }

@@ -83,6 +83,48 @@ was pressable. Never give decoration the accent.
 `onSurface.withValues(alpha: 0.6)` is an older muted idiom still in use for
 secondary *text*. It is fine; `onSurfaceVariant` is preferred for new code.
 
+## Status colours, and the one red family
+
+`StatusColors` (`status_colors.dart`) carries what `ColorScheme` has no honest
+role for. Read as `context.danger` / `context.warning` / `context.positive`.
+
+| Need | Token | Why not a scheme role |
+|---|---|---|
+| Error **text** | `context.danger` | `colorScheme.error` is a FILL (delete's confirm button, nav badge) and only makes ~4:1 as a label on dark — the same trap `primary` falls into |
+| Amber: off-nominal | `context.warning` | No role exists. An overdue reading, a sensor in its grace period |
+| Green: went well | `context.positive` | No role exists. A weight trending down, a success alert |
+
+Both the reds and the green are drawn from the family the app already speaks in
+`GlucoseColors`, so the product has **one** red rather than Material's stock
+maroon standing next to the chart's red. They are still separate tokens on
+purpose: `GlucoseColors` is the *language of glucose*, read by the chart and the
+readouts — a delete button borrowing its red would tie two unrelated meanings
+together, and a change to one would silently move the other.
+
+The rule at a call site: **does the colour fill a shape, or draw on one?** Fill →
+`colorScheme.error`. Draw (label, glyph, an `Alert`'s `iconColor`) → `context.danger`.
+
+## Brand tints
+
+`BrandTints` (`brand_tints.dart`) — an extension on `ColorScheme`, not a
+`ThemeExtension`, because a tint is computed (`primary` over whatever is beneath)
+and needs a name, not a per-theme value.
+
+| Token | Alpha | For |
+|---|---|---|
+| `scheme.tintPanel` | 0.08 | A panel/card/chip washed with the brand colour |
+| `scheme.tintSelected` | 0.14 | The chosen row of a selection |
+| `scheme.tintLine` | 0.20 | A tinted rim |
+
+Nine different alphas were in use for those three ideas, each guessed locally.
+That is the ground the badge problem grew on: with no shared value, "a faint
+tinted card" meant something different on every page and the icon on top had
+nothing stable to contrast against.
+
+**A scale is not a tint.** A progress fill that brightens toward its goal, or a
+button dimmed to half while disabled, carries information in its alpha — leave
+those alone.
+
 ## Shape language
 
 | Silhouette | Meaning | Example |

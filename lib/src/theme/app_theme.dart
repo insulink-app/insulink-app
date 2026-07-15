@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// The app's light and dark Material 3 themes. Kept out of `main.dart` so the
 /// shell there stays a thin wiring layer.
@@ -104,9 +105,17 @@ class AppTheme {
   /// [_lightSurfaceRaised] is what badges are made of. It MUST differ from
   /// [_lightSurface]: leaving it unset resolves it to `surface`, i.e. exactly the
   /// colour of the box the badge sits in, and every badge in the app vanishes.
+  static const Color _lightBg = Color(0xFFFAFAFA);
   static const Color _lightSurface = Color(0xFFE8E8E8);
   static const Color _lightSurfaceHigh = Color(0xFFE1E4E9);
   static const Color _lightSurfaceRaised = Color(0xFFD8DCE3);
+
+  /// Divider + box border ([OverviewSection]), the light twin of [_darkBorder]
+  /// and kept close to [_lightSurface] for the same reason: a border far from its
+  /// fill rings every card. Opaque, not a translucent black — a `Colors.black12`
+  /// picks up whatever is behind it, so the same divider came out a different
+  /// colour on the page than inside a box.
+  static const Color _lightBorder = Color(0xFFD7DBE2);
 
   /// Rim for outlined controls. Set for the same reason as [_darkOutline]: left
   /// out, [ColorScheme] resolves `outline` to `onBackground` — pure black here,
@@ -117,6 +126,17 @@ class AppTheme {
   /// only inform. Darker than it looks it should be: this sits on a near-white
   /// page, where anything lighter stops being readable.
   static const Color _lightMuted = Color(0xFF5A6070);
+
+  /// Danger and warning. On light one tone does both jobs — deep enough to fill a
+  /// button behind white text AND to be read as a label on the page — so
+  /// [StatusColors.danger] is simply the same value as the scheme's `error`.
+  /// Dark has to split them; see [_darkError] / [_darkDanger].
+  ///
+  /// Drawn from the same red the app already speaks (`GlucoseColors`), so the
+  /// product has ONE red family rather than Material's stock maroon next to it.
+  static const Color _lightError = Color(0xFFC42108);
+  static const Color _lightWarning = Color(0xFF9A5B00);
+  static const Color _lightPositive = Color(0xFF0F6B34);
 
   static final ThemeData light = ThemeData(
     useMaterial3: true,
@@ -132,22 +152,29 @@ class AppTheme {
       surfaceContainerHighest: _lightSurfaceRaised,
       outline: _lightOutline,
       onSurfaceVariant: _lightMuted,
+      error: _lightError,
+      onError: Colors.white,
     ),
     filledButtonTheme: _filledButtons,
     elevatedButtonTheme: _elevatedButtons,
     outlinedButtonTheme: _outlinedButtonsFor(),
     textButtonTheme: _textButtonsFor(Colors.black),
     iconButtonTheme: _iconButtonsFor(Colors.black),
-    inputDecorationTheme: _inputTheme(const Color(0xFFECECEC), lightPrimary),
-    appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFFAFAFA)),
+    inputDecorationTheme: _inputTheme(_lightSurfaceRaised, lightPrimary),
+    appBarTheme: const AppBarTheme(backgroundColor: _lightBg),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: Colors.white,
+      backgroundColor: _lightSurface,
     ),
-    scaffoldBackgroundColor: const Color(0xFFFAFAFA),
-    dividerColor: Colors.black12,
+    scaffoldBackgroundColor: _lightBg,
+    dividerColor: _lightBorder,
     extensions: [
       GlucoseColors.standard,
       AccentColors(onSurface: lightPrimary),
+      const StatusColors(
+        danger: _lightError,
+        warning: _lightWarning,
+        positive: _lightPositive,
+      ),
     ],
   );
 
@@ -194,6 +221,18 @@ class AppTheme {
   /// gives a decorative glyph the same weight as the value it annotates.
   static const Color _darkMuted = Color(0xFFA6AEBF);
 
+  /// The dark theme's status tones, split exactly like [darkPrimary] /
+  /// [darkAccent] and for the same reason: [_darkError] is the FILL (a delete's
+  /// confirm button, the nav badge) and only manages ~4:1 as a label, so error
+  /// TEXT takes the lighter [_darkDanger] (~6.9:1) via [StatusColors].
+  ///
+  /// The hue comes from the red the app already speaks (`GlucoseColors`), so the
+  /// product has ONE red family instead of Material's stock maroon beside it.
+  static const Color _darkError = Color(0xFFE0533D);
+  static const Color _darkDanger = Color(0xFFFF8A7A);
+  static const Color _darkWarning = Color(0xFFFFB23E);
+  static const Color _darkPositive = Color(0xFF5DD98C);
+
   static final ThemeData dark = ThemeData(
     useMaterial3: true,
     primaryColor: Colors.white,
@@ -206,6 +245,8 @@ class AppTheme {
       surfaceContainerHighest: _darkSurfaceRaised,
       outline: _darkOutline,
       onSurfaceVariant: _darkMuted,
+      error: _darkError,
+      onError: Colors.white,
     ),
     filledButtonTheme: _filledButtons,
     elevatedButtonTheme: _elevatedButtons,
@@ -225,6 +266,11 @@ class AppTheme {
     extensions: [
       GlucoseColors.standard,
       AccentColors(onSurface: darkAccent),
+      const StatusColors(
+        danger: _darkDanger,
+        warning: _darkWarning,
+        positive: _darkPositive,
+      ),
     ],
   );
 }

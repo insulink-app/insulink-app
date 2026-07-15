@@ -11,9 +11,13 @@ import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// Branded card that syncs the last ~90 days of Google Health data
+/// Card that syncs the last ~90 days of Google Health data
 /// (steps/distance/calories into the archive, weight into the history) — with
 /// loading and result feedback.
+///
+/// The whole card is the control, so it carries the accent on a neutral surface,
+/// like [TileLayoutButton] next to it. A neutral badge on a tinted card was
+/// tried and read as two unrelated things.
 class HealthImportButton extends StatefulWidget {
   const HealthImportButton({super.key});
 
@@ -83,7 +87,7 @@ class _HealthImportButtonState extends State<HealthImportButton> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.primary.withValues(alpha: 0.08),
+      color: scheme.onSurface.withValues(alpha: 0.04),
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -92,7 +96,7 @@ class _HealthImportButtonState extends State<HealthImportButton> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              _badge(scheme),
+              Icon(PhosphorIconsFill.heart, color: context.accent, size: 24),
               const SizedBox(width: 14),
               Expanded(child: _text(context, scheme)),
               const SizedBox(width: 10),
@@ -100,22 +104,6 @@ class _HealthImportButtonState extends State<HealthImportButton> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _badge(ColorScheme scheme) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        PhosphorIconsFill.heart,
-        color: scheme.onSurfaceVariant,
-        size: 22,
       ),
     );
   }
@@ -132,10 +120,7 @@ class _HealthImportButtonState extends State<HealthImportButton> {
         const SizedBox(height: 2),
         LocaleText(
           'sport.health.subtitle',
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
+          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
       ],
     );

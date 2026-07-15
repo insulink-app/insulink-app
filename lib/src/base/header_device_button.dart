@@ -28,7 +28,7 @@ class HeaderDeviceButton extends StatelessWidget {
               width: 12,
               height: 12,
               decoration: BoxDecoration(
-                color: Colors.red,
+                color: Theme.of(context).colorScheme.error,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color:

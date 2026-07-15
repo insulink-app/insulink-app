@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/tile_layout_state.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Lets the user pick which summary boxes are shown and drag them into the order
@@ -140,7 +141,7 @@ class _TileLayoutEditorState<T extends Enum>
       child: ListTile(
         tileColor: scheme.onSurface.withValues(alpha: 0.04),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: Icon(widget.icon(tile), color: scheme.primary),
+        leading: Icon(widget.icon(tile), color: context.accent),
         title: LocaleText(widget.labelKey(tile)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -151,9 +152,9 @@ class _TileLayoutEditorState<T extends Enum>
             ),
             const SizedBox(width: 4),
             if (draggable)
-              const Icon(
+              Icon(
                 PhosphorIconsRegular.dotsSixVertical,
-                color: Colors.grey,
+                color: scheme.onSurfaceVariant,
               )
             else
               const SizedBox(width: 24),

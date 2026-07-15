@@ -127,7 +127,7 @@ class _ProfileCard extends StatelessWidget {
       description: 'profile.basal.delete_title',
       cancelButton: true,
       confirmButtonText: 'alert.delete',
-      confirmButtonColor: Colors.red,
+      confirmButtonColor: Theme.of(context).colorScheme.error,
       callback: () => state.deleteProfile(index),
     ).show(context);
   }

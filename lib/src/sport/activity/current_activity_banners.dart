@@ -8,6 +8,7 @@ import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
 
 /// Resume banners shown at the top of the "Activities" list for anything still
 /// in progress (a paused strength workout, a recording cardio training) so the
@@ -68,7 +69,7 @@ class CurrentActivityBanners extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
-        color: scheme.primary.withValues(alpha: 0.12),
+        color: scheme.tintPanel,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),

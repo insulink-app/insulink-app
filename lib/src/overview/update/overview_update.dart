@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/overview/update/overview_clock_painter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// Compact "next reading" indicator: an animated clock whose ring fills as the
 /// next reading approaches (cadence per [intervalSec] — ~5 min on the G7, ~1 min
@@ -86,7 +87,7 @@ class _OverviewUpdateState extends State<OverviewUpdate>
   ({double progress, Color color, String value}) _resolve(ColorScheme scheme) {
     final last = widget.lastUpdate;
     if (last == null) {
-      return (progress: 0, color: Colors.grey, value: '—');
+      return (progress: 0, color: scheme.onSurfaceVariant, value: '—');
     }
     final elapsed = DateTime.now().difference(last);
     final remaining = Duration(seconds: widget.intervalSec) - elapsed;
@@ -94,7 +95,7 @@ class _OverviewUpdateState extends State<OverviewUpdate>
     if (remaining.isNegative) {
       return (
         progress: progress,
-        color: Colors.orangeAccent,
+        color: context.warning,
         value: '+${_mmss(remaining)}',
       );
     }

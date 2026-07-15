@@ -5,6 +5,7 @@ import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/weight/weight_entry_row.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
 
 /// Highlighted "Current" box: current weight + trend, with min/avg/max of the
 /// selected range below. [ranged] are the entries in the selected window,
@@ -90,7 +91,7 @@ class WeightCurrentCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.12),
+        color: scheme.tintPanel,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(

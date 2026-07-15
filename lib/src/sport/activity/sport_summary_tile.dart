@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
 
 /// A single summary "box": glyph + label + big value (optional unit), tappable.
 /// Used both in the Sport tab's activity card and on the overview.
@@ -35,10 +36,10 @@ class SportSummaryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.primary.withValues(alpha: 0.06),
+      color: scheme.tintPanel,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: scheme.primary.withValues(alpha: 0.12)),
+        side: BorderSide(color: scheme.tintLine),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(

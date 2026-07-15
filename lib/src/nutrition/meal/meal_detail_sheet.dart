@@ -11,6 +11,7 @@ import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/nutrition/meal/meal_time.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// Opens the details of a logged [meal]: carbs / glucose / bolus, and — when the
 /// bolus was dosed over the food database — the products that made it up.
@@ -236,14 +237,10 @@ class MealDetailSheet extends StatelessWidget {
           Navigator.of(context).pop();
         },
       ),
-      icon: const Icon(
-        PhosphorIconsRegular.trash,
-        size: 20,
-        color: Colors.redAccent,
-      ),
+      icon: Icon(PhosphorIconsRegular.trash, size: 20, color: context.danger),
       label: LocaleText(
         'nutrition.meals.delete',
-        style: const TextStyle(color: Colors.redAccent),
+        style: TextStyle(color: context.danger),
       ),
     );
   }

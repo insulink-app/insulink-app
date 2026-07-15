@@ -63,8 +63,8 @@ class ConnectionRow extends StatelessWidget {
                 Container(
                   width: 10,
                   height: 10,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
+                  decoration: BoxDecoration(
+                    color: scheme.error,
                     shape: BoxShape.circle,
                   ),
                 ),
