@@ -119,7 +119,9 @@
     "restore": {
       "title": "Vorherigen Sensor verwenden?",
       "body": "In deinem Konto ist ein Sensor hinterlegt. Übernimm ihn, um ohne erneutes Koppeln weiterzulesen.",
+      "body_scan": "In deinem Konto ist ein Sensor hinterlegt. Halte dein Handy kurz an den Sensor, um ihn zu übernehmen und weiterzulesen.",
       "use": "Verwenden",
+      "scan": "Scannen",
       "dismiss": "Nicht jetzt"
     },
     "active_insulin": {
@@ -220,8 +222,7 @@
         "failed": "NFC-Scan fehlgeschlagen — bitte erneut versuchen.",
         "done": "Sensor gescannt",
         "cancel": "Scan abbrechen",
-        "connecting": "Verbinde mit Sensor…",
-        "connected": "Verbunden — empfange Glukose"
+        "connecting": "Verbinde mit Sensor…"
       }
     },
     "life": {

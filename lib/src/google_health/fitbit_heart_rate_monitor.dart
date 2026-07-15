@@ -83,7 +83,7 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
       _running = false;
       return;
     }
-    if (!await _ensurePermissions()) {
+    if (!await _permissionsGranted()) {
       _set(FitbitHrStatus.error, 'Bluetooth permission denied.');
       _running = false;
       return;
@@ -142,20 +142,14 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     return null;
   }
 
-  /// Requests scan/connect permission (granted already if a G7 is set up, but the
-  /// HR page can run without one — the friend's standalone app relied on a manual
-  /// grant). Returns true if both are granted.
-  Future<bool> _ensurePermissions() async {
-    if (await Permission.bluetoothScan.isGranted &&
-        await Permission.bluetoothConnect.isGranted) {
-      return true;
-    }
-    final statuses = await [
-      Permission.bluetoothScan,
-      Permission.bluetoothConnect,
-    ].request();
-    return (statuses[Permission.bluetoothScan]?.isGranted ?? false) &&
-        (statuses[Permission.bluetoothConnect]?.isGranted ?? false);
+  /// Whether scan/connect are held. Checks only, never requests: this monitor
+  /// starts app-wide from [GoogleHealthState.init], so a request here fires a
+  /// bare "allow nearby devices" dialog on launch, ahead of the explained
+  /// Bluetooth page in [PermissionOnboarding]. That page (and the G7 start path)
+  /// own the prompt; without the grant the live pulse simply stays off.
+  Future<bool> _permissionsGranted() async {
+    return await Permission.bluetoothScan.isGranted &&
+        await Permission.bluetoothConnect.isGranted;
   }
 
   /// Broad scan (no service filter — the Air only advertises 0x180D in some

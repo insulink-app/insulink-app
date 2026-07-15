@@ -1,0 +1,86 @@
+import 'package:flutter/material.dart';
+
+import '../../cgm/cgm_controller.dart';
+import '../../localization/locales.dart';
+import 'libre3_nfc_scan_sheet.dart';
+
+/// Runs one Libre 3 NFC activation with its "hold the sensor" bottom sheet:
+/// shows the sheet, drives [CgmController.activateLibre3], flips the sheet to
+/// "success" the moment the NFC read lands (before the slower BLE start), and
+/// surfaces a failure as a snackbar. Cancelling the sheet aborts the scan.
+///
+/// Shared by the pairing form and the backend-restore offer — a restored Libre 3
+/// needs a scan too, because its BLE PIN is reissued on every NFC scan.
+class Libre3ScanFlow {
+  Libre3ScanFlow({required this.controller, this.accountId = ''});
+
+  final CgmController controller;
+
+  /// LibreView account id, only for taking over a sensor Abbott's app activated.
+  final String accountId;
+
+  /// True once the sensor is activated and reading; false if the scan failed or
+  /// the user cancelled the sheet.
+  ///
+  /// The sheet closes itself shortly after the NFC read lands, while the slower
+  /// BLE start is still running — so a closed sheet only counts as a cancel while
+  /// the scan has NOT succeeded ([scanned]), otherwise the success would abort
+  /// its own activation and swallow a later failure.
+  Future<bool> run(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final failed = Locales.string(context, 'sensor.pair.libre.failed');
+    final phase = ValueNotifier(Libre3ScanPhase.scanning);
+    var finished = false;
+    var scanned = false;
+    var cancelled = false;
+    var sheetOpen = true;
+    showModalBottomSheet<void>(
+      context: context,
+      // Same recipe as every other sheet in the app (see EditorSheet callers):
+      // scroll-controlled + transparent, with the sheet drawing its own surface,
+      // so it spans the full width instead of Material's centred 640-px box.
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      constraints: const BoxConstraints(maxWidth: double.infinity),
+      builder: (_) => Libre3NfcScanSheet(
+        phase: phase,
+        onCancel: navigator.maybePop,
+        onClose: navigator.maybePop,
+      ),
+    ).whenComplete(() {
+      sheetOpen = false;
+      if (!finished && !scanned) {
+        cancelled = true;
+        controller.cancelLibre3Scan();
+      }
+      phase.dispose();
+    });
+    final error = await controller.activateLibre3(
+      accountId: accountId,
+      onActivated: () {
+        if (!cancelled) {
+          scanned = true;
+          phase.value = Libre3ScanPhase.success;
+        }
+      },
+    );
+    finished = true;
+    if (cancelled) {
+      return false;
+    }
+    if (error == null) {
+      return true;
+    }
+    if (sheetOpen) {
+      navigator.maybePop();
+    }
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('$failed\n$error'),
+        duration: const Duration(seconds: 6),
+      ),
+    );
+    return false;
+  }
+}

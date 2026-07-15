@@ -73,23 +73,25 @@ class SensorSync {
     });
   }
 
-  /// Libre 3 identity: the NFC-derived MAC (+ BLE PIN and cached auth key) that
-  /// let a fresh install reconnect without re-scanning the sensor.
+  /// Libre 3 identity: only the NFC-derived MAC + session info, so a fresh
+  /// install recognises the sensor. Deliberately NO BLE PIN and NO cached kAuth:
+  /// **the sensor issues a NEW BLE PIN on every NFC scan and honours only the
+  /// latest one** (measured — a restored PIN made the sensor terminate the link
+  /// on our challenge response, see docs/LIBRE3.md). A stored PIN is therefore
+  /// worthless the moment anyone re-scans, and the kAuth derived from it with it;
+  /// restoring a Libre 3 always needs a fresh NFC scan. Don't put either secret
+  /// on the server for nothing.
   String? _libreData(CgmStore store, String key) {
     final mac = store.libreMac(key);
     if (mac == null || mac.isEmpty) {
       return null;
     }
-    final pin = store.librePinHex(key);
-    final authKey = store.libreAuthKeyHex(key);
     final start = store.loadSensorStart(key);
     final latest = store.loadLatest(key);
     return jsonEncode({
       'sensor_type': store.sensorType.wireKey,
       'resolved_key': key,
       'libre_mac': mac,
-      'libre_pin': ?pin,
-      'libre_auth': ?authKey,
       if (start != null) 'sensor_start': start.millisecondsSinceEpoch,
       if (latest != null) 'state': latest['state'],
     });
@@ -164,8 +166,6 @@ class SensorSync {
         deviceId: blob['device_id'] as String?,
         sessionKeyHex: blob['session_key'] as String?,
         libreMac: blob['libre_mac'] as String?,
-        librePinHex: blob['libre_pin'] as String?,
-        libreAuthKeyHex: blob['libre_auth'] as String?,
         infoJson: blob['info'] as Map<String, dynamic>?,
         sensorStartMs: (blob['sensor_start'] as num?)?.toInt(),
       );
@@ -186,10 +186,11 @@ class SensorSync {
   }
 }
 
-/// A backend sensor decoded into everything the local store needs to reconnect
-/// without re-pairing. [sensorType] selects which identity fields are populated:
-/// the G7 ([pairingCode]/[deviceId]/[sessionKeyHex]) or the Libre 3
-/// ([libreMac]/[librePinHex]/[libreAuthKeyHex]).
+/// A backend sensor decoded into what the local store needs to adopt it.
+/// [sensorType] selects which identity fields are populated: the G7
+/// ([pairingCode]/[deviceId]/[sessionKeyHex]) reconnects straight from these; the
+/// Libre 3 carries only [libreMac] and still needs an NFC scan for a fresh PIN
+/// (see [SensorSync._libreData]).
 class SensorRestore {
   const SensorRestore({
     required this.sensorId,
@@ -199,8 +200,6 @@ class SensorRestore {
     this.deviceId,
     this.sessionKeyHex,
     this.libreMac,
-    this.librePinHex,
-    this.libreAuthKeyHex,
     this.infoJson,
     this.sensorStartMs,
   });
@@ -214,10 +213,8 @@ class SensorRestore {
   final String? deviceId;
   final String? sessionKeyHex;
 
-  // Libre 3 identity.
+  // Libre 3 identity (the PIN is NOT restorable — it needs an NFC re-scan).
   final String? libreMac;
-  final String? librePinHex;
-  final String? libreAuthKeyHex;
 
   /// The sensor page info ([G7DeviceInfo] JSON) + session start, so the page
   /// populates immediately on restore instead of waiting for a reconnect.

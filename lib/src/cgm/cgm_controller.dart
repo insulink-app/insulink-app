@@ -87,6 +87,10 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       await store.saveResolvedKey(key);
       await store.saveLibreMac(key, result.bleMac);
       await store.saveLibrePin(key, result.blePin);
+      await store.clearLibreAuthKey(key);
+      _append(
+        'Libre 3 activated: ${result.bleMac} pin ${store.librePinHex(key)}',
+      );
       await store.saveIdentity(serial: '', pairingCode: '');
       code.text = '';
       onActivated?.call();
@@ -833,12 +837,18 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Adopt the sensor the backend has on file (offered on a fresh install when
-  /// no sensor is set up locally): restore its identity into the store so the
-  /// pipeline can reconnect without re-pairing, then start reading.
-  Future<void> restoreSensor(SensorRestore restore) async {
+  /// no sensor is set up locally): restore its identity into the store, then
+  /// start reading.
+  ///
+  /// The G7 reconnects straight from the restored identity. A Libre 3 CANNOT:
+  /// its BLE PIN is reissued on every NFC scan and the sensor honours only the
+  /// latest one, so this restores the recognisable parts (type, MAC, session
+  /// start) and does NOT start the service — the caller sends the user through
+  /// [activateLibre3] for a fresh PIN. Returns whether reading has started.
+  Future<bool> restoreSensor(SensorRestore restore) async {
     final store = _store;
     if (store == null) {
-      return;
+      return false;
     }
     await store.saveSensorType(restore.sensorType);
     await store.saveIdentity(
@@ -855,7 +865,11 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     code.text = restore.pairingCode ?? '';
     _restoreFromCache(store);
     notifyListeners();
+    if (restore.sensorType == SensorType.abbottLibre3) {
+      return false;
+    }
     await start();
+    return true;
   }
 
   Future<void> _restoreG7Identity(CgmStore store, SensorRestore restore) async {
@@ -878,15 +892,6 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   ) async {
     if (restore.libreMac != null) {
       await store.saveLibreMac(restore.resolvedKey, restore.libreMac!);
-    }
-    if (restore.librePinHex != null) {
-      await store.saveLibrePinHex(restore.resolvedKey, restore.librePinHex!);
-    }
-    if (restore.libreAuthKeyHex != null) {
-      await store.saveLibreAuthKeyHex(
-        restore.resolvedKey,
-        restore.libreAuthKeyHex!,
-      );
     }
     final start = restore.sensorStartMs;
     if (start != null) {

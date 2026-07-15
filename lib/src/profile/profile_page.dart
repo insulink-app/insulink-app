@@ -9,6 +9,7 @@ import 'package:insulink/src/profile/body/profile_body_selection.dart';
 import 'package:insulink/src/profile/basal/profile_basal_selection.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_selection.dart';
 import 'package:insulink/src/profile/notifications/profile_connection_toggle.dart';
+import 'package:insulink/src/profile/developer/developer_log_panel.dart';
 import 'package:insulink/src/profile/developer/profile_developer_toggle.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_selection.dart';
 import 'package:insulink/src/profile/language/profile_language_selection.dart';
@@ -156,7 +157,11 @@ class _ProfilePageState extends State<ProfilePage> {
       titleKey: "profile.developer",
       icon: PhosphorIconsRegular.code,
       searchKey: "profile.search.developer",
-      children: () => const [ProfileDeveloperToggle()],
+      children: () => const [
+        ProfileDeveloperToggle(),
+        Spacer(),
+        DeveloperLogPanel(),
+      ],
     ),
   ];
 

@@ -119,7 +119,9 @@
     "restore": {
       "title": "Use your previous sensor?",
       "body": "Your account has a sensor on file. Adopt it to keep reading without re-pairing.",
+      "body_scan": "Your account has a sensor on file. Hold your phone against it to adopt it and keep reading.",
       "use": "Use it",
+      "scan": "Scan",
       "dismiss": "Not now"
     },
     "active_insulin": {
@@ -220,8 +222,7 @@
         "failed": "NFC scan failed — try again.",
         "done": "Sensor scanned",
         "cancel": "Cancel scan",
-        "connecting": "Connecting to sensor…",
-        "connected": "Connected — receiving glucose"
+        "connecting": "Connecting to sensor…"
       }
     },
     "life": {

@@ -264,7 +264,17 @@ class Libre3Transport {
   }
 
   /// Send `enc(r1 ‖ r2 ‖ pin)` back on CHALLENGE_DATA, then command 0x08.
+  ///
+  /// The PIN is the one input the sensor validates that we cannot derive — a
+  /// missing one used to be sent as four zero bytes, which the sensor rejects by
+  /// terminating the link (indistinguishable from a crypto bug). Fail loudly and
+  /// log the PIN so a wrong/stale one is visible in the handshake log.
   Future<void> _respondToChallenge(Uint8List challenge23) async {
+    final pin = blePin;
+    if (pin == null || pin.length != 4) {
+      _fail('no BLE PIN on file — scan the sensor with NFC');
+      return;
+    }
     _r1.setRange(0, 16, challenge23);
     _nonce1.setRange(0, 7, challenge23, 16);
     for (var index = 0; index < 16; index++) {
@@ -273,7 +283,8 @@ class Libre3Transport {
     final payload = Uint8List(36)
       ..setRange(0, 16, _r1)
       ..setRange(16, 32, _r2)
-      ..setRange(32, 36, blePin ?? Uint8List(4));
+      ..setRange(32, 36, pin);
+    _log('Libre 3 challenge: pin ${_hex(pin)}');
     final encrypted = await crypto.encryptChallenge(_nonce1, payload);
     await _sendFramed(_challengeData!, encrypted);
     await _writeCommand(0x08); // challenge sent
