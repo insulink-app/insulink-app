@@ -46,6 +46,28 @@ class TrainingState extends ChangeNotifier {
     );
   }
 
+  /// Re-read the library, routines and logbook into THIS instance, so a pull that
+  /// replaced them reaches the UI. The provider keeps this instance, so listeners
+  /// just rebuild.
+  ///
+  /// [activeWorkout] is deliberately NOT reloaded: it has its own account watcher
+  /// ([watchActiveWorkout]) that owns it, and every listener notification here is
+  /// read by the app shell as "a workout appeared" — which opens its runner. A
+  /// refresh must never do that behind the user's back.
+  Future<void> reload() async {
+    final fresh = await TrainingState.load();
+    _exercises
+      ..clear()
+      ..addAll(fresh._exercises);
+    _routines
+      ..clear()
+      ..addAll(fresh._routines);
+    _sessions
+      ..clear()
+      ..addAll(fresh._sessions);
+    notifyListeners();
+  }
+
   List<SportExercise> get exercises => List.unmodifiable(_exercises);
   List<SportRoutine> get routines => List.unmodifiable(_routines);
   List<WorkoutSession> get sessions => List.unmodifiable(_sessions);

@@ -164,7 +164,11 @@ class _TimeRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(PhosphorIconsRegular.pencilSimple, size: 16, color: scheme.onSurfaceVariant),
+              Icon(
+                PhosphorIconsRegular.pencilSimple,
+                size: 16,
+                color: scheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),

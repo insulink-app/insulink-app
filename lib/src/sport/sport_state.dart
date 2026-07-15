@@ -44,6 +44,24 @@ class SportState extends ChangeNotifier {
     );
   }
 
+  /// Re-read the store into THIS instance, so a pull that replaced the stored
+  /// weights/goals reaches the UI. Reuses [load] and adopts its values rather
+  /// than reading the store twice; the provider keeps this instance, so listeners
+  /// just rebuild.
+  Future<void> reload() async {
+    final fresh = await SportState.load();
+    _weights
+      ..clear()
+      ..addAll(fresh._weights);
+    _strideCm = fresh._strideCm;
+    _heightCm = fresh._heightCm;
+    _stepsGoal = fresh._stepsGoal;
+    _distanceGoalM = fresh._distanceGoalM;
+    _caloriesGoal = fresh._caloriesGoal;
+    _weightGoalKg = fresh._weightGoalKg;
+    notifyListeners();
+  }
+
   /// Weights ascending by time (for the history chart).
   List<WeightEntry> get weights => List.unmodifiable(_weights);
 

@@ -6,6 +6,9 @@ import 'package:insulink/src/localization/locale_text.dart';
 /// Shared by every profile toggle so the switches line up in a column no matter
 /// how long each label is (the label takes the remaining width via [Expanded]
 /// and wraps; the switch stays at the right edge).
+///
+/// A null [onChanged] renders the switch disabled — for a setting that only
+/// means something while another one is on.
 class ProfileToggleRow extends StatelessWidget {
   const ProfileToggleRow({
     super.key,
@@ -17,7 +20,7 @@ class ProfileToggleRow extends StatelessWidget {
 
   final String labelKey;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
   /// Thumb colour when on (defaults to the theme primary).
   final Color? activeColor;

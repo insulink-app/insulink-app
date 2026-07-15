@@ -236,7 +236,11 @@ class MealDetailSheet extends StatelessWidget {
           Navigator.of(context).pop();
         },
       ),
-      icon: const Icon(PhosphorIconsRegular.trash, size: 20, color: Colors.redAccent),
+      icon: const Icon(
+        PhosphorIconsRegular.trash,
+        size: 20,
+        color: Colors.redAccent,
+      ),
       label: LocaleText(
         'nutrition.meals.delete',
         style: const TextStyle(color: Colors.redAccent),

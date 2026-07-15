@@ -261,7 +261,11 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
         actions: [
           if (active != null)
             IconButton(
-              icon: Icon(active.isPaused ? PhosphorIconsFill.play : PhosphorIconsRegular.pause),
+              icon: Icon(
+                active.isPaused
+                    ? PhosphorIconsFill.play
+                    : PhosphorIconsRegular.pause,
+              ),
               tooltip: Locales.string(
                 context,
                 active.isPaused

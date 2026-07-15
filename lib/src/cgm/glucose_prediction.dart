@@ -4,11 +4,24 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/request/request.dart';
 
 /// One point of the forecast curve: minutes ahead of "now" and predicted mg/dL.
+///
+/// [mgdl] is the model's conditional MEAN, so it is shrunk toward the middle and
+/// on its own rarely reaches a low or a high. [lo]/[hi] are that point's
+/// conformally calibrated q10/q90 band bounds — the values the true glucose is
+/// expected to fall outside ~10% of the time on each side — and are where the
+/// extremes actually live (see the backend's `BAND_QUANTILES`). [lo] drives the
+/// low pre-warning; both draw the band overlay.
+///
+/// Null for models trained before the band existed, and for a forecast restored
+/// from a cache written before it was persisted — every consumer falls back to
+/// [mgdl].
 class PredictionPoint {
-  const PredictionPoint(this.offsetMin, this.mgdl);
+  const PredictionPoint(this.offsetMin, this.mgdl, {this.lo, this.hi});
 
   final int offsetMin;
   final int mgdl;
+  final int? lo;
+  final int? hi;
 }
 
 /// A fetched forecast: the reading time it is anchored to plus the curve.
@@ -21,10 +34,19 @@ class GlucosePrediction {
   Map<String, dynamic> toJson() => {
     'base': base.millisecondsSinceEpoch,
     'points': [
-      for (final point in points) {'o': point.offsetMin, 'm': point.mgdl},
+      for (final point in points)
+        {
+          'o': point.offsetMin,
+          'm': point.mgdl,
+          if (point.lo != null) 'l': point.lo,
+          if (point.hi != null) 'h': point.hi,
+        },
     ],
   };
 
+  /// Rebuild a cached forecast. A point written before the band was persisted
+  /// carries no `l`/`h` — its bounds stay null and both the advisory and the
+  /// overlay fall back to the mean, so an old cache degrades instead of breaking.
   static GlucosePrediction? fromJson(Map<String, dynamic> json) {
     final base = json['base'];
     final points = json['points'];
@@ -33,7 +55,12 @@ class GlucosePrediction {
     }
     final parsed = [
       for (final point in points)
-        PredictionPoint((point as Map)['o'] as int, point['m'] as int),
+        PredictionPoint(
+          (point as Map)['o'] as int,
+          point['m'] as int,
+          lo: point['l'] as int?,
+          hi: point['h'] as int?,
+        ),
     ];
     return parsed.isEmpty
         ? null
@@ -85,6 +112,8 @@ class GlucosePredictionFetcher {
         PredictionPoint(
           (item as Map)['offset_min'] as int,
           (item['mgdl'] as num).round(),
+          lo: (item['lo_mgdl'] as num?)?.round(),
+          hi: (item['hi_mgdl'] as num?)?.round(),
         ),
     ];
     return points.isEmpty ? null : GlucosePrediction(base, points);

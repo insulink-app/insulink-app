@@ -10,6 +10,7 @@ import 'package:insulink/src/profile/notifications/profile_alarm_sound_state.dar
 import 'package:insulink/src/profile/notifications/profile_connection_state.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_state.dart';
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
+import 'package:insulink/src/profile/notifications/notification_threshold.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
@@ -52,6 +53,8 @@ class ProfileSettings {
       "glucose_urgent_high": "${glucose.urgentHigh}",
       "bolus_correction_factor": "${bolus.correctionFactor}",
       "bolus_carb_factor": "${bolus.carbFactor}",
+      "bolus_max": "${bolus.maxBolus}",
+      "bolus_insulin_duration_h": "${bolus.insulinDurationH}",
       "basal_profiles": await ProfileBasalState.loadRaw(),
       "notifications": "$notifications",
       "alarm_sound": "${await ProfileAlarmSoundState().load()}",
@@ -64,10 +67,16 @@ class ProfileSettings {
       "sensor_expiry_alert": "${await NotificationSetting.expiry.load()}",
       "sensor_halftime_alert": "${await NotificationSetting.halftime.load()}",
       "training_detected_alert": "${await NotificationSetting.training.load()}",
+      // Pod warnings: each toggle plus the number it fires at.
+      "pod_expiry_alert": "${await NotificationSetting.podExpiry.load()}",
+      "pod_expiry_hours": "${await NotificationThreshold.podExpiry.load()}",
+      "pod_insulin_alert": "${await NotificationSetting.podInsulin.load()}",
+      "pod_insulin_units": "${await NotificationThreshold.podInsulin.load()}",
       "silent_mode": "${await ProfileSilentState.load()}",
       "developer": "${await ProfileDeveloperState.load()}",
-      // Glucose-prediction overlay (on/off + horizon).
+      // Glucose-prediction overlay (on/off + band + horizon).
       "prediction_enabled": "${prediction.enabled}",
+      "prediction_band": "${prediction.band}",
       "prediction_horizon": "${prediction.horizon}",
       // Keys must match SportStore's storage keys so pull() writes them back
       // where SportState reads them.

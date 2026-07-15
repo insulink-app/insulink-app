@@ -3,14 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/profile/bolus/bolus_fill_bar.dart';
+import 'package:insulink/src/base/setting_fill_bar.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// Focused editor for one bolus factor: a fill preview, a [Slider] for quick
+/// Focused editor for one integer setting: a fill preview, a [Slider] for quick
 /// adjustment, and a stepper for precise control. Lives in a modal bottom sheet
 /// so dragging never competes with the settings list scroll.
-class BolusFactorEditorSheet extends StatefulWidget {
-  const BolusFactorEditorSheet({
+class SettingValueEditorSheet extends StatefulWidget {
+  const SettingValueEditorSheet({
     super.key,
     required this.labelKey,
     required this.valueKey,
@@ -26,10 +26,11 @@ class BolusFactorEditorSheet extends StatefulWidget {
   final void Function(int) onChanged;
 
   @override
-  State<BolusFactorEditorSheet> createState() => _BolusFactorEditorSheetState();
+  State<SettingValueEditorSheet> createState() =>
+      _SettingValueEditorSheetState();
 }
 
-class _BolusFactorEditorSheetState extends State<BolusFactorEditorSheet> {
+class _SettingValueEditorSheetState extends State<SettingValueEditorSheet> {
   late int _value = widget.value;
 
   void _apply(int value) {
@@ -46,7 +47,7 @@ class _BolusFactorEditorSheetState extends State<BolusFactorEditorSheet> {
       valueText: Locales.string(context, widget.valueKey, params: ['$_value']),
       accent: accent,
       children: [
-        BolusFillBar(
+        SettingFillBar(
           value: _value,
           min: widget.min,
           max: widget.max,

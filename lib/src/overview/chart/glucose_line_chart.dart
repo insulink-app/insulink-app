@@ -26,7 +26,14 @@ class GlucoseLineChart extends StatelessWidget {
     this.pulse = 0,
     this.futureHours = 0,
     this.panHours = 0,
+    this.betweenBars = const [],
   });
+
+  /// Fills between two of [bars], by index — the forecast's uncertainty band.
+  /// Empty unless the band overlay is on. Indexes are resolved by the caller,
+  /// which owns [bars]' order, so [_highlightBar] must stay APPENDED last or the
+  /// indexes would shift out from under it.
+  final List<BetweenBarsData> betweenBars;
 
   /// Hours the visible window is scrolled BACK from the latest reading (0 = the
   /// live window). Shifts [minX]/[maxX] left without moving the x=0 anchor, so
@@ -108,6 +115,7 @@ class GlucoseLineChart extends StatelessWidget {
         titlesData: _titles(context),
         extraLinesData: _targetBand(),
         lineTouchData: _touchData(context),
+        betweenBarsData: betweenBars,
         lineBarsData: [...bars, if (highlightSpot != null) _highlightBar()],
       ),
       // No implicit morph animation: the number of zone bars changes between

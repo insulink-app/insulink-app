@@ -337,8 +337,13 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   List<PredictionPoint>? get predictionCurve => _prediction?.points;
   DateTime? get predictionBase => _prediction?.base;
 
-  /// Fetch a fresh forecast and update the overlay. Fire-and-forget. Called on
-  /// every new reading and when the setting changes.
+  /// Fetch a fresh forecast and update the overlay. Fire-and-forget.
+  ///
+  /// Only for the events the service isolate cannot see: opening the app, and
+  /// the user changing the setting (both want an answer NOW rather than at the
+  /// next reading). The steady 5-minutely refresh belongs to the service isolate
+  /// — see `CgmTaskHandler._refreshPrediction` — because it is the only one alive
+  /// while the phone sleeps; this class then just adopts its cache.
   ///
   /// A disabled setting clears the overlay (and its cache); a FAILED request
   /// keeps the last good forecast, so a transient network error doesn't blank
@@ -642,11 +647,26 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
           _byTime[secs] = mgdl;
         }
         notifyListeners();
-        // A new reading means the backend has fresh data to forecast from.
-        unawaited(refreshPrediction());
+      // The service isolate fetches the forecast (it is the only one alive while
+      // the phone sleeps) and pings once the cache holds a fresh one — so the UI
+      // only mirrors it, exactly as it mirrors the store.
+      case 'prediction':
+        unawaited(_adoptCachedPrediction());
       case 'update':
         _reloadFromStore();
     }
+  }
+
+  /// Show whatever forecast the service isolate last cached. Unlike
+  /// [refreshPrediction] this never hits the network — a null cache means the
+  /// setting is off or nothing has been fetched yet, and clearing is correct.
+  Future<void> _adoptCachedPrediction() async {
+    final cached = await _predictionCache.load();
+    if (_disposed) {
+      return;
+    }
+    _prediction = cached;
+    notifyListeners();
   }
 
   /// Re-read everything the service persisted (history, info, sensor start).

@@ -11,12 +11,15 @@ import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
 import '../../sport/sport_store.dart';
+import '../../sport/sport_sync.dart';
 import '../../sport/training/activity_recognition_sampler.dart';
 import '../../sport/training/background_location_sampler.dart';
 import '../../sport/training/cardio_detection_runner.dart';
+import '../../profile/prediction/profile_prediction_state.dart';
 import 'alarms.dart';
 import '../cgm_connection.dart';
 import '../event_sync.dart';
+import '../glucose_prediction.dart';
 import '../glucose_sync.dart';
 import '../protocol/connection.dart';
 import '../sensor_sync.dart';
@@ -143,7 +146,7 @@ class CgmTaskHandler extends TaskHandler {
       (_) => _locationSampler.tick(),
     );
     _activitySampler.start();
-    unawaited(const SportStore().applyTrainingDecisions());
+    unawaited(_applyTrainingDecisions());
     // With no sensor paired the service still runs (samplers + detection above)
     // but has nothing to connect to, so skip the BLE connect.
     if (await _ensureReady() && _sensorConfigured) {
@@ -256,6 +259,61 @@ class CgmTaskHandler extends TaskHandler {
       'secs': reading.secsSinceStart,
       'tempC': reading.temperatureCentiC,
     });
+    unawaited(_refreshPrediction(reading));
+  }
+
+  /// Fetch a fresh forecast into [PredictionCache] and tell the UI to adopt it.
+  ///
+  /// This isolate owns the periodic fetch because it is the only one alive while
+  /// the phone sleeps — and the sleeping phone is exactly when the advisory
+  /// matters. The UI used to fetch instead, which left [G7AlarmManager] falling
+  /// back to the bare trend line the moment the app was closed.
+  ///
+  /// Deliberately NOT awaited before [G7AlarmManager.checkAdvisory] above: a
+  /// forecast is a network round-trip (up to 10 s plus retries) and an alarm must
+  /// not wait on the network. The advisory therefore reads the PREVIOUS reading's
+  /// curve — at the G7's 5-min cadence that is well inside the 10-min freshness
+  /// window, and it is what the UI-driven fetch already did.
+  Future<void> _refreshPrediction(CgmReading reading) async {
+    final mgdl = reading.glucoseMgDl;
+    final store = _store;
+    if (mgdl == null || store == null) {
+      return;
+    }
+    final setting = await ProfilePredictionState.load();
+    if (!setting.enabled) {
+      return;
+    }
+    final result = await GlucosePredictionFetcher().fetch(
+      setting.horizon,
+      readings: _predictionAnchor(store, reading, mgdl),
+    );
+    if (result == null) {
+      return;
+    }
+    await PredictionCache().save(result);
+    FlutterForegroundTask.sendDataToMain({'t': 'prediction'});
+  }
+
+  /// The reading to anchor the forecast to, with a wall-clock time.
+  ///
+  /// Glucose reaches the backend through a debounced [GlucoseSync], so the tip
+  /// the predictor sees in the DB can lag by minutes — this hands it the value we
+  /// just read. Timed off the sensor's own session clock (like the UI does) so
+  /// the point lands in the right 5-min bucket; an unknown session start means we
+  /// cannot place it in wall-clock time at all, so we send nothing and let the
+  /// predictor anchor to its stored tip.
+  List<(int, DateTime)> _predictionAnchor(
+    CgmStore store,
+    CgmReading reading,
+    int mgdl,
+  ) {
+    final key = store.resolvedKey ?? _serial;
+    final start = key.isEmpty ? null : store.loadSensorStart(key);
+    if (start == null) {
+      return const [];
+    }
+    return [(mgdl, start.add(Duration(seconds: reading.secsSinceStart)))];
   }
 
   void _handleUpdate() {
@@ -288,7 +346,17 @@ class CgmTaskHandler extends TaskHandler {
     _maybePollHeartRate();
     // Apply Confirm/Reject taps buffered by the notification-action isolate,
     // which can't reach secure storage itself (see SportStore.recordTrainingDecision).
-    const SportStore().applyTrainingDecisions();
+    unawaited(_applyTrainingDecisions());
+  }
+
+  /// Drain the buffered Confirm/Reject taps and push the confirmed trainings to
+  /// the account. The push is what makes a confirm survive: without it the
+  /// training exists only on this device, and the next pull replaces the local
+  /// list with the account's — which never heard about it.
+  Future<void> _applyTrainingDecisions() async {
+    if (await const SportStore().applyTrainingDecisions()) {
+      SportSync().pushTrainings();
+    }
   }
 
   /// Runs cardio auto-detection at most every [_detectEvery]; each new training

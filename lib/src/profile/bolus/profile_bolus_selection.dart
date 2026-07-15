@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/profile/bolus/bolus_factor_card.dart';
+import 'package:insulink/src/base/setting_value_card.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:provider/provider.dart';
 
-/// The two bolus-calculator factors (correction + carb ratio).
+/// The bolus settings: the two calculator factors (correction + carb ratio),
+/// the maximum bolus the injection sheet accepts, and how long insulin stays
+/// active.
 ///
 /// Like the glucose ranges, these are NOT inline sliders: a slider in the
 /// scrolling settings list grabs vertical drags and shifts the value by
@@ -18,7 +20,7 @@ class ProfileBolusSelection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        BolusFactorCard(
+        SettingValueCard(
           labelKey: 'profile.bolus.correction',
           valueKey: 'profile.bolus.correction.value',
           value: state.correctionFactor,
@@ -28,7 +30,7 @@ class ProfileBolusSelection extends StatelessWidget {
           onChanged: state.setCorrectionFactor,
         ),
         const SizedBox(height: 12),
-        BolusFactorCard(
+        SettingValueCard(
           labelKey: 'profile.bolus.carb',
           valueKey: 'profile.bolus.carb.value',
           value: state.carbFactor,
@@ -36,6 +38,26 @@ class ProfileBolusSelection extends StatelessWidget {
           max: ProfileBolusState.maxCarb,
           step: ProfileBolusState.carbStep,
           onChanged: state.setCarbFactor,
+        ),
+        const SizedBox(height: 12),
+        SettingValueCard(
+          labelKey: 'profile.bolus.max',
+          valueKey: 'profile.bolus.max.value',
+          value: state.maxBolus,
+          min: ProfileBolusState.minMaxBolus,
+          max: ProfileBolusState.maxMaxBolus,
+          step: ProfileBolusState.maxBolusStep,
+          onChanged: state.setMaxBolus,
+        ),
+        const SizedBox(height: 12),
+        SettingValueCard(
+          labelKey: 'profile.bolus.duration',
+          valueKey: 'profile.bolus.duration.value',
+          value: state.insulinDurationH,
+          min: ProfileBolusState.minInsulinDuration,
+          max: ProfileBolusState.maxInsulinDuration,
+          step: ProfileBolusState.insulinDurationStep,
+          onChanged: state.setInsulinDurationH,
         ),
       ],
     );

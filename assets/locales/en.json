@@ -121,6 +121,10 @@
       "body": "Your account has a sensor on file. Adopt it to keep reading without re-pairing.",
       "use": "Use it",
       "dismiss": "Not now"
+    },
+    "active_insulin": {
+      "_": "Active insulin",
+      "until": "Active until #"
     }
   },
   "analysis": {
@@ -679,6 +683,14 @@
       "carb": {
         "_": "Carb ratio",
         "value": "1 U / # g"
+      },
+      "max": {
+        "_": "Maximum bolus",
+        "value": "max. # U"
+      },
+      "duration": {
+        "_": "Insulin duration",
+        "value": "# h"
       }
     },
     "basal": {
@@ -703,10 +715,10 @@
       "language": "language german english flag",
       "theme": "theme appearance light dark color mode display",
       "glucose": "glucose sugar unit target thresholds alarm mmol mgdl",
-      "bolus": "bolus insulin correction carbs factor",
+      "bolus": "bolus insulin correction carbs factor maximum limit cap duration active on board iob",
       "basal": "basal rate profile curve omnipod pod insulin hour",
       "body": "body metrics stride length height bmi weight steps distance",
-      "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training",
+      "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training pod pump insulin reservoir",
       "silent": "silent mute quiet do not disturb dnd",
       "developer": "developer debug logs advanced",
       "prediction": "prediction forecast future trend minutes",
@@ -715,20 +727,37 @@
     "prediction": {
       "_": "Prediction",
       "description": "Show glucose prediction",
+      "band": "Show uncertainty band",
       "min_30": "30 minutes",
       "min_60": "60 minutes"
+    },
+    "pod_expiry": {
+      "description": "Warn when the pod is about to expire",
+      "threshold": {
+        "_": "Lead time before pod expiry",
+        "value": "# h before"
+      }
+    },
+    "pod_insulin": {
+      "description": "Warn when the pod is low on insulin",
+      "threshold": {
+        "_": "Insulin left in the pod",
+        "value": "below # U"
+      }
     }
   },
   "injection": {
     "title": "Bolus calculator",
     "carbs": "Carbohydrates",
     "glucose": "Current glucose",
+    "active_insulin": "Active insulin: # U already subtracted",
     "carbs_tab": "Carbs",
     "products_tab": "Products",
     "bolus": {
       "_": "Bolus",
       "value": "# U",
-      "unit": "U"
+      "unit": "U",
+      "exceeds_max": "Above the maximum of # U"
     },
     "products": {
       "add": "Add product",

@@ -83,6 +83,17 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   /// re-reads, so adopting pulled settings never flashes back to the splash.
   AppPreferences? _preferences;
 
+  /// Bumped on every completed [_reload] to key the preferences subtree, so it
+  /// is rebuilt from scratch instead of reused.
+  ///
+  /// Load-bearing: a provider's `create` runs once per ELEMENT, not per build.
+  /// Without a fresh key the reloaded state objects are constructed and then
+  /// dropped on the floor — the account's settings would only reach the app on
+  /// the next cold start. The key sits BELOW [CgmController] on purpose, so a
+  /// reload never restarts the read pipeline (see CLAUDE.md on the scan
+  /// throttle).
+  int _generation = 0;
+
   @override
   void initState() {
     super.initState();
@@ -107,6 +118,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
     if (mounted) {
       setState(() {
         _preferences = preferences;
+        _generation++;
       });
     }
   }
@@ -145,6 +157,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   /// Wraps the app in the shared state providers built from the loaded prefs.
   Widget _providers(AppPreferences prefs) {
     return MultiProvider(
+      key: ValueKey(_generation),
       providers: [
         ChangeNotifierProvider(
           create: (_) => ProfileLanguageState(prefs.language),
