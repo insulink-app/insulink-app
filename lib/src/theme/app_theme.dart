@@ -80,7 +80,11 @@ class AppTheme {
   /// Modern, filled, borderless text fields with a soft rounded shape — the
   /// focused state gets a thin primary ring. One place styles every [TextField]
   /// in the app (auth, sport editors, …).
-  static InputDecorationTheme _inputTheme(Color fill, Color primary) {
+  static InputDecorationTheme _inputTheme(
+    Color fill,
+    Color primary,
+    Color label,
+  ) {
     OutlineInputBorder ring(Color color, double width) => OutlineInputBorder(
       borderRadius: BorderRadius.circular(buttonRadius),
       borderSide: BorderSide(color: color, width: width),
@@ -92,8 +96,21 @@ class AppTheme {
       border: ring(Colors.transparent, 0),
       enabledBorder: ring(Colors.transparent, 0),
       focusedBorder: ring(primary, 1.6),
+      // The floating label defaults to `primary` when focused, which reads as a
+      // second accent in the field's corner. Keep it a plain neutral grey — the
+      // muted scheme tone still leans blue, which the user didn't want here.
+      floatingLabelStyle: TextStyle(color: label),
     );
   }
+
+  /// Popup/overflow menus sit ON TOP of content, so they take the most raised
+  /// surface rung — the one furthest from the page in both themes — to stand out
+  /// as a floating layer rather than blend into the card beneath.
+  static PopupMenuThemeData _popupMenu(Color color) => PopupMenuThemeData(
+    color: color,
+    elevation: 3,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  );
 
   /// An indigo-blue: the brand accent pulled a little toward the calm blue-grey
   /// of the surfaces, but kept saturated enough to read as a real accent rather
@@ -164,7 +181,12 @@ class AppTheme {
     outlinedButtonTheme: _outlinedButtonsFor(),
     textButtonTheme: _textButtonsFor(Colors.black),
     iconButtonTheme: _iconButtonsFor(Colors.black),
-    inputDecorationTheme: _inputTheme(_lightSurfaceRaised, lightPrimary),
+    inputDecorationTheme: _inputTheme(
+      _lightSurfaceRaised,
+      lightPrimary,
+      const Color(0xFF757575),
+    ),
+    popupMenuTheme: _popupMenu(_lightSurfaceRaised),
     appBarTheme: const AppBarTheme(backgroundColor: _lightBg),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: _lightSurface,
@@ -265,7 +287,12 @@ class AppTheme {
     ),
     textButtonTheme: _textButtonsFor(Colors.white),
     iconButtonTheme: _iconButtonsFor(Colors.white),
-    inputDecorationTheme: _inputTheme(_darkSurfaceRaised, darkPrimary),
+    inputDecorationTheme: _inputTheme(
+      _darkSurfaceRaised,
+      darkPrimary,
+      const Color(0xFF9E9E9E),
+    ),
+    popupMenuTheme: _popupMenu(_darkSurfaceRaised),
     appBarTheme: const AppBarTheme(backgroundColor: _darkBg),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: _darkSurface,

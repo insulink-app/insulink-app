@@ -26,8 +26,14 @@ class LocationSync {
   static const Duration _backoffCap = Duration(seconds: 300);
   static Duration _backoff = _backoffFloor;
 
-  /// Buffer one fix and (re)arm a short flush, so a burst of dense fixes settles
-  /// into a single report.
+  /// How long a queued fix waits before its batch is flushed: once a minute, so
+  /// dense (few-second) local sampling reaches the backend as one request per
+  /// minute rather than a POST per fix — in every case, recording or not.
+  static const Duration _flushInterval = Duration(seconds: 60);
+
+  /// Buffer one fix and arm the batched flush (only if one isn't already armed,
+  /// so continuous sampling can't keep pushing it back forever). A burst of dense
+  /// fixes settles into a single ~[_flushInterval] report.
   void queue(
     double latitude,
     double longitude,
@@ -38,8 +44,10 @@ class LocationSync {
     while (_pending.length > _pendingCap) {
       _pending.removeAt(0);
     }
-    _flush?.cancel();
-    _flush = Timer(const Duration(seconds: 3), () => _send(onLog));
+    _flush ??= Timer(_flushInterval, () {
+      _flush = null;
+      _send(onLog);
+    });
   }
 
   Future<void> _send(void Function(String) onLog) async {
@@ -95,7 +103,10 @@ class LocationSync {
       _pending.removeAt(0);
     }
     _flush?.cancel();
-    _flush = Timer(_backoff, () => _send((_) {}));
+    _flush = Timer(_backoff, () {
+      _flush = null;
+      _send((_) {});
+    });
     _backoff = _backoff * 2 > _backoffCap ? _backoffCap : _backoff * 2;
   }
 }

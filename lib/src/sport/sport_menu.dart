@@ -32,9 +32,6 @@ class SportRowMenu extends StatelessWidget {
       ),
       tooltip: '',
       position: PopupMenuPosition.under,
-      color: scheme.surfaceContainerHigh,
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       onSelected: (action) => _run(context, action),
       itemBuilder: (context) => [
         _item(

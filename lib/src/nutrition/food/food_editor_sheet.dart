@@ -184,7 +184,8 @@ class _FoodEditorSheetState extends State<_FoodEditorSheet> {
             : null,
         decoration: InputDecoration(
           labelText: Locales.string(context, labelKey),
-          floatingLabelStyle: TextStyle(color: accent),
+          // No local floatingLabelStyle — inherit the theme's neutral-grey label
+          // instead of tinting it primary.
           suffixText: suffix,
           isDense: true,
           filled: true,

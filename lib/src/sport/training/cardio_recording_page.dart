@@ -316,7 +316,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
