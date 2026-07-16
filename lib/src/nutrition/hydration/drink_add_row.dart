@@ -27,7 +27,7 @@ class DrinkAddRow extends StatelessWidget {
           ),
         _button(
           context,
-          PhosphorIconsRegular.plus,
+          PhosphorIconsBold.plus,
           Locales.string(context, 'nutrition.hydration.free'),
           () => _free(context),
         ),

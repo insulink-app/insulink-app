@@ -47,11 +47,11 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
       floatingActionButton: FloatingActionButton(
         heroTag: 'weight-add',
         onPressed: () => showWeightEntrySheet(context),
-        child: const Icon(PhosphorIconsRegular.plus),
+        child: const Icon(PhosphorIconsBold.plus),
       ),
       body: weights.isEmpty
           ? const EmptyState(
-              icon: PhosphorIconsRegular.scales,
+              icon: PhosphorIconsBold.scales,
               titleKey: 'sport.weight.empty',
             )
           : ListView(

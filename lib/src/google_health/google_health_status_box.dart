@@ -63,7 +63,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(PhosphorIconsRegular.warning, size: 15, color: scheme.error),
+        Icon(PhosphorIconsBold.warning, size: 15, color: scheme.error),
         const SizedBox(width: 8),
         Expanded(
           child: LocaleText(
@@ -94,8 +94,8 @@ class GoogleHealthStatusBox extends StatelessWidget {
           ),
           child: Icon(
             health.connected
-                ? PhosphorIconsRegular.watch
-                : PhosphorIconsRegular.watch,
+                ? PhosphorIconsBold.watch
+                : PhosphorIconsBold.watch,
             size: 30,
             color: accent,
           ),
@@ -139,7 +139,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
     if (health.connected) {
       return OutlinedButton.icon(
         onPressed: () => _confirmDisconnect(context),
-        icon: const Icon(PhosphorIconsRegular.linkBreak, size: 20),
+        icon: const Icon(PhosphorIconsBold.linkBreak, size: 20),
         label: LocaleText('google_health.disconnect'),
         style: OutlinedButton.styleFrom(
           foregroundColor: context.danger,
@@ -154,7 +154,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
     // the box renders it — see _hintOrFailure.
     return FilledButton.tonalIcon(
       onPressed: () => health.connect(),
-      icon: const Icon(PhosphorIconsRegular.link, size: 20),
+      icon: const Icon(PhosphorIconsBold.link, size: 20),
       label: LocaleText('google_health.connect'),
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
     );
@@ -162,7 +162,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
 
   void _confirmDisconnect(BuildContext context) {
     Alert(
-      icon: PhosphorIconsRegular.warning,
+      icon: PhosphorIconsBold.warning,
       iconColor: context.danger,
       description: 'google_health.disconnect_confirm',
       cancelButton: true,

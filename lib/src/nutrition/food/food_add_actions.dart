@@ -50,17 +50,17 @@ class FoodAddActions extends StatelessWidget {
       children: [
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(PhosphorIconsRegular.plus, size: 24),
+          icon: const Icon(PhosphorIconsBold.plus, size: 24),
           onPressed: () => showFoodEditor(context),
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(PhosphorIconsRegular.magnifyingGlass, size: 24),
+          icon: const Icon(PhosphorIconsBold.magnifyingGlass, size: 24),
           onPressed: () => openFoodSearch(context),
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(PhosphorIconsRegular.qrCode, size: 22),
+          icon: const Icon(PhosphorIconsBold.qrCode, size: 22),
           onPressed: () => scanAndEditProduct(context),
         ),
       ],

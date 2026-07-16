@@ -86,7 +86,7 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
             suffixIcon: _query.text.isEmpty
                 ? null
                 : IconButton(
-                    icon: const Icon(PhosphorIconsRegular.x),
+                    icon: const Icon(PhosphorIconsBold.x),
                     onPressed: () {
                       _query.clear();
                       _onChanged('');
@@ -131,8 +131,8 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
     return ListTile(
       leading: Icon(
         product.unit == 'ml'
-            ? PhosphorIconsRegular.drop
-            : PhosphorIconsRegular.forkKnife,
+            ? PhosphorIconsBold.drop
+            : PhosphorIconsBold.forkKnife,
         color: scheme.primary,
       ),
       title: Text(product.name, maxLines: 1, overflow: TextOverflow.ellipsis),

@@ -94,7 +94,10 @@ class AppTheme {
     );
   }
 
-  static final Color lightPrimary = Colors.indigo;
+  /// An indigo-blue: the brand accent pulled a little toward the calm blue-grey
+  /// of the surfaces, but kept saturated enough to read as a real accent rather
+  /// than grey. Dark enough to carry white button labels.
+  static final Color lightPrimary = const Color(0xFF45569F);
 
   /// The light theme's surface ladder. It mirrors the dark one rung for rung,
   /// but steps DOWNWARD: here the page is the brightest thing on screen, so each
@@ -144,8 +147,8 @@ class AppTheme {
     colorScheme: ColorScheme.light(
       primary: lightPrimary,
       onPrimary: onPrimary,
-      // ponytail: default secondary is teal — align it to the indigo brand so
-      // chips/date-pickers stop tinting turquoise.
+      // ponytail: default secondary is teal — align it to the slate-blue brand
+      // so chips/date-pickers stop tinting turquoise.
       secondary: lightPrimary,
       surface: _lightSurface,
       surfaceContainerHigh: _lightSurfaceHigh,
@@ -178,20 +181,19 @@ class AppTheme {
     ],
   );
 
-  /// Indigo with a little saturation taken off. The light theme can carry the
-  /// fully saturated brand accent, but on the dark background that same hue at
-  /// ~99% saturation reads as harsh neon — ~85% keeps it vivid while letting it
-  /// sit ON the surface instead of glowing off it.
+  /// The indigo-blue [lightPrimary] lifted for the dark background: saturated
+  /// enough to stay a clear brand accent, but softened from the old neon indigo
+  /// so it sits ON the surface instead of glowing off it.
   ///
   /// This is tuned as a FILL (a button with white text on top). It is too dark
   /// to double as a foreground on a dark surface — see [darkAccent].
-  static final Color darkPrimary = Color(0xFF5A73F2);
+  static final Color darkPrimary = Color(0xFF5D73CC);
 
   /// A light tone of [darkPrimary], for drawing the accent ON a dark surface
   /// (outlined-button labels) rather than filling with it. Same hue, so the two
   /// read as one brand colour; light enough to clear 7:1 against the surface,
   /// where [darkPrimary] itself only manages ~4:1.
-  static final Color darkAccent = Color(0xFF93A6FF);
+  static final Color darkAccent = Color(0xFF9DACEA);
 
   /// Dark surfaces take their hue from the insulink website's palette (`--bg`,
   /// `--surface`, `--surface-2`, `--border` in its `style.css`) so app and site

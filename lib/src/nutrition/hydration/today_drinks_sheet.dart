@@ -85,7 +85,7 @@ class _TodayDrinksSheet extends StatelessWidget {
           subtitle: Text(_time(entry.atEpochMs)),
           trailing: IconButton(
             icon: Icon(
-              PhosphorIconsRegular.trash,
+              PhosphorIconsBold.trash,
               color: theme.colorScheme.onSurfaceVariant,
             ),
             onPressed: () => state.removeEntry(entry),

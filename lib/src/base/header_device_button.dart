@@ -16,7 +16,7 @@ class HeaderDeviceButton extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         IconButton(
-          icon: const Icon(PhosphorIconsRegular.plug, size: 30),
+          icon: const Icon(PhosphorIconsBold.plug, size: 30),
           color: const Color(0xFFB3B3B3),
           onPressed: () => openConnectionsPage(context),
         ),

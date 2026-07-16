@@ -14,7 +14,7 @@ class ProfilePasswordDialog {
     final current = TextEditingController();
     final next = TextEditingController();
     Alert(
-      icon: PhosphorIconsRegular.lock,
+      icon: PhosphorIconsBold.lock,
       content: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         child: _PasswordFields(current: current, next: next),
@@ -91,10 +91,10 @@ class _PasswordFieldsState extends State<_PasswordFields> {
       obscureText: _obscure,
       textInputAction: TextInputAction.done,
       decoration: InputDecoration(
-        prefixIcon: const Icon(PhosphorIconsRegular.lock),
+        prefixIcon: const Icon(PhosphorIconsBold.lock),
         suffixIcon: IconButton(
           icon: Icon(
-            _obscure ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
+            _obscure ? PhosphorIconsBold.eye : PhosphorIconsBold.eyeSlash,
           ),
           onPressed: () => setState(() => _obscure = !_obscure),
           tooltip: Locales.string(context, "profile.account.show_password"),

@@ -27,7 +27,7 @@ class WeightDeltaChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            up ? PhosphorIconsRegular.arrowUp : PhosphorIconsRegular.arrowDown,
+            up ? PhosphorIconsBold.arrowUp : PhosphorIconsBold.arrowDown,
             size: 12,
             color: color,
           ),
@@ -100,7 +100,7 @@ class WeightEntryRow extends StatelessWidget {
           ),
           if (delta != null && delta != 0) WeightDeltaChip(delta: delta),
           IconButton(
-            icon: const Icon(PhosphorIconsRegular.trash, size: 20),
+            icon: const Icon(PhosphorIconsBold.trash, size: 20),
             onPressed: () => confirmDelete(
               context,
               messageKey: 'sport.weight.delete_confirm',

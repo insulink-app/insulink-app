@@ -561,7 +561,7 @@
       "delete_confirm": "Dieses Training wirklich löschen?",
       "no_route": "Keine Route aufgezeichnet",
       "metrics": "Zeitlicher Verlauf",
-      "no_metrics": "Keine Glukose- oder Herzfrequenzdaten",
+      "no_metrics": "Keine Glukose-, Herzfrequenz- oder Tempodaten",
       "glucose": "Glukose",
       "heart_rate": "Herzfrequenz",
       "splits": "Tempo pro Kilometer",

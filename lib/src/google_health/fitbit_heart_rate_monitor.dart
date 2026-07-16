@@ -64,7 +64,6 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   void _set(FitbitHrStatus next, String text) {
     status = next;
     message = text;
-    debugPrint('[fitbit-hr] $text');
     notifyListeners();
   }
 

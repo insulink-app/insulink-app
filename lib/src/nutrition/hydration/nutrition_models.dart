@@ -36,10 +36,10 @@ class DrinkPreset {
 }
 
 const List<DrinkPreset> drinkPresets = [
-  DrinkPreset('glass', 250, PhosphorIconsRegular.pintGlass, '250 ml'),
-  DrinkPreset('small_bottle', 700, PhosphorIconsRegular.beerBottle, '0,7 L'),
-  DrinkPreset('sodastream', 840, PhosphorIconsRegular.beerBottle, '840 ml'),
-  DrinkPreset('large_bottle', 1000, PhosphorIconsRegular.beerBottle, '1 L'),
+  DrinkPreset('glass', 250, PhosphorIconsBold.pintGlass, '250 ml'),
+  DrinkPreset('small_bottle', 700, PhosphorIconsBold.beerBottle, '0,7 L'),
+  DrinkPreset('sodastream', 840, PhosphorIconsBold.beerBottle, '840 ml'),
+  DrinkPreset('large_bottle', 1000, PhosphorIconsBold.beerBottle, '1 L'),
 ];
 
 /// Icon for a stored entry's [kind]; free-input entries fall back to a drop.
@@ -49,7 +49,7 @@ IconData iconForKind(String kind) {
       return preset.icon;
     }
   }
-  return PhosphorIconsRegular.drop;
+  return PhosphorIconsBold.drop;
 }
 
 /// Litres with up to two decimals, German comma, trailing zeros trimmed

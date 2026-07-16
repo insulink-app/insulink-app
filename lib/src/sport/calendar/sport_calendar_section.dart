@@ -73,7 +73,7 @@ class _SportCalendarSectionState extends State<SportCalendarSection> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          icon: const Icon(PhosphorIconsRegular.caretLeft),
+          icon: const Icon(PhosphorIconsBold.caretLeft),
           onPressed: () => _step(-1),
         ),
         Text(
@@ -81,7 +81,7 @@ class _SportCalendarSectionState extends State<SportCalendarSection> {
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         IconButton(
-          icon: const Icon(PhosphorIconsRegular.caretRight),
+          icon: const Icon(PhosphorIconsBold.caretRight),
           // No stepping into the future — there are no activities there.
           onPressed: atCurrent ? null : () => _step(1),
         ),

@@ -58,7 +58,7 @@ class ActivitySummaryCard extends StatelessWidget {
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(PhosphorIconsRegular.slidersHorizontal, size: 20),
+          icon: const Icon(PhosphorIconsBold.slidersHorizontal, size: 20),
           onPressed: () => showActivitySettingsSheet(context),
         ),
       ],

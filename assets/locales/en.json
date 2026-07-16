@@ -561,7 +561,7 @@
       "delete_confirm": "Delete this training?",
       "no_route": "No route recorded",
       "metrics": "Trends over time",
-      "no_metrics": "No glucose or heart-rate data",
+      "no_metrics": "No glucose, heart-rate or speed data",
       "glucose": "Glucose",
       "heart_rate": "Heart rate",
       "splits": "Pace per kilometre",

@@ -106,12 +106,12 @@ class _TileLayoutEditorState<T extends Enum>
         controller: _query,
         decoration: InputDecoration(
           isDense: true,
-          prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
+          prefixIcon: const Icon(PhosphorIconsBold.magnifyingGlass),
           hintText: Locales.string(context, 'sport.layout.search'),
           suffixIcon: _query.text.isEmpty
               ? null
               : IconButton(
-                  icon: const Icon(PhosphorIconsRegular.x),
+                  icon: const Icon(PhosphorIconsBold.x),
                   onPressed: _query.clear,
                 ),
         ),
@@ -153,7 +153,7 @@ class _TileLayoutEditorState<T extends Enum>
             const SizedBox(width: 4),
             if (draggable)
               Icon(
-                PhosphorIconsRegular.dotsSixVertical,
+                PhosphorIconsBold.dotsSixVertical,
                 color: scheme.onSurfaceVariant,
               )
             else

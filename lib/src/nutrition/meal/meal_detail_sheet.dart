@@ -111,14 +111,14 @@ class MealDetailSheet extends StatelessWidget {
         children: [
           _statRow(
             context,
-            PhosphorIconsRegular.drop,
+            PhosphorIconsBold.drop,
             'injection.glucose',
             '${meal.glucoseMgdl} mg/dL',
           ),
           Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
           _statRow(
             context,
-            PhosphorIconsRegular.drop,
+            PhosphorIconsBold.drop,
             'injection.bolus',
             '${meal.bolus.toStringAsFixed(1)} E',
           ),
@@ -201,7 +201,7 @@ class MealDetailSheet extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(left: 6),
                     child: Icon(
-                      PhosphorIconsRegular.caretRight,
+                      PhosphorIconsBold.caretRight,
                       color: scheme.onSurface.withValues(alpha: 0.3),
                     ),
                   ),
@@ -237,7 +237,7 @@ class MealDetailSheet extends StatelessWidget {
           Navigator.of(context).pop();
         },
       ),
-      icon: Icon(PhosphorIconsRegular.trash, size: 20, color: context.danger),
+      icon: Icon(PhosphorIconsBold.trash, size: 20, color: context.danger),
       label: LocaleText(
         'nutrition.meals.delete',
         style: TextStyle(color: context.danger),

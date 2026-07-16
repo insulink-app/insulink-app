@@ -217,7 +217,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
 
   void _confirmStop() {
     Alert(
-      icon: PhosphorIconsRegular.stopCircle,
+      icon: PhosphorIconsBold.stopCircle,
       iconColor: context.danger,
       description: 'sport.trainings.stop_confirm',
       cancelButton: true,
@@ -265,7 +265,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
               icon: Icon(
                 active.isPaused
                     ? PhosphorIconsFill.play
-                    : PhosphorIconsRegular.pause,
+                    : PhosphorIconsBold.pause,
               ),
               tooltip: Locales.string(
                 context,

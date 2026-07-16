@@ -67,7 +67,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
         title: LocaleText('sport.routines.edit'),
         actions: [
           IconButton(
-            icon: const Icon(PhosphorIconsRegular.trash),
+            icon: const Icon(PhosphorIconsBold.trash),
             onPressed: () => confirmDelete(
               context,
               messageKey: 'sport.routines.delete_confirm',
@@ -113,7 +113,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       child: Row(
         children: [
           Icon(
-            PhosphorIconsRegular.clock,
+            PhosphorIconsBold.clock,
             size: 16,
             color: scheme.onSurface.withValues(alpha: 0.6),
           ),
@@ -221,14 +221,14 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
           border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
         ),
         child: ListTile(
-          leading: const Icon(PhosphorIconsRegular.dotsSixVertical),
+          leading: const Icon(PhosphorIconsBold.dotsSixVertical),
           title: Text(
             exercise?.name ?? '—',
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           subtitle: Text(_summary(item, exercise)),
           trailing: IconButton(
-            icon: const Icon(PhosphorIconsRegular.trash, size: 20),
+            icon: const Icon(PhosphorIconsBold.trash, size: 20),
             onPressed: () => confirmDelete(
               context,
               messageKey: 'sport.routines.item_delete_confirm',

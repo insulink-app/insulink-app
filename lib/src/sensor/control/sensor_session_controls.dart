@@ -32,7 +32,7 @@ class SensorSessionControls extends StatelessWidget {
   Widget _endSessionButton(BuildContext context, ColorScheme scheme) {
     return FilledButton.tonalIcon(
       onPressed: _connected ? () => _endSession(context) : null,
-      icon: const Icon(PhosphorIconsRegular.stopCircle, size: 20),
+      icon: const Icon(PhosphorIconsBold.stopCircle, size: 20),
       label: LocaleText('sensor.control.end_session'),
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(46),
@@ -47,7 +47,7 @@ class SensorSessionControls extends StatelessWidget {
       onPressed: (_connected || controller.hasSensor)
           ? () => _stopSensor(context)
           : null,
-      icon: const Icon(PhosphorIconsRegular.linkBreak, size: 20),
+      icon: const Icon(PhosphorIconsBold.linkBreak, size: 20),
       label: LocaleText('sensor.control.stop_sensor'),
       style: OutlinedButton.styleFrom(
         foregroundColor: context.danger,
@@ -89,7 +89,7 @@ class SensorSessionControls extends StatelessWidget {
     bool destructive = false,
   }) {
     Alert(
-      icon: PhosphorIconsRegular.warning,
+      icon: PhosphorIconsBold.warning,
       iconColor: destructive ? context.danger : null,
       content: _confirmContent(titleKey, bodyKey),
       cancelButton: true,

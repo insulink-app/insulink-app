@@ -117,7 +117,7 @@ class _CopyLogButtonState extends State<_CopyLogButton> {
     return TextButton.icon(
       onPressed: _copy,
       icon: Icon(
-        done ? PhosphorIconsRegular.check : PhosphorIconsRegular.copy,
+        done ? PhosphorIconsBold.check : PhosphorIconsBold.copy,
         size: 16,
       ),
       label: done

@@ -35,7 +35,7 @@ class CurrentActivityBanners extends StatelessWidget {
         if (routine != null)
           _banner(
             context,
-            PhosphorIconsRegular.barbell,
+            PhosphorIconsBold.barbell,
             'sport.workout.resume_active',
             () => Navigator.of(context).push(
               MaterialPageRoute<void>(

@@ -135,8 +135,8 @@ class _HealthImportButtonState extends State<HealthImportButton> {
       );
     }
     if (_imported) {
-      return Icon(PhosphorIconsRegular.check, color: context.accent);
+      return Icon(PhosphorIconsBold.check, color: context.accent);
     }
-    return Icon(PhosphorIconsRegular.arrowsClockwise, color: context.accent);
+    return Icon(PhosphorIconsBold.arrowsClockwise, color: context.accent);
   }
 }

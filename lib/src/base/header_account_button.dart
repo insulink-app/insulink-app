@@ -42,7 +42,7 @@ class _HeaderAccountButtonState extends State<HeaderAccountButton> {
           backgroundColor: theme.colorScheme.primary,
           child: initial.isEmpty
               ? Icon(
-                  PhosphorIconsRegular.user,
+                  PhosphorIconsBold.user,
                   color: theme.colorScheme.onPrimary,
                 )
               : Text(

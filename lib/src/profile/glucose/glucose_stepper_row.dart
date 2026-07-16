@@ -31,7 +31,7 @@ class GlucoseStepperRow extends StatelessWidget {
       children: [
         Expanded(child: _label(theme)),
         CircleIconButton(
-          icon: PhosphorIconsRegular.minus,
+          icon: PhosphorIconsBold.minus,
           accent: accent,
           onTap: onMinus,
         ),
@@ -39,7 +39,7 @@ class GlucoseStepperRow extends StatelessWidget {
         _value(),
         const SizedBox(width: 10),
         CircleIconButton(
-          icon: PhosphorIconsRegular.plus,
+          icon: PhosphorIconsBold.plus,
           accent: accent,
           onTap: onPlus,
         ),

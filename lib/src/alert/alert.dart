@@ -237,9 +237,9 @@ class AlertState extends State<Alert> {
       return widget.icon!;
     }
     return switch (widget.type) {
-      AlertType.success => PhosphorIconsRegular.checkCircle,
-      AlertType.error => PhosphorIconsRegular.warningCircle,
-      _ => PhosphorIconsRegular.info,
+      AlertType.success => PhosphorIconsBold.checkCircle,
+      AlertType.error => PhosphorIconsBold.warningCircle,
+      _ => PhosphorIconsBold.info,
     };
   }
 

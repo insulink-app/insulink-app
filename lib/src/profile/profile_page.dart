@@ -66,49 +66,49 @@ class _ProfilePageState extends State<ProfilePage> {
   List<ProfileTopic> get _topics => [
     (
       titleKey: "profile.language",
-      icon: PhosphorIconsRegular.translate,
+      icon: PhosphorIconsBold.translate,
       searchKey: "profile.search.language",
       children: () => const [ProfileLanguageSelection()],
     ),
     (
       titleKey: "profile.theme",
-      icon: PhosphorIconsRegular.palette,
+      icon: PhosphorIconsBold.palette,
       searchKey: "profile.search.theme",
       children: () => const [ProfileThemeSelection()],
     ),
     (
       titleKey: "profile.glucose",
-      icon: PhosphorIconsRegular.drop,
+      icon: PhosphorIconsBold.drop,
       searchKey: "profile.search.glucose",
       children: () => const [ProfileGlucoseSelection()],
     ),
     (
       titleKey: "profile.bolus",
-      icon: PhosphorIconsRegular.pill,
+      icon: PhosphorIconsBold.pill,
       searchKey: "profile.search.bolus",
       children: () => const [ProfileBolusSelection()],
     ),
     (
       titleKey: "profile.basal",
-      icon: PhosphorIconsRegular.chartLine,
+      icon: PhosphorIconsBold.chartLine,
       searchKey: "profile.search.basal",
       children: () => const [ProfileBasalSelection()],
     ),
     (
       titleKey: "profile.body",
-      icon: PhosphorIconsRegular.ruler,
+      icon: PhosphorIconsBold.ruler,
       searchKey: "profile.search.body",
       children: () => const [ProfileBodySelection()],
     ),
     (
       titleKey: "sport.goals",
-      icon: PhosphorIconsRegular.flag,
+      icon: PhosphorIconsBold.flag,
       searchKey: "profile.search.sport_goals",
       children: () => const [SportGoalsEditor()],
     ),
     (
       titleKey: "profile.notification",
-      icon: PhosphorIconsRegular.bell,
+      icon: PhosphorIconsBold.bell,
       searchKey: "profile.search.notification",
       children: () => const [
         ProfileNotificationToggle(),
@@ -138,7 +138,7 @@ class _ProfilePageState extends State<ProfilePage> {
     ),
     (
       titleKey: "profile.prediction",
-      icon: PhosphorIconsRegular.chartLine,
+      icon: PhosphorIconsBold.chartLine,
       searchKey: "profile.search.prediction",
       children: () => const [
         ProfilePredictionToggle(),
@@ -149,13 +149,13 @@ class _ProfilePageState extends State<ProfilePage> {
     ),
     (
       titleKey: "profile.silent",
-      icon: PhosphorIconsRegular.bellSlash,
+      icon: PhosphorIconsBold.bellSlash,
       searchKey: "profile.search.silent",
       children: () => const [ProfileSilentToggle()],
     ),
     (
       titleKey: "profile.developer",
-      icon: PhosphorIconsRegular.code,
+      icon: PhosphorIconsBold.code,
       searchKey: "profile.search.developer",
       children: () => const [
         ProfileDeveloperToggle(),
@@ -199,7 +199,7 @@ class _ProfilePageState extends State<ProfilePage> {
         appBar: AppBar(
           surfaceTintColor: Colors.transparent,
           leading: IconButton(
-            icon: const Icon(PhosphorIconsRegular.arrowLeft),
+            icon: const Icon(PhosphorIconsBold.arrowLeft),
             onPressed: _leave,
           ),
           title: LocaleText("profile.label"),
@@ -227,11 +227,11 @@ class _ProfilePageState extends State<ProfilePage> {
       controller: _search,
       decoration: InputDecoration(
         hintText: Locales.string(context, "profile.search"),
-        prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
+        prefixIcon: const Icon(PhosphorIconsBold.magnifyingGlass),
         suffixIcon: _query.isEmpty
             ? null
             : IconButton(
-                icon: const Icon(PhosphorIconsRegular.x),
+                icon: const Icon(PhosphorIconsBold.x),
                 onPressed: _search.clear,
               ),
       ),
@@ -286,7 +286,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 Icon(
-                  PhosphorIconsRegular.caretRight,
+                  PhosphorIconsBold.caretRight,
                   size: 18,
                   color: scheme.onSurface.withValues(alpha: 0.4),
                 ),

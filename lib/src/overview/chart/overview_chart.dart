@@ -165,7 +165,7 @@ class _OverviewChartState extends State<OverviewChart>
       children: [
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(PhosphorIconsRegular.caretLeft, size: 22),
+          icon: const Icon(PhosphorIconsBold.caretLeft, size: 22),
           onPressed: canGoBack ? () => _pan(1) : null,
         ),
         Flexible(
@@ -178,7 +178,7 @@ class _OverviewChartState extends State<OverviewChart>
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(PhosphorIconsRegular.caretRight, size: 22),
+          icon: const Icon(PhosphorIconsBold.caretRight, size: 22),
           onPressed: _panWindows > 0 ? () => _pan(-1) : null,
         ),
       ],

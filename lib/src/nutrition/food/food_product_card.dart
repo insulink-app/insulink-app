@@ -41,7 +41,7 @@ class FoodProductCard extends StatelessWidget {
               IconButton(
                 visualDensity: VisualDensity.compact,
                 icon: Icon(
-                  PhosphorIconsRegular.x,
+                  PhosphorIconsBold.x,
                   size: 18,
                   color: scheme.onSurface.withValues(alpha: 0.4),
                 ),
@@ -68,7 +68,7 @@ class FoodProductCard extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Icon(
-        isDrink ? PhosphorIconsRegular.drop : PhosphorIconsRegular.forkKnife,
+        isDrink ? PhosphorIconsBold.drop : PhosphorIconsBold.forkKnife,
         color: scheme.onSurfaceVariant,
         size: 22,
       ),

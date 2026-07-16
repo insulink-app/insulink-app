@@ -19,7 +19,7 @@ class EventLogView extends StatelessWidget {
     final glucose = context.watch<ProfileGlucoseState>();
     if (events.isEmpty) {
       return const EmptyState(
-        icon: PhosphorIconsRegular.calendarBlank,
+        icon: PhosphorIconsBold.calendarBlank,
         titleKey: 'analysis.events.empty',
       );
     }
@@ -129,16 +129,16 @@ class _EventStyle {
     switch (type) {
       case 'glucose_low':
       case 'glucose_low_urgent':
-        return _EventStyle(PhosphorIconsRegular.arrowDown, colors.low);
+        return _EventStyle(PhosphorIconsBold.arrowDown, colors.low);
       case 'glucose_high':
       case 'glucose_high_urgent':
-        return _EventStyle(PhosphorIconsRegular.arrowUp, colors.high);
+        return _EventStyle(PhosphorIconsBold.arrowUp, colors.high);
       case 'signal_loss':
-        return _EventStyle(PhosphorIconsRegular.wifiSlash, scheme.onSurface);
+        return _EventStyle(PhosphorIconsBold.wifiSlash, scheme.onSurface);
       case 'new_sensor':
-        return _EventStyle(PhosphorIconsRegular.plusCircle, colors.inRange);
+        return _EventStyle(PhosphorIconsBold.plusCircle, colors.inRange);
       case 'sensor_stopped':
-        return _EventStyle(PhosphorIconsRegular.stopCircle, scheme.onSurface);
+        return _EventStyle(PhosphorIconsBold.stopCircle, scheme.onSurface);
       default:
         return _EventStyle(PhosphorIconsFill.circle, scheme.onSurface);
     }

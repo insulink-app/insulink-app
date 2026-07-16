@@ -29,7 +29,7 @@ class BasalPeakRow extends StatelessWidget {
   void _typeHour(BuildContext context) {
     final controller = TextEditingController(text: '${peak.hour.round()}');
     Alert(
-      icon: PhosphorIconsRegular.clock,
+      icon: PhosphorIconsBold.clock,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -66,7 +66,7 @@ class BasalPeakRow extends StatelessWidget {
     return Row(
       children: [
         CircleIconButton(
-          icon: PhosphorIconsRegular.caretLeft,
+          icon: PhosphorIconsBold.caretLeft,
           accent: accent,
           onTap: () => _shift(-1),
         ),
@@ -93,7 +93,7 @@ class BasalPeakRow extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         CircleIconButton(
-          icon: PhosphorIconsRegular.caretRight,
+          icon: PhosphorIconsBold.caretRight,
           accent: accent,
           onTap: () => _shift(1),
         ),
@@ -112,7 +112,7 @@ class BasalPeakRow extends StatelessWidget {
           ),
         ),
         IconButton(
-          icon: const Icon(PhosphorIconsRegular.trash),
+          icon: const Icon(PhosphorIconsBold.trash),
           onPressed: onDelete,
         ),
       ],

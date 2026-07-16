@@ -6,6 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:insulink/src/google_health/google_health_importer.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
+import 'package:insulink/src/sport/training/cardio_models.dart';
+import 'package:insulink/src/sport/training/cardio_type_ui.dart';
+import 'package:insulink/src/sport/training/km_splits.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 import 'package:provider/provider.dart';
 
 /// A single normalised series: the plotted spots (0..1) plus the real values,
@@ -19,17 +23,19 @@ class _Series {
   bool get isEmpty => spots.isEmpty;
 }
 
-/// Glucose + heart-rate over a training's time span, shown as one chart below the
-/// route. Both series are normalised to 0..1 (their scales differ wildly), so the
-/// Y axis is hidden and the exact values come from the hover tooltip. Scrubbing
-/// the chart reports the hovered epoch-ms via [onHoverMs] (null when the pointer
-/// leaves) — the parent maps it to a position on the route.
+/// Glucose + heart-rate + speed over a training's time span, shown as one chart
+/// below the route. All series are normalised to 0..1 (their scales differ
+/// wildly), so the Y axis is hidden and the exact values come from the hover
+/// tooltip. Scrubbing the chart reports the hovered epoch-ms via [onHoverMs]
+/// (null when the pointer leaves) — the parent maps it to a position on the
+/// route.
 class TrainingMetricsChart extends StatefulWidget {
   const TrainingMetricsChart({
     super.key,
     required this.startMs,
     required this.endMs,
     required this.glucose,
+    required this.track,
     required this.onHoverMs,
   });
 
@@ -38,6 +44,9 @@ class TrainingMetricsChart extends StatefulWidget {
 
   /// Glucose archive over the span, keyed by epoch-minute → mg/dL.
   final Map<int, int> glucose;
+
+  /// The training's GPS track — the speed series is derived from it.
+  final List<TrackPoint> track;
   final void Function(int? ms) onHoverMs;
 
   @override
@@ -131,18 +140,25 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
       (x: _xOf(sample.at.millisecondsSinceEpoch), value: sample.bpm.toDouble()),
   ]);
 
+  _Series get _speedSeries => _normalise([
+    for (final sample in trackSpeeds(widget.track))
+      (x: _xOf(sample.tMs), value: sample.kmh),
+  ]);
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final scheme = Theme.of(context).colorScheme;
     final glucose = _glucoseSeries;
     final heart = _heartSeries;
+    final speed = _speedSeries;
     final glucoseColor = scheme.primary;
     final heartColor = scheme.error;
+    final speedColor = context.positive;
     // The box is ALWAYS shown (no spinner): the chart area holds the line as soon
     // as there's data, and only once loading is finished with genuinely nothing
     // to show does it swap to the empty-state message.
-    final empty = glucose.isEmpty && heart.isEmpty;
+    final empty = glucose.isEmpty && heart.isEmpty && speed.isEmpty;
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 16, 16, 12),
       decoration: BoxDecoration(
@@ -173,6 +189,10 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
                   const SizedBox(width: 14),
                   _legendChip(heartColor, 'sport.trainings.heart_rate'),
                 ],
+                if (!speed.isEmpty) ...[
+                  const SizedBox(width: 14),
+                  _legendChip(speedColor, 'sport.trainings.speed'),
+                ],
               ],
             ),
           ),
@@ -186,9 +206,11 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
                       scheme,
                       glucose,
                       heart,
+                      speed,
                       glucoseColor,
                       heartColor,
-                      _rangeX(glucose, heart),
+                      speedColor,
+                      _rangeX(glucose, heart, speed),
                     ),
                   ),
           ),
@@ -217,12 +239,17 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
 
   /// The X span the chart draws over: the workout window widened to include any
   /// before/after glucose points, so their line stays inside the plot.
-  ({double min, double max}) _rangeX(_Series glucose, _Series heart) {
+  ({double min, double max}) _rangeX(
+    _Series glucose,
+    _Series heart,
+    _Series speed,
+  ) {
     final xs = [
       0.0,
       _windowMaxX,
       for (final spot in glucose.spots) spot.x,
       for (final spot in heart.spots) spot.x,
+      for (final spot in speed.spots) spot.x,
     ];
     final min = xs.reduce(math.min);
     final max = xs.reduce(math.max);
@@ -233,8 +260,10 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     ColorScheme scheme,
     _Series glucose,
     _Series heart,
+    _Series speed,
     Color glucoseColor,
     Color heartColor,
+    Color speedColor,
     ({double min, double max}) rangeX,
   ) {
     return LineChartData(
@@ -256,10 +285,11 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
       ),
       borderData: FlBorderData(show: false),
       titlesData: _titles(scheme, rangeX),
-      lineTouchData: _touch(scheme, glucose, heart),
+      lineTouchData: _touch(scheme, glucose, heart, speed),
       lineBarsData: [
         _bar(glucose, glucoseColor, fill: true),
         _bar(heart, heartColor, fill: false),
+        _bar(speed, speedColor, fill: false),
       ],
     );
   }
@@ -313,7 +343,12 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     );
   }
 
-  LineTouchData _touch(ColorScheme scheme, _Series glucose, _Series heart) {
+  LineTouchData _touch(
+    ColorScheme scheme,
+    _Series glucose,
+    _Series heart,
+    _Series speed,
+  ) {
     return LineTouchData(
       touchCallback: (event, response) {
         final spots = response?.lineBarSpots;
@@ -361,6 +396,7 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
               spots[index],
               glucose,
               heart,
+              speed,
               showTime: index == spots.length - 1,
             ),
         ],
@@ -373,19 +409,30 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     ColorScheme scheme,
     LineBarSpot spot,
     _Series glucose,
-    _Series heart, {
+    _Series heart,
+    _Series speed, {
     required bool showTime,
   }) {
-    final isGlucose = spot.barIndex == 0;
-    final series = isGlucose ? glucose : heart;
+    final series = switch (spot.barIndex) {
+      0 => glucose,
+      1 => heart,
+      _ => speed,
+    };
     final raw = series.raw[spot.spotIndex];
-    final text = isGlucose
-        ? context.read<ProfileGlucoseState>().formatWithUnit(raw.round())
-        : '${raw.round()} bpm';
+    final text = switch (spot.barIndex) {
+      0 => context.read<ProfileGlucoseState>().formatWithUnit(raw.round()),
+      1 => '${raw.round()} bpm',
+      _ => formatSpeed(raw),
+    };
+    final color = switch (spot.barIndex) {
+      0 => scheme.onInverseSurface,
+      1 => scheme.error,
+      _ => context.positive,
+    };
     return LineTooltipItem(
       text,
       TextStyle(
-        color: isGlucose ? scheme.onInverseSurface : scheme.error,
+        color: color,
         fontWeight: FontWeight.bold,
         fontSize: 13,
       ),

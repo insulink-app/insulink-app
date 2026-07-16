@@ -71,7 +71,7 @@ class ConnectionRow extends StatelessWidget {
                 const SizedBox(width: 12),
               ],
               Icon(
-                PhosphorIconsRegular.caretRight,
+                PhosphorIconsBold.caretRight,
                 size: 18,
                 color: scheme.onSurface.withValues(alpha: 0.4),
               ),

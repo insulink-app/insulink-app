@@ -115,7 +115,7 @@ class _NutritionDetailPageState extends State<NutritionDetailPage> {
       ),
       body: all.isEmpty
           ? const EmptyState(
-              icon: PhosphorIconsRegular.chartLineUp,
+              icon: PhosphorIconsBold.chartLineUp,
               titleKey: 'nutrition.meals.empty',
               subtitleKey: 'nutrition.meals.empty_hint',
             )
@@ -208,14 +208,14 @@ class _NutritionDetailPageState extends State<NutritionDetailPage> {
               _stat(
                 context,
                 scheme,
-                PhosphorIconsRegular.chartLine,
+                PhosphorIconsBold.chartLine,
                 'nutrition.detail.average',
                 avg,
               ),
               _stat(
                 context,
                 scheme,
-                PhosphorIconsRegular.function,
+                PhosphorIconsBold.function,
                 'nutrition.detail.total',
                 total,
               ),

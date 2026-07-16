@@ -101,7 +101,7 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
   Widget _addButton() {
     return OutlinedButton.icon(
       onPressed: _addProduct,
-      icon: const Icon(PhosphorIconsRegular.plus, size: 20),
+      icon: const Icon(PhosphorIconsBold.plus, size: 20),
       label: LocaleText('injection.products.add'),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
@@ -154,7 +154,7 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   icon: Icon(
-                    PhosphorIconsRegular.x,
+                    PhosphorIconsBold.x,
                     size: 18,
                     color: scheme.onSurface.withValues(alpha: 0.4),
                   ),

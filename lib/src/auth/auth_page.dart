@@ -120,8 +120,8 @@ class _AuthPageState extends State<AuthPage> {
         suffixIcon: IconButton(
           icon: Icon(
             _showPassword
-                ? PhosphorIconsRegular.eyeSlash
-                : PhosphorIconsRegular.eye,
+                ? PhosphorIconsBold.eyeSlash
+                : PhosphorIconsBold.eye,
           ),
           onPressed: () => setState(() => _showPassword = !_showPassword),
         ),

@@ -66,7 +66,7 @@ class SensorPairingForm extends StatelessWidget {
         color: scheme.onSurface.withValues(alpha: 0.08),
       ),
       child: Icon(
-        PhosphorIconsRegular.drop,
+        PhosphorIconsBold.drop,
         size: 32,
         color: scheme.onSurface.withValues(alpha: 0.7),
       ),
@@ -127,7 +127,7 @@ class SensorPairingForm extends StatelessWidget {
             padding: EdgeInsets.zero,
             backgroundColor: scheme.onSurface.withValues(alpha: 0.12),
           ),
-          child: const Icon(PhosphorIconsRegular.qrCode, size: 26),
+          child: const Icon(PhosphorIconsBold.qrCode, size: 26),
         ),
       ),
     );
@@ -143,7 +143,7 @@ class SensorPairingForm extends StatelessWidget {
   Widget _connectButton() {
     return FilledButton.icon(
       onPressed: controller.busy ? null : controller.start,
-      icon: const Icon(PhosphorIconsRegular.bluetooth, size: 20),
+      icon: const Icon(PhosphorIconsBold.bluetooth, size: 20),
       label: LocaleText(
         controller.busy ? 'overview.connecting' : 'overview.connect',
       ),

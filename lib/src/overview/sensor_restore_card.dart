@@ -28,8 +28,8 @@ class SensorRestoreCard extends StatelessWidget {
   bool get _needsScan => offer.sensorType == SensorType.abbottLibre3;
 
   IconData get _icon => _needsScan
-      ? PhosphorIconsRegular.scan
-      : PhosphorIconsRegular.cloudArrowDown;
+      ? PhosphorIconsBold.scan
+      : PhosphorIconsBold.cloudArrowDown;
 
   @override
   Widget build(BuildContext context) {

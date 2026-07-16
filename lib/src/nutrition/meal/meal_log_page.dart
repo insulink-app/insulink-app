@@ -23,7 +23,7 @@ class MealLogPage extends StatelessWidget {
       ),
       body: meals.isEmpty
           ? const EmptyState(
-              icon: PhosphorIconsRegular.forkKnife,
+              icon: PhosphorIconsBold.forkKnife,
               titleKey: 'nutrition.meals.empty',
               subtitleKey: 'nutrition.meals.empty_hint',
             )

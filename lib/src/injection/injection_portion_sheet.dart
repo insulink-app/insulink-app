@@ -106,7 +106,7 @@ class _PortionSheetState extends State<_PortionSheet> {
           Row(
             children: [
               CircleIconButton(
-                icon: PhosphorIconsRegular.minus,
+                icon: PhosphorIconsBold.minus,
                 accent: scheme.primary,
                 onTap: () => _bump(-_step),
               ),
@@ -135,7 +135,7 @@ class _PortionSheetState extends State<_PortionSheet> {
               ),
               const SizedBox(width: 12),
               CircleIconButton(
-                icon: PhosphorIconsRegular.plus,
+                icon: PhosphorIconsBold.plus,
                 accent: scheme.primary,
                 onTap: () => _bump(_step),
               ),

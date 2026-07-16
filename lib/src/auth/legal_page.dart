@@ -193,7 +193,7 @@ class _LegalPageState extends State<LegalPage> {
         minimumSize: WidgetStateProperty.all(const Size(double.infinity, 0)),
       ),
       icon: Icon(
-        PhosphorIconsRegular.arrowRight,
+        PhosphorIconsBold.arrowRight,
         color: theme.colorScheme.onPrimary,
         size: 25,
       ),

@@ -87,7 +87,7 @@ class FoodSection extends StatelessWidget {
         child: Column(
           children: [
             Icon(
-              PhosphorIconsRegular.qrCode,
+              PhosphorIconsBold.qrCode,
               size: 32,
               color: theme.colorScheme.onSurfaceVariant,
             ),

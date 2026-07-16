@@ -150,7 +150,7 @@ class _TimeRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(PhosphorIconsRegular.clock, size: 20, color: context.accent),
+              Icon(PhosphorIconsBold.clock, size: 20, color: context.accent),
               const SizedBox(width: 12),
               LocaleText(
                 'sport.weight.time',
@@ -166,7 +166,7 @@ class _TimeRow extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Icon(
-                PhosphorIconsRegular.pencilSimple,
+                PhosphorIconsBold.pencilSimple,
                 size: 16,
                 color: scheme.onSurfaceVariant,
               ),

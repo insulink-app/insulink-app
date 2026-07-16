@@ -34,7 +34,7 @@ class RoutinesSection extends StatelessWidget {
             ),
             IconButton(
               visualDensity: VisualDensity.compact,
-              icon: const Icon(PhosphorIconsRegular.barbell, size: 20),
+              icon: const Icon(PhosphorIconsBold.barbell, size: 20),
               tooltip: Locales.string(context, 'sport.exercises'),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const ExercisesPage()),
@@ -96,7 +96,7 @@ class RoutinesSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
             child: Row(
               children: [
-                const SportLeadingBadge(icon: PhosphorIconsRegular.barbell),
+                const SportLeadingBadge(icon: PhosphorIconsBold.barbell),
                 const SizedBox(width: 14),
                 Expanded(
                   child: _titleBlock(context, routine, training, scheme),
@@ -188,10 +188,10 @@ class RoutinesSection extends StatelessWidget {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(9),
+          padding: const EdgeInsets.all(10),
           child: Icon(
             PhosphorIconsFill.play,
-            size: 24,
+            size: 18,
             color: scheme.onPrimary,
           ),
         ),

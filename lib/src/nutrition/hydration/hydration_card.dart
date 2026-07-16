@@ -72,7 +72,7 @@ class HydrationCard extends StatelessWidget {
         IconButton(
           visualDensity: VisualDensity.compact,
           icon: const Icon(
-            PhosphorIconsRegular.clockCounterClockwise,
+            PhosphorIconsBold.clockCounterClockwise,
             size: 22,
           ),
           onPressed: () => showTodayDrinksSheet(context),

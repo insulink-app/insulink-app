@@ -66,7 +66,7 @@ class ProfilePredictionHorizon extends StatelessWidget {
                   ),
                 ),
                 if (selected)
-                  Icon(PhosphorIconsRegular.check, color: scheme.primary),
+                  Icon(PhosphorIconsBold.check, color: scheme.primary),
               ],
             ),
           ),

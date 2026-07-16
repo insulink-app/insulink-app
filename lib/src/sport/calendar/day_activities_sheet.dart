@@ -94,7 +94,7 @@ class _DayActivitiesSheet extends StatelessWidget {
     return _tile(
       context,
       color: calendarRoutineColor(Theme.of(context).colorScheme),
-      icon: PhosphorIconsRegular.barbell,
+      icon: PhosphorIconsBold.barbell,
       title:
           routine?.name ??
           Locales.string(context, 'sport.logbook.deleted_routine'),

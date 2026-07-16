@@ -85,7 +85,7 @@ class _BasalEditorState extends State<BasalEditor> {
       return;
     }
     Alert(
-      icon: PhosphorIconsRegular.floppyDisk,
+      icon: PhosphorIconsBold.floppyDisk,
       description: 'profile.basal.unsaved',
       cancelButton: true,
       cancelButtonText: 'profile.basal.discard',
@@ -115,7 +115,7 @@ class _BasalEditorState extends State<BasalEditor> {
         appBar: AppBar(
           surfaceTintColor: Colors.transparent,
           leading: IconButton(
-            icon: const Icon(PhosphorIconsRegular.arrowLeft),
+            icon: const Icon(PhosphorIconsBold.arrowLeft),
             onPressed: _onBack,
           ),
           title: LocaleText('profile.basal'),
@@ -159,7 +159,7 @@ class _BasalEditorState extends State<BasalEditor> {
       textCapitalization: TextCapitalization.sentences,
       decoration: InputDecoration(
         labelText: Locales.string(context, 'profile.basal.name'),
-        prefixIcon: const Icon(PhosphorIconsRegular.tag),
+        prefixIcon: const Icon(PhosphorIconsBold.tag),
       ),
     );
   }
@@ -195,7 +195,7 @@ class _BasalEditorState extends State<BasalEditor> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         CircleIconButton(
-          icon: PhosphorIconsRegular.minus,
+          icon: PhosphorIconsBold.minus,
           accent: accent,
           onTap: () => _setHour(
             _selectedHour,
@@ -219,7 +219,7 @@ class _BasalEditorState extends State<BasalEditor> {
           ],
         ),
         CircleIconButton(
-          icon: PhosphorIconsRegular.plus,
+          icon: PhosphorIconsBold.plus,
           accent: accent,
           onTap: () => _setHour(
             _selectedHour,
@@ -238,7 +238,7 @@ class _BasalEditorState extends State<BasalEditor> {
       children: [
         Row(
           children: [
-            Icon(PhosphorIconsRegular.chartLineUp, size: 20, color: accent),
+            Icon(PhosphorIconsBold.chartLineUp, size: 20, color: accent),
             const SizedBox(width: 8),
             LocaleText(
               'profile.basal.generate',
@@ -266,7 +266,7 @@ class _BasalEditorState extends State<BasalEditor> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _addPeak,
-            icon: const Icon(PhosphorIconsRegular.plus),
+            icon: const Icon(PhosphorIconsBold.plus),
             label: LocaleText('profile.basal.add_peak'),
             style: OutlinedButton.styleFrom(
               foregroundColor: accent,

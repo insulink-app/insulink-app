@@ -112,6 +112,10 @@ class _DataView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      // Restore scroll offset if the list subtree is torn down and rebuilt
+      // (e.g. the silent banner appearing shifts the unkeyed Column children),
+      // instead of snapping back to the top.
+      key: const PageStorageKey<String>('overview_scroll'),
       padding: const EdgeInsets.only(bottom: 52),
       children: [
         // Still offer the account's stored sensor when none is paired locally —
@@ -199,7 +203,7 @@ class _ChartPreview extends StatelessWidget {
         ),
         const Spacer(),
         Icon(
-          PhosphorIconsRegular.caretRight,
+          PhosphorIconsBold.caretRight,
           size: 20,
           color: scheme.onSurface.withValues(alpha: 0.4),
         ),

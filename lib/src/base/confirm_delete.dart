@@ -13,7 +13,7 @@ void confirmDelete(
   required VoidCallback onConfirm,
 }) {
   Alert(
-    icon: PhosphorIconsRegular.trash,
+    icon: PhosphorIconsBold.trash,
     iconColor: context.danger,
     description: messageKey,
     cancelButton: true,

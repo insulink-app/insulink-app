@@ -24,7 +24,7 @@ class ProfileBasalSelection extends StatelessWidget {
     final state = context.read<ProfileBasalState>();
     final controller = TextEditingController();
     Alert(
-      icon: PhosphorIconsRegular.plus,
+      icon: PhosphorIconsBold.plus,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -96,7 +96,7 @@ class _AddProfileButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(PhosphorIconsRegular.plus, size: 20, color: accent),
+              Icon(PhosphorIconsBold.plus, size: 20, color: accent),
               const SizedBox(width: 8),
               LocaleText(
                 'profile.basal.add_profile',
@@ -123,7 +123,7 @@ class _ProfileCard extends StatelessWidget {
     final state = context.read<ProfileBasalState>();
     Alert(
       type: AlertType.error,
-      icon: PhosphorIconsRegular.trash,
+      icon: PhosphorIconsBold.trash,
       description: 'profile.basal.delete_title',
       cancelButton: true,
       confirmButtonText: 'alert.delete',
@@ -164,7 +164,7 @@ class _ProfileCard extends StatelessWidget {
                     icon: Icon(
                       active
                           ? PhosphorIconsFill.circle
-                          : PhosphorIconsRegular.circle,
+                          : PhosphorIconsBold.circle,
                       color: active
                           ? theme.colorScheme.primary
                           : theme.colorScheme.onSurface.withValues(alpha: 0.4),
@@ -200,11 +200,11 @@ class _ProfileCard extends StatelessWidget {
                   ),
                   if (state.profiles.length > 1)
                     IconButton(
-                      icon: const Icon(PhosphorIconsRegular.trash),
+                      icon: const Icon(PhosphorIconsBold.trash),
                       onPressed: () => _confirmDelete(context),
                     ),
                   Icon(
-                    PhosphorIconsRegular.caretRight,
+                    PhosphorIconsBold.caretRight,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
                 ],

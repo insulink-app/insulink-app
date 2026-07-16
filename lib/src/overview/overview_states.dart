@@ -26,7 +26,7 @@ class SilentBanner extends StatelessWidget {
           child: Row(
             children: [
               const Icon(
-                PhosphorIconsRegular.bellSlash,
+                PhosphorIconsBold.bellSlash,
                 color: accent,
                 size: 22,
               ),
@@ -123,7 +123,7 @@ class EmptyView extends StatelessWidget {
                 color: scheme.primary,
               ),
               child: Icon(
-                PhosphorIconsRegular.drop,
+                PhosphorIconsBold.drop,
                 size: 44,
                 color: scheme.onPrimary,
               ),

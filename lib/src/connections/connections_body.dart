@@ -58,7 +58,7 @@ class ConnectionsBodyContent extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         ConnectionRow(
-          icon: PhosphorIconsRegular.watch,
+          icon: PhosphorIconsBold.watch,
           labelKey: "google_health.label",
           page: const GoogleHealthBodyContent(),
         ),

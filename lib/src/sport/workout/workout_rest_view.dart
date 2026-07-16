@@ -108,7 +108,7 @@ class WorkoutRestView extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Icon(
-              PhosphorIconsRegular.arrowsLeftRight,
+              PhosphorIconsBold.arrowsLeftRight,
               size: 18,
               color: scheme.primary,
             ),
@@ -158,7 +158,7 @@ class WorkoutRestView extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         CircleIconButton(
-          icon: PhosphorIconsRegular.minus,
+          icon: PhosphorIconsBold.minus,
           accent: scheme.primary,
           onTap: () =>
               runner.updateLastSet(weightKg: (weight - 2.5).clamp(0, 999)),
@@ -172,7 +172,7 @@ class WorkoutRestView extends StatelessWidget {
           ),
         ),
         CircleIconButton(
-          icon: PhosphorIconsRegular.plus,
+          icon: PhosphorIconsBold.plus,
           accent: scheme.primary,
           onTap: () =>
               runner.updateLastSet(weightKg: (weight + 2.5).clamp(0, 999)),
@@ -192,7 +192,7 @@ class WorkoutRestView extends StatelessWidget {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () => runner.extendRest(60),
-            icon: const Icon(PhosphorIconsRegular.clock, size: 20),
+            icon: const Icon(PhosphorIconsBold.clock, size: 20),
             label: LocaleText('sport.workout.extend'),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(56),
@@ -207,7 +207,7 @@ class WorkoutRestView extends StatelessWidget {
         Expanded(
           child: FilledButton.icon(
             onPressed: runner.skipRest,
-            icon: const Icon(PhosphorIconsRegular.arrowRight, size: 20),
+            icon: const Icon(PhosphorIconsBold.arrowRight, size: 20),
             label: LocaleText('sport.workout.continue'),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(56),

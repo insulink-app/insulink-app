@@ -32,11 +32,11 @@ class ExercisesPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         heroTag: 'exercise-add',
         onPressed: () => showExerciseEditorSheet(context),
-        child: const Icon(PhosphorIconsRegular.plus),
+        child: const Icon(PhosphorIconsBold.plus),
       ),
       body: exercises.isEmpty
           ? const EmptyState(
-              icon: PhosphorIconsRegular.barbell,
+              icon: PhosphorIconsBold.barbell,
               titleKey: 'sport.exercises.empty',
             )
           : onPick == null
@@ -78,7 +78,7 @@ class ExercisesPage extends StatelessWidget {
         leading: ReorderableDragStartListener(
           index: index,
           child: Icon(
-            PhosphorIconsRegular.dotsSixVertical,
+            PhosphorIconsBold.dotsSixVertical,
             color: Theme.of(
               context,
             ).colorScheme.onSurface.withValues(alpha: 0.4),
@@ -104,7 +104,7 @@ class ExercisesPage extends StatelessWidget {
       child: _tile(
         context,
         exercise,
-        trailing: const Icon(PhosphorIconsRegular.caretRight),
+        trailing: const Icon(PhosphorIconsBold.caretRight),
         onTap: () {
           onPick!(exercise);
           Navigator.of(context).pop();

@@ -38,14 +38,14 @@ class TileLayoutButton<T extends Enum> extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                PhosphorIconsRegular.squaresFour,
+                PhosphorIconsBold.squaresFour,
                 color: context.accent,
                 size: 24,
               ),
               const SizedBox(width: 14),
               Expanded(child: _text(scheme)),
               const SizedBox(width: 10),
-              Icon(PhosphorIconsRegular.caretRight, color: context.accent),
+              Icon(PhosphorIconsBold.caretRight, color: context.accent),
             ],
           ),
         ),

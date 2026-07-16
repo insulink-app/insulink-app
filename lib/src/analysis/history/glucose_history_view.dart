@@ -28,7 +28,7 @@ class GlucoseHistoryView extends StatelessWidget {
     final spots = series.build();
     if (spots.isEmpty) {
       return const EmptyState(
-        icon: PhosphorIconsRegular.chartLineUp,
+        icon: PhosphorIconsBold.chartLineUp,
         titleKey: 'analysis.empty',
       );
     }

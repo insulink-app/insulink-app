@@ -10,7 +10,7 @@ class SportAddTile extends StatelessWidget {
     super.key,
     required this.labelKey,
     required this.onTap,
-    this.icon = PhosphorIconsRegular.plus,
+    this.icon = PhosphorIconsBold.plus,
   });
 
   final String labelKey;

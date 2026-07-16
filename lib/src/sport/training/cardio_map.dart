@@ -99,7 +99,7 @@ class CardioMap extends StatelessWidget {
           MarkerLayer(
             markers: [
               _badgeMarker(route.first, PhosphorIconsFill.play),
-              _badgeMarker(route.last, PhosphorIconsRegular.flagCheckered),
+              _badgeMarker(route.last, PhosphorIconsBold.flagCheckered),
             ],
           ),
         if (highlight != null)

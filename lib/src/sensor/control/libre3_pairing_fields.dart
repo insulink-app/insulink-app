@@ -67,7 +67,7 @@ class _Libre3PairingFieldsState extends State<Libre3PairingFields> {
         const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: _busy ? null : _activate,
-          icon: const Icon(PhosphorIconsRegular.scan, size: 20),
+          icon: const Icon(PhosphorIconsBold.scan, size: 20),
           label: LocaleText(
             _busy ? 'sensor.pair.libre.scanning' : 'sensor.pair.libre.activate',
           ),

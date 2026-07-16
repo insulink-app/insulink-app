@@ -38,8 +38,8 @@ diff /tmp/l /tmp/d && echo "symmetric"
 
 ## Two accents, because one colour cannot do both jobs
 
-The brand indigo has to serve two opposite purposes on a dark background, and a
-single value loses one of them:
+The brand indigo-blue has to serve two opposite purposes on a dark background, and
+a single value loses one of them:
 
 - **Fill** — a button with white text on top. Wants a mid tone.
 - **Foreground** — a label or glyph drawn *on* a dark surface. Wants a light tone.
@@ -48,14 +48,16 @@ So there are two, same hue:
 
 | Token | Dark | Light | Used for |
 |---|---|---|---|
-| `colorScheme.primary` | `#5A73F2` | `Colors.indigo` | Fills only: filled/elevated buttons, solid badges, tints |
-| `AccentColors.onSurface` (`context.accent`) | `#93A6FF` | `Colors.indigo` | The accent drawn ON a surface |
+| `colorScheme.primary` | `#5D73CC` | `#45569F` | Fills only: filled/elevated buttons, solid badges, tints |
+| `AccentColors.onSurface` (`context.accent`) | `#9DACEA` | `#45569F` | The accent drawn ON a surface |
 
-On light they are the same colour — a deep indigo on a near-white page is legible
-either way. The split exists purely because dark forces it.
+On light they are the same colour — a deep indigo-blue on a near-white page is
+legible either way. The split exists purely because dark forces it.
 
-`darkPrimary` is also deliberately **not** the raw brand `#536dfe`: at ~99%
-saturation it glares on a dark ground. `#5A73F2` is the same hue at ~85%.
+The indigo-blue is the old brand indigo pulled part-way toward the calm blue-grey
+of the surfaces (statistic boxes): softened from the original neon, but kept
+saturated enough to read as a real accent rather than grey. On dark it is lifted
+a touch (`#5D73CC`) so it sits ON the surface instead of glowing off it.
 
 Rejected alternative, for the record: the textbook Material 3 move is a light
 `primary` plus a dark `onPrimary`, which fixes every foreground with one value
@@ -231,9 +233,9 @@ Measured against `surface #1F232A`, for calibrating future changes:
 
 | Pair | Ratio |
 |---|---|
-| `primary #5A73F2` as a foreground | ~4.0:1 — the reason the accent exists |
-| same at `alpha: 0.7` | ~2.8:1 — under even the 3:1 floor for graphics |
-| `accent #93A6FF` as a foreground | ~7:1 |
+| `primary #5D73CC` as a foreground | ~4.4:1 — the reason the accent exists |
+| same at `alpha: 0.7` | ~2.9:1 — under even the 3:1 floor for graphics |
+| `accent #9DACEA` as a foreground | ~7.6:1 |
 | `primary` behind white text | ~4.1:1 |
 
 Non-text/graphics need ≥3:1, normal text ≥4.5:1.

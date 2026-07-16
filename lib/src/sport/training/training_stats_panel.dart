@@ -24,7 +24,7 @@ class TrainingStatsPanel extends StatelessWidget {
         Expanded(
           child: _tile(
             context,
-            PhosphorIconsRegular.ruler,
+            PhosphorIconsBold.ruler,
             'sport.trainings.distance',
             formatDistanceKm(training.distanceM),
           ),
@@ -33,7 +33,7 @@ class TrainingStatsPanel extends StatelessWidget {
         Expanded(
           child: _tile(
             context,
-            PhosphorIconsRegular.timer,
+            PhosphorIconsBold.timer,
             'sport.trainings.duration',
             formatDuration(training.duration),
           ),
@@ -42,7 +42,7 @@ class TrainingStatsPanel extends StatelessWidget {
         Expanded(
           child: _tile(
             context,
-            PhosphorIconsRegular.gauge,
+            PhosphorIconsBold.gauge,
             'sport.trainings.avg_speed',
             formatSpeed(training.avgSpeedKmh),
           ),

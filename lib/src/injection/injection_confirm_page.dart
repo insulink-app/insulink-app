@@ -96,8 +96,8 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
                       )
                     : Icon(
                         _needsAuth
-                            ? PhosphorIconsRegular.fingerprint
-                            : PhosphorIconsRegular.check,
+                            ? PhosphorIconsBold.fingerprint
+                            : PhosphorIconsBold.check,
                       ),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
@@ -123,7 +123,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       ),
       child: Column(
         children: [
-          Icon(PhosphorIconsRegular.syringe, color: context.accent, size: 30),
+          Icon(PhosphorIconsBold.syringe, color: context.accent, size: 30),
           const SizedBox(height: 10),
           LocaleText(
             'injection.bolus',
@@ -173,14 +173,14 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
         children: [
           _row(
             context,
-            PhosphorIconsRegular.forkKnife,
+            PhosphorIconsBold.forkKnife,
             'injection.carbs',
             '${widget.carbs.toStringAsFixed(0)} g',
           ),
           Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
           _row(
             context,
-            PhosphorIconsRegular.syringe,
+            PhosphorIconsBold.syringe,
             'injection.glucose',
             '${widget.glucoseMgdl} mg/dL',
           ),
@@ -225,7 +225,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(PhosphorIconsRegular.warning, size: 16, color: scheme.error),
+        Icon(PhosphorIconsBold.warning, size: 16, color: scheme.error),
         const SizedBox(width: 6),
         Flexible(
           child: LocaleText(
@@ -249,7 +249,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          PhosphorIconsRegular.fingerprint,
+          PhosphorIconsBold.fingerprint,
           size: 16,
           color: scheme.onSurface.withValues(alpha: 0.5),
         ),
