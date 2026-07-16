@@ -103,12 +103,27 @@ class BasalProfile {
     'total': dailyTotal,
   };
 
-  factory BasalProfile.fromJson(Map<String, dynamic> json) => BasalProfile(
-    name: json['name'] as String,
-    rates: (json['rates'] as List).map((v) => (v as num).toDouble()).toList(),
-    peaks: (json['peaks'] as List)
-        .map((p) => BasalPeak.fromJson(p as Map<String, dynamic>))
-        .toList(),
-    dailyTotal: (json['total'] as num).toDouble(),
-  );
+  /// Tolerant of partial/foreign blobs (the basal profiles also arrive from the
+  /// backend and other clients): a missing name, peaks or total falls back to a
+  /// default, and [rates] is normalised to EXACTLY 24 values. Without the latter
+  /// a short list makes `BasalBarChart` read `rates[hour]` out of range and blank
+  /// the whole basal settings page.
+  factory BasalProfile.fromJson(Map<String, dynamic> json) {
+    final rates = List<double>.filled(24, 0);
+    final stored = json['rates'];
+    if (stored is List) {
+      for (var hour = 0; hour < 24 && hour < stored.length; hour++) {
+        rates[hour] = (stored[hour] as num?)?.toDouble() ?? 0;
+      }
+    }
+    final peaks = (json['peaks'] as List?)
+        ?.map((p) => BasalPeak.fromJson(p as Map<String, dynamic>))
+        .toList();
+    return BasalProfile(
+      name: json['name'] as String? ?? 'Standard',
+      rates: rates,
+      peaks: (peaks == null || peaks.isEmpty) ? [BasalPeak(5, 1.0)] : peaks,
+      dailyTotal: (json['total'] as num?)?.toDouble() ?? 24,
+    );
+  }
 }

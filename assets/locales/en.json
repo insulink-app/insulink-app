@@ -336,6 +336,7 @@
       "title": "Pulse zones",
       "elevated": "Elevated from",
       "high": "High from",
+      "note": "Sets the colour thresholds on the pulse chart: green below “Elevated from”, orange up to “High from”, red above.",
       "save": "Save"
     }
   },
@@ -560,6 +561,9 @@
       "avg_speed": "Avg speed",
       "delete_confirm": "Delete this training?",
       "no_route": "No route recorded",
+      "zoom_in": "Zoom in",
+      "zoom_out": "Zoom out",
+      "reset_view": "Reset view",
       "metrics": "Trends over time",
       "no_metrics": "No glucose, heart-rate or speed data",
       "glucose": "Glucose",
@@ -590,6 +594,8 @@
   },
   "profile": {
     "label": "Profile",
+    "sport_goals": "Sport goals",
+    "nutrition_goals": "Nutrition goals",
     "account": {
       "_": "Account",
       "name": "Name",
@@ -723,7 +729,9 @@
       "silent": "silent mute quiet do not disturb dnd",
       "developer": "developer debug logs advanced",
       "prediction": "prediction forecast future trend minutes",
-      "sport_goals": "sport goals daily steps distance calories targets"
+      "sport_goals": "sport goals daily steps distance calories targets",
+      "nutrition_goals": "nutrition goals daily carbs protein water hydration",
+      "hr_zones": "pulse heart rate zones bpm elevated high green orange red"
     },
     "prediction": {
       "_": "Prediction",

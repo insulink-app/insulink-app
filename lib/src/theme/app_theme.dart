@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
+import 'package:insulink/src/theme/stat_box_colors.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
 /// The app's light and dark Material 3 themes. Kept out of `main.dart` so the
@@ -173,6 +174,12 @@ class AppTheme {
     extensions: [
       GlucoseColors.standard,
       AccentColors(onSurface: lightPrimary),
+      // The stat boxes keep the original brand indigo, decoupled from the
+      // (later softened) primary — see StatBoxColors.
+      const StatBoxColors(
+        icon: Color(0xFF3F51B5),
+        tintBase: Color(0xFF3F51B5),
+      ),
       const StatusColors(
         danger: _lightError,
         warning: _lightWarning,
@@ -268,6 +275,12 @@ class AppTheme {
     extensions: [
       GlucoseColors.standard,
       AccentColors(onSurface: darkAccent),
+      // The stat boxes keep the original brand indigo (icon #93A6FF on a #5A73F2
+      // tint), decoupled from the softened primary — see StatBoxColors.
+      const StatBoxColors(
+        icon: Color(0xFF93A6FF),
+        tintBase: Color(0xFF5A73F2),
+      ),
       const StatusColors(
         danger: _darkDanger,
         warning: _darkWarning,

@@ -23,6 +23,8 @@ import 'package:insulink/src/profile/prediction/profile_prediction_band_toggle.d
 import 'package:insulink/src/profile/prediction/profile_prediction_horizon.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_toggle.dart';
 import 'package:insulink/src/profile/silent/profile_silent_toggle.dart';
+import 'package:insulink/src/google_health/heart_rate_zones_editor.dart';
+import 'package:insulink/src/nutrition/stats/nutrition_goals_editor.dart';
 import 'package:insulink/src/sport/activity/sport_goals_editor.dart';
 import 'package:insulink/src/profile/theme/profile_theme_selection.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -101,10 +103,22 @@ class _ProfilePageState extends State<ProfilePage> {
       children: () => const [ProfileBodySelection()],
     ),
     (
-      titleKey: "sport.goals",
+      titleKey: "profile.sport_goals",
       icon: PhosphorIconsBold.flag,
       searchKey: "profile.search.sport_goals",
       children: () => const [SportGoalsEditor()],
+    ),
+    (
+      titleKey: "profile.nutrition_goals",
+      icon: PhosphorIconsBold.forkKnife,
+      searchKey: "profile.search.nutrition_goals",
+      children: () => const [NutritionGoalsEditor()],
+    ),
+    (
+      titleKey: "google_health.hr_zones.title",
+      icon: PhosphorIconsBold.heartbeat,
+      searchKey: "profile.search.hr_zones",
+      children: () => const [HeartRateZonesEditor()],
     ),
     (
       titleKey: "profile.notification",

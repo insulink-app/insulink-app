@@ -12,6 +12,10 @@ import 'package:insulink/src/sport/training/km_splits.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:provider/provider.dart';
 
+/// The three plottable metrics, in the fixed order they occupy in the chart's
+/// bar list (so a tooltip can map a bar index back to its metric).
+enum _Metric { glucose, heart, speed }
+
 /// A single normalised series: the plotted spots (0..1) plus the real values,
 /// aligned by index so a hover can show the true reading.
 class _Series {
@@ -57,6 +61,10 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     with AutomaticKeepAliveClientMixin {
   List<({DateTime at, int bpm})> _heart = const [];
   bool _loading = true;
+
+  /// Metrics the user has toggled off in the legend — hidden from the plot but
+  /// still counted as available (their legend chip stays, dimmed).
+  final Set<_Metric> _hidden = {};
 
   // Keep the state alive so scrolling the chart off-screen in the detail
   // ListView doesn't dispose it and re-run _loadHeart() on scroll-back.
@@ -171,31 +179,45 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 6),
-            child: Row(
-              children: [
-                Expanded(
-                  child: LocaleText(
-                    'sport.trainings.metrics',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: scheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ),
-                if (!glucose.isEmpty)
-                  _legendChip(glucoseColor, 'sport.trainings.glucose'),
-                if (!heart.isEmpty) ...[
-                  const SizedBox(width: 14),
-                  _legendChip(heartColor, 'sport.trainings.heart_rate'),
-                ],
-                if (!speed.isEmpty) ...[
-                  const SizedBox(width: 14),
-                  _legendChip(speedColor, 'sport.trainings.speed'),
-                ],
-              ],
+            child: LocaleText(
+              'sport.trainings.metrics',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
           ),
+          if (!empty) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: Wrap(
+                spacing: 16,
+                runSpacing: 8,
+                children: [
+                  if (!glucose.isEmpty)
+                    _legendChip(
+                      _Metric.glucose,
+                      glucoseColor,
+                      'sport.trainings.glucose',
+                    ),
+                  if (!heart.isEmpty)
+                    _legendChip(
+                      _Metric.heart,
+                      heartColor,
+                      'sport.trainings.heart_rate',
+                    ),
+                  if (!speed.isEmpty)
+                    _legendChip(
+                      _Metric.speed,
+                      speedColor,
+                      'sport.trainings.speed',
+                    ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
           SizedBox(
             height: 210,
@@ -204,13 +226,13 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
                 : LineChart(
                     _data(
                       scheme,
-                      glucose,
-                      heart,
-                      speed,
+                      _shown(_Metric.glucose, glucose),
+                      _shown(_Metric.heart, heart),
+                      _shown(_Metric.speed, speed),
                       glucoseColor,
                       heartColor,
                       speedColor,
-                      _rangeX(glucose, heart, speed),
+                      _rangeX,
                     ),
                   ),
           ),
@@ -219,42 +241,60 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     );
   }
 
-  Widget _legendChip(Color color, String labelKey) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 9,
-          height: 9,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  /// The series to actually plot for [metric]: the real one, or an empty series
+  /// when the user has toggled it off (keeps the bar index stable so tooltip
+  /// mapping doesn't shift).
+  _Series _shown(_Metric metric, _Series series) {
+    return _hidden.contains(metric) ? const _Series([], []) : series;
+  }
+
+  /// A tappable legend entry: tap toggles its metric on the plot. When off, the
+  /// dot and label dim and the label is struck through.
+  Widget _legendChip(_Metric metric, Color color, String labelKey) {
+    final scheme = Theme.of(context).colorScheme;
+    final hidden = _hidden.contains(metric);
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: () => setState(() {
+        if (!_hidden.remove(metric)) {
+          _hidden.add(metric);
+        }
+      }),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(
+                color: hidden ? color.withValues(alpha: 0.3) : color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            LocaleText(
+              labelKey,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: hidden ? scheme.onSurface.withValues(alpha: 0.35) : null,
+                decoration: hidden ? TextDecoration.lineThrough : null,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 6),
-        LocaleText(
-          labelKey,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-        ),
-      ],
+      ),
     );
   }
 
-  /// The X span the chart draws over: the workout window widened to include any
-  /// before/after glucose points, so their line stays inside the plot.
-  ({double min, double max}) _rangeX(
-    _Series glucose,
-    _Series heart,
-    _Series speed,
-  ) {
-    final xs = [
-      0.0,
-      _windowMaxX,
-      for (final spot in glucose.spots) spot.x,
-      for (final spot in heart.spots) spot.x,
-      for (final spot in speed.spots) spot.x,
-    ];
-    final min = xs.reduce(math.min);
-    final max = xs.reduce(math.max);
-    return (min: min, max: max > min ? max : min + 1);
-  }
+  /// The X span the chart draws over: the training window itself. The
+  /// before/after glucose points sit outside it and are drawn clipped (their line
+  /// still enters from the edge), so the axis isn't widened past the activity —
+  /// which would leave the shorter heart/speed series looking cut off inside a
+  /// mostly-empty window.
+  ({double min, double max}) get _rangeX => (min: 0, max: _windowMaxX);
 
   LineChartData _data(
     ColorScheme scheme,
@@ -349,7 +389,18 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     _Series heart,
     _Series speed,
   ) {
+    // The hovered point reads as a neutral marker, not the series colour: white
+    // on dark, black on light, ringed by its opposite so it stays visible.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dotColor = isDark ? Colors.white : Colors.black;
+    final dotStroke = isDark ? Colors.black : Colors.white;
     return LineTouchData(
+      // Measure nearness by horizontal distance only, with no threshold, so a
+      // hover always picks the nearest point on EVERY line at that time — the
+      // tooltip shows all metrics at once, not just the line under the cursor.
+      distanceCalculator: (touchPoint, spotPixel) =>
+          (touchPoint.dx - spotPixel.dx).abs(),
+      touchSpotThreshold: double.infinity,
       touchCallback: (event, response) {
         final spots = response?.lineBarSpots;
         if (!event.isInterestedForInteractions ||
@@ -378,8 +429,8 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
             FlDotData(
               getDotPainter: (spot, _, bar, _) => FlDotCirclePainter(
                 radius: 4,
-                color: bar.color ?? scheme.primary,
-                strokeColor: Colors.white,
+                color: dotColor,
+                strokeColor: dotStroke,
                 strokeWidth: 1.5,
               ),
             ),

@@ -127,6 +127,23 @@ nothing stable to contrast against.
 button dimmed to half while disabled, carries information in its alpha — leave
 those alone.
 
+## The stat boxes keep the original indigo
+
+`StatBoxColors` (`stat_box_colors.dart`, a `ThemeExtension`, read as
+`context.statBox`) is the one place that does NOT follow `primary`. The stat
+boxes (`SportSummaryTile` — the overview boxes and the Today/nutrition tiles)
+looked best at the app's first, more saturated brand indigo; `primary` was later
+softened toward a calmer blue-grey, which washed the boxes and their icons out.
+So the boxes carry their own fixed tone here instead:
+
+| Field | Dark | Light | For |
+|---|---|---|---|
+| `icon` | `#93A6FF` | `#3F51B5` | The tile glyph, drawn on the tinted face |
+| `tintBase` | `#5A73F2` | `#3F51B5` | Base for the panel/border/fill tints (its own `BrandTints`, 0.08 / 0.20 / 0.13–0.22) |
+
+Change `primary` freely — the boxes stay put. If you *want* them to track a new
+brand colour, update these two values too; nothing else references them.
+
 ## Shape language
 
 | Silhouette | Meaning | Example |

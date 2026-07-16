@@ -103,19 +103,48 @@ class OverviewBodyContent extends StatelessWidget {
   }
 }
 
+/// The overview's last scroll offset, held at module scope so it survives a full
+/// rebuild of the app subtree — an account-sync `_reload` (main.dart) bumps the
+/// provider generation key, which recreates the Navigator and drops PageStorage,
+/// snapping the list back to the top. This outlives that; it resets only on a
+/// cold process start.
+double _overviewScrollOffset = 0;
+
 /// Normal view once a (live or cached) reading exists: headline value + chart.
-class _DataView extends StatelessWidget {
+/// Stateful so it can own a [ScrollController] that restores [_overviewScrollOffset]
+/// on (re)build and keeps it current as the user scrolls.
+class _DataView extends StatefulWidget {
   const _DataView({required this.controller});
 
   final CgmController controller;
 
   @override
+  State<_DataView> createState() => _DataViewState();
+}
+
+class _DataViewState extends State<_DataView> {
+  late final ScrollController _scroll =
+      ScrollController(initialScrollOffset: _overviewScrollOffset)
+        ..addListener(_remember);
+
+  void _remember() {
+    if (_scroll.hasClients) {
+      _overviewScrollOffset = _scroll.offset;
+    }
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_remember);
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return ListView(
-      // Restore scroll offset if the list subtree is torn down and rebuilt
-      // (e.g. the silent banner appearing shifts the unkeyed Column children),
-      // instead of snapping back to the top.
-      key: const PageStorageKey<String>('overview_scroll'),
+      controller: _scroll,
       padding: const EdgeInsets.only(bottom: 52),
       children: [
         // Still offer the account's stored sensor when none is paired locally —

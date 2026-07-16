@@ -336,6 +336,7 @@
       "title": "Pulszonen",
       "elevated": "Erhöht ab",
       "high": "Hoch ab",
+      "note": "Legt die Farbschwellen im Puls-Diagramm fest: grün unter „Erhöht ab“, orange bis „Hoch ab“, darüber rot.",
       "save": "Speichern"
     }
   },
@@ -560,6 +561,9 @@
       "avg_speed": "Ø-Tempo",
       "delete_confirm": "Dieses Training wirklich löschen?",
       "no_route": "Keine Route aufgezeichnet",
+      "zoom_in": "Vergrößern",
+      "zoom_out": "Verkleinern",
+      "reset_view": "Ansicht zurücksetzen",
       "metrics": "Zeitlicher Verlauf",
       "no_metrics": "Keine Glukose-, Herzfrequenz- oder Tempodaten",
       "glucose": "Glukose",
@@ -590,6 +594,8 @@
   },
   "profile": {
     "label": "Profil",
+    "sport_goals": "Sportziele",
+    "nutrition_goals": "Ernährungsziele",
     "account": {
       "_": "Konto",
       "name": "Name",
@@ -723,7 +729,9 @@
       "silent": "stumm lautlos ruhe stören nicht dnd",
       "developer": "entwickler debug logs erweitert protokoll",
       "prediction": "vorhersage prognose forecast zukunft trend verlauf minuten",
-      "sport_goals": "sport ziele tagesziele schritte strecke kalorien"
+      "sport_goals": "sport ziele tagesziele schritte strecke kalorien",
+      "nutrition_goals": "ernährung ziele tagesziele kohlenhydrate eiweiß protein wasser trinken",
+      "hr_zones": "puls pulszonen herzfrequenz zonen bpm erhöht hoch grün orange rot"
     },
     "prediction": {
       "_": "Vorhersage",

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/theme/accent_colors.dart';
-import 'package:insulink/src/theme/brand_tints.dart';
+import 'package:insulink/src/theme/stat_box_colors.dart';
 
 /// A single summary "box": glyph + label + big value (optional unit), tappable.
 /// Used both in the Sport tab's activity card and on the overview.
@@ -35,18 +34,19 @@ class SportSummaryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final box = context.statBox;
     return Material(
-      color: scheme.tintPanel,
+      color: box.panel,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: scheme.tintLine),
+        side: BorderSide(color: box.line),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Stack(
           children: [
-            if (progress != null) _fill(scheme),
+            if (progress != null) _fill(box),
             Padding(
               padding: const EdgeInsets.all(14),
               child: Row(
@@ -66,16 +66,14 @@ class SportSummaryTile extends StatelessWidget {
 
   /// The proportional background fill, anchored to the left edge and filling the
   /// full tile height.
-  Widget _fill(ColorScheme scheme) {
+  Widget _fill(StatBoxColors box) {
     final value = progress!.clamp(0.0, 1.0);
     final reached = value >= 1.0;
     return Positioned.fill(
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
         widthFactor: value,
-        child: ColoredBox(
-          color: scheme.primary.withValues(alpha: reached ? 0.22 : 0.13),
-        ),
+        child: ColoredBox(color: box.fill(reached ? 0.22 : 0.13)),
       ),
     );
   }
@@ -89,7 +87,7 @@ class SportSummaryTile extends StatelessWidget {
   /// hold its own against the 28px value beside it, and weighted with the
   /// accent. The fixed slot keeps every tile's text in one column.
   Widget _glyph(BuildContext context) {
-    Widget glyph = Icon(icon, size: 26, color: context.accent);
+    Widget glyph = Icon(icon, size: 26, color: context.statBox.icon);
     if (pulse) {
       glyph = _HeartbeatBadge(child: glyph);
     }
