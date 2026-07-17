@@ -15,6 +15,11 @@ import 'package:provider/provider.dart';
 
 /// Lets any page request a tab switch (e.g. the overview's empty state linking
 /// to the devices page). The value is the index into [AppPageState.pageBodies].
+///
+/// It also OUTLIVES the shell: the account pull on launch can rebuild the whole
+/// provider tree a second or two in (`_pullAccount` → `_reload`), remounting
+/// [AppPage]. Reading the initial tab back from here is what stops that remount
+/// from throwing the user back to the overview mid-tap.
 final ValueNotifier<int> appTab = ValueNotifier<int>(0);
 
 /// Tab index of the analysis page within [AppPageState.pageBodies].
@@ -23,7 +28,7 @@ const int kAnalysisTabIndex = 3;
 class AppPage extends StatefulWidget {
   final int? initialPageIndex;
 
-  const AppPage({super.key, this.initialPageIndex = 0});
+  const AppPage({super.key, this.initialPageIndex});
 
   @override
   State<AppPage> createState() => AppPageState();
@@ -47,7 +52,7 @@ class AppPageState extends State<AppPage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.initialPageIndex ?? 0;
+    _selectedIndex = widget.initialPageIndex ?? appTab.value;
     appTab.value = _selectedIndex;
     appTab.addListener(_onExternalTab);
     WidgetsBinding.instance.addObserver(this);

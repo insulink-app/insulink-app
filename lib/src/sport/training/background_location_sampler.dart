@@ -13,23 +13,28 @@ import 'location_sync.dart';
 ///
 /// The cadence is **adaptive**: whenever a training records OR — for
 /// auto-detection — we're recently moving, we open a continuous
-/// [Geolocator.getPositionStream] (dense route, GPS radio kept hot), throttled
-/// locally to one stored point per [_recordingInterval]. Only truly at rest do
-/// we fall back to a sparse one-shot poll (~55s) to save battery and to notice
-/// movement starting. A running training forces high accuracy; a paused training
-/// records nothing. Fixes are passed through an outlier filter ([isPlausibleFix])
+/// [Geolocator.getPositionStream] (dense route, GPS radio kept hot). Only truly
+/// at rest do we fall back to a sparse one-shot poll (~55s) to save battery and
+/// to notice movement starting. A running training streams every
+/// [_recordingInterval]; auto-detection every the sparser [_detectInterval]; a
+/// paused training records nothing — but both streams are high accuracy, see
+/// [_streamSettings]. Fixes are passed through an outlier filter ([isPlausibleFix])
 /// so a poor-accuracy or teleport-jump glitch never lands in the route. Only runs
 /// when location is permitted (otherwise silently does nothing); glucose reading
 /// never depends on it.
 ///
 /// **Why a stream, not short one-shot polls** (the fix for the multi-minute
 /// gaps): a one-shot [Geolocator.getCurrentPosition] lets Android power the GPS
-/// radio down between the 4s ticks, so every tick cold-reacquires a fix —
-/// routinely slower than [_fixTimeout], producing minutes with no points. A
-/// stream keeps the radio on and delivers steady fixes, which is why denser
-/// auto-detect tracking uses it too (not a faster poll). The backend send cadence
-/// is decoupled from this: [LocationSync] batches the queued fixes and flushes
-/// them roughly once a minute, so dense sampling doesn't mean dense network I/O.
+/// radio down between ticks, so every tick cold-reacquires a fix — routinely
+/// slower than [_fixTimeout], producing minutes with no points. A stream keeps
+/// the radio on and delivers steady fixes, which is why denser auto-detect
+/// tracking uses it too (not a faster poll). The stream's cadence is set on the
+/// PLATFORM ([AndroidSettings.intervalDuration] + `distanceFilter`), not
+/// throttled in Dart: only the platform request actually duty-cycles the GNSS
+/// radio, and the distance filter means standing still costs nothing at all.
+/// The backend send cadence is decoupled from this: [LocationSync] batches the
+/// queued fixes and flushes them roughly once a minute, so dense sampling
+/// doesn't mean dense network I/O.
 ///
 /// The GPS radio therefore stays hot only while moving (plus a short
 /// [_movingLinger] so a red light doesn't drop it) — at rest it's the sparse poll.
@@ -41,8 +46,19 @@ class BackgroundLocationSampler {
   Position? _lastFix;
   StreamSubscription<Position>? _stream;
 
+  /// Whether the open [_stream] is the high-accuracy recording one — a mode flip
+  /// has to reopen it with the other settings.
+  bool _streamRecords = false;
+
   static const _idleInterval = Duration(seconds: 55);
   static const _recordingInterval = Duration(seconds: 4);
+
+  /// Auto-detect cadence while moving without a training. Detection itself would
+  /// tolerate minutes ([CardioDetector._maxGap] is 5), but a detected training's
+  /// route, distance and km-splits are built from these same points — at 30s a
+  /// 25 km/h ride jumps ~200 m per point and cuts every corner. So the cadence
+  /// is set by the route we want to keep, not by the detector.
+  static const _detectInterval = Duration(seconds: 10);
   static const _fixTimeout = Duration(seconds: 20);
 
   /// How long after the last moving fix we keep the stream open, so a brief stop
@@ -70,7 +86,7 @@ class BackgroundLocationSampler {
       // moving (dense auto-detect route). A paused training (active, not
       // recording) must record nothing, so it never streams.
       final wantStream = recording || (active == null && _recentlyMoving);
-      await _syncStream(wantStream);
+      await _syncStream(wantStream, recording);
       if (active != null || _stream != null) {
         return;
       }
@@ -97,47 +113,58 @@ class BackgroundLocationSampler {
     }
   }
 
-  /// Opens the high-accuracy recording stream when a training starts, closes it
-  /// when it stops/pauses. Idempotent per state.
-  Future<void> _syncStream(bool recording) async {
-    if (recording && _stream == null) {
-      await _startStream();
-    } else if (!recording && _stream != null) {
+  /// Opens the stream when a training records or auto-detection wants it, closes
+  /// it at rest, and reopens it when the mode (and so the cadence) flips.
+  /// Idempotent per state.
+  Future<void> _syncStream(bool wanted, bool recording) async {
+    if (_stream != null && (!wanted || recording != _streamRecords)) {
       await _stopStream();
+    }
+    if (wanted && _stream == null) {
+      await _startStream(recording);
     }
   }
 
-  Future<void> _startStream() async {
+  Future<void> _startStream(bool recording) async {
     if (!await _ready()) {
       return;
     }
-    _stream =
-        Geolocator.getPositionStream(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
-            distanceFilter: 0,
-          ),
-        ).listen(
-          _onStreamFix,
-          onError: (Object error) => _onLog('location stream error: $error'),
-        );
-    _onLog('location: recording stream started');
+    _streamRecords = recording;
+    _stream = Geolocator.getPositionStream(
+      locationSettings: _streamSettings(recording),
+    ).listen(
+      _onStreamFix,
+      onError: (Object error) => _onLog('location stream error: $error'),
+    );
+    _onLog('location: ${recording ? 'recording' : 'detect'} stream started');
+  }
+
+  /// The platform request that decides the actual battery cost. Both modes ask
+  /// for high accuracy and save power through the CADENCE instead: the interval
+  /// plus the distance filter are what let the radio duty-cycle, and standing
+  /// still costs nothing at all (no movement, no fixes, no radio).
+  ///
+  /// **Auto-detection must not drop to [LocationAccuracy.medium]** — that is
+  /// `PRIORITY_BALANCED_POWER_ACCURACY` (~100 m), and [isPlausibleFix] rejects
+  /// anything worse than [_maxAccuracyM] (50 m). The cheaper provider would have
+  /// its fixes filtered straight back out of the route, leaving the detector
+  /// with no segments.
+  LocationSettings _streamSettings(bool recording) {
+    return AndroidSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: recording ? 5 : 15,
+      intervalDuration: recording ? _recordingInterval : _detectInterval,
+    );
   }
 
   Future<void> _stopStream() async {
     await _stream?.cancel();
     _stream = null;
-    _onLog('location: recording stream stopped');
+    _onLog('location: stream stopped');
   }
 
-  /// Throttles the stream (which can deliver faster than we need) to at most one
-  /// recorded point per [_recordingInterval].
   void _onStreamFix(Position fix) {
     final now = DateTime.now();
-    final last = _lastSampledAt;
-    if (last != null && now.difference(last) < _recordingInterval) {
-      return;
-    }
     _lastSampledAt = now;
     unawaited(_record(fix, now.millisecondsSinceEpoch));
   }
