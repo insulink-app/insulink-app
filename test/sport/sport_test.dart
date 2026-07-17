@@ -584,6 +584,61 @@ void main() {
       expect(runner.phase, WorkoutPhase.exercising);
       runner.dispose();
     });
+
+    // The cross-device fix: a follower must render the exercise/set/target the
+    // DRIVER is on, resolved from the snapshot's embedded routine — not by
+    // indexing the follower's own (possibly differently ordered) copy.
+    test('follower resumes the driver routine from the embedded snapshot', () {
+      const squat = SportExercise(id: 'e1', name: 'Squat', kind: ExerciseKind.reps);
+      const bench = SportExercise(id: 'e2', name: 'Bench', kind: ExerciseKind.reps);
+      final driverRoutine = SportRoutine(
+        id: 'r1',
+        name: 'Push',
+        items: const [
+          RoutineItem(
+            id: 'i1',
+            exerciseId: 'e1',
+            targetSets: 2,
+            target: 10,
+            restSeconds: 0,
+          ),
+          RoutineItem(
+            id: 'i2',
+            exerciseId: 'e2',
+            targetSets: 3,
+            target: 8,
+            restSeconds: 0,
+          ),
+        ],
+      );
+      WorkoutSnapshot? snapshot;
+      final driver = WorkoutRunner(
+        driverRoutine,
+        [squat, bench],
+        onPersist: (snap) => snapshot = snap,
+      );
+      driver.completeSet(); // squat set 1
+      driver.completeSet(); // squat set 2 -> advance to bench
+      expect(driver.currentExercise?.id, 'e2');
+      expect(snapshot!.items.map((item) => item.exerciseId), ['e1', 'e2']);
+
+      // Rebuild the routine from the snapshot the way a follower does; even with
+      // no local routine at all this resolves the driver's exercise + targets.
+      final embedded = SportRoutine(
+        id: snapshot!.routineId,
+        name: snapshot!.routineName,
+        items: snapshot!.items,
+      );
+      final follower = WorkoutRunner(
+        embedded,
+        [squat, bench],
+        resume: WorkoutSnapshot.fromJson(snapshot!.toJson()),
+      );
+      expect(follower.currentExercise?.id, 'e2');
+      expect(follower.totalSets, 3); // bench's targetSets, not squat's 2
+      driver.dispose();
+      follower.dispose();
+    });
   });
 
   group('mergedActivities', () {

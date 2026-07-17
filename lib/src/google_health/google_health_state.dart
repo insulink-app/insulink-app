@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -18,7 +18,7 @@ import 'pulse_sync.dart';
 /// secure storage (like the Profile*State classes) so the flag and last values
 /// survive a relaunch. Provided above the page tree so the Devices sub-page and
 /// the Sport section observe the same value.
-class GoogleHealthState extends ChangeNotifier {
+class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
   static const _kConnected = 'google_health.connected';
   static const _kData = 'google_health.data';
   static const _storage = FlutterSecureStorage();
@@ -68,14 +68,44 @@ class GoogleHealthState extends ChangeNotifier {
   /// once when the provider is created (analog to `CgmController.init`).
   void init() {
     FlutterForegroundTask.addTaskDataCallback(_onTaskData);
+    WidgetsBinding.instance.addObserver(this);
     // Live BLE pulse runs app-wide (not page-scoped) so the heart-rate tile on
     // the overview / sport page shows + animates the real-time value.
     _bleMonitor.addListener(_onBleHr);
-    _bleMonitor.start();
+    // Exactly one isolate holds the single band link at a time. The service
+    // isolate hosts it for as long as the service runs (so bpm streams while the
+    // app is backgrounded OR fully closed); this UI monitor only runs when NO
+    // service is up, and stands down the moment a service HR push arrives (see
+    // [_onTaskData]). No cross-isolate handoff message — the service does not
+    // depend on the dying UI isolate to tell it to take over.
+    unawaited(_startLocalBandIfNoService());
+  }
+
+  /// Start the UI-isolate band reader only when no foreground service is running
+  /// to host it. When a service runs it owns the band and feeds us `t:'hr'`
+  /// pushes instead, which is what keeps streaming once the app is gone.
+  Future<void> _startLocalBandIfNoService() async {
+    if (await FlutterForegroundTask.isRunningService) {
+      return;
+    }
+    await _bleMonitor.start();
+  }
+
+  /// Release the band while the app is away so the service's own reader can hold
+  /// it; reclaim it on resume only if no service is running.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_startLocalBandIfNoService());
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      unawaited(_bleMonitor.stop());
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _liveTimer?.cancel();
     _metricsTimer?.cancel();
     _bleMonitor.dispose();
@@ -86,6 +116,11 @@ class GoogleHealthState extends ChangeNotifier {
   void _onTaskData(Object data) {
     if (data is! Map || data['t'] != 'hr') {
       return;
+    }
+    // A service HR push means the service now holds the band; stand our own
+    // reader down so the two isolates never connect to it at once.
+    if (_bleMonitor.isRunning) {
+      unawaited(_bleMonitor.stop());
     }
     _applyLiveHr(data['v'] as int?, data['at'] as int?);
   }
@@ -188,6 +223,21 @@ class GoogleHealthState extends ChangeNotifier {
   /// The live-BLE Fitbit reader (streams while [startLive] is active). Exposed so
   /// a page can show its real-time bpm + status directly.
   FitbitHeartRateMonitor get liveHrMonitor => _bleMonitor;
+
+  /// Whether a live bpm is arriving right now — the freshest reading is recent,
+  /// from EITHER the UI band reader OR the service isolate's `t:'hr'` push. Drives
+  /// the animated heart + the "live" banner, so they keep beating when the band is
+  /// owned by the service (app backgrounded / band service-owned) and not just
+  /// when this isolate's [liveHrMonitor] happens to be streaming.
+  bool get hasLiveHr {
+    final at = _latestHrAtMs;
+    return at != null &&
+        DateTime.now().millisecondsSinceEpoch - at < _liveHrMaxAge.inMilliseconds;
+  }
+
+  /// A band delivers ~1 Hz and the service relays at that rate; a few seconds'
+  /// grace rides out a short BLE hiccup without blinking the pulse out.
+  static const _liveHrMaxAge = Duration(seconds: 15);
 
   bool get connected => _connected;
   bool get busy => _busy;

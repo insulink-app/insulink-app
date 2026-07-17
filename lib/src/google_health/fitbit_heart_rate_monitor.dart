@@ -51,6 +51,7 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   final List<({DateTime at, int bpm})> liveHistory = [];
 
   bool _running = false;
+  bool _knownOnly = false;
   bool _foundTarget = false;
   bool _triedCacheClear = false;
   final Set<String> _seen = {};
@@ -70,11 +71,17 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   /// Begins scanning + connecting; idempotent. Waits up to 12 s for the BLE
   /// adapter (the G7 pipeline owns the permission/adapter prompts, this only
   /// reads).
-  Future<void> start() async {
+  ///
+  /// [knownOnly] connects ONLY to an already-bonded/known band and never scans —
+  /// used in the foreground-service isolate, where a broad scan would fight the
+  /// G7's own BLE scanner (see the app CLAUDE.md scanner-wedge notes) and where
+  /// the band is bonded anyway once it has been used once in the foreground.
+  Future<void> start({bool knownOnly = false}) async {
     if (_running) {
       return;
     }
     _running = true;
+    _knownOnly = knownOnly;
     _foundTarget = false;
     _triedCacheClear = false;
     if (!await FlutterBluePlus.isSupported) {
@@ -117,6 +124,13 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     if (known != null) {
       debugPrint('[fitbit-hr] using known device ${known.remoteId.str}');
       await _connect(known);
+      return;
+    }
+    if (_knownOnly) {
+      // No bonded band and scanning is disallowed here: go idle and wait for the
+      // next attempt (a disconnect re-arm, or the foreground isolate taking over).
+      _set(FitbitHrStatus.idle, 'No paired band.');
+      _running = false;
       return;
     }
     await _scanAndConnect();

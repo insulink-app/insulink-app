@@ -343,6 +343,8 @@ class WorkoutRunner extends ChangeNotifier {
     onPersist?.call(
       WorkoutSnapshot(
         routineId: routine.id,
+        routineName: routine.name,
+        items: routine.items,
         startedAtMs: _sessionStartedMs,
         exerciseIndex: _exerciseIndex,
         setIndex: _setIndex,

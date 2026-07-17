@@ -5,7 +5,9 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../google_health/fitbit_heart_rate_monitor.dart';
 import '../../google_health/google_health_importer.dart';
+import '../../google_health/intraday_pulse_store.dart';
 import '../../google_health/pulse_sync.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
@@ -98,6 +100,18 @@ class CgmTaskHandler extends TaskHandler {
   // before it counts a value as too stale to pass to the panel as live.
   static const _liveRelayMaxAge = Duration(minutes: 3);
 
+  /// Live-BLE heart-rate reader hosted HERE while the app is backgrounded or
+  /// closed, so bpm keeps streaming (~1 Hz) when the UI isolate — and the band
+  /// link it owns — is gone. Ownership is exclusive: the UI runs the band while
+  /// foregrounded and hands it over via an [onReceiveData] `hrOwner` message on
+  /// going to background, so the two isolates never fight over the one GATT
+  /// link. Null until the first handover; the Health Connect poll below is the
+  /// fallback when no band streams. Fresh readings go to the UI, the account's
+  /// live-pulse cache, and (buffered) the durable pulse curve.
+  FitbitHeartRateMonitor? _hrMonitor;
+  final IntradayPulseStore _pulseStore = const IntradayPulseStore();
+  DateTime? _lastPulseFlush;
+
   /// Dedicated timer so GPS can be sampled far more often than the ~30s watchdog
   /// (up to every 10s while moving / recording a training). The sampler itself
   /// decides the effective cadence; this just gives it the chance every 10s.
@@ -152,6 +166,11 @@ class CgmTaskHandler extends TaskHandler {
     );
     _activitySampler.start();
     unawaited(_applyTrainingDecisions());
+    // Host the live band the whole time this service runs, so bpm keeps
+    // streaming with the app backgrounded OR fully closed — no dependence on the
+    // dying UI isolate to hand it over. Known-band-only (never scans), so it is a
+    // no-op until a Fitbit has been paired and cannot fight the G7 scanner.
+    _startBackgroundHr();
     // With no sensor paired the service still runs (samplers + detection above)
     // but has nothing to connect to, so skip the BLE connect.
     if (await _ensureReady() && _sensorConfigured) {
@@ -390,6 +409,11 @@ class CgmTaskHandler extends TaskHandler {
   /// GoogleHealthState. The connected flag is read fresh from storage — the service
   /// isolate can't observe the UI's GoogleHealthState.
   Future<void> _maybePollHeartRate() async {
+    // A hosted band streaming live bpm is fresher than Health Connect (which
+    // lags the band by hours); don't let a stale poll overwrite it.
+    if (_hrMonitor?.status == FitbitHrStatus.streaming) {
+      return;
+    }
     final last = _lastHrPollAt;
     if (last != null && DateTime.now().difference(last) < _hrPollEvery) {
       return;
@@ -559,11 +583,79 @@ class CgmTaskHandler extends TaskHandler {
     }
   }
 
+  /// Host the live band for as long as this service runs. Idempotent, and
+  /// known-band-only so it never scans (no G7 scanner contention) and no-ops
+  /// until a Fitbit has been paired — so it is safe to call unconditionally on
+  /// every service start, sensor or not.
+  void _startBackgroundHr() {
+    if (_hrMonitor != null) {
+      return;
+    }
+    final monitor = FitbitHeartRateMonitor();
+    _hrMonitor = monitor;
+    monitor.addListener(_onBackgroundHr);
+    unawaited(monitor.start(knownOnly: true));
+  }
+
+  Future<void> _stopBackgroundHr() async {
+    final monitor = _hrMonitor;
+    if (monitor == null) {
+      return;
+    }
+    _hrMonitor = null;
+    monitor.removeListener(_onBackgroundHr);
+    await monitor.stop();
+  }
+
+  /// Relay a fresh band reading to the UI, the account's live-pulse cache and
+  /// (buffered) the durable curve. Mirrors `GoogleHealthState._onBleHr`; the
+  /// monitor also notifies on status changes, so a stale/absent bpm is ignored.
+  void _onBackgroundHr() {
+    final monitor = _hrMonitor;
+    final bpm = monitor?.bpm;
+    final at = monitor?.lastUpdate;
+    if (bpm == null || at == null) {
+      return;
+    }
+    if (DateTime.now().difference(at) > _liveRelayMaxAge) {
+      return;
+    }
+    FlutterForegroundTask.sendDataToMain({
+      't': 'hr',
+      'v': bpm,
+      'at': at.millisecondsSinceEpoch,
+    });
+    PulseSync().pushLive(bpm);
+    unawaited(_flushBackgroundPulse(monitor!));
+  }
+
+  /// Persist + sync the band samples buffered since the last flush, at most once
+  /// a minute (the pulse store buckets to one point per minute, so flushing
+  /// faster only rewrites today's blob). Mirrors `GoogleHealthState._flushLivePulse`.
+  Future<void> _flushBackgroundPulse(FitbitHeartRateMonitor monitor) async {
+    final now = DateTime.now();
+    final cutoff = _lastPulseFlush;
+    if (cutoff != null && now.difference(cutoff).inSeconds < 60) {
+      return;
+    }
+    _lastPulseFlush = now;
+    final recent = [
+      for (final sample in monitor.liveHistory)
+        if (cutoff == null || sample.at.isAfter(cutoff)) sample,
+    ];
+    if (recent.isEmpty) {
+      return;
+    }
+    final touched = await _pulseStore.merge(recent);
+    PulseSync().push(touched);
+  }
+
   @override
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
     _locationTimer?.cancel();
     _locationTimer = null;
     _activitySampler.dispose();
+    await _stopBackgroundHr();
     await _conn?.dispose();
     _conn = null;
   }

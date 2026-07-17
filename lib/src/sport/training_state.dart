@@ -196,6 +196,23 @@ class TrainingState extends ChangeNotifier {
     return null;
   }
 
+  /// The routine to run a followed/resumed [snapshot] against. Prefers the
+  /// routine the DRIVER embedded in the snapshot, so the exercise/set/target
+  /// shown matches what that device is on even when this device's own copy of
+  /// the routine differs or is missing entirely (a workout started in the web
+  /// panel). Falls back to the local routine for a legacy snapshot without
+  /// embedded items.
+  SportRoutine? routineForSnapshot(WorkoutSnapshot snapshot) {
+    if (snapshot.items.isNotEmpty) {
+      return SportRoutine(
+        id: snapshot.routineId,
+        name: snapshot.routineName,
+        items: snapshot.items,
+      );
+    }
+    return routineById(snapshot.routineId);
+  }
+
   int _idCounter = 0;
 
   /// Unique id — the counter guards against collisions when several ids are

@@ -49,6 +49,11 @@ class AppPageState extends State<AppPage> with WidgetsBindingObserver {
   /// paused and running.
   int? _openedWorkoutStartedAt;
 
+  /// Cached so [dispose] can detach its listener WITHOUT a `context.read` — during
+  /// full-tree teardown (the app closing) the provider ancestor is already gone,
+  /// and reading it there throws a null-check crash.
+  late final TrainingState _training = context.read<TrainingState>();
+
   @override
   void initState() {
     super.initState();
@@ -56,7 +61,7 @@ class AppPageState extends State<AppPage> with WidgetsBindingObserver {
     appTab.value = _selectedIndex;
     appTab.addListener(_onExternalTab);
     WidgetsBinding.instance.addObserver(this);
-    context.read<TrainingState>().addListener(_onTrainingChanged);
+    _training.addListener(_onTrainingChanged);
     _watchActiveWorkout();
     WidgetsBinding.instance.addPostFrameCallback((_) => _resumeActive());
   }
@@ -120,7 +125,7 @@ class AppPageState extends State<AppPage> with WidgetsBindingObserver {
         snapshot.startedAtMs == _openedWorkoutStartedAt) {
       return;
     }
-    final routine = training.routineById(snapshot.routineId);
+    final routine = training.routineForSnapshot(snapshot);
     if (routine == null) {
       return;
     }
@@ -148,7 +153,7 @@ class AppPageState extends State<AppPage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     appTab.removeListener(_onExternalTab);
-    context.read<TrainingState>()
+    _training
       ..removeListener(_onTrainingChanged)
       ..stopWatchingActiveWorkout();
     super.dispose();

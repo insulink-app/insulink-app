@@ -24,7 +24,7 @@ class CurrentActivityBanners extends StatelessWidget {
     final workout = training.activeWorkout;
     final routine = workout == null
         ? null
-        : training.routineById(workout.routineId);
+        : training.routineForSnapshot(workout);
     final active = cardio.activeTraining;
     if (routine == null && active == null) {
       return const SizedBox.shrink();

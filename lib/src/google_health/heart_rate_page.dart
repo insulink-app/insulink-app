@@ -186,14 +186,19 @@ class _HeartRatePageState extends State<HeartRatePage> {
   /// Real-time BLE pulse from the worn Fitbit (see [FitbitHeartRateMonitor]),
   /// with its scan/connect/stream status so a missing pulse is diagnosable.
   Widget _liveBanner(BuildContext context) {
-    final monitor = context.read<GoogleHealthState>().liveHrMonitor;
+    final health = context.watch<GoogleHealthState>();
+    final monitor = health.liveHrMonitor;
     final scheme = Theme.of(context).colorScheme;
     return ListenableBuilder(
       listenable: monitor,
       builder: (context, _) {
-        final live = monitor.status == FitbitHrStatus.streaming;
+        // Live from either source: this isolate's band reader OR the service's
+        // push (which owns the band while backgrounded). Tapping only restarts
+        // the local reader when nothing is streaming from anywhere.
+        final live = health.hasLiveHr;
+        final bpm = health.latestHr;
         return InkWell(
-          onTap: monitor.isRunning ? null : monitor.start,
+          onTap: live || monitor.isRunning ? null : monitor.start,
           borderRadius: BorderRadius.circular(16),
           child: Container(
             margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
@@ -212,7 +217,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  live && monitor.bpm != null ? '${monitor.bpm}' : '–',
+                  live && bpm != null ? '$bpm' : '–',
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w700,

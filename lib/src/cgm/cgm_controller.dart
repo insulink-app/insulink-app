@@ -928,7 +928,12 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     required bool forSensor,
   }) async {
     final types = <ForegroundServiceTypes>[];
-    if (forSensor) {
+    // `connectedDevice` for a sensor, and also for a detection-only service when
+    // Bluetooth is already permitted — that service hosts the live heart-rate
+    // band (see CgmTaskHandler._startBackgroundHr), which on Android 14+ needs
+    // this FGS type. Gated on the held permission so a service never declares a
+    // type it lacks the runtime permission for.
+    if (forSensor || await Permission.bluetoothConnect.isGranted) {
       types.add(ForegroundServiceTypes.connectedDevice);
     }
     if (await Permission.location.isGranted) {

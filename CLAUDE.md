@@ -264,6 +264,23 @@ Load-bearing background gotchas (don't regress):
    status 19 / `GATT_CONNECTION_TIMEOUT` 147). Do exactly ONE clean attempt per
    `connect()` and let the watchdog retry on the sensor's own advertising
    schedule — do NOT tight-loop retry within a single connect.
+7. **The SERVICE owns the live band while it runs; the UI defers — no handoff
+   message.** The `FitbitHeartRateMonitor` (0x180D live bpm) is hosted in the
+   service isolate for the whole life of the service (`CgmTaskHandler.onStart` →
+   `_startBackgroundHr`, `knownOnly: true` so it connects only to the bonded band
+   and NEVER scans — a scan would fight the G7's scanner). So bpm keeps streaming
+   while the app is backgrounded OR fully closed, with no dependence on the dying
+   UI isolate to hand anything over (the earlier `hrOwner` lifecycle-message
+   design was removed — it never fired on a swipe-close). The UI `_bleMonitor`
+   (`GoogleHealthState`) runs ONLY when no service is up, and stands down the
+   moment a service `t:'hr'` push arrives — so the two isolates never hold the one
+   GATT link at once. Detection/workout services now also add the
+   `connectedDevice` FGS type when Bluetooth is permitted (Android 14+ needs it to
+   hold the band). The Health-Connect poll (`_maybePollHeartRate`) is the fallback
+   and self-suppresses while the band streams. Background HR still requires SOME
+   service to be running (a CGM sensor or a workout) — a Fitbit-only user with no
+   sensor and no workout would need a dedicated pulse service (a persistent
+   notification), deliberately not built.
 
 ### App / UI layer
 

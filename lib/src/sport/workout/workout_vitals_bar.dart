@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/cgm/glucose_trend_icon.dart';
-import 'package:insulink/src/google_health/fitbit_heart_rate_monitor.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
@@ -9,49 +8,36 @@ import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Compact live-vitals strip for the running routine: current glucose (from the
-/// G7 pipeline, stained by its target band and carrying the same trend arrow as
+/// CGM pipeline, stained by its target band and carrying the same trend arrow as
 /// the overview headline) and live pulse (from the worn Fitbit, stained by its
-/// zone). Kicks off the BLE pulse reader when mounted so the workout page shows
-/// a live bpm without the user visiting the heart-rate page first.
-class WorkoutVitalsBar extends StatefulWidget {
+/// zone).
+///
+/// Reads the pulse from [GoogleHealthState] — its source-agnostic [latestHr] /
+/// [hasLiveHr], fed by EITHER the UI band reader OR the service isolate's push.
+/// It does NOT run its own band reader: during a workout the foreground service
+/// owns the single band link (see `CgmTaskHandler._startBackgroundHr`), so a
+/// second reader here would fight it and read nothing.
+class WorkoutVitalsBar extends StatelessWidget {
   const WorkoutVitalsBar({super.key});
-
-  @override
-  State<WorkoutVitalsBar> createState() => _WorkoutVitalsBarState();
-}
-
-class _WorkoutVitalsBarState extends State<WorkoutVitalsBar> {
-  FitbitHeartRateMonitor get _monitor =>
-      context.read<GoogleHealthState>().liveHrMonitor;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _monitor.start());
-  }
-
-  @override
-  void dispose() {
-    _monitor.stop();
-    super.dispose();
-  }
 
   /// The palette the big overview readout uses, so a glanced-at value mid-set
   /// reads the same colour as on the overview page.
-  GlucoseColors get _colors => Theme.of(context).brightness == Brightness.dark
+  GlucoseColors _colors(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
       ? GlucoseColors.headlineDark
       : GlucoseColors.headlineLight;
 
   /// ponytail: fixed pulse zones (normal / elevated / high) — there is no
   /// HR-zone setting yet; wire it up once the profile grows one.
-  Color _pulseColor(int bpm) {
+  Color _pulseColor(BuildContext context, int bpm) {
+    final colors = _colors(context);
     if (bpm < 100) {
-      return _colors.inRange;
+      return colors.inRange;
     }
     if (bpm < 140) {
-      return _colors.high;
+      return colors.high;
     }
-    return _colors.low;
+    return colors.low;
   }
 
   @override
@@ -59,12 +45,17 @@ class _WorkoutVitalsBarState extends State<WorkoutVitalsBar> {
     final scheme = Theme.of(context).colorScheme;
     final controller = context.watch<CgmController>();
     final glucose = context.watch<ProfileGlucoseState>();
+    final health = context.watch<GoogleHealthState>();
     final mgdl = controller.currentMgdl;
     // A stale (cached, not live) value is grey, matching the overview headline.
     final glucoseColor = (mgdl == null || controller.currentIsStale)
         ? Colors.grey
-        : _colors.forValue(mgdl, glucose);
+        : _colors(context).forValue(mgdl, glucose);
     final trend = controller.displayTrendPerMin;
+    // Keep the last known bpm on screen and grey it when it is no longer live —
+    // same stale treatment as the glucose reading, rather than blinking to '–'.
+    final bpm = health.latestHr;
+    final pulseLive = health.hasLiveHr;
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -83,21 +74,12 @@ class _WorkoutVitalsBarState extends State<WorkoutVitalsBar> {
                 ? GlucoseTrendIcon(perMin: trend, color: glucoseColor, size: 22)
                 : null,
           ),
-          ListenableBuilder(
-            listenable: _monitor,
-            builder: (context, _) {
-              // Keep the last known bpm on screen; the Fitbit drops/rescans
-              // between deliveries and status briefly leaves `streaming`, which
-              // otherwise flickered the value back to '–'.
-              final bpm = _monitor.bpm;
-              return _reading(
-                PhosphorIconsFill.heart,
-                bpm != null
-                    ? _pulseColor(bpm)
-                    : scheme.onSurface.withValues(alpha: 0.3),
-                bpm != null ? '$bpm bpm' : '–',
-              );
-            },
+          _reading(
+            PhosphorIconsFill.heart,
+            bpm == null
+                ? scheme.onSurface.withValues(alpha: 0.3)
+                : (pulseLive ? _pulseColor(context, bpm) : Colors.grey),
+            bpm == null ? '–' : '$bpm bpm',
           ),
         ],
       ),

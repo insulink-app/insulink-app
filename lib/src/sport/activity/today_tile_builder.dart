@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/google_health/fitbit_heart_rate_monitor.dart';
 import 'package:insulink/src/google_health/google_health_detail_page.dart';
 import 'package:insulink/src/google_health/google_health_models.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
@@ -122,8 +121,11 @@ class TodayTileBuilder {
           onTap: () => _googleHealthDetail(context, GoogleHealthMetric.sleep),
         );
       case TodayTile.heartRate:
-        final live = health.liveHrMonitor.status == FitbitHrStatus.streaming;
-        final bpm = live ? health.liveHrMonitor.bpm : health.latestHr;
+        // Live from either source: the UI band reader OR the service isolate's
+        // push (which owns the band while the app is backgrounded). Both land in
+        // [latestHr]; [hasLiveHr] is the source-agnostic freshness flag.
+        final live = health.hasLiveHr;
+        final bpm = health.latestHr;
         return SportSummaryTile(
           icon: icon,
           labelKey: label,

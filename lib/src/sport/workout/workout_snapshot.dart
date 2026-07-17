@@ -6,6 +6,16 @@ import 'package:insulink/src/sport/workout/workout_runner.dart';
 /// no matter how long the app was gone.
 class WorkoutSnapshot {
   final String routineId;
+  final String routineName;
+
+  /// The driving device's own copy of the routine's ordered items, carried in
+  /// the snapshot so a follower renders the exercise/set/target the DRIVER is on
+  /// — resolving [exerciseIndex]/[setIndex] against the follower's local routine
+  /// breaks the moment the two copies differ (a reorder, an edit, a stale pull),
+  /// showing the wrong exercise/set/time. Empty only for a legacy snapshot from
+  /// before this field; callers then fall back to the local routine.
+  final List<RoutineItem> items;
+
   final int startedAtMs;
   final int exerciseIndex;
   final int setIndex;
@@ -20,6 +30,8 @@ class WorkoutSnapshot {
 
   const WorkoutSnapshot({
     required this.routineId,
+    this.routineName = '',
+    this.items = const [],
     required this.startedAtMs,
     required this.exerciseIndex,
     required this.setIndex,
@@ -35,6 +47,8 @@ class WorkoutSnapshot {
 
   Map<String, dynamic> toJson() => {
     'routine': routineId,
+    'name': routineName,
+    'items': items.map((item) => item.toJson()).toList(),
     'started': startedAtMs,
     'ex': exerciseIndex,
     'set': setIndex,
@@ -51,6 +65,12 @@ class WorkoutSnapshot {
   factory WorkoutSnapshot.fromJson(Map<String, dynamic> json) =>
       WorkoutSnapshot(
         routineId: json['routine'] as String,
+        routineName: json['name'] as String? ?? '',
+        items: (json['items'] as List?)
+                ?.cast<Map<String, dynamic>>()
+                .map(RoutineItem.fromJson)
+                .toList() ??
+            const [],
         startedAtMs: json['started'] as int,
         exerciseIndex: json['ex'] as int,
         setIndex: json['set'] as int,
