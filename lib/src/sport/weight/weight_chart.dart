@@ -189,7 +189,10 @@ class _WeightChartState extends State<WeightChart> {
               fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
               child: Text(
                 locale.formatShortDate(date),
-                style: const TextStyle(fontSize: 9, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             );
           },
@@ -203,7 +206,10 @@ class _WeightChartState extends State<WeightChart> {
             meta: meta,
             child: Text(
               value.toStringAsFixed(0),
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 10,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ),

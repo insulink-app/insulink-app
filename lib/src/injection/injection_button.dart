@@ -51,8 +51,12 @@ class _InjectionButtonState extends State<InjectionButton>
           ),
           child: FloatingActionButton(
             onPressed: () => showInjectionSheet(context),
+            // Pulse between two fully opaque tones — a darker shade → primary —
+            // so the button changes colour without becoming see-through, and
+            // never gets lighter than primary (which would wash out the white
+            // icon, especially on the already-light dark-theme primary).
             backgroundColor: Color.lerp(
-              color.withValues(alpha: 0.9),
+              Color.lerp(color, Colors.black, 0.22)!,
               color,
               glowValue,
             ),

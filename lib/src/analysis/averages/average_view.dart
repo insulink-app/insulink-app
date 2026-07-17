@@ -21,7 +21,7 @@ class AverageView extends StatelessWidget {
     final values = controller.statsArchive.values.toList();
     if (values.isEmpty) {
       return const EmptyState(
-        icon: PhosphorIconsRegular.chartLineUp,
+        icon: PhosphorIconsBold.chartLineUp,
         titleKey: 'analysis.empty',
       );
     }

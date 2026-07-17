@@ -1,16 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/google_health/health_permissions.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_state.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// Branded card that syncs the last ~90 days of Google Health data
+/// Card that syncs the last ~90 days of Google Health data
 /// (steps/distance/calories into the archive, weight into the history) — with
 /// loading and result feedback.
+///
+/// The whole card is the control, so it carries the accent on a neutral surface,
+/// like [TileLayoutButton] next to it. A neutral badge on a tinted card was
+/// tried and read as two unrelated things.
 class HealthImportButton extends StatefulWidget {
   const HealthImportButton({super.key});
 
@@ -19,14 +26,33 @@ class HealthImportButton extends StatefulWidget {
 }
 
 class _HealthImportButtonState extends State<HealthImportButton> {
+  static const _confirmFor = Duration(seconds: 2);
+
   bool _busy = false;
+
+  /// Set briefly after a successful import, to swap the trailing glyph for a
+  /// checkmark.
+  bool _imported = false;
+
+  Timer? _revert;
+
+  @override
+  void dispose() {
+    _revert?.cancel();
+    super.dispose();
+  }
 
   /// Asks before importing: this is an explicit tap, so a prompt is what the
   /// user just requested — unlike the Sport page's import-on-open, which stays
   /// silent (see [HealthPermissions]).
+  ///
+  /// The two outcomes are reported differently, because they ask different
+  /// things of the user. Success needs no words: the numbers on the page behind
+  /// this card have just changed, so the card only nods with a checkmark. A
+  /// denial or a missing Health Connect is a dead end that has to be explained
+  /// and acknowledged, so it gets a modal.
   Future<void> _run() async {
     setState(() => _busy = true);
-    final messenger = ScaffoldMessenger.of(context);
     final sport = context.read<SportState>();
     final activity = context.read<SportActivityState>();
     await HealthPermissions().request();
@@ -35,22 +61,33 @@ class _HealthImportButtonState extends State<HealthImportButton> {
       return;
     }
     setState(() => _busy = false);
-    messenger.showSnackBar(
-      SnackBar(content: Text(Locales.string(context, _messageKey(result)))),
-    );
+    if (result == HealthImportResult.success) {
+      _confirm();
+      return;
+    }
+    Alert(
+      type: AlertType.error,
+      description: result == HealthImportResult.denied
+          ? 'sport.health.denied'
+          : 'sport.health.unavailable',
+    ).show(context);
   }
 
-  String _messageKey(HealthImportResult result) => switch (result) {
-    HealthImportResult.success => 'sport.health.imported',
-    HealthImportResult.denied => 'sport.health.denied',
-    HealthImportResult.unavailable => 'sport.health.unavailable',
-  };
+  void _confirm() {
+    setState(() => _imported = true);
+    _revert?.cancel();
+    _revert = Timer(_confirmFor, () {
+      if (mounted) {
+        setState(() => _imported = false);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.primary.withValues(alpha: 0.08),
+      color: scheme.onSurface.withValues(alpha: 0.04),
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -59,7 +96,7 @@ class _HealthImportButtonState extends State<HealthImportButton> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              _badge(scheme),
+              Icon(PhosphorIconsFill.heart, color: context.accent, size: 24),
               const SizedBox(width: 14),
               Expanded(child: _text(context, scheme)),
               const SizedBox(width: 10),
@@ -68,15 +105,6 @@ class _HealthImportButtonState extends State<HealthImportButton> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _badge(ColorScheme scheme) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
-      child: Icon(PhosphorIconsFill.heart, color: scheme.onPrimary, size: 22),
     );
   }
 
@@ -92,10 +120,7 @@ class _HealthImportButtonState extends State<HealthImportButton> {
         const SizedBox(height: 2),
         LocaleText(
           'sport.health.subtitle',
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
+          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
       ],
     );
@@ -109,6 +134,9 @@ class _HealthImportButtonState extends State<HealthImportButton> {
         child: CircularProgressIndicator(strokeWidth: 2),
       );
     }
-    return Icon(PhosphorIconsRegular.arrowsClockwise, color: scheme.primary);
+    if (_imported) {
+      return Icon(PhosphorIconsBold.check, color: context.accent);
+    }
+    return Icon(PhosphorIconsBold.arrowsClockwise, color: context.accent);
   }
 }

@@ -8,9 +8,9 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// and detail pages so the mapping lives in one place.
 extension CardioTypeUi on CardioType {
   IconData get icon => switch (this) {
-    CardioType.walk => PhosphorIconsRegular.personSimpleWalk,
-    CardioType.jog => PhosphorIconsRegular.personSimpleRun,
-    CardioType.bike => PhosphorIconsRegular.bicycle,
+    CardioType.walk => PhosphorIconsBold.personSimpleWalk,
+    CardioType.jog => PhosphorIconsBold.personSimpleRun,
+    CardioType.bike => PhosphorIconsBold.bicycle,
   };
 
   String get labelKey => 'sport.trainings.$name';

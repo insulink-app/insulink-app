@@ -72,7 +72,7 @@ class _ProductPickerState extends State<_ProductPicker> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(PhosphorIconsRegular.arrowLeft),
+                  icon: const Icon(PhosphorIconsBold.arrowLeft),
                   tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
@@ -94,12 +94,12 @@ class _ProductPickerState extends State<_ProductPicker> {
             child: TextField(
               controller: _search,
               decoration: InputDecoration(
-                prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
+                prefixIcon: const Icon(PhosphorIconsBold.magnifyingGlass),
                 hintText: Locales.string(context, 'injection.products.search'),
                 suffixIcon: _search.text.isEmpty
                     ? null
                     : IconButton(
-                        icon: const Icon(PhosphorIconsRegular.x),
+                        icon: const Icon(PhosphorIconsBold.x),
                         onPressed: _search.clear,
                       ),
               ),
@@ -183,7 +183,7 @@ class _ProductPickerState extends State<_ProductPicker> {
                   ),
                 ),
                 Icon(
-                  PhosphorIconsRegular.caretRight,
+                  PhosphorIconsBold.caretRight,
                   color: scheme.onSurface.withValues(alpha: 0.3),
                 ),
               ],
@@ -200,12 +200,12 @@ class _ProductPickerState extends State<_ProductPicker> {
       height: 40,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.12),
+        color: scheme.surfaceContainerHighest,
         shape: BoxShape.circle,
       ),
       child: Icon(
-        isDrink ? PhosphorIconsRegular.drop : PhosphorIconsRegular.forkKnife,
-        color: scheme.primary,
+        isDrink ? PhosphorIconsBold.drop : PhosphorIconsBold.forkKnife,
+        color: scheme.onSurfaceVariant,
         size: 20,
       ),
     );

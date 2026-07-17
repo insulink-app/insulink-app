@@ -38,7 +38,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
         title: LocaleText('sport.logbook'),
         actions: [
           IconButton(
-            icon: const Icon(PhosphorIconsRegular.calendarBlank),
+            icon: const Icon(PhosphorIconsBold.calendarBlank),
             tooltip: Locales.string(context, 'sport.calendar'),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -50,7 +50,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
       ),
       body: entries.isEmpty
           ? const EmptyState(
-              icon: PhosphorIconsRegular.calendarBlank,
+              icon: PhosphorIconsBold.calendarBlank,
               titleKey: 'sport.logbook.empty',
             )
           : ListView(

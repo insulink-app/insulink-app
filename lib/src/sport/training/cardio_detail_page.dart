@@ -90,7 +90,7 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
         title: LocaleText(training.type.labelKey),
         actions: [
           PopupMenuButton<CardioType>(
-            icon: const Icon(PhosphorIconsRegular.pencilSimple),
+            icon: const Icon(PhosphorIconsBold.pencilSimple),
             tooltip: Locales.string(context, 'sport.trainings.change_type'),
             onSelected: (type) => state.changeTrainingType(training.id, type),
             itemBuilder: (context) => [
@@ -108,7 +108,7 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
             ],
           ),
           IconButton(
-            icon: const Icon(PhosphorIconsRegular.trash),
+            icon: const Icon(PhosphorIconsBold.trash),
             onPressed: () => confirmDelete(
               context,
               messageKey: 'sport.trainings.delete_confirm',
@@ -199,6 +199,7 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
       startMs: training.startMs,
       endMs: training.endMs,
       glucose: glucose,
+      track: training.track,
       onHoverMs: (ms) => _onHoverMs(ms, training),
     );
   }

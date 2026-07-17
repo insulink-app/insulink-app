@@ -18,18 +18,18 @@ class GlucoseTrendIcon extends StatelessWidget {
 
   IconData get _arrow {
     if (perMin >= 2) {
-      return PhosphorIconsRegular.arrowUp;
+      return PhosphorIconsBold.arrowUp;
     }
     if (perMin >= 1) {
-      return PhosphorIconsRegular.arrowUpRight;
+      return PhosphorIconsBold.arrowUpRight;
     }
     if (perMin > -1) {
-      return PhosphorIconsRegular.arrowRight;
+      return PhosphorIconsBold.arrowRight;
     }
     if (perMin > -2) {
-      return PhosphorIconsRegular.arrowDownRight;
+      return PhosphorIconsBold.arrowDownRight;
     }
-    return PhosphorIconsRegular.arrowDown;
+    return PhosphorIconsBold.arrowDown;
   }
 
   @override

@@ -150,7 +150,7 @@ class WorkoutExerciseView extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         CircleIconButton(
-          icon: PhosphorIconsRegular.minus,
+          icon: PhosphorIconsBold.minus,
           accent: scheme.primary,
           onTap: () => runner.adjustWeight(-2.5),
         ),
@@ -163,7 +163,7 @@ class WorkoutExerciseView extends StatelessWidget {
           ),
         ),
         CircleIconButton(
-          icon: PhosphorIconsRegular.plus,
+          icon: PhosphorIconsBold.plus,
           accent: scheme.primary,
           onTap: () => runner.adjustWeight(2.5),
         ),

@@ -5,6 +5,7 @@ import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/profile_toggle_row.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// Settings toggle for [ProfileSilentState]. Observes the provider so it stays
 /// in sync with the overview indicator (which can also turn it off).
@@ -22,7 +23,7 @@ class ProfileSilentToggle extends StatelessWidget {
     // Switching ON: confirm via a danger-styled alert before muting alarms.
     Alert(
       icon: PhosphorIconsFill.warning,
-      iconColor: Colors.red,
+      iconColor: context.danger,
       content: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         child: Column(
@@ -44,7 +45,7 @@ class ProfileSilentToggle extends StatelessWidget {
       ),
       cancelButton: true,
       confirmButtonText: "profile.silent.warning.confirm",
-      confirmButtonColor: Colors.red,
+      confirmButtonColor: Theme.of(context).colorScheme.error,
       callback: () => state.setSilent(true),
     ).show(context);
   }
@@ -56,7 +57,7 @@ class ProfileSilentToggle extends StatelessWidget {
       labelKey: "profile.silent.description",
       value: state.silent,
       onChanged: (value) => _onChanged(context, state, value),
-      activeColor: Colors.red,
+      activeColor: Theme.of(context).colorScheme.error,
     );
   }
 }

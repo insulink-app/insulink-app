@@ -79,7 +79,7 @@ class SportRangeSelector extends StatelessWidget {
                 context,
                 selected: value.custom != null,
                 onTap: () => _pickCustom(context),
-                child: const Icon(PhosphorIconsRegular.calendarBlank, size: 18),
+                child: const Icon(PhosphorIconsBold.calendarBlank, size: 18),
               ),
             ),
           ],

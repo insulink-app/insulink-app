@@ -5,6 +5,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/language/profile_language_state.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
 
 /// Language picker as a plain list of rows: a small flag, the language name and
 /// a check on the active one — simpler than the old big flag buttons.
@@ -39,7 +40,7 @@ class ProfileLanguageSelection extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: selected
-            ? scheme.primary.withValues(alpha: 0.14)
+            ? scheme.tintSelected
             : scheme.onSurface.withValues(alpha: 0.04),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
@@ -74,7 +75,8 @@ class ProfileLanguageSelection extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (selected) Icon(PhosphorIconsRegular.check, color: scheme.primary),
+                if (selected)
+                  Icon(PhosphorIconsBold.check, color: scheme.primary),
               ],
             ),
           ),

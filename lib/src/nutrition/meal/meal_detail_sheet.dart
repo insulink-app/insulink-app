@@ -11,6 +11,7 @@ import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/nutrition/meal/meal_time.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// Opens the details of a logged [meal]: carbs / glucose / bolus, and — when the
 /// bolus was dosed over the food database — the products that made it up.
@@ -110,14 +111,14 @@ class MealDetailSheet extends StatelessWidget {
         children: [
           _statRow(
             context,
-            PhosphorIconsRegular.drop,
+            PhosphorIconsBold.drop,
             'injection.glucose',
             '${meal.glucoseMgdl} mg/dL',
           ),
           Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
           _statRow(
             context,
-            PhosphorIconsRegular.drop,
+            PhosphorIconsBold.drop,
             'injection.bolus',
             '${meal.bolus.toStringAsFixed(1)} E',
           ),
@@ -137,7 +138,7 @@ class MealDetailSheet extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: scheme.primary),
+          Icon(icon, size: 20, color: scheme.onSurfaceVariant),
           const SizedBox(width: 12),
           Expanded(
             child: LocaleText(
@@ -200,7 +201,7 @@ class MealDetailSheet extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(left: 6),
                     child: Icon(
-                      PhosphorIconsRegular.caretRight,
+                      PhosphorIconsBold.caretRight,
                       color: scheme.onSurface.withValues(alpha: 0.3),
                     ),
                   ),
@@ -236,14 +237,10 @@ class MealDetailSheet extends StatelessWidget {
           Navigator.of(context).pop();
         },
       ),
-      icon: const Icon(
-        PhosphorIconsRegular.trash,
-        size: 20,
-        color: Colors.redAccent,
-      ),
+      icon: Icon(PhosphorIconsBold.trash, size: 20, color: context.danger),
       label: LocaleText(
         'nutrition.meals.delete',
-        style: const TextStyle(color: Colors.redAccent),
+        style: TextStyle(color: context.danger),
       ),
     );
   }

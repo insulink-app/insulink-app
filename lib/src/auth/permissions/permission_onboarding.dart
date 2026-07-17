@@ -34,7 +34,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
 
   static final List<PermissionRequest> _permissions = [
     (
-      icon: PhosphorIconsRegular.bluetooth,
+      icon: PhosphorIconsBold.bluetooth,
       titleKey: 'permission.bluetooth.title',
       bodyKey: 'permission.bluetooth.body',
       request: () async {
@@ -54,7 +54,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       },
     ),
     (
-      icon: PhosphorIconsRegular.prohibit,
+      icon: PhosphorIconsBold.prohibit,
       titleKey: 'permission.dnd.title',
       bodyKey: 'permission.dnd.body',
       request: () async {
@@ -64,7 +64,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       },
     ),
     (
-      icon: PhosphorIconsRegular.personSimpleWalk,
+      icon: PhosphorIconsBold.personSimpleWalk,
       titleKey: 'permission.activity.title',
       bodyKey: 'permission.activity.body',
       request: () async {
@@ -72,7 +72,7 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
       },
     ),
     (
-      icon: PhosphorIconsRegular.batteryCharging,
+      icon: PhosphorIconsBold.batteryCharging,
       titleKey: 'permission.battery.title',
       bodyKey: 'permission.battery.body',
       request: () async {

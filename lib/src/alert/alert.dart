@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 enum AlertType { success, error, neutral }
 
@@ -236,9 +237,9 @@ class AlertState extends State<Alert> {
       return widget.icon!;
     }
     return switch (widget.type) {
-      AlertType.success => PhosphorIconsRegular.checkCircle,
-      AlertType.error => PhosphorIconsRegular.warningCircle,
-      _ => PhosphorIconsRegular.info,
+      AlertType.success => PhosphorIconsBold.checkCircle,
+      AlertType.error => PhosphorIconsBold.warningCircle,
+      _ => PhosphorIconsBold.info,
     };
   }
 
@@ -247,8 +248,8 @@ class AlertState extends State<Alert> {
       return widget.iconColor;
     }
     return switch (widget.type) {
-      AlertType.success => Colors.green,
-      AlertType.error => Colors.red,
+      AlertType.success => context.positive,
+      AlertType.error => context.danger,
       _ => Theme.of(context).colorScheme.onSurface,
     };
   }

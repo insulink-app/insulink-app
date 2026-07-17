@@ -80,7 +80,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
       ),
       body: archive.isEmpty
           ? const EmptyState(
-              icon: PhosphorIconsRegular.chartLineUp,
+              icon: PhosphorIconsBold.chartLineUp,
               titleKey: 'sport.activity.detail.empty',
             )
           : ListView(
@@ -172,14 +172,14 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
               _stat(
                 context,
                 scheme,
-                PhosphorIconsRegular.chartLine,
+                PhosphorIconsBold.chartLine,
                 'sport.activity.detail.average',
                 avg,
               ),
               _stat(
                 context,
                 scheme,
-                PhosphorIconsRegular.function,
+                PhosphorIconsBold.function,
                 'sport.activity.detail.total',
                 total,
               ),
@@ -199,7 +199,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
   ) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: scheme.primary),
+        Icon(icon, size: 16, color: scheme.onSurfaceVariant),
         const SizedBox(width: 6),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,

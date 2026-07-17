@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/tile_layout_state.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Lets the user pick which summary boxes are shown and drag them into the order
@@ -84,7 +85,10 @@ class _TileLayoutEditorState<T extends Enum>
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
                 child: LocaleText(
                   widget.hintKey,
-                  style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               Expanded(child: _list(context, tiles, filtering)),
@@ -102,12 +106,12 @@ class _TileLayoutEditorState<T extends Enum>
         controller: _query,
         decoration: InputDecoration(
           isDense: true,
-          prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
+          prefixIcon: const Icon(PhosphorIconsBold.magnifyingGlass),
           hintText: Locales.string(context, 'sport.layout.search'),
           suffixIcon: _query.text.isEmpty
               ? null
               : IconButton(
-                  icon: const Icon(PhosphorIconsRegular.x),
+                  icon: const Icon(PhosphorIconsBold.x),
                   onPressed: _query.clear,
                 ),
         ),
@@ -137,7 +141,7 @@ class _TileLayoutEditorState<T extends Enum>
       child: ListTile(
         tileColor: scheme.onSurface.withValues(alpha: 0.04),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: Icon(widget.icon(tile), color: scheme.primary),
+        leading: Icon(widget.icon(tile), color: context.accent),
         title: LocaleText(widget.labelKey(tile)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -148,9 +152,9 @@ class _TileLayoutEditorState<T extends Enum>
             ),
             const SizedBox(width: 4),
             if (draggable)
-              const Icon(
-                PhosphorIconsRegular.dotsSixVertical,
-                color: Colors.grey,
+              Icon(
+                PhosphorIconsBold.dotsSixVertical,
+                color: scheme.onSurfaceVariant,
               )
             else
               const SizedBox(width: 24),

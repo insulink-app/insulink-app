@@ -94,7 +94,7 @@ class SettingValueCard extends StatelessWidget {
           ),
         ),
         Icon(
-          PhosphorIconsRegular.caretRight,
+          PhosphorIconsBold.caretRight,
           color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
         ),
       ],

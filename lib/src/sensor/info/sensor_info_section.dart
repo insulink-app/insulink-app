@@ -17,7 +17,7 @@ class SensorSectionList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (sections.isEmpty) {
       return const EmptyState(
-        icon: PhosphorIconsRegular.broadcast,
+        icon: PhosphorIconsBold.broadcast,
         titleKey: 'sensor.info.empty',
       );
     }

@@ -95,18 +95,16 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
     );
   }
 
-  /// Outlined "add" tile — a primary-bordered, transparent button so it reads as
-  /// the add action without competing with the solid "Next" button below.
+  /// Outlined "add" tile — a transparent button so it reads as the add action
+  /// without competing with the solid "Next" button below. Colours come from
+  /// the theme, which tunes them per light/dark; only the sizing is local.
   Widget _addButton() {
-    final scheme = Theme.of(context).colorScheme;
     return OutlinedButton.icon(
       onPressed: _addProduct,
-      icon: const Icon(PhosphorIconsRegular.plus, size: 20),
+      icon: const Icon(PhosphorIconsBold.plus, size: 20),
       label: LocaleText('injection.products.add'),
       style: OutlinedButton.styleFrom(
-        foregroundColor: scheme.primary,
         minimumSize: const Size.fromHeight(48),
-        side: BorderSide(color: scheme.primary.withValues(alpha: 0.5)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
       ),
@@ -156,7 +154,7 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   icon: Icon(
-                    PhosphorIconsRegular.x,
+                    PhosphorIconsBold.x,
                     size: 18,
                     color: scheme.onSurface.withValues(alpha: 0.4),
                   ),

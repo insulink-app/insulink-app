@@ -45,7 +45,7 @@ class OverviewBoxes extends StatelessWidget {
           child: IconButton(
             visualDensity: VisualDensity.compact,
             icon: Icon(
-              PhosphorIconsRegular.slidersHorizontal,
+              PhosphorIconsBold.slidersHorizontal,
               size: 20,
               color: Theme.of(
                 context,

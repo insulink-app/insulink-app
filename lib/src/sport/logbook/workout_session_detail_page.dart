@@ -40,7 +40,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(PhosphorIconsRegular.trash),
+            icon: const Icon(PhosphorIconsBold.trash),
             onPressed: () => confirmDelete(
               context,
               messageKey: 'sport.logbook.delete_confirm',
@@ -97,14 +97,14 @@ class WorkoutSessionDetailPage extends StatelessWidget {
               _stat(
                 context,
                 scheme,
-                PhosphorIconsRegular.timer,
+                PhosphorIconsBold.timer,
                 'sport.logbook.duration',
                 _duration(session),
               ),
               _stat(
                 context,
                 scheme,
-                PhosphorIconsRegular.repeat,
+                PhosphorIconsBold.repeat,
                 'sport.routines.sets',
                 '${session.sets.length}',
               ),
@@ -133,6 +133,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
       startMs: session.startedAtMs,
       endMs: endMs,
       glucose: glucose,
+      track: const [],
       onHoverMs: (_) {},
     );
   }
@@ -156,7 +157,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
   ) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: scheme.primary),
+        Icon(icon, size: 16, color: scheme.onSurfaceVariant),
         const SizedBox(width: 6),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,7 +298,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   icon: Icon(
-                    PhosphorIconsRegular.x,
+                    PhosphorIconsBold.x,
                     size: 18,
                     color: scheme.onSurface.withValues(alpha: 0.4),
                   ),
@@ -326,7 +327,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
         onPressed: () => _addSet(training, session, afterIndex),
-        icon: const Icon(PhosphorIconsRegular.plus, size: 18),
+        icon: const Icon(PhosphorIconsBold.plus, size: 18),
         label: LocaleText('sport.logbook.add_set'),
       ),
     );

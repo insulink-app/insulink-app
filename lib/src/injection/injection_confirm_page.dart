@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/biometric_auth.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
 
 /// Confirmation step before a bolus is delivered: a summary of carbs, glucose
 /// and the (possibly edited) bolus, confirmed with the device biometric. Pops
@@ -27,6 +29,11 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
   final BiometricAuth _auth = BiometricAuth();
   bool _authenticating = false;
 
+  /// Set when the biometric check was declined or failed. Deliberately sticky:
+  /// this page gates a bolus, so "it didn't work" has to stay on screen next to
+  /// the retry until the user acts on it, rather than time out on its own.
+  bool _failed = false;
+
   /// Whether this bolus needs biometric confirmation. A zero bolus (carbs-only
   /// logging) is confirmed with a plain tap.
   bool get _needsAuth => widget.bolus > 0;
@@ -36,7 +43,10 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       Navigator.of(context).pop(true);
       return;
     }
-    setState(() => _authenticating = true);
+    setState(() {
+      _authenticating = true;
+      _failed = false;
+    });
     final ok = await _auth.confirm(
       Locales.string(context, 'injection.confirm.reason'),
     );
@@ -47,10 +57,10 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       Navigator.of(context).pop(true);
       return;
     }
-    setState(() => _authenticating = false);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: LocaleText('injection.confirm.failed')));
+    setState(() {
+      _authenticating = false;
+      _failed = true;
+    });
   }
 
   @override
@@ -71,7 +81,10 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
               const SizedBox(height: 24),
               _details(context),
               const Spacer(),
-              if (_needsAuth) _hint(context),
+              if (_failed)
+                _failure(context)
+              else if (_needsAuth)
+                _hint(context),
               const SizedBox(height: 14),
               FilledButton.icon(
                 onPressed: _authenticating ? null : _confirm,
@@ -81,7 +94,11 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Icon(_needsAuth ? PhosphorIconsRegular.fingerprint : PhosphorIconsRegular.check),
+                    : Icon(
+                        _needsAuth
+                            ? PhosphorIconsBold.fingerprint
+                            : PhosphorIconsBold.check,
+                      ),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
                 ),
@@ -100,13 +117,13 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 28),
       decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.08),
+        color: scheme.tintPanel,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: scheme.primary.withValues(alpha: 0.15)),
+        border: Border.all(color: scheme.tintLine),
       ),
       child: Column(
         children: [
-          Icon(PhosphorIconsRegular.syringe, color: scheme.primary, size: 30),
+          Icon(PhosphorIconsBold.syringe, color: context.accent, size: 30),
           const SizedBox(height: 10),
           LocaleText(
             'injection.bolus',
@@ -123,7 +140,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
               style: TextStyle(
                 fontSize: 46,
                 fontWeight: FontWeight.bold,
-                color: scheme.primary,
+                color: context.accent,
                 height: 1,
               ),
               children: [
@@ -132,7 +149,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
-                    color: scheme.primary.withValues(alpha: 0.7),
+                    color: context.accent.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -156,14 +173,14 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
         children: [
           _row(
             context,
-            PhosphorIconsRegular.forkKnife,
+            PhosphorIconsBold.forkKnife,
             'injection.carbs',
             '${widget.carbs.toStringAsFixed(0)} g',
           ),
           Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
           _row(
             context,
-            PhosphorIconsRegular.syringe,
+            PhosphorIconsBold.syringe,
             'injection.glucose',
             '${widget.glucoseMgdl} mg/dL',
           ),
@@ -183,7 +200,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: scheme.primary),
+          Icon(icon, size: 20, color: scheme.onSurfaceVariant),
           const SizedBox(width: 12),
           Expanded(
             child: LocaleText(
@@ -200,6 +217,31 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
     );
   }
 
+  /// Takes the hint's place once the biometric check fails, in the error colour:
+  /// same spot, directly above the button that is now a retry, so the reason the
+  /// bolus did not go through is impossible to miss and does not disappear.
+  Widget _failure(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(PhosphorIconsBold.warning, size: 16, color: scheme.error),
+        const SizedBox(width: 6),
+        Flexible(
+          child: LocaleText(
+            'injection.confirm.failed',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: scheme.error,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   /// Small hint reminding the user the confirm uses biometrics.
   Widget _hint(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -207,7 +249,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          PhosphorIconsRegular.fingerprint,
+          PhosphorIconsBold.fingerprint,
           size: 16,
           color: scheme.onSurface.withValues(alpha: 0.5),
         ),

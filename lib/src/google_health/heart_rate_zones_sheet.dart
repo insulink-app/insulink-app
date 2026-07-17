@@ -95,7 +95,7 @@ class _HeartRateZonesSheetState extends State<_HeartRateZonesSheet> {
           ),
         ),
         CircleIconButton(
-          icon: PhosphorIconsRegular.minus,
+          icon: PhosphorIconsBold.minus,
           accent: accent,
           onTap: () => step(-_step),
         ),
@@ -108,7 +108,7 @@ class _HeartRateZonesSheetState extends State<_HeartRateZonesSheet> {
           ),
         ),
         CircleIconButton(
-          icon: PhosphorIconsRegular.plus,
+          icon: PhosphorIconsBold.plus,
           accent: accent,
           onTap: () => step(_step),
         ),

@@ -26,7 +26,7 @@ class SilentBanner extends StatelessWidget {
           child: Row(
             children: [
               const Icon(
-                PhosphorIconsRegular.bellSlash,
+                PhosphorIconsBold.bellSlash,
                 color: accent,
                 size: 22,
               ),
@@ -92,7 +92,7 @@ class SearchingView extends StatelessWidget {
           const SizedBox(height: 8),
           LocaleText(
             'overview.searching.hint',
-            style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
         ],
@@ -123,7 +123,7 @@ class EmptyView extends StatelessWidget {
                 color: scheme.primary,
               ),
               child: Icon(
-                PhosphorIconsRegular.drop,
+                PhosphorIconsBold.drop,
                 size: 44,
                 color: scheme.onPrimary,
               ),
@@ -137,7 +137,7 @@ class EmptyView extends StatelessWidget {
             const SizedBox(height: 10),
             LocaleText(
               'overview.empty.body',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),

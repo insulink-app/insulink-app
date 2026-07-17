@@ -25,7 +25,7 @@ class MealCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
       ),
-      leading: const SportLeadingBadge(icon: PhosphorIconsRegular.forkKnife),
+      leading: const SportLeadingBadge(icon: PhosphorIconsBold.forkKnife),
       title: Text(
         '${meal.carbs.toStringAsFixed(0)} g '
         '${Locales.string(context, 'nutrition.stats.carbs')}',

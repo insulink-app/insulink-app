@@ -64,6 +64,19 @@ class _SportBodyContentState extends State<SportBodyContent> {
     });
   }
 
+  /// Pull-to-refresh: re-pull the account AND re-fetch today's Google Health data
+  /// (steps/distance/calories) when connected, so a manual pull updates both.
+  /// The two are independent, so they run concurrently.
+  Future<void> _refresh() async {
+    await Future.wait([
+      _syncAccount(),
+      _syncGoogleHealth(
+        context.read<SportState>(),
+        context.read<SportActivityState>(),
+      ),
+    ]);
+  }
+
   /// Adopts the account's sport data, then re-reads it into the shared state so
   /// the page shows it. Runs on every entry to the tab (the shell rebuilds the
   /// body per tab switch, so [initState] IS "on enter") and behind the
@@ -113,7 +126,7 @@ class _SportBodyContentState extends State<SportBodyContent> {
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: _syncAccount,
+      onRefresh: _refresh,
       child: ListView(
         // Always scrollable/bouncy so the whole page scrolls as one block (no
         // "stuck" section) — and so the pull-to-refresh is reachable even when

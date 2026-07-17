@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
 import 'sensor_lifespan.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// Sensor durability shown as one rectangle per remaining unit: one per day
 /// normally, switching to one per HOUR over the final 24 h so the last day
@@ -77,9 +78,9 @@ class SensorLifeBar extends StatelessWidget {
         fontSize: 12,
         fontWeight: overview ? FontWeight.normal : FontWeight.w600,
         color: life.expired
-            ? Colors.redAccent
+            ? context.danger
             : life.inGrace
-            ? Colors.orangeAccent
+            ? context.warning
             : normalColor,
       ),
     );

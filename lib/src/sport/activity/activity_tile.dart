@@ -50,7 +50,7 @@ class _RoutineSessionTile extends StatelessWidget {
         side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
       ),
       leading: const SportLeadingBadge(
-        icon: PhosphorIconsRegular.calendarCheck,
+        icon: PhosphorIconsBold.calendarCheck,
       ),
       title: Text(
         routine?.name ??

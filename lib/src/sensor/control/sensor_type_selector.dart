@@ -37,7 +37,7 @@ class SensorTypeSelector extends StatelessWidget {
               context,
               SensorType.abbottLibre3,
               'sensor.type.libre3',
-              PhosphorIconsRegular.broadcast,
+              PhosphorIconsBold.broadcast,
             ),
           ),
         ],

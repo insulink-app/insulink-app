@@ -53,12 +53,15 @@ class BasalBarChart extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         return GestureDetector(
-          onTapDown:
-              _interactive ? (d) => _select(d.localPosition, width) : null,
-          onPanStart:
-              _interactive ? (d) => _paint(d.localPosition, width) : null,
-          onPanUpdate:
-              _interactive ? (d) => _paint(d.localPosition, width) : null,
+          onTapDown: _interactive
+              ? (d) => _select(d.localPosition, width)
+              : null,
+          onPanStart: _interactive
+              ? (d) => _paint(d.localPosition, width)
+              : null,
+          onPanUpdate: _interactive
+              ? (d) => _paint(d.localPosition, width)
+              : null,
           child: SizedBox(
             height: height,
             child: Row(
@@ -77,8 +80,9 @@ class BasalBarChart extends StatelessWidget {
   Widget _bar(BuildContext context, int hour, double scale) {
     final scheme = Theme.of(context).colorScheme;
     final selected = hour == selectedHour;
-    final color =
-        selected ? scheme.primary : scheme.primary.withValues(alpha: 0.45);
+    final color = selected
+        ? scheme.primary
+        : scheme.primary.withValues(alpha: 0.45);
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 0.75),

@@ -164,7 +164,7 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          icon: const Icon(PhosphorIconsRegular.caretLeft),
+          icon: const Icon(PhosphorIconsBold.caretLeft),
           onPressed: index > 0 ? () => select(index - 1) : null,
         ),
         Text(
@@ -174,7 +174,7 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         IconButton(
-          icon: const Icon(PhosphorIconsRegular.caretRight),
+          icon: const Icon(PhosphorIconsBold.caretRight),
           onPressed: index < nights.length - 1 ? () => select(index + 1) : null,
         ),
       ],
@@ -382,7 +382,11 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Icon(PhosphorIconsRegular.chartLine, size: 16, color: scheme.primary),
+              Icon(
+                PhosphorIconsBold.chartLine,
+                size: 16,
+                color: scheme.primary,
+              ),
               const SizedBox(width: 6),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -27,27 +27,24 @@ class SportRowMenu extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final menu = PopupMenuButton<_SportRowAction>(
       icon: Icon(
-        PhosphorIconsRegular.dotsThreeVertical,
+        PhosphorIconsBold.dotsThreeVertical,
         color: scheme.onSurface.withValues(alpha: 0.55),
       ),
       tooltip: '',
       position: PopupMenuPosition.under,
-      color: scheme.surfaceContainerHigh,
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       onSelected: (action) => _run(context, action),
       itemBuilder: (context) => [
         _item(
           context,
           _SportRowAction.copy,
-          PhosphorIconsRegular.copy,
+          PhosphorIconsBold.copy,
           'sport.copy',
           scheme.onSurface,
         ),
         _item(
           context,
           _SportRowAction.delete,
-          PhosphorIconsRegular.trash,
+          PhosphorIconsBold.trash,
           'alert.delete',
           scheme.error,
         ),

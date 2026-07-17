@@ -97,7 +97,10 @@ class ProfileBasalState extends ChangeNotifier {
     if (legacy == null || legacy.isEmpty) {
       return _fresh();
     }
-    final rates = legacy.split(',').map((s) => double.tryParse(s) ?? 0.0).toList();
+    final rates = legacy
+        .split(',')
+        .map((s) => double.tryParse(s) ?? 0.0)
+        .toList();
     if (rates.length != 24) {
       return _fresh();
     }

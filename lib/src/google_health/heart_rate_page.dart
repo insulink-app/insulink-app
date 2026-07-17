@@ -151,7 +151,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
         title: LocaleText('google_health.heart_rate'),
         actions: [
           IconButton(
-            icon: const Icon(PhosphorIconsRegular.slidersHorizontal),
+            icon: const Icon(PhosphorIconsBold.slidersHorizontal),
             tooltip: Locales.string(context, 'google_health.hr_zones.title'),
             onPressed: _editZones,
           ),
@@ -239,7 +239,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(PhosphorIconsRegular.caretLeft),
+            icon: const Icon(PhosphorIconsBold.caretLeft),
             onPressed: () => _shift(-1),
           ),
           Text(
@@ -247,7 +247,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           IconButton(
-            icon: const Icon(PhosphorIconsRegular.caretRight),
+            icon: const Icon(PhosphorIconsBold.caretRight),
             onPressed: _isToday ? null : () => _shift(1),
           ),
         ],
@@ -568,7 +568,10 @@ class _HeartRatePageState extends State<HeartRatePage> {
             meta: meta,
             child: Text(
               '${value.round()}',
-              style: const TextStyle(fontSize: 9, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 9,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ),
@@ -586,7 +589,10 @@ class _HeartRatePageState extends State<HeartRatePage> {
               meta: meta,
               child: Text(
                 '${clock.hour.toString().padLeft(2, '0')}:00',
-                style: const TextStyle(fontSize: 9, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             );
           },

@@ -27,7 +27,7 @@ class RequestReset {
     }
     Alert(
       description: "connection.logout",
-      icon: PhosphorIconsRegular.warning,
+      icon: PhosphorIconsBold.warning,
       callback: () {
         Navigator.pushReplacement(
           context,

@@ -49,7 +49,7 @@ class _Libre3PulsingIconState extends State<Libre3PulsingIcon>
           ],
         ),
         child: _Libre3IconDisc(
-          icon: PhosphorIconsRegular.scan,
+          icon: PhosphorIconsBold.scan,
           iconSize: 40,
           alpha: 0.12,
         ),
@@ -95,7 +95,7 @@ class Libre3CheckIcon extends StatelessWidget {
             child: Opacity(opacity: value.clamp(0.0, 1.0), child: child),
           ),
           child: _Libre3IconDisc(
-            icon: PhosphorIconsRegular.check,
+            icon: PhosphorIconsBold.check,
             iconSize: 44,
             alpha: 0.14,
           ),

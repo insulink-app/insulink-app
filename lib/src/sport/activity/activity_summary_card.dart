@@ -38,7 +38,10 @@ class ActivitySummaryCard extends StatelessWidget {
           const SizedBox(height: 10),
           LocaleText(
             'sport.activity.permission',
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ],
@@ -55,7 +58,7 @@ class ActivitySummaryCard extends StatelessWidget {
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
-          icon: const Icon(PhosphorIconsRegular.slidersHorizontal, size: 20),
+          icon: const Icon(PhosphorIconsBold.slidersHorizontal, size: 20),
           onPressed: () => showActivitySettingsSheet(context),
         ),
       ],

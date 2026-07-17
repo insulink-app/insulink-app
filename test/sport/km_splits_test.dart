@@ -33,4 +33,28 @@ void main() {
     expect(splits.length, 2);
     expect(splits.last.km, closeTo(0.5, 0.02));
   });
+
+  test('trackSpeeds gives ~12 km/h at the segment midpoints', () {
+    // ~1 km per 0.009° latitude covered in 300 s → 12 km/h.
+    const track = [
+      TrackPoint(lat: 0.000, lng: 0, tMs: 0),
+      TrackPoint(lat: 0.009, lng: 0, tMs: 300000),
+      TrackPoint(lat: 0.018, lng: 0, tMs: 600000),
+    ];
+    final speeds = trackSpeeds(track);
+    expect(speeds.length, 2);
+    expect(speeds.first.tMs, 150000);
+    expect(speeds.last.tMs, 450000);
+    for (final sample in speeds) {
+      expect(sample.kmh, closeTo(12, 0.5));
+    }
+  });
+
+  test('trackSpeeds skips a duplicate-timestamp segment', () {
+    const track = [
+      TrackPoint(lat: 0.000, lng: 0, tMs: 0),
+      TrackPoint(lat: 0.009, lng: 0, tMs: 0),
+    ];
+    expect(trackSpeeds(track), isEmpty);
+  });
 }

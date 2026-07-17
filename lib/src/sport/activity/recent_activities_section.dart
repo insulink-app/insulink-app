@@ -36,7 +36,7 @@ class RecentActivitiesSection extends StatelessWidget {
             ),
             IconButton(
               visualDensity: VisualDensity.compact,
-              icon: const Icon(PhosphorIconsRegular.calendarBlank, size: 20),
+              icon: const Icon(PhosphorIconsBold.calendarBlank, size: 20),
               tooltip: Locales.string(context, 'sport.calendar'),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(

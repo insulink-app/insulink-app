@@ -51,9 +51,10 @@ class PulseSync {
     _lastLiveSend = now;
     _liveInFlight = true;
     unawaited(
-      Request.post(url: '/health/pulse/live/push/', body: {'b': bpm})
-          .send(null)
-          .whenComplete(() => _liveInFlight = false),
+      Request.post(
+        url: '/health/pulse/live/push/',
+        body: {'b': bpm},
+      ).send(null).whenComplete(() => _liveInFlight = false),
     );
   }
 

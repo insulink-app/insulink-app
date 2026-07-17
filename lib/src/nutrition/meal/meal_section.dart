@@ -51,7 +51,7 @@ class MealSection extends StatelessWidget {
 
   Widget _empty(BuildContext context) {
     return const EmptyState(
-      icon: PhosphorIconsRegular.forkKnife,
+      icon: PhosphorIconsBold.forkKnife,
       titleKey: 'nutrition.meals.empty',
       subtitleKey: 'nutrition.meals.empty_hint',
     );

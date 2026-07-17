@@ -4,8 +4,8 @@ import 'package:insulink/src/google_health/google_health_importer.dart';
 import 'package:insulink/src/google_health/google_health_metric_list.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// Connection box for the Google Health device page, styled like the sensor's status
 /// box: an icon badge + status, the latest metrics when connected, and a
@@ -35,15 +35,45 @@ class GoogleHealthStatusBox extends StatelessWidget {
             GoogleHealthMetricList(health: health),
           ] else ...[
             const SizedBox(height: 14),
-            LocaleText(
-              'google_health.hint',
-              style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-            ),
+            _hintOrFailure(scheme),
           ],
           const SizedBox(height: 16),
           _action(context),
         ],
       ),
+    );
+  }
+
+  /// The box's own explanatory line: normally what connecting will do, but after
+  /// a failed attempt, why it failed.
+  ///
+  /// The failure belongs here rather than in a passing notice — a denied
+  /// permission is a standing condition, not an event, so it stays visible next
+  /// to the button that retries it, and it survives leaving and reopening the
+  /// page. It replaces the hint instead of joining it: once connecting has
+  /// failed, telling the user what connecting would do is no longer the point.
+  Widget _hintOrFailure(ColorScheme scheme) {
+    final failure = health.connectFailure;
+    if (failure == null) {
+      return LocaleText(
+        'google_health.hint',
+        style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(PhosphorIconsBold.warning, size: 15, color: scheme.error),
+        const SizedBox(width: 8),
+        Expanded(
+          child: LocaleText(
+            failure == GoogleHealthImportResult.denied
+                ? 'google_health.denied'
+                : 'google_health.unavailable',
+            style: TextStyle(fontSize: 13, height: 1.3, color: scheme.error),
+          ),
+        ),
+      ],
     );
   }
 
@@ -63,7 +93,9 @@ class GoogleHealthStatusBox extends StatelessWidget {
             color: accent.withValues(alpha: 0.15),
           ),
           child: Icon(
-            health.connected ? PhosphorIconsRegular.watch : PhosphorIconsRegular.watch,
+            health.connected
+                ? PhosphorIconsBold.watch
+                : PhosphorIconsBold.watch,
             size: 30,
             color: accent,
           ),
@@ -85,7 +117,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
               const SizedBox(height: 2),
               LocaleText(
                 'google_health.status.source',
-                style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -107,18 +139,22 @@ class GoogleHealthStatusBox extends StatelessWidget {
     if (health.connected) {
       return OutlinedButton.icon(
         onPressed: () => _confirmDisconnect(context),
-        icon: const Icon(PhosphorIconsRegular.linkBreak, size: 20),
+        icon: const Icon(PhosphorIconsBold.linkBreak, size: 20),
         label: LocaleText('google_health.disconnect'),
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.redAccent,
+          foregroundColor: context.danger,
           minimumSize: const Size.fromHeight(46),
-          side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.4)),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.4),
+          ),
         ),
       );
     }
+    // The outcome needs no handling here: connect() records it and notifies, and
+    // the box renders it — see _hintOrFailure.
     return FilledButton.tonalIcon(
-      onPressed: () => _connect(context),
-      icon: const Icon(PhosphorIconsRegular.link, size: 20),
+      onPressed: () => health.connect(),
+      icon: const Icon(PhosphorIconsBold.link, size: 20),
       label: LocaleText('google_health.connect'),
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
     );
@@ -126,28 +162,13 @@ class GoogleHealthStatusBox extends StatelessWidget {
 
   void _confirmDisconnect(BuildContext context) {
     Alert(
-      icon: PhosphorIconsRegular.warning,
-      iconColor: Colors.redAccent,
+      icon: PhosphorIconsBold.warning,
+      iconColor: context.danger,
       description: 'google_health.disconnect_confirm',
       cancelButton: true,
       confirmButtonText: 'google_health.disconnect',
-      confirmButtonColor: Colors.redAccent,
+      confirmButtonColor: Theme.of(context).colorScheme.error,
       callback: health.disconnect,
     ).show(context);
-  }
-
-  Future<void> _connect(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final denied = Locales.string(context, 'google_health.denied');
-    final unavailable = Locales.string(context, 'google_health.unavailable');
-    final result = await health.connect();
-    final message = switch (result) {
-      GoogleHealthImportResult.success => null,
-      GoogleHealthImportResult.denied => denied,
-      GoogleHealthImportResult.unavailable => unavailable,
-    };
-    if (message != null) {
-      messenger.showSnackBar(SnackBar(content: Text(message)));
-    }
   }
 }

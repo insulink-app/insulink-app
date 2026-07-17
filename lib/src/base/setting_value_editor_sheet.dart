@@ -92,7 +92,7 @@ class _SettingValueEditorSheetState extends State<SettingValueEditorSheet> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         CircleIconButton(
-          icon: PhosphorIconsRegular.minus,
+          icon: PhosphorIconsBold.minus,
           accent: accent,
           onTap: () => _apply(_value - widget.step),
         ),
@@ -105,7 +105,7 @@ class _SettingValueEditorSheetState extends State<SettingValueEditorSheet> {
           ),
         ),
         CircleIconButton(
-          icon: PhosphorIconsRegular.plus,
+          icon: PhosphorIconsBold.plus,
           accent: accent,
           onTap: () => _apply(_value + widget.step),
         ),

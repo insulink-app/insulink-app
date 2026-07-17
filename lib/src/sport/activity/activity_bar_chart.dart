@@ -131,7 +131,10 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
               value >= 1000
                   ? '${(value / 1000).toStringAsFixed(0)}k'
                   : value.toStringAsFixed(0),
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 10,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ),
@@ -150,7 +153,10 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
               fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
               child: Text(
                 locale.formatShortDate(widget.date(widget.days[index])),
-                style: const TextStyle(fontSize: 9, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             );
           },

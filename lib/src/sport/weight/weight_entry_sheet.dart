@@ -5,6 +5,7 @@ import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_state.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -149,7 +150,7 @@ class _TimeRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(PhosphorIconsRegular.clock, size: 20, color: scheme.primary),
+              Icon(PhosphorIconsBold.clock, size: 20, color: context.accent),
               const SizedBox(width: 12),
               LocaleText(
                 'sport.weight.time',
@@ -165,7 +166,7 @@ class _TimeRow extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Icon(
-                PhosphorIconsRegular.pencilSimple,
+                PhosphorIconsBold.pencilSimple,
                 size: 16,
                 color: scheme.onSurfaceVariant,
               ),

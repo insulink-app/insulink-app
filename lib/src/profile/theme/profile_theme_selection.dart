@@ -20,14 +20,14 @@ class ProfileThemeSelection extends StatelessWidget {
           _buildThemeButton(
             themeState,
             ThemeMode.light,
-            PhosphorIconsRegular.sun,
+            PhosphorIconsBold.sun,
             "profile.theme.light",
             context,
           ),
           _buildThemeButton(
             themeState,
             ThemeMode.dark,
-            PhosphorIconsRegular.moon,
+            PhosphorIconsBold.moon,
             "profile.theme.dark",
             context,
           ),

@@ -62,7 +62,7 @@ class OverviewBodyContent extends StatelessWidget {
     final controller = context.watch<CgmController>();
     final silent = context.watch<ProfileSilentState>().silent;
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         children: [
           if (silent) ...[const SilentBanner(), const SizedBox(height: 12)],
@@ -103,15 +103,49 @@ class OverviewBodyContent extends StatelessWidget {
   }
 }
 
+/// The overview's last scroll offset, held at module scope so it survives a full
+/// rebuild of the app subtree — an account-sync `_reload` (main.dart) bumps the
+/// provider generation key, which recreates the Navigator and drops PageStorage,
+/// snapping the list back to the top. This outlives that; it resets only on a
+/// cold process start.
+double _overviewScrollOffset = 0;
+
 /// Normal view once a (live or cached) reading exists: headline value + chart.
-class _DataView extends StatelessWidget {
+/// Stateful so it can own a [ScrollController] that restores [_overviewScrollOffset]
+/// on (re)build and keeps it current as the user scrolls.
+class _DataView extends StatefulWidget {
   const _DataView({required this.controller});
 
   final CgmController controller;
 
   @override
+  State<_DataView> createState() => _DataViewState();
+}
+
+class _DataViewState extends State<_DataView> {
+  late final ScrollController _scroll =
+      ScrollController(initialScrollOffset: _overviewScrollOffset)
+        ..addListener(_remember);
+
+  void _remember() {
+    if (_scroll.hasClients) {
+      _overviewScrollOffset = _scroll.offset;
+    }
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_remember);
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return ListView(
+      controller: _scroll,
+      padding: const EdgeInsets.only(bottom: 52),
       children: [
         // Still offer the account's stored sensor when none is paired locally —
         // a returning device now shows this data view (synced history) instead of
@@ -143,7 +177,6 @@ class _DataView extends StatelessWidget {
           const SizedBox(height: 16),
         ],
         const OverviewBoxes(),
-        const SizedBox(height: 48),
       ],
     );
   }
@@ -199,7 +232,7 @@ class _ChartPreview extends StatelessWidget {
         ),
         const Spacer(),
         Icon(
-          PhosphorIconsRegular.caretRight,
+          PhosphorIconsBold.caretRight,
           size: 20,
           color: scheme.onSurface.withValues(alpha: 0.4),
         ),

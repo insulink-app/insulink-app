@@ -134,7 +134,7 @@ class GlucoseLineChart extends StatelessWidget {
           showTitles: true,
           reservedSize: 24,
           interval: minimal ? _minimalTick : _yInterval,
-          getTitlesWidget: (value, _) => _leftLabel(value),
+          getTitlesWidget: (value, _) => _leftLabel(context, value),
         ),
       ),
       bottomTitles: AxisTitles(
@@ -145,14 +145,20 @@ class GlucoseLineChart extends StatelessWidget {
           // Drop the fractional min/max edge ticks so only full hours show.
           minIncluded: false,
           maxIncluded: false,
-          getTitlesWidget: (value, _) => _label(_xLabel(context, value)),
+          getTitlesWidget: (value, _) =>
+              _label(context, _xLabel(context, value)),
         ),
       ),
     );
   }
 
-  Widget _label(String text) =>
-      Text(text, style: const TextStyle(fontSize: 10, color: Colors.grey));
+  Widget _label(BuildContext context, String text) => Text(
+    text,
+    style: TextStyle(
+      fontSize: 10,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    ),
+  );
 
   /// Coarse tick step for the minimal axis — kept large (few ticks per frame,
   /// since the pulse re-lays-out the chart) while still landing a tick near each
@@ -162,15 +168,15 @@ class GlucoseLineChart extends StatelessWidget {
   /// Left-axis Y label. In minimal mode only the two target bounds are labelled
   /// (at their nearest tick, showing the true threshold value); the full chart
   /// labels every tick.
-  Widget _leftLabel(double value) {
+  Widget _leftLabel(BuildContext context, double value) {
     if (!minimal) {
-      return _label(_formatY(value));
+      return _label(context, _formatY(value));
     }
     final target = _targetForTick(value);
     if (target == null) {
       return const SizedBox.shrink();
     }
-    return _label(glucose.format(target));
+    return _label(context, glucose.format(target));
   }
 
   /// The target bound (mg/dL) whose nearest axis tick is [value], or null.

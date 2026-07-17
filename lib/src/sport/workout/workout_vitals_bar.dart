@@ -76,7 +76,7 @@ class _WorkoutVitalsBarState extends State<WorkoutVitalsBar> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _reading(
-            PhosphorIconsRegular.drop,
+            PhosphorIconsBold.drop,
             glucoseColor,
             mgdl == null ? '–' : glucose.formatWithUnit(mgdl),
             trailing: mgdl != null && trend != null

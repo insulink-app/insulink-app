@@ -92,7 +92,7 @@ class _GlucoseRangeEditorSheetState extends State<GlucoseRangeEditorSheet> {
   Widget _testButton() {
     return OutlinedButton.icon(
       onPressed: widget.onTest,
-      icon: const Icon(PhosphorIconsRegular.bellRinging, size: 18),
+      icon: const Icon(PhosphorIconsBold.bellRinging, size: 18),
       label: LocaleText('profile.glucose.test_alarm'),
       style: OutlinedButton.styleFrom(
         foregroundColor: widget.accent,

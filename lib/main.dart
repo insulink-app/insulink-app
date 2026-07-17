@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -25,6 +26,7 @@ import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_layout_state.dart';
+import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_state.dart';
@@ -341,7 +343,23 @@ class _AppLifecycleState extends State<_AppLifecycle>
     }
     context.read<SportActivityState>().startIfPermitted();
     context.read<CardioTrainingState>().reloadPending();
-    context.read<GoogleHealthState>().refreshIfConnected();
+    unawaited(_refreshHealth());
+  }
+
+  /// Refreshes the Google Health metrics and, while connected, imports today's
+  /// steps/distance/calories into the Today tiles — so a relaunch or resume
+  /// updates them without waiting for the Sport tab to be opened. Sequential:
+  /// the `health` plugin has a single activity-result channel, so the metrics
+  /// refresh and the import must not overlap.
+  Future<void> _refreshHealth() async {
+    final health = context.read<GoogleHealthState>();
+    final sport = context.read<SportState>();
+    final activity = context.read<SportActivityState>();
+    await health.refreshIfConnected();
+    if (!mounted || !health.connected) {
+      return;
+    }
+    await HealthImporter().import(sport, activity);
   }
 
   @override

@@ -28,7 +28,7 @@ class GlucoseHistoryView extends StatelessWidget {
     final spots = series.build();
     if (spots.isEmpty) {
       return const EmptyState(
-        icon: PhosphorIconsRegular.chartLineUp,
+        icon: PhosphorIconsBold.chartLineUp,
         titleKey: 'analysis.empty',
       );
     }
@@ -110,7 +110,7 @@ class _Chart extends StatelessWidget {
           showTitles: true,
           reservedSize: 36,
           interval: _yInterval,
-          getTitlesWidget: (value, _) => _label(_formatY(value)),
+          getTitlesWidget: (value, _) => _label(context, _formatY(value)),
         ),
       ),
       bottomTitles: AxisTitles(
@@ -129,7 +129,7 @@ class _Chart extends StatelessWidget {
     if (index < 0 || index >= starts.length) {
       return const SizedBox.shrink();
     }
-    return _label(_formatX(context, starts[index]));
+    return _label(context, _formatX(context, starts[index]));
   }
 
   /// Localized tick text for a bucket start, per the chosen granularity.
@@ -150,8 +150,13 @@ class _Chart extends StatelessWidget {
       ? value.toStringAsFixed(0)
       : '${value.toInt()}';
 
-  Widget _label(String text) =>
-      Text(text, style: const TextStyle(fontSize: 10, color: Colors.grey));
+  Widget _label(BuildContext context, String text) => Text(
+    text,
+    style: TextStyle(
+      fontSize: 10,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    ),
+  );
 
   ExtraLinesData _targetLines() {
     return ExtraLinesData(

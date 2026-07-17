@@ -23,7 +23,7 @@ class CalendarHeatmapView extends StatelessWidget {
     final tirByDay = DailyTimeInRange(controller.statsArchive, glucose).build();
     if (tirByDay.isEmpty) {
       return const EmptyState(
-        icon: PhosphorIconsRegular.chartLineUp,
+        icon: PhosphorIconsBold.chartLineUp,
         titleKey: 'analysis.empty',
       );
     }
@@ -58,7 +58,10 @@ class CalendarHeatmapView extends StatelessWidget {
             child: Center(
               child: Text(
                 Locales.string(context, 'date.weekday.$weekday'),
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),

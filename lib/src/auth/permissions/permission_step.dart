@@ -44,7 +44,7 @@ class PermissionStep extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
-              color: Colors.grey[500],
+              color: scheme.onSurfaceVariant,
               height: 1.4,
             ),
           ),
@@ -57,12 +57,12 @@ class PermissionStep extends StatelessWidget {
               minimumSize: const Size.fromHeight(50),
             ),
             child: busy
-                ? const SizedBox(
+                ? SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: scheme.onPrimary,
                     ),
                   )
                 : LocaleText(
@@ -81,9 +81,9 @@ class PermissionStep extends StatelessWidget {
         height: 96,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: scheme.primary,
+          color: scheme.surfaceContainerHighest,
         ),
-        child: Icon(permission.icon, size: 48, color: scheme.onPrimary),
+        child: Icon(permission.icon, size: 48, color: scheme.onSurfaceVariant),
       ),
     );
   }

@@ -70,11 +70,17 @@ class OverviewCurrentValue extends StatelessWidget {
             if (hasTrend)
               Text(
                 '${glucose.formatTrend(trendPerMin!)}/min',
-                style: TextStyle(fontSize: 10, color: Colors.grey[400]),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             Text(
               glucose.unit.label,
-              style: TextStyle(fontSize: 10, color: Colors.grey[400]),
+              style: TextStyle(
+                fontSize: 10,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 12),
           ],

@@ -14,6 +14,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 enum _Phase { countdown, recording }
 
@@ -216,12 +217,12 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
 
   void _confirmStop() {
     Alert(
-      icon: PhosphorIconsRegular.stopCircle,
-      iconColor: Colors.red.shade700,
+      icon: PhosphorIconsBold.stopCircle,
+      iconColor: context.danger,
       description: 'sport.trainings.stop_confirm',
       cancelButton: true,
       confirmButtonText: 'sport.trainings.stop',
-      confirmButtonColor: Colors.red.shade700,
+      confirmButtonColor: Theme.of(context).colorScheme.error,
       callback: _stop,
     ).show(context);
   }
@@ -264,7 +265,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
               icon: Icon(
                 active.isPaused
                     ? PhosphorIconsFill.play
-                    : PhosphorIconsRegular.pause,
+                    : PhosphorIconsBold.pause,
               ),
               tooltip: Locales.string(
                 context,
@@ -315,7 +316,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
@@ -360,7 +361,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
             width: double.infinity,
             child: FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
+                backgroundColor: Theme.of(context).colorScheme.error,
               ),
               icon: const Icon(PhosphorIconsFill.stop, size: 28),
               label: LocaleText(

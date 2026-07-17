@@ -87,15 +87,18 @@ class FoodSection extends StatelessWidget {
         child: Column(
           children: [
             Icon(
-              PhosphorIconsRegular.qrCode,
+              PhosphorIconsBold.qrCode,
               size: 32,
-              color: Colors.grey[500],
+              color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 10),
             LocaleText(
               'nutrition.food.empty',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

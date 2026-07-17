@@ -10,6 +10,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/account/profile_account.dart';
 import 'package:insulink/src/profile/account/profile_password_dialog.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// The signed-in account card shown at the top of the profile page: the stored
 /// name (editable) plus a confirm-guarded log-out button.
@@ -41,16 +42,16 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
           _nameRow(theme),
           const SizedBox(height: 8),
           _actionButton(
-            icon: PhosphorIconsRegular.lock,
+            icon: PhosphorIconsBold.lock,
             labelKey: "profile.account.change_password",
             onPressed: () => const ProfilePasswordDialog().show(context),
           ),
           const SizedBox(height: 8),
           _actionButton(
-            icon: PhosphorIconsRegular.signOut,
+            icon: PhosphorIconsBold.signOut,
             labelKey: "profile.account.logout",
             onPressed: _confirmLogout,
-            color: Colors.redAccent,
+            color: context.danger,
           ),
         ],
       ),
@@ -91,7 +92,7 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
             ),
             IconButton(
               onPressed: () => _editName(name),
-              icon: const Icon(PhosphorIconsRegular.pencilSimple, size: 18),
+              icon: const Icon(PhosphorIconsBold.pencilSimple, size: 18),
               tooltip: Locales.string(context, "profile.account.save"),
             ),
           ],
@@ -108,7 +109,7 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
       radius: 24,
       backgroundColor: theme.colorScheme.primary,
       child: initial.isEmpty
-          ? Icon(PhosphorIconsRegular.user, color: theme.colorScheme.onPrimary)
+          ? Icon(PhosphorIconsBold.user, color: theme.colorScheme.onPrimary)
           : Text(
               initial[0].toUpperCase(),
               style: TextStyle(
@@ -150,7 +151,7 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
   void _editName(String? current) {
     final controller = TextEditingController(text: current);
     Alert(
-      icon: PhosphorIconsRegular.pencilSimple,
+      icon: PhosphorIconsBold.pencilSimple,
       content: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
         child: TextField(
@@ -160,7 +161,7 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
           textInputAction: TextInputAction.done,
           decoration: InputDecoration(
             counterText: "",
-            prefixIcon: const Icon(PhosphorIconsRegular.user),
+            prefixIcon: const Icon(PhosphorIconsBold.user),
             hintText: Locales.string(context, "profile.account.name"),
           ),
         ),
@@ -189,10 +190,10 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
   void _confirmLogout() {
     Alert(
       description: "profile.account.logout_confirm",
-      icon: PhosphorIconsRegular.warning,
+      icon: PhosphorIconsBold.warning,
       cancelButton: true,
       confirmButtonText: "profile.account.logout",
-      confirmButtonColor: Colors.redAccent,
+      confirmButtonColor: Theme.of(context).colorScheme.error,
       callback: _logout,
     ).show(context);
   }

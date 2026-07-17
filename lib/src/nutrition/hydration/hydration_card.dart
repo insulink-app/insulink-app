@@ -68,11 +68,11 @@ class HydrationCard extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _amount(state, accent)),
+        Expanded(child: _amount(context, state, accent)),
         IconButton(
           visualDensity: VisualDensity.compact,
           icon: const Icon(
-            PhosphorIconsRegular.clockCounterClockwise,
+            PhosphorIconsBold.clockCounterClockwise,
             size: 22,
           ),
           onPressed: () => showTodayDrinksSheet(context),
@@ -81,7 +81,7 @@ class HydrationCard extends StatelessWidget {
     );
   }
 
-  Widget _amount(NutritionState state, Color accent) {
+  Widget _amount(BuildContext context, NutritionState state, Color accent) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
@@ -93,7 +93,10 @@ class HydrationCard extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           '/ ${formatLitres(state.goalLitres)} L',
-          style: TextStyle(fontSize: 15, color: Colors.grey[600]),
+          style: TextStyle(
+            fontSize: 15,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

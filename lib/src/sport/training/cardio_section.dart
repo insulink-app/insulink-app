@@ -6,6 +6,7 @@ import 'package:insulink/src/sport/training/cardio_recording_page.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
 
 /// "Trainings" section of the sport home page: three start buttons
 /// (walk/jog/cycle), a resume banner and any pending auto-detected trainings.
@@ -51,16 +52,16 @@ class CardioSection extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.10),
+        color: scheme.tintPanel,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.primary.withValues(alpha: 0.30)),
+        border: Border.all(color: scheme.tintLine),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Icon(training.type.icon, color: scheme.primary),
+              Icon(training.type.icon, color: scheme.onSurfaceVariant),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

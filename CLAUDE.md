@@ -320,6 +320,75 @@ glucose/bolus/silent profile state, and `CgmController`) and `MaterialApp`
   session — see `archiveSince` / `archiveRange` under Data + persistence. Default
   window is 14 d (`CgmController.statsWindow`, clinical AGP).
 
+### Theme & design system (`lib/src/theme/`)
+
+`app_theme.dart` holds both `ThemeData`s; `accent_colors.dart` and
+`glucose_colors.dart` are `ThemeExtension`s. **No widget invents a colour** —
+needed a value the scheme has no role for? Add the role here, don't hard-code it
+at the call site. Full rationale + the measured contrast values: `docs/DESIGN.md`.
+
+The load-bearing parts (regressing any of these is a visible bug):
+
+- **An unset `ColorScheme` role does not fall back sensibly — it aliases to
+  another role, wrongly.** `surfaceContainer*` → `surface` (badges become the
+  exact colour of the card they sit in ⇒ invisible), `outline` → `onBackground`
+  (**white**/black rims on every `OutlinedButton`), `onSurfaceVariant` →
+  `onSurface`. So **a role set in one theme MUST be set in the other** — both
+  schemes set the same nine; keep that list symmetric (`docs/DESIGN.md` has a
+  one-liner to check it).
+- **Material's component defaults pick surprising roles**: `TextButton` /
+  `OutlinedButton` draw their label in `colorScheme.primary` (the *fill* colour,
+  ~4:1 as a label on dark), `IconButton` in `onSurfaceVariant` (the *decoration*
+  tone). Both are corrected per theme in `app_theme.dart`.
+- **Two accents, same hue, because one colour can't do both jobs on dark**:
+  `colorScheme.primary` (`#5A73F2`) is a **fill** only — a button with white text
+  on top. `AccentColors.onSurface`, read as `context.accent`, (`#93A6FF` dark) is
+  the accent **drawn on** a surface. `primary` as a foreground only reaches ~4:1.
+  On light both are the same indigo. Don't "simplify" them back into one, and
+  don't lighten `primary` into the M3 light-primary/dark-onPrimary pattern — that
+  was tried and reverted (it recolours every filled button).
+- **Three foreground tones**: `onSurface` = text + **bare controls** (`IconButton`,
+  `TextButton` — no container of their own, so no tint); `context.accent` =
+  affordances that carry the brand and have a shape to carry it (outlined-button
+  labels, chevrons, tappable banners, summary-tile glyphs); `onSurfaceVariant` =
+  anything that only informs. **Never give decoration the accent** — that split is
+  what makes a control distinguishable from a glyph.
+- **Shape says affordance**: a neutral filled circle is a row's *identity* badge
+  and is never pressable; a bare glyph is information (or a tile that is itself
+  the control); a filled rounded-rect with a label is the button. Tinted square
+  faces on `IconButton`s, and badges inside `SportSummaryTile`, were both tried
+  and rejected — don't reintroduce them.
+- **The light ladder steps DOWN** (the page is the brightest thing), the dark one
+  steps up — so "raised" is *darker* than its box in light. Dark neutrals take
+  their hue from the website's palette but lifted a rung and much less saturated.
+  Every slot (`scaffold`/`appBar`/`bottomNav`/input fill/`divider`) pulls the SAME
+  named rung in both themes — keep it that way, and never inline a hex or a
+  `Colors.white` there.
+- **No hard-coded semantic colour.** `StatusColors` (`context.danger` /
+  `context.warning` / `context.positive`) carries what `ColorScheme` has no role
+  for: error TEXT (`error` itself is a fill and only makes ~4:1 as a label on
+  dark), amber, and green. Same fill-vs-foreground rule as the accent. Reds and
+  green come from the family `GlucoseColors` already speaks, so the app has ONE
+  red — but they stay separate tokens: glucose is its own language and must not
+  move when a delete button does.
+- **`BrandTints`** (`scheme.tintPanel` 0.08 / `tintSelected` 0.14 / `tintLine`
+  0.20) replaces the nine hand-guessed alphas that used to tint panels. A **scale**
+  (progress fill, disabled dimming) is not a tint — its alpha carries information.
+- `dividerColor` doubles as the box border (`OverviewSection`), so it must stay
+  close to `surface` or every card gets a hard ring.
+- **A local `styleFrom` silently beats the theme.** Pass only genuinely local
+  values (size, shape) — this is why one page's `OutlinedButton` ignored a global
+  fix for a whole round.
+- **No `SnackBar`s** — all were removed and none come back. They cover content,
+  time out whether or not they were read, and appear away from what the user
+  touched. Pick per site: a **standing condition** (denied permission) goes into
+  the state and is rendered by the UI that shows state (`connectFailure`); a
+  **dead end that must be answered** gets the app's `Alert` (`alert/alert.dart`);
+  a plain **confirmation** goes ON the control that was pressed (icon/label →
+  checkmark for ~2 s, `Timer` cancelled in `dispose`). A success often needs no
+  message — the page behind it already changed. Safety-relevant failures (bolus)
+  are **sticky, never timed**. Details + all five replacements: `docs/DESIGN.md`.
+
 ### Alarms & notifications (`cgm/service/alarms.dart`)
 
 `G7AlarmManager` runs in the **service isolate** (alongside `CgmTaskHandler`) so
@@ -443,6 +512,9 @@ alarms fire with the app closed. `init()` must be called once per isolate
   implementation status (what's done vs. hardware-gated).
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
+- `docs/DESIGN.md` — the theme/colour-role system: the two accents, the three
+  foreground tones, the affordance shapes, both surface ladders, Flutter's
+  silent `ColorScheme` fallbacks, and the measured contrast values.
 
 `lib/src/rust/` is generated — never hand-edit; change `rust/src/api/` and rerun
 codegen.

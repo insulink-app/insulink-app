@@ -27,7 +27,7 @@ class PatternsView extends StatelessWidget {
     final pattern = HourlyGlucosePattern(controller.statsArchive).build();
     if (pattern.isEmpty) {
       return const EmptyState(
-        icon: PhosphorIconsRegular.chartLineUp,
+        icon: PhosphorIconsBold.chartLineUp,
         titleKey: 'analysis.empty',
       );
     }
