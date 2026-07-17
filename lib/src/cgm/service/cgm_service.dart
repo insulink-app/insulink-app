@@ -141,8 +141,13 @@ class CgmTaskHandler extends TaskHandler {
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
+    // The tick only decides WHICH location stream should be open (and does the
+    // sparse at-rest poll) — the recording cadence itself is the stream's, on
+    // the platform. So it doesn't have to be fast, and every tick costs a
+    // secure-storage read; the price is that a pause takes up to one tick to
+    // stop recording.
     _locationTimer ??= Timer.periodic(
-      const Duration(seconds: 4),
+      const Duration(seconds: 10),
       (_) => _locationSampler.tick(),
     );
     _activitySampler.start();

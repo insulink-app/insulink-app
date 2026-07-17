@@ -100,9 +100,12 @@ class ProfileSettings {
   }
 
   /// Pushes the complete current settings to the backend (best-effort).
-  Future<void> push(BuildContext context) async {
+  ///
+  /// The context is optional: it only buys the 403/417 handling a UI, and a
+  /// caller that isn't a widget (see [ProfileSilentState.setSilent]) has none.
+  Future<void> push(BuildContext? context) async {
     final settings = await collect();
-    if (!context.mounted) {
+    if (context != null && !context.mounted) {
       return;
     }
     await Request.post(

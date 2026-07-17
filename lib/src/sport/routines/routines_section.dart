@@ -187,11 +187,13 @@ class RoutinesSection extends StatelessWidget {
             builder: (_) => WorkoutRunnerPage(routine: routine),
           ),
         ),
+        // Padding absorbs what the glyph gives up, so the button keeps its
+        // 38px diameter and only the icon inside it shrinks.
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           child: Icon(
             PhosphorIconsFill.play,
-            size: 18,
+            size: 14,
             color: scheme.onPrimary,
           ),
         ),
