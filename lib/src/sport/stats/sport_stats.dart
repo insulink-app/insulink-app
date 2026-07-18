@@ -56,19 +56,20 @@ class SportStats {
         sum + session.sets.fold(0, (inner, set) => inner + (set.reps ?? 0)),
   );
 
-  /// Total lifted volume (kg × reps) across every weighted set, rounded — a
-  /// single "how much did I move" number for the summary.
-  int get totalVolumeKg => sessions
-      .fold(
-        0.0,
+  /// Total time actually spent performing sets, in minutes (rest excluded).
+  /// Legacy sets without a recorded duration count as 0, so the number only
+  /// grows once workouts are run through the timed runner.
+  int get totalTrainingMinutes =>
+      sessions.fold(
+        0,
         (sum, session) =>
             sum +
             session.sets.fold(
-              0.0,
-              (inner, set) => inner + (set.weightKg ?? 0) * (set.reps ?? 0),
+              0,
+              (inner, set) => inner + (set.durationSecs ?? 0),
             ),
-      )
-      .round();
+      ) ~/
+      60;
 
   /// Epley one-rep-max estimate for a weighted set; 0 without both weight and
   /// reps, so the standard formula lets weighted sets rank on est. 1RM.

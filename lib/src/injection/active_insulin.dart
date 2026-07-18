@@ -58,6 +58,40 @@ class ActiveInsulin {
     return doses;
   }
 
+  /// The IOB curve across [meals]: total active units sampled every [step] from
+  /// the earliest still-active dose to when the last wears off. Only doses
+  /// already given by each sample time count, so the curve ramps up at each
+  /// injection and decays away — what the active-insulin page graphs. Empty when
+  /// nothing is active.
+  List<({DateTime at, double units})> curve(
+    List<Meal> meals, {
+    DateTime? now,
+    Duration step = const Duration(minutes: 5),
+  }) {
+    final at = now ?? DateTime.now();
+    final active = activeDoses(meals, now: at);
+    if (active.isEmpty) {
+      return const [];
+    }
+    final start = active
+        .map((dose) => dose.meal.time)
+        .reduce((first, second) => first.isBefore(second) ? first : second);
+    final end = activeUntil(meals, now: at)!;
+    final points = <({DateTime at, double units})>[];
+    for (var sample = start; !sample.isAfter(end); sample = sample.add(step)) {
+      points.add((at: sample, units: _iobAt(meals, sample)));
+    }
+    return points;
+  }
+
+  /// Total IOB at [sample], counting only doses already given by then — a future
+  /// dose contributes nothing, unlike [units] (which is only ever read at "now").
+  double _iobAt(List<Meal> meals, DateTime sample) {
+    return meals
+        .where((meal) => !meal.time.isAfter(sample))
+        .fold(0.0, (sum, meal) => sum + _remaining(meal, sample));
+  }
+
   /// The share of [meal]'s bolus still active at [at]. Clamping covers both
   /// ends: a dose past [duration] gives 0, and a clock skew that dates a meal
   /// into the future can never yield more than the dose itself.

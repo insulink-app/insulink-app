@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/injection/active_insulin.dart';
+import 'package:insulink/src/injection/active_insulin_chart.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
@@ -59,6 +60,14 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 64),
               children: [
                 _totalHeader(context, insulin, meals),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 180,
+                  child: ActiveInsulinChart(
+                    points: insulin.curve(meals),
+                    now: DateTime.now(),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 LocaleText(
                   'overview.active_insulin.doses',

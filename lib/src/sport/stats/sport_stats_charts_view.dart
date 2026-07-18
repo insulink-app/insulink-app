@@ -70,11 +70,20 @@ class SportStatsChartsView extends StatelessWidget {
   Widget _frequencyChart(BuildContext context, List<WeeklyBucket> weekly) {
     final scheme = Theme.of(context).colorScheme;
     final maxCount = weekly.fold(0, (max, bucket) => bucket.count > max ? bucket.count : max);
+    final topY = (maxCount + 1).toDouble();
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: (maxCount + 1).toDouble(),
-        gridData: const FlGridData(show: false),
+        maxY: topY,
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 1,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: scheme.onSurface.withValues(alpha: 0.06),
+            strokeWidth: 1,
+          ),
+        ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -98,6 +107,20 @@ class SportStatsChartsView extends StatelessWidget {
             ),
           ),
         ),
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => scheme.inverseSurface,
+            tooltipBorderRadius: BorderRadius.circular(8),
+            getTooltipItem: (_, _, rod, _) => BarTooltipItem(
+              '${rod.toY.toInt()}',
+              TextStyle(
+                color: scheme.onInverseSurface,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
         barGroups: [
           for (var index = 0; index < weekly.length; index++)
             BarChartGroupData(
@@ -105,10 +128,22 @@ class SportStatsChartsView extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: weekly[index].count.toDouble(),
-                  color: scheme.primary,
-                  width: 8,
+                  width: 10,
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(3),
+                    top: Radius.circular(4),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      scheme.primary.withValues(alpha: 0.55),
+                      scheme.primary,
+                    ],
+                  ),
+                  backDrawRodData: BackgroundBarChartRodData(
+                    show: true,
+                    toY: topY,
+                    color: scheme.onSurface.withValues(alpha: 0.04),
                   ),
                 ),
               ],
@@ -139,17 +174,31 @@ class SportStatsChartsView extends StatelessWidget {
     final minMs = allMs.reduce((a, b) => a < b ? a : b);
     final maxMs = allMs.reduce((a, b) => a > b ? a : b);
     final spanDays = ((maxMs - minMs) / _dayMs).clamp(1, double.infinity);
+    final scheme = Theme.of(context).colorScheme;
+    // Only fill under a lone line — overlapping tinted areas muddy each other.
+    final fill = series.length == 1;
     return LineChart(
       LineChartData(
         minX: 0,
         maxX: spanDays.toDouble(),
-        gridData: const FlGridData(show: true, drawVerticalLine: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: scheme.onSurface.withValues(alpha: 0.06),
+            strokeWidth: 1,
+          ),
+        ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: true, reservedSize: 36),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 36,
+              getTitlesWidget: (value, _) => _axisText(context, _compact(value)),
+            ),
           ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
@@ -163,7 +212,23 @@ class SportStatsChartsView extends StatelessWidget {
             ),
           ),
         ),
-        lineTouchData: const LineTouchData(enabled: false),
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => scheme.inverseSurface,
+            tooltipBorderRadius: BorderRadius.circular(8),
+            getTooltipItems: (spots) => [
+              for (final spot in spots)
+                LineTooltipItem(
+                  _compact(spot.y),
+                  TextStyle(
+                    color: scheme.onInverseSurface,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+            ],
+          ),
+        ),
         lineBarsData: [
           for (var index = 0; index < series.length; index++)
             LineChartBarData(
@@ -176,11 +241,39 @@ class SportStatsChartsView extends StatelessWidget {
               preventCurveOverShooting: true,
               barWidth: 2.5,
               color: palette[index % palette.length],
-              dotData: const FlDotData(show: true),
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, _, bar, _) => FlDotCirclePainter(
+                  radius: 3,
+                  color: scheme.surface,
+                  strokeWidth: 2,
+                  strokeColor: bar.color ?? scheme.primary,
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: fill,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    palette[index % palette.length].withValues(alpha: 0.22),
+                    palette[index % palette.length].withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
             ),
         ],
       ),
     );
+  }
+
+  /// Short axis/tooltip number: drops the decimal, and folds thousands to "1.2k"
+  /// so a big workout score doesn't need a 36px gutter of digits.
+  String _compact(double value) {
+    if (value.abs() >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}k';
+    }
+    return value.toStringAsFixed(0);
   }
 
   Widget _legend(BuildContext context, List<RoutineSeries> series) {

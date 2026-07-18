@@ -66,4 +66,31 @@ void main() {
     final old = bolusAt(now.subtract(const Duration(hours: 4)), 3);
     expect(iob.activeUntil([old], now: now), isNull);
   });
+
+  test('curve spans the earliest active dose to when the last wears off', () {
+    final meals = [bolusAt(now.subtract(const Duration(hours: 1)), 6)];
+    final curve = iob.curve(meals, now: now, step: const Duration(minutes: 30));
+    expect(curve.first.at, now.subtract(const Duration(hours: 1)));
+    expect(curve.first.units, closeTo(6, 0.001));
+    expect(curve.last.at, now.add(const Duration(hours: 2)));
+    expect(curve.last.units, closeTo(0, 0.001));
+  });
+
+  test('curve counts only doses already given at each sample', () {
+    // A later dose contributes nothing before its time, then its full units at it.
+    final later = bolusAt(now, 4);
+    final earlier = bolusAt(now.subtract(const Duration(hours: 1)), 6);
+    final curve = iob.curve([
+      earlier,
+      later,
+    ], now: now, step: const Duration(minutes: 30));
+    expect(curve.first.units, closeTo(6, 0.001));
+    final atNow = curve.firstWhere((point) => point.at == now);
+    expect(atNow.units, closeTo(8, 0.001));
+  });
+
+  test('curve is empty while nothing is active', () {
+    final old = bolusAt(now.subtract(const Duration(hours: 4)), 3);
+    expect(iob.curve([old], now: now), isEmpty);
+  });
 }

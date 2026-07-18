@@ -91,10 +91,10 @@ class _SportStatsPageState extends State<SportStatsPage> {
             const SizedBox(width: 12),
             Expanded(
               child: SportSummaryTile(
-                icon: PhosphorIconsBold.barbell,
-                labelKey: 'sport.stats.total_volume',
-                value: '${stats.totalVolumeKg}',
-                unit: Locales.string(context, 'sport.stats.kg'),
+                icon: PhosphorIconsBold.timer,
+                labelKey: 'sport.stats.total_time',
+                value: '${stats.totalTrainingMinutes}',
+                unit: Locales.string(context, 'sport.stats.min'),
               ),
             ),
           ],

@@ -615,10 +615,11 @@
       "sort_name": "Name",
       "sort_sets": "Meiste Sätze",
       "sort_best": "Bestes Ergebnis",
-      "total_volume": "Volumen",
       "chart_frequency": "Workouts pro Woche",
       "chart_comparison": "Routinen im Vergleich",
-      "comparison_empty": "Führe eine Routine mindestens zweimal durch, um die Durchgänge zu vergleichen."
+      "comparison_empty": "Führe eine Routine mindestens zweimal durch, um die Durchgänge zu vergleichen.",
+      "total_time": "Trainingszeit",
+      "min": "min"
     }
   },
   "profile": {

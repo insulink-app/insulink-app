@@ -248,12 +248,12 @@ class GlucoseLineChart extends StatelessWidget {
       color: color.withValues(alpha: 0.35),
       strokeWidth: 1.5,
       dashArray: const [3, 4],
-      // Anchored at the bottom so the carb amount sits down at the x-axis,
-      // clear of the glucose trace above it.
+      // Anchored at the top, but pushed to the RIGHT of the line so the carb
+      // amount sits beside it — the dashed line never runs through the text.
       label: VerticalLineLabel(
         show: true,
-        alignment: Alignment.bottomCenter,
-        padding: const EdgeInsets.only(top: 2),
+        alignment: Alignment.topRight,
+        padding: const EdgeInsets.only(left: 3, bottom: 2),
         style: TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.bold,
