@@ -92,7 +92,8 @@
     "chart": {
       "empty": "Noch keine Messwerte",
       "hour": "# Uhr",
-      "now": "Jetzt"
+      "now": "Jetzt",
+      "show_meals": "Mahlzeiten anzeigen"
     },
     "time_in_range": "Zeit im Zielbereich",
     "time_in_range_window": "Letzte 24h",
@@ -126,7 +127,12 @@
     },
     "active_insulin": {
       "_": "Aktives Insulin",
-      "until": "Noch aktiv bis #"
+      "until": "Noch aktiv bis #",
+      "doses": "Aktive Dosen",
+      "total": "Gesamt aktiv",
+      "remaining": "# E aktiv",
+      "of_bolus": "von # E Bolus",
+      "empty": "Keine aktiven Insulindosen."
     }
   },
   "analysis": {
@@ -590,6 +596,29 @@
       "calories": "Kalorienziel",
       "weight": "Gewichtsziel",
       "note": "Jede Box füllt sich, je näher du dem Tagesziel kommst. Das Gewichtsziel erscheint als Linie im Gewichtsdiagramm."
+    },
+    "stats": {
+      "title": "Übungsstatistiken",
+      "per_exercise": "Pro Übung",
+      "total_sessions": "Einheiten",
+      "total_sets": "Sätze",
+      "total_reps": "Wiederholungen",
+      "best": "Bestwert",
+      "progression": "Verlauf",
+      "not_enough_data": "Noch zu wenige Einheiten für einen Trend.",
+      "empty": "Noch keine abgeschlossenen Workouts.",
+      "card_subtitle": "# Sätze · zuletzt #",
+      "reps": "# Wdh.",
+      "seconds": "# s",
+      "kg": "kg",
+      "sort_last": "Zuletzt gemacht",
+      "sort_name": "Name",
+      "sort_sets": "Meiste Sätze",
+      "sort_best": "Bestes Ergebnis",
+      "total_volume": "Volumen",
+      "chart_frequency": "Workouts pro Woche",
+      "chart_comparison": "Routinen im Vergleich",
+      "comparison_empty": "Führe eine Routine mindestens zweimal durch, um die Durchgänge zu vergleichen."
     }
   },
   "profile": {

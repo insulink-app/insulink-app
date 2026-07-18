@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/active_insulin.dart';
+import 'package:insulink/src/injection/active_insulin_page.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
@@ -52,7 +53,15 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
     }
     return Column(
       children: [
-        OverviewSection(child: _content(context, units, insulin, meals)),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const ActiveInsulinPage()),
+          ),
+          child: OverviewSection(
+            child: _content(context, units, insulin, meals),
+          ),
+        ),
         const SizedBox(height: 16),
       ],
     );

@@ -1,8 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// The fl_chart line graph itself: axes, target-range band and the touch
 /// tooltip/indicator. Receives ready-made bars (zone runs + the transparent
@@ -27,7 +29,14 @@ class GlucoseLineChart extends StatelessWidget {
     this.futureHours = 0,
     this.panHours = 0,
     this.betweenBars = const [],
+    this.mealMarkers = const [],
   });
+
+  /// Logged meals to mark on the chart, each at its x (shifted hours). Drawn as
+  /// dashed vertical lines with the carb amount; the tappable dots that open a
+  /// meal live on a bar the caller adds to [bars]. Empty unless the meal overlay
+  /// is on (the detail page's toggle).
+  final List<({double x, Meal meal})> mealMarkers;
 
   /// Fills between two of [bars], by index — the forecast's uncertainty band.
   /// Empty unless the band overlay is on. Indexes are resolved by the caller,
@@ -113,7 +122,7 @@ class GlucoseLineChart extends StatelessWidget {
         ),
         borderData: FlBorderData(show: false),
         titlesData: _titles(context),
-        extraLinesData: _targetBand(),
+        extraLinesData: _extraLines(context),
         lineTouchData: _touchData(context),
         betweenBarsData: betweenBars,
         lineBarsData: [...bars, if (highlightSpot != null) _highlightBar()],
@@ -216,14 +225,42 @@ class GlucoseLineChart extends StatelessWidget {
     );
   }
 
-  /// User-configurable target range band (the two bound lines). The values are
-  /// labelled on the Y axis (see `_leftLabel`), so the lines stay label-free.
-  ExtraLinesData _targetBand() {
+  /// The two target-range bound lines plus, when the meal overlay is on, a
+  /// dashed vertical line per logged meal labelled with its carbs. The target
+  /// values are labelled on the Y axis (see `_leftLabel`), so those lines stay
+  /// label-free.
+  ExtraLinesData _extraLines(BuildContext context) {
+    final mealColor = context.warning;
     return ExtraLinesData(
       horizontalLines: [
         _boundLine(glucose.targetLow, colors.low),
         _boundLine(glucose.targetHigh, colors.high),
       ],
+      verticalLines: [
+        for (final marker in mealMarkers) _mealLine(marker, mealColor),
+      ],
+    );
+  }
+
+  VerticalLine _mealLine(({double x, Meal meal}) marker, Color color) {
+    return VerticalLine(
+      x: marker.x,
+      color: color.withValues(alpha: 0.35),
+      strokeWidth: 1.5,
+      dashArray: const [3, 4],
+      // Anchored at the bottom so the carb amount sits down at the x-axis,
+      // clear of the glucose trace above it.
+      label: VerticalLineLabel(
+        show: true,
+        alignment: Alignment.bottomCenter,
+        padding: const EdgeInsets.only(top: 2),
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+        labelResolver: (_) => '${marker.meal.carbs.toStringAsFixed(0)}g',
+      ),
     );
   }
 

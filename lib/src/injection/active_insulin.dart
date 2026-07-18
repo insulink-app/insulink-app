@@ -41,6 +41,23 @@ class ActiveInsulin {
     return ends.reduce((a, b) => a.isAfter(b) ? a : b);
   }
 
+  /// Each dose still contributing IOB with the units of it left, newest first —
+  /// what the active-insulin detail page lists. A dose is a logged [Meal]'s
+  /// bolus, so tapping one opens that meal.
+  List<({Meal meal, double remaining})> activeDoses(
+    List<Meal> meals, {
+    DateTime? now,
+  }) {
+    final at = now ?? DateTime.now();
+    final doses = [
+      for (final meal in meals)
+        if (_remaining(meal, at) > 0)
+          (meal: meal, remaining: _remaining(meal, at)),
+    ];
+    doses.sort((first, second) => second.meal.time.compareTo(first.meal.time));
+    return doses;
+  }
+
   /// The share of [meal]'s bolus still active at [at]. Clamping covers both
   /// ends: a dose past [duration] gives 0, and a clock skew that dates a meal
   /// into the future can never yield more than the dose itself.

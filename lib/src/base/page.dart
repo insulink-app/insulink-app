@@ -16,10 +16,10 @@ import 'package:provider/provider.dart';
 /// Lets any page request a tab switch (e.g. the overview's empty state linking
 /// to the devices page). The value is the index into [AppPageState.pageBodies].
 ///
-/// It also OUTLIVES the shell: the account pull on launch can rebuild the whole
-/// provider tree a second or two in (`_pullAccount` → `_reload`), remounting
-/// [AppPage]. Reading the initial tab back from here is what stops that remount
-/// from throwing the user back to the overview mid-tap.
+/// It also OUTLIVES the shell, so the selected tab is remembered even if [AppPage]
+/// is ever rebuilt: reading the initial tab back from here restores it. (The
+/// account pull no longer remounts the shell — `main.dart` keeps the [Navigator]
+/// mounted across a reload — but persisting the tab here is cheap insurance.)
 final ValueNotifier<int> appTab = ValueNotifier<int>(0);
 
 /// Tab index of the analysis page within [AppPageState.pageBodies].

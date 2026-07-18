@@ -9,11 +9,14 @@ import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/cgm/glucose_prediction.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:insulink/src/nutrition/meal/meal_detail_sheet.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -27,9 +30,16 @@ class OverviewChart extends StatefulWidget {
     this.navigable = false,
     this.minYmgdl = 0,
     this.maxYmgdl = 300,
+    this.showMeals = false,
+    this.meals = const [],
   });
 
   final SplayTreeMap<int, int> byTime;
+
+  /// Overlay logged [meals] on the chart (dashed marker + tappable dot that opens
+  /// the meal's details). Off by default; the detail page's toggle turns it on.
+  final bool showMeals;
+  final List<Meal> meals;
 
   /// Preview mode (on the overview): hide the range selector and disable touch,
   /// so an outer tap handler can open the full-screen detail page.
@@ -75,6 +85,12 @@ class _OverviewChartState extends State<OverviewChart>
   /// per data point as the finger moves across (and reset when it lifts off).
   int? _lastTouchedIndex;
 
+  /// Index of the (transparent) bar carrying the tappable meal dots, or -1 when
+  /// the meal overlay is off, and the markers behind it — so a tap on a dot can
+  /// resolve back to its [Meal] and open its details.
+  int _mealBarIndex = -1;
+  List<({double x, Meal meal})> _mealMarkers = const [];
+
   @override
   void initState() {
     super.initState();
@@ -111,6 +127,15 @@ class _OverviewChartState extends State<OverviewChart>
   /// reading rather than per colour segment.
   void _onChartTouch(FlTouchEvent event, LineTouchResponse? response) {
     final spots = response?.lineBarSpots;
+    if (event is FlTapUpEvent && spots != null && _mealBarIndex >= 0) {
+      for (final spot in spots) {
+        if (spot.barIndex == _mealBarIndex &&
+            spot.spotIndex < _mealMarkers.length) {
+          showMealDetail(context, _mealMarkers[spot.spotIndex].meal);
+          return;
+        }
+      }
+    }
     if (!event.isInterestedForInteractions || spots == null || spots.isEmpty) {
       _lastTouchedIndex = null;
       return;
@@ -261,6 +286,22 @@ class _OverviewChartState extends State<OverviewChart>
     // zone bars, which share boundary points, or the interpolated crossings).
     _touchBarIndex = bars.length;
     bars.add(_touchBar([...series.realSpots, ...prediction.touchSpots]));
+    // Meal overlay: a marker line per logged meal (drawn by GlucoseLineChart)
+    // plus a transparent bar of tappable dots appended here, so a tap resolves
+    // to a meal via its spot index.
+    final mealMarkers = _buildMealMarkers(
+      anchor,
+      shift,
+      effectiveRange,
+      panSecs,
+    );
+    _mealMarkers = mealMarkers;
+    if (mealMarkers.isEmpty) {
+      _mealBarIndex = -1;
+    } else {
+      _mealBarIndex = bars.length;
+      bars.add(_mealBar(mealMarkers, glucose));
+    }
     final highlightSpot = series.realSpots.isEmpty
         ? null
         : series.realSpots.last;
@@ -272,7 +313,7 @@ class _OverviewChartState extends State<OverviewChart>
     // to take part in the key or fl_chart tweens between mismatched lists.
     final key = ValueKey(
       '$latestSecs-${entries.length}-$effectiveRange-$panWindows'
-      '-$predictionCount-${prediction.band != null}',
+      '-$predictionCount-${prediction.band != null}-${mealMarkers.length}',
     );
     GlucoseLineChart chart(double pulse) => GlucoseLineChart(
       key: key,
@@ -293,6 +334,7 @@ class _OverviewChartState extends State<OverviewChart>
       pulse: pulse,
       futureHours: futureHours,
       panHours: panSecs / 3600.0,
+      mealMarkers: mealMarkers,
     );
     // Only the overview preview pulses; the detail page renders once (no per-
     // frame relayout of the full chart).
@@ -438,6 +480,59 @@ class _OverviewChartState extends State<OverviewChart>
         checkToShowDot: (spot, bar) => spot.x == bar.spots.last.x,
         getDotPainter: (spot, _, _, _) =>
             FlDotCirclePainter(radius: 3.5, color: dotColor, strokeWidth: 0),
+      ),
+    );
+  }
+
+  /// Logged meals as (x, meal) markers, kept to the visible window so a long
+  /// history draws only a handful of lines. x maps a meal's wall-clock time the
+  /// same way readings map: `(time - anchor)` hours, phase-shifted. Empty when
+  /// the overlay is off or the session clock is unknown (no [anchor]).
+  List<({double x, Meal meal})> _buildMealMarkers(
+    DateTime? anchor,
+    double shift,
+    int effectiveRange,
+    int panSecs,
+  ) {
+    if (!widget.showMeals || anchor == null || widget.meals.isEmpty) {
+      return const [];
+    }
+    final panHours = panSecs / 3600.0;
+    final minX = shift - effectiveRange - panHours - 0.5;
+    final maxX = shift - panHours + 0.5;
+    final markers = <({double x, Meal meal})>[];
+    for (final meal in widget.meals) {
+      final x = meal.time.difference(anchor).inSeconds / 3600.0 + shift;
+      if (x >= minX && x <= maxX) {
+        markers.add((x: x, meal: meal));
+      }
+    }
+    return markers;
+  }
+
+  /// Transparent bar carrying one visible dot per meal at the glucose it was
+  /// logged with. Its non-zero barWidth (with a transparent colour) keeps the
+  /// scrub indicator off it while leaving the dots hoverable for taps.
+  LineChartBarData _mealBar(
+    List<({double x, Meal meal})> markers,
+    ProfileGlucoseState glucose,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return LineChartBarData(
+      spots: [
+        for (final marker in markers)
+          FlSpot(marker.x, glucose.toDisplay(marker.meal.glucoseMgdl)),
+      ],
+      barWidth: 2,
+      color: Colors.transparent,
+      dotData: FlDotData(
+        show: true,
+        getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
+          radius: 5,
+          color: context.warning,
+          strokeColor: scheme.surface,
+          strokeWidth: 2,
+        ),
       ),
     );
   }

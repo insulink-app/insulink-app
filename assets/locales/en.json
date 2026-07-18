@@ -92,7 +92,8 @@
     "chart": {
       "empty": "no readings yet",
       "hour": "#:00",
-      "now": "Now"
+      "now": "Now",
+      "show_meals": "Show meals"
     },
     "time_in_range": "Time in Range",
     "time_in_range_window": "Last 24 h",
@@ -126,7 +127,12 @@
     },
     "active_insulin": {
       "_": "Active insulin",
-      "until": "Active until #"
+      "until": "Active until #",
+      "doses": "Active doses",
+      "total": "Total active",
+      "remaining": "# U active",
+      "of_bolus": "of # U bolus",
+      "empty": "No active insulin doses."
     }
   },
   "analysis": {
@@ -590,6 +596,29 @@
       "calories": "Calories goal",
       "weight": "Weight goal",
       "note": "Each box fills up as you approach its daily goal. The weight goal shows as a line on the weight graph."
+    },
+    "stats": {
+      "title": "Exercise statistics",
+      "per_exercise": "Per exercise",
+      "total_sessions": "Sessions",
+      "total_sets": "Sets",
+      "total_reps": "Reps",
+      "best": "Best",
+      "progression": "Progression",
+      "not_enough_data": "Not enough sessions for a trend yet.",
+      "empty": "No completed workouts yet.",
+      "card_subtitle": "# sets · last #",
+      "reps": "# reps",
+      "seconds": "# s",
+      "kg": "kg",
+      "sort_last": "Last performed",
+      "sort_name": "Name",
+      "sort_sets": "Most sets",
+      "sort_best": "Best result",
+      "total_volume": "Volume",
+      "chart_frequency": "Workouts per week",
+      "chart_comparison": "Routines compared",
+      "comparison_empty": "Run a routine at least twice to compare its sessions."
     }
   },
   "profile": {
