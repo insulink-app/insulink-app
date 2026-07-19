@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'google_health_models.dart';
+import 'sleep_hypnogram_tooltip.dart';
 
 /// Folds stretches shorter than [minMs] into the preceding stage, then coalesces
 /// adjacent same-stage stretches — so a night's hypnogram reads as a few clear
@@ -119,7 +120,7 @@ class SleepHypnogram extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: CustomPaint(
+                child: InteractiveHypnogram(
                   painter: _HypnogramPainter(
                     segments: shown,
                     lanes: lanes,
@@ -129,6 +130,11 @@ class SleepHypnogram extends StatelessWidget {
                     trackColor: axisColor.withValues(alpha: 0.08),
                     riserColor: axisColor.withValues(alpha: 0.15),
                   ),
+                  segments: shown,
+                  colors: colors,
+                  labels: labels,
+                  start: start,
+                  end: end,
                 ),
               ),
             ],

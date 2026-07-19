@@ -30,15 +30,22 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
   Timer? _tick;
 
   @override
-  void initState() {
-    super.initState();
-    _tick = Timer.periodic(const Duration(minutes: 1), (_) => setState(() {}));
-  }
-
-  @override
   void dispose() {
     _tick?.cancel();
     super.dispose();
+  }
+
+  /// Runs the once-a-minute decay tick ONLY while a dose is active — with no
+  /// insulin on board (the common case) the number is static, so ticking then
+  /// would rebuild for nothing. A fresh bolus arrives via [MealState] notifying,
+  /// which rebuilds and restarts the tick.
+  void _syncTicker(bool active) {
+    if (active && _tick == null) {
+      _tick = Timer.periodic(const Duration(minutes: 1), (_) => setState(() {}));
+    } else if (!active && _tick != null) {
+      _tick!.cancel();
+      _tick = null;
+    }
   }
 
   @override
@@ -48,6 +55,7 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
       context.watch<ProfileBolusState>().insulinDuration,
     );
     final units = insulin.units(meals);
+    _syncTicker(units > 0);
     if (units <= 0) {
       return const SizedBox.shrink();
     }

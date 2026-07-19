@@ -370,9 +370,9 @@ class _NumberField extends StatelessWidget {
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
       style: highlight
           ? TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: scheme.primary,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: scheme.onSurface,
             )
           : null,
       decoration: InputDecoration(

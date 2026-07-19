@@ -4,13 +4,16 @@ import 'package:intl/intl.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// Input sheet for a new weight entry (kg + timestamp, defaulting to now).
-Future<void> showWeightEntrySheet(BuildContext context) {
+/// Input sheet for a weight entry (kg + timestamp). Pass [existing] to edit an
+/// entry in place; omit it to add a new one defaulting to now.
+Future<void> showWeightEntrySheet(BuildContext context, {WeightEntry? existing}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -20,13 +23,15 @@ Future<void> showWeightEntrySheet(BuildContext context) {
     ),
     builder: (_) => ChangeNotifierProvider.value(
       value: context.read<SportState>(),
-      child: const _WeightEntrySheet(),
+      child: _WeightEntrySheet(existing: existing),
     ),
   );
 }
 
 class _WeightEntrySheet extends StatefulWidget {
-  const _WeightEntrySheet();
+  const _WeightEntrySheet({this.existing});
+
+  final WeightEntry? existing;
 
   @override
   State<_WeightEntrySheet> createState() => _WeightEntrySheetState();
@@ -34,11 +39,16 @@ class _WeightEntrySheet extends StatefulWidget {
 
 class _WeightEntrySheetState extends State<_WeightEntrySheet> {
   final _controller = TextEditingController();
-  DateTime _at = DateTime.now();
+  late DateTime _at;
 
   @override
   void initState() {
     super.initState();
+    final existing = widget.existing;
+    _at = existing?.time ?? DateTime.now();
+    if (existing != null) {
+      _controller.text = sportDecimal(existing.kg, 1);
+    }
     _controller.addListener(() => setState(() {}));
   }
 
@@ -77,7 +87,13 @@ class _WeightEntrySheetState extends State<_WeightEntrySheet> {
   }
 
   void _save() {
-    context.read<SportState>().addWeight(_kg!, at: _at);
+    final existing = widget.existing;
+    final state = context.read<SportState>();
+    if (existing == null) {
+      state.addWeight(_kg!, at: _at);
+    } else {
+      state.editWeight(existing, kg: _kg!, at: _at);
+    }
     Navigator.of(context).pop();
   }
 
@@ -98,7 +114,7 @@ class _WeightEntrySheetState extends State<_WeightEntrySheet> {
           const GrabHandle(),
           const SizedBox(height: 20),
           LocaleText(
-            'sport.weight.add',
+            widget.existing == null ? 'sport.weight.add' : 'sport.weight.edit',
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),

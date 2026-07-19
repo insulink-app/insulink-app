@@ -105,6 +105,30 @@ class SportState extends ChangeNotifier {
     await _saveWeights();
   }
 
+  /// Replaces an existing entry with a new weight and/or timestamp. If the
+  /// timestamp changed, the old server row (keyed by type+time) is deleted, as
+  /// the measurements sync only merges — otherwise it would leave an orphan.
+  Future<void> editWeight(
+    WeightEntry original, {
+    required double kg,
+    required DateTime at,
+  }) async {
+    _weights.remove(original);
+    final updated = WeightEntry(
+      atEpochMs: at.millisecondsSinceEpoch,
+      kg: kg,
+    );
+    _weights
+      ..add(updated)
+      ..sort((first, second) => first.atEpochMs.compareTo(second.atEpochMs));
+    notifyListeners();
+    await _store.saveWeights(_weights);
+    if (updated.atEpochMs != original.atEpochMs) {
+      await SportSync().deleteWeight(original);
+    }
+    SportSync().pushMeasurements();
+  }
+
   /// Adds imported weight entries that aren't present yet (deduplicated by
   /// timestamp) — for the Google Health import.
   Future<void> mergeWeights(List<WeightEntry> entries) async {

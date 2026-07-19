@@ -445,6 +445,7 @@
       "_": "Weight",
       "empty": "No weight logged yet",
       "add": "Log weight",
+      "edit": "Edit weight",
       "time": "Time",
       "current": "Current",
       "history": "History",
