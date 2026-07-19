@@ -373,9 +373,9 @@ class G7Connection implements CgmConnection {
       });
       _connSub = boundTransport.device.connectionState.listen((state) {
         if (state == BluetoothConnectionState.disconnected) {
-          // DIAGNOSTIC: include the disconnect reason/code. A NORMAL G7 drop
-          // looks different from an abnormal one (e.g. 19 REMOTE_USER_TERMINATED,
-          // 147/8 CONNECTION_TIMEOUT) that may leave the sensor not advertising.
+          // Include the disconnect reason/code: a NORMAL G7 drop looks different
+          // from an abnormal one (e.g. 19 REMOTE_USER_TERMINATED, 147/8
+          // CONNECTION_TIMEOUT) that may leave the sensor not advertising.
           final reason = boundTransport.device.disconnectReason;
           _log(
             'link dropped (reason code=${reason?.code} "${reason?.description}")',

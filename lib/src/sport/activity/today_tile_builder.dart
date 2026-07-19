@@ -66,6 +66,14 @@ class TodayTileBuilder {
   SportSummaryTile build(BuildContext context, TodayTile tile) {
     final icon = todayTileIcon(tile);
     final label = todayTileLabelKey(tile);
+    if (tile.isGoogleHealth && !health.connected) {
+      return SportSummaryTile(
+        icon: icon,
+        labelKey: label,
+        value: '–',
+        unavailable: true,
+      );
+    }
     switch (tile) {
       case TodayTile.steps:
         return SportSummaryTile(

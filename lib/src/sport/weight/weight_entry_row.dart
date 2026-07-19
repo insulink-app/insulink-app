@@ -54,11 +54,13 @@ class WeightEntryRow extends StatelessWidget {
     required this.entry,
     required this.previousKg,
     required this.onDelete,
+    required this.onEdit,
   });
 
   final WeightEntry entry;
   final double? previousKg;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -67,13 +69,17 @@ class WeightEntryRow extends StatelessWidget {
     final time = entry.time;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
       decoration: BoxDecoration(
         color: scheme.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+          child: Row(
         children: [
           Expanded(
             child: Column(
@@ -107,7 +113,9 @@ class WeightEntryRow extends StatelessWidget {
               onConfirm: onDelete,
             ),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

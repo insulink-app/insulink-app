@@ -46,6 +46,7 @@ class Libre3Connection implements CgmConnection {
   Libre3Transport? _transport;
   StreamSubscription? _glucoseSub;
   StreamSubscription? _historicSub;
+  StreamSubscription? _clinicalSub;
   StreamSubscription? _connSub;
 
   final SplayTreeMap<int, int> _byTime = SplayTreeMap();
@@ -95,6 +96,9 @@ class Libre3Connection implements CgmConnection {
 
   void _log(String line) => onLog?.call(line);
 
+  String _hex(List<int> bytes) =>
+      bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+
   @override
   Future<void> connect() async {
     if (_connecting) {
@@ -127,6 +131,7 @@ class Libre3Connection implements CgmConnection {
       }
       _glucoseSub = transport.glucoseStream.listen(_onGlucose);
       _historicSub = transport.historicStream.listen(_onHistoric);
+      _clinicalSub = transport.clinicalStream.listen(_onClinical);
       _connSub = transport.device.connectionState.listen((state) {
         if (state == BluetoothConnectionState.disconnected) {
           _log('Libre 3 link dropped');
@@ -217,7 +222,7 @@ class Libre3Connection implements CgmConnection {
     onUpdate?.call();
     if (!_backfillRequested && _transport != null) {
       _backfillRequested = true;
-      _requestBackfill(reading.secsSinceStart, priorMax);
+      _requestGapFill(reading.secsSinceStart, priorMax);
     }
   }
 
@@ -228,57 +233,47 @@ class Libre3Connection implements CgmConnection {
 
   /// Don't pester the patch for gaps smaller than this — the normal 1-min stream
   /// needs no catch-up; only a real disconnect leaves a bigger hole.
-  static const int _minBackfillGapMin = 10;
+  static const int _minBackfillGapMin = 2;
 
-  /// Gap-based backfill (mirrors the G7's `_requestBackfill`): on the first
-  /// reading after connecting, ask the sensor to replay what we're missing since
-  /// [priorMax] (our newest stored point). Fire-and-forget — replies merge back
-  /// through [_onHistoric].
-  ///
-  /// DIAGNOSTIC MODE ([_backfillDiagnostic]): the Patch Control command is still
-  /// hardware-unverified, so right now we fire ONCE per connect even without a
-  /// gap (a short recent window) and log richly — the only way to observe on real
-  /// hardware whether the command elicits any historic (`0898195a`) response.
-  /// Once confirmed, flip [_backfillDiagnostic] off to restore the gap gate.
-  void _requestBackfill(int liveSecs, int? priorMax) {
+  /// The clinical (1-min) buffer's depth. A gap older than this window needs the
+  /// coarser 5-min historic buffer for the part clinical can no longer reach.
+  static const int _clinicalWindowMin = 2 * 60;
+
+  /// Gap fill after a reconnect: ask the sensor's own buffers for what we missed
+  /// since [priorMax]. The 1-minute clinical buffer (2 h deep) covers a recent
+  /// gap at full resolution; only when the gap is older than that window do we
+  /// also pull the coarser 5-minute historic buffer for the overflow. The two
+  /// writes are serialised (Juggluco queues patch-control commands one at a
+  /// time). Replies merge back through [_onClinical] / [_onHistoric]. Only fires
+  /// on a real gap ([backfillStartLifeCount]).
+  Future<void> _requestGapFill(int liveSecs, int? priorMax) async {
     final transport = _transport;
-    if (transport == null) {
+    if (transport == null || !_activeBackfillWrite) {
       return;
     }
     final liveLifeCount = liveSecs ~/ 60;
-    final gated = backfillStartLifeCount(liveSecs, priorMax);
-    final from =
-        gated ??
-        (_backfillDiagnostic
-            ? (liveLifeCount - 60 < 0 ? 0 : liveLifeCount - 60)
-            : null);
+    final from = backfillStartLifeCount(liveSecs, priorMax);
     if (from == null) {
       _log(
-        'Libre 3 backfill: skipped (no gap; live $liveLifeCount, '
+        'Libre 3 gap-fill: skipped (no gap; live $liveLifeCount, '
         'prior ${priorMax == null ? '—' : priorMax ~/ 60})',
       );
       return;
     }
     _log(
-      'Libre 3 backfill: would request from life count $from '
+      'Libre 3 gap-fill: requesting from life count $from '
       '(live $liveLifeCount, prior ${priorMax == null ? '—' : priorMax ~/ 60})',
     );
-    if (_activeBackfillWrite) {
-      transport.requestBackfill(from);
-    } else {
-      _log('Libre 3 backfill: active write disabled — observing passively');
+    await transport.requestClinical(from);
+    if (liveLifeCount - from > _clinicalWindowMin) {
+      await transport.requestBackfill(from);
     }
   }
 
-  /// ponytail: while true, always evaluate the backfill once per connect so
-  /// on-device logs reveal the sensor's behaviour. Turn off once verified.
-  static const bool _backfillDiagnostic = true;
-
-  /// The Patch Control command is confirmed length-rejected
-  /// (GATT_INVALID_ATTRIBUTE_LENGTH) — the 3-byte guess is wrong. Keep the write
-  /// OFF until the real command format is known (from a Juggluco/DiaBLE capture),
-  /// so we can cleanly observe whether the sensor pushes historic passively.
-  static const bool _activeBackfillWrite = false;
+  /// Kill-switch for the patch-control gap-fill requests (clinical + historic).
+  /// Both commands are faithful Juggluco ports, confirmed working on real
+  /// hardware. Set to `false` if a sensor ever reacts badly to the write.
+  static const bool _activeBackfillWrite = true;
 
   /// The life count (minutes since activation) to start a backfill request from,
   /// or null when the gap since [priorMax] is too small to bother. Only pulls the
@@ -299,13 +294,30 @@ class Libre3Connection implements CgmConnection {
     return from < 0 ? 0 : from;
   }
 
-  void _onHistoric(List<int> plaintext) {
-    final records = Libre3GlucoseCodec.parseHistorical(
-      Uint8List.fromList(plaintext),
-    );
+  void _onHistoric(List<int> plaintext) => _mergeBuffered(
+    'historic',
+    plaintext,
+    Libre3GlucoseCodec.parseHistorical(Uint8List.fromList(plaintext)),
+  );
+
+  void _onClinical(List<int> plaintext) => _mergeBuffered(
+    'clinical',
+    plaintext,
+    Libre3GlucoseCodec.parseClinical(Uint8List.fromList(plaintext)),
+  );
+
+  /// Merge a decoded historic/clinical buffer packet into the session history +
+  /// archive. Logs the raw plaintext and the decoded records so a wrong stride /
+  /// layout is diagnosable on-device.
+  void _mergeBuffered(
+    String label,
+    List<int> plaintext,
+    List<Libre3HistoricalRecord> records,
+  ) {
     _log(
-      'Libre 3 historic notification: ${plaintext.length} B → '
-      '${records.length} record(s)',
+      'Libre 3 $label notification: ${plaintext.length} B '
+      '(${_hex(plaintext)}) → ${records.length} record(s): '
+      '${records.map((record) => '${record.secsSinceStart ~/ 60}m=${record.glucoseMgDl}').join(', ')}',
     );
     if (records.isEmpty) {
       return;
@@ -380,8 +392,9 @@ class Libre3Connection implements CgmConnection {
   Future<void> _teardown() async {
     await _glucoseSub?.cancel();
     await _historicSub?.cancel();
+    await _clinicalSub?.cancel();
     await _connSub?.cancel();
-    _glucoseSub = _historicSub = _connSub = null;
+    _glucoseSub = _historicSub = _clinicalSub = _connSub = null;
     await _transport?.dispose();
     _transport = null;
     _backfillRequested = false;

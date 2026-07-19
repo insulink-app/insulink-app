@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import 'libre3_crypto.dart';
@@ -39,12 +39,16 @@ class Libre3Transport {
 
   final _glucoseRx = StreamController<Uint8List>.broadcast();
   final _historicRx = StreamController<Uint8List>.broadcast();
+  final _clinicalRx = StreamController<Uint8List>.broadcast();
 
   /// Decrypted one-minute glucose payloads.
   Stream<Uint8List> get glucoseStream => _glucoseRx.stream;
 
-  /// Decrypted historical (backfill) payloads.
+  /// Decrypted historical (backfill, 5-min) payloads.
   Stream<Uint8List> get historicStream => _historicRx.stream;
+
+  /// Decrypted clinical (1-min, 2-hour buffer) payloads.
+  Stream<Uint8List> get clinicalStream => _clinicalRx.stream;
 
   final List<StreamSubscription> _subs = [];
 
@@ -394,7 +398,13 @@ class Libre3Transport {
         (data) => _decryptInto(Libre3Uuids.decryptHistoric, data, _historicRx),
       );
     }
-    await _observe(_clinicalData, 'clinicalData');
+    if (_clinicalData != null) {
+      await _subscribeLogged(
+        _clinicalData!,
+        'clinical',
+        (data) => _decryptInto(Libre3Uuids.decryptClinical, data, _clinicalRx),
+      );
+    }
     await _observe(_eventLog, 'eventLog');
     await _observe(_factoryData, 'factoryData');
     if (_oneMinute != null) {
@@ -434,43 +444,69 @@ class Libre3Transport {
     _log('Libre 3 enabled notify: $name (${characteristic.uuid.str})');
   }
 
-  /// Ask the patch to replay its stored history from [fromLifeCount] (minutes
-  /// since activation) onward, so a gap left by a disconnect is filled from the
-  /// sensor's own buffer. Replies arrive on the (already-subscribed) historic
-  /// channel and land in [historicStream].
-  ///
-  /// ponytail: HARDWARE-UNVERIFIED — the Patch Control command framing below is a
-  /// best-effort guess, NOT captured from a real Libre 3. A wrong write here can
-  /// make the sensor drop the link, so the caller only fires it when there is an
-  /// actual gap to fill (never on a healthy continuous stream). Confirm the
-  /// opcode + argument layout against a Juggluco/DiaBLE BLE-HCI capture, fix
-  /// [_backfillCommand], then remove this warning.
-  Future<void> requestBackfill(int fromLifeCount) async {
+  /// Ask the patch to replay its **5-minute historic** buffer from
+  /// [fromLifeCount] onward (snapped to a boundary by [historicBoundary]), so a
+  /// gap left by a disconnect is filled from the sensor's own buffer. Replies
+  /// land in [historicStream]. Older data only — the historic buffer lags the
+  /// live edge by ~18 min, so recent gaps use [requestClinical] instead.
+  Future<void> requestBackfill(int fromLifeCount) => _sendControlCommand(
+    _controlCommand(0, historicBoundary(fromLifeCount)),
+    'backfill',
+  );
+
+  /// Ask the patch to replay its **1-minute clinical** buffer (2 hours deep)
+  /// from [fromLifeCount] onward — the minute-by-minute source that fills a
+  /// recent reconnect gap the lagging historic buffer can't. Replies land in
+  /// [clinicalStream]. Ported from Juggluco's `fillClinical` →
+  /// `Natives.libre3ClinicalControl(1, from)` (`kind={1,1}`).
+  Future<void> requestClinical(int fromLifeCount) => _sendControlCommand(
+    _controlCommand(1, fromLifeCount),
+    'clinical',
+  );
+
+  /// Encrypt a patch-control command and write it **raw** (`setValue(encr)`,
+  /// with response — Juggluco's `sendcommandonly`), NOT the 2-byte-offset 20-byte
+  /// framing the cert/challenge writes use ([_sendFramed]); framing it trips
+  /// `GATT_INVALID_ATTRIBUTE_LENGTH`.
+  Future<void> _sendControlCommand(Uint8List plain, String label) async {
     final control = _patchControl;
     if (control == null) {
-      _log('Libre 3 backfill: no patch-control characteristic bound');
+      _log('Libre 3 $label: no patch-control characteristic bound');
       return;
     }
-    final command = _backfillCommand(fromLifeCount);
-    _log('Libre 3 backfill: writing patch-control ${_hex(command)}');
     try {
-      await control.write(command, withoutResponse: false);
-      _log('Libre 3 backfill: patch-control write ok');
+      final encrypted = await crypto.encrypt(Libre3Uuids.encryptControl, plain);
+      _log('Libre 3 $label: patch-control ${_hex(plain)} → enc ${encrypted.length} B');
+      await control.write(encrypted, withoutResponse: false);
+      _log('Libre 3 $label: patch-control write ok');
     } catch (error) {
-      _log('Libre 3 backfill: patch-control write FAILED ($error)');
+      _log('Libre 3 $label: patch-control write FAILED ($error)');
     }
   }
 
-  /// The (unverified) Patch Control payload: a one-byte "request historic"
-  /// opcode followed by the little-endian start life count.
-  static List<int> _backfillCommand(int fromLifeCount) => [
-    _patchControlBackfillOpcode,
-    fromLifeCount & 0xFF,
-    (fromLifeCount >> 8) & 0xFF,
-  ];
+  /// The plaintext patch-control request, byte-exact to Juggluco's `RequestData`
+  /// struct (`{ kind={1,[kind1]}, arg=1, from }`, packed little-endian):
+  /// `01 <kind1> 01 <from as int32 LE>` = 7 bytes. [kind1] is 0 for the 5-min
+  /// history (`ControlHistory`), 1 for the 1-min clinical (`ClinicalControl`).
+  static Uint8List _controlCommand(int kind1, int from) {
+    final command = Uint8List(7);
+    command[0] = 0x01;
+    command[1] = kind1;
+    command[2] = 0x01;
+    ByteData.sublistView(command).setInt32(3, from, Endian.little);
+    return command;
+  }
 
-  /// ponytail: placeholder opcode — replace with the value from a real capture.
-  static const int _patchControlBackfillOpcode = 0x01;
+  /// The 5-minute historic-buffer boundary at/just below [fromLifeCount], byte
+  /// -exact to Juggluco's `fillHistory`: `((from - 16) / 5) * 5`. The sensor's
+  /// historic buffer is keyed at 5-minute steps, so an unsnapped start returns
+  /// no records; the 16-count margin makes the request reach back far enough to
+  /// include the boundary that covers the gap. Never negative.
+  @visibleForTesting
+  static int historicBoundary(int fromLifeCount) {
+    final snapped = ((fromLifeCount - 16) ~/ 5) * 5;
+    return snapped < 0 ? 0 : snapped;
+  }
 
   /// Reassemble the data notifications before decrypting. At MTU 23 a reading
   /// (~35 B encrypted) arrives split across several ≤20-byte notifications, so a
@@ -543,6 +579,7 @@ class Libre3Transport {
     }
     await _glucoseRx.close();
     await _historicRx.close();
+    await _clinicalRx.close();
     try {
       await device.disconnect();
     } catch (_) {}

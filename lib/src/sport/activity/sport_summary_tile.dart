@@ -14,6 +14,7 @@ class SportSummaryTile extends StatelessWidget {
     this.onTap,
     this.progress,
     this.pulse = false,
+    this.unavailable = false,
   });
 
   final IconData icon;
@@ -21,6 +22,11 @@ class SportSummaryTile extends StatelessWidget {
   final String value;
   final String? unit;
   final VoidCallback? onTap;
+
+  /// When true the box is greyed out and non-interactive, and [value] holds a
+  /// short "not available" note instead of a number — used for a Google Health
+  /// metric the user enabled while Google Health is disconnected.
+  final bool unavailable;
 
   /// When true the glyph beats like a heartbeat (used by the heart-rate tile
   /// while a live BLE pulse is streaming).
@@ -35,30 +41,33 @@ class SportSummaryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final box = context.statBox;
-    return Material(
-      color: box.panel,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: box.line),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Stack(
-          children: [
-            if (progress != null) _fill(box),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _glyph(context),
-                  const SizedBox(width: 12),
-                  Expanded(child: _text(context, scheme)),
-                ],
+    return Opacity(
+      opacity: unavailable ? 0.45 : 1.0,
+      child: Material(
+        color: box.panel,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: box.line),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: unavailable ? null : onTap,
+          child: Stack(
+            children: [
+              if (progress != null) _fill(box),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _glyph(context),
+                    const SizedBox(width: 12),
+                    Expanded(child: _text(context, scheme)),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

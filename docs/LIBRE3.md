@@ -231,9 +231,11 @@ One-Minute Reading (29 B, decrypted) — decoded in `libre3_glucose.dart`
 [19..21) temperature  UInt16  ÷100 → °C
 ```
 
-Historical/backfill (`0898195A`, 20 B) = start life count then 2-byte glucose
-values at 5-minute steps. Glucose masking is certain; the record stride is marked
-for on-device confirmation.
+Historical/backfill (`0898195A`, decrypted) = a `uint16` start life count then
+back-to-back `uint16` glucose values, each **+5 minutes** after the last
+(ascending). Ported from Juggluco's `bluetooth.cpp` `HistoryData`: historic
+glucose is a **plain `uint16` mg/dL** (no 13-bit mask / error flag — those are
+specific to the one-minute reading), range-validated 39–501.
 
 ## Security handshake
 
@@ -345,15 +347,12 @@ bytes the user drops in (see that folder's README).
 > implications (the same ones Juggluco carries). This was an explicit, accepted
 > project decision.
 
-## Historic / backfill (gap-fill) — investigation status
+## Historic / backfill (gap-fill)
 
 **The problem:** the Libre streams one value/minute on One-Minute (`0898177A`,
 decrypt channel 3). When the BLE link drops for a few minutes, those minutes are
 lost from the live stream. Filling that gap from the **sensor's own buffer** is
-what "backlog"/backfill means. As of this writing it **does not work** — after a
-gap only the current value resumes; the historic characteristic `0898195A`
-(channel 4) has **never been observed firing a single notification** on real
-hardware.
+what "backlog"/backfill means.
 
 Two separate things are often confused — keep them distinct:
 
@@ -363,47 +362,92 @@ Two separate things are often confused — keep them distinct:
   time window** (`saveReadings`, cadence-independent — a fixed point count gave the
   1-min Libre only ~5 h). This keeps the chart across reconnects/restarts. It is
   **NOT** sensor-buffer gap-fill — it only re-shows data we already received.
-- **Sensor-buffer gap-fill (NOT working).** Retrieving the missed minutes from the
-  patch. This is the open item below.
+- **Sensor-buffer gap-fill (implemented as a Juggluco-faithful port).** Retrieving
+  the missed minutes from the patch — resolved below.
 
-### What we know (on-device, confirmed)
+### The full notify set must be enabled (on-device confirmed)
 
-- **The full data-characteristic notify set must be enabled.** The data service
-  (`089810CC`) has **seven** characteristics; the transport used to enable only
-  four. `clinicalData 08981AB8`, `eventLog 08981BEE`, `factoryData 08981D24` were
-  declared in `Libre3Uuids` but never `_bind()`'d or `setNotifyValue`'d. Now all
-  seven are enabled, in the documented order (PATCH_CONTROL → historic → clinical →
-  eventLog → factory → GLUCOSE → PATCH_STATUS, status last). All seven return
-  `GATT_SUCCESS`.
-- **What pushes automatically:** glucose (ch3, every minute) and **patchStatus**
-  (`08981482`, decrypt channel 2 — pushes once at connect, e.g.
-  `c4db6eca…0100`). Observe-only raw logging is wired on patchControl/patchStatus/
-  clinical/event/factory to catch anything.
-- **What does NOT push (so far):** `historic 0898195A`, clinical, eventLog,
-  factory — silent in every (short, seconds-to-~2-min) window captured. Not yet
-  conclusive: historic may fire only at 5-min life-count boundaries, so a
-  **15-min continuous window** is needed to rule out push-based delivery.
-- **The active Patch Control request is a dead end without a capture.** A guessed
-  3-byte command `[0x01, lifeCountLE16]` written to `08981338` is **length-rejected**
-  by the sensor (`GATT_INVALID_ATTRIBUTE_LENGTH`, code 13) → the characteristic
-  validates a **fixed length** we don't know. It's disabled behind
-  `Libre3Connection._activeBackfillWrite = false`; `_backfillDiagnostic` keeps the
-  gap logging on. Do **not** blind-guess more bytes — a wrong write can drop the link.
+The data service (`089810CC`) has **seven** characteristics; all seven are enabled
+at connect in the documented order (PATCH_CONTROL → historic → clinical → eventLog
+→ factory → GLUCOSE → PATCH_STATUS, status last) and return `GATT_SUCCESS`.
+Glucose (ch3, every minute) and **patchStatus** (`08981482`, ch2) push
+automatically; historic (`0898195A`, ch4) and clinical (`08981AB8`, ch5) are
+**request-based** (below).
 
-### The one decisive open test
+### The command (request-based, ported from Juggluco)
 
-Keep the app connected ~15 min (spans several 5-min boundaries) and watch for
-`ch4 frag` / `historic notification` / `clinicalData|eventLog|factoryData notify`:
+Resolved from Juggluco's `Libre3GattCallback` source: `fillHistory` sends
+`Natives.libre3ControlHistory(1, from)` and the sensor replies on `0898195A`. The
+earlier 3-byte guess `[0x01, lifeCountLE16]` was length-rejected
+(`GATT_INVALID_ATTRIBUTE_LENGTH`) because the real command is a **7-byte struct,
+then AES-CCM-encrypted** to a 13-byte frame — not a short plaintext. The full
+path, byte-exact to Juggluco:
 
-- **Any fires** → historic is **push-based**; wire that channel's decode
-  (`_onHistoric` + `parseHistorical` already exist for `0898195A`; the others need
-  their decrypt channel identified). Then verify the `parseHistorical` 5-min stride
-  (still marked unconfirmed).
-- **15 min of silence** → historic is **request-based**, and the only path is the
-  correct Patch Control command from a **Juggluco `Libre3GattCallback` read or a
-  BLE-HCI capture** (its byte layout AND fixed length). The `GATT_INVALID_ATTRIBUTE_LENGTH`
-  is a useful fingerprint: once the reference length is known it's a one-liner in
-  `Libre3Transport._backfillCommand`.
+1. **Plaintext** (`ControlHistory` = `RequestData{ kind={1,0}, arg=1, from }`,
+   packed LE): `01 00 01 <from as int32 LE>` = 7 bytes
+   (`Libre3Transport._backfillCommand`). `from` is the start life count, **snapped
+   to a 5-min boundary** with Juggluco's 16-count margin `((from-16)/5)*5`
+   (`historicBoundary`) — the historic buffer is keyed at 5-min steps, so an
+   unsnapped start returns no records.
+2. **Encrypt** on the control channel (kind 0): `Libre3Crypto.encrypt(0, plain)`
+   = `intEncrypt` — 13-byte nonce `seq(2 LE) ‖ packetDescriptor[0]={00,00,00} ‖
+   ivEnc(8)`, no AAD, 4-byte MAC; frame is `ciphertext ‖ tag(4) ‖ seq(2 LE)` =
+   13 bytes; `outCryptoSequence` starts at 1 and increments per command.
+3. **Write** the encrypted frame to Patch Control `08981338` **raw**
+   (`setValue(encr)`, with response — Juggluco's `sendcommandonly`), NOT the
+   2-byte-offset 20-byte framing the cert/challenge writes use. Framing the
+   command trips `GATT_INVALID_ATTRIBUTE_LENGTH` — the write must be the bare
+   13-byte encrypted payload.
+
+Gated to real gaps only (`Libre3Connection.backfillStartLifeCount`), behind the
+`_activeBackfillWrite` kill-switch (default on). The reply decode is
+`Libre3GlucoseCodec.parseHistorical` (see "Reading layout" — ascending +5 min,
+plain `uint16`), unit-tested.
+
+### Clinical / "fast" 1-minute gap-fill (the recent-gap path)
+
+The 5-min historic buffer **lags the live edge by ~18 min**, so it can't fill a
+recent reconnection gap — measured on real hardware (a 15-min gap only ever
+returned pre-gap boundary points). The sensor's **2-hour, 1-minute clinical
+buffer** (`clinicalData 08981AB8`, decrypt channel 5) is the recent source and
+does not lag. Ported from Juggluco's `fillClinical`:
+
+- **Command** `ClinicalControl` = `RequestData{ kind={1,1}, arg=1, from }` →
+  `01 01 01 <from int32 LE>`, **no boundary snap** (1-min granularity), same
+  encrypt-ch0 + raw-write path as history (`_controlCommand(1, from)`).
+- **Reply** on `clinicalData` (ch5, `fast_data` → `intDecrypt(…,5,…)`), one
+  record per notification. **Confirmed on-device** (Juggluco's `saveLibre3fastData`
+  is native, so decoded from real captures, not the source): each record is a
+  **14-byte struct** — `lifeCount` at `[0..2)`, calibrated glucose `uint16` at
+  `[10..12)` (that column tracked the live reading exactly across a 7-minute
+  backfill; the intervening bytes are raw/unsmoothed fields we don't need). This
+  is NOT the historic `start ‖ N×uint16` layout. `Libre3GlucoseCodec.parseClinical`
+  reads it in fixed 14-byte strides; `_mergeBuffered` logs the raw plaintext.
+
+`Libre3Connection._requestGapFill` requests **clinical** for every gap (covers up
+to 2 h at 1-min), and additionally **historic** only when the gap exceeds the
+clinical window (`_clinicalWindowMin` = 2 h) for the older overflow. The two
+patch-control writes are serialised (Juggluco queues them one at a time).
+
+### Confirmed working on real hardware (2026-07)
+
+Full round trip observed on a physical Libre 3: a real gap → snapped request
+`010001d0480000` (`from` 18640) → `patch-control write ok` → sensor replies on
+`historic` (ch4), 20 B → 14 B decrypted → 2 valid records merged into the chart.
+This also settled the last open question — the sensor accepting the encrypted
+command and replying confirms the outgoing CCM path (no AAD, `outCryptoSequence`
+from 1, channel 0, raw write). The patch-control notify (`access1100`, channel 1)
+is a bare ACK, not data — we raw-log it and ignore it.
+
+Notes:
+- Backfill fills at the sensor's **5-min historic cadence**, not the 1-min live
+  cadence — a short gap yields one or two points, the zero-padded tail of the
+  6-slot frame is dropped by the 39–501 range check.
+- Encrypt/decrypt are also RFC-3610 verified and the control-channel frame
+  round-trips in `libre3_ccm_test.dart`; `historicBoundary` is unit-tested.
+- `Libre3Connection._minBackfillGapMin` gates how big a gap triggers a request —
+  keep it at **10 min** for production (a low value re-requests on every minor
+  reconnect).
 
 ## Implementation status
 
@@ -412,7 +456,8 @@ Keep the app connected ~15 min (spans several 5-min boundaries) and watch for
 | Sensor abstraction (`CgmConnection`/`CgmReading`/`CgmTiming`, per-type service dispatch) | ✅ done, G7 unchanged, tested |
 | NFC activation (`Libre3Activation`) | ✅ end-to-end on a real sensor — re-ported byte-for-byte from Juggluco (mfg `0x7A` from UID, command on `patchInfo[17]`, `crc16Activation` + `nfc2` response KAT-verified, numeric account, non-zero fallback). Sensor accepts the command and returns MAC/PIN. |
 | Glucose decode (`Libre3GlucoseCodec`) | ✅ one-minute reading tested (incl. temperature); historical stride to confirm |
-| Historic / backfill (gap-fill from sensor buffer) | ⛔ NOT working — `0898195A` never observed firing; see "Historic / backfill" above. In-memory history persistence across reconnects IS done (not the same thing). |
+| Historic / backfill (gap-fill from sensor buffer) | ✅ working on real hardware — 7-byte `ControlHistory` → AES-CCM ch0 → raw write to `08981338` (boundary-snapped `from`); sensor replays on `historic` ch4, decoded ascending +5 min into the chart. Unit-tested; confirmed end-to-end 2026-07. |
+| Clinical / 1-min gap-fill (2 h buffer) | ✅ working on real hardware — `ClinicalControl` (`kind={1,1}`) → ch0 → raw write; sensor replays one 14-byte record per minute on `clinicalData` ch5 (lifeCount `[0..2)`, glucose `[10..12)`, decoded from real captures). Fills recent gaps at 1-min resolution where historic lags. Unit-tested against captured packets. |
 | Backend `ABBOTT_LIBRE3` type | ✅ wired (`SensorType.backendType`) |
 | BLE transport + handshake (`Libre3Transport`) | ✅ code ported from Juggluco; fragment framing + event order need on-device check |
 | `Libre3Connection` (`CgmConnection`) + service dispatch | ✅ wired — the service builds it for `SensorType.abbottLibre3` |

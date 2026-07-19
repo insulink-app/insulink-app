@@ -9,6 +9,7 @@ import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_leading_badge.dart';
 import 'package:insulink/src/sport/sport_menu.dart';
 import 'package:insulink/src/sport/sport_models.dart';
+import 'package:insulink/src/sport/stats/sport_stats_page.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:provider/provider.dart';
@@ -32,13 +33,27 @@ class RoutinesSection extends StatelessWidget {
               'sport.routines',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(PhosphorIconsBold.barbell, size: 20),
-              tooltip: Locales.string(context, 'sport.exercises'),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const ExercisesPage()),
-              ),
+            Row(
+              children: [
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(PhosphorIconsBold.chartLineUp, size: 20),
+                  tooltip: Locales.string(context, 'sport.stats.title'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const SportStatsPage(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(PhosphorIconsBold.barbell, size: 20),
+                  tooltip: Locales.string(context, 'sport.exercises'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const ExercisesPage()),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -58,15 +58,16 @@ class _AuthGateState extends State<AuthGate> {
     }
   }
 
-  /// Sign-in succeeded: reload the app from the preferences the sign-in pull
-  /// just wrote for this account.
+  /// Sign-in succeeded: advance this gate to the app, then reload so the data
+  /// providers pick up the preferences the sign-in pull just wrote.
   ///
-  /// That reload is what advances this gate — it REMOUNTS the tree below it, so
-  /// a fresh [_AuthGateState] runs [_load] again and finds the token [AuthService]
-  /// just stored. This state is never told about the sign-in directly, so the
-  /// remount is load-bearing: a reload that merely rebuilds leaves the token
-  /// [initState] read (empty) in place and strands the user on the login page.
+  /// We set [_authenticated] directly rather than relying on the reload to
+  /// remount us: the reload only re-keys the data-provider subtree, while the
+  /// [Navigator] above this gate carries a GlobalKey and is preserved across it
+  /// — so a fresh [_AuthGateState] never runs and the token [initState] read
+  /// (empty) would otherwise strand the user on the login page.
   void _onAuthenticated() {
+    setState(() => _authenticated = true);
     InsulinkApp.reload(context);
   }
 

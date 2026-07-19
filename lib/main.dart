@@ -85,16 +85,23 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   /// re-reads, so adopting pulled settings never flashes back to the splash.
   AppPreferences? _preferences;
 
-  /// Bumped on every completed [_reload] to key the preferences subtree, so it
+  /// Bumped on every completed [_reload] to key the DATA-provider subtree, so it
   /// is rebuilt from scratch instead of reused.
   ///
   /// Load-bearing: a provider's `create` runs once per ELEMENT, not per build.
   /// Without a fresh key the reloaded state objects are constructed and then
   /// dropped on the floor — the account's settings would only reach the app on
-  /// the next cold start. The key sits BELOW [CgmController] on purpose, so a
-  /// reload never restarts the read pipeline (see CLAUDE.md on the scan
-  /// throttle).
+  /// the next cold start. The key sits BELOW both [CgmController] AND the
+  /// [MaterialApp] (see [_dataProviders]): a reload must never restart the read
+  /// pipeline (CLAUDE.md scan throttle) NOR tear down the [Navigator] — doing so
+  /// dropped any pushed page and flashed the whole scaffold a second into launch
+  /// when the account pull arrived.
   int _generation = 0;
+
+  /// The theme provider lives ABOVE [MaterialApp] (a reload must not remount the
+  /// app), so it is created ONCE and updated in place by [_reload] instead of
+  /// being recreated per generation.
+  ProfileThemeState? _themeState;
 
   @override
   void initState() {
@@ -117,12 +124,21 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
 
   Future<void> _reload() async {
     final preferences = await _loadPreferences();
-    if (mounted) {
-      setState(() {
-        _preferences = preferences;
-        _generation++;
-      });
+    if (!mounted) {
+      return;
     }
+    final themeState = _themeState;
+    if (themeState == null) {
+      _themeState = ProfileThemeState(preferences.theme);
+    } else {
+      themeState.setThemeMode(
+        preferences.theme == "dark" ? ThemeMode.dark : ThemeMode.light,
+      );
+    }
+    setState(() {
+      _preferences = preferences;
+      _generation++;
+    });
   }
 
   @override
@@ -152,19 +168,57 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       ],
       child: preferences == null
           ? const _SplashHold()
-          : _providers(preferences),
+          : _rootApp(preferences),
     );
   }
 
-  /// Wraps the app in the shared state providers built from the loaded prefs.
-  Widget _providers(AppPreferences prefs) {
+  /// The app shell that SURVIVES an account-pull reload: the theme provider,
+  /// [MaterialApp] and its [Navigator] are built once and stay mounted. Only the
+  /// data providers below (see [_dataProviders]) rebuild per generation, so a
+  /// mid-session pull refreshes the pulled settings/history without flashing the
+  /// scaffold or dropping a page the user had just opened.
+  Widget _rootApp(AppPreferences prefs) {
+    return ChangeNotifierProvider<ProfileThemeState>.value(
+      value: _themeState!,
+      child: Consumer<ProfileThemeState>(
+        builder: (context, themeState, _) =>
+            LocaleBuilder(builder: (locale) => _app(prefs, themeState, locale)),
+      ),
+    );
+  }
+
+  Widget _app(
+    AppPreferences prefs,
+    ProfileThemeState themeState,
+    Locale? locale,
+  ) {
+    return MaterialApp(
+      title: 'Insulink',
+      scrollBehavior: const BouncyScrollBehavior(),
+      themeMode: themeState.themeMode,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      home: const AuthGate(),
+      debugShowCheckedModeBanner: false,
+      localizationsDelegates: Locales.delegates,
+      supportedLocales: Locales.supportedLocales,
+      locale: locale,
+      builder: (context, child) => _dataProviders(prefs, child!),
+    );
+  }
+
+  /// The reloadable state providers, keyed by [_generation] so a pull rebuilds
+  /// them from the freshly pulled storage. It wraps the [MaterialApp]'s
+  /// [Navigator] (`child`) rather than sitting above [MaterialApp], so the
+  /// Navigator — which carries its own GlobalKey — keeps its route stack across
+  /// the rebuild while the providers below it adopt the new state.
+  Widget _dataProviders(AppPreferences prefs, Widget child) {
     return MultiProvider(
       key: ValueKey(_generation),
       providers: [
         ChangeNotifierProvider(
           create: (_) => ProfileLanguageState(prefs.language),
         ),
-        ChangeNotifierProvider(create: (_) => ProfileThemeState(prefs.theme)),
         ChangeNotifierProvider(
           create: (_) => ProfileDeveloperState(prefs.developer),
         ),
@@ -184,27 +238,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.meals),
         ChangeNotifierProvider(create: (_) => prefs.nutritionLayout),
       ],
-      child: _AppLifecycle(
-        child: Consumer<ProfileThemeState>(
-          builder: (context, themeState, _) =>
-              LocaleBuilder(builder: (locale) => _app(themeState, locale)),
-        ),
-      ),
-    );
-  }
-
-  Widget _app(ProfileThemeState themeState, Locale? locale) {
-    return MaterialApp(
-      title: 'Insulink',
-      scrollBehavior: const BouncyScrollBehavior(),
-      themeMode: themeState.themeMode,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      home: const AuthGate(),
-      debugShowCheckedModeBanner: false,
-      localizationsDelegates: Locales.delegates,
-      supportedLocales: Locales.supportedLocales,
-      locale: locale,
+      child: _AppLifecycle(child: child),
     );
   }
 

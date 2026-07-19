@@ -50,7 +50,7 @@ class SensorLifeBar extends StatelessWidget {
     return Row(
       children: [
         LocaleText(
-          'sensor.life.title',
+          overview ? 'sensor.label' : 'sensor.life.title',
           style: overview
               ? const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
               : TextStyle(

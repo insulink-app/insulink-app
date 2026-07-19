@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 
@@ -24,10 +25,16 @@ class GlucoseLineChart extends StatelessWidget {
     this.maxYmgdl = 300,
     this.highlightSpot,
     this.pulse = 0,
-    this.futureHours = 0,
-    this.panHours = 0,
+    this.rightEdgeHours = 0,
     this.betweenBars = const [],
+    this.mealMarkers = const [],
   });
+
+  /// Logged meals to mark on the chart, each at its x (shifted hours). Drawn as
+  /// dashed vertical lines with the carb amount; the tappable dots that open a
+  /// meal live on a bar the caller adds to [bars]. Empty unless the meal overlay
+  /// is on (the detail page's toggle).
+  final List<({double x, Meal meal})> mealMarkers;
 
   /// Fills between two of [bars], by index — the forecast's uncertainty band.
   /// Empty unless the band overlay is on. Indexes are resolved by the caller,
@@ -35,24 +42,20 @@ class GlucoseLineChart extends StatelessWidget {
   /// indexes would shift out from under it.
   final List<BetweenBarsData> betweenBars;
 
-  /// Hours the visible window is scrolled BACK from the latest reading (0 = the
-  /// live window). Shifts [minX]/[maxX] left without moving the x=0 anchor, so
-  /// the clock-time labels stay correct for the earlier interval.
-  final double panHours;
+  /// X position (in shifted hours, relative to the latest reading at x=0) of the
+  /// window's RIGHT edge. Live sits at the forecast tip (positive); scrolling
+  /// back moves it left through the readings. The window is always [rangeHours]
+  /// wide, so [minX] follows at `rightEdgeHours - rangeHours`.
+  final double rightEdgeHours;
 
   final List<LineChartBarData> bars;
-
-  /// Extra hours drawn to the RIGHT of the latest reading, for the prediction
-  /// overlay (0 when there's no forecast). Widens [maxX] past [shift] so the
-  /// future dashed line isn't clipped.
-  final double futureHours;
 
   /// Index of the transparent overlay bar that owns touch.
   final int touchBarIndex;
 
   /// Phase shift placing full clock hours on integer x (also the max x).
   final double shift;
-  final int rangeHours;
+  final double rangeHours;
 
   /// Wall-clock time at x == shift; null falls back to "Nh ago" labels.
   final DateTime? anchor;
@@ -90,8 +93,12 @@ class GlucoseLineChart extends StatelessWidget {
   /// Whole-unit gridlines/ticks that read cleanly in either unit.
   double get _yInterval => glucose.unit == GlucoseUnit.mmol ? 3.0 : 50.0;
 
-  /// Fewer X ticks for shorter windows so labels don't crowd.
+  /// Fewer X ticks for wider windows so labels don't crowd; sub-hour steps once
+  /// zoomed right in so a tight window still gets a couple of ticks.
   double get _xInterval {
+    if (rangeHours <= 2) {
+      return 0.5;
+    }
     if (rangeHours <= 6) {
       return 2.0;
     }
@@ -104,8 +111,12 @@ class GlucoseLineChart extends StatelessWidget {
       LineChartData(
         minY: _minY,
         maxY: _maxY,
-        minX: shift - rangeHours - panHours,
-        maxX: shift + futureHours - panHours,
+        minX: shift + rightEdgeHours - rangeHours,
+        maxX: shift + rightEdgeHours,
+        // Clip to the plot: the forecast line runs to its full horizon, which can
+        // extend past the (constant-width) window's right edge — without clipping
+        // it would draw out over the margin.
+        clipData: const FlClipData.all(),
         gridData: FlGridData(
           show: !minimal,
           drawVerticalLine: false,
@@ -113,7 +124,7 @@ class GlucoseLineChart extends StatelessWidget {
         ),
         borderData: FlBorderData(show: false),
         titlesData: _titles(context),
-        extraLinesData: _targetBand(),
+        extraLinesData: _extraLines(context),
         lineTouchData: _touchData(context),
         betweenBarsData: betweenBars,
         lineBarsData: [...bars, if (highlightSpot != null) _highlightBar()],
@@ -209,6 +220,11 @@ class GlucoseLineChart extends StatelessWidget {
     final time = anchor!.add(
       Duration(seconds: ((value - shift) * 3600).round()),
     );
+    // Sub-hour ticks (deep zoom) land off the hour — show the minutes so two
+    // ticks in the same hour don't read as the same label.
+    if (time.minute != 0) {
+      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+    }
     return Locales.string(
       context,
       'overview.chart.hour',
@@ -216,14 +232,42 @@ class GlucoseLineChart extends StatelessWidget {
     );
   }
 
-  /// User-configurable target range band (the two bound lines). The values are
-  /// labelled on the Y axis (see `_leftLabel`), so the lines stay label-free.
-  ExtraLinesData _targetBand() {
+  /// The two target-range bound lines plus, when the meal overlay is on, a
+  /// dashed vertical line per logged meal labelled with its carbs. The target
+  /// values are labelled on the Y axis (see `_leftLabel`), so those lines stay
+  /// label-free.
+  ExtraLinesData _extraLines(BuildContext context) {
+    final mealColor = Theme.of(context).colorScheme.onSurfaceVariant;
     return ExtraLinesData(
       horizontalLines: [
         _boundLine(glucose.targetLow, colors.low),
         _boundLine(glucose.targetHigh, colors.high),
       ],
+      verticalLines: [
+        for (final marker in mealMarkers) _mealLine(marker, mealColor),
+      ],
+    );
+  }
+
+  VerticalLine _mealLine(({double x, Meal meal}) marker, Color color) {
+    return VerticalLine(
+      x: marker.x,
+      color: color.withValues(alpha: 0.35),
+      strokeWidth: 1.5,
+      dashArray: const [3, 4],
+      // Anchored at the top, but pushed to the RIGHT of the line so the carb
+      // amount sits beside it — the dashed line never runs through the text.
+      label: VerticalLineLabel(
+        show: true,
+        alignment: Alignment.topRight,
+        padding: const EdgeInsets.only(left: 3, bottom: 2),
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+        labelResolver: (_) => '${marker.meal.carbs.toStringAsFixed(0)}g',
+      ),
     );
   }
 

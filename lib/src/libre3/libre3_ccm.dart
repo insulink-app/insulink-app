@@ -10,6 +10,24 @@ import 'package:pointycastle/export.dart';
 /// (`initcrypt`/`intDecrypt`), not the blob. We use pointycastle's audited
 /// `CCMBlockCipher` rather than rolling our own.
 class Libre3Ccm {
+  /// One-shot CCM encrypt of `plaintext`, returning `ciphertext ‖ tag`. The
+  /// counterpart of [decrypt] (Juggluco's `intEncrypt`), used for the outgoing
+  /// patch-control command.
+  static Uint8List encrypt({
+    required Uint8List key,
+    required Uint8List nonce,
+    required Uint8List plaintext,
+    Uint8List? aad,
+    int macBits = 32,
+  }) {
+    final cipher = CCMBlockCipher(AESEngine())
+      ..init(
+        true,
+        AEADParameters(KeyParameter(key), macBits, nonce, aad ?? Uint8List(0)),
+      );
+    return cipher.process(plaintext);
+  }
+
   /// One-shot CCM decrypt of `ciphertext ‖ tag`. Throws
   /// `InvalidCipherTextException` if the tag doesn't verify.
   static Uint8List decrypt({

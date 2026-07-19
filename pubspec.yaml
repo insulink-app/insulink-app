@@ -140,14 +140,14 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/images/icon.png"
 
 flutter_native_splash:
-  color: "#ffffff"
-  color_dark: "#1e1e1e"
+  color: "#FAFAFA"
+  color_dark: "#15181D"
   image: assets/images/splash-black.png
   image_dark: assets/images/splash-white.png
   fullscreen: true
   android_gravity: center
   android_12:
-    color: "#ffffff"
-    color_dark: "#1e1e1e"
+    color: "#FAFAFA"
+    color_dark: "#15181D"
     image: assets/images/splash-black.png
     image_dark: assets/images/splash-white.png

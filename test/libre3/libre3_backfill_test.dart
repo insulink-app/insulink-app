@@ -1,13 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/libre3/libre3_connection.dart';
+import 'package:insulink/src/libre3/libre3_transport.dart';
 
 void main() {
+  group('Libre3Transport.historicBoundary', () {
+    test('snaps to a 5-min boundary with Juggluco\'s 16-count margin', () {
+      // ((18651 - 16) / 5) * 5 = (18635 / 5) * 5 = 18635.
+      expect(Libre3Transport.historicBoundary(18651), 18635);
+      // ((18657 - 16) / 5) * 5 = (18641 / 5) * 5 = 18640.
+      expect(Libre3Transport.historicBoundary(18657), 18640);
+    });
+
+    test('never goes negative for a young sensor', () {
+      expect(Libre3Transport.historicBoundary(10), 0);
+      expect(Libre3Transport.historicBoundary(0), 0);
+    });
+  });
+
   // liveSecs is seconds-since-start; life count = liveSecs / 60.
   group('Libre3Connection.backfillStartLifeCount', () {
     test('no request for a small gap (normal 1-min stream)', () {
-      // Live at 100 min, newest stored at 95 min → 5-min gap (< 10 min min).
+      // Live at 100 min, newest stored at 99 min → 1-min gap, below the
+      // min-gap threshold (no catch-up for the normal 1-min stream).
       expect(
-        Libre3Connection.backfillStartLifeCount(100 * 60, 95 * 60),
+        Libre3Connection.backfillStartLifeCount(100 * 60, 99 * 60),
         isNull,
       );
     });

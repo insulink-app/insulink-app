@@ -96,6 +96,8 @@ class ProfileSettings {
       TodayLayoutState.key: await TodayLayoutState.loadRaw(),
       OverviewLayoutState.key: await OverviewLayoutState.loadRaw(),
       NutritionLayoutState.key: await NutritionLayoutState.loadRaw(),
+      // Whether the glucose chart overlays logged meals (the detail page toggle).
+      "chart_show_meals": "${(await _storage.read(key: 'chart_show_meals')) == 'true'}",
     };
   }
 

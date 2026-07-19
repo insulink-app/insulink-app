@@ -106,7 +106,10 @@ jobs:
           dotnet: true
           haskell: true
           large-packages: true
-          swap-storage: true
+          # Keep swap: the Rust crypto compile + Gradle daemon spike RAM, and
+          # removing swap leaves no headroom → OOM-kill surfaces as a job that
+          # is silently "canceled" mid-build.
+          swap-storage: false
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -144,6 +147,10 @@ jobs:
         run: flutter pub get
 
       - name: Build debug APK (arm64)
+        # Cap cargo parallelism so peak RAM stays under the runner's limit
+        # (concurrent codegen units are the memory spike that OOM-kills the job).
+        env:
+          CARGO_BUILD_JOBS: "2"
         run: flutter build apk --debug --target-platform android-arm64
 
       - name: Upload APK
