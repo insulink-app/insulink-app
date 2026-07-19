@@ -610,14 +610,17 @@ class _OverviewChartState extends State<OverviewChart>
   }
 
   /// An invisible band edge: it exists only to bound the fill, so it carries no
-  /// stroke of its own. Curve settings mirror [_predictionBar] — a differently
-  /// smoothed edge would drift away from the mean line it wraps.
+  /// visible stroke. Curve settings mirror [_predictionBar] — a differently
+  /// smoothed edge would drift away from the mean line it wraps. Its barWidth is
+  /// deliberately NON-zero (transparent): a zero-width bar reads as the touch
+  /// overlay to `_indicators`, so hovering near the forecast boundary would draw
+  /// a stray scrub dot on the edge's anchor. Same trick as `_mealBar`.
   LineChartBarData _bandEdgeBar(List<FlSpot> spots) {
     return LineChartBarData(
       spots: spots,
       isCurved: true,
       curveSmoothness: 0.4,
-      barWidth: 0,
+      barWidth: 2,
       color: Colors.transparent,
       dotData: const FlDotData(show: false),
     );
