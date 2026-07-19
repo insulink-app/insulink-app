@@ -4,7 +4,6 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
-import 'package:insulink/src/theme/status_colors.dart';
 
 /// The fl_chart line graph itself: axes, target-range band and the touch
 /// tooltip/indicator. Receives ready-made bars (zone runs + the transparent
@@ -230,7 +229,7 @@ class GlucoseLineChart extends StatelessWidget {
   /// values are labelled on the Y axis (see `_leftLabel`), so those lines stay
   /// label-free.
   ExtraLinesData _extraLines(BuildContext context) {
-    final mealColor = context.warning;
+    final mealColor = Theme.of(context).colorScheme.onSurfaceVariant;
     return ExtraLinesData(
       horizontalLines: [
         _boundLine(glucose.targetLow, colors.low),
