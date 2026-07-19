@@ -56,7 +56,7 @@ class OverviewBoxes extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         ReorderableTileGrid<OverviewBox>(
-          tiles: layout.visible(health.connected),
+          tiles: layout.visible(true),
           state: layout,
           tileBuilder: builder.build,
         ),

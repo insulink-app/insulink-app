@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -101,8 +102,8 @@ class _OverviewChartState extends State<OverviewChart>
   Offset? _pinchLastFocal;
 
   /// Forecast horizon (hours past the latest reading) from the last build. The
-  /// visible span is `range + futureHours`, so the pan gesture needs it to map
-  /// finger pixels to time correctly when zoomed right in.
+  /// live right edge sits at this tip, so the navigator and its label read it to
+  /// know where the window ends (one frame stale, which is harmless there).
   double _futureHours = 0;
 
   /// The chart's render box, so a pinch's focal point can be mapped to a
@@ -320,8 +321,11 @@ class _OverviewChartState extends State<OverviewChart>
   Widget _navigator(BuildContext context, SplayTreeMap<int, int> byTime) {
     final latestSecs = byTime.isEmpty ? 0 : byTime.lastKey()!;
     final oldestSecs = byTime.isEmpty ? 0 : byTime.firstKey()!;
+    // Right edge sits at the forecast tip when live (_panSecs == 0); the horizon
+    // is from the last build (one frame stale, fine for enabling the button).
+    final horizonSecs = (_futureHours * 3600).round();
     final windowStartSecs =
-        latestSecs - _panSecs - (_rangeHours * 3600).round();
+        latestSecs + horizonSecs - _panSecs - (_rangeHours * 3600).round();
     final canGoBack = windowStartSecs > oldestSecs;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -357,14 +361,18 @@ class _OverviewChartState extends State<OverviewChart>
     });
   }
 
-  /// "Jetzt" for the live window, else the wall-clock date at the window's end.
+  /// "Jetzt" while the right edge still reaches the latest reading (through the
+  /// forecast), else the wall-clock time at the right edge of the earlier window.
   String _navigatorLabel(BuildContext context) {
     final start = widget.sensorStart;
-    if (_panSecs == 0 || start == null || widget.byTime.isEmpty) {
+    final horizonSecs = (_futureHours * 3600).round();
+    if (_panSecs <= horizonSecs || start == null || widget.byTime.isEmpty) {
       return Locales.string(context, 'overview.chart.now');
     }
     final latestSecs = widget.byTime.lastKey()!;
-    final end = start.add(Duration(seconds: latestSecs - _panSecs));
+    final end = start.add(
+      Duration(seconds: latestSecs + horizonSecs - _panSecs),
+    );
     final l10n = MaterialLocalizations.of(context);
     final time = l10n.formatTimeOfDay(TimeOfDay.fromDateTime(end));
     return '${l10n.formatMediumDate(end)}, $time';
@@ -381,14 +389,18 @@ class _OverviewChartState extends State<OverviewChart>
     // The overview preview always shows 24 h; only the full-screen detail page
     // honours the persisted, user-selectable range.
     final effectiveRange = widget.preview ? 24.0 : _rangeHours;
-    // The forecast tip is the live right edge: the window is always `range` wide
-    // and, at rest, ends at the tip so the whole forecast shows. Scrolling back
-    // slides the right edge left through the readings — the width never changes,
-    // so the forecast just glides off instead of popping the window narrower.
+    // At rest the window's right edge sits just past the latest reading to show
+    // the forecast; the window is always `range` wide and scrolling back slides
+    // the right edge left through the readings, so the width never changes and
+    // the forecast just glides off instead of popping the window narrower. Cap
+    // the live forecast to ~40 % of the window so a deep zoom still shows real
+    // readings rather than only the forecast.
     final horizonHours = _horizonHours(controller, latestSecs);
-    _futureHours = widget.preview ? 0 : horizonHours;
+    final liveForecastHours = math.min(horizonHours, effectiveRange * 0.4);
+    _futureHours = widget.preview ? 0 : liveForecastHours;
     final panSecs = widget.preview ? 0 : _panSecs;
-    final windowEndSecs = latestSecs + (horizonHours * 3600).round() - panSecs;
+    final windowEndSecs =
+        latestSecs + (liveForecastHours * 3600).round() - panSecs;
     final rightEdgeHours = (windowEndSecs - latestSecs) / 3600.0;
     // Wall-clock time at x == 0 (the latest reading), to label the X axis with
     // real times. x is hours relative to this, so wall(x) = anchor + x hours.
@@ -421,8 +433,6 @@ class _OverviewChartState extends State<OverviewChart>
       glucose,
       showBand,
     );
-    final futureHours = prediction.futureHours;
-    _futureHours = widget.preview ? 0 : futureHours;
     // Transparent overlay owning touch — over the REAL readings AND the forecast
     // points, so scrubbing snaps to a single value in either region (not to the
     // zone bars, which share boundary points, or the interpolated crossings).
@@ -435,7 +445,7 @@ class _OverviewChartState extends State<OverviewChart>
       anchor,
       shift,
       effectiveRange,
-      panSecs,
+      rightEdgeHours,
     );
     _mealMarkers = mealMarkers;
     if (mealMarkers.isEmpty) {
@@ -474,8 +484,7 @@ class _OverviewChartState extends State<OverviewChart>
       maxYmgdl: widget.maxYmgdl,
       highlightSpot: widget.preview ? highlightSpot : null,
       pulse: pulse,
-      futureHours: futureHours,
-      panHours: panSecs / 3600.0,
+      rightEdgeHours: rightEdgeHours,
       mealMarkers: mealMarkers,
     );
     // Only the overview preview pulses; the detail page renders once (no per-
@@ -487,6 +496,21 @@ class _OverviewChartState extends State<OverviewChart>
       animation: _pulse,
       builder: (context, _) => chart(_pulse.value),
     );
+  }
+
+  /// Forecast horizon in hours past the latest reading (0 when there is no live
+  /// forecast). Mirrors [_addPredictionBar] so the window's right edge reserves
+  /// exactly the span the dashed line occupies.
+  double _horizonHours(CgmController controller, int latestSecs) {
+    final curve = controller.predictionCurve;
+    final base = controller.predictionBase;
+    final start = widget.sensorStart;
+    if (curve == null || base == null || start == null || curve.isEmpty) {
+      return 0;
+    }
+    final baseSecs = base.difference(start).inSeconds;
+    final lastSecs = baseSecs + curve.last.offsetMin * 60;
+    return ((lastSecs - latestSecs) / 3600.0).clamp(0.0, 24.0);
   }
 
   /// Appends the dashed forecast bar (anchored at the latest reading), and the
@@ -634,14 +658,13 @@ class _OverviewChartState extends State<OverviewChart>
     DateTime? anchor,
     double shift,
     double effectiveRange,
-    int panSecs,
+    double rightEdgeHours,
   ) {
     if (!widget.showMeals || anchor == null || widget.meals.isEmpty) {
       return const [];
     }
-    final panHours = panSecs / 3600.0;
-    final minX = shift - effectiveRange - panHours - 0.5;
-    final maxX = shift - panHours + 0.5;
+    final minX = shift + rightEdgeHours - effectiveRange - 0.5;
+    final maxX = shift + rightEdgeHours + 0.5;
     final markers = <({double x, Meal meal})>[];
     for (final meal in widget.meals) {
       final x = meal.time.difference(anchor).inSeconds / 3600.0 + shift;

@@ -310,7 +310,7 @@
     "label": "Google Health",
     "connect": "Verbinden",
     "disconnect": "Trennen",
-    "disconnect_confirm": "Google Health wirklich trennen? Die Boxen werden dann ausgeblendet.",
+    "disconnect_confirm": "Google Health wirklich trennen? Die zugehörigen Boxen werden dann ausgegraut.",
     "hint": "Koppelt die Google-Health-App (Health Connect). Deine Wearable-App muss installiert sein und ihre Daten dorthin synchronisieren.",
     "denied": "Zugriff auf Google Health verweigert.",
     "unavailable": "Google Health (Health Connect) ist nicht verfügbar.",

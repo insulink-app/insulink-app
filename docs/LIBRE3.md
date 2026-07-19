@@ -371,7 +371,8 @@ The data service (`089810CC`) has **seven** characteristics; all seven are enabl
 at connect in the documented order (PATCH_CONTROL → historic → clinical → eventLog
 → factory → GLUCOSE → PATCH_STATUS, status last) and return `GATT_SUCCESS`.
 Glucose (ch3, every minute) and **patchStatus** (`08981482`, ch2) push
-automatically; historic (`0898195A`, ch4) is **request-based** (below).
+automatically; historic (`0898195A`, ch4) and clinical (`08981AB8`, ch5) are
+**request-based** (below).
 
 ### The command (request-based, ported from Juggluco)
 
@@ -403,6 +404,31 @@ Gated to real gaps only (`Libre3Connection.backfillStartLifeCount`), behind the
 `Libre3GlucoseCodec.parseHistorical` (see "Reading layout" — ascending +5 min,
 plain `uint16`), unit-tested.
 
+### Clinical / "fast" 1-minute gap-fill (the recent-gap path)
+
+The 5-min historic buffer **lags the live edge by ~18 min**, so it can't fill a
+recent reconnection gap — measured on real hardware (a 15-min gap only ever
+returned pre-gap boundary points). The sensor's **2-hour, 1-minute clinical
+buffer** (`clinicalData 08981AB8`, decrypt channel 5) is the recent source and
+does not lag. Ported from Juggluco's `fillClinical`:
+
+- **Command** `ClinicalControl` = `RequestData{ kind={1,1}, arg=1, from }` →
+  `01 01 01 <from int32 LE>`, **no boundary snap** (1-min granularity), same
+  encrypt-ch0 + raw-write path as history (`_controlCommand(1, from)`).
+- **Reply** on `clinicalData` (ch5, `fast_data` → `intDecrypt(…,5,…)`), one
+  record per notification. **Confirmed on-device** (Juggluco's `saveLibre3fastData`
+  is native, so decoded from real captures, not the source): each record is a
+  **14-byte struct** — `lifeCount` at `[0..2)`, calibrated glucose `uint16` at
+  `[10..12)` (that column tracked the live reading exactly across a 7-minute
+  backfill; the intervening bytes are raw/unsmoothed fields we don't need). This
+  is NOT the historic `start ‖ N×uint16` layout. `Libre3GlucoseCodec.parseClinical`
+  reads it in fixed 14-byte strides; `_mergeBuffered` logs the raw plaintext.
+
+`Libre3Connection._requestGapFill` requests **clinical** for every gap (covers up
+to 2 h at 1-min), and additionally **historic** only when the gap exceeds the
+clinical window (`_clinicalWindowMin` = 2 h) for the older overflow. The two
+patch-control writes are serialised (Juggluco queues them one at a time).
+
 ### Confirmed working on real hardware (2026-07)
 
 Full round trip observed on a physical Libre 3: a real gap → snapped request
@@ -431,6 +457,7 @@ Notes:
 | NFC activation (`Libre3Activation`) | ✅ end-to-end on a real sensor — re-ported byte-for-byte from Juggluco (mfg `0x7A` from UID, command on `patchInfo[17]`, `crc16Activation` + `nfc2` response KAT-verified, numeric account, non-zero fallback). Sensor accepts the command and returns MAC/PIN. |
 | Glucose decode (`Libre3GlucoseCodec`) | ✅ one-minute reading tested (incl. temperature); historical stride to confirm |
 | Historic / backfill (gap-fill from sensor buffer) | ✅ working on real hardware — 7-byte `ControlHistory` → AES-CCM ch0 → raw write to `08981338` (boundary-snapped `from`); sensor replays on `historic` ch4, decoded ascending +5 min into the chart. Unit-tested; confirmed end-to-end 2026-07. |
+| Clinical / 1-min gap-fill (2 h buffer) | ✅ working on real hardware — `ClinicalControl` (`kind={1,1}`) → ch0 → raw write; sensor replays one 14-byte record per minute on `clinicalData` ch5 (lifeCount `[0..2)`, glucose `[10..12)`, decoded from real captures). Fills recent gaps at 1-min resolution where historic lags. Unit-tested against captured packets. |
 | Backend `ABBOTT_LIBRE3` type | ✅ wired (`SensorType.backendType`) |
 | BLE transport + handshake (`Libre3Transport`) | ✅ code ported from Juggluco; fragment framing + event order need on-device check |
 | `Libre3Connection` (`CgmConnection`) + service dispatch | ✅ wired — the service builds it for `SensorType.abbottLibre3` |

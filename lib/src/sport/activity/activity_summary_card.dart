@@ -13,7 +13,8 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// "Today" section: a grid of summary boxes the user can configure (which boxes
 /// and their order — see [TodayLayoutState]) and reorder by dragging. Steps are
 /// real; distance/calories are estimated; weight and the Google Health metrics come
-/// from their states. Google Health boxes only appear while a Google Health is connected.
+/// from their states. Google Health boxes keep their slot while disconnected but
+/// are greyed out and marked unavailable.
 class ActivitySummaryCard extends StatelessWidget {
   const ActivitySummaryCard({super.key});
 
@@ -30,7 +31,7 @@ class ActivitySummaryCard extends StatelessWidget {
         _header(context),
         const SizedBox(height: 12),
         ReorderableTileGrid(
-          tiles: layout.visible(health.connected),
+          tiles: layout.visible(true),
           state: layout,
           tileBuilder: builder.build,
         ),

@@ -113,6 +113,10 @@ class GlucoseLineChart extends StatelessWidget {
         maxY: _maxY,
         minX: shift + rightEdgeHours - rangeHours,
         maxX: shift + rightEdgeHours,
+        // Clip to the plot: the forecast line runs to its full horizon, which can
+        // extend past the (constant-width) window's right edge — without clipping
+        // it would draw out over the margin.
+        clipData: const FlClipData.all(),
         gridData: FlGridData(
           show: !minimal,
           drawVerticalLine: false,

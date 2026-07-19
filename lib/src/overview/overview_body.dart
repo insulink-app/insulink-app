@@ -171,7 +171,7 @@ class _DataViewState extends State<_DataView> {
         if (controller.sensorStart != null) ...[
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => openConnectionsPage(context),
+            onTap: () => openSensorPage(context),
             child: const OverviewSection(child: OverviewSensorLife()),
           ),
           const SizedBox(height: 16),

@@ -3,6 +3,7 @@ import 'package:insulink/src/connections/connection_row.dart';
 import 'package:insulink/src/google_health/google_health_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +16,18 @@ void openConnectionsPage(BuildContext context) {
   Navigator.of(
     context,
   ).push(MaterialPageRoute<void>(builder: (_) => const ConnectionsPage()));
+}
+
+/// Opens the sensor page directly (skipping the connections list), for shortcuts
+/// that are specifically about the sensor — e.g. the overview's sensor section.
+void openSensorPage(BuildContext context) {
+  final title = Locales.string(context, 'sensor.label');
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) =>
+          ConnectionSubPage(title: title, body: const SensorBodyContent()),
+    ),
+  );
 }
 
 /// The connections page as a standalone route, with its own header + back button.

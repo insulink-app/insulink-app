@@ -23,4 +23,5 @@ class Libre3Uuids {
   static const decryptPatchStatus = 2;
   static const decryptGlucose = 3;
   static const decryptHistoric = 4;
+  static const decryptClinical = 5;
 }
