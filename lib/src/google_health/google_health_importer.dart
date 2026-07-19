@@ -102,7 +102,6 @@ class GoogleHealthImporter {
         startTime: start,
         endTime: end,
       );
-      debugPrint('[gh-import] ${type.name}: ${points.length} points');
       for (final point in _health.removeDuplicates(points)) {
         final value = point.value;
         if (value is NumericHealthValue) {
@@ -258,12 +257,6 @@ class GoogleHealthImporter {
           latest = point;
         }
       }
-      // ponytail: temporary diagnostic for the "no live HR" report — how many
-      // HEART_RATE points Health Connect actually returns and how fresh they are.
-      final age = latest == null
-          ? 'none'
-          : '${DateTime.now().difference(latest.dateFrom).inSeconds}s ago';
-      debugPrint('live-hr: ${points.length} pts in window, newest $age');
       final value = latest?.value;
       if (value is NumericHealthValue) {
         return (

@@ -67,30 +67,6 @@ class BleTransport {
     Duration timeout = const Duration(seconds: 120),
     void Function(String) log = print,
   }) async {
-    // A stale/half-open link from a previous session can leave the sensor
-    // CONNECTED at the OS level — and a connected device advertises nothing, so
-    // a scan would never find it and we'd loop "no sensor found" until the user
-    // manually unpairs in the OS Bluetooth settings (the reported symptom).
-    // FBP keeps such devices in `systemDevices`; reuse the device directly
-    // instead of scanning (connectAndBind's device.connect() just (re)attaches
-    // our GATT client). If that link is dead, the handshake fails, the catch
-    // path disconnects it — clearing it from systemDevices — and the next
-    // watchdog tick scans cleanly, so this self-heals without user action.
-    // --- DIAGNOSTIC: temporary, remove once the root cause is confirmed. ---
-    // Scan UNFILTERED and log every advertisement so we can see (a) whether the
-    // sensor advertises at all, and (b) whether its remoteId matches the stored
-    // wantedId (a MAC-rotation would make the filtered scan never match).
-    final scanStart = DateTime.now();
-    // Timestamp + adapter/scan state. If these scan-start lines come faster than
-    // ~5 per 30 s, Android silently throttles the scanner and returns NOTHING —
-    // a prime suspect for the "0 results" loop (watchdog + service restarts can
-    // trigger scans back-to-back).
-    log(
-      'SCAN diag: ${scanStart.toIso8601String()} '
-      'adapter=${FlutterBluePlus.adapterStateNow}, '
-      'isScanning=${FlutterBluePlus.isScanningNow}, '
-      'looking for wantedId=$wantedId',
-    );
     // Android reports BluetoothAdapterState.unknown in a freshly-spawned isolate
     // (the foreground-service isolate hosting this scan) until the adapter-state
     // stream first emits — and startScan against an `unknown` adapter delivers NO
@@ -102,43 +78,15 @@ class BleTransport {
         await FlutterBluePlus.adapterState
             .firstWhere((state) => state == BluetoothAdapterState.on)
             .timeout(const Duration(seconds: 15));
-        log('SCAN diag: adapter resolved to on before scanning');
-      } catch (e) {
-        log('SCAN diag: adapter not on after wait ($e) — scanning anyway');
+      } catch (error) {
+        log('scan: adapter not on after wait ($error) — scanning anyway');
       }
     }
-    try {
-      final sys = await FlutterBluePlus.systemDevices(const []);
-      log(
-        'SCAN diag: systemDevices=${sys.length} '
-        '[${sys.map((sysDevice) => sysDevice.remoteId.str).join(", ")}]',
-      );
-      final bonded = await FlutterBluePlus.bondedDevices;
-      log(
-        'SCAN diag: bondedDevices=${bonded.length} '
-        '[${bonded.map((bondedDevice) => "${bondedDevice.platformName}/${bondedDevice.remoteId.str}").join(", ")}]',
-      );
-    } catch (e) {
-      log('SCAN diag: system/bonded query failed: $e');
-    }
-    final seen = <String>{};
-    var resultCount = 0;
-    // --- END DIAGNOSTIC ---
 
     final completer = Completer<BluetoothDevice?>();
     late StreamSubscription sub;
     sub = FlutterBluePlus.scanResults.listen((results) {
-      // DIAGNOSTIC: how many results per callback, and each distinct device.
-      resultCount += results.length;
       for (final result in results) {
-        if (seen.add(result.device.remoteId.str)) {
-          log(
-            'SCAN diag: saw "${result.device.platformName}"'
-            '/"${result.advertisementData.advName}" '
-            '${result.device.remoteId.str} rssi=${result.rssi} '
-            'conn=${result.advertisementData.connectable}',
-          );
-        }
         final matches = wantedId != null
             ? result.device.remoteId.str == wantedId
             : result.device.platformName.startsWith(namePrefix);
@@ -175,22 +123,12 @@ class BleTransport {
           await sub.cancel();
           await FlutterBluePlus.stopScan();
         });
-    // DIAGNOSTIC: summary — how many distinct devices the scan saw and the
-    // outcome. "0 distinct" ⇒ the scan delivered nothing (sensor not
-    // advertising / scan throttled). Devices listed but no match ⇒ the sensor's
-    // address differs from wantedId (rotation) or it isn't advertising.
-    log(
-      'SCAN diag: done after ${DateTime.now().difference(scanStart).inSeconds}s — '
-      '${seen.length} distinct device(s), '
-      '$resultCount total results, '
-      'match=${device?.remoteId.str ?? "none"}',
-    );
     return device;
   }
 
-  /// Connect, discover services, and bind the three characteristics. Logs every
-  /// service/characteristic so you can CONFIRM the UUIDs in [G7Uuids] against
-  /// your sensor (run this once and compare).
+  /// Connect, discover services, and bind the three characteristics. Throws a
+  /// [StateError] naming the expected [G7Uuids] if the auth or J-PAKE
+  /// characteristic is missing.
   ///
   /// [autoConnect] picks the reconnect strategy (Juggluco's Android-13+ path):
   /// register the device on the BLE controller's allowlist and let the OS
@@ -233,9 +171,7 @@ class BleTransport {
       const Duration(seconds: 30),
     );
     for (final service in services) {
-      log('service ${service.uuid}');
       for (final characteristic in service.characteristics) {
-        log('  char ${characteristic.uuid}  props=${_props(characteristic)}');
         final uuid128 = characteristic.uuid.str128.toLowerCase();
         if (uuid128 == G7Uuids.authentication) {
           _auth = characteristic;
@@ -418,17 +354,6 @@ class BleTransport {
     _jpakeWaiters.add(MapEntry(total, completer));
     _onJpakeBytes(const []); // service immediately if already buffered
     return completer.future.timeout(timeout);
-  }
-
-  String _props(BluetoothCharacteristic characteristic) {
-    final props = characteristic.properties;
-    return [
-      if (props.read) 'read',
-      if (props.write) 'write',
-      if (props.writeWithoutResponse) 'writeNR',
-      if (props.notify) 'notify',
-      if (props.indicate) 'indicate',
-    ].join(',');
   }
 
   Future<void> dispose() async {

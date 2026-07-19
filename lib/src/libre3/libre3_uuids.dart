@@ -16,7 +16,10 @@ class Libre3Uuids {
   static const challengeData = '089822CE-EF89-11E9-81B4-2A2AE2DBCCE4';
   static const certificateData = '089823FA-EF89-11E9-81B4-2A2AE2DBCCE4';
 
-  /// Channel ids for `intDecrypt` (the AES-CCM data decrypt), from Juggluco.
+  /// Channel ids ("kind") for the AES-CCM data path, from Juggluco's
+  /// `packetDescriptor` table. Outgoing patch-control commands encrypt on
+  /// channel 0; the sensor's data notifications decrypt on 2/3/4.
+  static const encryptControl = 0;
   static const decryptPatchStatus = 2;
   static const decryptGlucose = 3;
   static const decryptHistoric = 4;

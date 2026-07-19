@@ -196,10 +196,7 @@ class _ChartPreview extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => OverviewChartPage(
-            byTime: controller.chartHistory,
-            sensorStart: controller.sensorStart,
-          ),
+          builder: (_) => const OverviewChartPage(),
         ),
       ),
       child: Column(

@@ -53,6 +53,13 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   bool _running = false;
   bool _knownOnly = false;
   bool _foundTarget = false;
+
+  /// When the last broad scan ended finding no band. A broad (unfiltered) scan is
+  /// the most power-hungry BLE operation, and [start] runs on every app resume;
+  /// within this cooldown we skip re-broad-scanning (the cheap known-device
+  /// connect still runs), so app-switching doesn't fire a 20 s scan each time.
+  DateTime? _lastEmptyScanAt;
+  static const _emptyScanCooldown = Duration(minutes: 3);
   bool _triedCacheClear = false;
   final Set<String> _seen = {};
   BluetoothDevice? _device;
@@ -133,6 +140,15 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
       _running = false;
       return;
     }
+    final lastEmpty = _lastEmptyScanAt;
+    if (lastEmpty != null &&
+        DateTime.now().difference(lastEmpty) < _emptyScanCooldown) {
+      // A recent broad scan already found nothing; don't burn the radio again on
+      // this resume. The next scan runs once the cooldown lapses.
+      _set(FitbitHrStatus.idle, 'No paired band.');
+      _running = false;
+      return;
+    }
     await _scanAndConnect();
   }
 
@@ -146,7 +162,6 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     ];
     for (final device in candidates) {
       final name = device.platformName;
-      debugPrint('[fitbit-hr] known device ${device.remoteId.str} ("$name")');
       if (name.toLowerCase().contains('fitbit') ||
           RegExp(r'^[0-9A-Fa-f]{12}$').hasMatch(name)) {
         return device;
@@ -191,6 +206,7 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     // new subscribers, which would fire "not found" instantly.
     await FlutterBluePlus.isScanning.where((scanning) => !scanning).first;
     if (!_foundTarget && _running && status == FitbitHrStatus.scanning) {
+      _lastEmptyScanAt = DateTime.now();
       final seen = _seen.isEmpty ? 'no BLE devices' : _seen.join(', ');
       _set(FitbitHrStatus.notFound, 'No Fitbit found. Saw: $seen');
       _running = false;
@@ -198,6 +214,9 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   }
 
   void _logScan(List<ScanResult> results) {
+    if (!kDebugMode) {
+      return;
+    }
     for (final result in results) {
       final name = result.advertisementData.advName;
       final label = name.isEmpty
@@ -263,6 +282,7 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
       await characteristic.setNotifyValue(true);
       _valueSub = characteristic.onValueReceived.listen(_onValue);
       device.cancelWhenDisconnected(_valueSub!);
+      _lastEmptyScanAt = null;
       _set(FitbitHrStatus.connected, 'Connected — put the band on your wrist.');
     } catch (error) {
       _set(FitbitHrStatus.error, 'Connection failed: $error');

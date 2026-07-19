@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import 'libre3_crypto.dart';
@@ -439,38 +439,57 @@ class Libre3Transport {
   /// sensor's own buffer. Replies arrive on the (already-subscribed) historic
   /// channel and land in [historicStream].
   ///
-  /// ponytail: HARDWARE-UNVERIFIED — the Patch Control command framing below is a
-  /// best-effort guess, NOT captured from a real Libre 3. A wrong write here can
-  /// make the sensor drop the link, so the caller only fires it when there is an
-  /// actual gap to fill (never on a healthy continuous stream). Confirm the
-  /// opcode + argument layout against a Juggluco/DiaBLE BLE-HCI capture, fix
-  /// [_backfillCommand], then remove this warning.
+  /// Ported from Juggluco's `Libre3GattCallback.fillHistory` →
+  /// `Natives.libre3ControlHistory(1, from)` → `intEncrypt(0, …)` →
+  /// `sendcommandonly`: the 7-byte plaintext [_backfillCommand] is AES-CCM
+  /// -encrypted on the control channel and written to Patch Control **raw**
+  /// (`setValue(encr)`, with response) — NOT the 2-byte-offset 20-byte framing the
+  /// cert/challenge writes use ([_sendFramed]); framing it trips
+  /// `GATT_INVALID_ATTRIBUTE_LENGTH`. The caller only fires it on a real gap.
   Future<void> requestBackfill(int fromLifeCount) async {
     final control = _patchControl;
     if (control == null) {
       _log('Libre 3 backfill: no patch-control characteristic bound');
       return;
     }
-    final command = _backfillCommand(fromLifeCount);
-    _log('Libre 3 backfill: writing patch-control ${_hex(command)}');
     try {
-      await control.write(command, withoutResponse: false);
+      final plain = _backfillCommand(fromLifeCount);
+      final encrypted = await crypto.encrypt(Libre3Uuids.encryptControl, plain);
+      _log(
+        'Libre 3 backfill: patch-control ${_hex(plain)} '
+        '→ enc ${encrypted.length} B',
+      );
+      await control.write(encrypted, withoutResponse: false);
       _log('Libre 3 backfill: patch-control write ok');
     } catch (error) {
       _log('Libre 3 backfill: patch-control write FAILED ($error)');
     }
   }
 
-  /// The (unverified) Patch Control payload: a one-byte "request historic"
-  /// opcode followed by the little-endian start life count.
-  static List<int> _backfillCommand(int fromLifeCount) => [
-    _patchControlBackfillOpcode,
-    fromLifeCount & 0xFF,
-    (fromLifeCount >> 8) & 0xFF,
-  ];
+  /// The plaintext Patch Control history request, byte-exact to Juggluco's
+  /// `ControlHistory` struct (`RequestData{ kind={1,0}, arg=1, from }`, packed
+  /// little-endian): `01 00 01 <from as int32 LE>` = 7 bytes. `from` is snapped
+  /// by [historicBoundary].
+  static Uint8List _backfillCommand(int fromLifeCount) {
+    final command = Uint8List(7);
+    command[0] = 0x01;
+    command[1] = 0x00;
+    command[2] = 0x01;
+    ByteData.sublistView(command)
+        .setInt32(3, historicBoundary(fromLifeCount), Endian.little);
+    return command;
+  }
 
-  /// ponytail: placeholder opcode — replace with the value from a real capture.
-  static const int _patchControlBackfillOpcode = 0x01;
+  /// The 5-minute historic-buffer boundary at/just below [fromLifeCount], byte
+  /// -exact to Juggluco's `fillHistory`: `((from - 16) / 5) * 5`. The sensor's
+  /// historic buffer is keyed at 5-minute steps, so an unsnapped start returns
+  /// no records; the 16-count margin makes the request reach back far enough to
+  /// include the boundary that covers the gap. Never negative.
+  @visibleForTesting
+  static int historicBoundary(int fromLifeCount) {
+    final snapped = ((fromLifeCount - 16) ~/ 5) * 5;
+    return snapped < 0 ? 0 : snapped;
+  }
 
   /// Reassemble the data notifications before decrypting. At MTU 23 a reading
   /// (~35 B encrypted) arrives split across several ≤20-byte notifications, so a

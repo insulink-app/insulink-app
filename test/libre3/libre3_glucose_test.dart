@@ -67,4 +67,42 @@ void main() {
       expect(Libre3GlucoseCodec.parseOneMinuteReading(Uint8List(10)), isNull);
     });
   });
+
+  group('Libre3GlucoseCodec.parseHistorical', () {
+    // start life count (LE16) ‖ plain uint16 glucose values, ascending +5 min.
+    Uint8List packet(int start, List<int> glucose) {
+      final data = Uint8List(2 + glucose.length * 2);
+      final view = ByteData.sublistView(data);
+      view.setUint16(0, start, Endian.little);
+      for (var index = 0; index < glucose.length; index++) {
+        view.setUint16(2 + index * 2, glucose[index], Endian.little);
+      }
+      return data;
+    }
+
+    test('steps the life count +5 min forward per value (Juggluco order)', () {
+      final records = Libre3GlucoseCodec.parseHistorical(
+        packet(100, [120, 122, 124]),
+      );
+      expect(records.map((r) => r.secsSinceStart), [
+        100 * 60,
+        105 * 60,
+        110 * 60,
+      ]);
+      expect(records.map((r) => r.glucoseMgDl), [120, 122, 124]);
+    });
+
+    test('drops out-of-range values, keeps the rest', () {
+      final records = Libre3GlucoseCodec.parseHistorical(
+        packet(50, [120, 20, 130]), // 20 < 39 → dropped
+      );
+      expect(records.map((r) => r.glucoseMgDl), [120, 130]);
+      // the dropped slot still advances the clock (index 1 skipped).
+      expect(records.map((r) => r.secsSinceStart), [50 * 60, 60 * 60]);
+    });
+
+    test('empty on a too-short packet', () {
+      expect(Libre3GlucoseCodec.parseHistorical(Uint8List(2)), isEmpty);
+    });
+  });
 }

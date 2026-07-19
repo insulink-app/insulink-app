@@ -48,12 +48,14 @@ class Libre3GlucoseCodec {
     );
   }
 
-  /// A single historical (backfill) record — 5-minute cadence.
+  /// The historical (backfill) records in one decrypted packet — 5-minute
+  /// cadence.
   ///
-  /// The 20-byte historical packet (`0898195A`) is a start life count followed
-  /// by up to six back-to-back 2-byte glucose values at decreasing 5-minute
-  /// offsets. ponytail: the record stride is the one field to confirm on-device
-  /// against a real backfill capture; the glucose masking is certain.
+  /// Ported from Juggluco's historic parse (`bluetooth.cpp` `HistoryData`): a
+  /// `uint16` start life count followed by `(len/2) − 1` back-to-back `uint16`
+  /// glucose values, each **+5 minutes** after the last (ascending). Historic
+  /// glucose is a plain `uint16` mg/dL (no 13-bit mask / error flag — those are
+  /// specific to the one-minute reading), validated only by range.
   static List<Libre3HistoricalRecord> parseHistorical(Uint8List data) {
     if (data.length < 4) {
       return const [];
@@ -64,12 +66,11 @@ class Libre3GlucoseCodec {
     var offset = 2;
     var index = 0;
     while (offset + 2 <= data.length) {
-      final raw = bytes.getUint16(offset, Endian.little);
-      final glucose = raw & _glucoseMask;
-      if ((raw & _errorFlag) == 0 && _validMgdl(glucose)) {
+      final glucose = bytes.getUint16(offset, Endian.little);
+      if (_validMgdl(glucose)) {
         out.add(
           Libre3HistoricalRecord(
-            secsSinceStart: (startLifeCount - index * 5) * 60,
+            secsSinceStart: (startLifeCount + index * 5) * 60,
             glucoseMgDl: glucose,
           ),
         );

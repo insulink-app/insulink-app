@@ -1,7 +1,6 @@
-import 'dart:collection';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
@@ -13,12 +12,10 @@ import 'package:provider/provider.dart';
 /// Full-screen glucose chart, opened by tapping the overview preview. Shows the
 /// interactive chart (range selector + scrub tooltip) with room to breathe, and
 /// an optional meal overlay (marker + tappable details) toggled from the app bar
-/// and persisted like the range.
+/// and persisted like the range. Reads the live data straight from the
+/// [CgmController] so a new reading shows without reopening the page.
 class OverviewChartPage extends StatefulWidget {
-  const OverviewChartPage({super.key, required this.byTime, this.sensorStart});
-
-  final SplayTreeMap<int, int> byTime;
-  final DateTime? sensorStart;
+  const OverviewChartPage({super.key});
 
   @override
   State<OverviewChartPage> createState() => _OverviewChartPageState();
@@ -56,6 +53,7 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
   @override
   Widget build(BuildContext context) {
     final meals = context.watch<MealState>().meals;
+    final controller = context.watch<CgmController>();
     return Scaffold(
       appBar: AppBar(
         title: LocaleText('overview.glucose'),
@@ -78,8 +76,8 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: OverviewChart(
-              byTime: widget.byTime,
-              sensorStart: widget.sensorStart,
+              byTime: controller.chartHistory,
+              sensorStart: controller.sensorStart,
               navigable: true,
               showMeals: _showMeals,
               meals: meals,

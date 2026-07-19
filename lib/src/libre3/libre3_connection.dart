@@ -95,6 +95,9 @@ class Libre3Connection implements CgmConnection {
 
   void _log(String line) => onLog?.call(line);
 
+  String _hex(List<int> bytes) =>
+      bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+
   @override
   Future<void> connect() async {
     if (_connecting) {
@@ -233,25 +236,15 @@ class Libre3Connection implements CgmConnection {
   /// Gap-based backfill (mirrors the G7's `_requestBackfill`): on the first
   /// reading after connecting, ask the sensor to replay what we're missing since
   /// [priorMax] (our newest stored point). Fire-and-forget — replies merge back
-  /// through [_onHistoric].
-  ///
-  /// DIAGNOSTIC MODE ([_backfillDiagnostic]): the Patch Control command is still
-  /// hardware-unverified, so right now we fire ONCE per connect even without a
-  /// gap (a short recent window) and log richly — the only way to observe on real
-  /// hardware whether the command elicits any historic (`0898195a`) response.
-  /// Once confirmed, flip [_backfillDiagnostic] off to restore the gap gate.
+  /// through [_onHistoric]. Only fires when there is a real gap
+  /// ([backfillStartLifeCount]); a healthy continuous stream needs no catch-up.
   void _requestBackfill(int liveSecs, int? priorMax) {
     final transport = _transport;
     if (transport == null) {
       return;
     }
     final liveLifeCount = liveSecs ~/ 60;
-    final gated = backfillStartLifeCount(liveSecs, priorMax);
-    final from =
-        gated ??
-        (_backfillDiagnostic
-            ? (liveLifeCount - 60 < 0 ? 0 : liveLifeCount - 60)
-            : null);
+    final from = backfillStartLifeCount(liveSecs, priorMax);
     if (from == null) {
       _log(
         'Libre 3 backfill: skipped (no gap; live $liveLifeCount, '
@@ -260,25 +253,21 @@ class Libre3Connection implements CgmConnection {
       return;
     }
     _log(
-      'Libre 3 backfill: would request from life count $from '
+      'Libre 3 backfill: requesting from life count $from '
       '(live $liveLifeCount, prior ${priorMax == null ? '—' : priorMax ~/ 60})',
     );
     if (_activeBackfillWrite) {
       transport.requestBackfill(from);
-    } else {
-      _log('Libre 3 backfill: active write disabled — observing passively');
     }
   }
 
-  /// ponytail: while true, always evaluate the backfill once per connect so
-  /// on-device logs reveal the sensor's behaviour. Turn off once verified.
-  static const bool _backfillDiagnostic = true;
-
-  /// The Patch Control command is confirmed length-rejected
-  /// (GATT_INVALID_ATTRIBUTE_LENGTH) — the 3-byte guess is wrong. Keep the write
-  /// OFF until the real command format is known (from a Juggluco/DiaBLE capture),
-  /// so we can cleanly observe whether the sensor pushes historic passively.
-  static const bool _activeBackfillWrite = false;
+  /// Kill-switch for the patch-control history request. The command itself is now
+  /// a faithful port of Juggluco's `fillHistory` (7-byte `ControlHistory` struct,
+  /// AES-CCM-encrypted on the control channel, framed write) rather than the old
+  /// length-rejected guess — but it has not yet been confirmed end-to-end on a
+  /// real Libre 3 (it rides the blob handshake's session key). Set to `false` if
+  /// a real sensor ever reacts badly to the write.
+  static const bool _activeBackfillWrite = true;
 
   /// The life count (minutes since activation) to start a backfill request from,
   /// or null when the gap since [priorMax] is too small to bother. Only pulls the
@@ -304,8 +293,9 @@ class Libre3Connection implements CgmConnection {
       Uint8List.fromList(plaintext),
     );
     _log(
-      'Libre 3 historic notification: ${plaintext.length} B → '
-      '${records.length} record(s)',
+      'Libre 3 historic notification: ${plaintext.length} B '
+      '(${_hex(plaintext)}) → ${records.length} record(s): '
+      '${records.map((record) => '${record.secsSinceStart ~/ 60}m=${record.glucoseMgDl}').join(', ')}',
     );
     if (records.isEmpty) {
       return;

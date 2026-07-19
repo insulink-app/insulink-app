@@ -16,7 +16,6 @@ import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
-import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -67,12 +66,17 @@ class _OverviewChartState extends State<OverviewChart>
   static const _kRangeKey = 'chart_range_hours';
   static const _storage = FlutterSecureStorage();
 
-  /// Visible time window in hours (selectable: 6 / 12 / 24). Persisted.
-  int _rangeHours = 24;
+  /// Visible time window in hours. The selector jumps to 6 / 12 / 24, but a
+  /// two-finger pinch zooms it continuously between these bounds. The session
+  /// history is capped at 24 h, so that is the widest useful window. Persisted.
+  static const _minRangeHours = 0.5;
+  static const _maxRangeHours = 24.0;
+  double _rangeHours = _maxRangeHours;
 
-  /// How many whole windows the view is scrolled BACK from the latest reading
-  /// (0 = live). Reset whenever the range changes.
-  int _panWindows = 0;
+  /// Seconds the view is scrolled BACK from the latest reading (0 = live). Kept
+  /// in absolute time — NOT multiples of the window — so zooming leaves the
+  /// scrolled-to position fixed instead of snapping back to now.
+  int _panSecs = 0;
 
   /// Drives the latest-reading dot's pulsing halo.
   late final AnimationController _pulse;
@@ -84,6 +88,30 @@ class _OverviewChartState extends State<OverviewChart>
   /// Spot index under the finger on the last touch event, so we only buzz once
   /// per data point as the finger moves across (and reset when it lifts off).
   int? _lastTouchedIndex;
+
+  /// Active pointers by id and the finger distance on the previous move, so a
+  /// pinch can be measured without stealing single-finger scrubbing from
+  /// fl_chart (a plain [Listener] observes pointers in parallel, not a
+  /// [GestureDetector], which would claim the touch).
+  final Map<int, Offset> _pinchPointers = {};
+  double? _pinchLastDistance;
+
+  /// The two-finger focal point (global) on the previous move, so the gesture's
+  /// horizontal travel can pan the time axis alongside the pinch zoom.
+  Offset? _pinchLastFocal;
+
+  /// Forecast horizon (hours past the latest reading) from the last build. The
+  /// visible span is `range + futureHours`, so the pan gesture needs it to map
+  /// finger pixels to time correctly when zoomed right in.
+  double _futureHours = 0;
+
+  /// The chart's render box, so a pinch's focal point can be mapped to a
+  /// fraction across the plot and the zoom can hold that spot in place.
+  final GlobalKey _plotKey = GlobalKey();
+
+  /// Width of the left Y-axis label strip (leftTitles reservedSize), excluded
+  /// from the plotting area when mapping a focal point to time.
+  static const _axisInset = 24.0;
 
   /// Index of the (transparent) bar carrying the tappable meal dots, or -1 when
   /// the meal overlay is off, and the markers behind it — so a tap on a dot can
@@ -108,18 +136,119 @@ class _OverviewChartState extends State<OverviewChart>
   }
 
   Future<void> _loadRange() async {
-    final stored = int.tryParse(await _storage.read(key: _kRangeKey) ?? '');
-    if (mounted && (stored == 6 || stored == 12 || stored == 24)) {
-      setState(() => _rangeHours = stored!);
+    final stored = double.tryParse(await _storage.read(key: _kRangeKey) ?? '');
+    if (mounted &&
+        stored != null &&
+        stored >= _minRangeHours &&
+        stored <= _maxRangeHours) {
+      setState(() => _rangeHours = stored);
     }
   }
 
   void _setRange(int hours) {
+    _applyRange(hours.toDouble());
+    _persistRange();
+  }
+
+  void _applyRange(double hours) {
+    final clamped = hours.clamp(_minRangeHours, _maxRangeHours);
     setState(() {
-      _rangeHours = hours;
-      _panWindows = 0;
+      _rangeHours = clamped;
     });
-    _storage.write(key: _kRangeKey, value: '$hours');
+  }
+
+  void _persistRange() {
+    _storage.write(key: _kRangeKey, value: '$_rangeHours');
+  }
+
+  void _onPinchPointerDown(PointerDownEvent event) {
+    _pinchPointers[event.pointer] = event.position;
+    if (_pinchPointers.length == 2) {
+      _pinchLastDistance = _pinchDistance();
+      _pinchLastFocal = _pinchFocalGlobal();
+    }
+  }
+
+  /// Handles both parts of a two-finger gesture each move: the fingers spreading
+  /// or pinching zooms the window (anchored under the focal point), and the
+  /// focal point sliding sideways pans the time axis. Both compose, like a map.
+  void _onPinchPointerMove(PointerMoveEvent event) {
+    if (!_pinchPointers.containsKey(event.pointer)) {
+      return;
+    }
+    _pinchPointers[event.pointer] = event.position;
+    if (_pinchPointers.length != 2 || _pinchLastDistance == null) {
+      return;
+    }
+    final distance = _pinchDistance();
+    if (distance <= 0) {
+      return;
+    }
+    final box = _plotKey.currentContext?.findRenderObject() as RenderBox?;
+    final plotWidth = (box?.size.width ?? 0) - _axisInset;
+    final focal = _pinchFocalGlobal();
+
+    final oldRange = _rangeHours;
+    final newRange =
+        (oldRange / (distance / _pinchLastDistance!)).clamp(
+      _minRangeHours,
+      _maxRangeHours,
+    );
+    // Zoom: hold the time under the fingers in place — the window to the RIGHT
+    // of the focal point is what a range change adds to / removes from the
+    // scroll-back offset.
+    final fromRight = 1.0 - _focalFraction(box);
+    var deltaSecs = (oldRange - newRange) * 3600 * fromRight;
+    // Pan: convert the focal point's sideways travel to time (fingers moving
+    // right pulls older data into view, i.e. scrolls back).
+    if (plotWidth > 0 && _pinchLastFocal != null) {
+      final focalTravelX = focal.dx - _pinchLastFocal!.dx;
+      deltaSecs += focalTravelX * newRange * 3600 / plotWidth;
+    }
+
+    _pinchLastDistance = distance;
+    _pinchLastFocal = focal;
+    setState(() {
+      _rangeHours = newRange;
+      _panSecs = (_panSecs + deltaSecs.round()).clamp(0, 1 << 30);
+    });
+  }
+
+  Offset _pinchFocalGlobal() {
+    final points = _pinchPointers.values.toList();
+    return (points[0] + points[1]) / 2;
+  }
+
+  /// Where the pinch sits across the plot: 0 = left edge, 1 = right edge.
+  /// Falls back to the right edge (the old always-anchor-now behaviour) when the
+  /// geometry isn't available.
+  double _focalFraction(RenderBox? box) {
+    if (box == null || _pinchPointers.length < 2) {
+      return 1.0;
+    }
+    final focalX = box.globalToLocal(_pinchFocalGlobal()).dx;
+    final plotWidth = box.size.width - _axisInset;
+    if (plotWidth <= 0) {
+      return 1.0;
+    }
+    return ((focalX - _axisInset) / plotWidth).clamp(0.0, 1.0);
+  }
+
+  void _onPinchPointerUp(PointerEvent event) {
+    final wasPinching = _pinchPointers.length == 2;
+    _pinchPointers.remove(event.pointer);
+    if (_pinchPointers.length < 2) {
+      _pinchLastDistance = null;
+      _pinchLastFocal = null;
+      if (wasPinching) {
+        _persistRange();
+      }
+    }
+  }
+
+  double _pinchDistance() {
+    final points = _pinchPointers.values.toList();
+    return (points[0] - points[1]).distance;
   }
 
   /// Light haptic tick when the highlighted point changes while scrubbing. Use
@@ -167,12 +296,21 @@ class _OverviewChartState extends State<OverviewChart>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            HourRangeSelector(selected: _rangeHours, onChanged: _setRange),
+            HourRangeSelector(selected: _rangeHours.round(), onChanged: _setRange),
             if (widget.navigable) Flexible(child: _navigator(context, byTime)),
           ],
         ),
         const SizedBox(height: 24),
-        Expanded(child: _chart(byTime, glucose, colors)),
+        Expanded(
+          child: Listener(
+            key: _plotKey,
+            onPointerDown: _onPinchPointerDown,
+            onPointerMove: _onPinchPointerMove,
+            onPointerUp: _onPinchPointerUp,
+            onPointerCancel: _onPinchPointerUp,
+            child: _chart(byTime, glucose, colors),
+          ),
+        ),
       ],
     );
   }
@@ -182,7 +320,8 @@ class _OverviewChartState extends State<OverviewChart>
   Widget _navigator(BuildContext context, SplayTreeMap<int, int> byTime) {
     final latestSecs = byTime.isEmpty ? 0 : byTime.lastKey()!;
     final oldestSecs = byTime.isEmpty ? 0 : byTime.firstKey()!;
-    final windowStartSecs = latestSecs - (_panWindows + 1) * _rangeHours * 3600;
+    final windowStartSecs =
+        latestSecs - _panSecs - (_rangeHours * 3600).round();
     final canGoBack = windowStartSecs > oldestSecs;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -204,26 +343,28 @@ class _OverviewChartState extends State<OverviewChart>
         IconButton(
           visualDensity: VisualDensity.compact,
           icon: const Icon(PhosphorIconsBold.caretRight, size: 22),
-          onPressed: _panWindows > 0 ? () => _pan(-1) : null,
+          onPressed: _panSecs > 0 ? () => _pan(-1) : null,
         ),
       ],
     );
   }
 
-  void _pan(int windows) {
-    setState(() => _panWindows = (_panWindows + windows).clamp(0, 1000));
+  /// Pages by one current window: [direction] > 0 goes back, < 0 forward.
+  void _pan(int direction) {
+    final step = (_rangeHours * 3600).round();
+    setState(() {
+      _panSecs = (_panSecs + direction * step).clamp(0, 1 << 30);
+    });
   }
 
   /// "Jetzt" for the live window, else the wall-clock date at the window's end.
   String _navigatorLabel(BuildContext context) {
     final start = widget.sensorStart;
-    if (_panWindows == 0 || start == null || widget.byTime.isEmpty) {
+    if (_panSecs == 0 || start == null || widget.byTime.isEmpty) {
       return Locales.string(context, 'overview.chart.now');
     }
     final latestSecs = widget.byTime.lastKey()!;
-    final end = start.add(
-      Duration(seconds: latestSecs - _panWindows * _rangeHours * 3600),
-    );
+    final end = start.add(Duration(seconds: latestSecs - _panSecs));
     final l10n = MaterialLocalizations.of(context);
     final time = l10n.formatTimeOfDay(TimeOfDay.fromDateTime(end));
     return '${l10n.formatMediumDate(end)}, $time';
@@ -236,13 +377,19 @@ class _OverviewChartState extends State<OverviewChart>
   ) {
     final entries = byTime.entries.toList();
     final latestSecs = entries.last.key;
+    final controller = context.watch<CgmController>();
     // The overview preview always shows 24 h; only the full-screen detail page
     // honours the persisted, user-selectable range.
-    final effectiveRange = widget.preview ? 24 : _rangeHours;
-    // Windows scrolled back from the latest reading (the preview never pans).
-    final panWindows = widget.preview ? 0 : _panWindows;
-    final panSecs = panWindows * effectiveRange * 3600;
-    final windowEndSecs = latestSecs - panSecs;
+    final effectiveRange = widget.preview ? 24.0 : _rangeHours;
+    // The forecast tip is the live right edge: the window is always `range` wide
+    // and, at rest, ends at the tip so the whole forecast shows. Scrolling back
+    // slides the right edge left through the readings — the width never changes,
+    // so the forecast just glides off instead of popping the window narrower.
+    final horizonHours = _horizonHours(controller, latestSecs);
+    _futureHours = widget.preview ? 0 : horizonHours;
+    final panSecs = widget.preview ? 0 : _panSecs;
+    final windowEndSecs = latestSecs + (horizonHours * 3600).round() - panSecs;
+    final rightEdgeHours = (windowEndSecs - latestSecs) / 3600.0;
     // Wall-clock time at x == 0 (the latest reading), to label the X axis with
     // real times. x is hours relative to this, so wall(x) = anchor + x hours.
     final anchor = widget.sensorStart?.add(Duration(seconds: latestSecs));
@@ -254,33 +401,28 @@ class _OverviewChartState extends State<OverviewChart>
     final series = GlucoseChartSeries(
       entries: entries,
       latestSecs: latestSecs,
-      cutoff: windowEndSecs - effectiveRange * 3600,
+      cutoff: (windowEndSecs - effectiveRange * 3600).round(),
       windowEnd: windowEndSecs,
       shift: shift,
       glucose: glucose,
       colors: colors,
     );
     final bars = series.buildBars();
-    // Dashed forecast line extending past the latest reading (only in the live
-    // window — a forecast on a past interval makes no sense).
-    final controller = context.watch<CgmController>();
+    // Dashed forecast line past the latest reading. Always built (anchored at the
+    // latest reading, not the scroll position) and clipped by fl_chart once
+    // scrolled out — the window width is constant, so nothing jumps.
     final showBand = context.watch<ProfilePredictionState>().band;
-    final prediction = panWindows > 0
-        ? (
-            futureHours: 0.0,
-            touchSpots: const <FlSpot>[],
-            band: null as BetweenBarsData?,
-          )
-        : _addPredictionBar(
-            bars,
-            controller,
-            entries,
-            latestSecs,
-            shift,
-            glucose,
-            showBand,
-          );
+    final prediction = _addPredictionBar(
+      bars,
+      controller,
+      entries,
+      latestSecs,
+      shift,
+      glucose,
+      showBand,
+    );
     final futureHours = prediction.futureHours;
+    _futureHours = widget.preview ? 0 : futureHours;
     // Transparent overlay owning touch — over the REAL readings AND the forecast
     // points, so scrubbing snaps to a single value in either region (not to the
     // zone bars, which share boundary points, or the interpolated crossings).
@@ -312,7 +454,7 @@ class _OverviewChartState extends State<OverviewChart>
     // The band adds two bars, so toggling it changes the bar structure — it has
     // to take part in the key or fl_chart tweens between mismatched lists.
     final key = ValueKey(
-      '$latestSecs-${entries.length}-$effectiveRange-$panWindows'
+      '$latestSecs-${entries.length}-$effectiveRange-$panSecs'
       '-$predictionCount-${prediction.band != null}-${mealMarkers.length}',
     );
     GlucoseLineChart chart(double pulse) => GlucoseLineChart(
@@ -491,7 +633,7 @@ class _OverviewChartState extends State<OverviewChart>
   List<({double x, Meal meal})> _buildMealMarkers(
     DateTime? anchor,
     double shift,
-    int effectiveRange,
+    double effectiveRange,
     int panSecs,
   ) {
     if (!widget.showMeals || anchor == null || widget.meals.isEmpty) {
@@ -529,7 +671,7 @@ class _OverviewChartState extends State<OverviewChart>
         show: true,
         getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
           radius: 5,
-          color: context.warning,
+          color: scheme.onSurfaceVariant,
           strokeColor: scheme.surface,
           strokeWidth: 2,
         ),

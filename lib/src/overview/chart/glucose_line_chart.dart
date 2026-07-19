@@ -25,8 +25,7 @@ class GlucoseLineChart extends StatelessWidget {
     this.maxYmgdl = 300,
     this.highlightSpot,
     this.pulse = 0,
-    this.futureHours = 0,
-    this.panHours = 0,
+    this.rightEdgeHours = 0,
     this.betweenBars = const [],
     this.mealMarkers = const [],
   });
@@ -43,24 +42,20 @@ class GlucoseLineChart extends StatelessWidget {
   /// indexes would shift out from under it.
   final List<BetweenBarsData> betweenBars;
 
-  /// Hours the visible window is scrolled BACK from the latest reading (0 = the
-  /// live window). Shifts [minX]/[maxX] left without moving the x=0 anchor, so
-  /// the clock-time labels stay correct for the earlier interval.
-  final double panHours;
+  /// X position (in shifted hours, relative to the latest reading at x=0) of the
+  /// window's RIGHT edge. Live sits at the forecast tip (positive); scrolling
+  /// back moves it left through the readings. The window is always [rangeHours]
+  /// wide, so [minX] follows at `rightEdgeHours - rangeHours`.
+  final double rightEdgeHours;
 
   final List<LineChartBarData> bars;
-
-  /// Extra hours drawn to the RIGHT of the latest reading, for the prediction
-  /// overlay (0 when there's no forecast). Widens [maxX] past [shift] so the
-  /// future dashed line isn't clipped.
-  final double futureHours;
 
   /// Index of the transparent overlay bar that owns touch.
   final int touchBarIndex;
 
   /// Phase shift placing full clock hours on integer x (also the max x).
   final double shift;
-  final int rangeHours;
+  final double rangeHours;
 
   /// Wall-clock time at x == shift; null falls back to "Nh ago" labels.
   final DateTime? anchor;
@@ -98,8 +93,12 @@ class GlucoseLineChart extends StatelessWidget {
   /// Whole-unit gridlines/ticks that read cleanly in either unit.
   double get _yInterval => glucose.unit == GlucoseUnit.mmol ? 3.0 : 50.0;
 
-  /// Fewer X ticks for shorter windows so labels don't crowd.
+  /// Fewer X ticks for wider windows so labels don't crowd; sub-hour steps once
+  /// zoomed right in so a tight window still gets a couple of ticks.
   double get _xInterval {
+    if (rangeHours <= 2) {
+      return 0.5;
+    }
     if (rangeHours <= 6) {
       return 2.0;
     }
@@ -112,8 +111,8 @@ class GlucoseLineChart extends StatelessWidget {
       LineChartData(
         minY: _minY,
         maxY: _maxY,
-        minX: shift - rangeHours - panHours,
-        maxX: shift + futureHours - panHours,
+        minX: shift + rightEdgeHours - rangeHours,
+        maxX: shift + rightEdgeHours,
         gridData: FlGridData(
           show: !minimal,
           drawVerticalLine: false,
@@ -217,6 +216,11 @@ class GlucoseLineChart extends StatelessWidget {
     final time = anchor!.add(
       Duration(seconds: ((value - shift) * 3600).round()),
     );
+    // Sub-hour ticks (deep zoom) land off the hour — show the minutes so two
+    // ticks in the same hour don't read as the same label.
+    if (time.minute != 0) {
+      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+    }
     return Locales.string(
       context,
       'overview.chart.hour',

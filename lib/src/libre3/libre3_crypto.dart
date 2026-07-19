@@ -52,6 +52,11 @@ abstract class Libre3Crypto {
   /// `intDecrypt(channelId, data)` — decrypt one data-characteristic payload
   /// (3 = glucose, 4 = historic, 2 = patch status, …).
   Future<Uint8List> decrypt(int channelId, Uint8List data);
+
+  /// `intEncrypt(channelId, data)` — encrypt one outgoing command (0 = patch
+  /// control). The clean-room counterpart of [decrypt]; keeps the per-session
+  /// outgoing sequence counter.
+  Future<Uint8List> encrypt(int channelId, Uint8List data);
 }
 
 /// [Libre3Crypto] backed by the native blob via a `MethodChannel`. The Android
@@ -66,6 +71,11 @@ class Libre3NativeCrypto implements Libre3Crypto {
   /// path (Juggluco's `initcrypt`/`intDecrypt` — NOT the blob).
   Uint8List? _kEnc;
   Uint8List? _ivEnc;
+
+  /// Outgoing-command sequence, mixed into the CCM nonce so each encrypted
+  /// command is unique. Juggluco's `outCryptoSequence`: starts at 1, incremented
+  /// after every [encrypt].
+  int _outSequence = 1;
 
   @override
   Future<bool> initKeys(Uint8List? authKey, int securityVersion) async {
@@ -109,19 +119,28 @@ class Libre3NativeCrypto implements Libre3Crypto {
   Future<Uint8List> exportAuthKey() => _bytes('exportAuthKey');
 
   /// Clean-room: keep the session key/IV for the AES-CCM data path — no blob.
+  /// Resets the outgoing sequence, since a fresh cipher context is a fresh
+  /// session (mirrors Juggluco's `initcrypt`).
   @override
   Future<void> initCipher(Uint8List kEnc, Uint8List ivEnc) async {
     _kEnc = kEnc;
     _ivEnc = ivEnc;
+    _outSequence = 1;
   }
 
   /// Per-channel 3-byte nonce discriminator (Juggluco's `bcrypt.cpp`
-  /// `packetDescriptor`, indexed by the `intDecrypt` kind). Only the data
-  /// channels we read are listed: 2 = patch status, 3 = glucose, 4 = historic.
+  /// `packetDescriptor`, indexed by the `intEncrypt`/`intDecrypt` kind). Full
+  /// table ported verbatim: 0 = control (our outgoing command), 2 = patch
+  /// status, 3 = glucose, 4 = historic.
   static const _packetDescriptor = <int, List<int>>{
+    0: [0x00, 0x00, 0x00],
+    1: [0x00, 0x00, 0x0F],
     2: [0x00, 0x00, 0xF0],
     3: [0x00, 0x0F, 0x00],
     4: [0x00, 0xF0, 0x00],
+    5: [0x0F, 0x00, 0x00],
+    6: [0xF0, 0x00, 0x00],
+    7: [0x44, 0x00, 0x00],
   };
 
   /// Decrypt one reassembled data packet with AES-128-CCM, byte-exact to
@@ -152,6 +171,41 @@ class Libre3NativeCrypto implements Libre3Crypto {
       ciphertextAndTag: Uint8List.sublistView(data, 0, bodyLen),
       macBits: 32,
     );
+  }
+
+  /// Encrypt one outgoing command with AES-128-CCM, byte-exact to Juggluco's
+  /// native `intEncrypt`/`bcrypt`: the 13-byte CCM nonce is
+  /// `sequence(2) ‖ packetDescriptor[channelId](3) ‖ ivEnc(8)`, no AAD, 4-byte
+  /// MAC; the frame is `ciphertext ‖ tag(4) ‖ sequence(2)` and the sequence is
+  /// bumped afterwards.
+  @override
+  Future<Uint8List> encrypt(int channelId, Uint8List data) async {
+    final key = _kEnc;
+    final iv = _ivEnc;
+    if (key == null || iv == null) {
+      throw StateError('initCipher must run before encrypt');
+    }
+    final descriptor = _packetDescriptor[channelId];
+    if (descriptor == null) {
+      throw StateError('unsupported Libre 3 channel $channelId');
+    }
+    final sequence = _outSequence;
+    final nonce = Uint8List(13)
+      ..[0] = sequence & 0xFF
+      ..[1] = (sequence >> 8) & 0xFF
+      ..setRange(2, 5, descriptor)
+      ..setRange(5, 13, iv);
+    final cipherAndTag = Libre3Ccm.encrypt(
+      key: key,
+      nonce: nonce,
+      plaintext: data,
+      macBits: 32,
+    );
+    _outSequence++;
+    return Uint8List(cipherAndTag.length + 2)
+      ..setRange(0, cipherAndTag.length, cipherAndTag)
+      ..[cipherAndTag.length] = sequence & 0xFF
+      ..[cipherAndTag.length + 1] = (sequence >> 8) & 0xFF;
   }
 
   Future<Uint8List> _bytes(String method, [Map<String, Object?>? args]) async {
