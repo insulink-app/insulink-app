@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/logbook/workout_summary_page.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/training_state.dart';
@@ -59,8 +60,21 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
           )
           ..onFinished = (session) {
             training.addSession(session);
-            if (mounted) {
-              Navigator.of(context).pop();
+            if (!mounted) {
+              return;
+            }
+            // Swap the runner for the summary so "back" from it lands on the
+            // sport page, not a finished workout. A workout ended with nothing
+            // logged has nothing to summarise — just close.
+            final navigator = Navigator.of(context);
+            if (session.sets.isEmpty) {
+              navigator.pop();
+            } else {
+              navigator.pushReplacement(
+                MaterialPageRoute<void>(
+                  builder: (_) => WorkoutSummaryPage(session: session),
+                ),
+              );
             }
           };
   }

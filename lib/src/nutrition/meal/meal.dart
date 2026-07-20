@@ -20,6 +20,21 @@ class Meal {
   /// carries no product breakdown).
   double get protein => entries.fold(0, (sum, entry) => sum + entry.protein);
 
+  /// A copy with individual fields replaced — the basis for editing a logged
+  /// meal after the fact (see [MealState.updateMeal]).
+  Meal copyWith({
+    DateTime? time,
+    double? carbs,
+    int? glucoseMgdl,
+    double? bolus,
+  }) => Meal(
+    time: time ?? this.time,
+    carbs: carbs ?? this.carbs,
+    glucoseMgdl: glucoseMgdl ?? this.glucoseMgdl,
+    bolus: bolus ?? this.bolus,
+    entries: entries,
+  );
+
   factory Meal.fromJson(Map<String, dynamic> json) => Meal(
     time: DateTime.fromMillisecondsSinceEpoch(json['time'] as int),
     carbs: (json['carbs'] as num).toDouble(),

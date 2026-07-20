@@ -92,6 +92,13 @@ class Locales {
 
   String get(String key, [List<String>? params, List<String>? localeParams]) {
     key = key.replaceAll(" ", "_").toLowerCase();
+    // A `_` self-value flattens to its PARENT path (see `_flatten`), so a
+    // `parent._` key never exists in the flat map — it is always the mistaken
+    // form of `parent`. Heal it instead of returning the raw `$parent._`
+    // placeholder (a recurring slip when adding a section label).
+    if (key.endsWith('._')) {
+      key = key.substring(0, key.length - 2);
+    }
     String result = _localizedStings[key] ?? "\$$key";
     bool localizeParams = localeParams != null;
     if (localeParams != null) {

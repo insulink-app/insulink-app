@@ -37,6 +37,15 @@ value under `_`. Above, `profile.glucose._` → `profile.glucose` ("Glucose"),
 sitting alongside its children `profile.glucose.target` etc. `_` always maps to
 the parent path, never `parent._`.
 
+> ⚠️ **Common slip — reference the self-value by its PARENT path, not `parent._`.**
+> To read a section's own label in code, look up `'sport.summary'`, **not**
+> `'sport.summary._'`. The flattener maps `_` onto the parent path, so a
+> `parent._` key does not exist in the flat map and the UI would render the raw
+> `$sport.summary._` placeholder. `Locales.get` now self-heals a trailing `._`
+> back to the parent (a `parent._` lookup can only ever be this mistake), so both
+> forms resolve — but write the parent path directly. `ServiceStrings` walks the
+> path literally and already resolves either form.
+
 Group by feature/page first (`profile`, `sensor`, `alarm`, `statistics`), then
 by sub-area, then the leaf. Keep both locale files in the same shape/order so
 they're easy to diff.

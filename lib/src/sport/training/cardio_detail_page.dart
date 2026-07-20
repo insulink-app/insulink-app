@@ -129,9 +129,9 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 TrainingStatsPanel(training: training),
-                ..._splits(training),
                 const SizedBox(height: 20),
                 _metricsChart(context, training),
+                ..._splits(training),
               ]),
             ),
           ),

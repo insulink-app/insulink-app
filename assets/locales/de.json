@@ -245,7 +245,8 @@
       "end_session_title": "Sitzung beenden?",
       "end_session_body": "Das Auslesen wird gestoppt. Die Kopplung bleibt erhalten – du kannst dich später wieder verbinden.",
       "stop_sensor_title": "Sensor stoppen?",
-      "stop_sensor_body": "Der Sensor wird entkoppelt: gespeicherter Schlüssel und Verlauf werden gelöscht. Der physische Sensor läuft weiter."
+      "stop_sensor_body": "Der Sensor wird entkoppelt: gespeicherter Schlüssel und Verlauf werden gelöscht. Der physische Sensor läuft weiter.",
+      "forget_auth_reason": "Bestätige, um diesen Sensor zu vergessen"
     },
     "log": "Log",
     "copy": "Kopieren",
@@ -348,6 +349,41 @@
   },
   "connections": {
     "label": "Verbindungen"
+  },
+  "inventory": {
+    "label": "Inventar",
+    "calendar": "Kalender",
+    "add": "Hinzufügen",
+    "name": "Name",
+    "stock": "Aktueller Bestand",
+    "base_stock": "Grundbestand",
+    "stock_of": "# von ## Stück",
+    "set_stock": "Bestand setzen",
+    "days_per_unit": "Wie lange hält eine Einheit? (Tage)",
+    "type": "Typ",
+    "type_sensor": "Sensor",
+    "type_pump": "Pumpe",
+    "type_other": "Anderes",
+    "brand": "Sensor-Typ",
+    "brand_libre": "FreeStyle Libre 3",
+    "brand_dexcom": "Dexcom G7",
+    "brand_other": "Anderer",
+    "deliveries": "Lieferungen",
+    "no_deliveries": "Noch keine Lieferungen geplant",
+    "quantity": "Menge",
+    "delivery": "Lieferung",
+    "date": "Datum",
+    "save": "Speichern",
+    "units": "# Stück",
+    "runs_out": "Reicht bis # (noch ## Tage)",
+    "runs_out_never": "Reicht dauerhaft",
+    "surplus": "Überschuss vor Lieferung: #",
+    "shortage_warning": "Engpass vor der nächsten Lieferung",
+    "low_warning": "Vorrat wird knapp",
+    "no_events": "Keine Events an diesem Tag",
+    "empty": "Noch kein Zubehör erfasst",
+    "event_delivery": "Lieferung",
+    "event_run_out": "Vorrat aufgebraucht"
   },
   "nutrition": {
     "label": "Ernährung",
@@ -512,6 +548,13 @@
       "resume_active": "Laufendes Workout fortsetzen",
       "ended_elsewhere": "Dieses Training wurde auf einem anderen Gerät beendet.",
       "ended_elsewhere_confirm": "Verstanden"
+    },
+    "summary": {
+      "_": "Zusammenfassung",
+      "vs_previous": "Leistung",
+      "first_time": "Erstes Training dieser Routine",
+      "exercises": "Übungen",
+      "done": "Fertig"
     },
     "health": {
       "import": "Aus Google Health importieren",
@@ -701,6 +744,7 @@
     "silent": {
       "_": "Stummschaltung",
       "description": "Alle Benachrichtigungen und Alarme stummschalten",
+      "auth_reason": "Bestätige, um die Stummschaltung zu aktivieren",
       "warning": {
         "title": "Stummschaltung aktivieren?",
         "body": "Bei aktiver Stummschaltung erhältst du KEINE Alarme – auch nicht bei gefährlich niedrigem oder hohem Blutzucker. Eine Unterzuckerung kann unbemerkt bleiben und lebensbedrohlich werden. Aktiviere sie nur, wenn du deine Werte anderweitig im Blick behältst.",

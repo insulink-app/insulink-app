@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
+import 'package:insulink/src/injection/biometric_auth.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/profile_toggle_row.dart';
 import 'package:provider/provider.dart';
@@ -46,8 +48,25 @@ class ProfileSilentToggle extends StatelessWidget {
       cancelButton: true,
       confirmButtonText: "profile.silent.warning.confirm",
       confirmButtonColor: Theme.of(context).colorScheme.error,
-      callback: () => state.setSilent(true),
+      callback: () => _authThenMute(context, state),
     ).show(context);
+  }
+
+  /// After the risk warning is confirmed, require the device fingerprint (PIN
+  /// fallback when none is enrolled) before actually muting — muting silences
+  /// life-critical alarms, so it must be a deliberate, owner-only action. A
+  /// failed/declined check leaves silent mode OFF; the toggle reflects that.
+  Future<void> _authThenMute(
+    BuildContext context,
+    ProfileSilentState state,
+  ) async {
+    final ok = await BiometricAuth().confirm(
+      Locales.string(context, 'profile.silent.auth_reason'),
+      allowDeviceCredential: true,
+    );
+    if (ok) {
+      await state.setSilent(true);
+    }
   }
 
   @override

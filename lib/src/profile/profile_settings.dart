@@ -15,6 +15,7 @@ import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/inventory/inventory_store.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_store.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_layout_state.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
@@ -135,6 +136,11 @@ class ProfileSettings {
       return;
     }
     for (final entry in settings.entries) {
+      // Inventory moved to its own backend section (InventorySync); ignore a
+      // stale copy still riding an old settings blob so it can't clobber it.
+      if (entry.key == InventoryStore.itemsKey) {
+        continue;
+      }
       await _storage.write(key: "${entry.key}", value: "${entry.value}");
     }
   }

@@ -3,8 +3,13 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 
 import '../sport_store.dart';
+import 'active_training.dart';
 import 'cardio_models.dart';
 import 'location_sync.dart';
+
+/// Which cadence the open GPS stream is running at. A tier change reopens the
+/// stream with the matching settings; the pure [gpsTierFor] picks it.
+enum GpsTier { detect, activeDetect, recording }
 
 /// Periodically samples the position in the foreground-service isolate and
 /// appends it to the location log ([SportStore.appendLocationSample]) — the raw
@@ -43,12 +48,17 @@ class BackgroundLocationSampler {
   final void Function(String) _onLog;
   DateTime? _lastSampledAt;
   DateTime? _lastMovingAt;
+
+  /// When the current uninterrupted moving streak began (null when at rest).
+  /// Once it is older than [_sustainedMovingAfter] the movement looks like a
+  /// real training, so detection tracking ramps up to [GpsTier.activeDetect].
+  DateTime? _movingSince;
   Position? _lastFix;
   StreamSubscription<Position>? _stream;
 
-  /// Whether the open [_stream] is the high-accuracy recording one — a mode flip
-  /// has to reopen it with the other settings.
-  bool _streamRecords = false;
+  /// The cadence the open [_stream] is running at — a tier flip has to reopen it
+  /// with the other settings.
+  GpsTier? _streamTier;
 
   static const _idleInterval = Duration(seconds: 55);
   static const _recordingInterval = Duration(seconds: 4);
@@ -59,6 +69,18 @@ class BackgroundLocationSampler {
   /// 25 km/h ride jumps ~200 m per point and cuts every corner. So the cadence
   /// is set by the route we want to keep, not by the detector.
   static const _detectInterval = Duration(seconds: 10);
+
+  /// Denser detect cadence once movement has been sustained ([_movingSince]
+  /// older than [_sustainedMovingAfter]) — an auto-detected training then gets a
+  /// route almost as dense as a manually recorded one, without paying that cost
+  /// for a brief walk-to-the-car. Still coarser than [_recordingInterval] to
+  /// stay easy on the battery.
+  static const _activeDetectInterval = Duration(seconds: 5);
+
+  /// How long movement must persist before the detect stream ramps up to
+  /// [_activeDetectInterval]. Long enough that a short errand never triggers the
+  /// denser cadence; short enough to catch most of a training's route.
+  static const _sustainedMovingAfter = Duration(minutes: 3);
   static const _fixTimeout = Duration(seconds: 20);
 
   /// How long after the last moving fix we keep the stream open, so a brief stop
@@ -81,12 +103,16 @@ class BackgroundLocationSampler {
   Future<void> tick() async {
     try {
       final active = await _store.loadActiveTraining();
+      if (!_recentlyMoving) {
+        _movingSince = null;
+      }
       final recording = active != null && !active.isPaused;
       // Stream while recording, or — with no active training — while recently
-      // moving (dense auto-detect route). A paused training (active, not
-      // recording) must record nothing, so it never streams.
-      final wantStream = recording || (active == null && _recentlyMoving);
-      await _syncStream(wantStream, recording);
+      // moving (dense auto-detect route), ramping to the denser tier once the
+      // movement has been sustained. A paused training (active, not recording)
+      // must record nothing, so it never streams.
+      final tier = _wantedTier(active, recording);
+      await _syncStream(tier);
       if (active != null || _stream != null) {
         return;
       }
@@ -113,34 +139,46 @@ class BackgroundLocationSampler {
     }
   }
 
-  /// Opens the stream when a training records or auto-detection wants it, closes
-  /// it at rest, and reopens it when the mode (and so the cadence) flips.
-  /// Idempotent per state.
-  Future<void> _syncStream(bool wanted, bool recording) async {
-    if (_stream != null && (!wanted || recording != _streamRecords)) {
+  /// The cadence tier the current state wants, or null to keep no stream open:
+  /// a recording training gets [GpsTier.recording]; with no training, sustained
+  /// movement gets the denser [GpsTier.activeDetect] and briefer movement the
+  /// sparse [GpsTier.detect]; at rest, none.
+  GpsTier? _wantedTier(ActiveTraining? active, bool recording) {
+    return gpsTierFor(
+      recording: recording,
+      hasActiveTraining: active != null,
+      recentlyMoving: _recentlyMoving,
+      sustainedMoving: _sustainedMoving,
+    );
+  }
+
+  /// Opens the stream when a tier is wanted, closes it at rest, and reopens it
+  /// when the tier (and so the cadence) flips. Idempotent per state.
+  Future<void> _syncStream(GpsTier? tier) async {
+    if (_stream != null && tier != _streamTier) {
       await _stopStream();
     }
-    if (wanted && _stream == null) {
-      await _startStream(recording);
+    if (tier != null && _stream == null) {
+      await _startStream(tier);
     }
   }
 
-  Future<void> _startStream(bool recording) async {
+  Future<void> _startStream(GpsTier tier) async {
     if (!await _ready()) {
       return;
     }
-    _streamRecords = recording;
+    _streamTier = tier;
     _stream = Geolocator.getPositionStream(
-      locationSettings: _streamSettings(recording),
+      locationSettings: _streamSettings(tier),
     ).listen(
       _onStreamFix,
       onError: (Object error) => _onLog('location stream error: $error'),
     );
-    _onLog('location: ${recording ? 'recording' : 'detect'} stream started');
+    _onLog('location: ${tier.name} stream started');
   }
 
-  /// The platform request that decides the actual battery cost. Both modes ask
-  /// for high accuracy and save power through the CADENCE instead: the interval
+  /// The platform request that decides the actual battery cost. Every tier asks
+  /// for high accuracy and saves power through the CADENCE instead: the interval
   /// plus the distance filter are what let the radio duty-cycle, and standing
   /// still costs nothing at all (no movement, no fixes, no radio).
   ///
@@ -149,17 +187,26 @@ class BackgroundLocationSampler {
   /// anything worse than [_maxAccuracyM] (50 m). The cheaper provider would have
   /// its fixes filtered straight back out of the route, leaving the detector
   /// with no segments.
-  LocationSettings _streamSettings(bool recording) {
+  LocationSettings _streamSettings(GpsTier tier) {
     return AndroidSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: recording ? 5 : 15,
-      intervalDuration: recording ? _recordingInterval : _detectInterval,
+      distanceFilter: switch (tier) {
+        GpsTier.recording => 5,
+        GpsTier.activeDetect => 8,
+        GpsTier.detect => 15,
+      },
+      intervalDuration: switch (tier) {
+        GpsTier.recording => _recordingInterval,
+        GpsTier.activeDetect => _activeDetectInterval,
+        GpsTier.detect => _detectInterval,
+      },
     );
   }
 
   Future<void> _stopStream() async {
     await _stream?.cancel();
     _stream = null;
+    _streamTier = null;
     _onLog('location: stream stopped');
   }
 
@@ -175,6 +222,7 @@ class BackgroundLocationSampler {
   Future<void> _record(Position fix, int tMs) async {
     if (fix.speed * 3.6 >= _movingKmh) {
       _lastMovingAt = DateTime.now();
+      _movingSince ??= DateTime.now();
     }
     LocationSync().queue(fix.latitude, fix.longitude, tMs, _onLog);
     if (!_accept(fix)) {
@@ -231,6 +279,15 @@ class BackgroundLocationSampler {
     return movingAt != null &&
         DateTime.now().difference(movingAt) < _movingLinger;
   }
+
+  /// Whether the current moving streak has lasted long enough to look like a
+  /// training rather than a brief errand — the trigger for the denser detect
+  /// cadence.
+  bool get _sustainedMoving {
+    final since = _movingSince;
+    return since != null &&
+        DateTime.now().difference(since) >= _sustainedMovingAfter;
+  }
 }
 
 /// Above this horizontal accuracy (meters) a fix is too vague to trust.
@@ -244,6 +301,27 @@ const _maxSpeedMps = 55.0;
 /// a fix whose accuracy is worse than [_maxAccuracyM], or whose implied speed
 /// over [seconds]/[meters] since the previous fix exceeds [_maxSpeedMps]. With
 /// no previous fix ([meters]/[seconds] null) only accuracy is judged.
+/// Pure cadence picker (extracted so the tier logic is testable without time or
+/// storage): a recording training gets [GpsTier.recording]; with no training,
+/// recent movement gets the sparse [GpsTier.detect] or — once movement has been
+/// [sustainedMoving] — the denser [GpsTier.activeDetect]; otherwise null (no
+/// stream). A paused training ([hasActiveTraining] without [recording]) records
+/// nothing, so it streams nothing.
+GpsTier? gpsTierFor({
+  required bool recording,
+  required bool hasActiveTraining,
+  required bool recentlyMoving,
+  required bool sustainedMoving,
+}) {
+  if (recording) {
+    return GpsTier.recording;
+  }
+  if (!hasActiveTraining && recentlyMoving) {
+    return sustainedMoving ? GpsTier.activeDetect : GpsTier.detect;
+  }
+  return null;
+}
+
 bool isPlausibleFix({
   required double accuracyM,
   double? meters,
