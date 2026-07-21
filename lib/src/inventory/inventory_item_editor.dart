@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../base/confirm_delete.dart';
 import '../localization/locale_text.dart';
 import '../localization/locales.dart';
 import 'inventory_item.dart';
@@ -214,6 +215,8 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
                 IconButton(
                   icon: const Icon(PhosphorIconsBold.x, size: 16),
                   visualDensity: VisualDensity.compact,
+                  // ponytail: no confirm — an uncommitted form edit, only "save"
+                  // persists it, so a prompt per delivery row would just nag.
                   onPressed: () => setState(() => _deliveries.remove(delivery)),
                 ),
               ],
@@ -235,10 +238,14 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
           if (widget.existing != null)
             IconButton(
               icon: const Icon(PhosphorIconsBold.trash),
-              onPressed: () {
-                context.read<InventoryState>().remove(widget.existing!.id);
-                Navigator.pop(context);
-              },
+              onPressed: () => confirmDelete(
+                context,
+                messageKey: 'inventory.delete_confirm',
+                onConfirm: () {
+                  context.read<InventoryState>().remove(widget.existing!.id);
+                  Navigator.pop(context);
+                },
+              ),
             ),
           IconButton(icon: const Icon(PhosphorIconsBold.check), onPressed: _save),
         ],

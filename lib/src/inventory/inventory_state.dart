@@ -90,6 +90,17 @@ class InventoryState extends ChangeNotifier {
     await _persist();
   }
 
+  /// Move the item at [oldIndex] to [newIndex] (drag-reorder). [newIndex] is
+  /// already post-removal adjusted (ReorderableListView's onReorderItem). The
+  /// new order is the stored order: [_persist] saves the reordered array locally
+  /// AND pushes it via [InventorySync], so the backend mirror adopts the same
+  /// sequence.
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    final moved = _items.removeAt(oldIndex);
+    _items.insert(newIndex, moved);
+    await _persist();
+  }
+
   Future<void> _persist() async {
     notifyListeners();
     await _store.save(_items);

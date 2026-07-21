@@ -61,23 +61,27 @@ class _InventoryPageState extends State<InventoryPage> {
         onPressed: () => _openEditor(context),
         child: const Icon(PhosphorIconsBold.plus),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
-        children: [
-          if (items.isEmpty)
-            Padding(
+      body: items.isEmpty
+          ? Padding(
               padding: const EdgeInsets.only(top: 40),
               child: Center(child: LocaleText('inventory.empty')),
+            )
+          : ReorderableListView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
+              onReorderItem: (oldIndex, newIndex) =>
+                  context.read<InventoryState>().reorder(oldIndex, newIndex),
+              children: [
+                for (final item in items)
+                  Padding(
+                    key: ValueKey(item.id),
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: InventoryItemCard(
+                      item: item,
+                      onEdit: () => _openEditor(context, item: item),
+                    ),
+                  ),
+              ],
             ),
-          for (final item in items) ...[
-            InventoryItemCard(
-              item: item,
-              onEdit: () => _openEditor(context, item: item),
-            ),
-            const SizedBox(height: 14),
-          ],
-        ],
-      ),
     );
   }
 }

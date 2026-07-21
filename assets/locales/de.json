@@ -337,6 +337,16 @@
       "awake": "Wach",
       "restless": "Unruhe"
     },
+    "sleep_stats": {
+      "index": "Schlafindex",
+      "time_to_solid": "Zeit bis zum festen Schlaf",
+      "deep": "Fester Schlaf",
+      "interruption": "Unterbrechung",
+      "edit_targets": "Zielbereiche",
+      "min": "Min",
+      "max": "Max",
+      "save": "Speichern"
+    },
     "hr_min": "Min",
     "hr_max": "Max",
     "hr_zones": {
@@ -382,6 +392,7 @@
     "low_warning": "Vorrat wird knapp",
     "no_events": "Keine Events an diesem Tag",
     "empty": "Noch kein Zubehör erfasst",
+    "delete_confirm": "Diesen Eintrag wirklich löschen?",
     "event_delivery": "Lieferung",
     "event_run_out": "Vorrat aufgebraucht"
   },
@@ -670,6 +681,7 @@
     "label": "Profil",
     "sport_goals": "Sportziele",
     "nutrition_goals": "Ernährungsziele",
+    "sleep": "Schlaf",
     "account": {
       "_": "Konto",
       "name": "Name",
@@ -806,7 +818,8 @@
       "prediction": "vorhersage prognose forecast zukunft trend verlauf minuten",
       "sport_goals": "sport ziele tagesziele schritte strecke kalorien",
       "nutrition_goals": "ernährung ziele tagesziele kohlenhydrate eiweiß protein wasser trinken",
-      "hr_zones": "puls pulszonen herzfrequenz zonen bpm erhöht hoch grün orange rot"
+      "hr_zones": "puls pulszonen herzfrequenz zonen bpm erhöht hoch grün orange rot",
+      "sleep": "schlaf schlafqualität tiefschlaf einschlafen unterbrechung schlafindex zielbereich"
     },
     "prediction": {
       "_": "Vorhersage",

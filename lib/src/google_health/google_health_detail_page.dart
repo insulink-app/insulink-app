@@ -3,6 +3,8 @@ import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/google_health/google_health_models.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/google_health/sleep_hypnogram.dart';
+import 'package:insulink/src/google_health/sleep_stats_card.dart';
+import 'package:insulink/src/google_health/sleep_targets_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/activity_bar_chart.dart';
@@ -28,6 +30,23 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
 
   /// Which night the sleep stages + hypnogram show (`dateKey`); null = latest.
   String? _selectedNightKey;
+
+  /// The sleep target windows for the stat bars; null until loaded (stats card
+  /// simply waits for it). Edited in the profile "Sleep" topic — reloaded here
+  /// each time the page opens.
+  SleepTargets? _sleepTargets;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.metric == GoogleHealthMetric.sleep) {
+      SleepTargets.load().then((targets) {
+        if (mounted) {
+          setState(() => _sleepTargets = targets);
+        }
+      });
+    }
+  }
 
   String get _labelKey => switch (widget.metric) {
     GoogleHealthMetric.restingHr => 'google_health.resting_hr',
@@ -137,6 +156,14 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
       const SizedBox(height: 16),
       _nightPager(context, scheme, nights, index),
       const SizedBox(height: 12),
+      if (_sleepTargets != null) ...[
+        SleepStatsCard(
+          stages: night.sleepStages!,
+          timeline: night.sleepTimeline,
+          targets: _sleepTargets!,
+        ),
+        const SizedBox(height: 16),
+      ],
       _stagesCard(context, scheme, night.sleepStages!),
       if (night.sleepTimeline != null && night.sleepTimeline!.isNotEmpty) ...[
         const SizedBox(height: 16),

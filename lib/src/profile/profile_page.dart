@@ -24,6 +24,7 @@ import 'package:insulink/src/profile/prediction/profile_prediction_horizon.dart'
 import 'package:insulink/src/profile/prediction/profile_prediction_toggle.dart';
 import 'package:insulink/src/profile/silent/profile_silent_toggle.dart';
 import 'package:insulink/src/google_health/heart_rate_zones_editor.dart';
+import 'package:insulink/src/google_health/profile_sleep_targets_editor.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_goals_editor.dart';
 import 'package:insulink/src/sport/activity/sport_goals_editor.dart';
 import 'package:insulink/src/profile/theme/profile_theme_selection.dart';
@@ -119,6 +120,12 @@ class _ProfilePageState extends State<ProfilePage> {
       icon: PhosphorIconsBold.heartbeat,
       searchKey: "profile.search.hr_zones",
       children: () => const [HeartRateZonesEditor()],
+    ),
+    (
+      titleKey: "profile.sleep",
+      icon: PhosphorIconsBold.moon,
+      searchKey: "profile.search.sleep",
+      children: () => const [ProfileSleepTargetsEditor()],
     ),
     (
       titleKey: "profile.notification",

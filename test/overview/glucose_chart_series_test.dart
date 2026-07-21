@@ -65,18 +65,42 @@ void main() {
       expect(series.spots, equals(series.realSpots));
     });
 
-    test('readings older than the cutoff are dropped', () {
+    test('keeps only the last reading just before the cutoff, drops the rest', () {
+      // The reading right below the cutoff must survive so its segment can enter
+      // the viewport from the left; readings before THAT are truly off-window.
       final series = GlucoseChartSeries(
-        entries: const [MapEntry(0, 100), MapEntry(3600, 110)],
+        entries: const [
+          MapEntry(0, 90),
+          MapEntry(500, 100),
+          MapEntry(3600, 110),
+        ],
         latestSecs: 3600,
-        cutoff: 1000, // drops the key-0 reading
+        cutoff: 1000,
         shift: 0,
         glucose: glucoseState(),
         colors: GlucoseColors.standard,
       );
       series.buildBars();
-      expect(series.realSpots, hasLength(1));
-      expect(series.realSpots.single.y, 110);
+      expect(series.realSpots, hasLength(2));
+      expect(series.realSpots.map((spot) => spot.y), [100, 110]);
+    });
+
+    test('a window between two distant readings still renders a line', () {
+      // The visible window (cutoff..windowEnd) contains NO readings: the last
+      // before a gap sits left of it, the first after sits right of it. Both
+      // neighbours are kept so the spanning line crosses the empty viewport
+      // instead of leaving it blank.
+      final series = GlucoseChartSeries(
+        entries: const [MapEntry(0, 100), MapEntry(36000, 120)],
+        latestSecs: 36000,
+        cutoff: 10000,
+        windowEnd: 20000,
+        shift: 0,
+        glucose: glucoseState(),
+        colors: GlucoseColors.standard,
+      );
+      series.buildBars();
+      expect(series.realSpots.map((spot) => spot.y), [100, 120]);
     });
 
     test('shows dots only for sparse series (< 60 points)', () {

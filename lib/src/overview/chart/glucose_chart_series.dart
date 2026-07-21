@@ -57,10 +57,7 @@ class GlucoseChartSeries {
   void _collectSpots() {
     int? prevValue;
     double? prevX;
-    for (final entry in entries) {
-      if (entry.key < cutoff || entry.key > windowEnd) {
-        continue;
-      }
+    for (final entry in _windowSlice()) {
       final x = (entry.key - latestSecs) / 3600.0 + shift;
       final value = entry.value;
       if (prevValue != null) {
@@ -73,6 +70,34 @@ class GlucoseChartSeries {
       prevValue = value;
       prevX = x;
     }
+  }
+
+  /// The readings to plot: everything inside `[cutoff, windowEnd]` PLUS the one
+  /// reading just outside each edge. Those neighbours are what let a segment that
+  /// only CROSSES the viewport render — the last reading before a gap sitting
+  /// off-screen to the left, or a window that falls entirely between two distant
+  /// readings. fl_chart clips the off-window points at the axis bounds, so they
+  /// draw the entering/spanning line without being visible as points. Without
+  /// them such a window renders blank until fresh in-window data arrives.
+  /// [entries] is oldest-first, so the last sub-cutoff entry and the first
+  /// past-windowEnd entry are the immediate neighbours.
+  List<MapEntry<int, int>> _windowSlice() {
+    final slice = <MapEntry<int, int>>[];
+    MapEntry<int, int>? beforeLeft;
+    for (final entry in entries) {
+      if (entry.key < cutoff) {
+        beforeLeft = entry;
+        continue;
+      }
+      slice.add(entry);
+      if (entry.key > windowEnd) {
+        break;
+      }
+    }
+    if (beforeLeft != null) {
+      slice.insert(0, beforeLeft);
+    }
+    return slice;
   }
 
   /// Where two readings straddle a target line, insert a point EXACTLY at the

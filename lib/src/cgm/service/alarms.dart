@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import 'audio_output.dart';
 import '../../injection/active_insulin.dart';
 import '../../localization/service_strings.dart';
 import '../../nutrition/meal/meal_store.dart';
@@ -117,7 +118,6 @@ class G7AlarmManager {
   // ensureDndAccess()/fireTest() (which log nothing); the service isolate passes
   // its store so glucose/signal events are recorded.
   final CgmStore? _store;
-  final AudioPlayer _player = AudioPlayer(playerId: 'insulink_alarm');
   final ServiceStrings _strings = ServiceStrings();
   G7AlarmLevel _last = G7AlarmLevel.none;
   bool _lowAdvisoryArmed = true;
@@ -872,18 +872,36 @@ class G7AlarmManager {
       return;
     }
     try {
-      await _player.play(
-        AssetSource(asset),
-        ctx: AudioContext(
-          android: const AudioContextAndroid(
-            usageType: AndroidUsageType.alarm,
-            contentType: AndroidContentType.sonification,
-            audioFocus: AndroidAudioFocus.gainTransient,
-          ),
-        ),
-      );
+      final headphones = await AudioOutput().headphonesConnected();
+      debugPrint('insulink alarm routing: headphones=$headphones');
+      // A fresh player per alarm: the routing context (media for headphones,
+      // alarm for the speaker) is applied cleanly at first play. A reused player
+      // kept the attributes it was first configured with, so the alarm→media
+      // switch never took and it still duplicated to the speaker.
+      final player = AudioPlayer();
+      player.onPlayerComplete.listen((_) => player.dispose());
+      await player.play(AssetSource(asset), ctx: _alarmContext(headphones));
     } catch (_) {
       // ponytail: audio is best-effort; the visual notification already fired.
     }
   }
+
+  /// Route the alarm to headphones alone when they are connected (media usage
+  /// plays only to the active headset, not duplicated to the speaker like the
+  /// alarm stream is); otherwise keep the ALARM stream so it sounds through a
+  /// silenced ringer / DnD / screen-off.
+  // ponytail: the headphone path follows MEDIA volume + DnD, not the alarm
+  // slider — the trade-off the user picked (headphones-preferred). Tighten with
+  // setPreferredDevice/setCommunicationDevice (API 31+) if strict routing is
+  // ever needed.
+  AudioContext _alarmContext(bool headphones) => AudioContext(
+    android: AudioContextAndroid(
+      usageType:
+          headphones ? AndroidUsageType.media : AndroidUsageType.alarm,
+      contentType: headphones
+          ? AndroidContentType.music
+          : AndroidContentType.sonification,
+      audioFocus: AndroidAudioFocus.gainTransient,
+    ),
+  );
 }

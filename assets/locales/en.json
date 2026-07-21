@@ -337,6 +337,16 @@
       "awake": "Awake",
       "restless": "Restless"
     },
+    "sleep_stats": {
+      "index": "Sleep index",
+      "time_to_solid": "Time to deep sleep",
+      "deep": "Deep sleep",
+      "interruption": "Interruptions",
+      "edit_targets": "Target ranges",
+      "min": "Min",
+      "max": "Max",
+      "save": "Save"
+    },
     "hr_min": "Min",
     "hr_max": "Max",
     "hr_zones": {
@@ -382,6 +392,7 @@
     "low_warning": "Running low",
     "no_events": "No events on this day",
     "empty": "No supplies tracked yet",
+    "delete_confirm": "Delete this item?",
     "event_delivery": "Delivery",
     "event_run_out": "Supply runs out"
   },
@@ -670,6 +681,7 @@
     "label": "Profile",
     "sport_goals": "Sport goals",
     "nutrition_goals": "Nutrition goals",
+    "sleep": "Sleep",
     "account": {
       "_": "Account",
       "name": "Name",
@@ -806,7 +818,8 @@
       "prediction": "prediction forecast future trend minutes",
       "sport_goals": "sport goals daily steps distance calories targets",
       "nutrition_goals": "nutrition goals daily carbs protein water hydration",
-      "hr_zones": "pulse heart rate zones bpm elevated high green orange red"
+      "hr_zones": "pulse heart rate zones bpm elevated high green orange red",
+      "sleep": "sleep quality deep sleep onset interruptions sleep index target range"
     },
     "prediction": {
       "_": "Prediction",
