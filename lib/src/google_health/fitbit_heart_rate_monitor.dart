@@ -129,7 +129,6 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   Future<void> _findAndConnect() async {
     final known = await _knownFitbit();
     if (known != null) {
-      debugPrint('[fitbit-hr] using known device ${known.remoteId.str}');
       await _connect(known);
       return;
     }

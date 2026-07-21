@@ -392,12 +392,8 @@ class CgmTaskHandler extends TaskHandler {
     }
     _lastDetectionAt = DateTime.now();
     try {
-      final result = await _detectionRunner.run(
+      await _detectionRunner.run(
         (training) async => _alarms?.notifyTrainingDetected(training),
-      );
-      _log(
-        'cardio scan: ${result.logPoints} gps pts '
-        '(${result.consideredPoints} new), ${result.detected} detected',
       );
     } catch (e) {
       _log('training detection error: $e');

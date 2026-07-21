@@ -873,7 +873,6 @@ class G7AlarmManager {
     }
     try {
       final headphones = await AudioOutput().headphonesConnected();
-      debugPrint('insulink alarm routing: headphones=$headphones');
       // A fresh player per alarm: the routing context (media for headphones,
       // alarm for the speaker) is applied cleanly at first play. A reused player
       // kept the attributes it was first configured with, so the alarm→media

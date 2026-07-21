@@ -40,7 +40,6 @@ class Locales {
     try {
       supportedLocales = localeNames.map((name) => Locale(name)).toList();
       final pref = await LocalePreference.init();
-      log('prefLocale: ${pref.locale}');
       Locales.selectedLocale = pref.locale ?? supportedLocales.first;
     } catch (e) {
       log('error while loading locale: $e');

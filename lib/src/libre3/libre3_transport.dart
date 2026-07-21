@@ -288,7 +288,6 @@ class Libre3Transport {
       ..setRange(0, 16, _r1)
       ..setRange(16, 32, _r2)
       ..setRange(32, 36, pin);
-    _log('Libre 3 challenge: pin ${_hex(pin)}');
     final encrypted = await crypto.encryptChallenge(_nonce1, payload);
     await _sendFramed(_challengeData!, encrypted);
     await _writeCommand(0x08); // challenge sent
@@ -523,7 +522,6 @@ class Libre3Transport {
     List<int> data,
     StreamController<Uint8List> sink,
   ) async {
-    _log('Libre 3 ch$channelId frag: ${_hex(data)}');
     final buffer = _dataBuffers.putIfAbsent(channelId, () => <int>[])
       ..addAll(data);
     try {
