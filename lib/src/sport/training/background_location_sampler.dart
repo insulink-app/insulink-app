@@ -90,12 +90,23 @@ class BackgroundLocationSampler {
   /// At or above this speed (km/h) a fix counts as "moving" → keep streaming.
   static const _movingKmh = 3.0;
 
+  /// Reports whether the OS activity recognition currently says "still". While
+  /// it does, the idle one-shot GPS poll is skipped entirely: the recognition
+  /// stream is hardware-batched and near-free, and it flips off "still" before
+  /// the next tick, so movement is still noticed promptly — without a GPS fix
+  /// every [_idleInterval] around the clock. Defaults to never-still (poll as
+  /// before) when no recognizer is wired up or permitted.
+  final bool Function() _isStill;
+
   BackgroundLocationSampler({
     this._store = const SportStore(),
     void Function(String)? onLog,
+    this._isStill = _neverStill,
   }) : _onLog = (onLog ?? _noLog);
 
   static void _noLog(String _) {}
+
+  static bool _neverStill() => false;
 
   /// Called by the service timer; keeps the stream open while a training records
   /// or we're recently moving (auto-detection), otherwise one-shot polls at the
@@ -118,6 +129,9 @@ class BackgroundLocationSampler {
       }
       final last = _lastSampledAt;
       if (last != null && DateTime.now().difference(last) < _idleInterval) {
+        return;
+      }
+      if (_isStill()) {
         return;
       }
       _lastSampledAt = DateTime.now();

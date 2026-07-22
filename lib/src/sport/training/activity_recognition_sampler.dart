@@ -20,6 +20,11 @@ class ActivityRecognitionSampler {
 
   ActivityRecognitionSampler([this._store = const SportStore()]);
 
+  /// Whether the most recent OS activity change says the device is still.
+  /// False while unknown (no sample yet / permission missing), so consumers
+  /// fall back to their own polling.
+  bool get isStill => _last == ActivityKind.still;
+
   /// Idempotent: subscribe once. We do NOT call the plugin's `checkPermission()`
   /// here — it needs an attached Activity, which this foreground-service isolate
   /// lacks, so it throws `ACTIVITY_NOT_ATTACHED` and used to abort sampling

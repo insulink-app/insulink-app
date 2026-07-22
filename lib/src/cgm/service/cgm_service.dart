@@ -73,7 +73,10 @@ class CgmTaskHandler extends TaskHandler {
   /// (flutter_foreground_task hosts only one), independent of the BLE pipeline.
   /// No-ops unless location is permitted — glucose reading never depends on it.
   late final BackgroundLocationSampler _locationSampler =
-      BackgroundLocationSampler(onLog: _log);
+      BackgroundLocationSampler(
+        onLog: _log,
+        isStill: () => _activitySampler.isStill,
+      );
 
   /// Logs OS activity-recognition changes (cycling vs. in-vehicle) so the cardio
   /// auto-detector can reject bus/train rides. Permission-gated; no-op otherwise.
@@ -625,13 +628,18 @@ class CgmTaskHandler extends TaskHandler {
     unawaited(_flushBackgroundPulse(monitor!));
   }
 
-  /// Persist + sync the band samples buffered since the last flush, at most once
-  /// a minute (the pulse store buckets to one point per minute, so flushing
-  /// faster only rewrites today's blob). Mirrors `GoogleHealthState._flushLivePulse`.
+  /// Persist + sync the band samples buffered since the last flush — once a
+  /// minute while a viewer watches, every five minutes otherwise. The pulse
+  /// store buckets to one point per minute either way; the sparser idle cadence
+  /// is about the POST, which wakes the cellular radio out of its low-power
+  /// state each time. Mirrors `GoogleHealthState._flushLivePulse`.
   Future<void> _flushBackgroundPulse(FitbitHeartRateMonitor monitor) async {
     final now = DateTime.now();
     final cutoff = _lastPulseFlush;
-    if (cutoff != null && now.difference(cutoff).inSeconds < 60) {
+    final flushGap = PulseSync().liveViewer
+        ? const Duration(minutes: 1)
+        : const Duration(minutes: 5);
+    if (cutoff != null && now.difference(cutoff) < flushGap) {
       return;
     }
     _lastPulseFlush = now;
