@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import 'libre3_crypto.dart';
+import 'libre3_security_transfer.dart';
 import 'libre3_uuids.dart';
 
 /// flutter_blue_plus transport + security handshake for the FreeStyle Libre 3.
@@ -14,9 +15,9 @@ import 'libre3_uuids.dart';
 /// `Libre3GattCallback` ordered sequence; every crypto primitive is delegated to
 /// [Libre3Crypto] (the Abbott blob). See docs/LIBRE3.md for the byte-level flow.
 ///
-/// ponytail: the exact fragment framing of the security characteristics and the
-/// event interleaving are the parts to confirm against a real sensor — the
-/// happy-path ordering below follows Juggluco but cannot be validated headless.
+/// The ordering below follows Juggluco and has completed against a real sensor;
+/// incoming fragment reassembly is [Libre3SecurityTransfer], which tolerates a
+/// padded final frame and fails fast on a framing violation.
 class Libre3Transport {
   Libre3Transport({required this.device, required this.crypto, this.blePin});
 
@@ -57,10 +58,7 @@ class Libre3Transport {
   int _commandPhase = 1;
   // Reassembly of a cert/challenge transfer whose length COMMAND_RESPONSE
   // announced via preparedata; fragments carry an incrementing sequence byte.
-  int _rdtLength = 0;
-  Uint8List _rdtData = Uint8List(0);
-  int _rdtBytes = 0;
-  int _rdtSequence = -1;
+  final Libre3SecurityTransfer _transfer = Libre3SecurityTransfer();
   // Challenge nonce material.
   final Uint8List _r1 = Uint8List(16);
   final Uint8List _r2 = Uint8List(16);
@@ -212,58 +210,49 @@ class Libre3Transport {
       _fail('preparedata unknown signal $sig');
       return;
     }
-    _rdtLength = length;
-    _rdtData = Uint8List(length);
-    _rdtBytes = 0;
-    _rdtSequence = -1;
+    _transfer.expect(length);
   }
 
   /// A CERT_DATA / CHALLENGE_DATA fragment: `[sequence, ...data]`. Reassembles
-  /// into [_rdtData]; when the announced length is complete, runs [onComplete]
-  /// (Juggluco's `getsecdata`).
+  /// through [_transfer]; when the announced length is complete, runs
+  /// [onComplete] (Juggluco's `getsecdata`). A framing violation throws inside a
+  /// notification listener, where an escaping error would leave the handshake
+  /// hanging until its timeout — so it is caught and routed to [_fail].
   void _onSecData(List<int> value, Future<void> Function() onComplete) {
-    if (value.isEmpty) {
-      return;
-    }
-    final sequence = value[0];
-    if (sequence != _rdtSequence + 1) {
-      _fail('sec data out of sequence: $sequence != ${_rdtSequence + 1}');
-      return;
-    }
-    final length = value.length - 1;
-    _rdtData.setRange(_rdtBytes, _rdtBytes + length, value, 1);
-    _rdtBytes += length;
-    _rdtSequence = sequence;
-    if (_rdtBytes >= _rdtLength) {
-      _drive(onComplete);
+    try {
+      if (_transfer.add(value)) {
+        _drive(onComplete);
+      }
+    } on Libre3TransferException catch (error) {
+      _fail(error.message);
     }
   }
 
   /// A fully reassembled cert transfer: 140 B = sensor patch cert, 65 B = sensor
   /// ephemeral public key.
   Future<void> _receivedCert() async {
-    _log('Libre 3 received cert transfer ($_rdtLength B)');
-    if (_rdtLength == 140) {
-      await crypto.setPatchCertificate(_rdtData);
+    _log('Libre 3 received cert transfer (${_transfer.length} B)');
+    if (_transfer.length == 140) {
+      await crypto.setPatchCertificate(_transfer.data);
       _commandPhase = 4;
       await _writeCommand(0x0D);
-    } else if (_rdtLength == 65) {
-      await crypto.setPatchEphemeral(_rdtData);
+    } else if (_transfer.length == 65) {
+      await crypto.setPatchEphemeral(_transfer.data);
       await _writeCommand(0x11);
     } else {
-      _fail('unexpected cert length $_rdtLength');
+      _fail('unexpected cert length ${_transfer.length}');
     }
   }
 
   /// A fully reassembled challenge transfer: 23 B = r1 + nonce (respond), 67 B =
   /// encrypted `[r2‖r1‖kEnc‖ivEnc]` reply (finish).
   Future<void> _receivedChallenge() async {
-    if (_rdtLength == 23) {
-      await _respondToChallenge(_rdtData);
-    } else if (_rdtLength == 67) {
-      await _finishChallenge(_rdtData);
+    if (_transfer.length == 23) {
+      await _respondToChallenge(_transfer.data);
+    } else if (_transfer.length == 67) {
+      await _finishChallenge(_transfer.data);
     } else {
-      _fail('unexpected challenge length $_rdtLength');
+      _fail('unexpected challenge length ${_transfer.length}');
     }
   }
 

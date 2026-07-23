@@ -459,9 +459,9 @@ Notes:
 | Historic / backfill (gap-fill from sensor buffer) | ✅ working on real hardware — 7-byte `ControlHistory` → AES-CCM ch0 → raw write to `08981338` (boundary-snapped `from`); sensor replays on `historic` ch4, decoded ascending +5 min into the chart. Unit-tested; confirmed end-to-end 2026-07. |
 | Clinical / 1-min gap-fill (2 h buffer) | ✅ working on real hardware — `ClinicalControl` (`kind={1,1}`) → ch0 → raw write; sensor replays one 14-byte record per minute on `clinicalData` ch5 (lifeCount `[0..2)`, glucose `[10..12)`, decoded from real captures). Fills recent gaps at 1-min resolution where historic lags. Unit-tested against captured packets. |
 | Backend `ABBOTT_LIBRE3` type | ✅ wired (`SensorType.backendType`) |
-| BLE transport + handshake (`Libre3Transport`) | ✅ code ported from Juggluco; fragment framing + event order need on-device check |
+| BLE transport + handshake (`Libre3Transport`) | ✅ ported from Juggluco and **proven end-to-end on real hardware** — the 2026-07 backfill round trip only decrypts under the `kEnc`/`ivEnc` that `decryptChallenge` derives, so a completed handshake is a precondition of it. Fragment reassembly is now `Libre3SecurityTransfer` (clamped + unit-tested) |
 | `Libre3Connection` (`CgmConnection`) + service dispatch | ✅ wired — the service builds it for `SensorType.abbottLibre3` |
-| Crypto bridge (`Libre3Crypto` + `Libre3SecurityPlugin.kt`) | 🔧 channel registered on BOTH engines (fixed service-isolate `MissingPluginException`); native anti-tamper `bl` NOP'd in `libre3bridge.cpp` (fixed `JNI_OnLoad` SIGSEGV); handshake re-test pending |
+| Crypto bridge (`Libre3Crypto` + `Libre3SecurityPlugin.kt`) | ✅ channel registered on BOTH engines (fixed service-isolate `MissingPluginException`); native anti-tamper `bl` NOP'd in `libre3bridge.cpp` (fixed `JNI_OnLoad` SIGSEGV). Every blob op (`initKeys` … `exportAuthKey`, `intEncrypt`/`intDecrypt`) has since run against a real sensor — Juggluco's extra per-call anti-debug layer stayed unported and was not needed |
 | Pairing UI (sensor-type selector + NFC activation form) + de/en locale | ✅ done — pick "FreeStyle Libre 3", scan to activate |
 | Native dlopen bridge (`libre3bridge.cpp` + CMake + Kotlin) | ✅ shipped, compiles into the APK; bridges Abbott `process1`/`process2` |
 | AES-128-CCM data path (`Libre3Ccm`, pointycastle) | ✅ done, RFC-3610 tested; Libre nonce/MAC wiring marked for on-device check |
@@ -469,10 +469,27 @@ Notes:
 | Abbott `liblibre3extension.so` (from **Juggluco's** APK) | ⛔ user-extracted — `jniLibs/README.md`. The ONE remaining artifact. |
 
 The whole clean-room pipeline (NFC → BLE handshake orchestration → decode →
-persist) is implemented, compiles, and the pure logic is unit-tested. The two
-remaining pieces both require a physical Libre 3: supplying Abbott's binaries +
-the `dlopen` shim, and confirming the handshake's fragment framing / event
-ordering on a real sensor.
+persist) is implemented, unit-tested, and has run end-to-end against a physical
+sensor. The one thing a fresh checkout still needs is the user-supplied Abbott
+binary (`jniLibs/README.md`) — without it the bridge returns `no_blob` and only
+the G7 works.
+
+### Handshake robustness (`Libre3SecurityTransfer`)
+
+Fragment reassembly for the cert/challenge channels is its own class so the
+framing rules are testable without a sensor
+(`test/libre3/libre3_security_transfer_test.dart`):
+
+- **The copy is clamped to the announced length.** A last frame carrying more
+  bytes than the transfer still needs (the sensor pads its frames the same way
+  our `_sendFramed` writes do) used to overrun the destination and throw
+  `RangeError` *inside the notification listener* — nothing catches it there, so
+  the handshake stalled silently until its 40 s timeout instead of failing with a
+  reason. The surplus is now dropped.
+- **A fragment arriving before any `preparedata` announcement, or with a skipped
+  or repeated sequence byte, fails the handshake immediately** via
+  `Libre3TransferException` → `_fail`, rather than reassembling misaligned bytes
+  that surface much later as an unexplained `challenge r1/r2 mismatch`.
 
 ## Sources
 
