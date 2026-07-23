@@ -10,6 +10,7 @@ import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
+import 'package:insulink/src/inventory/inventory_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -55,6 +56,7 @@ typedef AppPreferences = ({
   FoodState food,
   MealState meals,
   NutritionLayoutState nutritionLayout,
+  InventoryState inventory,
 });
 
 Future<void> main() async {
@@ -237,6 +239,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.food),
         ChangeNotifierProvider(create: (_) => prefs.meals),
         ChangeNotifierProvider(create: (_) => prefs.nutritionLayout),
+        ChangeNotifierProvider(create: (_) => prefs.inventory),
       ],
       child: _AppLifecycle(child: child),
     );
@@ -302,6 +305,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       food: await FoodState.load(),
       meals: await MealState.load(),
       nutritionLayout: await NutritionLayoutState.load(),
+      inventory: await InventoryState.load(),
     );
   }
 }

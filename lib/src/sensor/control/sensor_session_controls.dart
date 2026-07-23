@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../alert/alert.dart';
 import '../../cgm/cgm_controller.dart';
+import '../../injection/biometric_auth.dart';
 import '../../localization/locale_text.dart';
+import '../../localization/locales.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
@@ -76,8 +78,21 @@ class SensorSessionControls extends StatelessWidget {
       bodyKey: 'sensor.control.stop_sensor_body',
       confirmKey: 'sensor.control.stop_sensor_confirm',
       destructive: true,
-      onConfirm: () => controller.forgetSensor(),
+      onConfirm: () => _authThenForget(context),
     );
+  }
+
+  /// Forgetting a sensor permanently deletes its key and history, so after the
+  /// confirmation it requires the device fingerprint (PIN fallback when none is
+  /// enrolled). A failed/declined check leaves the pairing untouched.
+  Future<void> _authThenForget(BuildContext context) async {
+    final ok = await BiometricAuth().confirm(
+      Locales.string(context, 'sensor.control.forget_auth_reason'),
+      allowDeviceCredential: true,
+    );
+    if (ok) {
+      await controller.forgetSensor();
+    }
   }
 
   void _confirm(

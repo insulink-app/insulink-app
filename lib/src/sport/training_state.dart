@@ -411,6 +411,24 @@ class TrainingState extends ChangeNotifier {
     await _saveSessions();
   }
 
+  /// The session of the same routine logged right before [session] — the one to
+  /// compare an end-of-workout summary against. Null when it is the first of its
+  /// routine. Not keyed on order in the list: compares by start time so an edited
+  /// or re-synced logbook still finds the true predecessor.
+  WorkoutSession? previousSessionOf(WorkoutSession session) {
+    WorkoutSession? previous;
+    for (final other in _sessions) {
+      if (other.routineId != session.routineId ||
+          other.startedAtMs >= session.startedAtMs) {
+        continue;
+      }
+      if (previous == null || other.startedAtMs > previous.startedAtMs) {
+        previous = other;
+      }
+    }
+    return previous;
+  }
+
   /// The most recent logged set for [exerciseId] at [setIndex] (0-based) across
   /// past sessions — powers the "last time" comparison in the runner. Sessions
   /// are appended in order, so iterating in reverse yields newest first.

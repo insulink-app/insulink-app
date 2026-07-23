@@ -60,6 +60,19 @@ class MealState extends ChangeNotifier {
     NutritionSync().pushMeals();
   }
 
+  /// Replaces a logged meal in place (edit-after-the-fact). Matches by identity,
+  /// so the caller passes the exact instance it holds; a no-op if it's gone.
+  Future<void> updateMeal(Meal old, Meal updated) async {
+    final index = _meals.indexWhere((meal) => identical(meal, old));
+    if (index < 0) {
+      return;
+    }
+    _meals[index] = updated;
+    notifyListeners();
+    await _store.saveMeals(_meals);
+    NutritionSync().pushMeals();
+  }
+
   Future<void> removeMeal(Meal meal) async {
     _meals.remove(meal);
     notifyListeners();

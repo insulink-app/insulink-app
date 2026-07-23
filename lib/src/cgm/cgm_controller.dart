@@ -128,7 +128,14 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// slides out of the chart's own time window. Bounded to the last 24 h (the
   /// widest window the chart offers) so we never build more than a day of points;
   /// before a session start is known, falls back to the cached [_byTime].
-  SplayTreeMap<int, int> get byTime => _byTimeWithin(const Duration(hours: 24));
+  ///
+  /// Spans sensor swaps ([includePreSession]): a fresh sensor's start is only
+  /// minutes old, so clipping to it would drop the previous sensor's readings and
+  /// leave the 24 h chart showing only the new session. Pre-session points are
+  /// keyed by negative seconds and the chart plots them left of x=0, as
+  /// [chartHistory] already does.
+  SplayTreeMap<int, int> get byTime =>
+      _byTimeWithin(const Duration(hours: 24), includePreSession: true);
 
   /// Wider history for the full-screen chart's interval navigation (paging back
   /// through earlier days), same session-relative-seconds keying as [byTime].

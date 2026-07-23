@@ -3,6 +3,7 @@ import 'package:insulink/src/cgm/event_sync.dart';
 import 'package:insulink/src/cgm/glucose_sync.dart';
 import 'package:insulink/src/google_health/google_health_sync.dart';
 import 'package:insulink/src/google_health/pulse_sync.dart';
+import 'package:insulink/src/inventory/inventory_sync.dart';
 import 'package:insulink/src/nutrition/nutrition_sync.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/sport_sync.dart';
@@ -31,6 +32,7 @@ class AccountSync {
       EventSync().pullHistory(context),
       SportSync().pull(context),
       NutritionSync().pull(context),
+      InventorySync().pull(context),
       GoogleHealthSync().pull(context),
       PulseSync().pull(context),
     ]);

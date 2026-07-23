@@ -59,10 +59,6 @@ class Libre3Connection implements CgmConnection {
   /// instead of overwriting it with only what the sensor re-streams.
   bool _historyLoaded = false;
 
-  /// Whether this connection already asked the sensor to replay its buffered
-  /// history (gap-fill). Reset on each connect so every reconnect catches up.
-  bool _backfillRequested = false;
-
   String get _key => store.resolvedKey ?? '';
 
   @override
@@ -220,8 +216,7 @@ class Libre3Connection implements CgmConnection {
     }
     onReading?.call(reading);
     onUpdate?.call();
-    if (!_backfillRequested && _transport != null) {
-      _backfillRequested = true;
+    if (_transport != null) {
       _requestGapFill(reading.secsSinceStart, priorMax);
     }
   }
@@ -231,7 +226,7 @@ class Libre3Connection implements CgmConnection {
   /// tunable cap (the real buffer may be shorter or longer).
   static const int _maxBackfillMinutes = 6 * 60;
 
-  /// Don't pester the patch for gaps smaller than this — the normal 1-min stream
+  /// Don't pester the patch for gaps smaller than this c— the normal 1-min stream
   /// needs no catch-up; only a real disconnect leaves a bigger hole.
   static const int _minBackfillGapMin = 2;
 
@@ -245,7 +240,10 @@ class Libre3Connection implements CgmConnection {
   /// also pull the coarser 5-minute historic buffer for the overflow. The two
   /// writes are serialised (Juggluco queues patch-control commands one at a
   /// time). Replies merge back through [_onClinical] / [_onHistoric]. Only fires
-  /// on a real gap ([backfillStartLifeCount]).
+  /// on a real gap ([backfillStartLifeCount]) — checked on EVERY live reading,
+  /// not once per connect, so a gap that opens on the continuous link (dropped
+  /// notifications without a disconnect) is caught the moment the stream resumes,
+  /// while the normal 1-min cadence (1-min gap, below the threshold) never fires.
   Future<void> _requestGapFill(int liveSecs, int? priorMax) async {
     final transport = _transport;
     if (transport == null || !_activeBackfillWrite) {
@@ -254,10 +252,6 @@ class Libre3Connection implements CgmConnection {
     final liveLifeCount = liveSecs ~/ 60;
     final from = backfillStartLifeCount(liveSecs, priorMax);
     if (from == null) {
-      _log(
-        'Libre 3 gap-fill: skipped (no gap; live $liveLifeCount, '
-        'prior ${priorMax == null ? '—' : priorMax ~/ 60})',
-      );
       return;
     }
     _log(
@@ -397,7 +391,6 @@ class Libre3Connection implements CgmConnection {
     _glucoseSub = _historicSub = _clinicalSub = _connSub = null;
     await _transport?.dispose();
     _transport = null;
-    _backfillRequested = false;
   }
 
   @override

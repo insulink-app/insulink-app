@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
+import 'package:http/http.dart' show Response;
 import 'package:insulink/src/google_health/intraday_pulse_store.dart';
 import 'package:insulink/src/request/request.dart';
 
@@ -19,14 +20,23 @@ import 'package:insulink/src/request/request.dart';
 class PulseSync {
   static const _store = IntradayPulseStore();
 
-  /// How often the live bpm is relayed. The band delivers ~1 Hz and the panel
-  /// reads at the same rate, so anything slower is visibly laggy and anything
-  /// faster sends the same number twice.
-  static const _liveEvery = Duration(seconds: 1);
+  /// Live relay cadence. While a viewer is actually watching (the panel's
+  /// running-routine vitals bar polls the server ~1 Hz) the bpm is worth 1 Hz;
+  /// otherwise a 1 Hz HTTPS relay would pin the cellular radio in its high-power
+  /// state around the clock — the single biggest background battery cost — so we
+  /// drop to a slow keepalive that still lets us notice a viewer appearing.
+  ///
+  /// Demand is driven by the server, not by local workout state: the push
+  /// response carries whether a viewer polled recently ([_liveViewer]). That is
+  /// the only signal that works when the workout runs on the panel while the app
+  /// is closed — the phone never sees such a session locally.
+  static const _liveActiveEvery = Duration(seconds: 1);
+  static const _liveIdleEvery = Duration(seconds: 20);
 
   static Timer? _timer;
   static DateTime? _lastLiveSend;
   static bool _liveInFlight = false;
+  static bool _liveViewer = false;
   static final Set<String> _dirtyDays = {};
 
   /// Relays the band's current bpm so the user's other devices — the web panel's
@@ -43,9 +53,10 @@ class PulseSync {
   /// beat costs nothing — the next one is a second away and carries a better
   /// value than the one we would have queued.
   void pushLive(int bpm) {
+    final every = _liveViewer ? _liveActiveEvery : _liveIdleEvery;
     final now = DateTime.now();
     final last = _lastLiveSend;
-    if (_liveInFlight || (last != null && now.difference(last) < _liveEvery)) {
+    if (_liveInFlight || (last != null && now.difference(last) < every)) {
       return;
     }
     _lastLiveSend = now;
@@ -54,8 +65,23 @@ class PulseSync {
       Request.post(
         url: '/health/pulse/live/push/',
         body: {'b': bpm},
-      ).send(null).whenComplete(() => _liveInFlight = false),
+      ).send(null).then(_adoptViewerFlag).whenComplete(() => _liveInFlight = false),
     );
+  }
+
+  /// Whether the server reported a live viewer on the last [pushLive] response —
+  /// callers that pick their own sync cadence read the same signal.
+  bool get liveViewer => _liveViewer;
+
+  /// Reads the push response's `live` flag: true while a device is polling the
+  /// server's live pulse (the panel's running-routine vitals bar). Drives the
+  /// [pushLive] cadence, so 1 Hz costs only run while something is watching.
+  void _adoptViewerFlag(Response? response) {
+    if (response == null) {
+      return;
+    }
+    final body = jsonDecode(response.body);
+    _liveViewer = body is Map && body['live'] == true;
   }
 
   void push(Set<String> dayKeys) {

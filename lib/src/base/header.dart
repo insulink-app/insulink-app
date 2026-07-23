@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/header_account_button.dart';
 import 'package:insulink/src/base/header_device_button.dart';
+import 'package:insulink/src/base/header_inventory_button.dart';
 
 class Header extends StatefulWidget implements PreferredSizeWidget {
   /// Title widget for the currently shown page (see [AppPageBody.title]).
@@ -23,7 +24,11 @@ class _HeaderState extends State<Header> {
       centerTitle: false,
       title: widget.title,
       titleSpacing: 10,
-      actions: <Widget>[HeaderDeviceButton(), HeaderAccountButton()],
+      actions: <Widget>[
+        HeaderInventoryButton(),
+        HeaderDeviceButton(),
+        HeaderAccountButton(),
+      ],
       automaticallyImplyLeading: false,
     );
   }

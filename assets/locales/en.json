@@ -245,7 +245,8 @@
       "end_session_title": "End session?",
       "end_session_body": "Reading will stop. The pairing is kept — you can reconnect later.",
       "stop_sensor_title": "Stop sensor?",
-      "stop_sensor_body": "The sensor will be unpaired: the stored key and history are deleted. The physical sensor keeps running."
+      "stop_sensor_body": "The sensor will be unpaired: the stored key and history are deleted. The physical sensor keeps running.",
+      "forget_auth_reason": "Confirm to forget this sensor"
     },
     "log": "Log",
     "copy": "Copy",
@@ -336,6 +337,16 @@
       "awake": "Awake",
       "restless": "Restless"
     },
+    "sleep_stats": {
+      "index": "Sleep index",
+      "time_to_solid": "Time to deep sleep",
+      "deep": "Deep sleep",
+      "interruption": "Interruptions",
+      "edit_targets": "Target ranges",
+      "min": "Min",
+      "max": "Max",
+      "save": "Save"
+    },
     "hr_min": "Min",
     "hr_max": "Max",
     "hr_zones": {
@@ -348,6 +359,42 @@
   },
   "connections": {
     "label": "Connections"
+  },
+  "inventory": {
+    "label": "Inventory",
+    "calendar": "Calendar",
+    "add": "Add",
+    "name": "Name",
+    "stock": "Current stock",
+    "base_stock": "Base stock",
+    "stock_of": "# of ## units",
+    "set_stock": "Set stock",
+    "days_per_unit": "How long does one unit last? (days)",
+    "type": "Type",
+    "type_sensor": "Sensor",
+    "type_pump": "Pump",
+    "type_other": "Other",
+    "brand": "Sensor type",
+    "brand_libre": "FreeStyle Libre 3",
+    "brand_dexcom": "Dexcom G7",
+    "brand_other": "Other",
+    "deliveries": "Deliveries",
+    "no_deliveries": "No deliveries planned yet",
+    "quantity": "Quantity",
+    "delivery": "Delivery",
+    "date": "Date",
+    "save": "Save",
+    "units": "# units",
+    "runs_out": "Lasts until # (## days left)",
+    "runs_out_never": "Lasts indefinitely",
+    "surplus": "Surplus before delivery: #",
+    "shortage_warning": "Shortage before the next delivery",
+    "low_warning": "Running low",
+    "no_events": "No events on this day",
+    "empty": "No supplies tracked yet",
+    "delete_confirm": "Delete this item?",
+    "event_delivery": "Delivery",
+    "event_run_out": "Supply runs out"
   },
   "nutrition": {
     "label": "Nutrition",
@@ -513,6 +560,13 @@
       "ended_elsewhere": "This workout was finished on another device.",
       "ended_elsewhere_confirm": "Got it"
     },
+    "summary": {
+      "_": "Summary",
+      "vs_previous": "Performance",
+      "first_time": "First workout of this routine",
+      "exercises": "Exercises",
+      "done": "Done"
+    },
     "health": {
       "import": "Import from Google Health",
       "note": "Syncs the last ~90 days from Google Health: daily steps, distance and calories plus your weight.",
@@ -627,6 +681,7 @@
     "label": "Profile",
     "sport_goals": "Sport goals",
     "nutrition_goals": "Nutrition goals",
+    "sleep": "Sleep",
     "account": {
       "_": "Account",
       "name": "Name",
@@ -701,6 +756,7 @@
     "silent": {
       "_": "Silent mode",
       "description": "Mute all notifications and alarms",
+      "auth_reason": "Confirm to enable silent mode",
       "warning": {
         "title": "Enable silent mode?",
         "body": "While silent mode is on you will receive NO alarms — not even for dangerously low or high glucose. A hypo can go unnoticed and become life-threatening. Only enable it if you keep an eye on your levels another way.",
@@ -762,7 +818,8 @@
       "prediction": "prediction forecast future trend minutes",
       "sport_goals": "sport goals daily steps distance calories targets",
       "nutrition_goals": "nutrition goals daily carbs protein water hydration",
-      "hr_zones": "pulse heart rate zones bpm elevated high green orange red"
+      "hr_zones": "pulse heart rate zones bpm elevated high green orange red",
+      "sleep": "sleep quality deep sleep onset interruptions sleep index target range"
     },
     "prediction": {
       "_": "Prediction",

@@ -21,7 +21,10 @@ import io.flutter.embedding.engine.FlutterEngine
 class InsulinkApplication : Application() {
     private val libre3ServiceListener = object : FlutterForegroundTaskLifecycleListener {
         override fun onEngineCreate(flutterEngine: FlutterEngine?) {
-            flutterEngine?.let { Libre3SecurityPlugin().register(it) }
+            flutterEngine?.let {
+                Libre3SecurityPlugin().register(it)
+                AudioOutputPlugin(applicationContext).register(it)
+            }
         }
 
         override fun onTaskStart(starter: FlutterForegroundTaskStarter) {}

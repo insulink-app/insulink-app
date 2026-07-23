@@ -11,5 +11,7 @@ class MainActivity : FlutterFragmentActivity() {
         // FreeStyle Libre 3 crypto bridge to Abbott's native blobs. No-op (returns
         // "no_blob") unless the shim + .so are present, so G7-only builds are fine.
         Libre3SecurityPlugin().register(flutterEngine)
+        // Headphone-detection for alarm routing (see AudioOutputPlugin).
+        AudioOutputPlugin(applicationContext).register(flutterEngine)
     }
 }

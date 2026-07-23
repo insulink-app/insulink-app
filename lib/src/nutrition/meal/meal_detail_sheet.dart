@@ -9,6 +9,7 @@ import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/nutrition/meal/meal_time.dart';
+import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/status_colors.dart';
@@ -27,10 +28,57 @@ Future<void> showMealDetail(BuildContext context, Meal meal) {
   );
 }
 
-class MealDetailSheet extends StatelessWidget {
+class MealDetailSheet extends StatefulWidget {
   const MealDetailSheet({super.key, required this.meal});
 
   final Meal meal;
+
+  @override
+  State<MealDetailSheet> createState() => _MealDetailSheetState();
+}
+
+class _MealDetailSheetState extends State<MealDetailSheet> {
+  /// The live meal shown, replaced in place on every inline edit so the sheet
+  /// reflects the change without reopening.
+  late Meal meal = widget.meal;
+
+  /// Persists an edit through [MealState] (matched by identity) and adopts the
+  /// new instance so subsequent edits build on it.
+  void _update(Meal updated) {
+    context.read<MealState>().updateMeal(meal, updated);
+    setState(() => meal = updated);
+  }
+
+  /// Opens the native date + time pickers to correct when the meal was logged.
+  Future<void> _editTime() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: meal.time,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (date == null || !mounted) {
+      return;
+    }
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(meal.time),
+    );
+    if (time == null) {
+      return;
+    }
+    _update(
+      meal.copyWith(
+        time: DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,35 +114,62 @@ class MealDetailSheet extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text.rich(
-          TextSpan(
-            text: meal.carbs.toStringAsFixed(0),
-            style: const TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.bold,
-              height: 1,
-            ),
-            children: [
-              TextSpan(
-                text: ' g ${Locales.string(context, 'nutrition.food.carbs')}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Text(
-          mealTimeLabel(meal.time),
-          style: TextStyle(
-            fontSize: 14,
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
+        Expanded(child: _carbs(context)),
+        _timeButton(context),
+      ],
+    );
+  }
+
+  /// The carbs headline. Editable inline for a manual meal; read-only when the
+  /// meal was dosed over the food database, where the total is the sum of the
+  /// listed products (edit those, not the total).
+  Widget _carbs(BuildContext context) {
+    const numberStyle = TextStyle(
+      fontSize: 34,
+      fontWeight: FontWeight.bold,
+      height: 1,
+    );
+    const suffixStyle = TextStyle(fontSize: 16, fontWeight: FontWeight.w600);
+    final suffix = ' g ${Locales.string(context, 'nutrition.food.carbs')}';
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (meal.entries.isEmpty)
+          SportEditableNumber(
+            valueText: meal.carbs.toStringAsFixed(0),
+            initial: meal.carbs,
+            min: 0,
+            max: 999,
+            width: 74,
+            style: numberStyle,
+            onSubmit: (value) => _update(meal.copyWith(carbs: value)),
+          )
+        else
+          Text(meal.carbs.toStringAsFixed(0), style: numberStyle),
+        Flexible(
+          child: Text(suffix, style: suffixStyle, overflow: TextOverflow.ellipsis),
         ),
       ],
+    );
+  }
+
+  /// The meal time, tappable to correct it via the native date/time pickers.
+  Widget _timeButton(BuildContext context) {
+    return TextButton(
+      onPressed: _editTime,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        mealTimeLabel(meal.time),
+        style: TextStyle(
+          fontSize: 14,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+      ),
     );
   }
 
@@ -113,14 +188,30 @@ class MealDetailSheet extends StatelessWidget {
             context,
             PhosphorIconsBold.drop,
             'injection.glucose',
-            '${meal.glucoseMgdl} mg/dL',
+            SportEditableNumber(
+              valueText: '${meal.glucoseMgdl} mg/dL',
+              initial: meal.glucoseMgdl.toDouble(),
+              min: 20,
+              max: 600,
+              width: 104,
+              onSubmit: (value) =>
+                  _update(meal.copyWith(glucoseMgdl: value.round())),
+            ),
           ),
           Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
           _statRow(
             context,
             PhosphorIconsBold.drop,
             'injection.bolus',
-            '${meal.bolus.toStringAsFixed(1)} E',
+            SportEditableNumber(
+              valueText: '${meal.bolus.toStringAsFixed(1)} E',
+              initial: meal.bolus,
+              min: 0,
+              max: 100,
+              decimal: true,
+              width: 88,
+              onSubmit: (value) => _update(meal.copyWith(bolus: value)),
+            ),
           ),
         ],
       ),
@@ -131,11 +222,11 @@ class MealDetailSheet extends StatelessWidget {
     BuildContext context,
     IconData icon,
     String labelKey,
-    String value,
+    Widget trailing,
   ) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Icon(icon, size: 20, color: scheme.onSurfaceVariant),
@@ -146,10 +237,7 @@ class MealDetailSheet extends StatelessWidget {
               style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.65)),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          trailing,
         ],
       ),
     );

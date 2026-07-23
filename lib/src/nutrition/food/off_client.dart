@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:http/http.dart' as http;
 
@@ -79,7 +78,6 @@ class OffClient {
       return null;
     }
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-    log(json.toString());
     if (json['status'] != 1 || json['product'] is! Map) {
       return null;
     }

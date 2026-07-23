@@ -19,9 +19,9 @@ injections and vitals. Android-first.
 - **Account sync:** an optional account (`api.insulink.de`) syncs glucose,
   sensors, events, meals, sport and vitals across devices.
 
-|      | Build Status                                                                                                                                                                      | Test Code Coverage                                                                                                                    |
-|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| main | [![Build Status](https://github.com/breuerlukas/insulink/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/breuerlukas/insulink/actions/workflows/build.yml) | [![codecov](https://codecov.io/gh/breuerlukas/insulink/graph/badge.svg?token=QU5RWJ6XWB)](https://codecov.io/gh/breuerlukas/insulink) |
+|      | Build Status                                                                                                                                                                                | Test Code Coverage                                                                                                                              |
+|------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| main | [![Build Status](https://github.com/insulink-app/insulink-app/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/insulink-app/insulink-app/actions/workflows/build.yml) | [![codecov](https://codecov.io/gh/insulink-app/insulink-app/graph/badge.svg?token=0Z5GOJUU80)](https://codecov.io/gh/insulink-app/insulink-app) |
 
 > ⚠️ **Use at your own risk.** This is an interoperability and research project,
 > **not a medical device**. Use it only with sensors you own and **never** for

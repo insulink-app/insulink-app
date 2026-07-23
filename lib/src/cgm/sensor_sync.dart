@@ -4,6 +4,9 @@ import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
 import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/cgm/cgm_store.dart';
+import 'package:insulink/src/inventory/inventory_item.dart';
+import 'package:insulink/src/inventory/inventory_store.dart';
+import 'package:insulink/src/inventory/inventory_sync.dart';
 import 'package:insulink/src/request/request.dart';
 
 /// Mirrors the paired sensor to the user's backend account so a fresh install
@@ -125,6 +128,21 @@ class SensorSync {
     if (id != null) {
       await store.saveBackendSensorId(key, '$id');
       await store.saveBackendSyncedData(key, data);
+      await _consumeFromInventory(store);
+    }
+  }
+
+  /// A successful register is the one moment a sensor becomes newly known (it
+  /// was neither local nor on the backend — a restore sets the id directly and
+  /// never lands here), so this is where a paired Libre/Dexcom pulls one unit
+  /// from the matching inventory item. The backend id now stored dedups it: the
+  /// next syncs take the update path, so a sensor is only ever counted once.
+  Future<void> _consumeFromInventory(CgmStore store) async {
+    final brand = store.sensorType == SensorType.abbottLibre3
+        ? SensorBrand.libre
+        : SensorBrand.dexcom;
+    if (await const InventoryStore().consumeSensor(brand)) {
+      InventorySync().push();
     }
   }
 
