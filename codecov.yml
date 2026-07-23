@@ -1,0 +1,4 @@
+# Generated code is never hand-written and never tested — keep it out of the
+# coverage denominator (see CLAUDE.md: "lib/src/rust/ is generated").
+ignore:
+  - "lib/src/rust/**"
