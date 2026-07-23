@@ -153,9 +153,14 @@ jobs:
           CARGO_BUILD_JOBS: "2"
         run: flutter build apk --debug --target-platform android-arm64
 
+      # Only kept for a manual run — a main-push APK is ~150 MB and the default
+      # 90-day retention filled the account's artifact storage quota. The build
+      # itself still gates every main push; it just doesn't store the output.
       - name: Upload APK
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v7
         with:
           name: app-debug-arm64
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
+          retention-days: 5
