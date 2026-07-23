@@ -83,6 +83,38 @@ void main() {
       expect(range.values.toList(), [105]); // last write wins for that minute
     });
 
+    test('the decoded day cache follows an append in the same isolate', () async {
+      final store = await CgmStore.open();
+      await store.archiveAdd(DateTime(2024, 1, 1, 10, 0), 100);
+      // Reads the day once, populating the decode cache.
+      store.archiveRange(DateTime(2024, 1, 1), DateTime(2024, 1, 2));
+      await store.archiveAdd(DateTime(2024, 1, 1, 10, 5), 110);
+      final range = store.archiveRange(
+        DateTime(2024, 1, 1),
+        DateTime(2024, 1, 2),
+      );
+      expect(range.values.toList(), [100, 110]);
+    });
+
+    test('reload picks up an archive written by another isolate', () async {
+      final backing = installSecureStorageMock();
+      final store = await CgmStore.open();
+      await store.archiveAdd(DateTime(2024, 1, 1, 10, 0), 100);
+      store.archiveRange(DateTime(2024, 1, 1), DateTime(2024, 1, 2));
+
+      // What the service isolate's own store instance would have written.
+      final other = await CgmStore.open();
+      await other.archiveAdd(DateTime(2024, 1, 1, 10, 5), 110);
+      expect(backing, isNotEmpty);
+
+      await store.reload();
+      final range = store.archiveRange(
+        DateTime(2024, 1, 1),
+        DateTime(2024, 1, 2),
+      );
+      expect(range.values.toList(), [100, 110]);
+    });
+
     test('archivePrune drops day-chunks older than the kept window', () async {
       final store = await CgmStore.open();
       final old = DateTime.now().subtract(const Duration(days: 100));

@@ -42,6 +42,25 @@ class SportStore {
   static const _kActiveWorkout = 'sport.active_workout';
   static const _kActiveTraining = 'sport.active_training';
 
+  /// The sync-owned keys, grouped by the state each maps to, so the sport tab
+  /// can reload ONLY the state whose data changed instead of all three. Split
+  /// this way because [SyncReload] reports which keys changed and routes by group.
+  ///
+  /// Deliberately excludes the live pedometer/route keys (their frequent writes
+  /// would force needless rebuilds) and `active_workout`/`activity_archive`,
+  /// which have their own owners and are not reloaded by the tab's sync.
+  static const weightSyncedKeys = <String>[_kWeight];
+  static const librarySyncedKeys = <String>[_kExercises, _kRoutines, _kSessions];
+  static const cardioSyncedKeys = <String>[_kTrainings, _kPendingTrainings];
+
+  /// The union — what [SyncReload] watches to decide whether the pull changed
+  /// anything worth reloading.
+  static const syncedKeys = <String>[
+    ...weightSyncedKeys,
+    ...librarySyncedKeys,
+    ...cardioSyncedKeys,
+  ];
+
   /// Default stride length in cm (for the distance estimate), until the user
   /// adjusts it — roughly an adult's stride.
   static const defStrideCm = 75;

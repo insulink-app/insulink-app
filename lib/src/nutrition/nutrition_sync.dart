@@ -21,6 +21,14 @@ class NutritionSync {
   static const _productStore = FoodStore();
   static final Map<String, Timer> _timers = {};
 
+  /// The storage keys this pull rewrites, assembled from the three stores it
+  /// touches — the set [SyncReload] watches to skip a no-op sync's rebuild.
+  static const syncedKeys = <String>[
+    ...MealStore.syncedKeys,
+    ...NutritionStore.syncedKeys,
+    ...FoodStore.syncedKeys,
+  ];
+
   /// Collections whose local change has not reached the backend yet — the
   /// debounce is still armed, or its POST is in flight. See [localWins].
   static final Set<String> _unsent = {};

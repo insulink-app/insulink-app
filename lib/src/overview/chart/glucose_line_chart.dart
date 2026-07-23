@@ -107,32 +107,38 @@ class GlucoseLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LineChart(
-      LineChartData(
-        minY: _minY,
-        maxY: _maxY,
-        minX: shift + rightEdgeHours - rangeHours,
-        maxX: shift + rightEdgeHours,
-        // Clip to the plot: the forecast line runs to its full horizon, which can
-        // extend past the (constant-width) window's right edge — without clipping
-        // it would draw out over the margin.
-        clipData: const FlClipData.all(),
-        gridData: FlGridData(
-          show: !minimal,
-          drawVerticalLine: false,
-          horizontalInterval: _yInterval,
+    // Isolate the chart's canvas: the pulsing latest-reading marker repaints at
+    // frame rate, and the surrounding page (scrolling list, headline value) has
+    // no reason to repaint with it. Without this the marker's every frame dirties
+    // the whole overview.
+    return RepaintBoundary(
+      child: LineChart(
+        LineChartData(
+          minY: _minY,
+          maxY: _maxY,
+          minX: shift + rightEdgeHours - rangeHours,
+          maxX: shift + rightEdgeHours,
+          // Clip to the plot: the forecast line runs to its full horizon, which can
+          // extend past the (constant-width) window's right edge — without clipping
+          // it would draw out over the margin.
+          clipData: const FlClipData.all(),
+          gridData: FlGridData(
+            show: !minimal,
+            drawVerticalLine: false,
+            horizontalInterval: _yInterval,
+          ),
+          borderData: FlBorderData(show: false),
+          titlesData: _titles(context),
+          extraLinesData: _extraLines(context),
+          lineTouchData: _touchData(context),
+          betweenBarsData: betweenBars,
+          lineBarsData: [...bars, if (highlightSpot != null) _highlightBar()],
         ),
-        borderData: FlBorderData(show: false),
-        titlesData: _titles(context),
-        extraLinesData: _extraLines(context),
-        lineTouchData: _touchData(context),
-        betweenBarsData: betweenBars,
-        lineBarsData: [...bars, if (highlightSpot != null) _highlightBar()],
+        // No implicit morph animation: the number of zone bars changes between
+        // states, so fl_chart would interpolate between mismatched structures —
+        // which looked broken on load/update. Render each state directly.
+        duration: Duration.zero,
       ),
-      // No implicit morph animation: the number of zone bars changes between
-      // states, so fl_chart would interpolate between mismatched structures —
-      // which looked broken on load/update. Render each state directly.
-      duration: Duration.zero,
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -54,10 +56,16 @@ class GlucoseChartSeries {
     return _zoneBars();
   }
 
+  /// The most points worth plotting: a phone chart is a few hundred pixels wide,
+  /// so beyond this the extra vertices only cost build + paint time. The Libre 3
+  /// packs ~1440 readings into a 24 h window; the G7's ~288 stay under the cap and
+  /// are drawn untouched.
+  static const _maxPoints = 400;
+
   void _collectSpots() {
     int? prevValue;
     double? prevX;
-    for (final entry in _windowSlice()) {
+    for (final entry in _downsample(_windowSlice())) {
       final x = (entry.key - latestSecs) / 3600.0 + shift;
       final value = entry.value;
       if (prevValue != null) {
@@ -98,6 +106,48 @@ class GlucoseChartSeries {
       slice.insert(0, beforeLeft);
     }
     return slice;
+  }
+
+  /// Thins a dense window down to at most [_maxPoints] while KEEPING the shape:
+  /// each bucket contributes its lowest and highest reading (in time order), so
+  /// every spike and dip survives — only the flat stretches between them lose
+  /// redundant vertices. The first and last readings are always kept so the line
+  /// still spans the exact window and ends on the current value. A window already
+  /// under the cap is returned unchanged.
+  List<MapEntry<int, int>> _downsample(List<MapEntry<int, int>> slice) {
+    if (slice.length <= _maxPoints) {
+      return slice;
+    }
+    final bucketCount = _maxPoints ~/ 2;
+    final bucketSize = slice.length / bucketCount;
+    final out = <MapEntry<int, int>>[];
+    for (var bucket = 0; bucket < bucketCount; bucket++) {
+      final start = (bucket * bucketSize).floor();
+      final end = math.min(((bucket + 1) * bucketSize).floor(), slice.length);
+      var lowest = start;
+      var highest = start;
+      for (var index = start + 1; index < end; index++) {
+        if (slice[index].value < slice[lowest].value) {
+          lowest = index;
+        }
+        if (slice[index].value > slice[highest].value) {
+          highest = index;
+        }
+      }
+      final first = math.min(lowest, highest);
+      final second = math.max(lowest, highest);
+      out.add(slice[first]);
+      if (second != first) {
+        out.add(slice[second]);
+      }
+    }
+    if (out.first != slice.first) {
+      out.insert(0, slice.first);
+    }
+    if (out.last != slice.last) {
+      out.add(slice.last);
+    }
+    return out;
   }
 
   /// Where two readings straddle a target line, insert a point EXACTLY at the

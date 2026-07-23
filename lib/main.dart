@@ -250,9 +250,9 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   /// long as it takes — no time budget, because nothing waits for it.
   ///
   /// Every branch writes into the same secure storage the preferences are read
-  /// from, so comparing storage across the pull says whether anything actually
-  /// arrived: an unchanged account — the normal cold start — leaves the running
-  /// tree untouched, and only a real change costs a [_reload].
+  /// from, so comparing storage across the pull says whether anything that feeds
+  /// the provider tree actually arrived: an unchanged account leaves the running
+  /// tree untouched, and only a real settings change costs a [_reload].
   ///
   /// Never throws: a failed sync must only mean "keep the local data", and the
   /// next start retries.
@@ -262,18 +262,30 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       return;
     }
     try {
-      final before = await storage.readAll();
+      final before = _preferenceKeys(await storage.readAll());
       await AccountSync().pullAll(null);
-      // ponytail: whole-storage compare, not per-branch change flags. A glucose
-      // reading landing from the service isolate mid-pull rebuilds needlessly —
-      // harmless, and ~1 launch in 100. Narrow it to the pulled keys only if
-      // that rebuild ever becomes visible.
-      if (!mapEquals(before, await storage.readAll())) {
+      if (!mapEquals(before, _preferenceKeys(await storage.readAll()))) {
         await _reload();
       }
     } catch (exception) {
       debugPrint("account sync skipped: $exception");
     }
+  }
+
+  /// The storage entries that feed [AppPreferences], with the CGM data dropped.
+  ///
+  /// [_reload] rebuilds the whole provider tree, so it must only fire for a real
+  /// settings change. The glucose archive/live keys (`g7.*`) are NOT preferences
+  /// — [CgmController], above the reload point, owns them — yet the account pull
+  /// rewrites the glucose history on EVERY launch. Comparing the whole store
+  /// therefore reloaded the entire app a second time on every start (the second
+  /// hitch on open). Ignoring the CGM keys leaves the compare to the settings the
+  /// reload actually adopts.
+  Map<String, String> _preferenceKeys(Map<String, String> all) {
+    return {
+      for (final entry in all.entries)
+        if (!entry.key.startsWith("g7.")) entry.key: entry.value,
+    };
   }
 
   Future<AppPreferences> _loadPreferences() async {

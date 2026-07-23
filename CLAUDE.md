@@ -532,6 +532,8 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `docs/DESIGN.md` — the theme/colour-role system: the two accents, the three
   foreground tones, the affordance shapes, both surface ladders, Flutter's
   silent `ColorScheme` fallbacks, and the measured contrast values.
+- `docs/PERFORMANCE.md` — what made the UI stutter: the per-build archive parse,
+  animating inside a chart, and the tab pages' scroll cache.
 
 `lib/src/rust/` is generated — never hand-edit; change `rust/src/api/` and rerun
 codegen.
