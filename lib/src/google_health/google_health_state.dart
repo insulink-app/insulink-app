@@ -293,16 +293,46 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  /// Re-reads the metrics when connected (Health Connect isn't push, so the
-  /// Sport page refreshes on open). No-op otherwise.
-  Future<void> refreshIfConnected() async {
+  static const _kLastImport = 'google_health.last_import';
+
+  /// A full metrics import (30 days × ~12 Health Connect types) deserializes on
+  /// the UI thread and froze it for 100+ ms (measured on a cold start). So an
+  /// AUTOMATIC refresh — overview cold start/resume, Sport-tab open, the periodic
+  /// timer — runs at most once per [_autoImportThrottle], shared across all of
+  /// them by a persisted stamp so opening one screen doesn't re-import for the
+  /// next. The tiles render from the persisted archive meanwhile, so this is a
+  /// background update; a user pull-to-refresh passes [force] to always fetch.
+  static const _autoImportThrottle = Duration(minutes: 15);
+
+  /// Re-reads the metrics when connected. Returns true only when it actually
+  /// imported, so callers can skip their follow-up (e.g. the steps import) on a
+  /// throttled no-op. No-op when disconnected or throttled (unless [force]).
+  Future<bool> refreshIfConnected({bool force = false}) async {
     if (!_connected) {
-      return;
+      return false;
+    }
+    if (!force && await _importedRecently()) {
+      return false;
     }
     final data = await _run();
-    if (data.result == GoogleHealthImportResult.success) {
-      await _persist();
+    if (data.result != GoogleHealthImportResult.success) {
+      return false;
     }
+    await _persist();
+    await _storage.write(
+      key: _kLastImport,
+      value: DateTime.now().millisecondsSinceEpoch.toString(),
+    );
+    return true;
+  }
+
+  Future<bool> _importedRecently() async {
+    final last = int.tryParse(await _storage.read(key: _kLastImport) ?? '');
+    if (last == null) {
+      return false;
+    }
+    final age = DateTime.now().millisecondsSinceEpoch - last;
+    return age >= 0 && age < _autoImportThrottle.inMilliseconds;
   }
 
   Future<GoogleHealthImport> _run() async {

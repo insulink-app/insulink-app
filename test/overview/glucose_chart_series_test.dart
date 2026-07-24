@@ -103,6 +103,35 @@ void main() {
       expect(series.realSpots.map((spot) => spot.y), [100, 120]);
     });
 
+    test('a window under the cap is plotted untouched', () {
+      // 288 points = the G7's 24 h; below the 400-point cap, so every reading is
+      // kept (plus the target crossings the zone split adds).
+      final series = seriesFor([
+        for (var index = 0; index < 288; index++) MapEntry(index * 300, 100),
+      ]);
+      series.buildBars();
+      expect(series.realSpots, hasLength(288));
+    });
+
+    test('a dense window is thinned but keeps its extremes and endpoints', () {
+      // 1440 points = the Libre's 24 h at 1-min cadence, with a single spike and
+      // a single dip buried in an otherwise flat line. Both must survive the thin.
+      final entries = [
+        for (var index = 0; index < 1440; index++)
+          MapEntry(index * 60, index == 700 ? 260 : (index == 900 ? 45 : 100)),
+      ];
+      final series = seriesFor(entries);
+      series.buildBars();
+
+      expect(series.realSpots.length, lessThan(1440));
+      expect(series.realSpots.length, lessThanOrEqualTo(402));
+      final values = series.realSpots.map((spot) => spot.y).toList();
+      expect(values, contains(260)); // the spike
+      expect(values, contains(45)); // the dip
+      expect(values.first, 100); // first reading kept
+      expect(values.last, 100); // last (current) reading kept
+    });
+
     test('shows dots only for sparse series (< 60 points)', () {
       final sparse = seriesFor([
         const MapEntry(0, 100),

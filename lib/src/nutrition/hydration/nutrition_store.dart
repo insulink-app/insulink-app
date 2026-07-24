@@ -22,6 +22,10 @@ class NutritionStore {
   static const _kEntries = 'nutrition.water_entries';
   static const _entryCap = 500;
 
+  /// The key a NutritionSync pull rewrites here (the drink log) — watched by
+  /// [SyncReload]. The goals are synced separately via [ProfileSettings].
+  static const syncedKeys = <String>[_kEntries];
+
   /// Default daily goal: 2 L.
   static const defGoalMl = 2000;
 

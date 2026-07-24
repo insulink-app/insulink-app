@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
@@ -7,6 +8,9 @@ import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/recent_activities_section.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/sport_state.dart';
+import 'package:insulink/src/request/pull_throttle.dart';
+import 'package:insulink/src/request/sync_reload.dart';
+import 'package:insulink/src/sport/sport_store.dart';
 import 'package:insulink/src/sport/sport_sync.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/routines/routines_section.dart';
@@ -59,8 +63,16 @@ class _SportBodyContentState extends State<SportBodyContent> {
       context.read<CardioTrainingState>().reloadPending();
       _health = context.read<GoogleHealthState>();
       _health!.startLive();
+      // A Health-Connect read plus an import that writes sport state and rebuilds.
+      // The 30-day metrics import froze the UI thread, so it is throttled + shared
+      // inside GoogleHealthState (with the overview/cold-start refresh); a Sport
+      // reopen within the window no longer re-imports. Pull-to-refresh forces it.
       _syncGoogleHealth(context.read<SportState>(), activity);
-      _syncAccount();
+      // Throttled: the body is rebuilt on every tab switch, so this fired six
+      // round trips per visit — the burst whose reload+rebuild hitched the page
+      // shortly after opening it. The Confirm/Reject drain (reloadPending above)
+      // and pull-to-refresh stay un-throttled.
+      const PullThrottle('sport').run(_syncAccount);
     });
   }
 
@@ -73,6 +85,7 @@ class _SportBodyContentState extends State<SportBodyContent> {
       _syncGoogleHealth(
         context.read<SportState>(),
         context.read<SportActivityState>(),
+        force: true,
       ),
     ]);
   }
@@ -90,15 +103,21 @@ class _SportBodyContentState extends State<SportBodyContent> {
     final sport = context.read<SportState>();
     final training = context.read<TrainingState>();
     final cardio = context.read<CardioTrainingState>();
-    await SportSync().pull(context);
-    if (!mounted) {
-      return;
-    }
-    await Future.wait([
-      sport.reload(),
-      training.reload(),
-      cardio.reloadPending(),
-    ]);
+    // Reload only when the pull actually changed storage (see [SyncReload]), so a
+    // sync that brings nothing new causes no rebuild — the hitch this used to be.
+    // A pending training the detection service wrote IS a storage change, so it
+    // still reaches reloadPending here.
+    await const SyncReload().ifChanged(SportStore.syncedKeys, () => SportSync().pull(context), (changed) async {
+      if (!mounted) {
+        return;
+      }
+      await Future.wait([
+        if (SportStore.weightSyncedKeys.any(changed.contains)) sport.reload(),
+        if (SportStore.librarySyncedKeys.any(changed.contains)) training.reload(),
+        if (SportStore.cardioSyncedKeys.any(changed.contains))
+          cardio.reloadPending(),
+      ]);
+    });
   }
 
   /// Refreshes the Google Health metrics, then — while connected — imports
@@ -108,10 +127,13 @@ class _SportBodyContentState extends State<SportBodyContent> {
   /// drops one request. Not connected ⇒ pedometer + estimates stay the source.
   Future<void> _syncGoogleHealth(
     SportState sport,
-    SportActivityState activity,
-  ) async {
-    await _health!.refreshIfConnected();
-    if (!mounted || _health!.connected != true) {
+    SportActivityState activity, {
+    bool force = false,
+  }) async {
+    if (!await _health!.refreshIfConnected(force: force)) {
+      return;
+    }
+    if (!mounted) {
       return;
     }
     await HealthImporter().import(sport, activity);
@@ -134,6 +156,9 @@ class _SportBodyContentState extends State<SportBodyContent> {
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
+        // Few, expensive sections: keep them built across a scroll gesture
+        // instead of rebuilding each one as it re-enters the viewport.
+        scrollCacheExtent: const ScrollCacheExtent.viewport(1.5),
         // Bottom padding keeps the centered injection FAB (page.dart) clear.
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 64),
         children: const [

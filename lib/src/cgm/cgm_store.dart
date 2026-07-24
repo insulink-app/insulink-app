@@ -40,9 +40,17 @@ class CgmStore {
     _cache
       ..clear()
       ..addAll(all);
+    _histDays.clear();
   }
 
+  /// The cache mirrors what is persisted, so an equal value is already on disk:
+  /// skip the encrypt+write. The replace-all account syncs re-offer the whole
+  /// archive on every launch/refresh, so this drops the redundant keystore
+  /// writes those would otherwise repeat for unchanged day-chunks.
   Future<void> _set(String key, String value) async {
+    if (_cache[key] == value) {
+      return;
+    }
     await _storage.write(key: key, value: value);
     _cache[key] = value;
   }
@@ -479,8 +487,17 @@ class CgmStore {
 
   static String _kHist(int dayIndex) => '$_kHistPrefix$dayIndex';
 
+  /// Decoded day-chunks, memoized. [archiveRange] runs on nearly every rebuild
+  /// of the overview and the analysis views, and re-parsing the comma-separated
+  /// chunk on each of those (up to 1440 points per day at the Libre's 1-min
+  /// cadence, times seven days for the analysis window) is what made those pages
+  /// stutter while scrolling. Kept coherent by [_archiveAddAll] merging into the
+  /// same map instance it stores, and dropped wholesale by [reload] — the same
+  /// point at which the raw [_cache] adopts another isolate's writes.
+  final Map<int, Map<int, int>> _histDays = {};
+
   Map<int, int> _loadHistDay(int dayIndex) =>
-      _decodeIntMap(_cache[_kHist(dayIndex)]);
+      _histDays[dayIndex] ??= _decodeIntMap(_cache[_kHist(dayIndex)]);
 
   // Serializes archive read-modify-writes. Callers fire archive appends WITHOUT
   // awaiting (from BLE stream listeners), so a live-EGV append racing a backfill
@@ -546,6 +563,7 @@ class CgmStore {
         .toList();
     for (final key in stale) {
       await _remove(key);
+      _histDays.remove(int.parse(key.substring(_kHistPrefix.length)));
     }
   }
 }

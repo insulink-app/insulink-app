@@ -82,6 +82,27 @@ class _OverviewChartState extends State<OverviewChart>
   /// Drives the latest-reading dot's pulsing halo.
   late final AnimationController _pulse;
 
+  /// The halo phase the chart actually renders, sampled from [_pulse] in
+  /// [_pulseSteps] steps. The marker is a dot painter INSIDE the chart, so every
+  /// phase change re-lays-out the whole fl_chart — axis label widgets included —
+  /// and at the display's frame rate that alone ate a chunk of every frame's
+  /// budget, which is what made the overview stutter while scrolling.
+  ///
+  /// ponytail: sampled, not moved out of the chart. 32 steps over 2.2 s is ~15
+  /// Hz and grows the ring ~0.7 px per step, so the motion still reads as
+  /// continuous. If the ripple ever has to be perfectly smooth, draw it as an
+  /// overlay above a static chart instead — that needs the plot rect, which is
+  /// fl_chart-internal geometry we'd have to reproduce.
+  static const _pulseSteps = 32;
+  final ValueNotifier<double> _phase = ValueNotifier<double>(0);
+
+  void _samplePulse() {
+    final sampled = (_pulse.value * _pulseSteps).floor() / _pulseSteps;
+    if (sampled != _phase.value) {
+      _phase.value = sampled;
+    }
+  }
+
   /// Index of the transparent overlay bar that owns touch (so the haptic and
   /// tooltip ignore the per-zone colour bars + interpolated crossing points).
   int _touchBarIndex = 0;
@@ -127,12 +148,15 @@ class _OverviewChartState extends State<OverviewChart>
     _pulse = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
-    )..repeat();
+    )
+      ..addListener(_samplePulse)
+      ..repeat();
   }
 
   @override
   void dispose() {
     _pulse.dispose();
+    _phase.dispose();
     super.dispose();
   }
 
@@ -492,9 +516,9 @@ class _OverviewChartState extends State<OverviewChart>
     if (!widget.preview) {
       return chart(0);
     }
-    return AnimatedBuilder(
-      animation: _pulse,
-      builder: (context, _) => chart(_pulse.value),
+    return ValueListenableBuilder<double>(
+      valueListenable: _phase,
+      builder: (context, phase, _) => chart(phase),
     );
   }
 

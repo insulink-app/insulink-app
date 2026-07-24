@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/nutrition/food/food_section.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
+import 'package:insulink/src/nutrition/food/food_store.dart';
 import 'package:insulink/src/nutrition/hydration/hydration_card.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
+import 'package:insulink/src/nutrition/hydration/nutrition_store.dart';
 import 'package:insulink/src/nutrition/meal/meal_section.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
+import 'package:insulink/src/nutrition/meal/meal_store.dart';
 import 'package:insulink/src/nutrition/nutrition_sync.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_stats_section.dart';
+import 'package:insulink/src/request/pull_throttle.dart';
+import 'package:insulink/src/request/sync_reload.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -39,7 +45,12 @@ class _NutritionBodyContentState extends State<NutritionBodyContent> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncAccount());
+    // Throttled: the body is rebuilt on every tab switch, so this fired a fresh
+    // pull each visit — the burst whose reload+rebuild hitched the page a second
+    // after opening it. Pull-to-refresh below stays un-throttled.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => const PullThrottle('nutrition').run(_syncAccount),
+    );
   }
 
   /// Adopts the account's nutrition data, then re-reads it into the shared state
@@ -49,15 +60,22 @@ class _NutritionBodyContentState extends State<NutritionBodyContent> {
   ///
   /// The pull only rewrites the STORE; without the reloads below, the in-memory
   /// state would keep what it read at startup and nothing would change on screen.
+  /// The reload runs only when the pull actually changed something (see
+  /// [SyncReload]), so a sync that brings nothing new causes no rebuild.
   Future<void> _syncAccount() async {
     final nutrition = context.read<NutritionState>();
     final meals = context.read<MealState>();
     final food = context.read<FoodState>();
-    await NutritionSync().pull(context);
-    if (!mounted) {
-      return;
-    }
-    await Future.wait([nutrition.reload(), meals.reload(), food.reload()]);
+    await const SyncReload().ifChanged(NutritionSync.syncedKeys, () => NutritionSync().pull(context), (changed) async {
+      if (!mounted) {
+        return;
+      }
+      await Future.wait([
+        if (NutritionStore.syncedKeys.any(changed.contains)) nutrition.reload(),
+        if (MealStore.syncedKeys.any(changed.contains)) meals.reload(),
+        if (FoodStore.syncedKeys.any(changed.contains)) food.reload(),
+      ]);
+    });
   }
 
   @override
@@ -70,6 +88,9 @@ class _NutritionBodyContentState extends State<NutritionBodyContent> {
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
+        // Few, expensive sections: keep them built across a scroll gesture
+        // instead of rebuilding each one as it re-enters the viewport.
+        scrollCacheExtent: const ScrollCacheExtent.viewport(1.5),
         // Bottom padding keeps the centered injection FAB (page.dart) clear.
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 64),
         children: const [

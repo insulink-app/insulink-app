@@ -250,30 +250,49 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   /// long as it takes — no time budget, because nothing waits for it.
   ///
   /// Every branch writes into the same secure storage the preferences are read
-  /// from, so comparing storage across the pull says whether anything actually
-  /// arrived: an unchanged account — the normal cold start — leaves the running
-  /// tree untouched, and only a real change costs a [_reload].
+  /// from, so comparing storage across the pull says whether anything that feeds
+  /// the provider tree actually arrived: an unchanged account leaves the running
+  /// tree untouched, and only a real settings change costs a [_reload].
   ///
   /// Never throws: a failed sync must only mean "keep the local data", and the
   /// next start retries.
+  /// Runs on EVERY cold start so a settings/panel change made elsewhere lands on
+  /// the next open. It stays cheap because the one heavy branch — re-pulling and
+  /// re-decoding the durable glucose/event history — is throttled inside
+  /// [AccountSync]; the light branches (settings, sport, nutrition, inventory,
+  /// health) are small JSON and run every time. The before/after compare over the
+  /// preference keys (never the `g7.*` archive) still gates the one expensive
+  /// [_reload] to a real settings change.
   Future<void> _pullAccount() async {
     const storage = FlutterSecureStorage();
     if ((await storage.read(key: "authentication_token") ?? "").isEmpty) {
       return;
     }
     try {
-      final before = await storage.readAll();
-      await AccountSync().pullAll(null);
-      // ponytail: whole-storage compare, not per-branch change flags. A glucose
-      // reading landing from the service isolate mid-pull rebuilds needlessly —
-      // harmless, and ~1 launch in 100. Narrow it to the pulled keys only if
-      // that rebuild ever becomes visible.
-      if (!mapEquals(before, await storage.readAll())) {
+      final before = _preferenceKeys(await storage.readAll());
+      await AccountSync().pullAll(null, withHistory: await AccountSync.historyDue());
+      if (!mapEquals(before, _preferenceKeys(await storage.readAll()))) {
         await _reload();
       }
     } catch (exception) {
       debugPrint("account sync skipped: $exception");
     }
+  }
+
+  /// The storage entries that feed [AppPreferences], with the CGM data dropped.
+  ///
+  /// [_reload] rebuilds the whole provider tree, so it must only fire for a real
+  /// settings change. The glucose archive/live keys (`g7.*`) are NOT preferences
+  /// — [CgmController], above the reload point, owns them — yet the account pull
+  /// rewrites the glucose history on EVERY launch. Comparing the whole store
+  /// therefore reloaded the entire app a second time on every start (the second
+  /// hitch on open). Ignoring the CGM keys leaves the compare to the settings the
+  /// reload actually adopts.
+  Map<String, String> _preferenceKeys(Map<String, String> all) {
+    return {
+      for (final entry in all.entries)
+        if (!entry.key.startsWith("g7.")) entry.key: entry.value,
+    };
   }
 
   Future<AppPreferences> _loadPreferences() async {
@@ -389,15 +408,22 @@ class _AppLifecycleState extends State<_AppLifecycle>
   /// updates them without waiting for the Sport tab to be opened. Sequential:
   /// the `health` plugin has a single activity-result channel, so the metrics
   /// refresh and the import must not overlap.
+  /// The metrics refresh is throttled + shared inside [GoogleHealthState] (a full
+  /// import froze the UI thread on open — see there). It returns false on a
+  /// throttled no-op, so today's steps import only runs when metrics actually
+  /// refreshed.
   Future<void> _refreshHealth() async {
     final health = context.read<GoogleHealthState>();
-    final sport = context.read<SportState>();
-    final activity = context.read<SportActivityState>();
-    await health.refreshIfConnected();
-    if (!mounted || !health.connected) {
+    if (!await health.refreshIfConnected()) {
       return;
     }
-    await HealthImporter().import(sport, activity);
+    if (!mounted) {
+      return;
+    }
+    await HealthImporter().import(
+      context.read<SportState>(),
+      context.read<SportActivityState>(),
+    );
   }
 
   @override

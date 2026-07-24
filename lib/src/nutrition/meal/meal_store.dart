@@ -9,6 +9,9 @@ import 'meal.dart';
 class MealStore {
   static const _kMeals = 'nutrition.meals';
 
+  /// The key a NutritionSync pull rewrites here — watched by [SyncReload].
+  static const syncedKeys = <String>[_kMeals];
+
   final FlutterSecureStorage _storage;
 
   const MealStore([this._storage = const FlutterSecureStorage()]);

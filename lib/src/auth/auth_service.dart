@@ -27,7 +27,7 @@ class AuthService {
     ).send(context);
     final error = await _handle(response, "auth.error.invalid");
     if (error == null && context.mounted) {
-      await AccountSync().pullAll(context);
+      await AccountSync().pullAll(context, withHistory: true);
     }
     return error;
   }

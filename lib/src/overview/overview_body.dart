@@ -1,6 +1,8 @@
+import 'dart:collection';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:insulink/src/base/page.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
@@ -80,8 +82,13 @@ class OverviewBodyContent extends StatelessWidget {
     // Known data (a live/cached value OR archived history) → show the chart
     // straight away, even before a fresh reading lands after a re-login/restore;
     // the headline shows a loader until the current value arrives.
-    if (controller.currentMgdl != null || controller.byTime.isNotEmpty) {
-      return _DataView(controller: controller);
+    //
+    // Read ONCE per build and handed down: every `byTime` read rebuilds the
+    // series out of the archive, and the view used to ask for it four times
+    // (here, the chart, and each Y-axis bound).
+    final byTime = controller.byTime;
+    if (controller.currentMgdl != null || byTime.isNotEmpty) {
+      return _DataView(controller: controller, byTime: byTime);
     }
     final loading =
         !controller.initialized ||
@@ -114,9 +121,12 @@ double _overviewScrollOffset = 0;
 /// Stateful so it can own a [ScrollController] that restores [_overviewScrollOffset]
 /// on (re)build and keeps it current as the user scrolls.
 class _DataView extends StatefulWidget {
-  const _DataView({required this.controller});
+  const _DataView({required this.controller, required this.byTime});
 
   final CgmController controller;
+
+  /// The chart series for this build (see [OverviewBodyContent._view]).
+  final SplayTreeMap<int, int> byTime;
 
   @override
   State<_DataView> createState() => _DataViewState();
@@ -145,6 +155,12 @@ class _DataViewState extends State<_DataView> {
     final controller = widget.controller;
     return ListView(
       controller: _scroll,
+      // The sections here are few and expensive (the chart rebuilds its whole
+      // series). The default 250 px cache drops one the moment it leaves the
+      // viewport and rebuilds it on the way back — the stutter you get scrolling
+      // up and down. One-and-a-half viewports of cache keeps the page built for
+      // the length of that gesture.
+      scrollCacheExtent: const ScrollCacheExtent.viewport(1.5),
       padding: const EdgeInsets.only(bottom: 52),
       children: [
         // Still offer the account's stored sensor when none is paired locally —
@@ -159,7 +175,18 @@ class _DataViewState extends State<_DataView> {
           stale: controller.currentIsStale,
         ),
         const SizedBox(height: 28),
-        OverviewSection(child: _ChartPreview(controller: controller)),
+        OverviewSection(
+          // Gate the fl_chart rebuild on the controller's chart fingerprint, so
+          // the burst of service pings on open (log/connection/prediction) that
+          // notify without changing the plotted data reuse the built chart
+          // instead of re-laying it out. When the fingerprint changes the whole
+          // body has already rebuilt too, so `widget.byTime` is the fresh series.
+          child: Selector<CgmController, int>(
+            selector: (_, controller) => controller.chartRevision,
+            builder: (_, _, _) =>
+                _ChartPreview(controller: controller, byTime: widget.byTime),
+          ),
+        ),
         const SizedBox(height: 16),
         const OverviewActiveInsulin(),
         GestureDetector(
@@ -184,9 +211,10 @@ class _DataViewState extends State<_DataView> {
 
 /// Smaller, non-interactive glucose chart; tapping opens the full-screen page.
 class _ChartPreview extends StatelessWidget {
-  const _ChartPreview({required this.controller});
+  const _ChartPreview({required this.controller, required this.byTime});
 
   final CgmController controller;
+  final SplayTreeMap<int, int> byTime;
 
   @override
   Widget build(BuildContext context) {
@@ -207,7 +235,7 @@ class _ChartPreview extends StatelessWidget {
           SizedBox(
             height: math.max(200.0, (niceMax - niceMin) * 0.9),
             child: OverviewChart(
-              byTime: controller.byTime,
+              byTime: byTime,
               sensorStart: controller.sensorStart,
               preview: true,
               minYmgdl: niceMin,
@@ -240,7 +268,7 @@ class _ChartPreview extends StatelessWidget {
   /// Y-axis top (mg/dL): the peak rounded up to the next 50, floored at 200 so
   /// the target band stays visible. A low day uses less space; a high day more.
   int _niceMaxMgdl() {
-    final values = controller.byTime.values;
+    final values = byTime.values;
     if (values.isEmpty) {
       return 200;
     }
@@ -252,7 +280,7 @@ class _ChartPreview extends StatelessWidget {
   /// Y-axis bottom (mg/dL): ~50 when nothing dips lower, else rounded down to the
   /// next 50 — so a normal day starts at 50 instead of wasting space down to 0.
   int _niceMinMgdl() {
-    final values = controller.byTime.values;
+    final values = byTime.values;
     if (values.isEmpty) {
       return 50;
     }
