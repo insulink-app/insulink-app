@@ -26,6 +26,10 @@ class TrainingState extends ChangeNotifier {
   Timer? _watchTimer;
   bool _driving = false;
   bool _endedElsewhere = false;
+  // Whether the current active workout has ever been seen on the account. A push
+  // is debounced ~1s, so a poll right after starting legitimately reads null
+  // before the start has landed — that must not read as "ended elsewhere".
+  bool _confirmedRemote = false;
 
   TrainingState(
     this._store,
@@ -91,6 +95,7 @@ class TrainingState extends ChangeNotifier {
   Future<void> clearActiveWorkout() async {
     _activeWorkout = null;
     _endedElsewhere = false;
+    _confirmedRemote = false;
     await _store.clearActiveWorkout();
     unawaited(SportSync().clearActiveWorkout());
     notifyListeners();
@@ -136,6 +141,7 @@ class TrainingState extends ChangeNotifier {
       await _adoptEndedWorkout();
       return;
     }
+    _confirmedRemote = true;
     if (_driving || _matchesActive(remote)) {
       return;
     }
@@ -145,14 +151,17 @@ class TrainingState extends ChangeNotifier {
   }
 
   /// The account has no workout: whatever this device still shows is over.
-  /// Flagged only when this device had it open, so the banner just disappearing
-  /// stays silent while a runner mid-set gets told.
+  /// Flagged only when this device drove it AND the account had once confirmed
+  /// it — so the banner just disappearing stays silent, and a poll that reads
+  /// null before this device's own freshly-started push has landed does not
+  /// masquerade as an end from elsewhere.
   Future<void> _adoptEndedWorkout() async {
     if (_activeWorkout == null) {
       return;
     }
     _activeWorkout = null;
-    _endedElsewhere = _driving;
+    _endedElsewhere = _driving && _confirmedRemote;
+    _confirmedRemote = false;
     await _store.clearActiveWorkout();
     notifyListeners();
   }

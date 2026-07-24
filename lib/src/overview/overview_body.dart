@@ -176,7 +176,16 @@ class _DataViewState extends State<_DataView> {
         ),
         const SizedBox(height: 28),
         OverviewSection(
-          child: _ChartPreview(controller: controller, byTime: widget.byTime),
+          // Gate the fl_chart rebuild on the controller's chart fingerprint, so
+          // the burst of service pings on open (log/connection/prediction) that
+          // notify without changing the plotted data reuse the built chart
+          // instead of re-laying it out. When the fingerprint changes the whole
+          // body has already rebuilt too, so `widget.byTime` is the fresh series.
+          child: Selector<CgmController, int>(
+            selector: (_, controller) => controller.chartRevision,
+            builder: (_, _, _) =>
+                _ChartPreview(controller: controller, byTime: widget.byTime),
+          ),
         ),
         const SizedBox(height: 16),
         const OverviewActiveInsulin(),

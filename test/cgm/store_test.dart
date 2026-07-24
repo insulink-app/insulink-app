@@ -83,6 +83,40 @@ void main() {
       expect(range.values.toList(), [105]); // last write wins for that minute
     });
 
+    test('re-adding an identical reading skips the keystore write', () async {
+      final backing = <String, String>{};
+      var writes = 0;
+      const channel = MethodChannel(
+        'plugins.it_nomads.com/flutter_secure_storage',
+      );
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            final args = (call.arguments as Map?) ?? const {};
+            switch (call.method) {
+              case 'write':
+                writes++;
+                backing[args['key'] as String] = args['value'] as String;
+                return null;
+              case 'read':
+                return backing[args['key'] as String];
+              case 'readAll':
+                return Map<String, String>.from(backing);
+              case 'delete':
+                backing.remove(args['key'] as String);
+                return null;
+            }
+            return null;
+          });
+
+      final store = await CgmStore.open();
+      await store.archiveAdd(DateTime.utc(2024, 1, 1, 10, 0), 100);
+      final afterFirst = writes;
+      await store.archiveAdd(DateTime.utc(2024, 1, 1, 10, 0), 100);
+      expect(writes, afterFirst, reason: 'identical value must not rewrite');
+      await store.archiveAdd(DateTime.utc(2024, 1, 1, 10, 5), 110);
+      expect(writes, afterFirst + 1, reason: 'a new point must write once');
+    });
+
     test('the decoded day cache follows an append in the same isolate', () async {
       final store = await CgmStore.open();
       await store.archiveAdd(DateTime(2024, 1, 1, 10, 0), 100);

@@ -43,7 +43,14 @@ class CgmStore {
     _histDays.clear();
   }
 
+  /// The cache mirrors what is persisted, so an equal value is already on disk:
+  /// skip the encrypt+write. The replace-all account syncs re-offer the whole
+  /// archive on every launch/refresh, so this drops the redundant keystore
+  /// writes those would otherwise repeat for unchanged day-chunks.
   Future<void> _set(String key, String value) async {
+    if (_cache[key] == value) {
+      return;
+    }
     await _storage.write(key: key, value: value);
     _cache[key] = value;
   }

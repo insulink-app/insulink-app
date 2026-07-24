@@ -137,6 +137,25 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   SplayTreeMap<int, int> get byTime =>
       _byTimeWithin(const Duration(hours: 24), includePreSession: true);
 
+  /// A cheap fingerprint of everything [byTime] plots. The overview gates the
+  /// expensive fl_chart rebuild on this via a `Selector`, so the burst of
+  /// service pings on open that notify WITHOUT touching the plotted data (log
+  /// lines, connection-state, prediction) no longer re-lay-out the chart. It
+  /// changes whenever a reading, the session start, or the live overlay changes.
+  // ponytail: fingerprints the session cache (size + newest point) + session +
+  // live overlay, NOT the archive `byTime` actually reads — an archive-only
+  // change that leaves `_byTime` untouched (e.g. a pre-session point from a
+  // sensor swap) is missed until the next reading ping refreshes it. Fold an
+  // archive counter in if a stale preview is ever seen.
+  int get chartRevision => Object.hash(
+    _byTime.length,
+    _byTime.isEmpty ? 0 : _byTime.lastKey(),
+    _byTime.isEmpty ? 0 : _byTime[_byTime.lastKey()],
+    _sensorStart?.millisecondsSinceEpoch,
+    _latestIsLive,
+    _latest?.glucoseMgDl,
+  );
+
   /// Wider history for the full-screen chart's interval navigation (paging back
   /// through earlier days), same session-relative-seconds keying as [byTime].
   /// Includes archive data from BEFORE the current session start (keyed by

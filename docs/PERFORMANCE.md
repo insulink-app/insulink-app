@@ -68,7 +68,7 @@ Rules:
 
 - On-open (`initState`) pulls go through `PullThrottle`.
 - **Pull-to-refresh does NOT** — an explicit user pull always fetches.
-- Cold start (`AccountSync` in `main.dart`) does NOT — it is the one full sync.
+- Cold start (`AccountSync` in `main.dart`) is throttled too — see below.
 - A best-effort pull that fails still counts as a run; the page keeps what it
   had until the next window. That is the intended trade.
 
@@ -132,6 +132,42 @@ preferences — `CgmController`, which sits above the reload point, owns the glu
 data — so ignoring them leaves `_reload()` to fire only for a real settings change
 (one made on another device or the panel). A normal launch now reloads once.
 
+## The cold-start sync is the app-open jank — throttle it
+
+A profile (release, performance overlay) put the open hitch on the **UI thread**
+with no single red frame — a run of just-too-expensive Dart frames, not GPU. That
+is `_pullAccount`: on **every** launch it runs the full `AccountSync` — two whole
+`readAll()`s for the before/after diff, plus `GlucoseSync.pullHistory` doing a
+`jsonDecode` of the entire server history and an `archiveAddAll` that re-decodes
+and re-encodes the touched day-chunks — all synchronous on the UI thread, landing
+right on top of the app it just rendered. None of the rebuild-side fixes above
+touched it, which is why they didn't move the open hitch.
+
+Two cuts, both narrow:
+
+- **Throttle only the heavy branch, not the whole sync.** The account sync runs
+  on **every** cold start (so a settings/panel change made elsewhere lands on the
+  next open), but its one expensive branch — re-pulling and re-decoding the
+  durable glucose/event history — is throttled to once per 30 min inside
+  `AccountSync` (`account_sync.history_last`, stamped in secure storage so it
+  survives process death). `AccountSync.historyDue()` decides; the cold-start
+  caller passes the result as `pullAll`'s `withHistory`, and a fresh sign-in
+  passes `true` (a returning device has no local history yet). The light branches
+  (settings, sport, nutrition, inventory, health) are small JSON and run every
+  time. An earlier version threw the *whole* sync behind a 30-min throttle, which
+  also delayed cross-device settings by up to 30 min — splitting it keeps those
+  instant while still skipping the archive decode/rewrite.
+- **`CgmStore._set` skips a write whose value equals the cache.** The cache
+  mirrors disk, so an equal value is already stored — the replace-all syncs
+  re-offer the whole archive on every launch/refresh, and this drops the redundant
+  keystore writes for unchanged day-chunks (the encode still runs; only the
+  platform write is skipped).
+
+Still open (the next lever if a sync that *does* run still hitches): move
+`pullHistory`'s `jsonDecode` + readings-map build into a `compute()` isolate, so
+the one heavy parse per window is off the UI thread entirely. Not built yet —
+the throttle makes those runs rare, so measure before adding it.
+
 ## The chart is the heavy widget
 
 The overview rebuilds on every `CgmController` notify, and on open the service
@@ -144,10 +180,47 @@ sends several pings in a row — each rebuilding the fl_chart line. Two cuts:
 - **`RepaintBoundary`** around the `LineChart`, so the pulsing marker's frame-rate
   repaint doesn't dirty the whole scrolling page.
 
-Still open: the overview rebuilds the chart on *every* controller notify, not only
-when `byTime` changed. Gating the chart subtree on a cheap revision counter (bumped
-when readings/archive actually change) would drop the redundant rebuilds during the
-burst of pings on open — the next lever if the open hitch persists.
+- **Gate the rebuild on a fingerprint.** The overview rebuilt the fl_chart on
+  *every* controller notify, but on open the service fires a burst of pings —
+  log lines, connection-state, prediction — that notify WITHOUT changing the
+  plotted data, and each re-laid-out the chart (the single hitch ~1 s after open).
+  `CgmController.chartRevision` is an O(1) fingerprint of what `byTime` plots
+  (session-cache size + newest point + session start + live overlay), and the
+  chart sits under a `Selector<CgmController, int>` on it — so a notify that
+  didn't move the fingerprint reuses the built chart instead of rebuilding it.
+  The fingerprint watches the session cache, not the archive `byTime` reads, so a
+  rare archive-only change (a pre-session point from a sensor swap) shows on the
+  next reading ping rather than instantly; widen it only if that is ever seen.
+
+## The real cold-start hitch was the Health Connect import (measured)
+
+After the sync throttle and the chart fingerprint, a brief cold-start hitch
+remained. A per-frame timing capture (`addTimingsCallback`, release build on
+device) pinned it down: the janky frames were **UI-thread bound** (`build`
+8–15 ms, once 32 ms; `raster` only 3–5 ms) with two outright **freezes** of
+177 ms and 86 ms — and they coincided exactly with a burst of `FLUTTER_HEALTH:
+Getting data …` logs. The chart and time-in-range builds measured **under 1 ms**,
+so neither was ever the cause.
+
+`_AppLifecycle` fires `_refreshHealth()` from a post-first-frame callback (and on
+every resume), which runs a full `GoogleHealthState.refreshIfConnected()` — a
+30-day import of ~12 Health Connect metric types (resting HR, SpO₂, sleep stages,
+weight…). The plugin deserializes that on the UI isolate, freezing it right after
+the app appears. The Sport tab hit the same wall on open.
+
+Fix: the import is **throttled and shared** inside `GoogleHealthState`
+(`_autoImportThrottle`, 15 min, stamped in secure storage under
+`google_health.last_import`). Every automatic entry point — overview cold
+start/resume, Sport-tab open, the periodic metrics timer — goes through it, so
+opening one screen doesn't re-import for the next, and a reopen within the window
+does no import at all. The tiles render from the persisted archive meanwhile.
+`refreshIfConnected` returns whether it actually imported, so callers skip their
+follow-up steps import on a throttled no-op. A user **pull-to-refresh passes
+`force: true`** and always fetches fresh.
+
+Rule: a Health Connect (or any large platform-channel) read deserializes on the
+UI isolate — treat it like the archive decrypt, never on every open. Throttle it,
+share the stamp, and let an explicit user action force it.
 
 ## Known, not fixed
 

@@ -109,6 +109,19 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // TEMP perf verification
+    WidgetsBinding.instance.addTimingsCallback((timings) {
+      for (final timing in timings) {
+        final total = timing.totalSpan.inMicroseconds;
+        if (total > 16000) {
+          debugPrint(
+            'PERF SLOW-frame ${total}us '
+            'build=${timing.buildDuration.inMicroseconds}us '
+            'raster=${timing.rasterDuration.inMicroseconds}us',
+          );
+        }
+      }
+    });
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -256,6 +269,13 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   ///
   /// Never throws: a failed sync must only mean "keep the local data", and the
   /// next start retries.
+  /// Runs on EVERY cold start so a settings/panel change made elsewhere lands on
+  /// the next open. It stays cheap because the one heavy branch — re-pulling and
+  /// re-decoding the durable glucose/event history — is throttled inside
+  /// [AccountSync]; the light branches (settings, sport, nutrition, inventory,
+  /// health) are small JSON and run every time. The before/after compare over the
+  /// preference keys (never the `g7.*` archive) still gates the one expensive
+  /// [_reload] to a real settings change.
   Future<void> _pullAccount() async {
     const storage = FlutterSecureStorage();
     if ((await storage.read(key: "authentication_token") ?? "").isEmpty) {
@@ -263,7 +283,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
     }
     try {
       final before = _preferenceKeys(await storage.readAll());
-      await AccountSync().pullAll(null);
+      await AccountSync().pullAll(null, withHistory: await AccountSync.historyDue());
       if (!mapEquals(before, _preferenceKeys(await storage.readAll()))) {
         await _reload();
       }
@@ -401,15 +421,22 @@ class _AppLifecycleState extends State<_AppLifecycle>
   /// updates them without waiting for the Sport tab to be opened. Sequential:
   /// the `health` plugin has a single activity-result channel, so the metrics
   /// refresh and the import must not overlap.
+  /// The metrics refresh is throttled + shared inside [GoogleHealthState] (a full
+  /// import froze the UI thread on open — see there). It returns false on a
+  /// throttled no-op, so today's steps import only runs when metrics actually
+  /// refreshed.
   Future<void> _refreshHealth() async {
     final health = context.read<GoogleHealthState>();
-    final sport = context.read<SportState>();
-    final activity = context.read<SportActivityState>();
-    await health.refreshIfConnected();
-    if (!mounted || !health.connected) {
+    if (!await health.refreshIfConnected()) {
       return;
     }
-    await HealthImporter().import(sport, activity);
+    if (!mounted) {
+      return;
+    }
+    await HealthImporter().import(
+      context.read<SportState>(),
+      context.read<SportActivityState>(),
+    );
   }
 
   @override

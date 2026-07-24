@@ -63,12 +63,11 @@ class _SportBodyContentState extends State<SportBodyContent> {
       context.read<CardioTrainingState>().reloadPending();
       _health = context.read<GoogleHealthState>();
       _health!.startLive();
-      // Same on-every-open burst as the account pull: a Health-Connect read plus
-      // an import that writes sport state and rebuilds. Throttled on its own key
-      // so pull-to-refresh (which calls it directly) still forces a fresh fetch.
-      const PullThrottle('sport-health').run(
-        () => _syncGoogleHealth(context.read<SportState>(), activity),
-      );
+      // A Health-Connect read plus an import that writes sport state and rebuilds.
+      // The 30-day metrics import froze the UI thread, so it is throttled + shared
+      // inside GoogleHealthState (with the overview/cold-start refresh); a Sport
+      // reopen within the window no longer re-imports. Pull-to-refresh forces it.
+      _syncGoogleHealth(context.read<SportState>(), activity);
       // Throttled: the body is rebuilt on every tab switch, so this fired six
       // round trips per visit — the burst whose reload+rebuild hitched the page
       // shortly after opening it. The Confirm/Reject drain (reloadPending above)
@@ -86,6 +85,7 @@ class _SportBodyContentState extends State<SportBodyContent> {
       _syncGoogleHealth(
         context.read<SportState>(),
         context.read<SportActivityState>(),
+        force: true,
       ),
     ]);
   }
@@ -127,10 +127,13 @@ class _SportBodyContentState extends State<SportBodyContent> {
   /// drops one request. Not connected ⇒ pedometer + estimates stay the source.
   Future<void> _syncGoogleHealth(
     SportState sport,
-    SportActivityState activity,
-  ) async {
-    await _health!.refreshIfConnected();
-    if (!mounted || _health!.connected != true) {
+    SportActivityState activity, {
+    bool force = false,
+  }) async {
+    if (!await _health!.refreshIfConnected(force: force)) {
+      return;
+    }
+    if (!mounted) {
       return;
     }
     await HealthImporter().import(sport, activity);

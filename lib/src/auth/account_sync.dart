@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/cgm/event_sync.dart';
 import 'package:insulink/src/cgm/glucose_sync.dart';
 import 'package:insulink/src/google_health/google_health_sync.dart';
@@ -22,19 +23,53 @@ import 'package:insulink/src/sport/sport_sync.dart';
 /// own storage keys, and a simultaneous token refresh is deduped by
 /// `RequestRefresh`.
 class AccountSync {
+  static const _kHistoryLast = 'account_sync.history_last';
+  static const _historyInterval = Duration(minutes: 30);
+  static const _storage = FlutterSecureStorage();
+
   /// A null [context] is the startup path — there is no widget tree yet. It only
   /// costs the logout alert on an auth failure (see `RequestReset`); the token
   /// refresh itself works without it.
-  Future<void> pullAll(BuildContext? context) async {
+  ///
+  /// A null [context] is the startup path — there is no widget tree yet. It only
+  /// costs the logout alert on an auth failure (see `RequestReset`); the token
+  /// refresh itself works without it.
+  ///
+  /// [withHistory] gates the one heavy branch: the glucose/event history re-pull
+  /// decodes weeks of readings and rewrites the archive on the UI isolate. The
+  /// cold-start caller passes [historyDue] (throttled to [_historyInterval]) so a
+  /// plain reopen skips it while the light branches still run; a fresh sign-in
+  /// passes true, since a returning device has no local history yet.
+  Future<void> pullAll(
+    BuildContext? context, {
+    required bool withHistory,
+  }) async {
     await Future.wait([
       ProfileSettings().pull(context),
-      GlucoseSync().pullHistory(context),
-      EventSync().pullHistory(context),
       SportSync().pull(context),
       NutritionSync().pull(context),
       InventorySync().pull(context),
       GoogleHealthSync().pull(context),
       PulseSync().pull(context),
+      if (withHistory) GlucoseSync().pullHistory(context),
+      if (withHistory) EventSync().pullHistory(context),
     ]);
+    if (withHistory) {
+      await _storage.write(
+        key: _kHistoryLast,
+        value: DateTime.now().millisecondsSinceEpoch.toString(),
+      );
+    }
+  }
+
+  /// Whether the throttled history re-pull is due. The cold-start caller checks
+  /// this and hands the result to [pullAll]; a fresh sign-in passes true directly.
+  static Future<bool> historyDue() async {
+    final last = int.tryParse(await _storage.read(key: _kHistoryLast) ?? '');
+    if (last == null) {
+      return true;
+    }
+    final age = DateTime.now().millisecondsSinceEpoch - last;
+    return age < 0 || age >= _historyInterval.inMilliseconds;
   }
 }
