@@ -109,19 +109,6 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // TEMP perf verification
-    WidgetsBinding.instance.addTimingsCallback((timings) {
-      for (final timing in timings) {
-        final total = timing.totalSpan.inMicroseconds;
-        if (total > 16000) {
-          debugPrint(
-            'PERF SLOW-frame ${total}us '
-            'build=${timing.buildDuration.inMicroseconds}us '
-            'raster=${timing.rasterDuration.inMicroseconds}us',
-          );
-        }
-      }
-    });
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
