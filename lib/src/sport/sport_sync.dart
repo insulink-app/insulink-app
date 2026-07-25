@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
+import 'package:http/http.dart' show Response;
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_store.dart';
@@ -21,6 +22,25 @@ import 'package:insulink/src/sport/workout/workout_snapshot.dart';
 class SportSync {
   static const _store = SportStore();
   static const _activeWorkoutKey = 'active-workout';
+
+  /// How long a snapshot waits before it goes up. Only enough to coalesce a
+  /// burst of taps — a follower is watching this happen live, so anything longer
+  /// is felt as the other screen lagging behind.
+  static const _activeWorkoutDebounce = Duration(milliseconds: 400);
+
+  /// The `updated` stamp of the account's active workout as this device last saw
+  /// it — from its own push or from a pull. The server writes it, so it orders
+  /// the devices' writes without trusting any of their clocks. 0 means "no
+  /// workout known", which is what a fresh start sends.
+  static int _knownUpdate = 0;
+
+  /// Which workout [_knownUpdate] belongs to (its start). A stamp is only ever
+  /// valid for its OWN workout: sending it for a different one claims to be
+  /// carrying on a workout the sender never saw, and the account rightly refuses
+  /// that — silently, for as long as the workout runs, so the phone worked out
+  /// alone and the panel never heard a thing. Every workout therefore starts
+  /// from 0 unless the account has confirmed THAT one.
+  static int _stampedWorkoutStart = 0;
   static final Map<String, Timer> _timers = {};
 
   /// Collections whose local change has not reached the backend yet — the
@@ -73,11 +93,18 @@ class SportSync {
     }
     _timers.clear();
     _unsent.clear();
+    _forgetStamp();
   }
 
-  Future<void> _post(String url, Map<String, Object> body) async {
-    await Request.post(url: url, body: body).send(null);
+  /// No workout on the account (or none this device has been told about), so the
+  /// next push is a fresh start.
+  static void _forgetStamp() {
+    _knownUpdate = 0;
+    _stampedWorkoutStart = 0;
   }
+
+  Future<Response?> _post(String url, Map<String, Object> body) =>
+      Request.post(url: url, body: body).send(null);
 
   /// Weight plus the daily activity metrics, each as a typed value+time entry.
   Future<void> _sendMeasurements() async {
@@ -153,11 +180,48 @@ class SportSync {
   void pushActiveWorkout(WorkoutSnapshot snapshot) => _debounce(
     _activeWorkoutKey,
     () => _sendActiveWorkout(snapshot),
-    delay: const Duration(seconds: 1),
+    delay: _activeWorkoutDebounce,
   );
 
-  Future<void> _sendActiveWorkout(WorkoutSnapshot snapshot) =>
-      _post('/sport/workout/active/sync/', {'workout': snapshot.toJson()});
+  /// Sends the snapshot together with the stamp of the account copy this device
+  /// last saw, so the server can tell a device carrying a workout on from one
+  /// starting a fresh one — and refuse the former once the workout has been
+  /// ended elsewhere.
+  Future<void> _sendActiveWorkout(WorkoutSnapshot snapshot) async {
+    final response = await _post('/sport/workout/active/sync/', {
+      'workout': snapshot.toJson(),
+      'updated': stampFor(snapshot.startedAtMs),
+    });
+    _rememberUpdate(response, snapshot.startedAtMs);
+  }
+
+  /// Whether the account has confirmed a running workout to this device — a pull
+  /// that answered with one, or a push it accepted. False the moment the account
+  /// says none runs. Read BEFORE a poll to tell a workout ENDED elsewhere from
+  /// one of this device's own that never reached the account at all.
+  static bool get activeWorkoutConfirmed => _stampedWorkoutStart != 0;
+
+  /// The stamp to send for the workout that started at [startedAtMs]: the one
+  /// the account confirmed for THIS workout, or 0 for any other — a workout this
+  /// device is starting, not carrying on.
+  @visibleForTesting
+  static int stampFor(int startedAtMs) =>
+      _stampedWorkoutStart == startedAtMs ? _knownUpdate : 0;
+
+  /// Keeps the newest stamp the account answered with. A response without one
+  /// (a refused push, a failed request) leaves it alone: the stamp still
+  /// describes the copy this device last saw.
+  void _rememberUpdate(Response? response, int startedAtMs) {
+    if (response == null) {
+      return;
+    }
+    final body = jsonDecode(response.body);
+    if (body['success'] != true || body['updated'] is! num) {
+      return;
+    }
+    _knownUpdate = (body['updated'] as num).toInt();
+    _stampedWorkoutStart = startedAtMs;
+  }
 
   /// Ends the shared workout. Disarms any pending push first — a snapshot timer
   /// firing after the clear would resurrect the finished workout on every other
@@ -166,12 +230,19 @@ class SportSync {
     _timers.remove(_activeWorkoutKey)?.cancel();
     // Cancelling skips the timer's `finally`, so drop the flag by hand.
     _unsent.remove(_activeWorkoutKey);
+    _forgetStamp();
     await _post('/sport/workout/active/clear/', {});
   }
 
-  /// The account's running workout, or null when none is running (also null when
-  /// the request fails, so a sign-in offline simply resumes nothing).
-  Future<WorkoutSnapshot?> pullActiveWorkout(BuildContext? context) async {
+  /// The account's running workout, or null when the account could not be asked
+  /// — which must NOT be read as "no workout runs", or a single failed poll ends
+  /// the workout on this device. A null `snapshot` is the account genuinely
+  /// holding none; `foreign` marks one written since this device last pushed or
+  /// pulled, i.e. by another device, so it is to be adopted rather than dropped
+  /// as this device's own copy coming back.
+  Future<({WorkoutSnapshot? snapshot, bool foreign})?> pullActiveWorkout(
+    BuildContext? context,
+  ) async {
     final response = await Request.get(
       url: '/sport/workout/active/find/',
     ).send(context);
@@ -179,12 +250,21 @@ class SportSync {
       return null;
     }
     final body = jsonDecode(response.body);
-    if (body['success'] != true || body['workout'] is! Map) {
+    if (body['success'] != true) {
       return null;
     }
-    return WorkoutSnapshot.fromJson(
+    if (body['workout'] is! Map) {
+      _forgetStamp();
+      return (snapshot: null, foreign: false);
+    }
+    final snapshot = WorkoutSnapshot.fromJson(
       (body['workout'] as Map).cast<String, dynamic>(),
     );
+    final updated = (body['updated'] as num?)?.toInt() ?? 0;
+    final foreign = updated > stampFor(snapshot.startedAtMs);
+    _knownUpdate = updated;
+    _stampedWorkoutStart = snapshot.startedAtMs;
+    return (snapshot: snapshot, foreign: foreign);
   }
 
   // ---- pull all on sign-in ----
@@ -193,8 +273,18 @@ class SportSync {
   /// every cold start), so a returning device shows its full history. Each
   /// collection is replaced with the server's, which is the source of truth.
   ///
-  /// The six fetches run concurrently — they write separate collections, and a
+  /// The five fetches run concurrently — they write separate collections, and a
   /// cold start waits on this (see [AccountSync]).
+  ///
+  /// The running workout is deliberately NOT among them. It has exactly one
+  /// owner, [TrainingState.watchActiveWorkout], which pulls it the moment the app
+  /// opens or resumes and writes it into the live state as well as the store.
+  /// This pull only ever wrote the STORE — and the shared state does not re-read
+  /// that key ([TrainingState.reload] skips it on purpose) — so pulling here left
+  /// the snapshot sitting in storage where nothing on screen would look at it
+  /// until the next cold start, and consumed the `updated` stamp the watcher uses
+  /// to recognise it as new. The phone then stayed a whole launch behind the
+  /// panel, and the runner only opened on the SECOND start.
   Future<void> pull(BuildContext? context) async {
     await Future.wait([
       _pullMeasurements(context),
@@ -202,20 +292,7 @@ class SportSync {
       _pullRoutines(context),
       _pullWorkouts(context),
       _pullTrainings(context),
-      _pullActiveWorkout(context),
     ]);
-  }
-
-  /// Adopts the account's running workout into the store, so a routine started
-  /// on another device (or in the web panel) is offered for resume here. Runs
-  /// before the provider tree reloads, like the collection pulls.
-  Future<void> _pullActiveWorkout(BuildContext? context) async {
-    final snapshot = await pullActiveWorkout(context);
-    if (snapshot == null) {
-      await _store.clearActiveWorkout();
-      return;
-    }
-    await _store.saveActiveWorkout(snapshot);
   }
 
   /// GETs [url] and returns its [key] list, or null when there is nothing safe to

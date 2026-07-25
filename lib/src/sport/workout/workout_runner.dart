@@ -10,7 +10,11 @@ enum WorkoutPhase { exercising, resting, done }
 /// (survives backgrounding, computed from timestamps) and the rest countdown.
 /// Logs one [SetLog] per set and delivers a [WorkoutSession] via [onFinished].
 /// Persists a [WorkoutSnapshot] via [onPersist] on every state change so the
-/// workout resumes after the app is closed. The rest does NOT auto-advance and
+/// workout resumes after the app is closed. A fresh workout persists at once, so
+/// it is resumable before the first set; a [resume]d one does NOT — that
+/// snapshot is already stored, and pushing it back would republish a workout
+/// this device is only following, recreating it when the device that owns it has
+/// just finished it. The rest does NOT auto-advance and
 /// plays no tone: at 0 it counts up as overtime until the user continues or
 /// extends it. UI-free.
 class WorkoutRunner extends ChangeNotifier {
@@ -60,14 +64,15 @@ class WorkoutRunner extends ChangeNotifier {
        ),
        _restEndsAt = _dateOrNull(resume?.restEndsAtMs),
        _restStartedAt = _dateOrNull(resume?.restStartedAtMs),
-       _pausedTotal = Duration(milliseconds: resume?.pausedTotalMs ?? 0) {
+       _pausedTotal = Duration(milliseconds: resume?.pausedTotalMs ?? 0),
+       _pausedAt = _dateOrNull(resume?.pausedAtMs) {
     if (resume != null) {
       _sets.addAll(resume.sets);
     }
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
-    // Persist right away so the workout shows up as resumable the moment it
-    // starts — even before the first set or a pause.
-    _persist();
+    if (resume == null) {
+      _persist();
+    }
   }
 
   static DateTime? _dateOrNull(int? ms) =>
@@ -353,6 +358,7 @@ class WorkoutRunner extends ChangeNotifier {
         restEndsAtMs: _restEndsAt?.millisecondsSinceEpoch,
         restStartedAtMs: _restStartedAt?.millisecondsSinceEpoch,
         pausedTotalMs: _pausedTotal.inMilliseconds,
+        pausedAtMs: _pausedAt?.millisecondsSinceEpoch,
         currentReps: _currentReps,
         currentWeight: _currentWeight,
         sets: List.of(_sets),

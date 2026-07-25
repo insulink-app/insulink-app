@@ -18,6 +18,12 @@ class TrainingState extends ChangeNotifier {
   /// shows it straight away, slow enough to cost nothing.
   static const _watchEvery = Duration(seconds: 5);
 
+  /// The same question while a runner is actually open. Someone is working out
+  /// on one of the two screens right now and watching the other; a set arriving
+  /// five seconds late reads as "it doesn't sync at all". A snapshot is small and
+  /// the phone is awake anyway (the runner holds the wakelock).
+  static const _watchEveryWithRunner = Duration(seconds: 2);
+
   final SportStore _store;
   final List<SportExercise> _exercises;
   final List<SportRoutine> _routines;
@@ -26,10 +32,7 @@ class TrainingState extends ChangeNotifier {
   Timer? _watchTimer;
   bool _driving = false;
   bool _endedElsewhere = false;
-  // Whether the current active workout has ever been seen on the account. A push
-  // is debounced ~1s, so a poll right after starting legitimately reads null
-  // before the start has landed — that must not read as "ended elsewhere".
-  bool _confirmedRemote = false;
+  int _adoptedRevision = 0;
 
   TrainingState(
     this._store,
@@ -95,7 +98,6 @@ class TrainingState extends ChangeNotifier {
   Future<void> clearActiveWorkout() async {
     _activeWorkout = null;
     _endedElsewhere = false;
-    _confirmedRemote = false;
     await _store.clearActiveWorkout();
     unawaited(SportSync().clearActiveWorkout());
     notifyListeners();
@@ -111,14 +113,27 @@ class TrainingState extends ChangeNotifier {
   /// Whether this device currently drives the workout (its runner is open).
   bool get drivingActiveWorkout => _driving;
 
-  /// Marks this device as the one driving the workout — set while the runner
-  /// page is open. The watcher then stops adopting the account's copy: it is
-  /// this device's own push coming back a few seconds stale, and applying it
-  /// would yank the user out of the set they are in the middle of. Ending is
-  /// still followed, because that must reach every device.
+  /// Marks this device as the one showing the workout — set while the runner
+  /// page is open. It only keeps a second runner from being opened on top and
+  /// tells an end elsewhere apart from a workout that was never on the account;
+  /// it does NOT stop the account's copy from being adopted. The runner having
+  /// the page open does not make this device the one moving the workout on: the
+  /// panel may be doing that, and ignoring its snapshots is what left the phone
+  /// ticking away on a set the user finished ages ago.
   void driveActiveWorkout(bool driving) {
+    if (_driving == driving) {
+      return;
+    }
     _driving = driving;
+    if (_watchTimer != null) {
+      watchActiveWorkout();
+    }
   }
+
+  /// Counts the snapshots adopted from another device, so an open runner can
+  /// tell one from its own save (both notify) and rebuild itself only for the
+  /// former.
+  int get adoptedRevision => _adoptedRevision;
 
   /// Follows the account's running workout, so a routine started or ended in the
   /// web panel reaches this device without a restart. Idempotent; pulls once
@@ -126,7 +141,10 @@ class TrainingState extends ChangeNotifier {
   /// after the first tick.
   void watchActiveWorkout() {
     _watchTimer?.cancel();
-    _watchTimer = Timer.periodic(_watchEvery, (_) => _followActiveWorkout());
+    _watchTimer = Timer.periodic(
+      _driving ? _watchEveryWithRunner : _watchEvery,
+      (_) => _followActiveWorkout(),
+    );
     unawaited(_followActiveWorkout());
   }
 
@@ -135,33 +153,41 @@ class TrainingState extends ChangeNotifier {
     _watchTimer = null;
   }
 
+  /// One poll of the account. An unreachable account changes nothing — reading a
+  /// failed request as "no workout runs" ends the workout on this device over a
+  /// moment of no signal.
   Future<void> _followActiveWorkout() async {
-    final remote = await SportSync().pullActiveWorkout(null);
-    if (remote == null) {
-      await _adoptEndedWorkout();
+    final confirmed = SportSync.activeWorkoutConfirmed;
+    final answer = await SportSync().pullActiveWorkout(null);
+    if (answer == null) {
       return;
     }
-    _confirmedRemote = true;
-    if (_driving || _matchesActive(remote)) {
+    final remote = answer.snapshot;
+    if (remote == null) {
+      await _adoptEndedWorkout(confirmed);
+      return;
+    }
+    if (!answer.foreign || _matchesActive(remote)) {
       return;
     }
     _activeWorkout = remote;
+    _adoptedRevision += 1;
     await _store.saveActiveWorkout(remote);
     notifyListeners();
   }
 
-  /// The account has no workout: whatever this device still shows is over.
-  /// Flagged only when this device drove it AND the account had once confirmed
-  /// it — so the banner just disappearing stays silent, and a poll that reads
-  /// null before this device's own freshly-started push has landed does not
-  /// masquerade as an end from elsewhere.
-  Future<void> _adoptEndedWorkout() async {
+  /// The account has no workout: whatever this device still shows is over. The
+  /// open runner is only TOLD so when the account had [confirmed] the workout to
+  /// this device beforehand — a push it accepted or a poll that answered with it.
+  /// Otherwise the workout never reached the account (a push still on its way, or
+  /// no signal since it started), and closing the runner would throw away a
+  /// session the user is in the middle of.
+  Future<void> _adoptEndedWorkout(bool confirmed) async {
     if (_activeWorkout == null) {
       return;
     }
     _activeWorkout = null;
-    _endedElsewhere = _driving && _confirmedRemote;
-    _confirmedRemote = false;
+    _endedElsewhere = _driving && confirmed;
     await _store.clearActiveWorkout();
     notifyListeners();
   }
@@ -171,7 +197,9 @@ class TrainingState extends ChangeNotifier {
   }
 
   /// Compared by their JSON so an unchanged poll does not rebuild the tree every
-  /// few seconds. [WorkoutSnapshot] is a plain value object without `==`, and
+  /// few seconds — and so another device echoing this device's own snapshot back
+  /// (the panel mirrors what it adopts) does not restart the runner over state it
+  /// already holds. [WorkoutSnapshot] is a plain value object without `==`, and
   /// giving it one only for this would be the longer way round.
   bool _matchesActive(WorkoutSnapshot remote) {
     final local = _activeWorkout;

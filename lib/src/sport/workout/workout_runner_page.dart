@@ -29,7 +29,12 @@ class WorkoutRunnerPage extends StatefulWidget {
 }
 
 class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
-  late final WorkoutRunner _runner;
+  late WorkoutRunner _runner;
+  late int _seenRevision;
+
+  /// The routine the runner is on. Follows the driver's embedded copy when a
+  /// snapshot is adopted, so the jump sheet and the pointers agree with it.
+  late SportRoutine _routine;
 
   @override
   void initState() {
@@ -43,40 +48,81 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     // no-op when a CGM sensor already runs the service.
     context.read<CgmController>().ensureDetectionService();
     final training = context.read<TrainingState>();
-    // This device drives the workout for as long as this page is up: the
-    // account's copy is only watched for the workout ENDING elsewhere, never
-    // applied over the set in progress.
+    // This page shows the workout; it does not own it. The account's copy is
+    // adopted while it is up, so a set logged in the panel appears here too.
     training.driveActiveWorkout(true);
     training.addListener(_onTrainingChanged);
-    _runner =
-        WorkoutRunner(
-            widget.routine,
-            training.exercises,
-            resume: widget.resume,
-            findLastSet: training.lastSetFor,
-            onPersist: (snapshot) => snapshot == null
-                ? training.clearActiveWorkout()
-                : training.saveActiveWorkout(snapshot),
-          )
-          ..onFinished = (session) {
-            training.addSession(session);
-            if (!mounted) {
-              return;
-            }
-            // Swap the runner for the summary so "back" from it lands on the
-            // sport page, not a finished workout. A workout ended with nothing
-            // logged has nothing to summarise — just close.
-            final navigator = Navigator.of(context);
-            if (session.sets.isEmpty) {
-              navigator.pop();
-            } else {
-              navigator.pushReplacement(
-                MaterialPageRoute<void>(
-                  builder: (_) => WorkoutSummaryPage(session: session),
-                ),
-              );
-            }
-          };
+    _seenRevision = training.adoptedRevision;
+    _routine = widget.routine;
+    _runner = _buildRunner(widget.resume);
+  }
+
+  /// A runner over [resume] (null starts a fresh workout), wired to persist into
+  /// the shared state and to hand its finished session to the summary.
+  WorkoutRunner _buildRunner(WorkoutSnapshot? resume) {
+    final training = context.read<TrainingState>();
+    return WorkoutRunner(
+      _routine,
+      training.exercises,
+      resume: resume,
+      findLastSet: training.lastSetFor,
+      onPersist: (snapshot) => snapshot == null
+          ? training.clearActiveWorkout()
+          : training.saveActiveWorkout(snapshot),
+    )..onFinished = _onFinished;
+  }
+
+  /// Swaps the runner for the summary so "back" from it lands on the sport page,
+  /// not a finished workout. A workout ended with nothing logged has nothing to
+  /// summarise — just close.
+  void _onFinished(WorkoutSession session) {
+    context.read<TrainingState>().addSession(session);
+    if (!mounted) {
+      return;
+    }
+    final navigator = Navigator.of(context);
+    if (session.sets.isEmpty) {
+      navigator.pop();
+      return;
+    }
+    navigator.pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => WorkoutSummaryPage(session: session),
+      ),
+    );
+  }
+
+  /// The shared workout changed: it was either ended somewhere else, or moved on
+  /// by the device that is driving it.
+  void _onTrainingChanged() {
+    if (!mounted) {
+      return;
+    }
+    final training = context.read<TrainingState>();
+    if (training.endedElsewhere) {
+      _closeEndedElsewhere(training);
+      return;
+    }
+    if (training.adoptedRevision != _seenRevision) {
+      _adoptRemote(training);
+    }
+  }
+
+  /// Another device moved the workout on. Rebuild the runner from its snapshot —
+  /// the same path a resume takes — so this screen shows the set that device is
+  /// on instead of ticking on state only this one still believes in.
+  void _adoptRemote(TrainingState training) {
+    _seenRevision = training.adoptedRevision;
+    final snapshot = training.activeWorkout;
+    if (snapshot == null) {
+      return;
+    }
+    final replaced = _runner;
+    setState(() {
+      _routine = training.routineForSnapshot(snapshot) ?? widget.routine;
+      _runner = _buildRunner(snapshot);
+    });
+    replaced.dispose();
   }
 
   /// The workout was ended somewhere else (the web panel, another phone). Say so
@@ -85,11 +131,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
   /// Closes first and tells afterwards, against the navigator's own context: the
   /// alert is itself a route, so popping while it is up would only dismiss the
   /// alert and leave the runner sitting on a workout that no longer exists.
-  void _onTrainingChanged() {
-    final training = context.read<TrainingState>();
-    if (!mounted || !training.endedElsewhere) {
-      return;
-    }
+  void _closeEndedElsewhere(TrainingState training) {
     training.acknowledgeEndedElsewhere();
     final navigator = Navigator.of(context);
     final iconColor = Theme.of(context).colorScheme.primary;
@@ -159,7 +201,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     final scheme = Theme.of(context).colorScheme;
     return AppBar(
       surfaceTintColor: Colors.transparent,
-      title: Text(widget.routine.name),
+      title: Text(_routine.name),
       actions: [
         IconButton(
           icon: Icon(
@@ -211,14 +253,14 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            for (var index = 0; index < widget.routine.items.length; index++)
+            for (var index = 0; index < _routine.items.length; index++)
               ListTile(
                 leading: index == _runner.exerciseIndex
                     ? const Icon(PhosphorIconsFill.play)
                     : const SizedBox(width: 24),
                 title: Text(
                   training
-                          .exerciseById(widget.routine.items[index].exerciseId)
+                          .exerciseById(_routine.items[index].exerciseId)
                           ?.name ??
                       '—',
                 ),

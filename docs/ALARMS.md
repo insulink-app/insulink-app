@@ -36,10 +36,32 @@ service isolate has no activity to launch the settings screen.
 ## Edge-triggered glucose alarms
 
 `check()` maps a reading to a `G7AlarmLevel` (none / low|high × warning|urgent)
-and only notifies when the **zone changes**. Re-evaluating the same zone every
-5 min does not re-notify. The zone is tracked even while silent, so turning
-silent mode off does not re-fire an alarm for a value still in-zone — only a
-fresh crossing fires.
+and only notifies when the zone gets **worse**. One excursion therefore raises
+one alarm per zone it reaches. Three rules, all in `check()`:
+
+1. **Staying in a zone is silent.** Re-evaluating the same zone every 5 min does
+   not re-notify.
+2. **A zone is only left once glucose clears its line by
+   `_alarmRearmMarginMgdl` (10 mg/dL)** — `_sustainedLevel`. With a bare
+   threshold comparison, sensor noise alone walks a value across the line
+   (69 → 71 → 69, five minutes apart) and every re-entry was a fresh alarm for
+   one and the same low, all night. Escalating skips the margin: dropping from a
+   low into an urgent low alarms immediately.
+3. **Easing off is not news** — `_worsened`. Climbing out of an urgent low back
+   into a plain low used to fire a second alarm *on the way up*; together with
+   rule 2 that made a single hypo notify four times. Severity ranking is
+   `severityOf`, NOT the enum order (that is the notification id).
+
+Entering a low straight from a high (or the reverse) always alarms — that is a
+different direction, not a recovery.
+
+The zone is tracked even while silent, so turning silent mode off does not
+re-fire an alarm for a value still in-zone — only a fresh crossing fires.
+
+The zone lives in memory in the service isolate, so a service restart (the
+25-min no-data watchdog) forgets it and the next reading in-zone alarms again.
+Left as is deliberately: after a gap that long, being told the low is still there
+is worth one notification.
 
 Thresholds, display unit, and the silent flag are read **fresh from storage on
 every call** (`ProfileGlucoseState.loadThresholds()`, `ProfileSilentState.load()`)

@@ -45,6 +45,16 @@ void main() {
     }
   });
 
+  /// The stamp fences a push that carries a workout on ("I last saw the account
+  /// at this version"). Sending it for a DIFFERENT workout claims to continue one
+  /// this device never saw, and the account refuses that — for as long as the
+  /// workout runs, so the phone would work out alone with nothing reaching the
+  /// panel. A workout this device is starting must therefore always send 0.
+  test('a stamp is only ever sent for the workout it was taken from', () {
+    expect(SportSync.stampFor(1000), 0);
+    expect(SportSync.stampFor(2000), 0);
+  });
+
   test('cancelling the queued pushes releases the guard', () {
     SportSync().pushTrainings();
     SportSync.cancelPending();

@@ -414,9 +414,13 @@ alarms fire with the app closed. `init()` must be called once per isolate
 
 - **Glucose alarms are edge-triggered**: `check()` maps the reading to a
   `G7AlarmLevel` (none/low|high × warning|urgent) and only notifies when the
-  zone CHANGES. The zone is tracked even while silent, so turning silent mode
-  off doesn't re-fire an alarm for a value still in-zone — only a fresh
-  crossing fires. Thresholds + unit are re-read each call (no restart needed).
+  zone gets WORSE — one excursion, one alarm per zone it reaches. A zone is only
+  left once glucose clears its line by a 10 mg/dL margin (or a value resting on
+  the threshold re-alarms with every wobble), and easing off (urgent low → low)
+  says nothing; escalating always fires at once. The zone is tracked even while
+  silent, so turning silent mode off doesn't re-fire an alarm for a value still
+  in-zone — only a fresh crossing fires. Thresholds + unit are re-read each call
+  (no restart needed). Details: `docs/ALARMS.md`.
 - **The alarm TONE is NOT played by the notification channel** — the channels
   are `playSound: false`. The sound is played manually via `audioplayers` on the
   **ALARM audio stream** (`usageType: alarm`) so it obeys the alarm-volume
@@ -534,6 +538,9 @@ alarms fire with the app closed. `init()` must be called once per isolate
   silent `ColorScheme` fallbacks, and the measured contrast values.
 - `docs/PERFORMANCE.md` — what made the UI stutter: the per-build archive parse,
   animating inside a chart, and the tab pages' scroll cache.
+- `docs/ACTIVE_WORKOUT.md` — the running workout shared with the panel: who
+  drives, who follows, and the server stamp that stops a finished workout being
+  written back to life.
 
 `lib/src/rust/` is generated — never hand-edit; change `rust/src/api/` and rerun
 codegen.

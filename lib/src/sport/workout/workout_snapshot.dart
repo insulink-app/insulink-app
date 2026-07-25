@@ -24,6 +24,11 @@ class WorkoutSnapshot {
   final int? restEndsAtMs;
   final int? restStartedAtMs;
   final int pausedTotalMs;
+
+  /// When the workout was paused, or null while it runs. Carried like every
+  /// other time as an absolute epoch, so a follower freezes its clocks at the
+  /// same instant instead of counting on while the other screen sits paused.
+  final int? pausedAtMs;
   final int currentReps;
   final double currentWeight;
   final List<SetLog> sets;
@@ -40,6 +45,7 @@ class WorkoutSnapshot {
     required this.restEndsAtMs,
     required this.restStartedAtMs,
     required this.pausedTotalMs,
+    this.pausedAtMs,
     required this.currentReps,
     required this.currentWeight,
     required this.sets,
@@ -57,6 +63,7 @@ class WorkoutSnapshot {
     'restEnds': restEndsAtMs,
     'restStarted': restStartedAtMs,
     'paused': pausedTotalMs,
+    'pausedAt': pausedAtMs,
     'reps': currentReps,
     'weight': currentWeight,
     'sets': sets.map((set) => set.toJson()).toList(),
@@ -79,6 +86,7 @@ class WorkoutSnapshot {
         restEndsAtMs: json['restEnds'] as int?,
         restStartedAtMs: json['restStarted'] as int?,
         pausedTotalMs: json['paused'] as int,
+        pausedAtMs: json['pausedAt'] as int?,
         currentReps: json['reps'] as int,
         currentWeight: (json['weight'] as num).toDouble(),
         sets: (json['sets'] as List)

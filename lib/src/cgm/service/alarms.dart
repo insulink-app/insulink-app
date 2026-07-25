@@ -55,9 +55,19 @@ void trainingNotificationAction(NotificationResponse response) {
   }
 }
 
-/// Glucose alarm severity. Ordered so a transition between two non-`none`
-/// levels (e.g. urgent low → warning low) still re-fires the notification.
+/// Glucose alarm severity. The enum order is the notification id, NOT a ranking
+/// — how loud a level is comes from [G7AlarmManager.severityOf], and which
+/// direction it points from `_isHigh`.
 enum G7AlarmLevel { none, lowWarning, lowUrgent, highWarning, highUrgent }
+
+/// The user's alarm lines plus the unit they read values in.
+typedef GlucoseThresholds = ({
+  GlucoseUnit unit,
+  int urgentLow,
+  int low,
+  int high,
+  int urgentHigh,
+});
 
 /// Predictive advisory zone: glucose is currently in range but forecast to
 /// cross the low or high threshold within the advisory horizon.
@@ -160,6 +170,14 @@ class G7AlarmManager {
   /// pre-warning — it shows once, then only again after a real recovery.
   static const _advisoryRearmMarginMgdl = 30;
 
+  /// How far glucose must recover past an alarm line before that zone counts as
+  /// left and can alarm again. Sensor noise alone moves a value either side of a
+  /// threshold between two readings, and each of those crossings used to be a
+  /// fresh notification for one and the same low. Much tighter than the
+  /// advisory's margin: this is a real excursion, not a forecast, so recovery is
+  /// measured close to the line.
+  static const _alarmRearmMarginMgdl = 10;
+
   /// A cached backend prediction older than this is ignored — only the UI
   /// isolate refreshes it, so with the app closed it goes stale and the advisory
   /// falls back to the pure trend projection.
@@ -237,34 +255,34 @@ class G7AlarmManager {
     return '↓';
   }
 
-  /// Evaluate a new reading and notify on entering a different alarm zone.
-  /// Re-evaluating the same zone repeatedly (e.g. every 5 min EGV) does not
-  /// re-notify, so the alarm only fires again once the value has recovered and
-  /// crossed back in, or escalated/de-escalated to a different zone. The zone is
-  /// tracked even while silent, so it doesn't fire on the FIRST reading after
-  /// silent mode is switched off if glucose is still in-zone — only on a fresh
-  /// crossing. Thresholds, display unit, and the silent flag are read fresh from
-  /// storage each call so profile changes take effect without a service restart.
+  /// Evaluate a new reading and notify when the alarm zone gets WORSE: entering
+  /// one from the target range, or escalating inside one. One excursion raises
+  /// one alarm per zone it reaches — the way back out raises none, because a
+  /// value climbing out of an urgent low is not news the user has to be told
+  /// twice. Staying in a zone is silent too, and a value resting on a line does
+  /// not re-alarm with every wobble ([_sustainedLevel]).
+  ///
+  /// The zone is tracked even while silent, so it doesn't fire on the FIRST
+  /// reading after silent mode is switched off if glucose is still in-zone —
+  /// only on a fresh crossing. Thresholds, display unit, and the silent flag are
+  /// read fresh from storage each call so profile changes take effect without a
+  /// service restart.
   Future<void> check(int? mgdl, double trendPerMin) async {
     if (mgdl == null) {
       return;
     }
     final thresholds = await ProfileGlucoseState.loadThresholds();
-    final level = levelFor(mgdl, thresholds);
-    if (level == _last) {
-      return;
-    }
-    final leftTargetRange =
-        _last == G7AlarmLevel.none && level != G7AlarmLevel.none;
+    final level = _sustainedLevel(mgdl, thresholds);
+    final previous = _last;
     _last = level;
-    if (level == G7AlarmLevel.none) {
+    if (!_worsened(previous, level)) {
       return;
     }
     // Only log ONE event per excursion: on leaving the target range. Escalating
-    // within the same out-of-range spell (low warning → urgent low, or back)
-    // still re-fires the notification below, but does not open a new event — a
-    // fresh event needs glucose to have recovered into range in between.
-    if (leftTargetRange) {
+    // within the same out-of-range spell (low warning → urgent low) still fires
+    // the notification below, but does not open a new event — a fresh event
+    // needs glucose to have recovered into range in between.
+    if (previous == G7AlarmLevel.none) {
       await _store?.addEvent(eventTypeFor(level), value: mgdl);
     }
     if (await ProfileSilentState.load()) {
@@ -272,6 +290,60 @@ class G7AlarmManager {
     }
     await _show(level, _formatValue(mgdl, thresholds.unit, trendPerMin));
     await _playSound(high: _isHigh(level));
+  }
+
+  /// The zone this reading counts as being in. A zone is only LEFT once glucose
+  /// has cleared its line by [_alarmRearmMarginMgdl]; until then the reading is
+  /// still part of the same episode, whatever the raw thresholds say. Without
+  /// that a value resting on a line (69 → 71 → 69, five minutes apart) leaves
+  /// and re-enters the zone all night, and every re-entry was another alarm.
+  /// Getting worse always passes straight through — an escalation must never
+  /// wait for a margin.
+  G7AlarmLevel _sustainedLevel(int mgdl, GlucoseThresholds thresholds) {
+    final level = levelFor(mgdl, thresholds);
+    if (_last == G7AlarmLevel.none || _clearedLine(mgdl, _last, thresholds)) {
+      return level;
+    }
+    return severityOf(level) > severityOf(_last) ? level : _last;
+  }
+
+  /// Whether [mgdl] has recovered past [level]'s own line by the re-arm margin
+  /// — the point at which that zone counts as left.
+  bool _clearedLine(int mgdl, G7AlarmLevel level, GlucoseThresholds thresholds) {
+    return switch (level) {
+      G7AlarmLevel.lowUrgent =>
+        mgdl >= thresholds.urgentLow + _alarmRearmMarginMgdl,
+      G7AlarmLevel.lowWarning => mgdl >= thresholds.low + _alarmRearmMarginMgdl,
+      G7AlarmLevel.highWarning =>
+        mgdl <= thresholds.high - _alarmRearmMarginMgdl,
+      G7AlarmLevel.highUrgent =>
+        mgdl <= thresholds.urgentHigh - _alarmRearmMarginMgdl,
+      G7AlarmLevel.none => true,
+    };
+  }
+
+  /// Whether the move from [previous] to [level] is worth an alarm: into a zone
+  /// from the target range, straight from a low to a high (or back), or up a
+  /// severity inside the same direction. Easing off is not.
+  bool _worsened(G7AlarmLevel previous, G7AlarmLevel level) {
+    if (level == G7AlarmLevel.none || level == previous) {
+      return false;
+    }
+    if (previous == G7AlarmLevel.none || _isHigh(previous) != _isHigh(level)) {
+      return true;
+    }
+    return severityOf(level) > severityOf(previous);
+  }
+
+  /// How loud a level is: urgent beats warning, whichever direction it points.
+  /// The enum's own order cannot say this — it is the notification id.
+  @visibleForTesting
+  static int severityOf(G7AlarmLevel level) {
+    return switch (level) {
+      G7AlarmLevel.none => 0,
+      G7AlarmLevel.lowWarning || G7AlarmLevel.highWarning => 1,
+      G7AlarmLevel.lowUrgent || G7AlarmLevel.highUrgent => 2,
+    };
   }
 
   /// Raise a PRE-warning before glucose actually reaches a low/high zone and
@@ -678,10 +750,7 @@ class G7AlarmManager {
   /// Map a reading to its alarm zone using the user's thresholds. Pure and
   /// static so it can be unit-tested without the notification plugin.
   @visibleForTesting
-  static G7AlarmLevel levelFor(
-    int mgdl,
-    ({GlucoseUnit unit, int urgentLow, int low, int high, int urgentHigh}) t,
-  ) {
+  static G7AlarmLevel levelFor(int mgdl, GlucoseThresholds t) {
     if (mgdl <= t.urgentLow) {
       return G7AlarmLevel.lowUrgent;
     }

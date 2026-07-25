@@ -123,6 +123,65 @@ void main() {
     });
   });
 
+  /// One low, one alarm per zone it reaches. Defaults are 55/70/180/250 with a
+  /// 10 mg/dL re-arm margin, so a low is only over at 80 and an urgent low at 65
+  /// — everything in between is still the same episode.
+  group('one excursion alarms once per zone', () {
+    test('a value wobbling around the line does not re-alarm', () async {
+      await alarms.check(68, -1.0); // low warning
+      await alarms.check(75, 1.0); // over the line, but not recovered
+      await alarms.check(68, -1.0); // back under it — same low
+      await alarms.check(72, 1.0);
+      expect(notifications.shown, [G7AlarmLevel.lowWarning.index]);
+    });
+
+    test('a real recovery re-arms the zone', () async {
+      await alarms.check(68, -1.0);
+      await alarms.check(85, 1.0); // clear of the line by the margin
+      await alarms.check(68, -1.0);
+      expect(notifications.shown, [
+        G7AlarmLevel.lowWarning.index,
+        G7AlarmLevel.lowWarning.index,
+      ]);
+    });
+
+    test('climbing back out of an urgent low says nothing', () async {
+      await alarms.check(68, -1.0); // low warning
+      await alarms.check(50, -1.0); // urgent low
+      await alarms.check(60, 1.0); // recovering, still urgent's episode
+      await alarms.check(68, 1.0); // back to a plain low — not news
+      expect(notifications.shown, [
+        G7AlarmLevel.lowWarning.index,
+        G7AlarmLevel.lowUrgent.index,
+      ]);
+    });
+
+    test('dropping deeper still alarms at once', () async {
+      await alarms.check(68, -1.0);
+      await alarms.check(50, -2.0);
+      expect(notifications.shown.last, G7AlarmLevel.lowUrgent.index);
+    });
+
+    test('the high side holds its line the same way', () async {
+      await alarms.check(185, 1.0); // high warning
+      await alarms.check(175, -1.0); // under the line, not yet recovered
+      await alarms.check(185, 1.0); // same high
+      expect(notifications.shown, [G7AlarmLevel.highWarning.index]);
+      await alarms.check(165, -1.0); // clear of it by the margin
+      await alarms.check(185, 1.0);
+      expect(notifications.shown.length, 2);
+    });
+
+    test('a low straight after a high is its own alarm', () async {
+      await alarms.check(185, -2.0);
+      await alarms.check(65, -2.0);
+      expect(notifications.shown, [
+        G7AlarmLevel.highWarning.index,
+        G7AlarmLevel.lowWarning.index,
+      ]);
+    });
+  });
+
   group('event log groups an excursion into one event', () {
     Future<List<String>> eventTypes() async {
       final store = await CgmStore.open();
