@@ -30,7 +30,14 @@ class WorkoutRunnerPage extends StatefulWidget {
 
 class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
   late WorkoutRunner _runner;
-  late int _seenRevision;
+
+  /// The snapshot this page's runner is showing, compared by IDENTITY against
+  /// the shared state. The runner's own saves put THIS object there, so anything
+  /// else sitting in `activeWorkout` was written by another device and has to be
+  /// adopted. A counter of adoptions cannot say that: it is consumed whether or
+  /// not the snapshot behind it was applied, and a signal dropped once is a
+  /// screen that never catches up again.
+  WorkoutSnapshot? _shown;
 
   /// The routine the runner is on. Follows the driver's embedded copy when a
   /// snapshot is adopted, so the jump sheet and the pointers agree with it.
@@ -52,7 +59,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     // adopted while it is up, so a set logged in the panel appears here too.
     training.driveActiveWorkout(true);
     training.addListener(_onTrainingChanged);
-    _seenRevision = training.adoptedRevision;
+    _shown = widget.resume;
     _routine = widget.routine;
     _runner = _buildRunner(widget.resume);
   }
@@ -66,10 +73,20 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
       training.exercises,
       resume: resume,
       findLastSet: training.lastSetFor,
-      onPersist: (snapshot) => snapshot == null
-          ? training.clearActiveWorkout()
-          : training.saveActiveWorkout(snapshot),
+      onPersist: _onPersist,
     )..onFinished = _onFinished;
+  }
+
+  /// The runner moved: remember what it published — that is what this page is
+  /// showing — and hand it to the shared state. A null snapshot ends the workout.
+  void _onPersist(WorkoutSnapshot? snapshot) {
+    _shown = snapshot;
+    final training = context.read<TrainingState>();
+    if (snapshot == null) {
+      training.clearActiveWorkout();
+      return;
+    }
+    training.saveActiveWorkout(snapshot);
   }
 
   /// Swaps the runner for the summary so "back" from it lands on the sport page,
@@ -103,7 +120,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
       _closeEndedElsewhere(training);
       return;
     }
-    if (training.adoptedRevision != _seenRevision) {
+    if (!identical(training.activeWorkout, _shown)) {
       _adoptRemote(training);
     }
   }
@@ -112,11 +129,11 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
   /// the same path a resume takes — so this screen shows the set that device is
   /// on instead of ticking on state only this one still believes in.
   void _adoptRemote(TrainingState training) {
-    _seenRevision = training.adoptedRevision;
     final snapshot = training.activeWorkout;
     if (snapshot == null) {
       return;
     }
+    _shown = snapshot;
     final replaced = _runner;
     setState(() {
       _routine = training.routineForSnapshot(snapshot) ?? widget.routine;

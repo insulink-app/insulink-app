@@ -195,11 +195,11 @@ class SportSync {
     _rememberUpdate(response, snapshot.startedAtMs);
   }
 
-  /// Whether the account has confirmed a running workout to this device — a pull
-  /// that answered with one, or a push it accepted. False the moment the account
-  /// says none runs. Read BEFORE a poll to tell a workout ENDED elsewhere from
-  /// one of this device's own that never reached the account at all.
-  static bool get activeWorkoutConfirmed => _stampedWorkoutStart != 0;
+  /// The start of the workout the account has confirmed to this device — a pull
+  /// that answered with it, or a push it accepted; 0 when there is none. Read
+  /// BEFORE a poll, to tell a workout ENDED elsewhere from one of this device's
+  /// own that the account has never heard of yet.
+  static int get confirmedActiveWorkoutStart => _stampedWorkoutStart;
 
   /// The stamp to send for the workout that started at [startedAtMs]: the one
   /// the account confirmed for THIS workout, or 0 for any other — a workout this

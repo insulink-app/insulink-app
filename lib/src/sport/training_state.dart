@@ -32,7 +32,6 @@ class TrainingState extends ChangeNotifier {
   Timer? _watchTimer;
   bool _driving = false;
   bool _endedElsewhere = false;
-  int _adoptedRevision = 0;
 
   TrainingState(
     this._store,
@@ -130,11 +129,6 @@ class TrainingState extends ChangeNotifier {
     }
   }
 
-  /// Counts the snapshots adopted from another device, so an open runner can
-  /// tell one from its own save (both notify) and rebuild itself only for the
-  /// former.
-  int get adoptedRevision => _adoptedRevision;
-
   /// Follows the account's running workout, so a routine started or ended in the
   /// web panel reaches this device without a restart. Idempotent; pulls once
   /// immediately so returning to the app shows the truth at once rather than
@@ -157,37 +151,40 @@ class TrainingState extends ChangeNotifier {
   /// failed request as "no workout runs" ends the workout on this device over a
   /// moment of no signal.
   Future<void> _followActiveWorkout() async {
-    final confirmed = SportSync.activeWorkoutConfirmed;
+    final confirmedStart = SportSync.confirmedActiveWorkoutStart;
     final answer = await SportSync().pullActiveWorkout(null);
     if (answer == null) {
       return;
     }
     final remote = answer.snapshot;
     if (remote == null) {
-      await _adoptEndedWorkout(confirmed);
+      await _adoptEndedWorkout(confirmedStart);
       return;
     }
     if (!answer.foreign || _matchesActive(remote)) {
       return;
     }
     _activeWorkout = remote;
-    _adoptedRevision += 1;
     await _store.saveActiveWorkout(remote);
     notifyListeners();
   }
 
-  /// The account has no workout: whatever this device still shows is over. The
-  /// open runner is only TOLD so when the account had [confirmed] the workout to
-  /// this device beforehand — a push it accepted or a poll that answered with it.
-  /// Otherwise the workout never reached the account (a push still on its way, or
-  /// no signal since it started), and closing the runner would throw away a
-  /// session the user is in the middle of.
-  Future<void> _adoptEndedWorkout(bool confirmed) async {
-    if (_activeWorkout == null) {
+  /// The account has no workout. That only ends the session here when the account
+  /// had confirmed THIS workout beforehand ([confirmedStart] is its start) — a
+  /// push it accepted, or a poll that answered with it.
+  ///
+  /// Otherwise the account has simply never heard of it: a workout just started
+  /// on this device goes up only after a short debounce, and a poll firing inside
+  /// that window would wipe it from the shared state the moment it began. The
+  /// runner then ticks on over a session nothing else knows about, and nothing
+  /// syncs for the rest of the workout.
+  Future<void> _adoptEndedWorkout(int confirmedStart) async {
+    final local = _activeWorkout;
+    if (local == null || confirmedStart != local.startedAtMs) {
       return;
     }
     _activeWorkout = null;
-    _endedElsewhere = _driving && confirmed;
+    _endedElsewhere = _driving;
     await _store.clearActiveWorkout();
     notifyListeners();
   }

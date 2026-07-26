@@ -27,6 +27,10 @@ modules keep — app (`sport/workout/`, `sport/training_state.dart`), api
    snapshot the account gained since it last wrote or read one (`updated` higher
    than the one it knows) and rebuilds its runner from it. Ignoring them is how
    a phone sat showing "+24 min rest" while the panel was three sets further on.
+   The open runner decides by comparing the shared state's snapshot with the one
+   it published, by IDENTITY — anything else came from another device. Not by
+   counting adoptions: such a signal is consumed whether or not it was applied,
+   and one dropped tick is a screen that never catches up again.
 2. **A device only publishes what the user did on it.** Resuming, adopting or
    merely opening a workout pushes nothing — the snapshot came from the account
    in the first place.
@@ -41,14 +45,17 @@ modules keep — app (`sport/workout/`, `sport/training_state.dart`), api
    the resulting zombie is offered for resume on every device and logged a second
    time under the same id (the client id is the session start, so both rows look
    identical). `clear` resets the stamp to `0` on the device that sent it.
-4. **A failed poll is not an ended workout.** The app answers "the account could
-   not be asked" separately from "no workout runs"; only the latter ends the
-   session on the device (`endedElsewhere` → close the runner). The runner is
-   only TOLD the workout ended elsewhere when the account had confirmed it to
-   this device first — a push it accepted or a poll that answered with it
-   (`SportSync.activeWorkoutConfirmed`). A workout that never reached the account
-   is not one somebody else finished, and closing its runner would throw away the
-   session in progress. Ending is the one write the panel retries rather than
+4. **A failed poll is not an ended workout, and neither is one the account never
+   knew.** The app answers "the account could not be asked" separately from "no
+   workout runs". Even the latter only ends the session when the account had
+   confirmed THIS workout first — its start matches
+   `SportSync.confirmedActiveWorkoutStart`, set by a push it accepted or a poll
+   that answered with it. A workout started on this device goes up only after the
+   debounce, and the runner polls the moment it opens: that poll legitimately
+   answers "nothing runs". Treating it as an ending wipes the workout from the
+   shared state the second it begins, and then nothing syncs for the rest of the
+   session — the failure looked exactly like "starting on the phone breaks
+   sync entirely". Ending is also the one write the panel retries rather than
    drops: it navigates away regardless, and a lost `clear` leaves the workout
    running on every other device.
 5. **The logbook is keyed by client id.** `sync` keeps the last entry per id, so
