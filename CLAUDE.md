@@ -318,7 +318,9 @@ glucose/bolus/silent profile state, and `CgmController`) and `MaterialApp`
   root. **The service isolate reads these with `load()` fresh on each check**
   (it can't observe a `ChangeNotifier` across isolates), so a toggle takes
   effect WITHOUT restarting the service. Safety-relevant settings default ON
-  (alarm sound, connection-lost). `ProfileSilentState` suppresses all alarms;
+  (alarm sound, connection-lost). `ProfileSilentState` is a tri-state
+  `SilentMode` — mute nothing, only the alarm tones (notification + vibration
+  stay), or everything (`docs/ALARMS.md`);
   `ProfileGlucoseState` holds the unit + the four thresholds
   (urgentLow/low/high/urgentHigh) used by both alarms and formatting.
 

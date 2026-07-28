@@ -114,8 +114,14 @@
       "action": "Zur Sensor-Seite"
     },
     "silent": {
-      "title": "Stummschaltung aktiv",
-      "hint": "Alarme sind stummgeschaltet · zum Deaktivieren tippen"
+      "tones": {
+        "title": "Alarmtöne stummgeschaltet",
+        "hint": "Alarme erscheinen und vibrieren weiterhin · zum Deaktivieren tippen"
+      },
+      "all": {
+        "title": "Stummschaltung aktiv",
+        "hint": "Alarme sind stummgeschaltet · zum Deaktivieren tippen"
+      }
     },
     "restore": {
       "title": "Vorherigen Sensor verwenden?",
@@ -755,12 +761,17 @@
     },
     "silent": {
       "_": "Stummschaltung",
-      "description": "Alle Benachrichtigungen und Alarme stummschalten",
+      "description": "Alarme stummschalten",
       "auth_reason": "Bestätige, um die Stummschaltung zu aktivieren",
       "warning": {
         "title": "Stummschaltung aktivieren?",
         "body": "Bei aktiver Stummschaltung erhältst du KEINE Alarme – auch nicht bei gefährlich niedrigem oder hohem Blutzucker. Eine Unterzuckerung kann unbemerkt bleiben und lebensbedrohlich werden. Aktiviere sie nur, wenn du deine Werte anderweitig im Blick behältst.",
         "confirm": "Aktivieren"
+      },
+      "mode": {
+        "off": "Aus",
+        "tones": "Nur Töne",
+        "all": "Alles"
       }
     },
     "developer": {
@@ -813,7 +824,7 @@
       "basal": "basalrate basal profil kurve omnipod pod insulin stunde",
       "body": "körpermaße schrittlänge körpergröße größe bmi gewicht schritte distanz",
       "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose ablauf halbzeit halbwertszeit sensor training pod pumpe insulin restmenge",
-      "silent": "stumm lautlos ruhe stören nicht dnd",
+      "silent": "stumm lautlos ruhe stören nicht dnd ton töne vibration",
       "developer": "entwickler debug logs erweitert protokoll",
       "prediction": "vorhersage prognose forecast zukunft trend verlauf minuten",
       "sport_goals": "sport ziele tagesziele schritte strecke kalorien",
@@ -911,6 +922,10 @@
       "advisory": {
         "name": "Vorwarnung",
         "desc": "Frühwarnung mit Gegenmaßnahme bei drohendem Über-/Unterzucker."
+      },
+      "warning_silent": {
+        "name": "Zucker-Warnung (stumm)",
+        "desc": "Leichte Warnung bei grenzwertigem Zuckerwert, ohne Ton."
       }
     },
     "advisory": {

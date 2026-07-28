@@ -117,6 +117,12 @@ void main() {
       },
     );
 
+    test('muting only the tones still shows the notification', () async {
+      storage['silent_tones'] = 'true';
+      await alarms.check(60, -1.0);
+      expect(notifications.shown, [G7AlarmLevel.lowWarning.index]);
+    });
+
     test('a null reading is ignored', () async {
       await alarms.check(null, 0.0);
       expect(notifications.shown, isEmpty);

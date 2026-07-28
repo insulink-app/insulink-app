@@ -25,6 +25,36 @@ played by us through `audioplayers` on the **ALARM audio stream**
 best-effort: if it fails (or the user disabled the tone via
 `ProfileAlarmSoundState`), the visual notification still fires.
 
+Because we own the player, **swiping the notification away stops the tone**
+(`_silenceWhenDismissed`): the tone is tied to its notification id and the shade
+is polled every 400 ms while it plays — `flutter_local_notifications` has no
+dismissal callback on Android, so `getActiveNotifications()` is the signal.
+Tapping the notification (auto-cancel) silences it the same way.
+
+## Two silent modes
+
+`SilentMode` (`ProfileSilentState`) is a tri-state, not a flag:
+
+| Mode | Notification | Vibration | Tone |
+|------|--------------|-----------|------|
+| `off` | ✓ | ✓ | ✓ |
+| `tones` | ✓ | ✓ | — |
+| `all` | — | — | — |
+
+`mutesNotifications` gates every `show()` call; `mutesSound` gates the tone at
+the two call sites (`check` / `checkAdvisory`) — **not** inside `_playAsset`, so
+the settings-page test alarm keeps previewing the sound as it always did.
+
+The non-glucose warnings (connection lost / expiry / halftime) carry the system
+default sound on their channel, which we cannot switch off after the fact —
+Android freezes a channel's sound at creation. So `_warningChannel()` posts to a
+second, muted channel id (`insulink_alarm_warning_silent`) while tones are muted.
+
+It is persisted as the **two original boolean keys** `silent_mode` + a new
+`silent_tones`, not one enum string: the panel coerces `silent_mode` to a bool
+and writes the whole settings blob back, so an enum string would return from a
+panel save as `false` and silently unmute. `all` outranks `tones` on read.
+
 ## DnD bypass is order-sensitive (load-bearing)
 
 The alarm channels set `channelBypassDnd: true`. Android **silently ignores**
@@ -74,7 +104,8 @@ Urgent levels additionally set `fullScreenIntent` + `category: alarm`.
 - Glucose alarm channels: `insulink_alarm_{low,high}_{warning,urgent}`, ids =
   `G7AlarmLevel.index` (0–4).
 - Plain warning channel `insulink_alarm_warning` (default sound) for the
-  non-glucose warnings.
+  non-glucose warnings, plus `insulink_alarm_warning_silent` (no sound) used
+  instead while `SilentMode.tones` is on.
 - Connection-lost id `101` (cleared on the next reading via `onReading`).
 - Expiry id `100`, one-shot, **persisted per-sensor** in `G7Store` so it fires
   once even across service/app restarts.

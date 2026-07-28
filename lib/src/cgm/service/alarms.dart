@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:audioplayers/audioplayers.dart';
@@ -149,6 +150,11 @@ class G7AlarmManager {
   /// Notification id for the predictive glucose advisory pre-warning.
   static const _advisoryId = 104;
 
+  /// How often the shade is checked while a tone plays, to notice the alarm
+  /// notification being swiped away ([_silenceWhenDismissed]). Short enough that
+  /// the tone cuts off as the swipe finishes, long enough not to poll per frame.
+  static const _dismissPollInterval = Duration(milliseconds: 400);
+
   /// How many minutes ahead the advisory projects the current value + trend.
   /// Kept deliberately short so the pre-warning fires only when the low/high is
   /// genuinely imminent, not on every distant projection.
@@ -285,11 +291,14 @@ class G7AlarmManager {
     if (previous == G7AlarmLevel.none) {
       await _store?.addEvent(eventTypeFor(level), value: mgdl);
     }
-    if (await ProfileSilentState.load()) {
+    final silent = await ProfileSilentState.load();
+    if (silent.mutesNotifications) {
       return;
     }
     await _show(level, _formatValue(mgdl, thresholds.unit, trendPerMin));
-    await _playSound(high: _isHigh(level));
+    if (!silent.mutesSound) {
+      await _playSound(level);
+    }
   }
 
   /// The zone this reading counts as being in. A zone is only LEFT once glucose
@@ -381,14 +390,17 @@ class G7AlarmManager {
     if (level == AdvisoryLevel.high && !_highAdvisoryArmed) {
       return;
     }
-    if (await ProfileSilentState.load()) {
+    final silent = await ProfileSilentState.load();
+    if (silent.mutesNotifications) {
       return;
     }
     await _showAdvisory(
       level,
       await _advisoryBody(level, mgdl, trendPerMin, forecast, glucose),
     );
-    await _playAdvisorySound(level);
+    if (!silent.mutesSound) {
+      await _playAdvisorySound(level);
+    }
     if (level == AdvisoryLevel.low) {
       _lowAdvisoryArmed = false;
     } else {
@@ -598,7 +610,7 @@ class G7AlarmManager {
     final sampleMgdl = high ? 260 : 60;
     final trendPerMin = high ? 1.5 : -1.5;
     await _show(level, _formatValue(sampleMgdl, unit, trendPerMin));
-    await _playSound(high: high);
+    await _playSound(level);
   }
 
   /// Clear any pending "connection lost" warning — call on each fresh reading.
@@ -634,7 +646,7 @@ class G7AlarmManager {
     if (!await ProfileConnectionState().load()) {
       return;
     }
-    if (await ProfileSilentState.load()) {
+    if ((await ProfileSilentState.load()).mutesNotifications) {
       return;
     }
     _connectionLostShown = true;
@@ -666,7 +678,7 @@ class G7AlarmManager {
     if (remaining <= 0 || remaining > 86400) {
       return;
     }
-    if (await ProfileSilentState.load()) {
+    if ((await ProfileSilentState.load()).mutesNotifications) {
       return;
     }
     if (!await NotificationSetting.expiry.load()) {
@@ -705,7 +717,7 @@ class G7AlarmManager {
     if (pastHalf < 0 || pastHalf > _halftimeWindowSec) {
       return;
     }
-    if (await ProfileSilentState.load()) {
+    if ((await ProfileSilentState.load()).mutesNotifications) {
       return;
     }
     if (!await NotificationSetting.halftime.load()) {
@@ -838,11 +850,18 @@ class G7AlarmManager {
 
   /// Plain channel for the non-glucose warnings (connection lost / expiry):
   /// default sound, no direction.
+  ///
+  /// While the user mutes tones there is a SECOND, muted channel instead of a
+  /// `playSound: false` on this one — Android freezes a channel's sound at
+  /// creation time, so the same id could never be switched back and forth.
   Future<AndroidNotificationDetails> _warningChannel() async {
+    final quiet = (await ProfileSilentState.load()).mutesSound;
+    final slug = quiet ? 'warning_silent' : 'warning';
     return AndroidNotificationDetails(
-      'insulink_alarm_warning',
-      await _strings.get('alarm.channel.warning.name'),
-      channelDescription: await _strings.get('alarm.channel.warning.desc'),
+      'insulink_alarm_$slug',
+      await _strings.get('alarm.channel.$slug.name'),
+      channelDescription: await _strings.get('alarm.channel.$slug.desc'),
+      playSound: !quiet,
       importance: Importance.high,
       priority: Priority.high,
       vibrationPattern: Int64List.fromList(_vibrationPattern),
@@ -921,9 +940,12 @@ class G7AlarmManager {
     );
   }
 
-  /// Play the distinct low/high tone through the ALARM stream.
-  Future<void> _playSound({required bool high}) =>
-      _playAsset(high ? 'sounds/alarm_high.wav' : 'sounds/alarm_low.wav');
+  /// Play the distinct low/high tone through the ALARM stream, tied to the
+  /// alarm's own notification id so swiping that notification away stops it.
+  Future<void> _playSound(G7AlarmLevel level) => _playAsset(
+    _isHigh(level) ? 'sounds/alarm_high.wav' : 'sounds/alarm_low.wav',
+    level.index,
+  );
 
   /// Play the pre-warning tone for an imminent low/high, one distinct sound per
   /// direction so the two are audibly distinguishable.
@@ -931,12 +953,14 @@ class G7AlarmManager {
     level == AdvisoryLevel.low
         ? 'sounds/alarm_low_soon.wav'
         : 'sounds/alarm_high_soon.wav',
+    _advisoryId,
   );
 
   /// Play [asset] through the ALARM stream so it sounds regardless of ringer/
   /// notification volume, DnD, or screen state. Best-effort: the notification
-  /// still shows if audio fails or the user disabled the tone.
-  Future<void> _playAsset(String asset) async {
+  /// still shows if audio fails or the user disabled the tone. Playback is not
+  /// awaited — [_silenceWhenDismissed] outlives this call and owns the player.
+  Future<void> _playAsset(String asset, int notificationId) async {
     if (!await ProfileAlarmSoundState().load()) {
       return;
     }
@@ -947,11 +971,33 @@ class G7AlarmManager {
       // kept the attributes it was first configured with, so the alarm→media
       // switch never took and it still duplicated to the speaker.
       final player = AudioPlayer();
-      player.onPlayerComplete.listen((_) => player.dispose());
       await player.play(AssetSource(asset), ctx: _alarmContext(headphones));
+      unawaited(_silenceWhenDismissed(player, notificationId));
     } catch (_) {
       // ponytail: audio is best-effort; the visual notification already fired.
     }
+  }
+
+  /// Stop the tone the moment notification [notificationId] leaves the shade —
+  /// swiping an alarm away is the user saying they have seen it, so it must not
+  /// keep sounding. The plugin exposes no dismissal callback on Android, so the
+  /// shade is polled while the tone plays; the player is disposed either way.
+  // ponytail: a poll beats a custom platform channel for a deleteIntent, and it
+  // only runs for the few seconds a tone lasts.
+  Future<void> _silenceWhenDismissed(AudioPlayer player, int id) async {
+    while (player.state == PlayerState.playing) {
+      await Future.delayed(_dismissPollInterval);
+      if (!await _notificationShowing(id)) {
+        await player.stop();
+      }
+    }
+    await player.dispose();
+  }
+
+  /// Whether the notification with [id] is still in the shade.
+  Future<bool> _notificationShowing(int id) async {
+    final active = await _plugin.getActiveNotifications();
+    return active.any((notification) => notification.id == id);
   }
 
   /// Route the alarm to headphones alone when they are connected (media usage
