@@ -62,12 +62,15 @@ class OverviewBodyContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
-    final silent = context.watch<ProfileSilentState>().silent;
+    final silent = context.watch<ProfileSilentState>().mode;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         children: [
-          if (silent) ...[const SilentBanner(), const SizedBox(height: 12)],
+          if (silent != SilentMode.off) ...[
+            SilentBanner(silent),
+            const SizedBox(height: 12),
+          ],
           Expanded(child: _view(controller)),
         ],
       ),

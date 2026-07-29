@@ -114,8 +114,14 @@
       "action": "Go to sensor page"
     },
     "silent": {
-      "title": "Silent mode on",
-      "hint": "Alarms are muted · tap to turn off"
+      "tones": {
+        "title": "Alarm tones muted",
+        "hint": "Alarms still show and vibrate · tap to turn off"
+      },
+      "all": {
+        "title": "Silent mode on",
+        "hint": "Alarms are muted · tap to turn off"
+      }
     },
     "restore": {
       "title": "Use your previous sensor?",
@@ -755,12 +761,17 @@
     },
     "silent": {
       "_": "Silent mode",
-      "description": "Mute all notifications and alarms",
+      "description": "Mute alarms",
       "auth_reason": "Confirm to enable silent mode",
       "warning": {
         "title": "Enable silent mode?",
         "body": "While silent mode is on you will receive NO alarms — not even for dangerously low or high glucose. A hypo can go unnoticed and become life-threatening. Only enable it if you keep an eye on your levels another way.",
         "confirm": "Enable"
+      },
+      "mode": {
+        "off": "Off",
+        "tones": "Tones only",
+        "all": "Everything"
       }
     },
     "developer": {
@@ -813,7 +824,7 @@
       "basal": "basal rate profile curve omnipod pod insulin hour",
       "body": "body metrics stride length height bmi weight steps distance",
       "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training pod pump insulin reservoir",
-      "silent": "silent mute quiet do not disturb dnd",
+      "silent": "silent mute quiet do not disturb dnd tone sound vibration",
       "developer": "developer debug logs advanced",
       "prediction": "prediction forecast future trend minutes",
       "sport_goals": "sport goals daily steps distance calories targets",
@@ -911,6 +922,10 @@
       "advisory": {
         "name": "Advance warning",
         "desc": "Early warning with a countermeasure before a predicted high/low."
+      },
+      "warning_silent": {
+        "name": "Glucose warning (muted)",
+        "desc": "Mild warning for a borderline glucose value, without a tone."
       }
     },
     "advisory": {

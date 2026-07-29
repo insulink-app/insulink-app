@@ -41,6 +41,7 @@ class ProfileSettings {
     final glucose = await ProfileGlucoseState.load();
     final bolus = await ProfileBolusState.load();
     final prediction = await ProfilePredictionState.load();
+    final silent = await ProfileSilentState.load();
     const sport = SportStore();
     const nutrition = NutritionStore();
     final notifications =
@@ -74,7 +75,10 @@ class ProfileSettings {
       "pod_expiry_hours": "${await NotificationThreshold.podExpiry.load()}",
       "pod_insulin_alert": "${await NotificationSetting.podInsulin.load()}",
       "pod_insulin_units": "${await NotificationThreshold.podInsulin.load()}",
-      "silent_mode": "${await ProfileSilentState.load()}",
+      // Two booleans, not one enum: the panel coerces `silent_mode` to a bool
+      // and writes it back, so the tone-only mute needs a key of its own.
+      "silent_mode": "${silent == SilentMode.all}",
+      "silent_tones": "${silent == SilentMode.tones}",
       "developer": "${await ProfileDeveloperState.load()}",
       // Glucose-prediction overlay (on/off + band + horizon).
       "prediction_enabled": "${prediction.enabled}",

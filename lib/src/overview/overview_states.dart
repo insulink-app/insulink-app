@@ -6,10 +6,13 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
 /// Prominent, tappable indicator shown on the overview while silent mode mutes
-/// all alarms. Tapping it turns silent mode back off — alarms are safety
-/// relevant, so it's deliberately easy to clear from the main screen.
+/// the alarm tones or the alarms outright. Tapping it turns silent mode back off
+/// — alarms are safety relevant, so it's deliberately easy to clear from the
+/// main screen.
 class SilentBanner extends StatelessWidget {
-  const SilentBanner({super.key});
+  const SilentBanner(this.mode, {super.key});
+
+  final SilentMode mode;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +23,8 @@ class SilentBanner extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.read<ProfileSilentState>().setSilent(false),
+        onTap: () =>
+            context.read<ProfileSilentState>().setMode(SilentMode.off),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
@@ -44,7 +48,7 @@ class SilentBanner extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         LocaleText(
-          'overview.silent.title',
+          'overview.silent.${mode.name}.title',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
@@ -53,7 +57,7 @@ class SilentBanner extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         LocaleText(
-          'overview.silent.hint',
+          'overview.silent.${mode.name}.hint',
           style: TextStyle(
             fontSize: 12,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
