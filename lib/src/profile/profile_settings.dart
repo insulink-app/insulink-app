@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
+import 'package:insulink/src/profile/battery/profile_battery_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -42,6 +43,7 @@ class ProfileSettings {
     final bolus = await ProfileBolusState.load();
     final prediction = await ProfilePredictionState.load();
     final silent = await ProfileSilentState.load();
+    final battery = await ProfileBatteryState.loadRaw();
     const sport = SportStore();
     const nutrition = NutritionStore();
     final notifications =
@@ -79,6 +81,13 @@ class ProfileSettings {
       // and writes it back, so the tone-only mute needs a key of its own.
       "silent_mode": "${silent == SilentMode.all}",
       "silent_tones": "${silent == SilentMode.tones}",
+      // Battery saver: the mode as an enum string (unlike silent mode, no client
+      // coerces this key to a bool), the picked window in minutes and the epoch-ms
+      // end it was anchored to. A lapsed window collects as `off`, so a returning
+      // device never adopts a saver whose time is up.
+      "battery_saver_mode": battery.mode.name,
+      "battery_saver_window_min": "${battery.windowMin}",
+      "battery_saver_until": "${battery.until}",
       "developer": "${await ProfileDeveloperState.load()}",
       // Glucose-prediction overlay (on/off + band + horizon).
       "prediction_enabled": "${prediction.enabled}",

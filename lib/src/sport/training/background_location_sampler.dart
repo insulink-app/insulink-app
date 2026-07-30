@@ -43,6 +43,9 @@ enum GpsTier { detect, activeDetect, recording }
 ///
 /// The GPS radio therefore stays hot only while moving (plus a short
 /// [_movingLinger] so a red light doesn't drop it) — at rest it's the sparse poll.
+///
+/// The battery saver ([_isDetectionPaused]) switches all of that off except a
+/// recording training's route: see the guard at the top of [tick].
 class BackgroundLocationSampler {
   final SportStore _store;
   final void Function(String) _onLog;
@@ -98,15 +101,26 @@ class BackgroundLocationSampler {
   /// before) when no recognizer is wired up or permitted.
   final bool Function() _isStill;
 
+  /// Reports whether the battery saver has paused the cardio auto-detection (see
+  /// `BatteryMode.pausesDetection`). While it does, this sampler does nothing
+  /// unless a training is actually recording — which is the whole saving: no
+  /// detect stream, no idle poll, and so no location POSTs either. Defaults to
+  /// never-paused. Read through a callback (not loaded here) so the 10 s tick
+  /// gains no secure-storage read; the service isolate caches the mode.
+  final bool Function() _isDetectionPaused;
+
   BackgroundLocationSampler({
     this._store = const SportStore(),
     void Function(String)? onLog,
     this._isStill = _neverStill,
+    this._isDetectionPaused = _neverPaused,
   }) : _onLog = (onLog ?? _noLog);
 
   static void _noLog(String _) {}
 
   static bool _neverStill() => false;
+
+  static bool _neverPaused() => false;
 
   /// Called by the service timer; keeps the stream open while a training records
   /// or we're recently moving (auto-detection), otherwise one-shot polls at the
@@ -118,6 +132,13 @@ class BackgroundLocationSampler {
         _movingSince = null;
       }
       final recording = active != null && !active.isPaused;
+      // The saver pauses DETECTION, never a recording. A manually started
+      // training keeps its dense route; everything else stands down here, which
+      // is the single gate that covers both the detect stream and the idle poll.
+      if (!recording && _isDetectionPaused()) {
+        await _syncStream(null);
+        return;
+      }
       // Stream while recording, or — with no active training — while recently
       // moving (dense auto-detect route), ramping to the denser tier once the
       // movement has been sustained. A paused training (active, not recording)

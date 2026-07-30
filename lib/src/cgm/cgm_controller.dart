@@ -14,6 +14,7 @@ import 'package:insulink/src/cgm/glucose_prediction.dart';
 import 'package:insulink/src/cgm/sensor_sync.dart';
 import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/localization/service_strings.dart';
+import 'package:insulink/src/profile/battery/profile_battery_state.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -976,8 +977,18 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// service WITHOUT prompting — only if location + notifications are already
   /// granted (both requested in onboarding) — so opening the Sport tab never
   /// triggers a permission dialog.
-  Future<void> ensureDetectionService() async {
+  /// [force] skips only the battery-saver check — a manually started cardio
+  /// recording needs this service for its route even while the saver has
+  /// auto-detection paused (`CardioTrainingState.startTraining` starts no service
+  /// of its own). The permission checks below always apply.
+  Future<void> ensureDetectionService({bool force = false}) async {
     if (_busy || hasSensor) {
+      return;
+    }
+    // Nothing to host: with detection paused, a sensorless service would only
+    // hold the wake + Wi-Fi lock. Biggest saving for a user with no CGM sensor,
+    // whose service today comes up merely from opening the Sport tab.
+    if (!force && (await ProfileBatteryState.loadActive()).pausesDetection) {
       return;
     }
     if (await FlutterForegroundTask.isRunningService) {

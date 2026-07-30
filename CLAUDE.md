@@ -543,6 +543,9 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `docs/ACTIVE_WORKOUT.md` — the running workout shared with the panel: who
   drives, who follows, and the server stamp that stops a finished workout being
   written back to life.
+- `docs/BATTERY.md` — the two-level battery saver: what each level pauses, why the
+  gate sits in `BackgroundLocationSampler.tick()`, and why a manual cardio
+  recording must force the detection service up.
 
 `lib/src/rust/` is generated — never hand-edit; change `rust/src/api/` and rerun
 codegen.

@@ -123,6 +123,18 @@
         "hint": "Alarms are muted · tap to turn off"
       }
     },
+    "battery": {
+      "saving": {
+        "title": "Battery saver on",
+        "hint": "Activity detection paused"
+      },
+      "extreme": {
+        "title": "Extreme battery saver on",
+        "hint": "Activity detection, pulse band and forecast paused"
+      },
+      "until": "until #",
+      "end": "tap to end"
+    },
     "restore": {
       "title": "Use your previous sensor?",
       "body": "Your account has a sensor on file. Adopt it to keep reading without re-pairing.",
@@ -774,6 +786,24 @@
         "all": "Everything"
       }
     },
+    "battery": {
+      "_": "Battery saver",
+      "description": "Scale back background work to save battery. Glucose reading and alarms keep running unchanged at every level.",
+      "mode": {
+        "off": "Off",
+        "saving": "Saving",
+        "extreme": "Extreme",
+        "off_hint": "All background work runs normally.",
+        "saving_hint": "Automatic training detection (GPS and motion sensing) is off and the pulse poll runs less often. A training you start yourself still records in full.",
+        "extreme_hint": "On top of \"Saving\": no live pulse from the band and no glucose forecast. Only the sensor reading and its alarms are left."
+      },
+      "duration": {
+        "_": "Duration",
+        "h2": "2 hrs",
+        "h8": "8 hrs",
+        "permanent": "Until off"
+      }
+    },
     "developer": {
       "_": "Developer",
       "description": "Enable developer mode"
@@ -830,7 +860,8 @@
       "sport_goals": "sport goals daily steps distance calories targets",
       "nutrition_goals": "nutrition goals daily carbs protein water hydration",
       "hr_zones": "pulse heart rate zones bpm elevated high green orange red",
-      "sleep": "sleep quality deep sleep onset interruptions sleep index target range"
+      "sleep": "sleep quality deep sleep onset interruptions sleep index target range",
+      "battery": "battery power energy saver save drain gps location tracking detection runtime"
     },
     "prediction": {
       "_": "Prediction",

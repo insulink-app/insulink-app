@@ -9,6 +9,7 @@ import '../../google_health/fitbit_heart_rate_monitor.dart';
 import '../../google_health/google_health_importer.dart';
 import '../../google_health/intraday_pulse_store.dart';
 import '../../google_health/pulse_sync.dart';
+import '../../profile/battery/profile_battery_state.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
@@ -76,6 +77,7 @@ class CgmTaskHandler extends TaskHandler {
       BackgroundLocationSampler(
         onLog: _log,
         isStill: () => _activitySampler.isStill,
+        isDetectionPaused: () => _batteryMode.pausesDetection,
       );
 
   /// Logs OS activity-recognition changes (cycling vs. in-vehicle) so the cardio
@@ -93,11 +95,20 @@ class CgmTaskHandler extends TaskHandler {
   DateTime? _lastDetectionAt;
   static const _detectEvery = Duration(minutes: 2);
 
+  /// The battery saver in force, re-read once per watchdog tick by
+  /// [_applyBatteryMode]. Cached rather than loaded at each use so the 10 s GPS
+  /// tick doesn't gain a secure-storage read, and so every gate below reads the
+  /// same value within a tick.
+  BatteryMode _batteryMode = BatteryMode.off;
+
   /// When the live heart-rate poll last ran, and its cadence. Only polls while a
   /// Google Health is connected; pushes fresh samples to the UI's GoogleHealthState.
   DateTime? _lastHrPollAt;
   int? _lastHrPushedAtMs;
-  static const _hrPollEvery = Duration(seconds: 60);
+  /// Health Connect poll cadence, stretched by the battery saver.
+  Duration get _hrPollEvery => _batteryMode.slowsHeartRatePoll
+      ? const Duration(minutes: 5)
+      : const Duration(seconds: 60);
   // A background Health Connect sample lags more than the main isolate's 1 Hz
   // BLE reading, so the relay tolerates more age than GoogleHealthState's 5 s
   // before it counts a value as too stale to pass to the panel as live.
@@ -167,13 +178,18 @@ class CgmTaskHandler extends TaskHandler {
       const Duration(seconds: 10),
       (_) => _locationSampler.tick(),
     );
-    _activitySampler.start();
+    _batteryMode = await ProfileBatteryState.loadActive();
+    if (!_batteryMode.pausesDetection) {
+      _activitySampler.start();
+    }
     unawaited(_applyTrainingDecisions());
     // Host the live band the whole time this service runs, so bpm keeps
     // streaming with the app backgrounded OR fully closed — no dependence on the
     // dying UI isolate to hand it over. Known-band-only (never scans), so it is a
     // no-op until a Fitbit has been paired and cannot fight the G7 scanner.
-    _startBackgroundHr();
+    if (!_batteryMode.pausesBand) {
+      _startBackgroundHr();
+    }
     // With no sensor paired the service still runs (samplers + detection above)
     // but has nothing to connect to, so skip the BLE connect.
     if (await _ensureReady() && _sensorConfigured) {
@@ -307,6 +323,9 @@ class CgmTaskHandler extends TaskHandler {
     if (mgdl == null || store == null) {
       return;
     }
+    if (_batteryMode.pausesPrediction) {
+      return;
+    }
     final setting = await ProfilePredictionState.load();
     if (!setting.enabled) {
       return;
@@ -366,7 +385,9 @@ class CgmTaskHandler extends TaskHandler {
   @override
   void onRepeatEvent(DateTime timestamp) {
     _watchdog();
-    _maybeDetectTraining();
+    // Chained, not fired in parallel, so detection sees THIS tick's mode — the
+    // whole point is that toggling the saver takes effect without a restart.
+    unawaited(_applyBatteryMode().then((_) => _maybeDetectTraining()));
     // ponytail: rides the CGM service (the app's only foreground service), so
     // background HR runs only while glucose reading is active. Standalone HR
     // would need its own service — out of scope.
@@ -386,9 +407,35 @@ class CgmTaskHandler extends TaskHandler {
     }
   }
 
+  /// Re-read the battery saver and bring the two long-lived subscriptions in
+  /// line with it: the OS activity-recognition stream and the hosted Fitbit band.
+  ///
+  /// Both `start` calls are idempotent, so this can run on every tick. Doing it
+  /// here rather than at service start is what lets a saver be switched on or off
+  /// mid-session — the settings live in secure storage, which this isolate can
+  /// only poll (it cannot observe the UI's notifier). The remaining gates
+  /// ([_maybeDetectTraining], the GPS tick, the HR cadence, the forecast fetch)
+  /// read the cached [_batteryMode] this sets.
+  Future<void> _applyBatteryMode() async {
+    _batteryMode = await ProfileBatteryState.loadActive();
+    if (_batteryMode.pausesDetection) {
+      _activitySampler.dispose();
+    } else {
+      await _activitySampler.start();
+    }
+    if (_batteryMode.pausesBand) {
+      await _stopBackgroundHr();
+    } else {
+      _startBackgroundHr();
+    }
+  }
+
   /// Runs cardio auto-detection at most every [_detectEvery]; each new training
   /// is added to the pending list and raises a confirm-notification.
   Future<void> _maybeDetectTraining() async {
+    if (_batteryMode.pausesDetection) {
+      return;
+    }
     final last = _lastDetectionAt;
     if (last != null && DateTime.now().difference(last) < _detectEvery) {
       return;
@@ -636,7 +683,7 @@ class CgmTaskHandler extends TaskHandler {
   Future<void> _flushBackgroundPulse(FitbitHeartRateMonitor monitor) async {
     final now = DateTime.now();
     final cutoff = _lastPulseFlush;
-    final flushGap = PulseSync().liveViewer
+    final flushGap = PulseSync().liveViewer && !_batteryMode.pausesBand
         ? const Duration(minutes: 1)
         : const Duration(minutes: 5);
     if (cutoff != null && now.difference(cutoff) < flushGap) {

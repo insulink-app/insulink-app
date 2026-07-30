@@ -8,6 +8,7 @@ import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/overview/battery_saver_banner.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
 import 'package:insulink/src/overview/overview_active_insulin.dart';
@@ -19,6 +20,7 @@ import 'package:insulink/src/overview/overview_time_in_range.dart';
 import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_states.dart';
 import 'package:insulink/src/overview/sensor_restore_offer.dart';
+import 'package:insulink/src/profile/battery/profile_battery_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
@@ -63,12 +65,17 @@ class OverviewBodyContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
     final silent = context.watch<ProfileSilentState>().mode;
+    final battery = context.watch<ProfileBatteryState>().activeMode;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         children: [
           if (silent != SilentMode.off) ...[
             SilentBanner(silent),
+            const SizedBox(height: 12),
+          ],
+          if (battery != BatteryMode.off) ...[
+            BatterySaverBanner(battery),
             const SizedBox(height: 12),
           ],
           Expanded(child: _view(controller)),

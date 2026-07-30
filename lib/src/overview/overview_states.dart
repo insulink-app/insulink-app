@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/overview/overview_banner.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
@@ -16,54 +18,11 @@ class SilentBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    const accent = Color(0xFFE8A13A);
-    return Material(
-      color: accent.withValues(alpha: 0.15),
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () =>
-            context.read<ProfileSilentState>().setMode(SilentMode.off),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            children: [
-              const Icon(
-                PhosphorIconsBold.bellSlash,
-                color: accent,
-                size: 22,
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: _text(theme)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _text(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LocaleText(
-          'overview.silent.${mode.name}.title',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 2),
-        LocaleText(
-          'overview.silent.${mode.name}.hint',
-          style: TextStyle(
-            fontSize: 12,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-      ],
+    return OverviewBanner(
+      icon: PhosphorIconsBold.bellSlash,
+      titleKey: 'overview.silent.${mode.name}.title',
+      hint: Locales.string(context, 'overview.silent.${mode.name}.hint'),
+      onTap: () => context.read<ProfileSilentState>().setMode(SilentMode.off),
     );
   }
 }
