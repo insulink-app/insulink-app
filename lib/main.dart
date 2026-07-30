@@ -298,6 +298,13 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
     };
   }
 
+  /// The silent state needs both its mode and its window, and the raw read
+  /// resolves a lapsed mute for us — so it can't use the one-value loader.
+  Future<ProfileSilentState> _silentState() async {
+    final stored = await ProfileSilentState.loadRaw();
+    return ProfileSilentState(stored.mode, stored.window);
+  }
+
   Future<AppPreferences> _loadPreferences() async {
     const storage = FlutterSecureStorage();
     final language =
@@ -315,7 +322,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       glucose: await ProfileGlucoseState.load(),
       bolus: await ProfileBolusState.load(),
       basal: await ProfileBasalState.load(),
-      silent: ProfileSilentState(await ProfileSilentState.load()),
+      silent: await _silentState(),
       battery: await ProfileBatteryState.load(),
       prediction: await ProfilePredictionState.load(),
       sport: await SportState.load(),

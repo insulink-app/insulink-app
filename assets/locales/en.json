@@ -116,11 +116,11 @@
     "silent": {
       "tones": {
         "title": "Alarm tones muted",
-        "hint": "Alarms still show and vibrate · tap to turn off"
+        "hint": "Alarms still show and vibrate"
       },
       "all": {
         "title": "Silent mode on",
-        "hint": "Alarms are muted · tap to turn off"
+        "hint": "Alarms are muted"
       }
     },
     "battery": {
@@ -131,7 +131,9 @@
       "extreme": {
         "title": "Extreme battery saver on",
         "hint": "Activity detection, pulse band and forecast paused"
-      },
+      }
+    },
+    "mode": {
       "until": "until #",
       "end": "tap to end"
     },
@@ -797,12 +799,13 @@
         "saving_hint": "Automatic training detection (GPS and motion sensing) is off and the pulse poll runs less often. A training you start yourself still records in full.",
         "extreme_hint": "On top of \"Saving\": no live pulse from the band and no glucose forecast. Only the sensor reading and its alarms are left."
       },
-      "duration": {
-        "_": "Duration",
-        "h2": "2 hrs",
-        "h8": "8 hrs",
-        "permanent": "Until off"
-      }
+      "auth_reason": "Confirm to turn the battery saver on"
+    },
+    "duration": {
+      "_": "Duration",
+      "h2": "2 hrs",
+      "h8": "8 hrs",
+      "permanent": "Until off"
     },
     "developer": {
       "_": "Developer",

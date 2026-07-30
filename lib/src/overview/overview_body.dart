@@ -64,7 +64,7 @@ class OverviewBodyContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
-    final silent = context.watch<ProfileSilentState>().mode;
+    final silent = context.watch<ProfileSilentState>().activeMode;
     final battery = context.watch<ProfileBatteryState>().activeMode;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),

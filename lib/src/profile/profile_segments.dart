@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 
-/// One labelled option of a [ProfileBatterySegments] row.
-typedef BatterySegment = ({String labelKey, bool selected, VoidCallback? onTap});
-
-/// A segmented row of mutually exclusive options, styled like the silent-mode
-/// picker (bordered track, animated pill on the picked segment).
+/// One labelled option of a [ProfileSegments] row.
 ///
-/// The battery saver needs two of these — mode and duration — so the track lives
-/// here instead of being written twice. A null [BatterySegment.onTap] renders the
-/// segment dimmed and inert, which is how the duration row reads while the saver
-/// is off.
-class ProfileBatterySegments extends StatelessWidget {
-  const ProfileBatterySegments(this.segments, {super.key});
+/// [fill] is the colour the segment takes while picked — silent mode paints its
+/// muting choices in the error colour so the picked state reads as "alarms are
+/// held back" rather than as a neutral choice. Defaults to `onSurface`.
+/// A null [onTap] renders the segment dimmed and inert.
+typedef ProfileSegment = ({
+  String labelKey,
+  bool selected,
+  Color? fill,
+  VoidCallback? onTap,
+});
 
-  final List<BatterySegment> segments;
+/// A segmented row of mutually exclusive settings options: bordered track, an
+/// animated pill on the picked one.
+///
+/// Shared by every setting built this way (silent mode's reach and the battery
+/// saver's level, plus the duration row both of them carry), so the track is
+/// written once instead of per setting.
+class ProfileSegments extends StatelessWidget {
+  const ProfileSegments(this.segments, {super.key});
+
+  final List<ProfileSegment> segments;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +44,7 @@ class ProfileBatterySegments extends StatelessWidget {
     );
   }
 
-  Widget _segment(ThemeData theme, BatterySegment segment) {
+  Widget _segment(ThemeData theme, ProfileSegment segment) {
     final enabled = segment.onTap != null;
     final label = segment.selected
         ? theme.colorScheme.surface
@@ -49,7 +58,7 @@ class ProfileBatterySegments extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: segment.selected
-              ? theme.colorScheme.onSurface
+              ? (segment.fill ?? theme.colorScheme.onSurface)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
         ),

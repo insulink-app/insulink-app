@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/overview_banner.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -21,7 +20,8 @@ class SilentBanner extends StatelessWidget {
     return OverviewBanner(
       icon: PhosphorIconsBold.bellSlash,
       titleKey: 'overview.silent.${mode.name}.title',
-      hint: Locales.string(context, 'overview.silent.${mode.name}.hint'),
+      hintKey: 'overview.silent.${mode.name}.hint',
+      until: context.watch<ProfileSilentState>().window.until,
       onTap: () => context.read<ProfileSilentState>().setMode(SilentMode.off),
     );
   }

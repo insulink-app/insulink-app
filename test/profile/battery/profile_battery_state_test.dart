@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/profile/battery/profile_battery_state.dart';
+import 'package:insulink/src/profile/profile_mode_window.dart';
 
 import '../../support/secure_storage_mock.dart';
 
@@ -15,19 +16,16 @@ void main() {
   int msFromNow(Duration offset) =>
       DateTime.now().add(offset).millisecondsSinceEpoch;
 
-  test('defaults to off, permanent', () async {
+  ProfileBatteryState freshState() =>
+      ProfileBatteryState(BatteryMode.off, const ProfileModeWindow.none());
+
+  test('defaults to off with no limit', () async {
     expect(await ProfileBatteryState.loadActive(), BatteryMode.off);
-    final state = await ProfileBatteryState.load();
-    expect(state.windowMin, ProfileBatteryState.permanent);
-    expect(state.remaining, isNull);
+    expect((await ProfileBatteryState.load()).window.remaining, isNull);
   });
 
-  test('setMode persists the mode and load reads it back', () async {
-    final state = ProfileBatteryState(
-      BatteryMode.off,
-      ProfileBatteryState.permanent,
-      ProfileBatteryState.permanent,
-    );
+  test('setMode persists each level and load reads it back', () async {
+    final state = freshState();
     await state.setMode(BatteryMode.saving);
     expect(await ProfileBatteryState.loadActive(), BatteryMode.saving);
     await state.setMode(BatteryMode.extreme);
@@ -36,7 +34,7 @@ void main() {
     expect(await ProfileBatteryState.loadActive(), BatteryMode.off);
   });
 
-  test('a window turns the saver off once it lapses', () async {
+  test('a lapsed window turns the saver off for every reader', () async {
     storage['battery_saver_mode'] = 'saving';
     storage['battery_saver_window_min'] = '120';
     storage['battery_saver_until'] = '${msFromNow(const Duration(minutes: 1))}';
@@ -47,41 +45,33 @@ void main() {
     expect((await ProfileBatteryState.load()).activeMode, BatteryMode.off);
   });
 
-  /// The window is kept across a lapse so re-arming the same duration is one tap.
-  test('a lapsed window keeps its duration but clears the end', () async {
+  /// The duration survives a lapse so re-arming the same window is one tap.
+  test('a lapsed run keeps its duration but clears the end', () async {
     storage['battery_saver_mode'] = 'extreme';
     storage['battery_saver_window_min'] = '480';
     storage['battery_saver_until'] = '${msFromNow(const Duration(minutes: -1))}';
     final stored = await ProfileBatteryState.loadRaw();
     expect(stored.mode, BatteryMode.off);
-    expect(stored.windowMin, 480);
-    expect(stored.until, ProfileBatteryState.permanent);
+    expect(stored.window.windowMin, 480);
+    expect(stored.window.until, ProfileModeWindow.permanent);
   });
 
-  test('a permanent saver never lapses', () async {
+  test('a saver with no limit never lapses', () async {
     storage['battery_saver_mode'] = 'saving';
-    storage['battery_saver_until'] = '${ProfileBatteryState.permanent}';
+    storage['battery_saver_until'] = '${ProfileModeWindow.permanent}';
     expect(await ProfileBatteryState.loadActive(), BatteryMode.saving);
-    expect((await ProfileBatteryState.load()).remaining, isNull);
   });
 
-  test('setWindow anchors the end from now and setMode re-anchors it', () async {
-    final state = ProfileBatteryState(
-      BatteryMode.off,
-      ProfileBatteryState.permanent,
-      ProfileBatteryState.permanent,
-    );
+  test('switching off then on restarts the full window', () async {
+    final state = freshState();
     await state.setMode(BatteryMode.saving);
     await state.setWindow(120);
-    expect(state.windowMin, 120);
-    expect(state.remaining!.inMinutes, inInclusiveRange(118, 120));
+    expect(state.window.remaining!.inMinutes, inInclusiveRange(118, 120));
 
-    // Turning it off clears the end; turning it back on gives the FULL window
-    // again rather than the sliver that was left.
     await state.setMode(BatteryMode.off);
-    expect(state.until, ProfileBatteryState.permanent);
+    expect(state.window.until, ProfileModeWindow.permanent);
     await state.setMode(BatteryMode.extreme);
-    expect(state.remaining!.inMinutes, inInclusiveRange(118, 120));
+    expect(state.window.remaining!.inMinutes, inInclusiveRange(118, 120));
   });
 
   test('an unknown stored mode falls back to off', () async {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/profile/profile_mode_window.dart';
 
 /// Prominent, tappable strip above the overview's content that says a global
 /// mode is holding something back, and clears that mode when tapped.
@@ -12,7 +14,8 @@ class OverviewBanner extends StatelessWidget {
     super.key,
     required this.icon,
     required this.titleKey,
-    required this.hint,
+    required this.hintKey,
+    required this.until,
     required this.onTap,
   });
 
@@ -23,9 +26,12 @@ class OverviewBanner extends StatelessWidget {
   final IconData icon;
   final String titleKey;
 
-  /// Already-resolved hint line — the battery banner interpolates a time into
-  /// it, so this takes text rather than a key.
-  final String hint;
+  /// What the mode is holding back, in the mode's own words.
+  final String hintKey;
+
+  /// When the mode ends (epoch ms), or [ProfileModeWindow.permanent] — a
+  /// time-limited mode names its end time so the user knows whether to act.
+  final int until;
 
   final VoidCallback onTap;
 
@@ -43,7 +49,7 @@ class OverviewBanner extends StatelessWidget {
             children: [
               Icon(icon, color: accent, size: 22),
               const SizedBox(width: 12),
-              Expanded(child: _text(Theme.of(context))),
+              Expanded(child: _text(context)),
             ],
           ),
         ),
@@ -51,7 +57,8 @@ class OverviewBanner extends StatelessWidget {
     );
   }
 
-  Widget _text(ThemeData theme) {
+  Widget _text(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -65,7 +72,7 @@ class OverviewBanner extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          hint,
+          _hint(context),
           style: TextStyle(
             fontSize: 12,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -73,5 +80,26 @@ class OverviewBanner extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// "what is held back · until 14:30 · tap to end". The middle part is dropped
+  /// for a mode with no time limit, which has no end to name.
+  String _hint(BuildContext context) {
+    final parts = [
+      Locales.string(context, hintKey),
+      if (until != ProfileModeWindow.permanent)
+        Locales.string(
+          context,
+          'overview.mode.until',
+          params: [_clock(DateTime.fromMillisecondsSinceEpoch(until))],
+        ),
+      Locales.string(context, 'overview.mode.end'),
+    ];
+    return parts.join(' · ');
+  }
+
+  String _clock(DateTime at) {
+    return '${at.hour.toString().padLeft(2, '0')}:'
+        '${at.minute.toString().padLeft(2, '0')}';
   }
 }

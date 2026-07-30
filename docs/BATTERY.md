@@ -26,6 +26,17 @@ detected (10 s / 15 m, tightening to 5 s / 8 m after 3 min of movement), and
 polls a one-shot fix every 55 s at rest — all of it for auto-detection the user
 never asked for directly.
 
+## Turning it on takes a fingerprint
+
+`ProfileBatterySelection` requires `BiometricAuth().confirm(...,
+allowDeviceCredential: true)` (PIN/pattern fallback, so a user with no enrolled
+biometric is not locked out) before switching a level ON. It quietly stops
+background work the user may be relying on, so it must be a deliberate,
+owner-only action. Switching it **off** — including the one-tap overview banner —
+and changing the duration of a level that was already confirmed are direct:
+neither reduces what the app does. Unlike the hard mute there is no risk `Alert`
+first; the saver never touches alarms.
+
 ## How the mode reaches the work
 
 Three keys in secure storage, mirrored into the account settings blob by
@@ -36,14 +47,17 @@ Three keys in secure storage, mirrored into the account settings blob by
   round-trip trap.
 - `battery_saver_window_min` — the picked window (`0` = permanent). Stored
   separately because the end timestamp alone can't say which duration was picked
-  once time has passed.
+  once time has passed, and so re-arming the same duration is one tap.
 - `battery_saver_until` — epoch ms the window ends at (`0` = permanent).
 
-The **end is a timestamp, not a countdown**, so a temporary saver expires
-correctly across an app close: `ProfileBatteryState.loadRaw()` normalises a
-lapsed window to `off` (keeping the window, so re-arming it is one tap), and
-`activeMode` compares against the clock. The in-isolate `Timer` exists only so
-the overview banner disappears on time while the app is open.
+The window itself is `ProfileModeWindow` in
+`lib/src/profile/profile_mode_window.dart`, **shared with silent mode** — both are
+modes you switch on for a while and want back off by themselves, and both render
+the same `ProfileDurationRow`. The **end is a timestamp, not a countdown**, so a
+temporary saver expires correctly across an app close: `loadRaw()` normalises a
+lapsed window to `off`, and `activeMode` compares against the clock. The
+in-isolate `Timer` exists only so the overview banner disappears on time while the
+app is open.
 
 The gated work runs in the **foreground-service isolate**, which cannot observe a
 `ChangeNotifier`. `CgmTaskHandler._applyBatteryMode()` therefore re-reads

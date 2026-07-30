@@ -42,7 +42,7 @@ class ProfileSettings {
     final glucose = await ProfileGlucoseState.load();
     final bolus = await ProfileBolusState.load();
     final prediction = await ProfilePredictionState.load();
-    final silent = await ProfileSilentState.load();
+    final silent = await ProfileSilentState.loadRaw();
     final battery = await ProfileBatteryState.loadRaw();
     const sport = SportStore();
     const nutrition = NutritionStore();
@@ -79,15 +79,20 @@ class ProfileSettings {
       "pod_insulin_units": "${await NotificationThreshold.podInsulin.load()}",
       // Two booleans, not one enum: the panel coerces `silent_mode` to a bool
       // and writes it back, so the tone-only mute needs a key of its own.
-      "silent_mode": "${silent == SilentMode.all}",
-      "silent_tones": "${silent == SilentMode.tones}",
+      "silent_mode": "${silent.mode == SilentMode.all}",
+      "silent_tones": "${silent.mode == SilentMode.tones}",
+      // How long the mute runs (0 = until switched off) and the epoch-ms end it
+      // was anchored to. Untyped by the panel, so they pass through untouched; a
+      // lapsed mute collects as off.
+      "silent_window_min": "${silent.window.windowMin}",
+      "silent_until": "${silent.window.until}",
       // Battery saver: the mode as an enum string (unlike silent mode, no client
       // coerces this key to a bool), the picked window in minutes and the epoch-ms
       // end it was anchored to. A lapsed window collects as `off`, so a returning
       // device never adopts a saver whose time is up.
       "battery_saver_mode": battery.mode.name,
-      "battery_saver_window_min": "${battery.windowMin}",
-      "battery_saver_until": "${battery.until}",
+      "battery_saver_window_min": "${battery.window.windowMin}",
+      "battery_saver_until": "${battery.window.until}",
       "developer": "${await ProfileDeveloperState.load()}",
       // Glucose-prediction overlay (on/off + band + horizon).
       "prediction_enabled": "${prediction.enabled}",

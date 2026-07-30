@@ -55,6 +55,28 @@ It is persisted as the **two original boolean keys** `silent_mode` + a new
 and writes the whole settings blob back, so an enum string would return from a
 panel save as `false` and silently unmute. `all` outranks `tones` on read.
 
+### A mute can be time-limited
+
+A mute carries an optional `ProfileModeWindow` (`lib/src/profile/profile_mode_window.dart`,
+shared with the battery saver — see `docs/BATTERY.md`), persisted under
+`silent_window_min` + `silent_until`. Those keys are new and untyped in the panel,
+so they pass through its settings blob untouched.
+
+Two properties matter here, and both are safety-relevant:
+
+- **`ProfileSilentState.load()` resolves the window itself.** It returns
+  `SilentMode.off` once the run has lapsed, so every alarm call site un-mutes with
+  no extra code — `alarms.dart` was not touched for this. The end is a stored
+  **timestamp**, so a limited mute also expires correctly while the app is closed.
+- **An absent or unparseable window means "no limit", never "elapsed".** A mute
+  set before this existed has no window keys at all and must stay muted rather
+  than expire the moment the app updates.
+
+The in-isolate `Timer` (`expiryTimer`) exists only so the overview banner
+disappears on time while the app is open; nothing depends on it having fired.
+Shortening or extending a mute that was already confirmed needs no new biometric
+check — neither reduces what the app tells you.
+
 ## DnD bypass is order-sensitive (load-bearing)
 
 The alarm channels set `channelBypassDnd: true`. Android **silently ignores**

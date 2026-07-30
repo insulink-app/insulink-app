@@ -116,11 +116,11 @@
     "silent": {
       "tones": {
         "title": "Alarmtöne stummgeschaltet",
-        "hint": "Alarme erscheinen und vibrieren weiterhin · zum Deaktivieren tippen"
+        "hint": "Alarme erscheinen und vibrieren weiterhin"
       },
       "all": {
         "title": "Stummschaltung aktiv",
-        "hint": "Alarme sind stummgeschaltet · zum Deaktivieren tippen"
+        "hint": "Alarme sind stummgeschaltet"
       }
     },
     "battery": {
@@ -131,7 +131,9 @@
       "extreme": {
         "title": "Extremer Akkusparmodus aktiv",
         "hint": "Aktivitätserkennung, Puls-Band und Prognose pausiert"
-      },
+      }
+    },
+    "mode": {
       "until": "bis #",
       "end": "zum Beenden tippen"
     },
@@ -797,12 +799,13 @@
         "saving_hint": "Automatische Trainingserkennung (GPS und Bewegungserkennung) ist aus, die Pulsabfrage läuft seltener. Ein selbst gestartetes Training zeichnet weiterhin vollständig auf.",
         "extreme_hint": "Zusätzlich zu „Sparsam\": kein Live-Puls vom Band und keine Glukoseprognose. Es läuft nur noch die Sensormessung mit ihren Alarmen."
       },
-      "duration": {
-        "_": "Dauer",
-        "h2": "2 Std.",
-        "h8": "8 Std.",
-        "permanent": "Dauerhaft"
-      }
+      "auth_reason": "Bestätige, um den Akkusparmodus zu aktivieren"
+    },
+    "duration": {
+      "_": "Dauer",
+      "h2": "2 Std.",
+      "h8": "8 Std.",
+      "permanent": "Dauerhaft"
     },
     "developer": {
       "_": "Entwickler",
