@@ -3,19 +3,23 @@ import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/injection/biometric_auth.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/profile/profile_duration_row.dart';
+import 'package:insulink/src/profile/profile_segments.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
 /// Settings control for [ProfileSilentState]: a segmented pick between muting
-/// nothing, only the alarm tones, or everything. Observes the provider so it
-/// stays in sync with the overview indicator (which can also turn it off).
+/// nothing, only the alarm tones, or everything, plus how long that mute lasts.
+/// Observes the provider so it stays in sync with the overview indicator (which
+/// can also turn it off).
 ///
 /// Only [SilentMode.all] is gated: it mutes every glucose alarm, which is safety
 /// relevant, so it needs an explicit risk warning plus a biometric confirmation.
 /// Muting the tones alone keeps the buzzing alarm on screen, so it is direct —
-/// as is turning the mute back off.
+/// as is turning the mute back off, and as is shortening or extending a mute that
+/// was already confirmed.
 class ProfileSilentSelection extends StatelessWidget {
   const ProfileSilentSelection({super.key});
 
@@ -77,7 +81,6 @@ class ProfileSilentSelection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ProfileSilentState>();
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -86,58 +89,30 @@ class ProfileSilentSelection extends StatelessWidget {
           style: TextStyle(fontSize: 15),
         ),
         const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.dividerColor),
-          ),
-          child: Row(
-            children: [
-              for (final mode in SilentMode.values)
-                Expanded(child: _segment(context, state, theme, mode)),
-            ],
-          ),
+        ProfileSegments(_modes(context, state)),
+        const SizedBox(height: 14),
+        ProfileDurationRow(
+          windowMin: state.window.windowMin,
+          enabled: state.activeMode != SilentMode.off,
+          onPicked: (minutes) =>
+              context.read<ProfileSilentState>().setWindow(minutes),
         ),
       ],
     );
   }
 
-  /// One segment of the control. A muting segment fills in the error colour so
-  /// the picked state reads as "alarms are held back", not as a neutral choice.
-  Widget _segment(
-    BuildContext context,
-    ProfileSilentState state,
-    ThemeData theme,
-    SilentMode mode,
-  ) {
-    final selected = state.mode == mode;
-    final fill = mode == SilentMode.off
-        ? theme.colorScheme.onSurface
-        : theme.colorScheme.error;
-    return GestureDetector(
-      onTap: () => _onPicked(context, state, mode),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? fill : Colors.transparent,
-          borderRadius: BorderRadius.circular(9),
+  /// A muting segment fills in the error colour so the picked state reads as
+  /// "alarms are held back", not as a neutral choice.
+  List<ProfileSegment> _modes(BuildContext context, ProfileSilentState state) {
+    final scheme = Theme.of(context).colorScheme;
+    return [
+      for (final mode in SilentMode.values)
+        (
+          labelKey: 'profile.silent.mode.${mode.name}',
+          selected: state.activeMode == mode,
+          fill: mode == SilentMode.off ? scheme.onSurface : scheme.error,
+          onTap: () => _onPicked(context, state, mode),
         ),
-        child: LocaleText(
-          'profile.silent.mode.${mode.name}',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: selected
-                ? theme.colorScheme.surface
-                : theme.colorScheme.onSurface,
-          ),
-        ),
-      ),
-    );
+    ];
   }
 }

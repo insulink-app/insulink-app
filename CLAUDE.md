@@ -320,7 +320,10 @@ glucose/bolus/silent profile state, and `CgmController`) and `MaterialApp`
   effect WITHOUT restarting the service. Safety-relevant settings default ON
   (alarm sound, connection-lost). `ProfileSilentState` is a tri-state
   `SilentMode` — mute nothing, only the alarm tones (notification + vibration
-  stay), or everything (`docs/ALARMS.md`);
+  stay), or everything (`docs/ALARMS.md`). Both it and `ProfileBatteryState`
+  carry an optional `ProfileModeWindow` (2 h / 8 h / until switched off), so
+  their `load()` resolves a lapsed run to "off" and every reader un-mutes /
+  un-saves without extra code (`docs/BATTERY.md`);
   `ProfileGlucoseState` holds the unit + the four thresholds
   (urgentLow/low/high/urgentHigh) used by both alarms and formatting.
 
@@ -543,6 +546,9 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `docs/ACTIVE_WORKOUT.md` — the running workout shared with the panel: who
   drives, who follows, and the server stamp that stops a finished workout being
   written back to life.
+- `docs/BATTERY.md` — the two-level battery saver: what each level pauses, why the
+  gate sits in `BackgroundLocationSampler.tick()`, and why a manual cardio
+  recording must force the detection service up.
 
 `lib/src/rust/` is generated — never hand-edit; change `rust/src/api/` and rerun
 codegen.

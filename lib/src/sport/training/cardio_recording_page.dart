@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:insulink/src/alert/alert.dart';
+import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/training/cardio_map.dart';
@@ -107,6 +108,10 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       return;
     }
     _countdown?.cancel();
+    // The route is recorded by the service isolate's GPS sampler, so the service
+    // must be up — forced, because the battery saver otherwise keeps a sensorless
+    // service down (see CgmController.ensureDetectionService).
+    await context.read<CgmController>().ensureDetectionService(force: true);
     await _state.startTraining(widget.type ?? CardioType.walk);
     if (!mounted) {
       return;

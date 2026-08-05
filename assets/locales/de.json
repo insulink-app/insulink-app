@@ -116,12 +116,26 @@
     "silent": {
       "tones": {
         "title": "Alarmtöne stummgeschaltet",
-        "hint": "Alarme erscheinen und vibrieren weiterhin · zum Deaktivieren tippen"
+        "hint": "Alarme erscheinen und vibrieren weiterhin"
       },
       "all": {
         "title": "Stummschaltung aktiv",
-        "hint": "Alarme sind stummgeschaltet · zum Deaktivieren tippen"
+        "hint": "Alarme sind stummgeschaltet"
       }
+    },
+    "battery": {
+      "saving": {
+        "title": "Akkusparmodus aktiv",
+        "hint": "Aktivitätserkennung pausiert"
+      },
+      "extreme": {
+        "title": "Extremer Akkusparmodus aktiv",
+        "hint": "Aktivitätserkennung, Puls-Band und Prognose pausiert"
+      }
+    },
+    "mode": {
+      "until": "bis #",
+      "end": "zum Beenden tippen"
     },
     "restore": {
       "title": "Vorherigen Sensor verwenden?",
@@ -774,6 +788,25 @@
         "all": "Alles"
       }
     },
+    "battery": {
+      "_": "Akkusparmodus",
+      "description": "Hintergrundaufgaben zurückfahren, um Akku zu sparen. Glukosemessung und Alarme laufen in jeder Stufe unverändert weiter.",
+      "mode": {
+        "off": "Aus",
+        "saving": "Sparsam",
+        "extreme": "Extrem",
+        "off_hint": "Alle Hintergrundaufgaben laufen normal.",
+        "saving_hint": "Automatische Trainingserkennung (GPS und Bewegungserkennung) ist aus, die Pulsabfrage läuft seltener. Ein selbst gestartetes Training zeichnet weiterhin vollständig auf.",
+        "extreme_hint": "Zusätzlich zu „Sparsam\": kein Live-Puls vom Band und keine Glukoseprognose. Es läuft nur noch die Sensormessung mit ihren Alarmen."
+      },
+      "auth_reason": "Bestätige, um den Akkusparmodus zu aktivieren"
+    },
+    "duration": {
+      "_": "Dauer",
+      "h2": "2 Std.",
+      "h8": "8 Std.",
+      "permanent": "Dauerhaft"
+    },
     "developer": {
       "_": "Entwickler",
       "description": "Entwicklermodus aktivieren"
@@ -830,7 +863,8 @@
       "sport_goals": "sport ziele tagesziele schritte strecke kalorien",
       "nutrition_goals": "ernährung ziele tagesziele kohlenhydrate eiweiß protein wasser trinken",
       "hr_zones": "puls pulszonen herzfrequenz zonen bpm erhöht hoch grün orange rot",
-      "sleep": "schlaf schlafqualität tiefschlaf einschlafen unterbrechung schlafindex zielbereich"
+      "sleep": "schlaf schlafqualität tiefschlaf einschlafen unterbrechung schlafindex zielbereich",
+      "battery": "akku batterie energie sparen strom stromsparen gps ortung standort erkennung laufzeit"
     },
     "prediction": {
       "_": "Vorhersage",

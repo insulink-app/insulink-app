@@ -16,6 +16,7 @@ import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
+import 'package:insulink/src/profile/battery/profile_battery_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -45,6 +46,7 @@ typedef AppPreferences = ({
   ProfileBolusState bolus,
   ProfileBasalState basal,
   ProfileSilentState silent,
+  ProfileBatteryState battery,
   ProfilePredictionState prediction,
   SportState sport,
   TrainingState training,
@@ -228,6 +230,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.bolus),
         ChangeNotifierProvider(create: (_) => prefs.basal),
         ChangeNotifierProvider(create: (_) => prefs.silent),
+        ChangeNotifierProvider(create: (_) => prefs.battery),
         ChangeNotifierProvider(create: (_) => prefs.prediction),
         ChangeNotifierProvider(create: (_) => prefs.sport),
         ChangeNotifierProvider(create: (_) => prefs.training),
@@ -295,6 +298,13 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
     };
   }
 
+  /// The silent state needs both its mode and its window, and the raw read
+  /// resolves a lapsed mute for us — so it can't use the one-value loader.
+  Future<ProfileSilentState> _silentState() async {
+    final stored = await ProfileSilentState.loadRaw();
+    return ProfileSilentState(stored.mode, stored.window);
+  }
+
   Future<AppPreferences> _loadPreferences() async {
     const storage = FlutterSecureStorage();
     final language =
@@ -312,7 +322,8 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       glucose: await ProfileGlucoseState.load(),
       bolus: await ProfileBolusState.load(),
       basal: await ProfileBasalState.load(),
-      silent: ProfileSilentState(await ProfileSilentState.load()),
+      silent: await _silentState(),
+      battery: await ProfileBatteryState.load(),
       prediction: await ProfilePredictionState.load(),
       sport: await SportState.load(),
       training: await TrainingState.load(),
