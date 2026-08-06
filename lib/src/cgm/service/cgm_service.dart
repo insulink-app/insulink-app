@@ -167,6 +167,10 @@ class CgmTaskHandler extends TaskHandler {
   /// wrongly suppress the very first connect.
   DateTime? _lastDeliveryAt;
 
+  /// Value+trend the ongoing notification currently shows, so repeats are
+  /// dropped — see [_updateNotification].
+  String? _shownNotification;
+
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     // The tick only decides WHICH location stream should be open (and does the
@@ -716,6 +720,16 @@ class CgmTaskHandler extends TaskHandler {
   /// notification, so it stays unchanged then). The toggle is read fresh so it
   /// takes effect without a service restart.
   Future<void> _updateNotification(int? mgdl, double? trendPerMin) async {
+    // Drop repeats before touching prefs: `_handleUpdate` fires per protocol
+    // update, so a backfill batch calls this dozens of times a second with the
+    // SAME value — two SharedPreferences reads and an `updateService` each,
+    // which is what makes Android shed the notification ("rate limit (5.0)
+    // exceeded") and drops frames. Nothing changed → nothing to show.
+    final signature = '$mgdl/$trendPerMin';
+    if (signature == _shownNotification) {
+      return;
+    }
+    _shownNotification = signature;
     final showValue = await ProfileLiveNotificationState().load();
     if (!showValue) {
       return;

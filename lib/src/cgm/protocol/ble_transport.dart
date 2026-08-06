@@ -87,9 +87,17 @@ class BleTransport {
     late StreamSubscription sub;
     sub = FlutterBluePlus.scanResults.listen((results) {
       for (final result in results) {
+        // Match the ADVERTISED name, not just platformName: on Android the
+        // latter is `BluetoothDevice.getName()` — the OS name cache — which is
+        // empty for a sensor the phone has never bonded/cached, so a G7 that is
+        // advertising as DXCM… right in front of us was silently skipped ("no
+        // sensor found" while scanning forever). advName comes from the
+        // advertisement itself and is always present for the G7.
+        final advertisedName = result.advertisementData.advName;
         final matches = wantedId != null
             ? result.device.remoteId.str == wantedId
-            : result.device.platformName.startsWith(namePrefix);
+            : advertisedName.startsWith(namePrefix) ||
+                  result.device.platformName.startsWith(namePrefix);
         if (matches) {
           if (!completer.isCompleted) {
             completer.complete(result.device);
@@ -134,8 +142,11 @@ class BleTransport {
   /// register the device on the BLE controller's allowlist and let the OS
   /// reconnect when the sensor next advertises — NO app-level scanning, so the
   /// native scanner can't wedge (the cause of the "toggle Bluetooth by hand"
-  /// outages). Used only when we already know the device id and hold a session
-  /// key; the fresh-pair / fallback path scans and uses a direct connect.
+  /// outages). Used for every connect once the OS has seen the sensor in this
+  /// process — either from the cached device id, or right after the scan that
+  /// found it. A direct connect is only left as the theoretical `autoConnect:
+  /// false` path: its 35 s timeout expires against the G7's ~1 s advertising
+  /// window and fails with 147 GATT_CONNECTION_TIMEOUT.
   Future<void> connectAndBind({
     bool autoConnect = false,
     void Function(String) log = print,

@@ -283,7 +283,7 @@ class G7Connection implements CgmConnection {
       final knownId = _knownDeviceId;
       // Only autoConnect once we've scanned this process (so the OS has seen the
       // device) and haven't exhausted the failure budget — see [_scannedThisProcess].
-      final useAutoConnect =
+      var useAutoConnect =
           knownId != null &&
           _scannedThisProcess &&
           _autoConnectFailures < _maxAutoConnectFailures;
@@ -305,6 +305,16 @@ class G7Connection implements CgmConnection {
         device = found;
         _scannedThisProcess =
             true; // OS has now seen the device → autoConnect ok
+        // Arm autoConnect for THIS connect too, rather than a direct connect.
+        // A direct connect has a hard 35 s timeout, but the G7 advertises only
+        // for about a second per ~5-min cycle: by the time the scan result is
+        // delivered and the bond checked, its window is usually already closed,
+        // so the connect dies with 147 GATT_CONNECTION_TIMEOUT and the whole
+        // cycle repeats forever. autoConnect has no timeout — the OS holds the
+        // request and completes it the moment the sensor next advertises, which
+        // is exactly what the steady-state path already relies on. Legal here
+        // because the scan we just ran taught the OS this address.
+        useAutoConnect = true;
       }
 
       // The serial is only a cache key, not an auth secret — when none was

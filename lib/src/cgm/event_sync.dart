@@ -16,9 +16,31 @@ class EventSync {
   /// In-memory: a fresh isolate re-sends from 0 once and the server dedups.
   static int _syncedThroughMs = 0;
 
+  /// True while a POST is in flight. [sync] is fired (unawaited) from
+  /// `_handleArchive`, which runs once per EGV **and once per backfill batch** —
+  /// a 24 h backfill triggers it dozens of times within a second. Without this
+  /// guard every one of those sees the un-advanced [_syncedThroughMs] and POSTs
+  /// the identical payload, flooding the backend and the heap (the repeated
+  /// event/report bodies + "Clamp target GC heap" in the logs). Overlapping
+  /// calls are dropped: the mark is unchanged, so the next archive write sends
+  /// whatever is still pending.
+  static bool _sending = false;
+
   /// POST the local events newer than [_syncedThroughMs], advancing the mark on
   /// success. Best-effort: a failure leaves the mark, so the next call retries.
   Future<void> sync(CgmStore store, void Function(String) onLog) async {
+    if (_sending) {
+      return;
+    }
+    _sending = true;
+    try {
+      await _send(store, onLog);
+    } finally {
+      _sending = false;
+    }
+  }
+
+  Future<void> _send(CgmStore store, void Function(String) onLog) async {
     final fresh = store
         .eventsBetween(DateTime.fromMillisecondsSinceEpoch(0), DateTime.now())
         .where((event) => event.time.millisecondsSinceEpoch > _syncedThroughMs)

@@ -69,10 +69,30 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
 
   bool get isRunning => _running;
 
+  /// Set once [dispose] ran. An in-flight `start`/`_findAndConnect` outlives the
+  /// widget tree, so its continuation would call [notifyListeners] on a disposed
+  /// notifier — that throw aborted the async chain mid-connect and left an
+  /// orphaned GATT client retrying forever (the connect/timeout/133 churn that
+  /// starves the G7's scan).
+  bool _disposed = false;
+
+  /// `connectionState` REPLAYS the current state on subscribe, so every fresh
+  /// [_connect] instantly saw `disconnected` and armed the 2 s retry — which
+  /// launched another [_connect] while the first 20 s connect was still pending,
+  /// each one arming yet another retry. That is the runaway
+  /// connect / "already connecting" / getBondedDevices storm in the logs, and it
+  /// starves the G7's own scan. So only a drop that FOLLOWS a real connection
+  /// re-arms ([_wasConnected]), and only one attempt runs at a time
+  /// ([_attempting]).
+  bool _attempting = false;
+  bool _wasConnected = false;
+
   void _set(FitbitHrStatus next, String text) {
     status = next;
     message = text;
-    notifyListeners();
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   /// Begins scanning + connecting; idempotent. Waits up to 12 s for the BLE
@@ -127,6 +147,19 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   /// advertising) — scanning finds nothing. So try the OS's already-known
   /// devices FIRST, connecting directly by id, and only scan as a fallback.
   Future<void> _findAndConnect() async {
+    if (_attempting) {
+      return;
+    }
+    _attempting = true;
+    try {
+      await _findAndConnectOnce();
+    } finally {
+      _attempting = false;
+    }
+  }
+
+  /// One attempt: known device first, broad scan as the fallback.
+  Future<void> _findAndConnectOnce() async {
     final known = await _knownFitbit();
     if (known != null) {
       await _connect(known);
@@ -252,16 +285,22 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   Future<void> _connect(BluetoothDevice device) async {
     _device = device;
     _set(FitbitHrStatus.connecting, 'Connecting…');
-    _connSub?.cancel();
+    await _connSub?.cancel();
     _connSub = device.connectionState.listen((state) {
-      if (state == BluetoothConnectionState.disconnected && _running) {
-        _foundTarget = false;
-        Future.delayed(const Duration(seconds: 2), () {
-          if (_running) {
-            _findAndConnect();
-          }
-        });
+      if (state == BluetoothConnectionState.connected) {
+        _wasConnected = true;
+        return;
       }
+      if (!_running || !_wasConnected) {
+        return;
+      }
+      _wasConnected = false;
+      _foundTarget = false;
+      Future.delayed(const Duration(seconds: 2), () {
+        if (_running) {
+          _findAndConnect();
+        }
+      });
     });
     try {
       // flutter_blue_plus 2.x requires a License arg; nonprofit = research use.
@@ -284,7 +323,12 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
       _lastEmptyScanAt = null;
       _set(FitbitHrStatus.connected, 'Connected — put the band on your wrist.');
     } catch (error) {
+      // Stand down instead of hammering: an unreachable band (out of range, or
+      // held by Google Health — status 133 / connect timeout) is not fixed by
+      // retrying seconds later. The next `start()` (app resume, or the service
+      // isolate taking over) tries again.
       _set(FitbitHrStatus.error, 'Connection failed: $error');
+      _running = false;
     }
   }
 
@@ -362,6 +406,7 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   Future<void> stop() async {
     _running = false;
     _foundTarget = false;
+    _wasConnected = false;
     await _scanSub?.cancel();
     await _valueSub?.cancel();
     await _connSub?.cancel();
@@ -377,6 +422,7 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     stop();
     super.dispose();
   }

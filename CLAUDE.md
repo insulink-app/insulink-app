@@ -236,6 +236,12 @@ Load-bearing background gotchas (don't regress):
      scanned). So `connection.dart` gates autoConnect on `_scannedThisProcess`:
      the FIRST connect of every process scans (teaching the OS the address), and
      only then do in-process reconnects autoConnect. Verified instinct of the user.
+   - **The scan path then autoConnects too — it does NOT direct-connect.** The
+     scan only teaches the OS the address; the connect that follows is armed with
+     `autoConnect: true` like every other. A direct connect's hard 35 s timeout
+     loses against the G7's ~1 s advertising window: the window is already closed
+     by the time the scan result is delivered and the bond checked, so it fails
+     with **147 GATT_CONNECTION_TIMEOUT** and the cycle repeats forever.
    - **FBP's autoConnect auto-rearm is broken (#528)** — never rely on it; the
      watchdog re-issues `connect()` per disconnect (Juggluco's pattern).
    - **No short timeout in autoConnect mode** — `connect(autoConnect:true)` returns
