@@ -191,6 +191,31 @@ void main() {
       expect(state.sessions, isEmpty);
     });
 
+    /// The id is the session's start, so the same workout finished on two
+    /// devices carries ONE id. Appended beside itself it reads as two workouts —
+    /// and deleting either takes both, because the logbook deletes by id.
+    test('logging the same workout twice keeps one entry', () async {
+      final state = await TrainingState.load();
+      const first = WorkoutSession(
+        id: 's1',
+        routineId: 'r1',
+        startedAtMs: 1000,
+        sets: [],
+      );
+      final second = WorkoutSession(
+        id: 's1',
+        routineId: 'r1',
+        startedAtMs: 1000,
+        sets: [setLog('ex-1')],
+      );
+
+      await state.addSession(first);
+      await state.addSession(second);
+
+      expect(state.sessions, hasLength(1));
+      expect(state.sessions.single.sets, hasLength(1));
+    });
+
     test('the previous session is the newest earlier one of the same routine', () async {
       final state = await TrainingState.load();
       const older = WorkoutSession(id: 'a', routineId: 'r1', startedAtMs: 100, sets: []);
@@ -242,6 +267,25 @@ void main() {
 
       await state.clearActiveWorkout();
       expect(state.activeWorkout, isNull);
+      expect((await TrainingState.load()).activeWorkout, isNull);
+    });
+
+    /// The zombie: a workout finished in the web panel, logged there, but whose
+    /// `clear` never reached the account (or this device). Resuming it would log
+    /// the same workout again under the same id — two rows the logbook then
+    /// deletes as one. Its session being in the logbook is proof it is over.
+    test('one whose session is already logged is not resumed', () async {
+      final state = await TrainingState.load();
+      await state.saveActiveWorkout(snapshot('r1'));
+      await state.addSession(
+        const WorkoutSession(
+          id: 'gk',
+          routineId: 'r1',
+          startedAtMs: 1000,
+          sets: [],
+        ),
+      );
+
       expect((await TrainingState.load()).activeWorkout, isNull);
     });
 

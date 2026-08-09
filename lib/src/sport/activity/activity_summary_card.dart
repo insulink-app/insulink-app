@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
+import 'package:insulink/src/hba1c/hba1c_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/sport/activity/activity_settings_sheet.dart';
 import 'package:insulink/src/sport/activity/reorderable_tile_grid.dart';
@@ -24,7 +25,12 @@ class ActivitySummaryCard extends StatelessWidget {
     final activity = context.watch<SportActivityState>();
     final sport = context.watch<SportState>();
     final health = context.watch<GoogleHealthState>();
-    final builder = TodayTileBuilder(activity, sport, health);
+    final builder = TodayTileBuilder(
+      activity,
+      sport,
+      health,
+      context.watch<Hba1cState>(),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

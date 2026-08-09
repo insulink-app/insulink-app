@@ -10,6 +10,7 @@ import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
+import 'package:insulink/src/hba1c/hba1c_state.dart';
 import 'package:insulink/src/inventory/inventory_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
@@ -52,6 +53,7 @@ typedef AppPreferences = ({
   TrainingState training,
   CardioTrainingState cardio,
   GoogleHealthState health,
+  Hba1cState hba1c,
   TodayLayoutState todayLayout,
   OverviewLayoutState overviewLayout,
   NutritionState nutrition,
@@ -236,6 +238,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.training),
         ChangeNotifierProvider(create: (_) => prefs.cardio),
         ChangeNotifierProvider(create: (_) => prefs.health..init()),
+        ChangeNotifierProvider(create: (_) => prefs.hba1c),
         ChangeNotifierProvider(create: (_) => prefs.todayLayout),
         ChangeNotifierProvider(create: (_) => prefs.overviewLayout),
         ChangeNotifierProvider(create: (_) => prefs.nutrition),
@@ -329,6 +332,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       training: await TrainingState.load(),
       cardio: await CardioTrainingState.load(),
       health: await GoogleHealthState.load(),
+      hba1c: await Hba1cState.load(),
       todayLayout: await TodayLayoutState.load(),
       overviewLayout: await OverviewLayoutState.load(),
       nutrition: await NutritionState.load(),

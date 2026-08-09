@@ -43,14 +43,41 @@ class TrainingState extends ChangeNotifier {
 
   static Future<TrainingState> load() async {
     const store = SportStore();
+    // Before anything reads the running workout: what the account had confirmed
+    // about it is the only thing that can end it, and it must survive a restart
+    // (see SportSync.restoreStamp).
+    await SportSync.restoreStamp();
+    final sessions = await store.loadSessions();
     return TrainingState(
       store,
       await store.loadExercises(),
       await store.loadRoutines(),
-      await store.loadSessions(),
-      await store.loadActiveWorkout(),
+      sessions,
+      await _pendingWorkout(store, sessions),
     );
   }
+
+  /// The stored workout to resume, unless the logbook already holds its session
+  /// — then it is the leftover of one that was finished elsewhere and logged
+  /// there, and resuming it would log the very same workout a second time.
+  /// Dropped from the store as well, so it cannot come back on the next launch.
+  static Future<WorkoutSnapshot?> _pendingWorkout(
+    SportStore store,
+    List<WorkoutSession> sessions,
+  ) async {
+    final snapshot = await store.loadActiveWorkout();
+    if (snapshot == null || !_isLogged(sessions, snapshot.startedAtMs)) {
+      return snapshot;
+    }
+    await store.clearActiveWorkout();
+    return null;
+  }
+
+  /// Whether a workout that started at [startedAtMs] is already in the logbook.
+  /// The session's id IS its start, so this is the same identity the logbook
+  /// deduplicates by.
+  static bool _isLogged(List<WorkoutSession> sessions, int startedAtMs) =>
+      sessions.any((session) => session.startedAtMs == startedAtMs);
 
   /// Re-read the library, routines and logbook into THIS instance, so a pull that
   /// replaced them reaches the UI. The provider keeps this instance, so listeners
@@ -161,6 +188,10 @@ class TrainingState extends ChangeNotifier {
       await _adoptEndedWorkout(confirmedStart);
       return;
     }
+    if (_isLogged(_sessions, remote.startedAtMs)) {
+      await _dropLoggedWorkout();
+      return;
+    }
     if (!answer.foreign || _matchesActive(remote)) {
       return;
     }
@@ -187,6 +218,20 @@ class TrainingState extends ChangeNotifier {
     _endedElsewhere = _driving;
     await _store.clearActiveWorkout();
     notifyListeners();
+  }
+
+  /// The account is still holding a workout whose session is already logged: the
+  /// device that finished it lost its `clear` (the panel navigates away whatever
+  /// the account answers, and a lost one leaves the workout running everywhere
+  /// else). Ends it here AND on the account — carrying it on would log the same
+  /// workout a second time under the same id.
+  Future<void> _dropLoggedWorkout() async {
+    final wasDriving = _driving;
+    await clearActiveWorkout();
+    if (wasDriving) {
+      _endedElsewhere = true;
+      notifyListeners();
+    }
   }
 
   void acknowledgeEndedElsewhere() {
@@ -235,9 +280,11 @@ class TrainingState extends ChangeNotifier {
   /// shown matches what that device is on even when this device's own copy of
   /// the routine differs or is missing entirely (a workout started in the web
   /// panel). Falls back to the local routine for a legacy snapshot without
-  /// embedded items.
+  /// embedded items — never for a free workout, which has no routine to fall
+  /// back to and legitimately carries no items until its first exercise is
+  /// picked.
   SportRoutine? routineForSnapshot(WorkoutSnapshot snapshot) {
-    if (snapshot.items.isNotEmpty) {
+    if (snapshot.items.isNotEmpty || snapshot.routineId == freeRoutineId) {
       return SportRoutine(
         id: snapshot.routineId,
         name: snapshot.routineName,
@@ -421,7 +468,14 @@ class TrainingState extends ChangeNotifier {
 
   // ---- Sessions ----
 
+  /// Logs a finished workout. The id is the session's START, so the same workout
+  /// finished on two devices is ONE entry: an id already in the list is
+  /// REPLACED, never appended beside itself. The account's `sync` keeps the last
+  /// entry per id and the whole logbook is keyed by it — two local rows sharing
+  /// one id look like two workouts until the first is deleted, which then takes
+  /// both with it.
   Future<void> addSession(WorkoutSession session) async {
+    _sessions.removeWhere((other) => other.id == session.id);
     _sessions.add(session);
     notifyListeners();
     await _saveSessions();

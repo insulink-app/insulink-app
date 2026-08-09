@@ -101,6 +101,7 @@ class SportSync {
   static void _forgetStamp() {
     _knownUpdate = 0;
     _stampedWorkoutStart = 0;
+    _persistStamp();
   }
 
   Future<Response?> _post(String url, Map<String, Object> body) =>
@@ -201,6 +202,22 @@ class SportSync {
   /// own that the account has never heard of yet.
   static int get confirmedActiveWorkoutStart => _stampedWorkoutStart;
 
+  /// Reads the confirmation back from the store on startup, so a workout the
+  /// account had confirmed BEFORE this launch is still recognised as one it
+  /// knows.
+  ///
+  /// Keeping it in memory only made a workout ended elsewhere immortal here: the
+  /// app restarts, the account (asked seconds later) answers "nothing runs", and
+  /// with the confirmation gone that answer reads as "the account has never heard
+  /// of this one" — which is deliberately NOT an ending. The stale workout then
+  /// resumed on every launch, and finishing it logged the session the other
+  /// device had already logged, under the same id.
+  static Future<void> restoreStamp() async {
+    final stamp = await _store.loadWorkoutStamp();
+    _stampedWorkoutStart = stamp.startedAtMs;
+    _knownUpdate = stamp.updated;
+  }
+
   /// The stamp to send for the workout that started at [startedAtMs]: the one
   /// the account confirmed for THIS workout, or 0 for any other — a workout this
   /// device is starting, not carrying on.
@@ -221,6 +238,14 @@ class SportSync {
     }
     _knownUpdate = (body['updated'] as num).toInt();
     _stampedWorkoutStart = startedAtMs;
+    _persistStamp();
+  }
+
+  /// Mirrors the confirmation into the store. Best-effort and never awaited: it
+  /// only has to be there by the NEXT launch, and a workout is not held up for a
+  /// disk write.
+  static void _persistStamp() {
+    unawaited(_store.saveWorkoutStamp(_stampedWorkoutStart, _knownUpdate));
   }
 
   /// Ends the shared workout. Disarms any pending push first — a snapshot timer
@@ -264,6 +289,7 @@ class SportSync {
     final foreign = updated > stampFor(snapshot.startedAtMs);
     _knownUpdate = updated;
     _stampedWorkoutStart = snapshot.startedAtMs;
+    _persistStamp();
     return (snapshot: snapshot, foreign: foreign);
   }
 

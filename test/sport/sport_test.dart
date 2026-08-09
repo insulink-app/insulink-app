@@ -247,7 +247,7 @@ void main() {
   });
 
   group('CardioDetector', () {
-    test('recognises a ~10 km/h jog surrounded by standing still', () {
+    test('recognises a ~10 km/h run surrounded by standing still', () {
       final points = <TrackPoint>[];
       var time = 1000000000000;
       var lat = 52.0;
@@ -271,7 +271,8 @@ void main() {
 
       final detected = const CardioDetector().detect(points);
       expect(detected.length, 1);
-      expect(detected.single.type, CardioType.jog);
+      // Auto-detection never emits a jog: below the bike threshold it is a walk.
+      expect(detected.single.type, CardioType.walk);
       expect(detected.single.detected, isTrue);
       expect(detected.single.distanceM, greaterThan(3000));
     });
@@ -437,7 +438,7 @@ void main() {
           at(afterNow),
         );
         expect(done.detected.length, 1);
-        expect(done.detected.single.type, CardioType.jog);
+        expect(done.detected.single.type, CardioType.walk);
         expect(done.detected.single.startMs, base);
         expect(done.detected.single.endMs, endMs);
 

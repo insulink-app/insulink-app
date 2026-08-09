@@ -21,6 +21,38 @@ modules keep — app (`sport/workout/`, `sport/training_state.dart`), api
 - `updated` is the server's own stamp on the row. It is the only ordering there
   is; the devices' clocks are never compared.
 
+## Workouts without a routine, and exercises added mid-session
+
+The snapshot carrying the routine by value is what makes both of these work at
+all — a follower renders the driver's items, so it needs no copy of its own.
+
+- **A free workout** carries the routine id `free` (app `freeRoutineId`, panel
+  `FREE_ROUTINE_ID`) and no stored routine behind it. It starts with **no items**
+  and both clients must survive that: nothing may index item 0 before the first
+  exercise is picked, and the id is never resolved against the routine list —
+  the places that name a workout show the free-training label instead. It also
+  **never ends itself**: running out of planned sets rests on the same set rather
+  than finishing, because there would otherwise be no way to add the next
+  exercise. Only the user's "finish" ends it.
+- **A free workout runs one set at a time.** A picked exercise gets exactly one
+  set and a two-minute rest; that rest is where both clients ask which exercise
+  comes next, and picking one starts it straight away. "Waiting for the next
+  exercise" is DERIVED from the snapshot (a free workout resting with at least as
+  many sets logged as planned), never carried — so a follower shows the same
+  question without another field to keep in step.
+- **An exercise added while a workout runs** is appended to the *runner's own*
+  copy of the routine, never to the stored one — a spontaneous extra must not
+  rewrite the plan for the next run. It reaches every other screen through the
+  snapshot's `items` like any other change. The panel keeps the ones it added in
+  a small local list and drops each as soon as the account's copy carries it, so
+  a round trip cannot add the same item twice.
+- **The predicted end is derived, not carried.** Both clients compute it from the
+  same rule — this session's elapsed time per logged set, extrapolated over the
+  sets still planned, with the routine's planned length standing in before the
+  first set — so it stays out of the snapshot: it would change every second and
+  each side already holds everything it needs. A free workout has no plan and
+  therefore no prediction.
+
 ## The rules
 
 1. **Having the runner open does not make a device the driver.** It adopts every
@@ -58,9 +90,27 @@ modules keep — app (`sport/workout/`, `sport/training_state.dart`), api
    sync entirely". Ending is also the one write the panel retries rather than
    drops: it navigates away regardless, and a lost `clear` leaves the workout
    running on every other device.
-5. **The logbook is keyed by client id.** `sync` keeps the last entry per id, so
-   a list that carries one twice cannot become two rows.
-6. **One owner per device.** In the app that is
+5. **The logbook is keyed by client id.** The id IS the session's start, so the
+   same workout finished on two devices is ONE entry: `sync` keeps the last per
+   id, and the app's `addSession` REPLACES an id it already holds instead of
+   appending beside it. Two local rows sharing an id look like two workouts and
+   are deleted as one — the logbook deletes by id.
+6. **The account's confirmation is persisted, not just held in memory.** It is
+   the only thing that lets "the account holds no workout" end a session
+   (rule 4), so a device that forgets it on restart can never end one again: the
+   app relaunches, the account answers "nothing runs", and without the
+   confirmation that reads as "it has never heard of this one". A workout
+   finished in the panel then ran on in the app for hours and was logged a second
+   time when finished there too. `SportSync.restoreStamp()` reads it back before
+   anything touches the running workout.
+7. **A workout whose session is already logged is over, whatever the account
+   says.** The `clear` can be lost — the panel navigates away regardless, and its
+   retries can all fail — leaving a row nothing will ever remove. Both clients
+   therefore refuse to resume a workout whose start is already in the logbook,
+   and the app clears it on the account as well. This is the backstop behind
+   rules 4 and 6, not a replacement for them: it only fires once the finished
+   session has synced.
+8. **One owner per device.** In the app that is
    `TrainingState.watchActiveWorkout` — nothing else may fetch the workout.
    `SportSync.pull` (sign-in, cold start, every entry to the sport tab) used to
    fetch it too, and only into the store, which `TrainingState.reload`

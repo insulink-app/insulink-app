@@ -147,12 +147,18 @@
     },
     "active_insulin": {
       "_": "Aktives Insulin",
+      "title": "Insulin",
+      "summary": "Letzte Dosis # um ## · aktiv bis ###",
       "until": "Noch aktiv bis #",
       "doses": "Aktive Dosen",
       "total": "Gesamt aktiv",
       "remaining": "# E aktiv",
       "of_bolus": "von # E Bolus",
       "empty": "Keine aktiven Insulindosen."
+    },
+    "boxes": {
+      "all": "Alle Werte",
+      "all_hint": "Alle Werte — auch die, deren Box du auf der Übersicht ausgeblendet hast. Tippe einen an, um den Verlauf zu sehen oder einen neuen einzutragen."
     }
   },
   "analysis": {
@@ -578,7 +584,13 @@
       "last_time": "Letztes Mal: #",
       "resume_active": "Laufendes Workout fortsetzen",
       "ended_elsewhere": "Dieses Training wurde auf einem anderen Gerät beendet.",
-      "ended_elsewhere_confirm": "Verstanden"
+      "ended_elsewhere_confirm": "Verstanden",
+      "free": "Freies Training",
+      "add_exercise": "Übung hinzufügen",
+      "no_exercise": "Noch keine Übung gewählt. Füge deine erste hinzu — sie gilt nur für dieses Training.",
+      "eta": "Ende ~#",
+      "next_exercise": "Nächste Übung",
+      "pick_next": "Was kommt als nächstes?"
     },
     "summary": {
       "_": "Zusammenfassung",
@@ -993,5 +1005,16 @@
       "title": "Sensor zur Hälfte aufgebraucht",
       "body": "Dein Sensor hat die Hälfte seiner Laufzeit erreicht."
     }
+  },
+  "hba1c": {
+    "_": "HbA1c",
+    "add": "HbA1c notieren",
+    "edit": "HbA1c bearbeiten",
+    "history": "Verlauf",
+    "measured_at": "Gemessen am",
+    "mmol_per_mol": "IFCC",
+    "average_glucose": "Ø Glukose",
+    "empty": "Noch kein HbA1c-Wert notiert.",
+    "delete_confirm": "Diesen HbA1c-Wert löschen?"
   }
 }

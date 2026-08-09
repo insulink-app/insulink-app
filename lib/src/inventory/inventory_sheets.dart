@@ -17,6 +17,7 @@ Future<int?> showNumberSheet(
   return showModalBottomSheet<int>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     showDragHandle: true,
     builder: (sheetContext) => _SheetBody(
       children: [
@@ -48,6 +49,7 @@ Future<Delivery?> showDeliverySheet(
   return showModalBottomSheet<Delivery>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     showDragHandle: true,
     builder: (_) => _DeliverySheet(existing: existing),
   );

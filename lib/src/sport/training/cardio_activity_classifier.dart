@@ -8,6 +8,9 @@ import 'cardio_models.dart';
 /// as a vehicle, and an on-foot label over a too-fast segment is upgraded to the
 /// speed-based type (a "walk" at 20 km/h is a vehicle, not a walk). Pure and
 /// plugin-free so it stays unit-testable.
+///
+/// It emits only [CardioType.walk] and [CardioType.bike] — never a jog, which is
+/// reserved for a manually started training (see [_bySpeed]).
 class CardioActivityClassifier {
   const CardioActivityClassifier();
 
@@ -43,21 +46,22 @@ class CardioActivityClassifier {
   /// The on-foot/bike [CardioType] for an activity kind, or null when the kind
   /// gives no usable signal (still/unknown/none) so speed decides. Vehicle is
   /// handled earlier (discard) and never reaches here.
+  ///
+  /// A recognised RUN maps to [CardioType.walk], not [CardioType.jog] — see
+  /// [_bySpeed] for why auto-detection never emits a jog.
   CardioType? _onFootType(ActivityKind? kind) => switch (kind) {
     ActivityKind.bike => CardioType.bike,
-    ActivityKind.run => CardioType.jog,
-    ActivityKind.walk => CardioType.walk,
+    ActivityKind.run || ActivityKind.walk => CardioType.walk,
     _ => null,
   };
 
+  /// Auto-detection only ever emits walk or bike: [CardioType.jog] stays in the
+  /// enum for a MANUALLY started training, but a GPS track can't tell a jog from
+  /// a brisk walk or a slow ride reliably enough to label it unasked, and a wrong
+  /// label is worse than a coarse one (the user confirms the training either
+  /// way). So everything below the bike threshold is a walk.
   CardioType _bySpeed(double avgKmh) {
-    if (avgKmh > 15) {
-      return CardioType.bike;
-    }
-    if (avgKmh > 7) {
-      return CardioType.jog;
-    }
-    return CardioType.walk;
+    return avgKmh > 15 ? CardioType.bike : CardioType.walk;
   }
 
   /// The activity kind that covered the most of the `[startMs, endMs]` window.

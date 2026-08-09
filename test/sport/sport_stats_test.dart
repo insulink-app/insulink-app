@@ -77,7 +77,7 @@ void main() {
       WorkoutSession(id: '2', routineId: 'r', startedAtMs: 2, sets: [weighted('b', 60, 5)]),
       WorkoutSession(id: '3', routineId: 'x', startedAtMs: 3, sets: [weighted('b', 50, 5)]),
     ];
-    final series = routineComparison(sessions, routines, 'Untitled');
+    final series = routineComparison(sessions, routines, 'Untitled', 'Free');
     expect(series.map((s) => s.name), ['Push']);
     // Second run scores higher than the first → positive delta.
     expect(series.single.points.last.delta, greaterThan(0));

@@ -147,12 +147,18 @@
     },
     "active_insulin": {
       "_": "Active insulin",
+      "title": "Insulin",
+      "summary": "Last dose # at ## · active until ###",
       "until": "Active until #",
       "doses": "Active doses",
       "total": "Total active",
       "remaining": "# U active",
       "of_bolus": "of # U bolus",
       "empty": "No active insulin doses."
+    },
+    "boxes": {
+      "all": "All values",
+      "all_hint": "Every value — including the ones whose box you hid on the overview. Tap one to see its history or note a new result."
     }
   },
   "analysis": {
@@ -578,7 +584,13 @@
       "last_time": "Last time: #",
       "resume_active": "Resume running workout",
       "ended_elsewhere": "This workout was finished on another device.",
-      "ended_elsewhere_confirm": "Got it"
+      "ended_elsewhere_confirm": "Got it",
+      "free": "Free workout",
+      "add_exercise": "Add exercise",
+      "no_exercise": "No exercise picked yet. Add your first — it counts for this workout only.",
+      "eta": "ends ~#",
+      "next_exercise": "Next exercise",
+      "pick_next": "What comes next?"
     },
     "summary": {
       "_": "Summary",
@@ -993,5 +1005,16 @@
       "title": "Sensor half used up",
       "body": "Your sensor has reached half of its lifetime."
     }
+  },
+  "hba1c": {
+    "_": "HbA1c",
+    "add": "Note HbA1c",
+    "edit": "Edit HbA1c",
+    "history": "History",
+    "measured_at": "Measured on",
+    "mmol_per_mol": "IFCC",
+    "average_glucose": "Avg. glucose",
+    "empty": "No HbA1c result noted yet.",
+    "delete_confirm": "Delete this HbA1c result?"
   }
 }

@@ -76,13 +76,18 @@ double workoutScore(WorkoutSession session) {
 }
 
 /// One line per routine run at least twice, each point a run scored by
-/// [workoutScore] with its change from the previous run.
+/// [workoutScore] with its change from the previous run. Free workouts have no
+/// routine to name them, so they share [freeName] as one line.
 List<RoutineSeries> routineComparison(
   List<WorkoutSession> sessions,
   List<SportRoutine> routines,
   String untitled,
+  String freeName,
 ) {
-  final nameById = {for (final routine in routines) routine.id: routine.name};
+  final nameById = {
+    for (final routine in routines) routine.id: routine.name,
+    freeRoutineId: freeName,
+  };
   final runsByRoutine = <String, List<WorkoutSession>>{};
   for (final session in sessions) {
     (runsByRoutine[session.routineId] ??= []).add(session);

@@ -10,9 +10,10 @@ import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
-/// End-of-workout headline: one overall training value — the lifted-volume
-/// change versus the previous session of the same routine — as a big progress
-/// ring, with the concrete figures (volume, sets, duration) small beneath it.
+/// End-of-workout headline: one overall training value — each exercise's change
+/// versus the previous session of the same routine, averaged so every exercise
+/// counts the same — as a big progress ring, with the concrete figures
+/// (exercises, sets, duration) small beneath it.
 /// Reused on the finish screen and the logbook detail page. Reads the
 /// predecessor from [TrainingState] (watched, so an in-place logbook edit
 /// recomputes it).
@@ -26,9 +27,9 @@ class WorkoutSummaryCard extends StatelessWidget {
     final training = context.watch<TrainingState>();
     final current = WorkoutSummary(session);
     final previousSession = training.previousSessionOf(session);
-    final previous = previousSession == null
+    final ratio = previousSession == null
         ? null
-        : WorkoutSummary(previousSession);
+        : effortRatioVsPrevious(session, previousSession);
     final scheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
@@ -40,7 +41,7 @@ class WorkoutSummaryCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _ring(context, scheme, current, previous),
+          _ring(context, scheme, ratio),
           const SizedBox(height: 24),
           _concreteStats(context, scheme, current),
         ],
@@ -48,18 +49,13 @@ class WorkoutSummaryCard extends StatelessWidget {
     );
   }
 
-  /// The overall training value: the change in effort (reps + held seconds) vs
-  /// the previous session, filling the ring by the ratio to last time. Shows the
-  /// "first time" note only when there genuinely is no predecessor (or the rare
-  /// empty one), never merely because a routine carries no weights.
-  Widget _ring(
-    BuildContext context,
-    ColorScheme scheme,
-    WorkoutSummary current,
-    WorkoutSummary? previous,
-  ) {
-    final base = previous?.effort ?? 0;
-    if (base == 0) {
+  /// The overall training value: [ratio] is the per-exercise change vs the
+  /// previous session (see [effortRatioVsPrevious]), filling the ring by how it
+  /// compares with last time. Shows the "first time" note only when there is
+  /// genuinely nothing to compare against, never merely because a routine
+  /// carries no weights.
+  Widget _ring(BuildContext context, ColorScheme scheme, double? ratio) {
+    if (ratio == null) {
       return WorkoutProgressRing(
         fraction: 1,
         color: context.accent,
@@ -71,7 +67,6 @@ class WorkoutSummaryCard extends StatelessWidget {
         ),
       );
     }
-    final ratio = current.effort / base;
     final percent = ((ratio - 1) * 100).round();
     final color = percent == 0
         ? scheme.onSurface.withValues(alpha: 0.6)

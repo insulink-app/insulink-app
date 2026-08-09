@@ -142,6 +142,11 @@ class RoutineItem {
   );
 }
 
+/// The routine id a free workout carries: one run without a stored routine, its
+/// exercises picked while it runs. Never in the library, so nothing resolves it
+/// there — the places that name a workout show the free-training label instead.
+const String freeRoutineId = 'free';
+
 /// A routine: a name and an ordered sequence of [RoutineItem]s.
 class SportRoutine {
   final String id;

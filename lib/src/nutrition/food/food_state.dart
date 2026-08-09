@@ -31,8 +31,19 @@ class FoodState extends ChangeNotifier {
   /// Products newest first (most recently scanned on top).
   List<FoodProduct> get products => _products.reversed.toList();
 
-  bool contains(String barcode) =>
-      _products.any((product) => product.barcode == barcode);
+  bool contains(String barcode) => findByBarcode(barcode) != null;
+
+  /// The stored product for [barcode], or null when it has never been scanned.
+  /// The barcode is the product's identity here (see [addProduct]), so this is
+  /// what a re-scan resolves to instead of creating a second entry.
+  FoodProduct? findByBarcode(String barcode) {
+    for (final product in _products) {
+      if (product.barcode == barcode) {
+        return product;
+      }
+    }
+    return null;
+  }
 
   /// Adds a product, replacing any existing entry with the same barcode so a
   /// re-scan refreshes rather than duplicates.

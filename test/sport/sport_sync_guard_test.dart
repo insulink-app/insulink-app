@@ -1,10 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/sport/sport_store.dart';
 import 'package:insulink/src/sport/sport_sync.dart';
+
+import '../support/secure_storage_mock.dart';
 
 /// The pulls REPLACE a collection with the account's copy. While a local change
 /// is still queued for upload, that copy is known to be out of date — adopting
 /// it reverts the change (a just-confirmed training vanishing again).
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(installSecureStorageMock);
   tearDown(SportSync.cancelPending);
 
   test('an untouched collection adopts the account copy', () {
@@ -53,6 +59,29 @@ void main() {
   test('a stamp is only ever sent for the workout it was taken from', () {
     expect(SportSync.stampFor(1000), 0);
     expect(SportSync.stampFor(2000), 0);
+  });
+
+  /// The account's confirmation is what tells a workout it has ENDED from one it
+  /// has never heard of. Held in memory only, it was gone after a restart — and a
+  /// workout ended in the web panel then ran on in the app for as long as the app
+  /// lived, because every poll's "nothing runs" read as "the account never knew
+  /// this one". Finishing it there logged the session a second time under the
+  /// same id.
+  test('the account confirmation survives a restart', () async {
+    await const SportStore().saveWorkoutStamp(1000, 42);
+
+    await SportSync.restoreStamp();
+
+    expect(SportSync.confirmedActiveWorkoutStart, 1000);
+    expect(SportSync.stampFor(1000), 42);
+    expect(SportSync.stampFor(2000), 0);
+  });
+
+  test('a device that has never been confirmed restores nothing', () async {
+    await SportSync.restoreStamp();
+
+    expect(SportSync.confirmedActiveWorkoutStart, 0);
+    expect(SportSync.stampFor(1000), 0);
   });
 
   test('cancelling the queued pushes releases the guard', () {

@@ -10,6 +10,7 @@ Future<int?> showFreeDrinkSheet(BuildContext context) {
   return showModalBottomSheet<int>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (_) => const _FreeDrinkSheet(),
   );

@@ -10,6 +10,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/training/cardio_map.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
+import 'package:insulink/src/sport/sport_vitals_bar.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
@@ -292,7 +293,13 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
           ),
           if (_phase == _Phase.countdown) _countdownOverlay(context),
           if (_phase == _Phase.recording)
-            Align(alignment: Alignment.bottomCenter, child: _panel(context)),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [const SportVitalsBar(), _panel(context)],
+              ),
+            ),
         ],
       ),
     );
@@ -318,7 +325,8 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
     final active = _state.activeTraining;
     final paused = active?.isPaused ?? false;
     return Container(
-      margin: const EdgeInsets.all(16),
+      // Side margins match SportVitalsBar's, so the two stacked cards line up.
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,

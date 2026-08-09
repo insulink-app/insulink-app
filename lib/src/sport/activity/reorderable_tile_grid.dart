@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
+import 'package:insulink/src/sport/activity/tile_grid.dart';
 import 'package:insulink/src/sport/activity/tile_layout_state.dart';
 
 /// A 2-column grid of summary boxes that can be reordered by long-pressing a box
@@ -20,25 +21,7 @@ class ReorderableTileGrid<T extends Enum> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tileWidth = (constraints.maxWidth - 12) / 2;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var index = 0; index < tiles.length; index += 2) ...[
-              if (index > 0) const SizedBox(height: 12),
-              _row(
-                _draggable(context, tiles[index], tileWidth),
-                index + 1 < tiles.length
-                    ? _draggable(context, tiles[index + 1], tileWidth)
-                    : null,
-              ),
-            ],
-          ],
-        );
-      },
-    );
+    return TileGrid<T>(tiles: tiles, tileBuilder: _draggable);
   }
 
   Widget _draggable(BuildContext context, T tile, double width) {
@@ -83,16 +66,4 @@ class ReorderableTileGrid<T extends Enum> extends StatelessWidget {
     }
   }
 
-  Widget _row(Widget left, Widget? right) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: left),
-          const SizedBox(width: 12),
-          Expanded(child: right ?? const SizedBox.shrink()),
-        ],
-      ),
-    );
-  }
 }

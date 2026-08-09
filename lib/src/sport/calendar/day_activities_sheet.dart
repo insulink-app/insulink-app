@@ -5,6 +5,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/calendar/sport_calendar_section.dart';
 import 'package:insulink/src/sport/logbook/workout_session_detail_page.dart';
+import 'package:insulink/src/sport/logbook/workout_session_title.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/cardio_detail_page.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
@@ -89,15 +90,11 @@ class _DayActivitiesSheet extends StatelessWidget {
   }
 
   Widget _routineTile(BuildContext context, WorkoutSession session) {
-    final training = context.read<TrainingState>();
-    final routine = training.routineById(session.routineId);
     return _tile(
       context,
       color: calendarRoutineColor(Theme.of(context).colorScheme),
       icon: PhosphorIconsBold.barbell,
-      title:
-          routine?.name ??
-          Locales.string(context, 'sport.logbook.deleted_routine'),
+      title: workoutSessionTitle(context, session),
       time: DateTime.fromMillisecondsSinceEpoch(session.startedAtMs),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(

@@ -3,8 +3,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// A configurable summary box. The first four are always available; the rest
-/// come from a connected Google Health (via Health Connect).
+/// A configurable summary box: the first four are always available, the Google
+/// Health block needs a connected Health Connect, and the trailing ones are
+/// hand-entered values with their own feature (HbA1c).
 enum TodayTile {
   steps,
   distance,
@@ -15,12 +16,16 @@ enum TodayTile {
   heartRate,
   spo2,
   respiratoryRate,
+  hba1c,
 }
 
 extension TodayTileInfo on TodayTile {
   /// Whether this tile's data comes from a Google Health (only rendered while one is
-  /// connected).
-  bool get isGoogleHealth => index >= TodayTile.restingHr.index;
+  /// connected). A RANGE, not an open-ended `>=`: tiles added after the Google
+  /// Health block (HbA1c) are hand-entered and must not be hidden with them.
+  bool get isGoogleHealth =>
+      index >= TodayTile.restingHr.index &&
+      index <= TodayTile.respiratoryRate.index;
 }
 
 /// Shared ordered-visibility model for a personalizable grid of summary boxes —

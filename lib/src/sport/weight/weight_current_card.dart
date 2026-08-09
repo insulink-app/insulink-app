@@ -3,7 +3,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
-import 'package:insulink/src/sport/weight/weight_entry_row.dart';
+import 'package:insulink/src/base/measurement_row.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/brand_tints.dart';
 
@@ -73,7 +73,7 @@ class WeightCurrentCard extends StatelessWidget {
                 _bmiPill(context, scheme),
               ],
               const Spacer(),
-              if (delta != null && delta != 0) WeightDeltaChip(delta: delta),
+              if (delta != null && delta != 0) MeasurementDeltaChip(delta: delta, unit: 'kg'),
             ],
           ),
           if (ranged.length >= 2) ...[

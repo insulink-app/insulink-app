@@ -19,6 +19,7 @@ class OverviewLayoutState extends TileLayoutState<OverviewBox> {
     OverviewBox.bolus,
     OverviewBox.water,
     OverviewBox.meals,
+    OverviewBox.hba1c,
   };
 
   OverviewLayoutState(super.order, super.hidden);

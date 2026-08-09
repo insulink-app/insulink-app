@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/google_health/google_health_state.dart';
-import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
-import 'package:insulink/src/nutrition/meal/meal_state.dart';
-import 'package:insulink/src/nutrition/stats/nutrition_tile_builder.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/overview/all_values_page.dart';
 import 'package:insulink/src/overview/overview_box.dart';
 import 'package:insulink/src/overview/overview_box_builder.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/activity/reorderable_tile_grid.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/activity/tile_layout_editor.dart';
-import 'package:insulink/src/sport/activity/today_tile_builder.dart';
-import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
 
 /// Personalizable summary boxes on the overview: Sport metrics AND nutrition
@@ -25,33 +20,30 @@ class OverviewBoxes extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layout = context.watch<OverviewLayoutState>();
-    final health = context.watch<GoogleHealthState>();
-    final builder = OverviewBoxBuilder(
-      TodayTileBuilder(
-        context.watch<SportActivityState>(),
-        context.watch<SportState>(),
-        health,
-      ),
-      NutritionTileBuilder(
-        context.watch<MealState>(),
-        context.watch<NutritionState>(),
-      ),
-    );
+    final builder = OverviewBoxBuilder.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Align(
           alignment: Alignment.centerRight,
-          child: IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: Icon(
-              PhosphorIconsBold.slidersHorizontal,
-              size: 20,
-              color: Theme.of(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _headerButton(
                 context,
-              ).colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-            onPressed: () => _edit(context, layout),
+                PhosphorIconsBold.squaresFour,
+                'overview.boxes.all',
+                () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const AllValuesPage()),
+                ),
+              ),
+              _headerButton(
+                context,
+                PhosphorIconsBold.slidersHorizontal,
+                'sport.layout.title',
+                () => _edit(context, layout),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 4),
@@ -61,6 +53,26 @@ class OverviewBoxes extends StatelessWidget {
           tileBuilder: builder.build,
         ),
       ],
+    );
+  }
+
+  /// One muted header action. `onSurfaceVariant` weight, not the accent: these
+  /// are controls for the section, not affordances that carry the brand.
+  Widget _headerButton(
+    BuildContext context,
+    IconData icon,
+    String tooltipKey,
+    VoidCallback onPressed,
+  ) {
+    return IconButton(
+      visualDensity: VisualDensity.compact,
+      tooltip: Locales.string(context, tooltipKey),
+      icon: Icon(
+        icon,
+        size: 20,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+      ),
+      onPressed: onPressed,
     );
   }
 

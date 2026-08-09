@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:insulink/src/sport/routines/routine_duration.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/workout/workout_snapshot.dart';
 
@@ -18,7 +19,7 @@ enum WorkoutPhase { exercising, resting, done }
 /// plays no tone: at 0 it counts up as overtime until the user continues or
 /// extends it. UI-free.
 class WorkoutRunner extends ChangeNotifier {
-  final SportRoutine routine;
+  SportRoutine _routine;
   final List<SportExercise> _exercises;
   final int _sessionStartedMs;
 
@@ -45,20 +46,20 @@ class WorkoutRunner extends ChangeNotifier {
   void Function(WorkoutSession session)? onFinished;
 
   WorkoutRunner(
-    this.routine,
+    SportRoutine routine,
     List<SportExercise> exercises, {
     WorkoutSnapshot? resume,
     this.onPersist,
     this.findLastSet,
-  }) : _exercises = exercises,
+  }) : _routine = routine,
+       _exercises = exercises,
        _sessionStartedMs =
            resume?.startedAtMs ?? DateTime.now().millisecondsSinceEpoch,
        _phase = resume?.phase ?? WorkoutPhase.exercising,
        _exerciseIndex = resume?.exerciseIndex ?? 0,
        _setIndex = resume?.setIndex ?? 0,
-       _currentReps = resume?.currentReps ?? routine.items.first.target,
-       _currentWeight =
-           resume?.currentWeight ?? routine.items.first.targetWeight,
+       _currentReps = resume?.currentReps ?? _firstTarget(routine),
+       _currentWeight = resume?.currentWeight ?? _firstWeight(routine),
        _setStartedAt = DateTime.fromMillisecondsSinceEpoch(
          resume?.setStartedAtMs ?? DateTime.now().millisecondsSinceEpoch,
        ),
@@ -78,11 +79,31 @@ class WorkoutRunner extends ChangeNotifier {
   static DateTime? _dateOrNull(int? ms) =>
       ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
 
+  /// A free workout starts with nothing to do, so there is no first item to take
+  /// the opening targets from.
+  static int _firstTarget(SportRoutine routine) =>
+      routine.items.isEmpty ? 0 : routine.items.first.target;
+
+  static double _firstWeight(SportRoutine routine) =>
+      routine.items.isEmpty ? 0 : routine.items.first.targetWeight;
+
+  /// The routine as THIS session runs it: the one it was started with plus
+  /// whatever [addExercise] appended. The stored routine is never touched.
+  SportRoutine get routine => _routine;
+
+  /// False only for a free workout before its first exercise is picked — the
+  /// exercise/rest views have nothing to show until then.
+  bool get hasExercises => _routine.items.isNotEmpty;
+
+  /// A free workout has no plan to run out of: it ends when the user says so,
+  /// not when the last planned set is done.
+  bool get _isFree => _routine.id == freeRoutineId;
+
   WorkoutPhase get phase => _phase;
-  RoutineItem get currentItem => routine.items[_exerciseIndex];
+  RoutineItem get currentItem => _routine.items[_exerciseIndex];
   SportExercise? get currentExercise => _exerciseById(currentItem.exerciseId);
   int get exerciseIndex => _exerciseIndex;
-  int get totalExercises => routine.items.length;
+  int get totalExercises => _routine.items.length;
   int get setNumber => _setIndex + 1;
   int get totalSets => currentItem.targetSets;
   int get currentReps => _currentReps;
@@ -129,6 +150,39 @@ class WorkoutRunner extends ChangeNotifier {
     return planned == 0 ? 0 : (_sets.length / planned).clamp(0.0, 1.0);
   }
 
+  /// How much longer the workout is expected to run, or null when there is no
+  /// plan to predict against (a free workout, or one already finished).
+  ///
+  /// Extrapolates THIS session's own pace — time elapsed per logged set — so it
+  /// corrects itself as the workout goes and needs no model of rests, pauses or
+  /// how long the user lingers. Before the first set there is nothing to measure
+  /// and the routine's planned length stands in.
+  ///
+  /// ponytail: one average across all sets, not one per exercise — a routine
+  /// mixing 30 s planks with 3 min squat sets predicts coarsely. Weight the
+  /// remaining sets by their planned cost if that ever matters.
+  Duration? get remaining {
+    if (_isFree || _phase == WorkoutPhase.done) {
+      return null;
+    }
+    final left = _plannedSets - _sets.length;
+    if (left <= 0) {
+      return Duration.zero;
+    }
+    if (_sets.isEmpty) {
+      return Duration(seconds: plannedRoutineSeconds(_routine, _exercises));
+    }
+    return sessionElapsed * (left / _sets.length);
+  }
+
+  /// When the workout is expected to be over, or null while nothing can be
+  /// predicted. Read from the wall clock, so a paused workout's end keeps moving
+  /// out — which is exactly what a pause does to it.
+  DateTime? get expectedEnd {
+    final left = remaining;
+    return left == null ? null : DateTime.now().add(left);
+  }
+
   int get _plannedSets {
     var total = 0;
     for (final item in routine.items) {
@@ -141,8 +195,9 @@ class WorkoutRunner extends ChangeNotifier {
   SetLog? get lastLoggedSet => _sets.isEmpty ? null : _sets.last;
 
   /// The matching set from a previous session (competitive comparison).
-  SetLog? get lastComparable =>
-      findLastSet?.call(currentItem.exerciseId, _setIndex);
+  SetLog? get lastComparable => hasExercises
+      ? findLastSet?.call(currentItem.exerciseId, _setIndex)
+      : null;
 
   SportExercise? _exerciseById(String id) {
     for (final exercise in _exercises) {
@@ -223,15 +278,61 @@ class WorkoutRunner extends ChangeNotifier {
     _persist();
   }
 
+  /// Whether a free workout has done everything it was told to and is waiting to
+  /// be told what comes next — the rest after its last set, where the UI asks for
+  /// the next exercise instead of offering to carry on.
+  ///
+  /// Derived, not stored: a free workout plans one set per exercise, so having
+  /// logged at least as many sets as it planned means the plan is spent. That
+  /// keeps it true for a follower reading the snapshot as well, and an older
+  /// free workout whose exercises still carry three sets simply runs them out
+  /// first.
+  bool get awaitingNextExercise =>
+      _isFree &&
+      _phase == WorkoutPhase.resting &&
+      _sets.length >= _plannedSets;
+
+  /// Add an exercise to THIS session — appended to the runner's own copy of the
+  /// routine, so the stored routine keeps its items and the snapshot carries the
+  /// added one to every other screen. It starts straight away when the workout
+  /// has nothing else to do (a free workout before its first pick, or resting
+  /// after its last set); inside a running routine it queues up behind what is
+  /// left.
+  ///
+  /// A free workout takes ONE set and a two-minute rest: it is picked exercise by
+  /// exercise as it goes, so planning three sets ahead would only be in the way.
+  /// An extra exercise in a real routine keeps the routine editor's defaults —
+  /// there it IS part of a plan.
+  void addExercise(String exerciseId) {
+    final startNow = _routine.items.isEmpty || awaitingNextExercise;
+    final item = RoutineItem(
+      id: 'adhoc-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}',
+      exerciseId: exerciseId,
+      targetSets: _isFree ? 1 : 3,
+      restSeconds: _isFree ? 120 : 60,
+    );
+    _routine = _routine.copyWith(items: [..._routine.items, item]);
+    if (startNow) {
+      _exerciseIndex = _routine.items.length - 1;
+      _setIndex = 0;
+      _enterExercising();
+      return;
+    }
+    notifyListeners();
+    _persist();
+  }
+
   /// Log the current set and advance to the next set/exercise (with rest), or
-  /// finish the session.
+  /// finish the session. A free workout is never finished by running out of
+  /// plan: it rests on the same set instead, so the user can add the next
+  /// exercise, repeat this one, or end it themselves.
   void completeSet() {
     if (_phase != WorkoutPhase.exercising) {
       return;
     }
     _logCurrentSet();
     final rest = currentItem.restSeconds;
-    if (!_advancePointers()) {
+    if (!_advancePointers() && !_isFree) {
       _finish();
       return;
     }

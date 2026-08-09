@@ -59,6 +59,18 @@ class Libre3Connection implements CgmConnection {
   /// instead of overwriting it with only what the sensor re-streams.
   bool _historyLoaded = false;
 
+  /// Bumped by every [_teardown] so an in-flight [connect] can tell it was
+  /// abandoned (watchdog force-reset, service restart, stop) and must close its
+  /// own link instead of adopting it.
+  ///
+  /// This matters far more here than on the G7. The Libre 3 holds a CONTINUOUS
+  /// link, so an abandoned one never drops by itself; [timing] force-resets a
+  /// slow connect after only 3 min and reconnects with a zero backoff, so each
+  /// abandoned attempt used to leave one more permanently-connected sensor link
+  /// behind within minutes — the "several sensors connected, have to stop
+  /// several times" report.
+  int _generation = 0;
+
   String get _key => store.resolvedKey ?? '';
 
   @override
@@ -80,12 +92,21 @@ class Libre3Connection implements CgmConnection {
 
   /// Continuous link, ~1-min stream: silence beyond a few minutes is a fault,
   /// and there is no connect/deliver/drop backoff to honour.
+  ///
+  /// [connectStuckAfter] must exceed the LONGEST legitimate [connect], or the
+  /// watchdog force-resets an attempt that was about to succeed and immediately
+  /// starts another. Worst case here: the scan (120 s) plus TWO handshake
+  /// attempts — the pre-authorised one and, when the sensor rejects the cached
+  /// kAuth, the full cert exchange after a 2 s pause — each of which is a 35 s
+  /// connect + 30 s service discovery + a 40 s handshake. That is ~5.5 min, so
+  /// the old 3 min aborted normal reconnects on the fallback path (and, before
+  /// the [_generation] fix, leaked the link each time).
   @override
   CgmTiming get timing => const CgmTiming(
     staleAfter: Duration(minutes: 6),
     restartAfter: Duration(minutes: 12),
     processRestartAfter: Duration(minutes: 20),
-    connectStuckAfter: Duration(minutes: 3),
+    connectStuckAfter: Duration(minutes: 7),
     reconnectBackoff: Duration.zero,
     expectsContinuousLink: true,
   );
@@ -114,6 +135,9 @@ class Libre3Connection implements CgmConnection {
       _byTime.addAll(store.loadReadings(key));
     }
 
+    final generation = _generation;
+    bool abandoned() => generation != _generation;
+
     try {
       _log('scanning for Libre 3 $mac…');
       final device = await Libre3Transport.scanForMac(mac, log: _log);
@@ -121,8 +145,21 @@ class Libre3Connection implements CgmConnection {
         _log('Libre 3 not found');
         return;
       }
+      // Torn down while we scanned (up to 120 s) — don't open a link nobody is
+      // waiting for.
+      if (abandoned()) {
+        _log('Libre 3 connect abandoned before connecting');
+        return;
+      }
       final transport = await _handshake(device, key);
       if (transport == null) {
+        return;
+      }
+      // Torn down during connect + handshake: close this link rather than
+      // adopting one the caller has given up on.
+      if (abandoned()) {
+        _log('Libre 3 connect abandoned mid-handshake');
+        await _dropTransport(transport);
         return;
       }
       _glucoseSub = transport.glucoseStream.listen(_onGlucose);
@@ -134,7 +171,8 @@ class Libre3Connection implements CgmConnection {
           onConnectionState?.call(false);
         }
       });
-      _transport = transport;
+      // _transport already points at this link (published in _tryHandshake) —
+      // the checks above are what confirm it is still the one we should keep.
       onConnectionState?.call(true);
       _log('Libre 3 connected — streaming');
     } catch (error) {
@@ -166,6 +204,12 @@ class Libre3Connection implements CgmConnection {
 
   /// One connect + handshake attempt ([cachedAuthKey] null = full cert exchange).
   /// Returns the live transport, or null after tearing a failed attempt down.
+  ///
+  /// The transport is published to [_transport] the moment it exists — BEFORE
+  /// `connectAndBind` (a 35 s connect + 30 s service discovery) and the cert
+  /// exchange, which together run for minutes. Until that assignment [_teardown]
+  /// had nothing to disconnect, so an abandoned attempt left a fully connected,
+  /// streaming sensor behind that nothing owned. See [_generation].
   Future<Libre3Transport?> _tryHandshake(
     BluetoothDevice device,
     String key,
@@ -176,6 +220,7 @@ class Libre3Connection implements CgmConnection {
       crypto: crypto,
       blePin: store.librePin(key),
     );
+    _transport = transport;
     try {
       await transport.connectAndBind(log: _log);
       final authKey = await transport.runHandshake(
@@ -186,9 +231,19 @@ class Libre3Connection implements CgmConnection {
       return transport;
     } catch (error) {
       _log('ERROR: $error');
-      await transport.dispose();
+      await _dropTransport(transport);
       return null;
     }
+  }
+
+  /// Close [transport] and stop tracking it — but only clear [_transport] when it
+  /// still points at this one, so a failed first handshake can't null out the
+  /// link a concurrent teardown or the retry attempt has already put there.
+  Future<void> _dropTransport(Libre3Transport transport) async {
+    if (identical(_transport, transport)) {
+      _transport = null;
+    }
+    await transport.dispose();
   }
 
   void _onGlucose(List<int> plaintext) {
@@ -384,6 +439,7 @@ class Libre3Connection implements CgmConnection {
   }
 
   Future<void> _teardown() async {
+    _generation++;
     await _glucoseSub?.cancel();
     await _historicSub?.cancel();
     await _clinicalSub?.cancel();

@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/activity_entry.dart';
 import 'package:insulink/src/sport/logbook/workout_session_detail_page.dart';
+import 'package:insulink/src/sport/logbook/workout_session_title.dart';
 import 'package:insulink/src/sport/sport_leading_badge.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/cardio_training_tile.dart';
-import 'package:insulink/src/sport/training_state.dart';
-import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// One logged activity — a routine session or an endurance training — as a
@@ -40,9 +39,6 @@ class _RoutineSessionTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final locale = MaterialLocalizations.of(context);
     final started = DateTime.fromMillisecondsSinceEpoch(session.startedAtMs);
-    final routine = context.read<TrainingState>().routineById(
-      session.routineId,
-    );
     return ListTile(
       tileColor: scheme.onSurface.withValues(alpha: 0.04),
       shape: RoundedRectangleBorder(
@@ -53,8 +49,7 @@ class _RoutineSessionTile extends StatelessWidget {
         icon: PhosphorIconsBold.calendarCheck,
       ),
       title: Text(
-        routine?.name ??
-            Locales.string(context, 'sport.logbook.deleted_routine'),
+        workoutSessionTitle(context, session),
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       subtitle: Text(

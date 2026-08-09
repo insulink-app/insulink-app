@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/active_insulin.dart';
+import 'package:insulink/src/injection/active_insulin_sparkline.dart';
 import 'package:insulink/src/injection/active_insulin_page.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -11,9 +12,15 @@ import 'package:insulink/src/overview/overview_section.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:provider/provider.dart';
 
-/// Active insulin (IOB) on the overview: the units still working from recent
-/// boluses and when the last of them wears off. Renders nothing while no dose is
-/// active, so the section only appears when it has something to say.
+/// The insulin summary on the overview: the units still working from recent
+/// boluses as the headline, the IOB curve underneath as a sparkline, and one
+/// muted line naming the last dose and when the insulin runs out. Renders nothing
+/// while no dose is active, so the section only appears when it has something to
+/// say.
+///
+/// The curve carries what two lines of grey text used to spell out — how fast it
+/// is falling and how much is left — which is why there is only one caption line
+/// now instead of a paragraph of them.
 ///
 /// The value decays continuously, but [MealState] only notifies on a new meal —
 /// so this ticks itself once a minute to keep the number honest even when no
@@ -81,58 +88,82 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
     ActiveInsulin insulin,
     List<Meal> meals,
   ) {
-    final scheme = Theme.of(context).colorScheme;
-    final until = insulin.activeUntil(meals);
+    final now = DateTime.now();
+    final until = insulin.activeUntil(meals, now: now);
+    // Newest dose still on board. activeDoses is already sorted newest-first and
+    // drops meals logged without a bolus, so the first entry is the last real
+    // injection — no separate scan of the meal log.
+    final doses = insulin.activeDoses(meals, now: now);
+    final lastDose = doses.isEmpty ? null : doses.first.meal;
+    // 10-minute sampling, not the detail page's 5: at 44 px tall the extra
+    // vertices are invisible and this runs on every overview build.
+    final curve = insulin.curve(
+      meals,
+      now: now,
+      step: const Duration(minutes: 10),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _headline(context, units),
+        if (curve.length >= 2) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 44,
+            child: ActiveInsulinSparkline(points: curve, now: now),
+          ),
+        ],
+        if (until != null && lastDose != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            Locales.string(context, 'overview.active_insulin.summary', params: [
+              _units(context, lastDose.bolus),
+              TimeOfDay.fromDateTime(lastDose.time).format(context),
+              TimeOfDay.fromDateTime(until).format(context),
+            ]),
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Section title on the left, the units on board on the right — the one number
+  /// that carries the box, so it stays the only large thing in it.
+  ///
+  /// onSurface, not a literal white: it reads white on the dark theme and stays
+  /// legible on the light one, where white on white would be invisible.
+  Widget _headline(BuildContext context, double units) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              LocaleText(
-                'overview.active_insulin',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (until != null) ...[
-                const SizedBox(height: 6),
-                Text(
-                  Locales.string(
-                    context,
-                    'overview.active_insulin.until',
-                    params: [TimeOfDay.fromDateTime(until).format(context)],
-                  ),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-              ],
-            ],
+          child: LocaleText(
+            'overview.active_insulin.title',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
-        const SizedBox(width: 12),
-        // Sized to span the label + "active until" stack beside it, so the
-        // number reads as the section's headline. onSurface, not a literal
-        // white: it reads white on the dark theme and stays legible on the light
-        // one, where white on white would be invisible.
         Text(
-          Locales.string(
-            context,
-            'injection.bolus.value',
-            params: [units.toStringAsFixed(1)],
-          ),
+          _units(context, units),
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
             height: 1,
-            color: scheme.onSurface,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
     );
   }
+
+  String _units(BuildContext context, double units) => Locales.string(
+    context,
+    'injection.bolus.value',
+    params: [units.toStringAsFixed(1)],
+  );
 }

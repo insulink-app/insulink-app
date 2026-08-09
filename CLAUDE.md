@@ -98,9 +98,12 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
   state class AND its editor widgets). **Do NOT create type-layer folders** like
   `state/`, `widgets/`, `models/`, `services/` or `controllers/`. The top level
   is already feature-based (`overview/`, `sensor/`, `statistics/`, `profile/`,
-  `injection/`, `cgm/` = the shared CGM read pipeline + the Dexcom G7 wire code
+  `injection/`, `hba1c/` = the lab-value history, `cgm/` = the shared CGM read
+  pipeline + the Dexcom G7 wire code
   under `cgm/protocol/`, `libre3/` = the FreeStyle Libre 3 wire code); cross-cutting
-  shared code lives in `base/` (shared widgets/primitives), `localization/`,
+  shared code lives in `base/` (shared widgets/primitives — including
+  `measurement_chart`/`measurement_row`/`measurement_entry_sheet`, the
+  dated-decimal history UI that weight and HbA1c both render), `localization/`,
   `theme/`. Within a large feature, subfolders are themselves features/sub-domains
   (e.g. `cgm/protocol/`, `profile/notifications/`), never technical layers.
 - **Document accumulated knowledge as individual markdown files under `docs/`** —
@@ -282,11 +285,36 @@ Load-bearing background gotchas (don't regress):
    moment a service `t:'hr'` push arrives — so the two isolates never hold the one
    GATT link at once. Detection/workout services now also add the
    `connectedDevice` FGS type when Bluetooth is permitted (Android 14+ needs it to
-   hold the band). The Health-Connect poll (`_maybePollHeartRate`) is the fallback
+   hold the band). **The monitor stands itself down after a failed connect and the
+   watchdog tick is its ONLY retry driver** — `_startBackgroundHr` therefore
+   re-runs `start()` every tick, not just when it creates the monitor. Guarding
+   that call on `_hrMonitor != null` meant one bad attempt at service start (band
+   out of range, still held by Google Health) killed live pulse for the whole life
+   of the service. The monitor's own `_retryCooldown` is what keeps the re-runs
+   from becoming a 20 s connect attempt per tick. The Health-Connect poll (`_maybePollHeartRate`) is the fallback
    and self-suppresses while the band streams. Background HR still requires SOME
    service to be running (a CGM sensor or a workout) — a Fitbit-only user with no
    sensor and no workout would need a dedicated pulse service (a persistent
    notification), deliberately not built.
+8. **An in-flight connect owns a real BLE link — publish it BEFORE the awaits, not
+   after them.** Both connections used to assign `_transport` only once the
+   handshake had succeeded, so for the whole scan (up to 120 s) and the connect +
+   handshake, `_teardown` had nothing to disconnect. A watchdog force-reset, a
+   `restartService()` or a stop in that window left a live GATT client behind: the
+   app then held TWO sensor links and closing the tracked one wasn't enough (the
+   user-visible "have to stop several times"). Both now publish the transport at
+   creation, and a `_generation` counter (bumped by every teardown) makes an
+   abandoned attempt close its own link instead of adopting it.
+   - **This hit the Libre 3 hardest**, for two compounding reasons: its link is
+     CONTINUOUS, so an abandoned one never drops by itself (a leaked G7 link dies
+     within a second when the sensor closes it), and its `connectStuckAfter` was
+     3 min — *shorter than its own worst-case connect*. The scan (120 s) plus the
+     two handshake attempts (`_handshake` retries the full cert exchange when the
+     cached kAuth is rejected: 2 × [35 s connect + 30 s discovery + 40 s
+     handshake]) is ~5.5 min, so the watchdog reset healthy attempts on the
+     fallback path and — with a zero `reconnectBackoff` — started a new one on the
+     very next tick. Raised to 7 min. **Any change to those transport timeouts
+     has to be re-checked against `connectStuckAfter`.**
 
 ### App / UI layer
 
@@ -416,6 +444,12 @@ The load-bearing parts (regressing any of these is a visible bug):
   checkmark for ~2 s, `Timer` cancelled in `dispose`). A success often needs no
   message — the page behind it already changed. Safety-relevant failures (bolus)
   are **sticky, never timed**. Details + all five replacements: `docs/DESIGN.md`.
+- **`isScrollControlled: true` ALWAYS goes with `useSafeArea: true`.** The first
+  removes Flutter's 9/16-height cap so the sheet grows with its content; without
+  the second there is no `SafeArea` at all, so a tall sheet slides under the
+  status bar / notch (reported on the injection sheet). All 18 scroll-controlled
+  sheets carry both — keep the pair together when adding one. Sheets without
+  `isScrollControlled` are capped at 9/16 and need nothing.
 
 ### Alarms & notifications (`cgm/service/alarms.dart`)
 

@@ -41,6 +41,7 @@ class Libre3ScanFlow {
       // scroll-controlled + transparent, with the sheet drawing its own surface,
       // so it spans the full width instead of Material's centred 640-px box.
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (_) => Libre3NfcScanSheet(

@@ -28,6 +28,7 @@ class SportStatsChartsView extends StatelessWidget {
       sessions,
       routines,
       Locales.string(context, 'sport.routines.new'),
+      Locales.string(context, 'sport.workout.free'),
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

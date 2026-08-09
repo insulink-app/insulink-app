@@ -6,7 +6,7 @@ export 'package:insulink/src/sport/activity/tile_layout_state.dart';
 /// resting HR, sleep and the live heart rate (SpO2 hidden until the user enables it).
 class TodayLayoutState extends TileLayoutState<TodayTile> {
   static const key = 'sport.today_layout';
-  static const _defaultHidden = {TodayTile.spo2};
+  static const _defaultHidden = {TodayTile.spo2, TodayTile.hba1c};
 
   TodayLayoutState(super.order, super.hidden);
 

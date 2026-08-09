@@ -91,6 +91,15 @@ class G7Connection implements CgmConnection {
   /// service isolate resets this, forcing a re-scan before we trust autoConnect.
   bool _scannedThisProcess = false;
 
+  /// Bumped by every [_teardownTransport], so an in-flight [connect] can tell it
+  /// was abandoned mid-attempt (watchdog force-reset, service restart, stop) and
+  /// must close its own link instead of adopting it. Without this, an attempt
+  /// that was "reset" while it scanned or waited for an armed autoConnect kept
+  /// running to completion and installed a SECOND sensor link the app then held
+  /// alongside the one it thought it had — which is why stopping once was not
+  /// enough.
+  int _generation = 0;
+
   @override
   bool get isConnected => _transport?.device.isConnected ?? false;
 
@@ -268,6 +277,9 @@ class G7Connection implements CgmConnection {
     await _teardownTransport();
     _backfillAsked = false;
 
+    final generation = _generation;
+    bool abandoned() => generation != _generation;
+
     BleTransport? transport;
     try {
       // Pin to the known sensor once we've paired: with a stored device id we
@@ -357,7 +369,20 @@ class G7Connection implements CgmConnection {
       // reconnects (REMOTE_USER_TERMINATED / CONNECTION_TIMEOUT), so on a
       // handshake failure we tear down and let the 30s watchdog re-scan and retry
       // on the sensor's own advertising schedule (see CgmTaskHandler.onRepeatEvent).
+      // A teardown while we were scanning (up to 120 s) means this attempt is
+      // already obsolete — don't arm a link nobody is waiting for.
+      if (abandoned()) {
+        _log('connect abandoned before connecting');
+        return;
+      }
       transport = BleTransport(device);
+      // Publish the link BEFORE the long awaits below, not after they succeed:
+      // an armed autoConnect waits minutes for the sensor to advertise, and
+      // until this assignment [_teardownTransport] had nothing to disconnect.
+      // A force-reset or service restart in that window therefore left a live
+      // GATT client behind that connected on its own later — a second sensor
+      // link the app no longer tracked.
+      _transport = transport;
       await transport.connectAndBind(autoConnect: useAutoConnect, log: _log);
       await _authenticate(transport);
       // Remember which physical sensor this was, so future reconnects pin to it.
@@ -409,8 +434,14 @@ class G7Connection implements CgmConnection {
         0x32,
       ]); // calibration bounds (read-only)
 
-      _transport = transport;
-      transport = null;
+      // Torn down while we authenticated: the teardown already disconnected this
+      // transport, so leave `transport` non-null and let the finally close it
+      // rather than adopting a link the caller has given up on.
+      if (abandoned()) {
+        _log('connect abandoned mid-handshake');
+        return;
+      }
+      transport = null; // adopted as _transport above — the finally must not close it
       _autoConnectFailures = 0; // this cycle reached streaming — clear fallback
       onConnectionState?.call(true);
       _log('connected — streaming');
@@ -419,8 +450,11 @@ class G7Connection implements CgmConnection {
       store.archivePrune(const Duration(days: 90));
     } catch (e) {
       _log('ERROR: $e');
-      await transport?.dispose();
     } finally {
+      // Any link this attempt still owns (failed, abandoned, or never adopted)
+      // is closed here — the one path that guarantees no armed autoConnect
+      // survives an attempt.
+      await transport?.dispose();
       _connecting = false;
     }
   }
@@ -553,6 +587,7 @@ class G7Connection implements CgmConnection {
   }
 
   Future<void> _teardownTransport() async {
+    _generation++;
     await _controlSub?.cancel();
     await _backfillSub?.cancel();
     await _connSub?.cancel();

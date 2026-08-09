@@ -436,18 +436,28 @@ class CgmTaskHandler extends TaskHandler {
 
   /// Runs cardio auto-detection at most every [_detectEvery]; each new training
   /// is added to the pending list and raises a confirm-notification.
+  ///
+  /// The runner's counts are logged because "no training was detected" has three
+  /// very different causes — the saver has detection off, no GPS points are
+  /// being recorded at all, or points exist but nothing qualified — and the log
+  /// pane is the only place to tell them apart on-device.
   Future<void> _maybeDetectTraining() async {
-    if (_batteryMode.pausesDetection) {
-      return;
-    }
     final last = _lastDetectionAt;
     if (last != null && DateTime.now().difference(last) < _detectEvery) {
       return;
     }
     _lastDetectionAt = DateTime.now();
+    if (_batteryMode.pausesDetection) {
+      _log('training detection paused (battery saver: ${_batteryMode.name})');
+      return;
+    }
     try {
-      await _detectionRunner.run(
+      final counts = await _detectionRunner.run(
         (training) async => _alarms?.notifyTrainingDetected(training),
+      );
+      _log(
+        'training detection: ${counts.logPoints} gps points '
+        '(${counts.consideredPoints} new) → ${counts.detected} detected',
       );
     } catch (e) {
       _log('training detection error: $e');
@@ -637,13 +647,20 @@ class CgmTaskHandler extends TaskHandler {
   /// known-band-only so it never scans (no G7 scanner contention) and no-ops
   /// until a Fitbit has been paired — so it is safe to call unconditionally on
   /// every service start, sensor or not.
+  ///
+  /// `start()` is re-run on EVERY tick, not just when the monitor is created:
+  /// the monitor stands itself down after a failed connect (band out of range,
+  /// still held by Google Health, no bond yet), so this tick is its only retry
+  /// driver. Guarding on `_hrMonitor != null` instead meant one bad attempt at
+  /// service start killed live pulse for the whole life of the service. The
+  /// monitor's own cooldown keeps the retries sparse.
   void _startBackgroundHr() {
-    if (_hrMonitor != null) {
-      return;
+    var monitor = _hrMonitor;
+    if (monitor == null) {
+      monitor = FitbitHeartRateMonitor();
+      _hrMonitor = monitor;
+      monitor.addListener(_onBackgroundHr);
     }
-    final monitor = FitbitHeartRateMonitor();
-    _hrMonitor = monitor;
-    monitor.addListener(_onBackgroundHr);
     unawaited(monitor.start(knownOnly: true));
   }
 

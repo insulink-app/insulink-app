@@ -3,6 +3,8 @@ import 'package:insulink/src/google_health/google_health_detail_page.dart';
 import 'package:insulink/src/google_health/google_health_models.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/google_health/heart_rate_page.dart';
+import 'package:insulink/src/hba1c/hba1c_page.dart';
+import 'package:insulink/src/hba1c/hba1c_state.dart';
 import 'package:insulink/src/sport/activity/activity_detail_page.dart';
 import 'package:insulink/src/sport/activity/activity_estimate.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
@@ -30,6 +32,7 @@ IconData todayTileIcon(TodayTile tile) => switch (tile) {
   TodayTile.heartRate => PhosphorIconsFill.heart,
   TodayTile.spo2 => PhosphorIconsBold.drop,
   TodayTile.respiratoryRate => PhosphorIconsBold.wind,
+  TodayTile.hba1c => PhosphorIconsBold.testTube,
 };
 
 /// Localization key for a Today box label (shared by the grid and the editor).
@@ -43,6 +46,7 @@ String todayTileLabelKey(TodayTile tile) => switch (tile) {
   TodayTile.heartRate => 'google_health.heart_rate',
   TodayTile.spo2 => 'google_health.spo2',
   TodayTile.respiratoryRate => 'google_health.respiratory_rate',
+  TodayTile.hba1c => 'hba1c._',
 };
 
 /// Builds the [SportSummaryTile] for a Today box from the current sport + Google Health
@@ -51,8 +55,9 @@ class TodayTileBuilder {
   final SportActivityState activity;
   final SportState sport;
   final GoogleHealthState health;
+  final Hba1cState hba1c;
 
-  TodayTileBuilder(this.activity, this.sport, this.health);
+  TodayTileBuilder(this.activity, this.sport, this.health, this.hba1c);
 
   double get _weightKg => sport.latestWeight?.kg ?? 70;
 
@@ -162,7 +167,25 @@ class TodayTileBuilder {
           'rpm',
           GoogleHealthMetric.respiratoryRate,
         );
+      case TodayTile.hba1c:
+        return _hba1cTile(context, icon, label);
     }
+  }
+
+  /// The newest lab result, or an em dash until one is entered — the box stays
+  /// tappable either way, because an empty box that opens the page is how the
+  /// user notes their first reading.
+  SportSummaryTile _hba1cTile(BuildContext context, IconData icon, String label) {
+    final latest = hba1c.latest;
+    return SportSummaryTile(
+      icon: icon,
+      labelKey: label,
+      value: latest == null ? '–' : sportDecimal(latest.percent, 1),
+      unit: latest == null ? null : '%',
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const Hba1cPage()),
+      ),
+    );
   }
 
   SportSummaryTile _metric(

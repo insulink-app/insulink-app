@@ -35,6 +35,7 @@ class GlucoseRangeCard extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => GlucoseRangeEditorSheet(
         state: state,

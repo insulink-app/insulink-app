@@ -22,6 +22,7 @@ enum OverviewBox {
   bolus,
   water,
   meals,
+  hba1c,
 }
 
 extension OverviewBoxInfo on OverviewBox {

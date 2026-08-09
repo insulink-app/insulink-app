@@ -9,6 +9,13 @@ import 'package:flutter/services.dart';
 ///
 /// Tapping/hovering a bar shows a value+date tooltip with a haptic tick per bar,
 /// mirroring the overview glucose chart.
+///
+/// [baseline] is where the bars start. It stays 0 for counted metrics (steps,
+/// calories) — shortening those bars would misstate them. It is raised only for a
+/// measurement with a physiological floor, where a zero baseline makes every bar
+/// look identical: an HbA1c of 6.8 and 7.4 differ by 8 % of a 0-based bar but by
+/// half a 4-based one. [decimals] follows, since such a value needs its axis
+/// labelled finer than whole numbers.
 class ActivityBarChart<T> extends StatefulWidget {
   const ActivityBarChart({
     super.key,
@@ -17,6 +24,8 @@ class ActivityBarChart<T> extends StatefulWidget {
     required this.value,
     required this.label,
     required this.color,
+    this.baseline = 0,
+    this.decimals = 0,
   });
 
   final List<T> days;
@@ -24,6 +33,8 @@ class ActivityBarChart<T> extends StatefulWidget {
   final double Function(T day) value;
   final String Function(T day) label;
   final Color color;
+  final double baseline;
+  final int decimals;
 
   @override
   State<ActivityBarChart<T>> createState() => _ActivityBarChartState<T>();
@@ -44,7 +55,10 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: maxY <= 0 ? 1 : maxY * 1.15,
+        minY: widget.baseline,
+        maxY: maxY <= widget.baseline
+            ? widget.baseline + 1
+            : widget.baseline + (maxY - widget.baseline) * 1.15,
         gridData: const FlGridData(show: true, drawVerticalLine: false),
         borderData: FlBorderData(show: false),
         barTouchData: _touchData(context, locale),
@@ -55,6 +69,7 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
               x: index,
               barRods: [
                 BarChartRodData(
+                  fromY: widget.baseline,
                   toY: widget.value(days[index]),
                   color: widget.color,
                   width: (260 / days.length).clamp(2, 14).toDouble(),
@@ -130,7 +145,7 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
             child: Text(
               value >= 1000
                   ? '${(value / 1000).toStringAsFixed(0)}k'
-                  : value.toStringAsFixed(0),
+                  : value.toStringAsFixed(widget.decimals),
               style: TextStyle(
                 fontSize: 10,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,

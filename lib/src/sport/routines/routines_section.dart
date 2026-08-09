@@ -73,7 +73,29 @@ class RoutinesSection extends StatelessWidget {
           labelKey: 'sport.routines.new',
           onTap: () => _create(context),
         ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          icon: const Icon(PhosphorIconsFill.play, size: 16),
+          label: LocaleText('sport.workout.free'),
+          onPressed: () => _startFree(context),
+        ),
       ],
+    );
+  }
+
+  /// Start a workout with no routine behind it: its exercises are picked while
+  /// it runs and nothing is written back to the library.
+  void _startFree(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => WorkoutRunnerPage(
+          routine: SportRoutine(
+            id: freeRoutineId,
+            name: Locales.string(context, 'sport.workout.free'),
+            items: const [],
+          ),
+        ),
+      ),
     );
   }
 

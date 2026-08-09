@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
+import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/exercises/exercises_page.dart';
 import 'package:insulink/src/sport/logbook/workout_summary_page.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/training_state.dart';
+import 'package:insulink/src/sport/workout/workout_empty_view.dart';
 import 'package:insulink/src/sport/workout/workout_exercise_view.dart';
 import 'package:insulink/src/sport/workout/workout_rest_view.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
 import 'package:insulink/src/sport/workout/workout_snapshot.dart';
-import 'package:insulink/src/sport/workout/workout_vitals_bar.dart';
+import 'package:insulink/src/sport/sport_vitals_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -180,22 +183,48 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
         body: SafeArea(
           child: Column(
             children: [
-              const WorkoutVitalsBar(),
-              Expanded(
-                child: _runner.phase == WorkoutPhase.resting
-                    ? WorkoutRestView(
-                        runner: _runner,
-                        onJump: _showJump,
-                        onFinish: () => _confirmFinish(context),
-                      )
-                    : WorkoutExerciseView(
-                        runner: _runner,
-                        onJump: _showJump,
-                        onFinish: () => _confirmFinish(context),
-                      ),
-              ),
+              const SportVitalsBar(),
+              Expanded(child: _phaseView(context)),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// The view for what the workout is doing right now: performing a set, resting
+  /// between two, or — a free workout before its first pick — waiting for an
+  /// exercise to be chosen.
+  Widget _phaseView(BuildContext context) {
+    if (!_runner.hasExercises) {
+      return WorkoutEmptyView(
+        onAdd: _addExercise,
+        onFinish: () => _confirmFinish(context),
+      );
+    }
+    if (_runner.phase == WorkoutPhase.resting) {
+      return WorkoutRestView(
+        runner: _runner,
+        onJump: _showJump,
+        onAdd: _addExercise,
+        onFinish: () => _confirmFinish(context),
+      );
+    }
+    return WorkoutExerciseView(
+      runner: _runner,
+      onJump: _showJump,
+      onFinish: () => _confirmFinish(context),
+    );
+  }
+
+  /// Pick an exercise for the running workout. It joins THIS session only — the
+  /// stored routine is left as it is, so a spontaneous extra exercise does not
+  /// rewrite the plan for next time.
+  void _addExercise() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ExercisesPage(
+          onPick: (exercise) => _runner.addExercise(exercise.id),
         ),
       ),
     );
@@ -218,7 +247,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     final scheme = Theme.of(context).colorScheme;
     return AppBar(
       surfaceTintColor: Colors.transparent,
-      title: Text(_routine.name),
+      title: Text(_runner.routine.name),
       actions: [
         IconButton(
           icon: Icon(
@@ -243,7 +272,8 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
               child: Text(
                 '${Locales.string(context, 'sport.workout.total')} '
                 '${formatDuration(_runner.sessionElapsed)}'
-                '${_runner.isPaused ? ' · ${Locales.string(context, 'sport.workout.paused')}' : ''}',
+                '${_runner.isPaused ? ' · ${Locales.string(context, 'sport.workout.paused')}' : ''}'
+                '${_expectedEnd(context)}',
                 style: TextStyle(
                   fontSize: 13,
                   color: scheme.onSurface.withValues(alpha: 0.6),
@@ -261,31 +291,51 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     );
   }
 
-  /// Bottom sheet to jump to any exercise in the routine.
+  /// " · ends ~18:45" for a workout that can be predicted, empty for one that
+  /// cannot (a free workout has no plan to run out of).
+  String _expectedEnd(BuildContext context) {
+    final end = _runner.expectedEnd;
+    if (end == null) {
+      return '';
+    }
+    final clock = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(TimeOfDay.fromDateTime(end));
+    return ' · ${Locales.string(context, 'sport.workout.eta', params: [clock])}';
+  }
+
+  /// Bottom sheet to jump to any exercise of the running workout, or to add one
+  /// to it on the spot.
   void _showJump() {
     final training = context.read<TrainingState>();
+    final items = _runner.routine.items;
     showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) => SafeArea(
         child: ListView(
           shrinkWrap: true,
           children: [
-            for (var index = 0; index < _routine.items.length; index++)
+            for (var index = 0; index < items.length; index++)
               ListTile(
                 leading: index == _runner.exerciseIndex
                     ? const Icon(PhosphorIconsFill.play)
                     : const SizedBox(width: 24),
                 title: Text(
-                  training
-                          .exerciseById(_routine.items[index].exerciseId)
-                          ?.name ??
-                      '—',
+                  training.exerciseById(items[index].exerciseId)?.name ?? '—',
                 ),
                 onTap: () {
                   _runner.jumpTo(index);
                   Navigator.of(sheetContext).pop();
                 },
               ),
+            ListTile(
+              leading: const Icon(PhosphorIconsBold.plus),
+              title: LocaleText('sport.workout.add_exercise'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _addExercise();
+              },
+            ),
           ],
         ),
       ),

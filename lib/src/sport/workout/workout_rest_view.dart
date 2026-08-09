@@ -10,17 +10,21 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The resting phase: countdown (overtime once past 0, no auto-advance/tone),
 /// the previous set's reps/weight still editable, and the extend/continue
-/// buttons.
+/// buttons. A free workout that has finished its picked exercise asks for the
+/// next one here instead of offering to carry on — there is nothing to carry on
+/// to.
 class WorkoutRestView extends StatelessWidget {
   const WorkoutRestView({
     super.key,
     required this.runner,
     required this.onJump,
+    required this.onAdd,
     required this.onFinish,
   });
 
   final WorkoutRunner runner;
   final VoidCallback onJump;
+  final VoidCallback onAdd;
   final VoidCallback onFinish;
 
   @override
@@ -84,8 +88,12 @@ class WorkoutRestView extends StatelessWidget {
     );
   }
 
-  /// Tap to switch/select the upcoming exercise during the rest.
+  /// Tap to switch/select the upcoming exercise during the rest — or, with
+  /// nothing left to do, to pick what comes next.
   Widget _nextLine(BuildContext context, ColorScheme scheme) {
+    if (runner.awaitingNextExercise) {
+      return _pickNextLine(context, scheme);
+    }
     return InkWell(
       onTap: onJump,
       borderRadius: BorderRadius.circular(12),
@@ -114,6 +122,19 @@ class WorkoutRestView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// The rest after a free workout's last set: nothing is queued, so the line
+  /// asks for the next exercise rather than naming one.
+  Widget _pickNextLine(BuildContext context, ColorScheme scheme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: LocaleText(
+        'sport.workout.pick_next',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
       ),
     );
   }
@@ -206,9 +227,18 @@ class WorkoutRestView extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: FilledButton.icon(
-            onPressed: runner.skipRest,
-            icon: const Icon(PhosphorIconsBold.arrowRight, size: 20),
-            label: LocaleText('sport.workout.continue'),
+            onPressed: runner.awaitingNextExercise ? onAdd : runner.skipRest,
+            icon: Icon(
+              runner.awaitingNextExercise
+                  ? PhosphorIconsBold.plus
+                  : PhosphorIconsBold.arrowRight,
+              size: 20,
+            ),
+            label: LocaleText(
+              runner.awaitingNextExercise
+                  ? 'sport.workout.next_exercise'
+                  : 'sport.workout.continue',
+            ),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(56),
               shape: shape,

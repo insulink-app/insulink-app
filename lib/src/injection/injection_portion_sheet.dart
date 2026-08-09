@@ -21,6 +21,7 @@ Future<double?> showPortionSheet(
   return showModalBottomSheet<double>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

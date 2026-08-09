@@ -14,7 +14,7 @@ int estimatedRoutineSeconds(
   if (measured != null) {
     return measured;
   }
-  return _additiveSeconds(routine, exercises);
+  return plannedRoutineSeconds(routine, exercises);
 }
 
 /// Average duration (seconds) of the most recent completed sessions of this
@@ -37,7 +37,15 @@ int? _averagePastSeconds(String routineId, List<WorkoutSession> sessions) {
   return (total / durations.length / 1000).round();
 }
 
-int _additiveSeconds(SportRoutine routine, List<SportExercise> exercises) {
+/// The additive guess on its own: what the routine plans for, ignoring how long
+/// it actually took before. Each set costs ~1 min of work (or its target seconds
+/// for a timed exercise) plus its rest. Used where no past session applies — a
+/// routine never run, and the running workout's prediction before its first set
+/// gives a pace to extrapolate.
+int plannedRoutineSeconds(
+  SportRoutine routine,
+  List<SportExercise> exercises,
+) {
   var seconds = 0;
   for (final item in routine.items) {
     final exercise = _exerciseById(exercises, item.exerciseId);

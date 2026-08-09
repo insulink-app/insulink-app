@@ -7,18 +7,18 @@ import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// Compact live-vitals strip for the running routine: current glucose (from the
-/// CGM pipeline, stained by its target band and carrying the same trend arrow as
-/// the overview headline) and live pulse (from the worn Fitbit, stained by its
-/// zone).
+/// Compact live-vitals strip for a training in progress — the strength routine
+/// AND the endurance recording: current glucose (from the CGM pipeline, stained
+/// by its target band and carrying the same trend arrow as the overview
+/// headline) and live pulse (from the worn Fitbit, stained by its zone).
 ///
 /// Reads the pulse from [GoogleHealthState] — its source-agnostic [latestHr] /
 /// [hasLiveHr], fed by EITHER the UI band reader OR the service isolate's push.
-/// It does NOT run its own band reader: during a workout the foreground service
+/// It does NOT run its own band reader: during a training the foreground service
 /// owns the single band link (see `CgmTaskHandler._startBackgroundHr`), so a
 /// second reader here would fight it and read nothing.
-class WorkoutVitalsBar extends StatelessWidget {
-  const WorkoutVitalsBar({super.key});
+class SportVitalsBar extends StatelessWidget {
+  const SportVitalsBar({super.key});
 
   /// The palette the big overview readout uses, so a glanced-at value mid-set
   /// reads the same colour as on the overview page.

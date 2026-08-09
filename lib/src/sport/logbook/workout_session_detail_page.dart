@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/logbook/workout_metrics_chart.dart';
+import 'package:insulink/src/sport/logbook/workout_session_title.dart';
 import 'package:insulink/src/sport/logbook/workout_set_list.dart';
 import 'package:insulink/src/sport/logbook/workout_summary_card.dart';
 import 'package:insulink/src/sport/sport_models.dart';
@@ -26,15 +26,11 @@ class WorkoutSessionDetailPage extends StatelessWidget {
       (other) => other.id == session.id,
       orElse: () => session,
     );
-    final routine = training.routineById(current.routineId);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
-        title: Text(
-          routine?.name ??
-              Locales.string(context, 'sport.logbook.deleted_routine'),
-        ),
+        title: Text(workoutSessionTitle(context, current)),
         actions: [
           IconButton(
             icon: const Icon(PhosphorIconsBold.trash),

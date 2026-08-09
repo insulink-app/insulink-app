@@ -40,6 +40,7 @@ class SportStore {
   static const _kStepsBaselineCounter = 'sport.steps_baseline_counter';
   static const _kDetectWatermark = 'sport.detect_watermark';
   static const _kActiveWorkout = 'sport.active_workout';
+  static const _kWorkoutStamp = 'sport.active_workout_stamp';
   static const _kActiveTraining = 'sport.active_training';
 
   /// The sync-owned keys, grouped by the state each maps to, so the sport tab
@@ -297,6 +298,29 @@ class SportStore {
   );
 
   Future<void> clearActiveWorkout() => _storage.delete(key: _kActiveWorkout);
+
+  /// What the ACCOUNT last confirmed about the running workout: which workout
+  /// (its start) and the `updated` stamp of the copy this device saw. Kept next
+  /// to the snapshot rather than in memory only, because it is what tells a
+  /// workout the account has ended from one it has never heard of — and a device
+  /// that forgets it on restart can never end the workout again. Zeros when the
+  /// account has confirmed nothing.
+  Future<({int startedAtMs, int updated})> loadWorkoutStamp() async {
+    final raw = await _storage.read(key: _kWorkoutStamp);
+    if (raw == null || raw.isEmpty) {
+      return (startedAtMs: 0, updated: 0);
+    }
+    final stamp = jsonDecode(raw) as Map<String, dynamic>;
+    return (
+      startedAtMs: stamp['started'] as int? ?? 0,
+      updated: stamp['updated'] as int? ?? 0,
+    );
+  }
+
+  Future<void> saveWorkoutStamp(int startedAtMs, int updated) => _storage.write(
+    key: _kWorkoutStamp,
+    value: jsonEncode({'started': startedAtMs, 'updated': updated}),
+  );
 
   /// The in-progress live training (single JSON object), so it keeps recording
   /// in the service isolate and resumes after the app is closed. Null when none.

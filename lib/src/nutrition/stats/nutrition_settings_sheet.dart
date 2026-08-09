@@ -13,6 +13,7 @@ Future<void> showNutritionSettingsSheet(BuildContext context) async {
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (_) => ChangeNotifierProvider<NutritionState>.value(
       value: context.read<NutritionState>(),

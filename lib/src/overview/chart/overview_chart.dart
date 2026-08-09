@@ -12,6 +12,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_detail_sheet.dart';
+import 'package:insulink/src/overview/chart/chart_window.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -349,7 +350,10 @@ class _OverviewChartState extends State<OverviewChart>
     // is from the last build (one frame stale, fine for enabling the button).
     final horizonSecs = (_futureHours * 3600).round();
     final windowStartSecs =
-        latestSecs + horizonSecs - _panSecs - (_rangeHours * 3600).round();
+        _liveEdgeSecs(latestSecs) +
+        horizonSecs -
+        _panSecs -
+        (_rangeHours * 3600).round();
     final canGoBack = windowStartSecs > oldestSecs;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -377,6 +381,14 @@ class _OverviewChartState extends State<OverviewChart>
     );
   }
 
+  /// The window's live right edge in session-seconds — now, not the newest
+  /// reading. See [liveWindowEdgeSecs] for why the difference matters.
+  int _liveEdgeSecs(int latestSecs) => liveWindowEdgeSecs(
+    latestSecs: latestSecs,
+    sensorStart: widget.sensorStart,
+    now: DateTime.now(),
+  );
+
   /// Pages by one current window: [direction] > 0 goes back, < 0 forward.
   void _pan(int direction) {
     final step = (_rangeHours * 3600).round();
@@ -395,7 +407,7 @@ class _OverviewChartState extends State<OverviewChart>
     }
     final latestSecs = widget.byTime.lastKey()!;
     final end = start.add(
-      Duration(seconds: latestSecs + horizonSecs - _panSecs),
+      Duration(seconds: _liveEdgeSecs(latestSecs) + horizonSecs - _panSecs),
     );
     final l10n = MaterialLocalizations.of(context);
     final time = l10n.formatTimeOfDay(TimeOfDay.fromDateTime(end));
@@ -424,7 +436,9 @@ class _OverviewChartState extends State<OverviewChart>
     _futureHours = widget.preview ? 0 : liveForecastHours;
     final panSecs = widget.preview ? 0 : _panSecs;
     final windowEndSecs =
-        latestSecs + (liveForecastHours * 3600).round() - panSecs;
+        _liveEdgeSecs(latestSecs) +
+        (liveForecastHours * 3600).round() -
+        panSecs;
     final rightEdgeHours = (windowEndSecs - latestSecs) / 3600.0;
     // Wall-clock time at x == 0 (the latest reading), to label the X axis with
     // real times. x is hours relative to this, so wall(x) = anchor + x hours.

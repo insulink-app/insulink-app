@@ -18,6 +18,7 @@ Future<void> showSetEditorSheet(
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _SetEditorSheet(set: set, kind: kind, onChanged: onChanged),
   );

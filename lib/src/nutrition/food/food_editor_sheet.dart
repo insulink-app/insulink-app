@@ -14,6 +14,7 @@ Future<void> showFoodEditor(BuildContext context, {FoodProduct? product}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _FoodEditorSheet(product: product ?? FoodProduct.blank()),
   );

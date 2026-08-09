@@ -19,6 +19,7 @@ Future<void> showRoutineItemEditorSheet(
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (_) => ChangeNotifierProvider.value(
       value: context.read<TrainingState>(),

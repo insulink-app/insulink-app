@@ -19,6 +19,7 @@ Future<void> showActivitySettingsSheet(BuildContext context) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (_) => MultiProvider(
       providers: [

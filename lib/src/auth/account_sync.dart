@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/cgm/event_sync.dart';
 import 'package:insulink/src/cgm/glucose_sync.dart';
 import 'package:insulink/src/google_health/google_health_sync.dart';
+import 'package:insulink/src/hba1c/hba1c_state.dart';
 import 'package:insulink/src/google_health/pulse_sync.dart';
 import 'package:insulink/src/inventory/inventory_sync.dart';
 import 'package:insulink/src/nutrition/nutrition_sync.dart';
@@ -50,6 +51,7 @@ class AccountSync {
       NutritionSync().pull(context),
       InventorySync().pull(context),
       GoogleHealthSync().pull(context),
+      Hba1cState.pullIntoStorage(context),
       PulseSync().pull(context),
       if (withHistory) GlucoseSync().pullHistory(context),
       if (withHistory) EventSync().pullHistory(context),

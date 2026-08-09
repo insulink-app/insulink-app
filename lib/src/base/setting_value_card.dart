@@ -28,6 +28,7 @@ class SettingValueCard extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => SettingValueEditorSheet(
         labelKey: labelKey,

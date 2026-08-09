@@ -87,6 +87,15 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   bool _attempting = false;
   bool _wasConnected = false;
 
+  /// When [start] last began an attempt. Every failure path below stands the
+  /// monitor down (`_running = false`) and relies on a caller re-running [start]
+  /// — the service watchdog does, on every tick. Without this cooldown that
+  /// would mean a fresh 20 s connect attempt every tick while the band is simply
+  /// out of range or held by Google Health; without the re-runs the FIRST failed
+  /// attempt killed live pulse until the app was restarted.
+  DateTime? _lastAttemptAt;
+  static const _retryCooldown = Duration(seconds: 60);
+
   void _set(FitbitHrStatus next, String text) {
     status = next;
     message = text;
@@ -103,10 +112,19 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   /// used in the foreground-service isolate, where a broad scan would fight the
   /// G7's own BLE scanner (see the app CLAUDE.md scanner-wedge notes) and where
   /// the band is bonded anyway once it has been used once in the foreground.
+  ///
+  /// Safe to call repeatedly: a running monitor no-ops, and a stood-down one
+  /// retries at most once per [_retryCooldown].
   Future<void> start({bool knownOnly = false}) async {
     if (_running) {
       return;
     }
+    final lastAttempt = _lastAttemptAt;
+    if (lastAttempt != null &&
+        DateTime.now().difference(lastAttempt) < _retryCooldown) {
+      return;
+    }
+    _lastAttemptAt = DateTime.now();
     _running = true;
     _knownOnly = knownOnly;
     _foundTarget = false;
@@ -325,8 +343,9 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     } catch (error) {
       // Stand down instead of hammering: an unreachable band (out of range, or
       // held by Google Health — status 133 / connect timeout) is not fixed by
-      // retrying seconds later. The next `start()` (app resume, or the service
-      // isolate taking over) tries again.
+      // retrying seconds later. The service watchdog re-runs `start()` every
+      // tick and the cooldown there spaces the retries — standing down without
+      // that re-run is what left live pulse dead after one bad attempt.
       _set(FitbitHrStatus.error, 'Connection failed: $error');
       _running = false;
     }
@@ -407,6 +426,7 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     _running = false;
     _foundTarget = false;
     _wasConnected = false;
+    _lastAttemptAt = null;
     await _scanSub?.cancel();
     await _valueSub?.cancel();
     await _connSub?.cancel();

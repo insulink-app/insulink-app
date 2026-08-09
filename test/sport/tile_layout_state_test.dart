@@ -129,7 +129,10 @@ void main() {
   test('the raw blob for the settings sync defaults before anything is saved', () async {
     expect(
       await TodayLayoutState.loadRaw(),
-      TileLayoutState.encode(TodayTile.values, const {TodayTile.spo2}),
+      TileLayoutState.encode(TodayTile.values, const {
+        TodayTile.spo2,
+        TodayTile.hba1c,
+      }),
     );
 
     backing[TodayLayoutState.key] = 'stored';
