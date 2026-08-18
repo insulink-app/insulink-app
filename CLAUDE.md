@@ -7,9 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A from-scratch **CGM BLE reader** (Flutter + Rust) for two sensors: the **Dexcom
 G7** (fully working) and the **FreeStyle Libre 3** (in progress — see
 `docs/LIBRE3.md`). It reimplements each sensor's proprietary pairing/auth and
-reads live + historical glucose without the official apps. GPL-3.0; derivative of
-[Juggluco](https://github.com/j-kaltes/Juggluco). Interoperability/research
-project — not a medical device.
+reads live + historical glucose without the official apps. It also drives the
+**Omnipod DASH** pump (`lib/src/pump/`, `docs/OMNIPOD.md`).
+**AGPL-3.0** — the pump driver derives from AndroidAPS (AGPL-3.0); the CGM
+handshake code derives from [Juggluco](https://github.com/j-kaltes/Juggluco) and
+stays GPL-3.0. See `NOTICE` for which file is which, and keep pod protocol code
+OUT of `insulink-api` (AGPL §13 would make the API a network service that must
+publish its source). Interoperability/research project — not a medical device.
 
 The two sensors share everything above the wire layer via a `CgmConnection`
 strategy (`lib/src/cgm/cgm_connection.dart`): both decoders emit a `CgmReading`,
@@ -576,6 +580,10 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `docs/LIBRE3.md` — **FreeStyle Libre 3** protocol (NFC activation, BLE GATT,
   security handshake), the vendor-blob bridge design + legal caveat, and the
   implementation status (what's done vs. hardware-gated).
+- `docs/OMNIPOD.md` — **Omnipod DASH** pump: implementation status, the four
+  protocol layers (fragments/messages/security/commands), and the hazard
+  analysis — including why there is no read-only mode and what each guard in
+  `lib/src/pump/protocol/` defends against.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
 - `docs/DESIGN.md` — the theme/colour-role system: the two accents, the three

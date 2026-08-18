@@ -84,9 +84,19 @@ green.
 
 ## License & credits
 
-Licensed under **GPL-3.0** (see `LICENSE`). Insulink is a derivative work of
-[Juggluco](https://github.com/j-kaltes/Juggluco) by Jaap Korthals Altes
-(GPL-3.0). Protocol details were also informed by
+Licensed under **AGPL-3.0** (see `LICENSE`). The app was GPL-3.0 until the
+Omnipod DASH driver arrived: that driver derives from
+[AndroidAPS](https://github.com/nightscout/AndroidAPS) (AGPL-3.0), and AGPL-3.0
+is the only licence the combined work can be distributed under.
+
+Files derived from [Juggluco](https://github.com/j-kaltes/Juggluco) by Jaap
+Korthals Altes remain **GPL-3.0** (`LICENSE.GPL-3.0`) — the CGM handshake code
+for the Dexcom G7 and FreeStyle Libre 3. Both licences explicitly allow the
+combination (GPL-3.0 §13 / AGPL-3.0 §13). `NOTICE` lists which file belongs to
+which.
+
+Protocol details were also informed by
 [DiaBLE](https://github.com/gui-dos/DiaBLE),
-[LoopKit/G7SensorKit](https://github.com/LoopKit/G7SensorKit) and
-[xDrip+](https://github.com/NightscoutFoundation/xDrip).
+[LoopKit/G7SensorKit](https://github.com/LoopKit/G7SensorKit),
+[xDrip+](https://github.com/NightscoutFoundation/xDrip) and the
+[openomni wiki](https://github.com/openaps/openomni/wiki).

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/injection/active_insulin.dart';
+import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/injection/injection_confirm_page.dart';
 import 'package:insulink/src/injection/injection_products_tab.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -11,6 +12,8 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
+import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pod_delivery_gate.dart';
 import 'package:provider/provider.dart';
 import 'package:insulink/src/theme/brand_tints.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -149,6 +152,22 @@ class _InjectionSheetState extends State<InjectionSheet> {
     _recompute();
   }
 
+  /// How the confirmed bolus reaches the body: through a paired pod when there is
+  /// one, otherwise only into the log, exactly as before pump support existed.
+  ///
+  /// The pod's own limits sit underneath, but the ceilings passed here are the
+  /// user's own [ProfileBolusState] settings, so the number the sheet already
+  /// enforces is the number the pump enforces too.
+  BolusDelivery get _delivery {
+    final bolusSettings = context.read<ProfileBolusState>();
+    return BolusDelivery(
+      controller: context.read<PodController>(),
+      gate: context.read<PodDeliveryGate>(),
+      maxBolusUnits: bolusSettings.maxBolus.toDouble(),
+      maxUnitsPerHour: bolusSettings.maxBolus.toDouble(),
+    );
+  }
+
   Future<void> _next() async {
     final bolus = _bolus;
     final glucose = _glucose;
@@ -157,27 +176,49 @@ class _InjectionSheetState extends State<InjectionSheet> {
     }
     final navigator = Navigator.of(context);
     final meals = context.read<MealState>();
-    final confirmed = await navigator.push<bool>(
-      MaterialPageRoute<bool>(
+    final outcome = await navigator.push<BolusDeliveryResult>(
+      MaterialPageRoute<BolusDeliveryResult>(
         builder: (_) => InjectionConfirmPage(
           carbs: _carbs,
           glucoseMgdl: glucose,
           bolus: bolus,
+          delivery: _delivery,
+          deliveredLastHour: _activeInsulin,
         ),
       ),
     );
-    if (confirmed == true && mounted) {
-      await meals.addMeal(
-        Meal(
-          time: DateTime.now(),
-          carbs: _carbs,
-          glucoseMgdl: glucose,
-          bolus: bolus,
-          entries: _productEntries,
-        ),
-      );
+    if (outcome == null || !mounted) {
+      return;
+    }
+    await _record(meals, glucose, outcome);
+    if (mounted) {
       navigator.pop();
     }
+  }
+
+  /// Writes the meal.
+  ///
+  /// The carbs are certain — the user ate them — so the meal is always recorded.
+  /// The insulin is only recorded at [BolusDeliveryResult.recordedUnits], which
+  /// is zero unless a dose is known to have gone in. A refused or unconfirmed
+  /// pump dose therefore logs the meal WITHOUT insulin: understating it can be
+  /// corrected by logging the dose afterwards, whereas insulin in the log that
+  /// never reached the body would suppress the next dose through IOB.
+  Future<void> _record(
+    MealState meals,
+    int glucose,
+    BolusDeliveryResult outcome,
+  ) async {
+    await meals.addMeal(
+      Meal(
+        time: DateTime.now(),
+        carbs: _carbs,
+        glucoseMgdl: glucose,
+        bolus: outcome.recordedUnits,
+        entries: _productEntries,
+        deliveredByPump: outcome.byPump,
+      ),
+    );
   }
 
   @override

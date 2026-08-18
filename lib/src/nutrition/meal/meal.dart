@@ -8,6 +8,7 @@ class Meal {
     required this.glucoseMgdl,
     required this.bolus,
     required this.entries,
+    this.deliveredByPump = false,
   });
 
   final DateTime time;
@@ -15,6 +16,13 @@ class Meal {
   final int glucoseMgdl;
   final double bolus;
   final List<MealEntry> entries;
+
+  /// Whether a pump delivered this [bolus] rather than the user injecting it.
+  ///
+  /// Worth keeping apart: if a pod later turns out to have stopped mid-delivery,
+  /// the pump-given doses are the ones whose recorded amount is worth doubting.
+  /// Defaults to false, so every meal logged before pump support reads correctly.
+  final bool deliveredByPump;
 
   /// Total protein across the logged products (0 for a manual carb entry, which
   /// carries no product breakdown).
@@ -33,6 +41,7 @@ class Meal {
     glucoseMgdl: glucoseMgdl ?? this.glucoseMgdl,
     bolus: bolus ?? this.bolus,
     entries: entries,
+    deliveredByPump: deliveredByPump,
   );
 
   factory Meal.fromJson(Map<String, dynamic> json) => Meal(
@@ -44,6 +53,7 @@ class Meal {
         .cast<Map<String, dynamic>>()
         .map(MealEntry.fromJson)
         .toList(),
+    deliveredByPump: json['delivered_by_pump'] as bool? ?? false,
   );
 
   Map<String, dynamic> toJson() => {
@@ -52,6 +62,7 @@ class Meal {
     'glucose': glucoseMgdl,
     'bolus': bolus,
     'entries': entries.map((entry) => entry.toJson()).toList(),
+    if (deliveredByPump) 'delivered_by_pump': true,
   };
 }
 

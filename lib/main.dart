@@ -15,6 +15,9 @@ import 'package:insulink/src/inventory/inventory_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pod_delivery_gate.dart';
+import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
 import 'package:insulink/src/profile/battery/profile_battery_state.dart';
@@ -61,6 +64,8 @@ typedef AppPreferences = ({
   MealState meals,
   NutritionLayoutState nutritionLayout,
   InventoryState inventory,
+  PodDeliveryGate podGate,
+  PodStore podStore,
 });
 
 Future<void> main() async {
@@ -246,6 +251,12 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.meals),
         ChangeNotifierProvider(create: (_) => prefs.nutritionLayout),
         ChangeNotifierProvider(create: (_) => prefs.inventory),
+        // The pod delivery lock and the paired pod's state, observed by the
+        // pump device page.
+        ChangeNotifierProvider(create: (_) => prefs.podGate),
+        ChangeNotifierProvider(
+          create: (_) => PodController(store: prefs.podStore, gate: prefs.podGate),
+        ),
       ],
       child: _AppLifecycle(child: child),
     );
@@ -340,6 +351,8 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       meals: await MealState.load(),
       nutritionLayout: await NutritionLayoutState.load(),
       inventory: await InventoryState.load(),
+      podGate: await PodDeliveryGate.restore(),
+      podStore: await PodStore.open(),
     );
   }
 }

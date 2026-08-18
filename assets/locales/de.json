@@ -331,7 +331,77 @@
     }
   },
   "pump": {
-    "label": "Pumpe"
+    "label": "Pumpe",
+    "status": {
+      "_": "Pod-Status",
+      "no_pod": "Kein Pod gekoppelt",
+      "no_pod_hint": "Insulink kann einen Omnipod DASH koppeln und steuern. Das Koppeln bindet den Pod dauerhaft an diese App.",
+      "lifecycle": "Zustand",
+      "delivery": "Abgabe",
+      "reservoir": "Reservoir",
+      "reservoir_plenty": "Mehr als messbar",
+      "age": "Laufzeit",
+      "expires_in": "Läuft ab in",
+      "alerts": "Aktive Warnungen",
+      "no_alerts": "Keine",
+      "last_read": "Zuletzt gelesen",
+      "never_read": "Noch nicht gelesen",
+      "stale": "Dieser Status ist veraltet. Vor jeder Entscheidung neu lesen."
+    },
+    "action": {
+      "refresh": "Status lesen",
+      "suspend": "Abgabe stoppen",
+      "deactivate": "Pod deaktivieren",
+      "silence": "Warnungen quittieren",
+      "activate": "Pod aktivieren"
+    },
+    "gate": {
+      "_": "Abgabe gesperrt",
+      "body": "Der DASH-Treiber ist nur gegen aufgezeichnete Protokolldaten geprüft, nie an einem echten Pod. Aktivierung, Basal und Bolus bleiben gesperrt, bis das an Hardware bestätigt wurde.",
+      "enable": "Abgabe an ungeprüfter Hardware freigeben",
+      "warning": "Nur freigeben, wenn du bereit bist, den Pod zu überwachen und im Zweifel abzunehmen."
+    },
+    "stop": {
+      "_": "Abgabe stoppen?",
+      "body": "Stoppt Basal und einen laufenden Bolus sofort. Der Pod piept zur Bestätigung.",
+      "confirm": "Stoppen"
+    },
+    "lifecycle": {
+      "filled": "Gefüllt",
+      "uid_set": "Gekoppelt",
+      "priming": "Wird vorbereitet",
+      "basal_set": "Basal programmiert",
+      "running": "Läuft",
+      "running_low": "Läuft, Reservoir niedrig",
+      "alarm": "Alarm",
+      "deactivated": "Deaktiviert",
+      "unknown": "Unbekannt"
+    },
+    "delivery": {
+      "suspended": "Gestoppt",
+      "basal": "Basal",
+      "temp_basal": "Temporäres Basal",
+      "priming": "Vorbereitung",
+      "bolus_basal": "Bolus + Basal",
+      "bolus_temp": "Bolus + temp. Basal",
+      "unknown": "Unbekannt"
+    },
+    "alert": {
+      "auto_off": "Automatische Abschaltung",
+      "multi_command": "Mehrfachbefehl",
+      "expiration_imminent": "Ablauf unmittelbar",
+      "user_set_expiration": "Eigene Ablaufwarnung",
+      "low_reservoir": "Reservoir niedrig",
+      "suspend_in_progress": "Stopp läuft",
+      "suspend_ended": "Stopp beendet",
+      "expiration": "Pod läuft ab"
+    },
+    "restore": {
+      "_": "Pod aus deinem Konto",
+      "body": "Für dein Konto ist ein Pod gespeichert, lokal aber keiner. Du kannst ihn übernehmen, ohne neu zu koppeln — nötig etwa nach einem App-Reset, damit du einen laufenden Pod weiter steuern und stoppen kannst.",
+      "remaining": "Restlaufzeit: #",
+      "use": "Pod übernehmen"
+    }
   },
   "google_health": {
     "label": "Google Health",
@@ -932,7 +1002,11 @@
       "button": "Bestätigen",
       "reason": "Bolus mit Fingerabdruck bestätigen",
       "success": "Bolus bestätigt",
-      "failed": "Authentifizierung fehlgeschlagen"
+      "failed": "Authentifizierung fehlgeschlagen",
+      "button_pump": "Bolus an Pumpe senden",
+      "log_without_bolus": "Ohne Bolus protokollieren",
+      "pump_refused": "Die Pumpe hat den Bolus nicht abgegeben.",
+      "pump_unknown": "Unklar, ob die Pumpe abgegeben hat. Prüfe den Pod, bevor du erneut dosierst."
     },
     "next": "Weiter"
   },

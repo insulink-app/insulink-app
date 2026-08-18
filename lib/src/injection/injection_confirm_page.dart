@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/biometric_auth.dart';
+import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
@@ -15,11 +16,21 @@ class InjectionConfirmPage extends StatefulWidget {
     required this.carbs,
     required this.glucoseMgdl,
     required this.bolus,
+    this.delivery,
+    this.deliveredLastHour = 0,
   });
 
   final double carbs;
   final int glucoseMgdl;
   final double bolus;
+
+  /// How the bolus reaches the body. Null, or one reporting no pump, keeps the
+  /// original behaviour: the user injects and the app only records it.
+  final BolusDelivery? delivery;
+
+  /// Insulin already given within the past hour, checked against the rolling
+  /// limit before a pod is asked to deliver.
+  final double deliveredLastHour;
 
   @override
   State<InjectionConfirmPage> createState() => _InjectionConfirmPageState();
@@ -34,18 +45,35 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
   /// the retry until the user acts on it, rather than time out on its own.
   bool _failed = false;
 
+  /// Set when a pump was asked to deliver and did not, or could not say whether
+  /// it did. Sticky for the same reason and carries the pod's own wording, since
+  /// "reservoir too low" and "we lost the confirmation" need different reactions.
+  BolusDeliveryResult? _pumpOutcome;
+
   /// Whether this bolus needs biometric confirmation. A zero bolus (carbs-only
   /// logging) is confirmed with a plain tap.
   bool get _needsAuth => widget.bolus > 0;
 
+  /// Whether the pod will be asked to deliver rather than the user injecting.
+  bool get _usesPump => widget.delivery?.usesPump ?? false;
+
+  /// A pod outcome that the user still has to acknowledge before the meal is
+  /// logged without its insulin.
+  bool get _awaitingAcknowledgement => _pumpOutcome?.needsAttention ?? false;
+
   Future<void> _confirm() async {
+    if (_awaitingAcknowledgement) {
+      Navigator.of(context).pop(_pumpOutcome);
+      return;
+    }
     if (!_needsAuth) {
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(BolusDeliveryResult.loggedOnly(widget.bolus));
       return;
     }
     setState(() {
       _authenticating = true;
       _failed = false;
+      _pumpOutcome = null;
     });
     final ok = await _auth.confirm(
       Locales.string(context, 'injection.confirm.reason'),
@@ -53,13 +81,41 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
     if (!mounted) {
       return;
     }
-    if (ok) {
-      Navigator.of(context).pop(true);
+    if (!ok) {
+      setState(() {
+        _authenticating = false;
+        _failed = true;
+      });
+      return;
+    }
+    await _runDelivery();
+  }
+
+  /// Hands the confirmed dose to the pump, or straight back when there is none.
+  ///
+  /// A refusal or an unknown outcome deliberately does NOT pop: the message stays
+  /// on this page next to a button that now means "log the meal without the
+  /// insulin", so the user cannot walk away thinking the dose went in.
+  Future<void> _runDelivery() async {
+    final delivery = widget.delivery;
+    if (delivery == null || !delivery.usesPump) {
+      Navigator.of(context).pop(BolusDeliveryResult.loggedOnly(widget.bolus));
+      return;
+    }
+    final outcome = await delivery.deliver(
+      widget.bolus,
+      deliveredLastHour: widget.deliveredLastHour,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (outcome.isDelivered) {
+      Navigator.of(context).pop(outcome);
       return;
     }
     setState(() {
       _authenticating = false;
-      _failed = true;
+      _pumpOutcome = outcome;
     });
   }
 
@@ -81,7 +137,9 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
               const SizedBox(height: 24),
               _details(context),
               const Spacer(),
-              if (_failed)
+              if (_pumpOutcome != null)
+                _pumpFailure(context, _pumpOutcome!)
+              else if (_failed)
                 _failure(context)
               else if (_needsAuth)
                 _hint(context),
@@ -94,15 +152,11 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Icon(
-                        _needsAuth
-                            ? PhosphorIconsBold.fingerprint
-                            : PhosphorIconsBold.check,
-                      ),
+                    : Icon(_buttonIcon),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
                 ),
-                label: LocaleText('injection.confirm.button'),
+                label: LocaleText(_buttonLabelKey),
               ),
             ],
           ),
@@ -264,6 +318,68 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  IconData get _buttonIcon {
+    if (_awaitingAcknowledgement) {
+      return PhosphorIconsBold.notePencil;
+    }
+    if (_needsAuth) {
+      return PhosphorIconsBold.fingerprint;
+    }
+    return PhosphorIconsBold.check;
+  }
+
+  /// The button changes meaning once a pod outcome is on screen: it no longer
+  /// confirms a dose, it logs the meal without one.
+  String get _buttonLabelKey {
+    if (_awaitingAcknowledgement) {
+      return 'injection.confirm.log_without_bolus';
+    }
+    if (_usesPump) {
+      return 'injection.confirm.button_pump';
+    }
+    return 'injection.confirm.button';
+  }
+
+  /// The pod's own outcome, in the error colour, in the same place the biometric
+  /// failure uses. An unknown outcome gets its own wording because the reaction
+  /// differs: a refusal means no insulin, an unknown means go and look at the pod.
+  Widget _pumpFailure(BuildContext context, BolusDeliveryResult outcome) {
+    final scheme = Theme.of(context).colorScheme;
+    final headlineKey = outcome.status == BolusDeliveryStatus.unknown
+        ? 'injection.confirm.pump_unknown'
+        : 'injection.confirm.pump_refused';
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(PhosphorIconsBold.warning, size: 16, color: scheme.error),
+            const SizedBox(width: 6),
+            Flexible(
+              child: LocaleText(
+                headlineKey,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.error,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (outcome.detail != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            outcome.detail!,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          ),
+        ],
       ],
     );
   }
