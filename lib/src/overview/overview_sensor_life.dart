@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
-import 'package:insulink/src/sensor/control/sensor_life_bar.dart';
+import 'package:insulink/src/base/device_lifespan_bar.dart';
 import 'package:provider/provider.dart';
 
 /// Remaining sensor lifetime on the overview — the same day/hour segment bar as
@@ -15,7 +15,7 @@ class OverviewSensorLife extends StatelessWidget {
     if (start == null) {
       return const SizedBox.shrink();
     }
-    return SensorLifeBar(
+    return DeviceLifespanBar(
       start: start,
       sessionLengthSec: _sessionLength(controller),
       overview: true,

@@ -13,9 +13,9 @@ import 'package:insulink/src/pump/protocol/pod_link.dart';
 /// and one whose CRC does not match answers fail — the two are distinct so the
 /// sender knows whether resending can help.
 ///
-/// ponytail: fragments are expected in order; an out-of-order one is nacked and
-/// awaited again rather than buffered. If field logs later show reordering on
-/// this link, buffer by index the way the reference driver does.
+/// A fragment that arrives ahead of its turn is KEPT, not discarded: the pod
+/// sends a burst and the queue can surface them out of order, and throwing one
+/// away means asking for it again and hoping the reorder does not repeat.
 class PodMessageIo {
   PodMessageIo(this.link);
 
@@ -41,9 +41,7 @@ class PodMessageIo {
   /// genuinely unknown — the pod may have acted on the message — so a caller
   /// that sent a delivery command must read the pod's status rather than resend.
   Future<void> sendMessage(MessagePacket message) async {
-    if (link.peek(PodCharacteristic.command) != null) {
-      throw PodLinkException('Pod is mid-transfer; refusing to send over it');
-    }
+    await _clearStaleControl();
     link.flush(PodCharacteristic.data);
 
     await link.write(PodCharacteristic.command, PodControlWord.requestToSend.frame);
@@ -55,6 +53,25 @@ class PodMessageIo {
       await _resendIfNacked(fragments, index);
     }
     await _expectControl(PodControlWord.success);
+  }
+
+  /// Drops leftover control words before starting a transfer.
+  ///
+  /// A stale success or nack from a finished exchange is noise and is discarded —
+  /// aborting on it would throw away a working link, and during pairing that costs
+  /// a pod. A pending request-to-send is different: the pod has something to say,
+  /// and talking over it would desynchronise both sides, so that one still stops us.
+  Future<void> _clearStaleControl() async {
+    while (true) {
+      final pending = link.peek(PodCharacteristic.command);
+      if (pending == null || pending.isEmpty) {
+        return;
+      }
+      if (PodControlWord.byValue(pending[0]) == PodControlWord.requestToSend) {
+        throw PodLinkException('Pod is mid-transfer; refusing to send over it');
+      }
+      await link.read(PodCharacteristic.command, _controlTimeout);
+    }
   }
 
   /// Waits for the pod to send a message and reassembles it.
@@ -88,22 +105,39 @@ class PodMessageIo {
   }
 
   Future<Uint8List> _readFragments() async {
-    final first = await _readFragment(0);
+    final earlyArrivals = <int, Uint8List>{};
+    final first = await _readFragment(0, earlyArrivals);
     final joiner = PodReassembler(first);
     var index = 0;
     while (!joiner.isComplete) {
       index++;
-      joiner.accumulate(await _readFragment(index));
+      joiner.accumulate(await _readFragment(index, earlyArrivals));
     }
     return joiner.finish();
   }
 
-  /// Reads the fragment at [index], nacking anything else so the pod resends.
-  Future<Uint8List> _readFragment(int index) async {
+  /// Reads the fragment at [index], keeping any that arrive ahead of their turn.
+  ///
+  /// [earlyArrivals] holds fragments that turned up before the one being waited
+  /// for. Serving from it first means a reordered burst is reassembled without a
+  /// single retransmission; only a fragment that genuinely never came is nacked.
+  Future<Uint8List> _readFragment(
+    int index,
+    Map<int, Uint8List> earlyArrivals,
+  ) async {
+    final buffered = earlyArrivals.remove(index);
+    if (buffered != null) {
+      return buffered;
+    }
     for (var attempt = 0; attempt < _maxFragmentTries; attempt++) {
       final frame = await link.read(PodCharacteristic.data, _fragmentTimeout);
-      if (frame != null && frame.isNotEmpty && frame[0] == index) {
-        return frame;
+      if (frame != null && frame.isNotEmpty) {
+        if (frame[0] == index) {
+          return frame;
+        }
+        if (frame[0] > index) {
+          earlyArrivals[frame[0]] = frame;
+        }
       }
       await link.write(PodCharacteristic.command, PodControlWord.nackFor(index));
     }

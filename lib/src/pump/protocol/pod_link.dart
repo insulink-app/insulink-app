@@ -11,10 +11,21 @@ enum PodCharacteristic {
   final String uuid;
 }
 
-/// The pod's BLE GATT service.
+/// The pod's BLE GATT service, on the connected device.
+///
+/// NOT what a scan filters on — see [podScanServiceUuid]. The two are genuinely
+/// different UUIDs and mixing them up means never finding a pod at all.
 const String podServiceUuid = '1a7e4024-e3ed-4464-8b7e-751e03d0dc5f';
 
-/// The 16-bit service id a pod advertises, used to filter a scan.
+/// What a scan filters on: the 16-bit id `0x4024` in the Bluetooth base UUID.
+///
+/// A pod advertises nine SHORT (16-bit) service ids, which the OS expands into the
+/// base UUID. Its GATT service, once connected, is the vendor 128-bit
+/// [podServiceUuid] — a completely different value that appears nowhere in the
+/// advertisement, so filtering a scan on it finds nothing.
+const String podScanServiceUuid = '00004024-0000-1000-8000-00805f9b34fb';
+
+/// The 16-bit service id a pod advertises, used to recognise one in a scan result.
 const String podAdvertisedServiceId = '4024';
 
 /// The single-byte control words exchanged on [PodCharacteristic.command] to

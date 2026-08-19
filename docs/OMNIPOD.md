@@ -41,13 +41,19 @@ which is off by default.
 | Pod state persistence | done | unit tests over an in-memory keystore |
 | Backend mirror + restore (`/pump/register/`, `/pump/update/`, `/pump/current/`) | done | API controller tests; app side reviewed |
 | Bolus delivery from the injection sheet | done | unit tests over a scripted pod |
+| Alarm status page (0x02) + alarm classification | done | captured page, byte-exact; all 256 codes classified |
+| Basal profile → pod schedule adapter | done | unit tests, incl. every rate the editor can produce |
+| Activation wizard (two phases, resumable) | done | stage/resume unit tests; flow untested on hardware |
+| Cannula insertion behind the device biometric | done | unit tests over a scripted pod |
+| Pod life + reservoir on the overview | done | lifespan unit tests |
+| Panel pod history (`/devices/pump`) | done | `src/lib/pump.check.ts` |
+| Background pod watch + alarms | done | alarm-decision and tick-policy unit tests |
+| Basal delivery into the forecasting model | done | app ledger tests + 12 predictor tests |
+| Temp basal: command, sheet, and ledger accounting | done | rate-window and sheet-path unit tests |
 | BLE link + scanner | written | **unverified — needs hardware** |
 | Pump page: status, stop, deactivate, acknowledge alerts | done | builds and analyses; not exercised on a device |
-| Activation wizard UI | **not built** | — |
-| Basal/temp basal wired to a UI | **not built** — encoders done, `BasalProfile` is the obvious source | — |
-| Background service, API sync, alarms | **not built** | — |
 
-Tests: `flutter test test/pump/` (139) and `cd rust && cargo test` (9). The
+Tests: `flutter test test/pump/` (323) and `cd rust && cargo test` (9). The
 pairing and flow tests load the host Rust library, so `cargo build` has to have
 run first.
 
@@ -103,6 +109,202 @@ Two things worth knowing:
   identity would replace the key to a pod that may still be delivering.
 - The stored record carries the pod's own expiry, so it ages out with the pod it
   describes rather than lingering as a usable key.
+
+### Pod life and reservoir on the overview
+
+The overview shows a pod exactly the way it shows a sensor, because it is the same
+widget: `DeviceLifespanBar` (was `SensorLifeBar`, moved to `base/` when the pod
+started needing it) draws one segment per remaining day, switching to hours in the
+final day.
+
+That reuse works because a pod's 80 hours describe the same shape the sensor bar
+already models: **three rated days plus an eight-hour grace window**, which is what
+an Omnipod actually does. `DeviceLifespan` needed no changes at all — only the
+title key became a parameter, since the remaining-time wording ("# days left") was
+already device-neutral.
+
+The reservoir is the one thing a sensor has no equivalent for, so it sits as a line
+underneath. It is never shown as a number the pod did not give: above roughly 50 U
+the pod reports a sentinel rather than a measurement, and that case is worded
+instead. Ten units or less is called out in the warning colour, which still leaves
+time to plan a pod change.
+
+### The panel
+
+`/devices/pump` lists every pod the account recorded, mirroring the sensor list
+column for column, plus lot/serial and the reservoir.
+
+Two things specific to the pod side:
+
+- **`unique_id` cannot identify a pod.** It is derived from the controller id, so
+  every pod this app has ever activated carries the same one. The panel therefore
+  de-duplicates restored registrations by activation time — two pods are never
+  activated in the same millisecond. (`uniqueSensors` keys off `resolved_key`,
+  which has no pod equivalent.)
+- **The reservoir is a snapshot, labelled as one.** The app mirrors a pod's state
+  only when it happens to talk to it, so the panel shows "as of the last contact"
+  and never implies a live reading. The live figure is in the app.
+
+`src/lib/pump.ts` deliberately does not declare `long_term_key` in its blob type,
+even though the blob carries it — it is the credential that authorises delivering
+insulin, and nothing in the panel should be able to reach for it by accident.
+
+### Basal into the forecasting model
+
+Boluses already reached the model: the app logs every dose as a meal row, and the
+predictor reads `nutrition_meals`. **Basal did not**, and on a pump it is often
+about half a day's insulin — so insulin on board was being built from roughly half
+the insulin.
+
+The chain is app → `/insulin/basal/sync/` → `basal_entries` → the predictor's
+`basal_u` channel. Four decisions hold it together:
+
+**A temporary rate is billed at the temporary rate.** `PodBasalDelivery` splits the
+window at the temp basal's start and end as well as at each hour boundary, so a
+temp basal beginning mid-hour is billed correctly on both sides. A zero-rate temp —
+the common "stop basal for sport" case — books the nothing it is; billing the
+schedule there would tell the model about insulin the pod deliberately withheld. The
+stored window is retired only once the ledger has billed PAST its end, so the window
+straddling the end still splits at the right rate.
+
+**It is booked from the programmed schedule, not from the pod's delivery counter.**
+The pod reports a cumulative `totalPulsesDelivered` that includes boluses.
+Differencing it and sending the result alongside the meal rows would count every
+bolus twice — a far worse error than the metering difference this ignores.
+`PodBasalDelivery` integrates the stored schedule over the window instead.
+
+**Nothing is booked unless the pod says it was delivering.** A suspended or
+alarming pod books a zero — which still closes the window, or the next poll would
+bill the whole stretch as if the pod had run through it. Those are exactly the
+stretches where the model would otherwise assume insulin that never arrived.
+
+**The ledger cannot double-count or gap.** `PodStore.addBasalDelivery` records the
+sample and advances the accounting mark in one step; samples are dropped locally
+only once the account has accepted them, because the service polls whether or not
+the phone has a connection and a lost sample is a hole nothing later can fill.
+
+**In the predictor, basal gets its OWN raw channel and is summed into IOB — but
+never into the bolus-edge features.** `insulin_u` drives `_bolus_flag` and
+`time_since_bolus`; folding a continuous drip into it would make "a bolus happened"
+true in every single bucket and destroy both. The two are summed only where summing
+is correct — insulin on board and its rate of action — because basal and bolus are
+the same molecule. `features.build._total_insulin` is that sum, and a test pins that
+a basal drip never raises the bolus flag.
+
+One thing this surfaced: the IOB feature used to be gated on `insulin_u` alone, so a
+pump user **between** boluses would have had no IOB at all — precisely the stretch
+where basal is the only insulin acting. It is now gated on either channel.
+
+### The background watch
+
+Pod warnings are raised from the service isolate, so they arrive with the app
+closed. Four design points, in order of how easy each is to get wrong:
+
+**1. It rides the existing service; it is not a second one.** The app has exactly
+one foreground service (`CgmTaskHandler`), and `PodMonitor` is hosted in it the way
+the Fitbit band is. That is not economy — **two things scanning for BLE around the
+clock wedge Android's scanner**, the documented multi-hour "0 devices found" stall.
+So the pod poll **never scans**: `PodConnection.openSession(allowScan: false)`
+connects straight to the stored address, mirroring the band's known-only rule and
+the G7's autoConnect lesson.
+
+**2. The checks split into contact-free and polling halves, and that split is the
+point.** Expiry and "no contact for 45 minutes" are computed from stored values, so
+they keep working exactly when the link does not — and a link that is down is
+itself one of the things worth warning about. Only the reservoir, the alarm reason
+and the delivery state need the pod. A test pins this: an unreachable pod still
+gets its expiry warning.
+
+**3. The pod's own beeper is the primary alarm.** It sounds on occlusion, an empty
+reservoir and expiry whether or not this app runs, and needs no radio. The
+notifications are the supplement that reaches a phone in another room and that can
+say WHY — the pod can only beep. That is what makes a 15-minute poll interval
+acceptable rather than negligent.
+
+**4. A deliberate suspend must not read as a fault.** `PodStore.suspendedByUs` is
+set when the app sends a suspend and cleared when a status shows the pod delivering
+again — the authoritative signal, since a resume can come from an activation, a
+retry, or the pod itself. Without it, every user-requested stop would fire "your
+pod stopped on its own", and a restarted service (whose edge tracker starts out
+assuming delivery) would fire it too.
+
+What each warning does:
+
+| Warning | Needs the pod? | Gating |
+|---------|----------------|--------|
+| Expiry within the configured hours (default 4) | no | `NotificationSetting.podExpiry`, one-shot per pod |
+| Expired | no | same |
+| Reservoir below the configured units (default 10) | yes | `NotificationSetting.podInsulin`, one-shot per pod |
+| Pod alarmed — occlusion, empty, infusion error, fault | yes | **none** |
+| Delivery stopped without us asking | yes | **none** |
+| No contact for 45 min | no | silent mode only |
+
+The two ungated ones are deliberate: an alarming or stopped pod is **not delivering
+insulin**, which is not something a user can opt out of being told. Both bypass Do
+Not Disturb, for the same reason the glucose alarms do.
+
+Two smaller things worth knowing:
+
+- **One-shot flags are keyed by activation time, not by pod id.** The pod's id is
+  derived from the controller address and is identical for every pod this app ever
+  activates, so it cannot tell two apart; two pods are never activated in the same
+  millisecond.
+- **The pod store is reloaded at the poll cadence, not every tick.** A fresh
+  `readAll()` decrypts the whole keystore, and 30-second ticks would do that 120
+  times an hour for data that changes hourly. The cost is that a pod paired while
+  the service runs is noticed within one poll interval — nothing against an 80-hour
+  life.
+
+### Activation
+
+`PodActivationController` + `PodActivationPage` walk the user through it in two
+phases, split at the point where the pod physically moves onto the body — the one
+transition no state machine can observe.
+
+The properties worth keeping:
+
+- **The binding is stated before anything is sent.** The first screen says that
+  activation ties the pod to this app for good, that the user's PDM will no longer
+  reach it, and that Insulink then becomes the only thing that can stop it.
+- **The basal profile is converted on the FIRST screen**, not when it is needed.
+  `PodBasalAdapter` turns the app's 24 hourly rates into the pod's 48 half-hour
+  slots (two identical slots per hour, no interpolation), and a profile the pod
+  cannot hold disables the start button then and there. Discovering it later would
+  mean throwing away a pod that had already been primed and bound.
+- **A retry resumes, it does not restart.** Every protocol step is written to the
+  store before the next runs, so the two steps that deliver insulin — priming and
+  cannula insertion — are never repeated. `test/pump/pod_activation_test.dart`
+  covers exactly that.
+- **Failure offers both ways out**: retry the same pod, or discard it. A failed
+  activation often means the pod is scrap, and pretending otherwise with a silent
+  retry loop would be worse.
+
+#### The cannula confirmation
+
+Driving the cannula in is the only step of the activation that puts a needle under
+the user's skin, so it is gated by the device biometric — the same `BiometricAuth`
+that gates a bolus, and with the same setting: **biometric only, no PIN fallback**.
+
+The gate sits in `PodActivation._insertCannula`, immediately before the command,
+NOT on the button that normally precedes it. Every route into the insertion — a
+first run, a retry, a resume — therefore passes through it. The callback is a
+**required** constructor parameter, so a caller that forgot to wire a confirmation
+does not compile rather than silently inserting unprompted.
+
+Consequences that are deliberate:
+
+- **Priming is not gated.** It delivers insulin, but into a pod that is still off
+  the body. A second identical prompt in front of it would train the user to tap
+  through both.
+- **A resume past the insertion does not ask again.** The needle is already in;
+  prompting would imply it is about to happen a second time.
+- **A decline is not a failure.** `PodActivationCancelled` is its own exception,
+  the step is not recorded, the pod is untouched, and the wizard says so in the
+  warning tone rather than the error one.
+- **A user with no enrolled biometric cannot finish an activation.** That is the
+  cost of biometric-only, and it is a wasted pod rather than a hazard. If it proves
+  too harsh, `BiometricAuth.confirm(allowDeviceCredential: true)` is the one-line
+  change — but it weakens exactly the gate this exists to be.
 
 ## Why there is no read-only mode
 
@@ -192,6 +394,22 @@ Details worth not rediscovering:
   `reservoirUnits` returns null there — never format it as a number.
 - **NAK `illegalSecurityCode` (0x14)** is a sequence desync and carries a resync
   counter instead of a lifecycle. It must be resynced, never blindly retried.
+- **The pod's id is NOT the controller's id.** The pod answers on the controller
+  address with its low two bits replaced by `01`, so a controller on 4242 gives the
+  pod 4241 — which is exactly what the captured commands address. Assigning the
+  controller's own id instead makes every message's source and destination
+  identical. Pinned by `test/pump/pod_ids_test.dart`.
+- **That address does not change when the pod is given its id**, because the id it
+  is assigned is the address it already answers on. So one session spans the whole
+  activation, across `SET_UNIQUE_ID`.
+- **A paired-but-unnamed pod still ADVERTISES the discovery address.** Only an
+  interrupted activation is in that state, and a resume has to scan for
+  `0xFFFFFFFE` rather than the pod's id — see
+  `PodConnection.openSession(stillAdvertisingUnactivated:)`.
+- **The alarm codes are not enumerated.** The pod has ~160, nearly all internal
+  faults with one remedy between them. `PodAlarm` keeps the raw byte and derives
+  the handful of categories that lead to different advice (occlusion, empty
+  reservoir, expiry, infusion error, escalated alert, radio, internal fault).
 - **There are THREE counters and mixing them up is the easiest way to break
   this.** The *pod command sequence* is a persisted 4-bit counter in the command
   header, incremented once per command, and it is what makes a retried command
@@ -215,11 +433,126 @@ Details worth not rediscovering:
 2. The activation wizard UI, which has to walk the user through filling, priming
    off the body, attaching, and cannula insertion — and must state the
    single-controller consequence BEFORE `SET_UNIQUE_ID` is sent.
-3. A background service, if delivery is ever to continue with the app closed.
-   The CGM side already has one (`cgm/service/`); the pod would need the same
-   treatment, and the pod state store is per-isolate cached like `CgmStore`, so
-   it needs the same `reload()` discipline.
-4. The decision about the injection UI above.
+3. Nothing else. Everything the driver needs to run a pod end to end is written;
+   what remains is the hardware verification above.
+
+### Found in the pre-hardware review
+
+A pass over the pairing path before the first hardware test, looking for what the
+offline tests structurally cannot see. Four things, in order of how much they cost:
+
+**1. The scan filtered on the wrong UUID — no pod would ever have been found.**
+A pod advertises SHORT (16-bit) service ids, so a scan must filter on
+`00004024-0000-1000-8000-00805f9b34fb`. Its GATT service, once connected, is the
+vendor `1a7e4024-…`, which appears nowhere in the advertisement. The scanner used
+the latter. No test could catch this — both are valid UUIDs and there is no radio in
+a unit test — so `pod_uuid_test.dart` now pins the two apart by construction.
+
+**2. A lost confirmation reply threw away a working key.** The pod may keep the
+long-term key from the moment OUR confirmation reaches it, not from when its reply
+reaches us. The key is now handed to `onKeyDerived` and stored BEFORE that message
+goes out. Only `PodPairingMismatch` — which proves the two sides derived different
+keys — discards it; a dropped link keeps it, because a possibly-good key is the
+difference between a pod that can be picked up again and one that is scrap.
+
+**3. A crash between pairing and the first recorded step would have re-paired.**
+Deriving a second key for a pod that already holds one loses it. The activation now
+resumes whenever a key is stored, whatever the recorded step says.
+
+**4. The first scan had no permission prompt.** A user who never set up a CGM
+sensor has never been asked for `BLUETOOTH_SCAN`/`CONNECT`, so the first pod scan
+would have failed with an opaque platform error — at the moment a pod is filled and
+waiting. `PodBlePermissions` now asks first, with a localized explanation.
+
+**Second pass — five more, four of which would have broken a real activation:**
+
+**5. Nothing reconnected after the long waits.** Priming takes close to a minute and
+the pod hangs up on an idle link, so the status read that verifies priming would have
+gone down a dead link — failing EVERY activation at that step. The reference driver
+reconnects at exactly these two points, with the comment "connection can time out
+while waiting". `PodActivation.reopenLink` now does, and only ever before an
+idempotent status read: reconnecting and retrying a delivery command that may already
+have run is how a dose gets given twice.
+
+**6. The activation forgot its command counter.** The pod treats a repeated sequence
+number as the command it already carried out. With the counter living only in memory,
+the first command after an activation would have restarted at one — and a bolus would
+have been quietly ignored while the app recorded it as delivered.
+
+**7. The UI never re-read the store, whose cache is per isolate.** The background
+watch advances the command counter every quarter hour; the UI kept the value it read
+at app start. `PodController` now reloads before every session, the same discipline
+`CgmController` already follows.
+
+**8. A new pod inherited the previous pod's counters.** A fresh pod has never seen a
+session, so `savePairing(resetSessionCounters: true)` starts it at one — while a
+RESTORE deliberately preserves what it was given, since that pod is already running.
+
+**9. A competing scan looked like an absent pod.** Only one BLE scan runs at a time
+and the CGM service scans on its own schedule, stopping ours mid-flight. An empty
+result is now retried once.
+
+**Third pass — the resume path, and two counters:**
+
+**10. A resumed activation re-sent the two commands that cannot be repeated.**
+Reading the version is addressed to the DISCOVERY id, which the pod stops answering
+on the moment it has an id of its own, and assigning that id is one-shot. Anything
+picked up after `identitySet` — the app restarted, the wizard reopened — would have
+sent both to a pod that never answers, and hung there. The reference driver gates
+exactly these two on its stored progress; it can afford to, because it primes with
+constants. We prime with the volumes the POD asked for, so those numbers are
+persisted (`PodStore.activationFacts`) the moment they arrive, and a resume works
+from the record. A resume with no record stops with a clear message rather than
+guessing a dose.
+
+**11. The message-packet counter was confused with the command counter.** Two
+different counters: one numbers COMMANDS inside four bits, the other numbers the
+PACKETS carrying them and is a byte wide. Only the first was stored, and the second
+was seeded from it — so every session after the first started its packet numbering
+at an arbitrary place. It is now `PodStore.messageSequence`, recorded when the link
+closes (so no caller has to remember), mirrored to the backend, and started at zero
+for a newly paired pod.
+
+**12. Any well-formed status counted as "the bolus is running".** The pod answers a
+command sequence number it has already run by re-sending the answer it gave the
+first time — so a counter that drifted (the app and the background poll racing)
+reads as a perfect status while no insulin moves, and the app would have logged a
+dose the user never got. The reply now has to NAME the bolus — pulses remaining, or
+the bolus delivery flag — or the outcome is reported as unknown and nothing is
+recorded.
+
+**13. A discarded pod answers to the same address as the one on the body.** Every
+pod this app activates is given the SAME id, so the pod that was just replaced is a
+second, equally valid answer to a reconnect scan until its battery dies. The stored
+BLE address now settles it; an ambiguity it cannot settle is still refused rather
+than guessed, since commanding the wrong pod is worse than failing.
+
+**14. Reconnecting after a prime scanned for a pod already in hand.** The address is
+known and this process has just used it, so the reconnect connects straight to it and
+only falls back to a scan if that fails — closing the half-open link first, or the app
+would hold two GATT clients to one pod (the same leak the CGM notes document).
+
+**15. A running pod could be discarded — the one outcome everything else prevents.**
+Bookkeeping AFTER the pod was already delivering (the basal ledger, the backend
+mirror) ran inside the same `try` as the protocol, so a failed network call turned
+the wizard to "Activation stopped" and offered "Discard pod" for a pod with a
+cannula in the body. Discarding forgets the key, and a forgotten key cannot be
+recovered: the pod would have kept delivering with nothing able to stop it. Two
+changes — the wizard reaches `running` before any bookkeeping and a failure there is
+reported without unwinding the stage, and `discardAttempt` outright REFUSES from
+`insertingCannula` onwards, pointing at deactivation instead.
+
+**16. The fingerprint requirement was only announced once the pod was on the body.**
+Biometric-only, no PIN fallback, is deliberate — but a phone with no fingerprint
+enrolled failed at the cannula step, with the pod primed, bound and attached. The
+explanation screen now says so before priming, and the declined message names the
+missing enrolment as a possible cause.
+
+Also hardened: a stale control word left over from a finished exchange is discarded
+instead of aborting the next send (a pending request-to-send still stops it, since
+the pod has something to say), out-of-order fragments are buffered rather than
+re-requested, and closing a link the pod has already dropped no longer throws — which
+is the normal state after a prime wait, right where the reconnect happens.
 
 ### What to check first with a real pod
 

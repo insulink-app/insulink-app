@@ -401,6 +401,52 @@
       "body": "Für dein Konto ist ein Pod gespeichert, lokal aber keiner. Du kannst ihn übernehmen, ohne neu zu koppeln — nötig etwa nach einem App-Reset, damit du einen laufenden Pod weiter steuern und stoppen kannst.",
       "remaining": "Restlaufzeit: #",
       "use": "Pod übernehmen"
+    },
+    "activate": {
+      "title": "Pod aktivieren",
+      "explain_title": "Pod aktivieren",
+      "explain_body": "Fülle den Pod mit Insulin und lege ihn bereit — noch nicht an den Körper. Insulink sucht ihn dann und bereitet ihn vor. Der Fingerabdruck gibt später die Kanüle frei – richte ihn auf diesem Handy ein, bevor du startest.",
+      "binding": "Die Aktivierung bindet den Pod dauerhaft an diese App. Danach kann dein PDM diesen Pod nicht mehr steuern — das lässt sich nicht rückgängig machen. Solange der Pod läuft, ist Insulink das Einzige, was ihn stoppen kann.",
+      "priming_title": "Pod wird vorbereitet",
+      "priming_body": "Der Pod wird gekoppelt und füllt seine Mechanik. Halte das Telefon in seiner Nähe.",
+      "attach_title": "Pod jetzt anlegen",
+      "attach_body": "Der Pod ist vorbereitet. Entferne die Schutzfolie und klebe ihn auf die gewählte Stelle. Beim Weitertippen bestätigst du per Fingerabdruck — erst danach setzt der Pod die Kanüle in den Körper.",
+      "primed_units": "Vorbereitung: # U",
+      "starting_title": "Abgabe wird gestartet",
+      "starting_body": "Basalprofil und Alarme werden programmiert, danach setzt der Pod die Kanüle.",
+      "running_title": "Pod läuft",
+      "running_body": "Der Pod gibt jetzt dein Basal ab. Restlaufzeit und Reservoir findest du auf der Pumpenseite.",
+      "failed_title": "Aktivierung abgebrochen",
+      "failed_body": "Du kannst es mit demselben Pod erneut versuchen — bereits erledigte Schritte werden nicht wiederholt. Oder verwirf den Pod und nimm einen neuen.",
+      "basal_problem": "Das aktive Basalprofil kann der Pod nicht übernehmen.",
+      "start": "Pod suchen und vorbereiten",
+      "attached": "Pod ist angelegt — weiter",
+      "retry": "Erneut versuchen",
+      "discard": "Pod verwerfen",
+      "done": "Fertig",
+      "working": "Bitte warten …",
+      "confirm_reason": "Bestätige das Setzen der Kanüle",
+      "confirm_declined": "Nicht bestätigt – die Kanüle wurde nicht gesetzt. Der Pod ist unverändert, du kannst es erneut versuchen. Falls auf dem Handy kein Fingerabdruck eingerichtet ist, richte ihn zuerst in den Systemeinstellungen ein.",
+      "attach_resume_title": "Aktivierung fortsetzen",
+      "attach_resume_body": "Der Pod ist bereits angelegt. Die Aktivierung wurde unterbrochen — beim Weitertippen wird nur nachgeholt, was noch fehlt.",
+      "locked": "Die Insulinabgabe ist gesperrt. Gib sie auf der Pumpenseite frei, um einen Pod zu aktivieren.",
+      "no_permission": "Insulink braucht die Bluetooth-Berechtigung, um den Pod zu finden. Erteile sie in den Systemeinstellungen und versuche es erneut.",
+      "discard_refused": "Dieser Pod hat die Kanüle bereits im Körper und gibt möglicherweise Insulin ab. Nicht verwerfen – beende ihn zuerst auf der Pumpen-Seite, das deaktiviert ihn sicher."
+    },
+    "life": {
+      "title": "Pod-Laufzeit"
+    },
+    "temp": {
+      "title": "Temporäres Basal",
+      "body": "Ändert die Basalrate für eine begrenzte Zeit — etwa weniger vor dem Sport. Danach läuft dein Zeitplan von selbst weiter.",
+      "percent": "Anteil der geplanten Rate",
+      "duration": "Dauer",
+      "duration_value": "# Std # Min",
+      "summary": "Die Pumpe gibt # E/Std ab",
+      "summary_stop": "Die Pumpe gibt in dieser Zeit kein Basal ab",
+      "apply": "Temporäres Basal starten",
+      "set": "Temporäres Basal",
+      "running": "Temporär: # E/Std — beenden"
     }
   },
   "google_health": {
@@ -1046,6 +1092,10 @@
       "warning_silent": {
         "name": "Zucker-Warnung (stumm)",
         "desc": "Leichte Warnung bei grenzwertigem Zuckerwert, ohne Ton."
+      },
+      "pod_alarm": {
+        "name": "Pod-Alarme",
+        "desc": "Der Pod hat die Insulinabgabe gestoppt."
       }
     },
     "advisory": {
@@ -1078,6 +1128,38 @@
     "halftime": {
       "title": "Sensor zur Hälfte aufgebraucht",
       "body": "Dein Sensor hat die Hälfte seiner Laufzeit erreicht."
+    },
+    "pod": {
+      "expiry": {
+        "title": "Pod läuft ab",
+        "body": "Der Pod läuft in # Std. ab. Halte einen neuen bereit."
+      },
+      "expired": {
+        "title": "Pod abgelaufen",
+        "body": "Der Pod hat seine Laufzeit erreicht und gibt kein Insulin mehr ab. Wechsle ihn jetzt."
+      },
+      "reservoir": {
+        "title": "Reservoir niedrig",
+        "body": "Nur noch # E im Pod. Plane einen Wechsel."
+      },
+      "alarm": {
+        "title": "Pod-Alarm — Abgabe gestoppt",
+        "occlusion": "Der Pod meldet eine Verstopfung. Es wurde kein Insulin abgegeben. Pod wechseln.",
+        "empty": "Das Reservoir ist leer. Pod wechseln.",
+        "expired": "Der Pod ist abgelaufen und hat gestoppt. Pod wechseln.",
+        "infusion": "Der Pod meldet eine Abgabe-Abweichung. Was protokolliert ist, muss nicht dem entsprechen, was angekommen ist. Pod wechseln.",
+        "alert": "Eine Pod-Warnung blieb unquittiert und wurde eskaliert. Pod prüfen.",
+        "communication": "Der Pod hat die Funkverbindung abgebrochen. Pod prüfen.",
+        "fault": "Der Pod meldet einen internen Fehler und hat gestoppt. Pod wechseln."
+      },
+      "stopped": {
+        "title": "Pod gibt nichts ab",
+        "body": "Der Pod ist gestoppt, ohne dass du ihn gestoppt hast. Es läuft kein Basal. Prüfe den Pod."
+      },
+      "unreachable": {
+        "title": "Kein Kontakt zum Pod",
+        "body": "Seit # Minuten keine Verbindung. Der Pod gibt weiter ab, aber die App kann ihn nicht steuern oder stoppen."
+      }
     }
   },
   "hba1c": {

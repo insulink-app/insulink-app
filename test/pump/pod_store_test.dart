@@ -79,4 +79,85 @@ void main() {
     expect(store.commandSequence, 0);
     expect(backing.keys.where((key) => key.startsWith('pod.')), isEmpty);
   });
+
+  group('a newly paired pod starts its counters from scratch', () {
+    /// A fresh pod has never seen a session or a command. Carrying a previous
+    /// pod's numbers over makes it reject the first handshake.
+    test('pairing with a reset zeroes both counters', () async {
+      await store.saveSynchronizedEapSequence(350);
+      await store.saveCommandSequence(9);
+
+      await store.savePairing(
+        uniqueId: 4241,
+        longTermKey: Uint8List.fromList(List<int>.filled(16, 7)),
+        lotNumber: 1,
+        podSequenceNumber: 2,
+        activatedAt: DateTime(2026, 3, 1),
+        resetSessionCounters: true,
+      );
+
+      expect(store.nextEapSequence, 1);
+      expect(store.commandSequence, 0);
+    });
+
+    /// Restoring a pod that is ALREADY running must keep its counters exactly —
+    /// resetting them would make the pod refuse everything the app then sends.
+    test('a restore preserves the counters it was given', () async {
+      await store.adoptFromBackend(
+        pumpId: 'pump-1',
+        uniqueId: 4241,
+        longTermKey: Uint8List.fromList(List<int>.filled(16, 7)),
+        lotNumber: 1,
+        podSequenceNumber: 2,
+        activatedAt: DateTime(2026, 3, 1),
+        expiryHours: 80,
+        eapSequence: 42,
+        commandSequence: 7,
+        messageSequence: 91,
+      );
+
+      expect(store.nextEapSequence, 42);
+      expect(store.commandSequence, 7);
+      expect(store.messageSequence, 91);
+    });
+  });
+
+  group('the message-packet counter runs across sessions', () {
+    /// A different counter from the command sequence: it numbers the PACKETS,
+    /// is a byte wide, and the pod keeps counting it whether or not a new session
+    /// was established in between. A session that restarted it would put every
+    /// packet it sent out of step with what the pod expects.
+    test('it is kept apart from the command sequence', () async {
+      await store.saveCommandSequence(9);
+      await store.saveMessageSequence(200);
+
+      expect(store.commandSequence, 9);
+      expect(store.messageSequence, 200);
+    });
+
+    test('it wraps inside the byte the header gives it', () async {
+      await store.saveMessageSequence(259);
+      expect(store.messageSequence, 3);
+    });
+
+    test('a newly paired pod starts it at zero', () async {
+      await store.saveMessageSequence(77);
+      await store.savePairing(
+        uniqueId: 4241,
+        longTermKey: Uint8List.fromList(List<int>.filled(16, 7)),
+        lotNumber: 1,
+        podSequenceNumber: 2,
+        activatedAt: DateTime(2026, 3, 1),
+        resetSessionCounters: true,
+      );
+
+      expect(store.messageSequence, 0);
+    });
+
+    test('forgetting a pod clears it', () async {
+      await store.saveMessageSequence(77);
+      await store.forgetPod();
+      expect(store.messageSequence, 0);
+    });
+  });
 }

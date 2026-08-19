@@ -1,0 +1,194 @@
+import 'package:flutter/material.dart';
+import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/pod_activation_controller.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
+import 'package:insulink/src/theme/status_colors.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+
+/// What the activation wizard says at each stage.
+///
+/// Presentation only — [PodActivationController] owns when each stage applies
+/// and what the buttons do.
+class PodActivationStageView extends StatelessWidget {
+  const PodActivationStageView({
+    super.key,
+    required this.controller,
+    this.basalProblem,
+  });
+
+  final PodActivationController controller;
+
+  /// Why the active basal profile cannot be programmed, if it cannot. Shown at
+  /// the very start, because discovering it after a pod is primed and bound would
+  /// mean throwing that pod away.
+  final String? basalProblem;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 12),
+        _icon(context),
+        const SizedBox(height: 20),
+        LocaleText(
+          _headlineKey,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        LocaleText(
+          _bodyKey,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.4,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        if (controller.stage == PodActivationStage.explaining) ...[
+          const SizedBox(height: 18),
+          _binding(context),
+        ],
+        if (basalProblem != null) ...[
+          const SizedBox(height: 14),
+          _basalWarning(context),
+        ],
+        if (_primeUnits != null) ...[
+          const SizedBox(height: 14),
+          _primed(context),
+        ],
+      ],
+    );
+  }
+
+  Widget _icon(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Container(
+        width: 76,
+        height: 76,
+        decoration: BoxDecoration(
+          color: scheme.tintPanel,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(_stageIcon, size: 34, color: context.accent),
+      ),
+    );
+  }
+
+  /// The consequence the user has to understand before anything is sent: the pod
+  /// will answer only to this app, and that cannot be undone.
+  Widget _binding(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: context.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.warning.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(PhosphorIconsFill.warning, size: 18, color: context.warning),
+          const SizedBox(width: 8),
+          Expanded(
+            child: LocaleText(
+              'pump.activate.binding',
+              style: TextStyle(fontSize: 13, color: scheme.onSurface, height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _basalWarning(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.danger.withValues(alpha: 0.24)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LocaleText(
+            'pump.activate.basal_problem',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.danger,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            basalProblem!,
+            style: TextStyle(fontSize: 12, color: context.danger),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// What the pod asked for and got during priming, so the number the user hears
+  /// the pod deliver is one they can check.
+  Widget _primed(BuildContext context) {
+    return Text(
+      Locales.string(context, 'pump.activate.primed_units')
+          .replaceFirst('#', _primeUnits!.toStringAsFixed(2)),
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 13,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+
+  /// Units the pod primed itself with, once it has reported them.
+  double? get _primeUnits {
+    if (controller.stage != PodActivationStage.attachPod) {
+      return null;
+    }
+    final facts = controller.facts;
+    return facts == null ? null : facts.primePulses * 0.05;
+  }
+
+  IconData get _stageIcon => switch (controller.stage) {
+        PodActivationStage.explaining => PhosphorIconsBold.info,
+        PodActivationStage.priming => PhosphorIconsBold.drop,
+        PodActivationStage.attachPod => PhosphorIconsBold.handTap,
+        PodActivationStage.starting => PhosphorIconsBold.playCircle,
+        PodActivationStage.running => PhosphorIconsBold.checkCircle,
+        PodActivationStage.failed => PhosphorIconsBold.warningCircle,
+      };
+
+  String get _headlineKey {
+    if (controller.stage == PodActivationStage.attachPod &&
+        controller.isAlreadyAttached) {
+      return 'pump.activate.attach_resume_title';
+    }
+    return 'pump.activate.${_stageKey}_title';
+  }
+
+  String get _bodyKey {
+    if (controller.stage == PodActivationStage.attachPod &&
+        controller.isAlreadyAttached) {
+      return 'pump.activate.attach_resume_body';
+    }
+    return 'pump.activate.${_stageKey}_body';
+  }
+
+  String get _stageKey => switch (controller.stage) {
+        PodActivationStage.explaining => 'explain',
+        PodActivationStage.priming => 'priming',
+        PodActivationStage.attachPod => 'attach',
+        PodActivationStage.starting => 'starting',
+        PodActivationStage.running => 'running',
+        PodActivationStage.failed => 'failed',
+      };
+}

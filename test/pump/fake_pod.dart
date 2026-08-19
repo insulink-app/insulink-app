@@ -68,6 +68,10 @@ class FakePodLink implements PodLink {
     _send(PodCharacteristic.command, PodControlWord.requestToSend.frame);
   }
 
+  /// Leaves a control word in the queue, as a real link can after an exchange.
+  void seedControl(Uint8List frame) =>
+      _send(PodCharacteristic.command, frame);
+
   void _send(PodCharacteristic characteristic, Uint8List frame) =>
       _inbox[characteristic]!.add(frame);
 
@@ -125,13 +129,27 @@ class FakePodLink implements PodLink {
     });
   }
 
+  /// Set to deliver each burst with its first two fragments swapped, so the
+  /// driver's handling of a reordered burst is exercised.
+  bool reorderFragments = false;
+
   void _flushOutgoing() {
     final fragments = _outgoing;
     if (fragments == null) {
       return;
     }
-    for (; _outgoingIndex < fragments.length; _outgoingIndex++) {
-      _send(PodCharacteristic.data, fragments[_outgoingIndex]);
+    final pending = fragments.sublist(_outgoingIndex);
+    _outgoingIndex = fragments.length;
+    if (reorderFragments && pending.length >= 2) {
+      _send(PodCharacteristic.data, pending[1]);
+      _send(PodCharacteristic.data, pending[0]);
+      for (final fragment in pending.skip(2)) {
+        _send(PodCharacteristic.data, fragment);
+      }
+      return;
+    }
+    for (final fragment in pending) {
+      _send(PodCharacteristic.data, fragment);
     }
   }
 

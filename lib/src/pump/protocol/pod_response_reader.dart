@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:insulink/src/pump/protocol/pod_alarm_status_response.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 
 /// Dispatches a decrypted response body to the parser for its type.

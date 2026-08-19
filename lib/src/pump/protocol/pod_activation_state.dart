@@ -46,6 +46,29 @@ class PodActivationFacts {
   final int primePumpRateEighthSeconds;
   final int expirationHours;
 
+  factory PodActivationFacts.fromJson(Map<String, dynamic> json) {
+    return PodActivationFacts(
+      uniqueId: (json['unique_id'] as num).toInt(),
+      lotNumber: (json['lot_number'] as num).toInt(),
+      podSequenceNumber: (json['pod_sequence_number'] as num).toInt(),
+      primePulses: (json['prime_pulses'] as num).toInt(),
+      cannulaInsertionPulses: (json['cannula_insertion_pulses'] as num).toInt(),
+      primePumpRateEighthSeconds:
+          (json['prime_pump_rate_eighth_seconds'] as num).toInt(),
+      expirationHours: (json['expiration_hours'] as num).toInt(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'unique_id': uniqueId,
+        'lot_number': lotNumber,
+        'pod_sequence_number': podSequenceNumber,
+        'prime_pulses': primePulses,
+        'cannula_insertion_pulses': cannulaInsertionPulses,
+        'prime_pump_rate_eighth_seconds': primePumpRateEighthSeconds,
+        'expiration_hours': expirationHours,
+      };
+
   /// How long a pulse train of [pulses] takes at the pod's prime rate.
   Duration deliveryTimeFor(int pulses) {
     final eighthSeconds = pulses * primePumpRateEighthSeconds;

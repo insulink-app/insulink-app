@@ -30,6 +30,18 @@ void openSensorPage(BuildContext context) {
   );
 }
 
+/// Opens the pump page directly (skipping the connections list), for shortcuts
+/// that are specifically about the pump — e.g. the overview's pod section.
+void openPumpPage(BuildContext context) {
+  final title = Locales.string(context, 'pump.label');
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) =>
+          ConnectionSubPage(title: title, body: const PumpBodyContent()),
+    ),
+  );
+}
+
 /// The connections page as a standalone route, with its own header + back button.
 class ConnectionsPage extends StatelessWidget {
   const ConnectionsPage({super.key});

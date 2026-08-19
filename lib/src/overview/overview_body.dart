@@ -15,6 +15,7 @@ import 'package:insulink/src/overview/overview_active_insulin.dart';
 import 'package:insulink/src/overview/overview_boxes.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
 import 'package:insulink/src/overview/overview_section.dart';
+import 'package:insulink/src/overview/overview_pod_life.dart';
 import 'package:insulink/src/overview/overview_sensor_life.dart';
 import 'package:insulink/src/overview/overview_time_in_range.dart';
 import 'package:insulink/src/overview/update/overview_update.dart';
@@ -23,6 +24,7 @@ import 'package:insulink/src/overview/sensor_restore_offer.dart';
 import 'package:insulink/src/profile/battery/profile_battery_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:provider/provider.dart';
 
 class OverviewBody extends AppPageBody {
@@ -210,6 +212,14 @@ class _DataViewState extends State<_DataView> {
             behavior: HitTestBehavior.opaque,
             onTap: () => openSensorPage(context),
             child: const OverviewSection(child: OverviewSensorLife()),
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (context.watch<PodController>().hasPod) ...[
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => openPumpPage(context),
+            child: const OverviewSection(child: OverviewPodLife()),
           ),
           const SizedBox(height: 16),
         ],

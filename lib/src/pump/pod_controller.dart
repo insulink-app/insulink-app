@@ -9,6 +9,8 @@ import 'package:insulink/src/pump/protocol/pod_definitions.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 import 'package:insulink/src/pump/protocol/pod_session.dart';
 import 'package:insulink/src/pump/protocol/pod_stop_delivery_command.dart';
+import 'package:insulink/src/pump/protocol/pod_temp_basal_command.dart';
+import 'package:insulink/src/pump/pod_basal_delivery.dart';
 
 /// The UI's view of the pod, and the few operations it can start.
 ///
@@ -77,6 +79,9 @@ class PodController extends ChangeNotifier {
           sequenceNumber: _nextSequence,
           nonce: _fixedNonce,
         ));
+        // Remember that WE stopped it, so the background watch does not report a
+        // deliberate suspend as the pod having stopped on its own.
+        await store.setSuspendedByUs(true);
         _absorb(response);
       });
 
@@ -155,24 +160,37 @@ class PodController extends ChangeNotifier {
 
   /// Runs [body] against a fresh session, always closing the link.
   ///
+  /// Closed before the backend mirror goes out rather than only in the `finally`:
+  /// closing is what records where the message-packet counter stands, and the
+  /// mirror is what a restored app resumes that counter from. Closing twice is a
+  /// no-op, so the `finally` still covers every path that threw.
+  ///
   /// A [PodCommandOutcomeUnknown] is reported as exactly that: the command may
   /// have taken effect, so the message tells the user to check the pod rather
   /// than implying nothing happened.
   Future<void> _withSession(
     String what,
-    Future<void> Function(PodSession session) body,
-  ) async {
+    Future<void> Function(PodSession session) body, {
+    bool requiresGate = false,
+  }) async {
     if (_busy) {
+      return;
+    }
+    if (requiresGate && !gate.allowsDelivery) {
+      _failure = 'Pod delivery is locked';
+      notifyListeners();
       return;
     }
     _busy = true;
     _failure = null;
     notifyListeners();
     try {
+      await _resyncFromStorage();
       final session = await _connection.openSession();
       await body(session);
       await store.saveCommandSequence(_sequence);
-      await PumpSync().sync(store);
+      await _connection.close();
+      await PumpSync().sync(store, status: _status);
     } on PodCommandOutcomeUnknown catch (error) {
       _failure = 'The pod may have acted on this — check the pod. ${error.message}';
     } on Exception catch (error) {
@@ -184,43 +202,16 @@ class PodController extends ChangeNotifier {
     }
   }
 
-  /// The pod the account is holding for us, or null if there is none, one is
-  /// already paired locally, or it has expired.
+  /// Re-reads the store and adopts the command counter it holds.
   ///
-  /// Never offered while a pod is paired locally: adopting a second identity
-  /// would silently replace the key to a pod that may still be delivering.
-  Future<PodRestore?> availableBackendPod(BuildContext context) async {
-    if (hasPod) {
-      return null;
-    }
-    final restore = await PumpSync().fetchCurrent(context);
-    if (restore == null || restore.isExpired) {
-      return null;
-    }
-    return restore;
-  }
-
-  /// Adopts a pod from the account and reads its status to confirm it answers.
-  ///
-  /// If the pod does not answer, the credentials are KEPT rather than rolled
-  /// back: the pod may simply be out of range, and discarding the only key to a
-  /// pod that is still on the body is the one outcome worth avoiding.
-  Future<void> restoreFromBackend(PodRestore restore) async {
-    await store.adoptFromBackend(
-      pumpId: restore.pumpId,
-      uniqueId: restore.uniqueId,
-      longTermKey: restore.longTermKey,
-      lotNumber: restore.lotNumber,
-      podSequenceNumber: restore.podSequenceNumber,
-      activatedAt: restore.activatedAt,
-      expiryHours: restore.expiryHours,
-      eapSequence: restore.eapSequence,
-      commandSequence: restore.commandSequence,
-      bleAddress: restore.bleAddress,
-    );
+  /// The store's cache is PER ISOLATE. The background service polls the pod every
+  /// quarter of an hour and advances that counter; this isolate would otherwise
+  /// keep using the value it read at app start and hand the pod a sequence number
+  /// it has already run — which the pod refuses as a duplicate. Reading fresh here
+  /// is the same discipline `CgmController` follows for its own store.
+  Future<void> _resyncFromStorage() async {
+    await store.reload();
     _sequence = store.commandSequence;
-    notifyListeners();
-    await refresh();
   }
 
   /// Programs a bolus on the pod and returns its answer.
@@ -243,6 +234,7 @@ class PodController extends ChangeNotifier {
     _failure = null;
     notifyListeners();
     try {
+      await _resyncFromStorage();
       final session = await _connection.openSession();
       final response = await session.run(PodProgramBolusCommand(
         uniqueId: uniqueId,
@@ -252,7 +244,8 @@ class PodController extends ChangeNotifier {
         reminder: const PodProgramReminder(atEnd: true),
       ));
       await store.saveCommandSequence(_sequence);
-      await PumpSync().sync(store);
+      await _connection.close();
+      await PumpSync().sync(store, status: _status);
       _absorb(response);
       return response;
     } finally {
@@ -260,5 +253,68 @@ class PodController extends ChangeNotifier {
       _busy = false;
       notifyListeners();
     }
+  }
+
+  /// Picks up credentials that were just written by a restore and reads the pod.
+  ///
+  /// The pod may simply be out of range, in which case the read fails but the
+  /// credentials stay — discarding the only key to a pod that is still on the body
+  /// is the one outcome worth avoiding.
+  Future<void> adoptRestoredPod() async {
+    _sequence = store.commandSequence;
+    notifyListeners();
+    await refresh();
+  }
+
+  /// Runs a temporary basal rate for a set time.
+  ///
+  /// Gated: this changes what the pod delivers. The stretch is stored BEFORE the
+  /// command goes out, so a confirmation lost in transit leaves the ledger
+  /// crediting the temporary rate rather than the schedule — understating insulin
+  /// is recoverable, claiming insulin the pod may not have delivered is not.
+  Future<void> setTemporaryBasal(PodTempBasalRate rate) =>
+      _withSession('set temporary basal', (session) async {
+        final started = DateTime.now();
+        await store.saveTemporaryBasal(PodTemporaryBasal(
+          unitsPerHour: rate.unitsPerHour,
+          start: started,
+          end: started.add(Duration(minutes: rate.minutes)),
+        ));
+        final response = await session.run(PodProgramTempBasalCommand(
+          uniqueId: store.uniqueId!,
+          sequenceNumber: _nextSequence,
+          nonce: _fixedNonce,
+          rate: rate,
+          reminder: const PodProgramReminder(atEnd: true),
+        ));
+        _absorb(response);
+      }, requiresGate: true);
+
+  /// Ends a running temporary basal, returning the pod to its schedule.
+  ///
+  /// Not gated: this only ever returns delivery to what the user already
+  /// programmed, and a control that undoes a change must not be harder to reach
+  /// than the one that made it.
+  Future<void> cancelTemporaryBasal() =>
+      _withSession('cancel temporary basal', (session) async {
+        final response = await session.run(PodStopDeliveryCommand(
+          uniqueId: store.uniqueId!,
+          sequenceNumber: _nextSequence,
+          nonce: _fixedNonce,
+          target: PodDeliveryTarget.tempBasal,
+        ));
+        final running = store.temporaryBasal;
+        if (running != null) {
+          await store.saveTemporaryBasal(running.endedAt(DateTime.now()));
+        }
+        _absorb(response);
+      });
+
+  /// The temporary rate running right now, or null.
+  PodTemporaryBasal? get activeTemporaryBasal {
+    final temporary = store.temporaryBasal;
+    return temporary != null && temporary.covers(DateTime.now())
+        ? temporary
+        : null;
   }
 }

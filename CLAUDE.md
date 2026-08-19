@@ -107,7 +107,9 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
   under `cgm/protocol/`, `libre3/` = the FreeStyle Libre 3 wire code); cross-cutting
   shared code lives in `base/` (shared widgets/primitives — including
   `measurement_chart`/`measurement_row`/`measurement_entry_sheet`, the
-  dated-decimal history UI that weight and HbA1c both render), `localization/`,
+  dated-decimal history UI that weight and HbA1c both render, and
+  `device_lifespan`/`device_lifespan_bar`, the remaining-life segment bar the CGM
+  sensor and the Omnipod pod share), `localization/`,
   `theme/`. Within a large feature, subfolders are themselves features/sub-domains
   (e.g. `cgm/protocol/`, `profile/notifications/`), never technical layers.
 - **Document accumulated knowledge as individual markdown files under `docs/`** —
@@ -209,6 +211,16 @@ dies when the activity is destroyed, so the whole read pipeline runs in a
   whole service (fresh isolate + Rust core + BLE stack). Health is measured by
   **time-since-last-reading, not BLE connection state** (which is normally
   "disconnected" between the G7's 5-min deliveries).
+- **The pod rides this service too** (`pump/service/pod_monitor.dart`, hosted from
+  `onRepeatEvent` like the Fitbit band). It **never scans** — `openSession(allowScan:
+  false)` connects to the stored address — because a second round-the-clock scanner
+  wedges the OS scanner (gotcha #4). Its tick splits into contact-free checks
+  (expiry, "no contact for 45 min") that run every time and a pod poll every 15 min;
+  the split is what keeps the warnings working when the link is down. Pod alarms are
+  in `pump/service/pod_alarms.dart` and share the one notification plugin with
+  `G7AlarmManager`. The same tick books basal delivery into the ledger the
+  forecasting model reads — at the TEMPORARY rate while a temp basal runs, or the
+  scheduled one otherwise. Details + the full warning table: `docs/OMNIPOD.md`.
 - The UI layer is in `cgm_controller.dart` (`CgmController`), not `main.dart`
   — see "App / UI layer" below. `flutter_blue_plus` works in the service
   isolate because FFT registers plugins on its background engine.

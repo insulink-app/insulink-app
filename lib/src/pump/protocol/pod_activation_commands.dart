@@ -15,7 +15,8 @@ class PodActivationCommands {
     required this.sendCommand,
     required this.wait,
     required this.nonce,
-  });
+    int startFrom = 0,
+  }) : _sequence = startFrom & 0x0f;
 
   static const int _maxStatusPolls = 20;
   static const Duration _statusPollInterval = Duration(seconds: 3);
@@ -26,7 +27,12 @@ class PodActivationCommands {
   /// The fixed nonce the delivery commands carry.
   final int nonce;
 
-  int _sequence = 0;
+  int _sequence;
+
+  /// Where the counter stands, so the caller can persist it. The pod refuses a
+  /// number it has already run, so an activation that did not hand its counter on
+  /// would have the next command collide with one of its own.
+  int get currentSequence => _sequence;
 
   /// The next pod command sequence number, wrapping inside the 4 bits the wire
   /// gives it.

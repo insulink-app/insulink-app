@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
 import 'package:insulink/src/pump/pod_store.dart';
+import 'package:insulink/src/pump/protocol/pod_responses.dart';
 import 'package:insulink/src/request/request.dart';
 
 /// Mirrors the paired pod to the user's backend account, so a reinstall or a
@@ -26,8 +27,8 @@ class PumpSync {
   ///
   /// Cheap and idempotent: the blob is compared against what the backend last
   /// accepted, so an unchanged pod costs nothing.
-  Future<void> sync(PodStore store) async {
-    final data = _data(store);
+  Future<void> sync(PodStore store, {PodStatusResponse? status}) async {
+    final data = _data(store, status);
     if (data == null) {
       return;
     }
@@ -43,10 +44,15 @@ class PumpSync {
 
   /// The reconnect identity, or null while no pod is fully paired.
   ///
-  /// The two counters are included so a restored app resumes near where it left
+  /// When a fresh [PodStatusResponse] is at hand it also carries the last thing
+  /// the pod said about itself, so the panel can show a pod's reservoir and state
+  /// as of the last contact. Those fields are a snapshot, never a live reading —
+  /// they are only as fresh as the last time the app spoke to the pod.
+  ///
+  /// All three counters are included so a restored app resumes near where it left
   /// off. They are only as fresh as the last sync — see [PodStore.adoptFromBackend]
   /// for why being behind is recoverable and being keyless is not.
-  String? _data(PodStore store) {
+  String? _data(PodStore store, PodStatusResponse? status) {
     final uniqueId = store.uniqueId;
     final longTermKey = store.longTermKey;
     final activatedAt = store.activatedAt;
@@ -63,7 +69,15 @@ class PumpSync {
       'expiry_hours': store.expiryHours,
       'eap_sequence': store.nextEapSequence,
       'command_sequence': store.commandSequence,
+      'message_sequence': store.messageSequence,
       if (store.bleAddress != null) 'ble_address': store.bleAddress,
+      if (status != null) ...{
+        'last_seen_at': DateTime.now().millisecondsSinceEpoch,
+        'last_lifecycle': status.lifecycle.name,
+        if (status.reservoirUnits != null)
+          'reservoir_units': status.reservoirUnits,
+        'total_delivered_units': status.totalUnitsDelivered,
+      },
     });
   }
 
@@ -153,6 +167,7 @@ class PodRestore {
     required this.expiryHours,
     required this.eapSequence,
     required this.commandSequence,
+    required this.messageSequence,
     this.bleAddress,
   });
 
@@ -173,6 +188,7 @@ class PodRestore {
       expiryHours: (blob['expiry_hours'] as num?)?.toInt() ?? 80,
       eapSequence: (blob['eap_sequence'] as num?)?.toInt() ?? 1,
       commandSequence: (blob['command_sequence'] as num?)?.toInt() ?? 0,
+      messageSequence: (blob['message_sequence'] as num?)?.toInt() ?? 0,
       bleAddress: blob['ble_address'] as String?,
     );
   }
@@ -186,6 +202,7 @@ class PodRestore {
   final int expiryHours;
   final int eapSequence;
   final int commandSequence;
+  final int messageSequence;
   final String? bleAddress;
 
   DateTime get expiresAt => activatedAt.add(Duration(hours: expiryHours));

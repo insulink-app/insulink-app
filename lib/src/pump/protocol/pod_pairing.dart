@@ -20,15 +20,17 @@ class PodPairingResult {
 /// use, both sides trade a public key and nonce, both send the confirmation
 /// value the other can recompute, and a final handshake closes it.
 ///
-/// Where this can be abandoned matters. Up to and including the confirmation
-/// check, a failure means no key was established and the pod is untouched. After
-/// the confirmation is accepted the pod may already have stored the key, so from
-/// that point a failure is reported but the key is kept — discarding it would
-/// leave a pod nobody can talk to.
+/// Where this can be abandoned matters, and the boundary is earlier than it looks.
+/// The pod may keep the key from the moment OUR confirmation reaches it — not from
+/// when its own confirmation reaches us. So the key is handed to [onKeyDerived] and
+/// stored before that message goes out. Only a [PodPairingMismatch] proves the key
+/// is worthless; every other failure leaves it possibly good and therefore worth
+/// keeping.
 class PodPairing {
   PodPairing({
     required this.messageIo,
     required this.addresses,
+    required this.onKeyDerived,
     PodKeyExchange? keyExchange,
   }) : keyExchange = keyExchange ?? PodKeyExchange.generate();
 
@@ -48,6 +50,13 @@ class PodPairing {
   final PodAddressPair addresses;
   final PodKeyExchange keyExchange;
 
+  /// Hands the derived key out the instant it exists, BEFORE our confirmation is
+  /// sent — because the pod may keep the key the moment that confirmation lands,
+  /// and from then on a pod we cannot address is a pod nobody can ever use again.
+  ///
+  /// Awaited, so the key is durably stored before anything else is attempted.
+  final Future<void> Function(Uint8List longTermKey) onKeyDerived;
+
   int _sequence = 1;
 
   Future<PodPairingResult> negotiate() async {
@@ -60,13 +69,18 @@ class PodPairing {
     await _send(_controllerOffer.encode([keyExchange.offer]));
     keyExchange.acceptPodOffer(_expect(_controllerOffer, await _receive('pod key offer')));
 
+    // The key exists now. Store it before sending our confirmation: the pod may
+    // keep it the moment that message lands, and everything after this point can
+    // fail on a dropped link. A key kept but unverified can be discarded later; a
+    // key never stored cannot be recovered at all.
+    await onKeyDerived(keyExchange.longTermKey);
+
     _sequence++;
     await _send(_confirmation.encode([keyExchange.controllerConfirmation]));
     keyExchange.verifyPodConfirmation(
       _expect(_confirmation, await _receive('pod confirmation')),
     );
 
-    // Past this point the pod may hold the key, so nothing below may throw.
     _sequence++;
     await _closeQuietly();
 

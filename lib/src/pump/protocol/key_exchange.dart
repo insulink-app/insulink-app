@@ -13,6 +13,17 @@ class PodPairingException implements Exception {
   String toString() => 'PodPairingException: $message';
 }
 
+/// Raised when the pod's confirmation value provably disagrees with ours.
+///
+/// Distinct from every other pairing failure, and the distinction is what decides
+/// a pod's fate: a mismatch PROVES the two sides derived different keys, so the key
+/// we hold is worthless and must be discarded. Any other failure — a lost reply, a
+/// dropped link — leaves our key possibly correct and the pod possibly holding it,
+/// so it must be KEPT or the pod becomes unreachable for good.
+class PodPairingMismatch extends PodPairingException {
+  PodPairingMismatch(super.message);
+}
+
 /// The pairing key ladder that turns an X25519 exchange into the pod's
 /// long-term key (LTK) plus the two confirmation values that prove both sides
 /// derived the same one.
@@ -126,7 +137,7 @@ class PodKeyExchange {
       mismatch |= received[index] ^ podConfirmation[index];
     }
     if (mismatch != 0) {
-      throw PodPairingException('Pod confirmation mismatch — aborting pairing');
+      throw PodPairingMismatch('Pod confirmation mismatch — aborting pairing');
     }
   }
 }

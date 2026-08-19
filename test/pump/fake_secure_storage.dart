@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -5,6 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// platform keystore.
 class FakeSecureStorage extends Fake implements FlutterSecureStorage {
   FakeSecureStorage(this.backing);
+
+  /// A stand-in 16-byte key for tests that need a pod to look paired.
+  static final Uint8List dummyKey = Uint8List.fromList(List<int>.filled(16, 7));
 
   final Map<String, String> backing;
 

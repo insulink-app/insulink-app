@@ -97,7 +97,9 @@ class PodBleLink implements PodLink {
   void flush(PodCharacteristic characteristic) =>
       _queues[characteristic]!.clear();
 
-  /// Closes the link. Safe to call more than once.
+  /// Closes the link. Safe to call more than once, and safe on a link the pod has
+  /// already dropped — which is the normal state after waiting for it to finish
+  /// priming, so a throw here would fail the activation that is about to reconnect.
   Future<void> close() async {
     for (final subscription in _subscriptions) {
       await subscription.cancel();
@@ -110,6 +112,10 @@ class PodBleLink implements PodLink {
       }
     }
     _waiters.clear();
-    await device.disconnect();
+    try {
+      await device.disconnect();
+    } on Exception {
+      return;
+    }
   }
 }

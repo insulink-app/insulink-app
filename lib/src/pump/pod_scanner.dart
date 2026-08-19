@@ -61,7 +61,7 @@ class PodScanner {
     });
     try {
       await FlutterBluePlus.startScan(
-        withServices: [Guid(podServiceUuid)],
+        withServices: [Guid(podScanServiceUuid)],
         timeout: timeout,
       );
       await FlutterBluePlus.isScanning.where((running) => !running).first;
@@ -73,20 +73,49 @@ class PodScanner {
   }
 
   /// Finds exactly one pod, or explains why it could not.
+  ///
+  /// An empty result is tried once more. Only one BLE scan can run at a time, and
+  /// the CGM service scans on its own schedule — starting one there stops ours
+  /// mid-flight, which looks exactly like "no pod in range". A second attempt costs
+  /// half a minute and saves a filled pod from being written off.
+  ///
+  /// [preferredAddress] settles the one ambiguity a pod id cannot: every pod this
+  /// app activates is given the SAME id, so the pod that was just replaced answers
+  /// to the same address as the one on the body until its battery gives out. The
+  /// stored BLE address is what tells them apart. Without a match the ambiguity
+  /// stands and nothing is chosen — commanding the wrong pod is worse than failing.
   Future<DiscoveredPod> scanForSingle({
     required int wantedPodId,
     Duration timeout = const Duration(seconds: 30),
+    String? preferredAddress,
   }) async {
-    final found = await scan(wantedPodId: wantedPodId, timeout: timeout);
+    var found = await scan(wantedPodId: wantedPodId, timeout: timeout);
+    if (found.isEmpty) {
+      found = await scan(wantedPodId: wantedPodId, timeout: timeout);
+    }
     if (found.isEmpty) {
       throw PodLinkException('No pod found');
     }
-    if (found.length > 1) {
-      throw PodLinkException(
-        '${found.length} pods in range — move away from the others and retry',
-      );
+    if (found.length == 1) {
+      return found.single;
     }
-    return found.single;
+    return _theKnownOne(found, preferredAddress);
+  }
+
+  /// The pod at [preferredAddress] among several that answer to the same id.
+  DiscoveredPod _theKnownOne(
+    List<DiscoveredPod> found,
+    String? preferredAddress,
+  ) {
+    final known = found
+        .where((pod) => pod.device.remoteId.str == preferredAddress)
+        .toList();
+    if (known.length == 1) {
+      return known.single;
+    }
+    throw PodLinkException(
+      '${found.length} pods in range — move away from the others and retry',
+    );
   }
 
   /// Reads a pod's identity out of its advertisement, or null if the

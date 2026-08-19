@@ -132,6 +132,17 @@ class BolusDelivery {
     return _send(amount);
   }
 
+  /// Whether the pod's answer actually shows the bolus it was just given.
+  ///
+  /// A reply is not agreement. The pod answers a command sequence number it has
+  /// already run by re-sending the ANSWER it gave the first time — so a counter
+  /// that drifted out of step (the app and the background poll racing for the same
+  /// number) reads as a perfectly well-formed status while no insulin moves. That
+  /// is the one failure mode that would have the app record a dose the user never
+  /// got, so the answer has to name the bolus, not merely arrive.
+  bool _confirmsBolus(PodStatusResponse status) =>
+      status.delivery.isBolusing || status.bolusPulsesRemaining > 0;
+
   /// Sends the programmed bolus and maps the pod's answer onto an outcome.
   Future<BolusDeliveryResult> _send(PodBolusAmount amount) async {
     try {
@@ -141,6 +152,11 @@ class BolusDelivery {
       }
       if (response is! PodStatusResponse) {
         return const BolusDeliveryResult.unknown('The pod gave an unclear answer');
+      }
+      if (!_confirmsBolus(response)) {
+        return const BolusDeliveryResult.unknown(
+          'The pod answered but does not report a bolus running',
+        );
       }
       return BolusDeliveryResult.delivered(amount.units);
     } on PodCommandOutcomeUnknown catch (error) {

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/pod_activation_page.dart';
+import 'package:insulink/src/pump/pod_temp_basal_sheet.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_delivery_gate.dart';
@@ -20,33 +23,10 @@ class PodActivateButton extends StatelessWidget {
     final unlocked = gate.allowsDelivery && !controller.isBusy;
     return FilledButton.icon(
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-      onPressed: unlocked ? () => _explain(context) : null,
+      onPressed: unlocked ? () => openPodActivation(context) : null,
       icon: const Icon(PhosphorIconsBold.plus, size: 20),
       label: LocaleText('pump.action.activate'),
     );
-  }
-
-  /// The activation wizard is not built yet. Rather than a button that appears
-  /// to work, this says plainly what is missing — the driver below it is done but
-  /// unverified against hardware.
-  void _explain(BuildContext context) {
-    Alert(
-      icon: PhosphorIconsBold.warning,
-      iconColor: context.warning,
-      content: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LocaleText('pump.gate._',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-            SizedBox(height: 6),
-            LocaleText('pump.gate.body',
-                textAlign: TextAlign.center, style: TextStyle(fontSize: 14)),
-          ],
-        ),
-      ),
-    ).show(context);
   }
 }
 
@@ -59,9 +39,27 @@ class PodMaintenanceActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<PodController>();
     final hasAlerts = controller.status?.activeAlerts.isNotEmpty ?? false;
+    final temporary = controller.activeTemporaryBasal;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (temporary == null)
+          OutlinedButton.icon(
+            onPressed: controller.isBusy ? null : () => openTempBasalSheet(context),
+            icon: const Icon(PhosphorIconsBold.timer, size: 18),
+            label: LocaleText('pump.temp.set'),
+          )
+        else
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(foregroundColor: context.warning),
+            onPressed: controller.isBusy ? null : controller.cancelTemporaryBasal,
+            icon: const Icon(PhosphorIconsBold.prohibit, size: 18),
+            label: Text(
+              Locales.string(context, 'pump.temp.running')
+                  .replaceFirst('#', temporary.unitsPerHour.toStringAsFixed(2)),
+            ),
+          ),
+        const SizedBox(height: 10),
         OutlinedButton.icon(
           onPressed: controller.isBusy ? null : controller.refresh,
           icon: const Icon(PhosphorIconsBold.arrowsClockwise, size: 18),

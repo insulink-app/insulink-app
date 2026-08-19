@@ -401,6 +401,52 @@
       "body": "Your account has a pod on file but this device has none. You can adopt it without re-pairing — needed after an app reset, so a pod that is still running stays controllable and stoppable.",
       "remaining": "Time left: #",
       "use": "Adopt pod"
+    },
+    "activate": {
+      "title": "Activate pod",
+      "explain_title": "Activate pod",
+      "explain_body": "Fill the pod with insulin and put it down within reach — not on your body yet. Insulink will find it and prime it. Your fingerprint is what releases the cannula later, so make sure one is set up on this phone before you start.",
+      "binding": "Activating binds the pod to this app for good. Your PDM will no longer be able to control this pod, and that cannot be undone. For as long as the pod runs, Insulink is the only thing that can stop it.",
+      "priming_title": "Priming the pod",
+      "priming_body": "The pod is being paired and is filling its mechanism. Keep the phone near it.",
+      "attach_title": "Attach the pod now",
+      "attach_body": "The pod is primed. Peel the backing and stick it on the site you chose. Continuing asks for your fingerprint — only then does the pod drive the cannula into your body.",
+      "primed_units": "Primed with # U",
+      "starting_title": "Starting delivery",
+      "starting_body": "Programming the basal schedule and the alerts, then the pod inserts the cannula.",
+      "running_title": "Pod is running",
+      "running_body": "The pod is delivering your basal. Time left and reservoir are on the pump page.",
+      "failed_title": "Activation stopped",
+      "failed_body": "You can try again with the same pod — steps that already ran are not repeated. Or discard the pod and use a new one.",
+      "basal_problem": "The pod cannot take the active basal profile.",
+      "start": "Find and prime pod",
+      "attached": "Pod is attached — continue",
+      "retry": "Try again",
+      "discard": "Discard pod",
+      "done": "Done",
+      "working": "Please wait …",
+      "confirm_reason": "Confirm inserting the cannula",
+      "confirm_declined": "Not confirmed — the cannula was not inserted. The pod is unchanged; you can try again. If your phone has no fingerprint set up, add one in the system settings first.",
+      "attach_resume_title": "Continue activation",
+      "attach_resume_body": "The pod is already attached. The activation was interrupted — continuing only picks up what is still missing.",
+      "locked": "Insulin delivery is locked. Unlock it on the pump page to activate a pod.",
+      "no_permission": "Insulink needs the Bluetooth permission to find the pod. Grant it in the system settings and try again.",
+      "discard_refused": "This pod already has its cannula in your body and may be delivering. Do not discard it — stop it from the pump page first, which deactivates it safely."
+    },
+    "life": {
+      "title": "Pod life"
+    },
+    "temp": {
+      "title": "Temporary basal",
+      "body": "Changes the basal rate for a limited time — less before sport, for instance. Your schedule resumes on its own afterwards.",
+      "percent": "Share of the scheduled rate",
+      "duration": "Duration",
+      "duration_value": "# h # min",
+      "summary": "The pump delivers # U/h",
+      "summary_stop": "The pump delivers no basal during this time",
+      "apply": "Start temporary basal",
+      "set": "Temporary basal",
+      "running": "Temporary: # U/h — end it"
     }
   },
   "google_health": {
@@ -1046,6 +1092,10 @@
       "warning_silent": {
         "name": "Glucose warning (muted)",
         "desc": "Mild warning for a borderline glucose value, without a tone."
+      },
+      "pod_alarm": {
+        "name": "Pod alarms",
+        "desc": "The pod has stopped delivering insulin."
       }
     },
     "advisory": {
@@ -1078,6 +1128,38 @@
     "halftime": {
       "title": "Sensor half used up",
       "body": "Your sensor has reached half of its lifetime."
+    },
+    "pod": {
+      "expiry": {
+        "title": "Pod expiring",
+        "body": "The pod expires in # h. Have a new one ready."
+      },
+      "expired": {
+        "title": "Pod expired",
+        "body": "The pod has reached the end of its life and is no longer delivering insulin. Change it now."
+      },
+      "reservoir": {
+        "title": "Reservoir low",
+        "body": "Only # U left in the pod. Plan a change."
+      },
+      "alarm": {
+        "title": "Pod alarm — delivery stopped",
+        "occlusion": "The pod reports a blockage. No insulin was delivered. Change the pod.",
+        "empty": "The reservoir is empty. Change the pod.",
+        "expired": "The pod has expired and stopped. Change the pod.",
+        "infusion": "The pod reports a delivery discrepancy. What is logged may not match what reached you. Change the pod.",
+        "alert": "A pod alert went unacknowledged and escalated. Check the pod.",
+        "communication": "The pod dropped its radio link. Check the pod.",
+        "fault": "The pod reports an internal fault and has stopped. Change the pod."
+      },
+      "stopped": {
+        "title": "Pod is not delivering",
+        "body": "The pod has stopped without you stopping it. No basal is running. Check the pod."
+      },
+      "unreachable": {
+        "title": "No contact with the pod",
+        "body": "No connection for # minutes. The pod keeps delivering, but the app cannot command or stop it."
+      }
     }
   },
   "hba1c": {

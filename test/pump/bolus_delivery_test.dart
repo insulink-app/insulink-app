@@ -33,6 +33,13 @@ Uint8List statusBody({
   return body;
 }
 
+/// What a pod that took the bolus answers with: the dose is named in the reply,
+/// not merely acknowledged.
+PodResponse _acceptedBolus(PodBolusAmount amount) => PodStatusResponse(statusBody(
+      delivery: PodDeliveryStatus.bolusAndBasalActive,
+      bolusPulsesRemaining: amount.pulses,
+    ));
+
 /// A controller whose pod answers however the test needs, so the real decision
 /// logic in [BolusDelivery] runs against it without a radio.
 class ScriptedPodController extends PodController {
@@ -146,7 +153,7 @@ void main() {
       return ScriptedPodController(
         store: store,
         gate: gate,
-        reply: reply ?? (_) => PodStatusResponse(statusBody()),
+        reply: reply ?? _acceptedBolus,
         initialStatus: status,
       );
     }
@@ -159,6 +166,34 @@ void main() {
       expect(outcome.recordedUnits, 4.0);
       expect(outcome.byPump, isTrue);
       expect(controller.sent.single.pulses, 80);
+    });
+
+    /// A well-formed status that does not name the bolus is what a pod sends when
+    /// it answers a sequence number it has already run — a cached reply, with no
+    /// insulin behind it. Recording that as delivered would suppress the next dose.
+    test('a status that does not report a bolus is not counted as delivered', () async {
+      final controller = controllerWith(
+        reply: (_) => PodStatusResponse(statusBody()),
+      );
+      final outcome = await deliveryFor(controller, gate)
+          .deliver(4.0, deliveredLastHour: 0);
+      expect(outcome.status, BolusDeliveryStatus.unknown);
+      expect(outcome.recordedUnits, 0);
+      expect(outcome.needsAttention, isTrue);
+    });
+
+    /// The pod may report only the remaining pulses in the instant before its
+    /// delivery flag flips, so either signal on its own is enough.
+    test('remaining pulses alone confirm the bolus', () async {
+      final controller = controllerWith(
+        reply: (amount) => PodStatusResponse(
+          statusBody(bolusPulsesRemaining: amount.pulses),
+        ),
+      );
+      final outcome = await deliveryFor(controller, gate)
+          .deliver(4.0, deliveredLastHour: 0);
+      expect(outcome.status, BolusDeliveryStatus.delivered);
+      expect(outcome.recordedUnits, 4.0);
     });
 
     test('a dose off the pulse grid is refused, not rounded', () async {

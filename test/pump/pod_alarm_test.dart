@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/pump/protocol/pod_alarm.dart';
+import 'package:insulink/src/pump/protocol/pod_alarm_status_response.dart';
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
 import 'package:insulink/src/pump/protocol/pod_response_reader.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';

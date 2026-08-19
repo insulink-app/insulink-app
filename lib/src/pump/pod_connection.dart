@@ -1,6 +1,8 @@
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:insulink/src/pump/pod_ble_link.dart';
 import 'package:insulink/src/pump/pod_scanner.dart';
 import 'package:insulink/src/pump/pod_store.dart';
+import 'package:insulink/src/pump/protocol/key_exchange.dart';
 import 'package:insulink/src/pump/protocol/pod_ids.dart';
 import 'package:insulink/src/pump/protocol/pod_link.dart';
 import 'package:insulink/src/pump/protocol/pod_message_io.dart';
@@ -28,6 +30,7 @@ class PodConnection {
   final PodScanner scanner;
 
   PodBleLink? _link;
+  PodSession? _openedSession;
 
   /// The link currently held, if any, so a caller can close it.
   PodBleLink? get link => _link;
@@ -37,13 +40,28 @@ class PodConnection {
   /// Retries once after a resynchronisation, because the pod's answer to a stale
   /// EAP sequence number is the corrected value — the second attempt uses it.
   /// Anything else is not retried here.
-  Future<PodSession> openSession() async {
+  /// [stillAdvertisingUnactivated] is for a pod that was paired but has not yet
+  /// been given its id: it already answers on the address we will assign, but it
+  /// still ADVERTISES the discovery address, so a scan has to look for that one.
+  /// Only an interrupted activation is in that state.
+  /// [allowScan] false connects straight to the stored BLE address instead of
+  /// scanning. The background service passes false: a scan there would compete
+  /// with the CGM's, and Android wedges its scanner when two things scan around
+  /// the clock — the documented multi-hour "0 devices found" stall. Mirrors the
+  /// Fitbit monitor's known-band-only rule for the same reason.
+  Future<PodSession> openSession({
+    bool stillAdvertisingUnactivated = false,
+    bool allowScan = true,
+  }) async {
     final uniqueId = store.uniqueId;
     final longTermKey = store.longTermKey;
     if (uniqueId == null || longTermKey == null) {
       throw PodLinkException('No pod is paired');
     }
-    final messageIo = await _connect(uniqueId);
+    final messageIo = await _connect(
+      stillAdvertisingUnactivated ? DiscoveredPod.unactivatedPodId : uniqueId,
+      allowScan: allowScan,
+    );
     final addresses = PodAddressPair(podUniqueId: uniqueId);
 
     for (var attempt = 0; attempt < 2; attempt++) {
@@ -54,13 +72,13 @@ class PodConnection {
           addresses: addresses,
           longTermKey: longTermKey,
           eapSequence: eapSequence,
-          messageSequence: store.commandSequence,
+          messageSequence: store.messageSequence,
         ).establish();
-        return PodSession(
+        return _remember(PodSession(
           messageIo: messageIo,
           addresses: addresses,
           keys: keys,
-        );
+        ));
       } on PodSessionResyncRequired catch (resync) {
         await store.saveSynchronizedEapSequence(resync.synchronizedEapSequence);
       }
@@ -99,20 +117,30 @@ class PodConnection {
     await messageIo.sayHello(PodAddressPair.controllerId);
 
     const addresses = PodAddressPair(podUniqueId: null);
-    final pairing = await PodPairing(
-      messageIo: messageIo,
-      addresses: addresses,
-    ).negotiate();
-
     final podUniqueId = addresses.podId.value;
-    await store.savePairing(
-      uniqueId: podUniqueId,
-      longTermKey: pairing.longTermKey,
-      lotNumber: pod.lotNumber,
-      podSequenceNumber: pod.podSequenceNumber,
-      activatedAt: DateTime.now(),
-    );
     await store.saveBleAddress(pod.device.remoteId.str);
+
+    final PodPairingResult pairing;
+    try {
+      pairing = await PodPairing(
+        messageIo: messageIo,
+        addresses: addresses,
+        onKeyDerived: (longTermKey) => store.savePairing(
+          uniqueId: podUniqueId,
+          longTermKey: longTermKey,
+          lotNumber: pod.lotNumber,
+          podSequenceNumber: pod.podSequenceNumber,
+          activatedAt: DateTime.now(),
+          resetSessionCounters: true,
+        ),
+      ).negotiate();
+    } on PodPairingMismatch {
+      // The only failure that proves the key is wrong. Everything else leaves it
+      // possibly good, and a possibly-good key is the difference between a pod
+      // that can be picked up again and one that is scrap.
+      await store.forgetPod();
+      rethrow;
+    }
 
     final keys = await PodSessionEstablisher(
       messageIo: messageIo,
@@ -123,31 +151,73 @@ class PodConnection {
     ).establish();
 
     return PodActivationSession(
-      session: PodSession(
+      session: _remember(PodSession(
         messageIo: messageIo,
         addresses: addresses,
         keys: keys,
-      ),
+      )),
       podUniqueId: podUniqueId,
     );
   }
 
-  Future<PodMessageIo> _connect(int uniqueId) async {
-    final pod = await scanner.scanForSingle(wantedPodId: uniqueId);
-    final link = PodBleLink(pod.device);
+  Future<PodMessageIo> _connect(
+    int advertisedPodId, {
+    bool allowScan = true,
+  }) async {
+    final device = allowScan
+        ? (await scanner.scanForSingle(
+            wantedPodId: advertisedPodId,
+            preferredAddress: store.bleAddress,
+          )).device
+        : _storedDevice();
+    final link = PodBleLink(device);
     _link = link;
     await link.open();
     final messageIo = PodMessageIo(link);
     await messageIo.sayHello(PodAddressPair.controllerId);
-    await store.saveBleAddress(pod.device.remoteId.str);
+    await store.saveBleAddress(device.remoteId.str);
     return messageIo;
   }
 
-  /// Closes the link, if one is open.
+  /// The pod at its remembered address.
+  ///
+  /// A cold process that has never SEEN this address may fail to connect to it —
+  /// the same OS quirk the G7 reconnect documents. The caller recovers by allowing
+  /// one scan after a few failures ([PodMonitor.scanAfterFailures]), which teaches
+  /// the OS the address without leaving a scanner running.
+  BluetoothDevice _storedDevice() {
+    final address = store.bleAddress;
+    if (address == null || address.isEmpty) {
+      throw PodLinkException('No pod address stored — connect once from the app');
+    }
+    return BluetoothDevice.fromId(address);
+  }
+
+  /// Holds on to the session so its counter can be persisted when the link is
+  /// dropped, rather than leaving every caller to remember it.
+  PodSession _remember(PodSession session) {
+    _openedSession = session;
+    return session;
+  }
+
+  /// Closes the link, if one is open, and records where the message-packet
+  /// counter stands.
+  ///
+  /// That counter runs ACROSS sessions — the pod keeps counting it whether or not
+  /// a new session was established in between — so a session that started it over
+  /// would put every packet it sent out of step with what the pod expects.
   Future<void> close() async {
+    final session = _openedSession;
+    _openedSession = null;
     final link = _link;
     _link = null;
-    await link?.close();
+    try {
+      if (session != null) {
+        await store.saveMessageSequence(session.keys.messageSequence);
+      }
+    } finally {
+      await link?.close();
+    }
   }
 }
 

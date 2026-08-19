@@ -27,6 +27,9 @@ import '../glucose_sync.dart';
 import '../protocol/connection.dart';
 import '../sensor_sync.dart';
 import '../cgm_store.dart';
+import '../../pump/pod_store.dart';
+import '../../pump/service/pod_alarms.dart';
+import '../../pump/service/pod_monitor.dart';
 import '../../libre3/libre3_connection.dart';
 import '../../libre3/libre3_crypto.dart';
 
@@ -52,6 +55,16 @@ class CgmTaskHandler extends TaskHandler {
   CgmConnection? _conn;
   G7AlarmManager? _alarms;
   CgmStore? _store;
+  FlutterLocalNotificationsPlugin? _notifications;
+  PodMonitor? _podMonitor;
+
+  /// The pod store, kept between ticks. Reloaded at the poll cadence rather than
+  /// every tick: a fresh `readAll()` on secure storage is not free, and nothing
+  /// the contact-free checks read changes faster than that — expiry is measured in
+  /// hours, and a pod paired while this service runs is noticed within one poll
+  /// interval, which is nothing against a pod's 80-hour life.
+  PodStore? _podStore;
+  DateTime? _podStoreLoadedAt;
   String _serial = '';
   String _pairingCode = '';
 
@@ -219,7 +232,12 @@ class CgmTaskHandler extends TaskHandler {
       if (_store == null) {
         final store = await CgmStore.open();
         _store = store;
-        final alarms = G7AlarmManager(FlutterLocalNotificationsPlugin(), store);
+        // One plugin per isolate, initialised once. The pod alarms share it
+        // rather than making a second — `initialize` is not idempotent across
+        // instances, and both post into the same shade anyway.
+        final notifications = FlutterLocalNotificationsPlugin();
+        _notifications = notifications;
+        final alarms = G7AlarmManager(notifications, store);
         await alarms.init();
         _alarms = alarms;
         _serial = store.serial ?? '';
@@ -396,6 +414,10 @@ class CgmTaskHandler extends TaskHandler {
     // background HR runs only while glucose reading is active. Standalone HR
     // would need its own service — out of scope.
     _maybePollHeartRate();
+    // Same reasoning as the band: the pod rides this service rather than getting
+    // its own, so it never competes for the BLE scanner. Its own tick decides
+    // whether a poll is due; the contact-free warnings run every time.
+    unawaited(_tickPodMonitor());
     // Apply Confirm/Reject taps buffered by the notification-action isolate,
     // which can't reach secure storage itself (see SportStore.recordTrainingDecision).
     unawaited(_applyTrainingDecisions());
@@ -662,6 +684,53 @@ class CgmTaskHandler extends TaskHandler {
       monitor.addListener(_onBackgroundHr);
     }
     unawaited(monitor.start(knownOnly: true));
+  }
+
+  /// Runs the pod watch, building it on first use.
+  Future<void> _tickPodMonitor() async {
+    final notifications = _notifications;
+    if (notifications == null) {
+      return;
+    }
+    try {
+      final store = await _freshPodStore();
+      if (!store.hasPod) {
+        _podMonitor = null;
+        return;
+      }
+      final monitor = _podMonitor ??= PodMonitor(
+        store: store,
+        alarms: PodAlarmManager(notifications),
+        onLog: _log,
+      );
+      await monitor.tick();
+    } on Exception catch (error) {
+      _log('pod monitor tick failed: $error');
+    }
+  }
+
+  /// The pod store, re-read at most once per poll interval.
+  ///
+  /// A pod is paired in the UI isolate, so this one only ever learns about it by
+  /// re-reading storage — but doing that on every 30 s tick would decrypt the
+  /// whole keystore 120 times an hour for data that changes hourly.
+  Future<PodStore> _freshPodStore() async {
+    final loadedAt = _podStoreLoadedAt;
+    final cached = _podStore;
+    final stale = loadedAt == null ||
+        DateTime.now().difference(loadedAt) >= PodMonitor.pollInterval;
+    if (cached != null && !stale) {
+      return cached;
+    }
+    if (cached != null) {
+      await cached.reload();
+      _podStoreLoadedAt = DateTime.now();
+      return cached;
+    }
+    final store = await PodStore.open();
+    _podStore = store;
+    _podStoreLoadedAt = DateTime.now();
+    return store;
   }
 
   Future<void> _stopBackgroundHr() async {

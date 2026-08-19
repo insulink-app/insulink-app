@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/pod_backup_restore.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
@@ -33,7 +34,8 @@ class _PodRestoreCardState extends State<PodRestoreCard> {
   }
 
   Future<void> _load() async {
-    final offer = await context.read<PodController>().availableBackendPod(context);
+    final controller = context.read<PodController>();
+    final offer = await PodBackupRestore(controller.store).availableBackendPod(context);
     if (mounted) {
       setState(() => _offer = offer);
     }
@@ -45,7 +47,9 @@ class _PodRestoreCardState extends State<PodRestoreCard> {
       return;
     }
     setState(() => _adopting = true);
-    await context.read<PodController>().restoreFromBackend(offer);
+    final controller = context.read<PodController>();
+    await PodBackupRestore(controller.store).restoreFromBackend(offer);
+    await controller.adoptRestoredPod();
     if (mounted) {
       setState(() {
         _adopting = false;

@@ -8,6 +8,7 @@ import 'package:insulink/src/pump/protocol/pod_aes.dart';
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
 import 'package:insulink/src/pump/protocol/pod_eap.dart';
 import 'package:insulink/src/pump/protocol/pod_ids.dart';
+import 'package:insulink/src/pump/protocol/pod_link.dart';
 import 'package:insulink/src/pump/protocol/pod_message_io.dart';
 import 'package:insulink/src/pump/protocol/pod_pairing.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
@@ -121,6 +122,64 @@ void main() {
       expect(toHex(seen.payload), toHex(body));
     });
 
+    /// The pod sends a burst, and the queue can surface it out of order. A driver
+    /// that discarded the early fragment would have to ask for it again.
+    test('a burst that arrives out of order is still reassembled', () async {
+      final body = Uint8List.fromList(
+          List<int>.generate(120, (index) => (index * 5 + 1) & 0xFF));
+      late FakePodLink link;
+      link = FakePodLink(onMessage: (request) async {
+        link.reorderFragments = true;
+        return request.withPayload(body);
+      });
+      final io = PodMessageIo(link);
+      await io.sendMessage(MessagePacket(
+        type: PodMessageType.clear,
+        source: PodId.fromInt(1),
+        destination: PodId.fromInt(2),
+        payload: Uint8List.fromList([1, 2, 3]),
+        sequenceNumber: 1,
+      ));
+      final reply = await io.receiveMessage();
+      expect(reply, isNotNull);
+      expect(toHex(reply!.payload), toHex(body));
+    });
+
+    /// A leftover word from a finished exchange must not abort the next one. During
+    /// pairing that would cost a pod for no reason.
+    test('a stale control word is discarded rather than aborting the send', () async {
+      late FakePodLink link;
+      link = FakePodLink(onMessage: (request) async => null);
+      // Leave a spent success word behind, as a real link can.
+      link.seedControl(PodControlWord.success.frame);
+      final io = PodMessageIo(link);
+      await io.sendMessage(MessagePacket(
+        type: PodMessageType.clear,
+        source: PodId.fromInt(1),
+        destination: PodId.fromInt(2),
+        payload: Uint8List.fromList([9, 9]),
+        sequenceNumber: 1,
+      ));
+      expect(link.received, hasLength(1));
+    });
+
+    /// A pending request-to-send is not noise: the pod has something to say, and
+    /// talking over it would desynchronise both sides.
+    test('a pending request-to-send still stops a send', () async {
+      final link = FakePodLink(onMessage: (_) async => null);
+      link.seedControl(PodControlWord.requestToSend.frame);
+      expect(
+        () => PodMessageIo(link).sendMessage(MessagePacket(
+          type: PodMessageType.clear,
+          source: PodId.fromInt(1),
+          destination: PodId.fromInt(2),
+          payload: Uint8List.fromList([1]),
+          sequenceNumber: 1,
+        )),
+        throwsA(isA<PodLinkException>()),
+      );
+    });
+
     test('a pod that never answers reads as no message, not as a hang', () async {
       final link = FakePodLink(onMessage: (_) async => null);
       expect(await PodMessageIo(link).receiveMessage(), isNull);
@@ -131,8 +190,10 @@ void main() {
     late PodSideKeyExchange pod;
     late PodPairing pairing;
     late FakePodLink link;
+    late List<Uint8List> derivedKeys;
 
     setUp(() {
+      derivedKeys = <Uint8List>[];
       pod = PodSideKeyExchange(
         privateKey: x25519GeneratePrivateKey(),
         nonce: hex('0f1e2d3c4b5a69788796a5b4c3d2e1f0'),
@@ -158,6 +219,7 @@ void main() {
       pairing = PodPairing(
         messageIo: PodMessageIo(link),
         addresses: const PodAddressPair(podUniqueId: null),
+        onKeyDerived: (key) async => derivedKeys.add(key),
       );
     });
 
@@ -200,8 +262,94 @@ void main() {
       final attempt = PodPairing(
         messageIo: PodMessageIo(tampering),
         addresses: const PodAddressPair(podUniqueId: null),
+        onKeyDerived: (key) async => derivedKeys.add(key),
       );
       expect(attempt.negotiate, throwsA(isA<PodPairingException>()));
+    });
+
+    /// The scenario that costs a pod: our confirmation reaches the pod, the pod
+    /// keeps the key, and ITS confirmation is lost on the way back. The key must
+    /// survive that, or the pod can never be addressed again by anyone.
+    test('a confirmation lost on the way back still leaves us the key', () async {
+      final losesLastReply = FakePodLink(onMessage: (request) async {
+        final text = String.fromCharCodes(request.payload.take(8));
+        if (text.startsWith('SP1=')) {
+          return null;
+        }
+        if (text.startsWith('SPS1=')) {
+          pod.accept(const PodKeyedPayload(['SPS1=']).decode(request.payload).first);
+          return request.withPayload(const PodKeyedPayload(['SPS1='])
+              .encode([Uint8List.fromList(pod.publicKey + pod.nonce)]));
+        }
+        // The pod received our confirmation and kept the key, but says nothing.
+        return null;
+      });
+      final keys = <Uint8List>[];
+      final attempt = PodPairing(
+        messageIo: PodMessageIo(losesLastReply),
+        addresses: const PodAddressPair(podUniqueId: null),
+        onKeyDerived: (key) async => keys.add(key),
+      );
+
+      await expectLater(attempt.negotiate, throwsA(isA<PodPairingException>()));
+
+      expect(keys, hasLength(1), reason: 'the key must be handed out before the send');
+      expect(toHex(keys.single), toHex(pod.longTermKey),
+          reason: 'and it must be the key the pod actually kept');
+    });
+
+    test('the key is handed out before our confirmation is sent', () async {
+      final order = <String>[];
+      final observing = FakePodLink(onMessage: (request) async {
+        final text = String.fromCharCodes(request.payload.take(8));
+        if (text.startsWith('SPS2=')) {
+          order.add('sent confirmation');
+          return request.withPayload(
+              const PodKeyedPayload(['SPS2=']).encode([pod.podConfirmation]));
+        }
+        if (text.startsWith('SPS1=')) {
+          pod.accept(const PodKeyedPayload(['SPS1=']).decode(request.payload).first);
+          return request.withPayload(const PodKeyedPayload(['SPS1='])
+              .encode([Uint8List.fromList(pod.publicKey + pod.nonce)]));
+        }
+        if (text.startsWith('SP1=')) {
+          return null;
+        }
+        return request.withPayload(const PodKeyedPayload(['P0='])
+            .encode([Uint8List.fromList([0xa5])]));
+      });
+      await PodPairing(
+        messageIo: PodMessageIo(observing),
+        addresses: const PodAddressPair(podUniqueId: null),
+        onKeyDerived: (_) async => order.add('stored key'),
+      ).negotiate();
+
+      expect(order.first, 'stored key');
+    });
+
+    /// A mismatch is the one failure that PROVES the key is worthless, so it is
+    /// reported as its own type — the caller discards only on this.
+    test('a mismatch is distinguishable from every other failure', () async {
+      final tampering = FakePodLink(onMessage: (request) async {
+        final text = String.fromCharCodes(request.payload.take(8));
+        if (text.startsWith('SP1=')) {
+          return null;
+        }
+        if (text.startsWith('SPS1=')) {
+          pod.accept(const PodKeyedPayload(['SPS1=']).decode(request.payload).first);
+          return request.withPayload(const PodKeyedPayload(['SPS1='])
+              .encode([Uint8List.fromList(pod.publicKey + pod.nonce)]));
+        }
+        final wrong = Uint8List.fromList(pod.podConfirmation)..[0] ^= 0xFF;
+        return request
+            .withPayload(const PodKeyedPayload(['SPS2=']).encode([wrong]));
+      });
+      final attempt = PodPairing(
+        messageIo: PodMessageIo(tampering),
+        addresses: const PodAddressPair(podUniqueId: null),
+        onKeyDerived: (_) async {},
+      );
+      await expectLater(attempt.negotiate, throwsA(isA<PodPairingMismatch>()));
     });
 
     test('a pod that goes silent mid-pairing fails rather than inventing a key', () async {
@@ -209,6 +357,7 @@ void main() {
       final attempt = PodPairing(
         messageIo: PodMessageIo(silent),
         addresses: const PodAddressPair(podUniqueId: null),
+        onKeyDerived: (key) async => derivedKeys.add(key),
       );
       expect(attempt.negotiate, throwsA(isA<PodPairingException>()));
     });
