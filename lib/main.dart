@@ -8,6 +8,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
+import 'package:insulink/src/injection/bolus_dispatcher.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/hba1c/hba1c_state.dart';
@@ -16,7 +17,6 @@ import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
-import 'package:insulink/src/pump/pod_delivery_gate.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
@@ -64,7 +64,6 @@ typedef AppPreferences = ({
   MealState meals,
   NutritionLayoutState nutritionLayout,
   InventoryState inventory,
-  PodDeliveryGate podGate,
   PodStore podStore,
 });
 
@@ -253,9 +252,18 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.inventory),
         // The pod delivery lock and the paired pod's state, observed by the
         // pump device page.
-        ChangeNotifierProvider(create: (_) => prefs.podGate),
         ChangeNotifierProvider(
-          create: (_) => PodController(store: prefs.podStore, gate: prefs.podGate),
+          create: (_) => PodController(store: prefs.podStore),
+        ),
+        // Carries a confirmed bolus to the pod after the sheet that asked for it
+        // has closed, so it has to live above the page tree.
+        ChangeNotifierProxyProvider<PodController, BolusDispatcher>(
+          create: (context) => BolusDispatcher(
+            controller: context.read<PodController>(),
+            meals: prefs.meals,
+          ),
+          update: (_, controller, previous) =>
+              previous ?? BolusDispatcher(controller: controller, meals: prefs.meals),
         ),
       ],
       child: _AppLifecycle(child: child),
@@ -351,7 +359,6 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       meals: await MealState.load(),
       nutritionLayout: await NutritionLayoutState.load(),
       inventory: await InventoryState.load(),
-      podGate: await PodDeliveryGate.restore(),
       podStore: await PodStore.open(),
     );
   }
@@ -428,6 +435,10 @@ class _AppLifecycleState extends State<_AppLifecycle>
     }
     context.read<SportActivityState>().startIfPermitted();
     context.read<CardioTrainingState>().reloadPending();
+    // A dose the app was still sending when it was killed. Resolved against the
+    // pod rather than assumed either way — the one thing that must not happen is
+    // the app quietly forgetting that insulin might be running.
+    unawaited(context.read<BolusDispatcher>().resolveStranded());
     unawaited(_refreshHealth());
   }
 

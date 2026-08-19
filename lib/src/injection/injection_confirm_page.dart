@@ -91,32 +91,19 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
     await _runDelivery();
   }
 
-  /// Hands the confirmed dose to the pump, or straight back when there is none.
+  /// Hands the confirmed dose over and closes.
   ///
-  /// A refusal or an unknown outcome deliberately does NOT pop: the message stays
-  /// on this page next to a button that now means "log the meal without the
-  /// insulin", so the user cannot walk away thinking the dose went in.
+  /// It does NOT wait for the pod. The pod takes seconds to answer and minutes to
+  /// deliver, and the user has already confirmed — what they want next is their
+  /// overview, not a spinner. [BolusDispatcher] carries the dose from here and
+  /// the overview reports what became of it, including a refusal.
   Future<void> _runDelivery() async {
     final delivery = widget.delivery;
     if (delivery == null || !delivery.usesPump) {
       Navigator.of(context).pop(BolusDeliveryResult.loggedOnly(widget.bolus));
       return;
     }
-    final outcome = await delivery.deliver(
-      widget.bolus,
-      deliveredLastHour: widget.deliveredLastHour,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (outcome.isDelivered) {
-      Navigator.of(context).pop(outcome);
-      return;
-    }
-    setState(() {
-      _authenticating = false;
-      _pumpOutcome = outcome;
-    });
+    Navigator.of(context).pop(const BolusDeliveryResult.handedOver());
   }
 
   @override

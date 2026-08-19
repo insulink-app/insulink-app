@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/pump/pod_activation_controller.dart';
-import 'package:insulink/src/pump/pod_delivery_gate.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_activation_state.dart';
 
@@ -15,16 +14,12 @@ void main() {
   late PodStore store;
 
   /// Permissions are asked for before the first scan; the tests grant them so the
-  /// gate and stage logic is what is being exercised.
+  /// stage logic is what is being exercised.
   const grantedPermissions = _GrantedPermissions();
 
-  PodActivationController controllerWith({
-    bool gateOpen = true,
-    bool confirmCannula = true,
-  }) =>
+  PodActivationController controllerWith({bool confirmCannula = true}) =>
       PodActivationController(
         store: store,
-        gate: PodDeliveryGate(gateOpen),
         confirmCannulaInsertion: () async => confirmCannula,
         permissions: grantedPermissions,
       );
@@ -103,21 +98,47 @@ void main() {
   });
 
 
-  group('the delivery gate is checked before anything is sent', () {
-    test('priming is refused while the gate is shut', () async {
-      final controller = controllerWith(gateOpen: false);
-      await controller.primePod();
-      expect(controller.stage, PodActivationStage.failed);
-      expect(controller.failure, contains('locked'));
+  group('an attempt can be stopped', () {
+    /// Stopping is only ever a way out of a running operation. With nothing in
+    /// flight it must not touch the stage the user is looking at.
+    test('stopping an idle wizard does nothing', () async {
+      await store.saveActivationStep(PodActivationStep.primed.name);
+      final controller = controllerWith()..restoreStage();
+
+      await controller.stopAttempt();
+
+      expect(controller.stage, PodActivationStage.attachPod);
+      expect(controller.isStopping, isFalse);
+      expect(controller.failure, isNull);
     });
 
-    test('the gate is checked before a scan, so no pod is touched', () async {
-      // A shut gate must fail without reaching the radio; if it did reach it, the
-      // test host has no Bluetooth and the failure would name that instead.
-      final controller = controllerWith(gateOpen: false);
-      await controller.primePod();
-      expect(controller.failure, isNot(contains('Bluetooth')));
-      expect(controller.isBusy, isFalse);
+    /// The whole point of being able to stop: what was recorded stays recorded,
+    /// so coming back resumes instead of re-sending commands the pod already ran.
+    test('nothing recorded is discarded by stopping', () async {
+      await store.savePairing(
+        uniqueId: 4241,
+        longTermKey: Uint8List.fromList(List<int>.filled(16, 3)),
+        lotNumber: 1,
+        podSequenceNumber: 2,
+        activatedAt: DateTime(2026, 3, 1),
+      );
+      await store.saveActivationStep(PodActivationStep.priming.name);
+      final controller = controllerWith();
+
+      await controller.stopAttempt();
+
+      expect(store.hasPod, isTrue);
+      expect(controller.storedStep, PodActivationStep.priming);
+      expect(controller.canResume, isTrue);
+    });
+
+    /// The user leaves the wizard mid-scan, so the route disposes the controller
+    /// while the call is still in flight. It landing afterwards must not throw.
+    test('a call landing after the wizard closed is harmless', () async {
+      final controller = controllerWith();
+      controller.dispose();
+
+      await expectLater(controller.primePod(), completes);
     });
   });
 
@@ -192,7 +213,6 @@ void main() {
     test('a refusal stops the activation with a clear reason', () async {
       final controller = PodActivationController(
         store: store,
-        gate: PodDeliveryGate(true),
         confirmCannulaInsertion: () async => true,
         permissions: const _DeniedPermissions(),
       );

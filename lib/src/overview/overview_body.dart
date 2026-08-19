@@ -9,6 +9,7 @@ import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/battery_saver_banner.dart';
+import 'package:insulink/src/overview/overview_running_bolus.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
 import 'package:insulink/src/overview/overview_active_insulin.dart';
@@ -72,6 +73,7 @@ class OverviewBodyContent extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         children: [
+          const OverviewRunningBolus(),
           if (silent != SilentMode.off) ...[
             SilentBanner(silent),
             const SizedBox(height: 12),

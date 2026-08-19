@@ -115,4 +115,45 @@ void main() {
       expect(scanner.scans, 2);
     });
   });
+
+  group('a search the user stopped', () {
+    /// The retry exists for a scan the CGM service interrupted. It must not fire
+    /// for a user who just asked to stop, or stopping costs another half minute
+    /// of staring at a spinner.
+    test('does not start the second attempt', () async {
+      final scanner = ScriptedScanner([[], [podAt('AA:AA:AA:AA:AA:AA')]]);
+
+      await expectLater(
+        () => scanner.scanForSingle(wantedPodId: 4241, isCancelled: () => true),
+        throwsA(isA<PodLinkException>()),
+      );
+      expect(scanner.scans, 1);
+    });
+
+    /// A pod found on the way out is not handed back either. Connecting to a pod
+    /// the user has just abandoned is the opposite of what they asked for.
+    test('does not return a pod it happened to find', () async {
+      final scanner = ScriptedScanner([
+        [podAt('AA:AA:AA:AA:AA:AA')],
+      ]);
+
+      await expectLater(
+        () => scanner.scanForSingle(wantedPodId: 4241, isCancelled: () => true),
+        throwsA(isA<PodLinkException>()),
+      );
+    });
+
+    /// Not stopping leaves the retry exactly as it was.
+    test('an uncancelled search still retries', () async {
+      final scanner = ScriptedScanner([[], [podAt('AA:AA:AA:AA:AA:AA')]]);
+
+      final pod = await scanner.scanForSingle(
+        wantedPodId: 4241,
+        isCancelled: () => false,
+      );
+
+      expect(scanner.scans, 2);
+      expect(pod.device.remoteId.str, 'AA:AA:AA:AA:AA:AA');
+    });
+  });
 }

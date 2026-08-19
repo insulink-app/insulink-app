@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
+import 'package:insulink/src/pump/demo_pod.dart';
 import 'package:insulink/src/pump/pod_ble_permissions.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
-import 'package:insulink/src/pump/pod_delivery_gate.dart';
+import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_store.dart';
+import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
 import 'package:insulink/src/pump/protocol/pod_activation.dart';
 import 'package:insulink/src/pump/protocol/pod_activation_state.dart';
 import 'package:insulink/src/pump/protocol/pod_basal_program.dart';
@@ -47,14 +49,12 @@ enum PodActivationStage {
 class PodActivationController extends ChangeNotifier {
   PodActivationController({
     required this.store,
-    required this.gate,
     required this.confirmCannulaInsertion,
     PodConnection? connection,
     this.permissions = const PodBlePermissions(),
-  }) : _connection = connection ?? PodConnection(store: store);
+  }) : _connection = connection ?? podConnectionFor(store);
 
   final PodStore store;
-  final PodDeliveryGate gate;
 
   /// Asked right before the cannula goes in. Supplied by the wizard, which puts
   /// the device biometric behind it.
@@ -70,6 +70,8 @@ class PodActivationController extends ChangeNotifier {
   String? _failure;
   String? _failureKey;
   bool _cancelled = false;
+  bool _stopped = false;
+  bool _disposed = false;
   PodActivationFacts? _facts;
   int? _podUniqueId;
   PodSession? _session;
@@ -89,6 +91,43 @@ class PodActivationController extends ChangeNotifier {
   /// Whether the last attempt stopped because the cannula confirmation was
   /// declined. Not a failure — the pod is untouched — so it reads differently.
   bool get wasCancelled => _cancelled;
+
+  /// Whether the user has asked to stop the attempt and it is still winding down.
+  bool get isStopping => _stopped && isBusy;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  /// Notifies only while the wizard is still on screen.
+  ///
+  /// The user may leave mid-operation — that is the whole point of being able to
+  /// stop one — and the call still in flight lands afterwards, on a controller the
+  /// route has already disposed.
+  void _notify() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
+  /// Stops the attempt in flight: ends the scan, drops the link, and puts the
+  /// wizard back where the user can act.
+  ///
+  /// Nothing recorded is thrown away. Every protocol step is written before the
+  /// next one runs, so a stopped activation picks up exactly where it got to. What
+  /// has already happened to the pod cannot be undone — a primed pod stays primed —
+  /// but nothing is lost by stopping, and a pod left mid-activation is reachable
+  /// again from this same wizard.
+  Future<void> stopAttempt() async {
+    if (!isBusy || _stopped) {
+      return;
+    }
+    _stopped = true;
+    _notify();
+    await _connection.stop();
+  }
 
   /// What the pod reported about itself, once it has been asked — from this run,
   /// or from the interrupted one this is picking up.
@@ -143,15 +182,11 @@ class PodActivationController extends ChangeNotifier {
     } else {
       _stage = PodActivationStage.attachPod;
     }
-    notifyListeners();
+    _notify();
   }
 
   /// Phase one: pair a pod and prime it, with the pod still off the body.
   Future<void> primePod() async {
-    if (!gate.allowsDelivery) {
-      _fail('Pod delivery is locked', messageKey: 'pump.activate.locked');
-      return;
-    }
     if (!await permissions.ensure()) {
       _fail(
         'Bluetooth permission is needed to find the pod',
@@ -159,6 +194,7 @@ class PodActivationController extends ChangeNotifier {
       );
       return;
     }
+    _stopped = false;
     _enter(PodActivationStage.priming);
     try {
       final activation = await _openActivation();
@@ -167,9 +203,10 @@ class PodActivationController extends ChangeNotifier {
       } finally {
         await _persistSequence(activation);
       }
+      await _logActivationDelivery(PodDeliveryKind.prime);
       _enter(PodActivationStage.attachPod);
-    } on Exception catch (error) {
-      _fail('$error');
+    } catch (error) {
+      _stoppedOrFailed(error);
     } finally {
       _session = null;
       await _connection.close();
@@ -183,16 +220,14 @@ class PodActivationController extends ChangeNotifier {
   /// life, so a profile that cannot be represented has to be rejected before this
   /// is reached rather than approximated here.
   Future<void> startDelivery(PodBasalProgram basalProgram) async {
-    if (!gate.allowsDelivery) {
-      _fail('Pod delivery is locked', messageKey: 'pump.activate.locked');
-      return;
-    }
     _clearCancelled();
+    _stopped = false;
     _enter(PodActivationStage.starting);
     if (!await _runDelivery(basalProgram)) {
       return;
     }
     _enter(PodActivationStage.running);
+    await _logActivationDelivery(PodDeliveryKind.cannula);
     await _recordRunningPod(basalProgram);
   }
 
@@ -216,8 +251,8 @@ class PodActivationController extends ChangeNotifier {
       _cancelled = true;
       _enter(PodActivationStage.attachPod);
       return false;
-    } on Exception catch (error) {
-      _fail('$error');
+    } catch (error) {
+      _stoppedOrFailed(error);
       return false;
     } finally {
       _session = null;
@@ -226,6 +261,24 @@ class PodActivationController extends ChangeNotifier {
       // resumes it from.
       await _connection.close();
     }
+  }
+
+  /// Records what an activation step consumed from the reservoir.
+  ///
+  /// Neither volume reaches the user, but both leave the reservoir, so a log that
+  /// left them out would not add up against what the pod reports it has left.
+  Future<void> _logActivationDelivery(PodDeliveryKind kind) async {
+    final pulses = kind == PodDeliveryKind.prime
+        ? facts?.primePulses
+        : facts?.cannulaInsertionPulses;
+    if (pulses == null) {
+      return;
+    }
+    await store.recordDelivery(PodDelivery(
+      at: DateTime.now(),
+      units: pulses * PodBolusAmount.pulseUnits,
+      kind: kind,
+    ));
   }
 
   /// Bookkeeping for a pod that is ALREADY in the body and delivering.
@@ -238,9 +291,9 @@ class PodActivationController extends ChangeNotifier {
     try {
       await _startBasalAccounting(basalProgram);
       await PumpSync().sync(store);
-    } on Exception catch (error) {
+    } catch (error) {
       _failure = 'The pod is running, but recording it failed: $error';
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -334,13 +387,36 @@ class PodActivationController extends ChangeNotifier {
   Future<void> _persistSequence(PodActivation activation) =>
       store.saveCommandSequence(activation.commandSequence);
 
+  /// A stop the user asked for is not a failure: the wizard simply returns to the
+  /// stage the durable record puts it at, with no alarm text, because nothing went
+  /// wrong and the attempt can be picked up again.
+  ///
+  /// Reached from a catch-all rather than `on Exception`, deliberately. A plugin
+  /// that throws an `Error` instead — flutter_blue_plus does, on a platform it does
+  /// not support — would otherwise escape and leave the wizard stuck on its
+  /// spinner, which is the one state the user cannot get out of.
+  void _stoppedOrFailed(Object error) {
+    if (_stopped) {
+      restoreStage();
+      return;
+    }
+    _fail('$error');
+  }
+
   void _enter(PodActivationStage stage) {
     _stage = stage;
     if (stage != PodActivationStage.failed) {
       _failure = null;
       _failureKey = null;
     }
-    notifyListeners();
+    _notify();
+  }
+
+  /// Reports a fingerprint the user declined at the button, before anything was
+  /// sent. Reads the same as a decline at the command, because it is one.
+  void reportCannulaDeclined() {
+    _cancelled = true;
+    _enter(PodActivationStage.attachPod);
   }
 
   /// Clears the declined-confirmation notice, so it does not outlive the attempt
@@ -353,7 +429,7 @@ class PodActivationController extends ChangeNotifier {
     _failure = reason;
     _failureKey = messageKey;
     _stage = PodActivationStage.failed;
-    notifyListeners();
+    _notify();
   }
 
   /// Abandons the attempt and forgets the pod.
@@ -391,11 +467,7 @@ class PodActivationController extends ChangeNotifier {
   /// The ledger starts now with nothing booked, so the first poll bills only the
   /// stretch since activation and not the whole day.
   Future<void> _startBasalAccounting(PodBasalProgram program) async {
-    final midnight = DateTime(2026);
-    await store.saveBasalRates([
-      for (var hour = 0; hour < 24; hour++)
-        program.rateAt(midnight.add(Duration(hours: hour, minutes: 15))),
-    ]);
+    await store.saveBasalRates(PodController.hourlyRatesOf(program));
     await store.startBasalAccounting(DateTime.now());
   }
 }

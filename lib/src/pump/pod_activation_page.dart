@@ -3,40 +3,43 @@ import 'package:insulink/src/injection/biometric_auth.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
+import 'package:insulink/src/pump/pod_activation_actions.dart';
 import 'package:insulink/src/pump/pod_activation_controller.dart';
+import 'package:insulink/src/pump/pod_activation_exit.dart';
 import 'package:insulink/src/pump/pod_activation_stage_view.dart';
 import 'package:insulink/src/pump/pod_basal_adapter.dart';
-import 'package:insulink/src/pump/protocol/pod_activation_state.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
-import 'package:insulink/src/pump/pod_delivery_gate.dart';
-import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/pump/pump_notice.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
 /// Opens the activation wizard.
 ///
 /// The cannula confirmation is wired in here, at the point where a
-/// [BuildContext] exists to prompt with. It goes through the same [BiometricAuth]
-/// that gates a bolus, and with the same setting: biometric only, no PIN
-/// fallback. Driving a needle into the body is not something a pocket-tap should
-/// be able to do.
-void openPodActivation(BuildContext context) {
-  final store = context.read<PodController>().store;
-  final gate = context.read<PodDeliveryGate>();
-  final reason = Locales.string(context, 'pump.activate.confirm_reason');
-  final auth = BiometricAuth();
-  Navigator.of(context).push(
+/// [BuildContext] exists to prompt with. See [CannulaConfirmation] for why it is
+/// asked at the button but consumed at the command.
+Future<void> openPodActivation(BuildContext context) async {
+  final controller = context.read<PodController>();
+  final confirmation = CannulaConfirmation(
+    reason: Locales.string(context, 'pump.activate.confirm_reason'),
+  );
+  await Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => ChangeNotifierProvider(
-        create: (_) => PodActivationController(
-          store: store,
-          gate: gate,
-          confirmCannulaInsertion: () => auth.confirm(reason),
-        )..restoreStage(),
-        child: const PodActivationPage(),
+      builder: (_) => Provider<CannulaConfirmation>.value(
+        value: confirmation,
+        child: ChangeNotifierProvider(
+          create: (_) => PodActivationController(
+            store: controller.store,
+            confirmCannulaInsertion: confirmation.consume,
+          )..restoreStage(),
+          child: const PodActivationPage(),
+        ),
       ),
     ),
   );
+  // The wizard wrote through the same store, but nothing would tell the page
+  // behind it to look again — it would keep showing "no pod" until rebuilt.
+  await controller.adoptActivatedPod();
 }
 
 /// Walks the user through starting a pod: acknowledge the binding, prime it off
@@ -46,6 +49,10 @@ void openPodActivation(BuildContext context) {
 /// unattended — the pause at [PodActivationStage.attachPod] exists because the
 /// pod has to physically move onto the body between the two halves, and no state
 /// machine can know that happened.
+///
+/// It can always be left, including mid-search: [PodActivationExit] warns first
+/// and stops the attempt cleanly, and the durable record means coming back
+/// resumes rather than restarts.
 class PodActivationPage extends StatelessWidget {
   const PodActivationPage({super.key});
 
@@ -53,11 +60,30 @@ class PodActivationPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<PodActivationController>();
     final basal = _basal(context);
+    return PopScope(
+      canPop: !controller.isBusy,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          PodActivationExit(controller).leave(context);
+        }
+      },
+      child: _scaffold(context, controller, basal),
+    );
+  }
+
+  Widget _scaffold(
+    BuildContext context,
+    PodActivationController controller,
+    PodBasalAdapter basal,
+  ) {
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
         title: LocaleText('pump.activate.title'),
-        automaticallyImplyLeading: !controller.isBusy,
+        leading: IconButton(
+          icon: const Icon(PhosphorIconsBold.arrowLeft),
+          onPressed: () => PodActivationExit(controller).leave(context),
+        ),
       ),
       body: SafeArea(
         child: Padding(
@@ -73,15 +99,25 @@ class PodActivationPage extends StatelessWidget {
                   ),
                 ),
               ),
-              if (controller.wasCancelled) _cancelled(context),
-              if (controller.failure != null) _failure(context, controller),
+              ..._notices(controller),
               const SizedBox(height: 12),
-              _actions(context, controller, basal),
+              PodActivationActions(controller: controller, basal: basal),
             ],
           ),
         ),
       ),
     );
+  }
+
+  List<Widget> _notices(PodActivationController controller) {
+    final failureKey = controller.failureKey;
+    return [
+      if (controller.wasCancelled) const PumpNotice.declined(),
+      if (failureKey != null)
+        PumpNotice.problem(failureKey)
+      else if (controller.failure != null)
+        PumpNotice.failure(controller.failure!),
+    ];
   }
 
   /// The pod schedule from the user's active basal profile.
@@ -90,149 +126,42 @@ class PodActivationPage extends StatelessWidget {
   /// first screen, rather than after the pod has already been primed and bound.
   PodBasalAdapter _basal(BuildContext context) =>
       PodBasalAdapter(context.watch<ProfileBasalState>().active);
-
-  Widget _failure(BuildContext context, PodActivationController controller) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: context.danger.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.danger.withValues(alpha: 0.24)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(PhosphorIconsFill.warningCircle, size: 18, color: context.danger),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              controller.failureKey != null
-                  ? Locales.string(context, controller.failureKey!)
-                  : controller.failure!,
-              style: TextStyle(fontSize: 13, color: context.danger),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Shown when the fingerprint was declined. Deliberately not an error: nothing
-  /// went wrong and the pod is untouched, so it explains rather than alarms.
-  Widget _cancelled(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: context.warning.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.warning.withValues(alpha: 0.24)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(PhosphorIconsBold.fingerprint, size: 18, color: context.warning),
-          const SizedBox(width: 8),
-          Expanded(
-            child: LocaleText(
-              'pump.activate.confirm_declined',
-              style: TextStyle(fontSize: 13, color: context.warning),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _actions(
-    BuildContext context,
-    PodActivationController controller,
-    PodBasalAdapter basal,
-  ) {
-    if (controller.isBusy) {
-      return const _BusyButton();
-    }
-    return switch (controller.stage) {
-      PodActivationStage.explaining => _primaryButton(
-          labelKey: 'pump.activate.start',
-          icon: PhosphorIconsBold.magnifyingGlass,
-          onPressed: basal.isProgrammable ? controller.primePod : null,
-        ),
-      PodActivationStage.attachPod => _primaryButton(
-          labelKey: 'pump.activate.attached',
-          icon: PhosphorIconsBold.fingerprint,
-          onPressed: basal.isProgrammable
-              ? () => controller.startDelivery(basal.program)
-              : null,
-        ),
-      PodActivationStage.running => _primaryButton(
-          labelKey: 'pump.activate.done',
-          icon: PhosphorIconsBold.check,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      PodActivationStage.failed => _failedActions(context, controller, basal),
-      _ => const _BusyButton(),
-    };
-  }
-
-  /// After a failure the user gets both ways forward: try the same pod again,
-  /// or give up on it. A retry resumes rather than restarting, so it cannot
-  /// re-deliver the priming insulin.
-  Widget _failedActions(
-    BuildContext context,
-    PodActivationController controller,
-    PodBasalAdapter basal,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _primaryButton(
-          labelKey: 'pump.activate.retry',
-          icon: PhosphorIconsBold.arrowsClockwise,
-          onPressed: () => controller.storedStep.isBefore(PodActivationStep.primed)
-              ? controller.primePod()
-              : controller.startDelivery(basal.program),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(foregroundColor: context.danger),
-          onPressed: controller.discardAttempt,
-          icon: const Icon(PhosphorIconsBold.trash, size: 18),
-          label: LocaleText('pump.activate.discard'),
-        ),
-      ],
-    );
-  }
-
-  Widget _primaryButton({
-    required String labelKey,
-    required IconData icon,
-    required VoidCallback? onPressed,
-  }) {
-    return FilledButton.icon(
-      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
-      onPressed: onPressed,
-      icon: Icon(icon),
-      label: LocaleText(labelKey),
-    );
-  }
-
 }
 
-/// A disabled button with a spinner, shown while the pod is being talked to.
-class _BusyButton extends StatelessWidget {
-  const _BusyButton();
 
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton.icon(
-      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
-      onPressed: null,
-      icon: const SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      ),
-      label: LocaleText('pump.activate.working'),
-    );
+/// The fingerprint that releases the cannula, asked at the button and spent at
+/// the command.
+///
+/// Asking at the button is what the user expects: they tap "continue" and the
+/// prompt is there, not half a minute later after a scan, a handshake and two
+/// programming commands have run.
+///
+/// Consuming it at the command is what keeps it honest. [PodActivation] still
+/// requires a confirmation callback and still refuses to move the needle without
+/// one, so no path can reach the insertion unasked — and the answer is SINGLE
+/// USE, so a confirmation given for one attempt cannot carry a later one.
+class CannulaConfirmation {
+  CannulaConfirmation({required this.reason, BiometricAuth? auth})
+      : _auth = auth ?? BiometricAuth();
+
+  /// What the biometric sheet says it is for.
+  final String reason;
+
+  final BiometricAuth _auth;
+
+  bool _armed = false;
+
+  /// Prompts now. Biometric only, no PIN fallback: driving a needle into the body
+  /// is not something a pocket-tap should be able to do.
+  Future<bool> ask() async {
+    _armed = await _auth.confirm(reason);
+    return _armed;
+  }
+
+  /// Hands the answer to the one command that needs it, and forgets it.
+  Future<bool> consume() async {
+    final armed = _armed;
+    _armed = false;
+    return armed;
   }
 }

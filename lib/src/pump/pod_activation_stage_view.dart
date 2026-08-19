@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_activation_controller.dart';
+import 'package:insulink/src/pump/pod_activation_steps.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/theme/brand_tints.dart';
 import 'package:insulink/src/theme/status_colors.dart';
@@ -48,6 +48,14 @@ class PodActivationStageView extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
+        // Only the attach stage walks through steps. That is where the user has
+        // something physical to do in a fixed order, right before the needle goes
+        // in; everywhere else the app is working and a checklist would just be
+        // something to scroll past.
+        if (controller.stage == PodActivationStage.attachPod) ...[
+          const SizedBox(height: 20),
+          const PodActivationSteps(prefix: 'pump.activate.attach'),
+        ],
         if (controller.stage == PodActivationStage.explaining) ...[
           const SizedBox(height: 18),
           _binding(context),
@@ -55,10 +63,6 @@ class PodActivationStageView extends StatelessWidget {
         if (basalProblem != null) ...[
           const SizedBox(height: 14),
           _basalWarning(context),
-        ],
-        if (_primeUnits != null) ...[
-          const SizedBox(height: 14),
-          _primed(context),
         ],
       ],
     );
@@ -133,29 +137,6 @@ class PodActivationStageView extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  /// What the pod asked for and got during priming, so the number the user hears
-  /// the pod deliver is one they can check.
-  Widget _primed(BuildContext context) {
-    return Text(
-      Locales.string(context, 'pump.activate.primed_units')
-          .replaceFirst('#', _primeUnits!.toStringAsFixed(2)),
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 13,
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
-    );
-  }
-
-  /// Units the pod primed itself with, once it has reported them.
-  double? get _primeUnits {
-    if (controller.stage != PodActivationStage.attachPod) {
-      return null;
-    }
-    final facts = controller.facts;
-    return facts == null ? null : facts.primePulses * 0.05;
   }
 
   IconData get _stageIcon => switch (controller.stage) {

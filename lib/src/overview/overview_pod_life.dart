@@ -3,6 +3,7 @@ import 'package:insulink/src/base/device_lifespan.dart';
 import 'package:insulink/src/base/device_lifespan_bar.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pod_reservoir_level.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -43,23 +44,42 @@ class OverviewPodLife extends StatelessWidget {
   }
 }
 
-/// The reservoir line under the pod's life bar.
+/// The reservoir under the pod's life bar, as a bar of its own.
 ///
-/// The pod cannot measure its reservoir above roughly 50 U and reports a sentinel
-/// instead, so that case is worded rather than shown as a number — a precise
-/// figure the pod did not give would invite decisions it cannot support. The same
-/// applies while no status has been read yet.
+/// Shaped like the life bar above it — same header row, same 9 px track, same
+/// rounded ends — because they answer the same question about the same pod: how
+/// much is left. Continuous rather than segmented, since insulin is not counted
+/// in days.
+///
+/// The pod cannot measure its reservoir above roughly [measurableUnits] and
+/// reports a sentinel instead. That case reads as a full bar and is worded rather
+/// than shown as a number: a precise figure the pod did not give would invite
+/// decisions it cannot support. The same applies while no status has been read.
 class OverviewPodReservoir extends StatelessWidget {
   const OverviewPodReservoir({super.key, required this.controller});
 
-  /// Units at or below which the reservoir is called out in the warning colour.
-  static const double lowUnits = 10.0;
-
   final PodController controller;
+
+  PodReservoirLevel get _level => PodReservoirLevel(
+        hasStatus: controller.status != null,
+        units: controller.status?.reservoirUnits,
+      );
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _header(context, scheme),
+        const SizedBox(height: 6),
+        _bar(context, scheme),
+      ],
+    );
+  }
+
+  Widget _header(BuildContext context, ColorScheme scheme) {
+    final level = _level;
     return Row(
       children: [
         Text(
@@ -74,8 +94,8 @@ class OverviewPodReservoir extends StatelessWidget {
           _value(context),
           style: TextStyle(
             fontSize: 12,
-            fontWeight: _isLow ? FontWeight.w600 : FontWeight.normal,
-            color: _isLow
+            fontWeight: level.isLow ? FontWeight.w600 : FontWeight.normal,
+            color: level.isLow
                 ? context.warning
                 : scheme.onSurface.withValues(alpha: 0.6),
           ),
@@ -84,22 +104,36 @@ class OverviewPodReservoir extends StatelessWidget {
     );
   }
 
-  double? get _units => controller.status?.reservoirUnits;
-
-  bool get _isLow {
-    final units = _units;
-    return units != null && units <= lowUnits;
+  Widget _bar(BuildContext context, ColorScheme scheme) {
+    final level = _level;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(3),
+      child: Stack(
+        children: [
+          Container(
+            height: 9,
+            color: scheme.onSurface.withValues(alpha: 0.12),
+          ),
+          FractionallySizedBox(
+            widthFactor: level.fraction,
+            child: Container(
+              height: 9,
+              color: level.isLow ? context.warning : scheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _value(BuildContext context) {
-    final status = controller.status;
-    if (status == null) {
+    final level = _level;
+    if (!level.hasStatus) {
       return Locales.string(context, 'pump.status.never_read');
     }
-    final units = _units;
-    if (units == null) {
+    if (level.isAboveRange) {
       return Locales.string(context, 'pump.status.reservoir_plenty');
     }
-    return '${units.toStringAsFixed(2)} U';
+    return '${level.units!.toStringAsFixed(2)} U';
   }
 }

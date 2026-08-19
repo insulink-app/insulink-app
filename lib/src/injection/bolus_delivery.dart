@@ -1,5 +1,6 @@
 import 'package:insulink/src/pump/pod_controller.dart';
-import 'package:insulink/src/pump/pod_delivery_gate.dart';
+import 'package:insulink/src/pump/pod_running_bolus.dart';
+import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
 import 'package:insulink/src/pump/protocol/pod_delivery_guard.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
@@ -19,6 +20,10 @@ enum BolusDeliveryStatus {
 
   /// The command went out but was never confirmed. The pod MAY be delivering.
   unknown,
+
+  /// On its way to the pump, with the answer still to come. The page does not
+  /// wait for it — the overview reports what became of it.
+  handedOver,
 }
 
 /// The outcome of a bolus, and how many units may be recorded because of it.
@@ -41,6 +46,11 @@ class BolusDeliveryResult {
   const BolusDeliveryResult.unknown(String detail)
       : this._(BolusDeliveryStatus.unknown, 0, detail);
 
+  /// Handed to the pump; the sheet is free to close. The meal is written with its
+  /// carbs and no insulin, and the dose is added only once the pod names it back.
+  const BolusDeliveryResult.handedOver()
+      : this._(BolusDeliveryStatus.handedOver, 0, null);
+
   final BolusDeliveryStatus status;
 
   /// Units that may be written to the meal log.
@@ -55,15 +65,21 @@ class BolusDeliveryResult {
       status == BolusDeliveryStatus.refused ||
       status == BolusDeliveryStatus.unknown;
 
-  bool get byPump => status == BolusDeliveryStatus.delivered;
+  bool get byPump =>
+      status == BolusDeliveryStatus.delivered ||
+      status == BolusDeliveryStatus.handedOver;
+
+  /// Whether the pump still owes an answer, so the caller hands over rather than
+  /// waits.
+  bool get isPending => status == BolusDeliveryStatus.handedOver;
 }
 
 /// Decides whether a confirmed bolus goes to a pump or is only logged, and
 /// carries it out.
 ///
-/// When no pod is paired, or the delivery gate is shut, this reports
-/// [BolusDeliveryStatus.loggedOnly] and the app behaves exactly as it did
-/// before — the user gives the injection and the app records it.
+/// When no pod is paired this reports [BolusDeliveryStatus.loggedOnly] and the
+/// app behaves exactly as it did before — the user gives the injection and the
+/// app records it.
 ///
 /// The rule about what gets recorded is deliberately one-directional: insulin is
 /// only ever written to the log once the pod has confirmed it. A dose that was
@@ -73,13 +89,11 @@ class BolusDeliveryResult {
 class BolusDelivery {
   const BolusDelivery({
     required this.controller,
-    required this.gate,
     required this.maxBolusUnits,
     required this.maxUnitsPerHour,
   });
 
   final PodController controller;
-  final PodDeliveryGate gate;
 
   /// The user's configured single-bolus ceiling (`ProfileBolusState.maxBolus`).
   final double maxBolusUnits;
@@ -88,7 +102,7 @@ class BolusDelivery {
   final double maxUnitsPerHour;
 
   /// Whether this bolus will be sent to a pod rather than only logged.
-  bool get usesPump => controller.hasPod && gate.allowsDelivery;
+  bool get usesPump => controller.hasPod;
 
   /// Runs the bolus. [deliveredLastHour] is the insulin already given within the
   /// past hour, which the rolling limit is checked against.
@@ -99,6 +113,8 @@ class BolusDelivery {
     if (!usesPump || units <= 0) {
       return BolusDeliveryResult.loggedOnly(units);
     }
+    // Recorded before anything is sent, so a process that dies between here and
+    // the pod's answer leaves evidence that a dose may be running.
     final PodBolusAmount amount;
     try {
       amount = PodBolusAmount.fromUnits(units);
@@ -129,7 +145,17 @@ class BolusDelivery {
         decision.detail ?? decision.refusal!.name,
       );
     }
-    return _send(amount);
+    await controller.store.startPendingBolus(PodRunningBolus(
+      startedAt: DateTime.now(),
+      pulses: amount.pulses,
+      eighthSecondsBetweenPulses:
+          PodProgramBolusCommand.defaultEighthSecondsBetweenPulses,
+    ));
+    try {
+      return await _send(amount);
+    } finally {
+      await controller.store.clearPendingBolus();
+    }
   }
 
   /// Whether the pod's answer actually shows the bolus it was just given.
@@ -158,6 +184,23 @@ class BolusDelivery {
           'The pod answered but does not report a bolus running',
         );
       }
+      // Logged only once the pod has named the bolus back, never before: an entry
+      // for a dose that did not run would overstate the insulin on board.
+      final startedAt = DateTime.now();
+      await controller.store.recordDelivery(PodDelivery(
+        at: startedAt,
+        units: amount.units,
+        kind: PodDeliveryKind.bolus,
+      ));
+      // The pod takes about two seconds per 0.05 U pulse, so this dose is still
+      // running for a while. Recorded so the overview can show it and stop it.
+      await controller.store.startRunningBolus(PodRunningBolus(
+        startedAt: startedAt,
+        pulses: amount.pulses,
+        eighthSecondsBetweenPulses:
+            PodProgramBolusCommand.defaultEighthSecondsBetweenPulses,
+      ));
+      controller.notifyRunningBolusChanged();
       return BolusDeliveryResult.delivered(amount.units);
     } on PodCommandOutcomeUnknown catch (error) {
       return BolusDeliveryResult.unknown(error.message);

@@ -67,6 +67,9 @@ class _PodRestoreCardState extends State<PodRestoreCard> {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      // The card's own gap, because it collapses to nothing when there is no pod
+      // on file — a spacer at the call site would be left hanging.
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: scheme.tintPanel,
         borderRadius: BorderRadius.circular(12),

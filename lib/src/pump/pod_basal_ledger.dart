@@ -100,9 +100,24 @@ extension PodBasalLedger on PodStore {
           ? queue.sublist(queue.length - PodStore._maxPendingDeliveries)
           : queue;
       await _set(PodStore._kBasalDelivered, jsonEncode(capped));
+      // Kept apart from the queue above, which is drained the moment the account
+      // accepts it. This is what the user is shown, and it has to survive that.
+      await _set(
+        PodStore._kBasalTotal,
+        '${basalDeliveredTotal + units}',
+      );
     }
     await _set(PodStore._kBasalCountedTo, '${countedTo.millisecondsSinceEpoch}');
   }
+
+  /// Every unit of basal this pod has delivered, as booked by the background
+  /// watch.
+  ///
+  /// The same number the forecasting model is fed, not a fresh calculation off the
+  /// schedule: a stretch the pod spent suspended is booked as the nothing it was,
+  /// and re-deriving it from the schedule afterwards would quietly put it back.
+  double get basalDeliveredTotal =>
+      double.tryParse(_cache[PodStore._kBasalTotal] ?? '') ?? 0;
 
   /// Drops the samples the account has accepted.
   Future<void> clearBasalDeliveries(int count) async {

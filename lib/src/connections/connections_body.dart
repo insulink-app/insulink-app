@@ -4,6 +4,7 @@ import 'package:insulink/src/google_health/google_health_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/pod_delivery_log_page.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
 import 'package:provider/provider.dart';
@@ -36,8 +37,11 @@ void openPumpPage(BuildContext context) {
   final title = Locales.string(context, 'pump.label');
   Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) =>
-          ConnectionSubPage(title: title, body: const PumpBodyContent()),
+      builder: (_) => ConnectionSubPage(
+        title: title,
+        body: const PumpBodyContent(),
+        actions: const [PodDeliveryLogButton()],
+      ),
     ),
   );
 }
@@ -80,6 +84,7 @@ class ConnectionsBodyContent extends StatelessWidget {
           icon: PhosphorIconsFill.syringe,
           labelKey: "pump.label",
           page: const PumpBodyContent(),
+          actions: const [PodDeliveryLogButton()],
         ),
         const SizedBox(height: 14),
         ConnectionRow(

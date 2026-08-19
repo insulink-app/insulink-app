@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
-import 'package:insulink/src/pump/pod_delivery_gate.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
@@ -45,7 +44,6 @@ PodResponse _acceptedBolus(PodBolusAmount amount) => PodStatusResponse(statusBod
 class ScriptedPodController extends PodController {
   ScriptedPodController({
     required super.store,
-    required super.gate,
     required this.reply,
     Uint8List? initialStatus,
   }) : _statusBody = initialStatus ?? statusBody();
@@ -92,14 +90,12 @@ void main() {
       );
 
   BolusDelivery deliveryFor(
-    PodController controller,
-    PodDeliveryGate gate, {
+    PodController controller, {
     double maxBolus = 10,
     double maxPerHour = 15,
   }) {
     return BolusDelivery(
       controller: controller,
-      gate: gate,
       maxBolusUnits: maxBolus,
       maxUnitsPerHour: maxPerHour,
     );
@@ -111,40 +107,21 @@ void main() {
   });
 
   group('with no pump involved the behaviour is unchanged', () {
+    /// The app without a pump: the user injects, the app records. Every dose is
+    /// logged in full, because nothing was asked of a pod.
     test('no pod paired logs the full dose', () async {
-      final gate = PodDeliveryGate(true);
-      final controller = PodController(store: store, gate: gate);
-      final outcome = await deliveryFor(controller, gate)
+      final controller = PodController(store: store);
+      final outcome = await deliveryFor(controller)
           .deliver(4.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.loggedOnly);
       expect(outcome.recordedUnits, 4.0);
       expect(outcome.byPump, isFalse);
-    });
-
-    test('a paired pod with the gate shut still only logs', () async {
-      await pairPod();
-      final gate = PodDeliveryGate(false);
-      final controller = ScriptedPodController(
-        store: store,
-        gate: gate,
-        reply: (_) => throw StateError('must not be reached'),
-      );
-      final delivery = deliveryFor(controller, gate);
-      expect(delivery.usesPump, isFalse);
-      final outcome = await delivery.deliver(4.0, deliveredLastHour: 0);
-      expect(outcome.status, BolusDeliveryStatus.loggedOnly);
-      expect(outcome.recordedUnits, 4.0);
-      expect(controller.sent, isEmpty);
+      expect(deliveryFor(controller).usesPump, isFalse);
     });
   });
 
-  group('with a pod and the gate open', () {
-    late PodDeliveryGate gate;
-
-    setUp(() async {
-      await pairPod();
-      gate = PodDeliveryGate(true);
-    });
+  group('with a pod paired', () {
+    setUp(pairPod);
 
     ScriptedPodController controllerWith({
       PodResponse Function(PodBolusAmount amount)? reply,
@@ -152,7 +129,6 @@ void main() {
     }) {
       return ScriptedPodController(
         store: store,
-        gate: gate,
         reply: reply ?? _acceptedBolus,
         initialStatus: status,
       );
@@ -160,7 +136,7 @@ void main() {
 
     test('a healthy pod delivers, and the dose is recorded', () async {
       final controller = controllerWith();
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(4.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.delivered);
       expect(outcome.recordedUnits, 4.0);
@@ -175,7 +151,7 @@ void main() {
       final controller = controllerWith(
         reply: (_) => PodStatusResponse(statusBody()),
       );
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(4.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.unknown);
       expect(outcome.recordedUnits, 0);
@@ -190,7 +166,7 @@ void main() {
           statusBody(bolusPulsesRemaining: amount.pulses),
         ),
       );
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(4.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.delivered);
       expect(outcome.recordedUnits, 4.0);
@@ -198,7 +174,7 @@ void main() {
 
     test('a dose off the pulse grid is refused, not rounded', () async {
       final controller = controllerWith();
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(1.03, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.refused);
       expect(outcome.recordedUnits, 0);
@@ -207,7 +183,7 @@ void main() {
 
     test('a dose above the user maximum never reaches the pod', () async {
       final controller = controllerWith();
-      final outcome = await deliveryFor(controller, gate, maxBolus: 5)
+      final outcome = await deliveryFor(controller, maxBolus: 5)
           .deliver(6.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.refused);
       expect(controller.sent, isEmpty);
@@ -215,7 +191,7 @@ void main() {
 
     test('the rolling hourly limit counts insulin already given', () async {
       final controller = controllerWith();
-      final outcome = await deliveryFor(controller, gate, maxPerHour: 10)
+      final outcome = await deliveryFor(controller, maxPerHour: 10)
           .deliver(4.0, deliveredLastHour: 8.0);
       expect(outcome.status, BolusDeliveryStatus.refused);
       expect(controller.sent, isEmpty);
@@ -228,7 +204,7 @@ void main() {
           bolusPulsesRemaining: 20,
         ),
       );
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(2.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.refused);
       expect(controller.sent, isEmpty);
@@ -237,7 +213,7 @@ void main() {
     test('an alarming pod is refused', () async {
       final controller =
           controllerWith(status: statusBody(lifecycle: PodLifecycleStatus.alarm));
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(2.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.refused);
       expect(controller.sent, isEmpty);
@@ -246,7 +222,7 @@ void main() {
     test('more insulin than the reservoir holds is refused', () async {
       // 40 pulses left = 2.0 U.
       final controller = controllerWith(status: statusBody(reservoirPulses: 40));
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(3.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.refused);
       expect(controller.sent, isEmpty);
@@ -256,7 +232,7 @@ void main() {
       final controller = controllerWith(
         reply: (_) => PodNakResponse(hex('0603070008')),
       );
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(2.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.refused);
       expect(outcome.recordedUnits, 0);
@@ -269,7 +245,7 @@ void main() {
       final controller = controllerWith(
         reply: (_) => throw PodCommandOutcomeUnknown('confirmation lost'),
       );
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(2.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.unknown);
       expect(outcome.recordedUnits, 0);
@@ -282,7 +258,7 @@ void main() {
       final controller = controllerWith(
         reply: (_) => throw const FormatException('link died'),
       );
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(2.0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.refused);
       expect(outcome.recordedUnits, 0);
@@ -290,7 +266,7 @@ void main() {
 
     test('a zero bolus is never sent to the pod', () async {
       final controller = controllerWith();
-      final outcome = await deliveryFor(controller, gate)
+      final outcome = await deliveryFor(controller)
           .deliver(0, deliveredLastHour: 0);
       expect(outcome.status, BolusDeliveryStatus.loggedOnly);
       expect(controller.sent, isEmpty);

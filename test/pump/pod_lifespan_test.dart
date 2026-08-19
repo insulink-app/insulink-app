@@ -69,9 +69,4 @@ void main() {
     });
   });
 
-  group('the low-reservoir threshold', () {
-    test('is a round ten units, so a pod change can still be planned', () {
-      expect(OverviewPodReservoir.lowUnits, 10.0);
-    });
-  });
 }

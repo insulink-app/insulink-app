@@ -42,6 +42,11 @@ class PodScanner {
   static const String _mainServiceId = podAdvertisedServiceId;
   static const String _thirdServiceId = '000a';
 
+  /// Ends a scan this app has running, so a wait for one can be cut short.
+  ///
+  /// Safe when nothing is scanning: the platform call is a no-op there.
+  Future<void> stop() => FlutterBluePlus.stopScan();
+
   /// Scans for pods, returning every valid candidate seen within [timeout].
   ///
   /// [wantedPodId] filters to one pod; pass [DiscoveredPod.unactivatedPodId] to
@@ -84,14 +89,23 @@ class PodScanner {
   /// to the same address as the one on the body until its battery gives out. The
   /// stored BLE address is what tells them apart. Without a match the ambiguity
   /// stands and nothing is chosen — commanding the wrong pod is worse than failing.
+  ///
+  /// [isCancelled] is asked between the two attempts and before the result is
+  /// used, so a user who stopped the search does not sit through a second scan or
+  /// end up connected to a pod they no longer wanted.
   Future<DiscoveredPod> scanForSingle({
     required int wantedPodId,
     Duration timeout = const Duration(seconds: 30),
     String? preferredAddress,
+    bool Function()? isCancelled,
   }) async {
+    bool cancelled() => isCancelled?.call() ?? false;
     var found = await scan(wantedPodId: wantedPodId, timeout: timeout);
-    if (found.isEmpty) {
+    if (found.isEmpty && !cancelled()) {
       found = await scan(wantedPodId: wantedPodId, timeout: timeout);
+    }
+    if (cancelled()) {
+      throw PodLinkException('Pod search stopped');
     }
     if (found.isEmpty) {
       throw PodLinkException('No pod found');

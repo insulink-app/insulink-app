@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/pump/pod_basal_delivery.dart';
+import 'package:insulink/src/pump/pod_running_bolus.dart';
 
 /// Everything about a paired pod that has to outlive the process.
 ///
@@ -16,6 +17,7 @@ import 'package:insulink/src/pump/pod_basal_delivery.dart';
 /// in-memory cache so the read path never awaits, and the same [reload]
 /// requirement across isolates.
 part 'pod_basal_ledger.dart';
+part 'pod_delivery_log.dart';
 
 class PodStore {
   PodStore(this._storage, this._cache);
@@ -42,10 +44,14 @@ class PodStore {
   static const _kSuspendedByUs = 'pod.suspended_by_us';
   static const _kBasalRates = 'pod.basal_rates';
   static const _kBasalDelivered = 'pod.basal_delivered';
+  static const _kBasalTotal = 'pod.basal_total';
   static const _kBasalCountedTo = 'pod.basal_counted_to';
   static const _kTempBasal = 'pod.temp_basal';
   static const _kActivationFacts = 'pod.activation_facts';
   static const _kMessageSequence = 'pod.message_sequence';
+  static const _kDeliveryLog = 'pod.delivery_log';
+  static const _kRunningBolus = 'pod.running_bolus';
+  static const _kPendingBolus = 'pod.pending_bolus';
 
   /// Roughly two days of 15-minute samples. Past that the oldest are dropped:
   /// insulin history that old is no longer shaping a forecast, and an unbounded
@@ -195,10 +201,14 @@ class PodStore {
       _kSuspendedByUs,
       _kBasalRates,
       _kBasalDelivered,
+      _kBasalTotal,
       _kBasalCountedTo,
       _kTempBasal,
       _kActivationFacts,
       _kMessageSequence,
+      _kDeliveryLog,
+      _kRunningBolus,
+      _kPendingBolus,
     ]) {
       await _remove(key);
     }

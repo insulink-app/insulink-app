@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/stepped_slider.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -110,11 +111,11 @@ class _PodTempBasalSheetState extends State<PodTempBasalSheet> {
       scheme: scheme,
       labelKey: 'pump.temp.percent',
       value: '$_percent %',
-      slider: Slider(
+      slider: SteppedSlider(
         value: _percent.toDouble(),
         min: 0,
         max: _maxPercent.toDouble(),
-        divisions: _maxPercent ~/ _percentStep,
+        steps: _maxPercent ~/ _percentStep,
         onChanged: (value) => setState(() => _percent = value.round()),
       ),
     );
@@ -128,11 +129,11 @@ class _PodTempBasalSheetState extends State<PodTempBasalSheet> {
       value: Locales.string(context, 'pump.temp.duration_value')
           .replaceFirst('#', '${_minutes ~/ 60}')
           .replaceFirst('#', '${_minutes % 60}'),
-      slider: Slider(
+      slider: SteppedSlider(
         value: (_minutes ~/ PodTempBasalRate.minutesPerSlot).toDouble(),
         min: 1,
         max: slots.toDouble(),
-        divisions: slots - 1,
+        steps: slots - 1,
         onChanged: (value) => setState(
           () => _minutes = value.round() * PodTempBasalRate.minutesPerSlot,
         ),

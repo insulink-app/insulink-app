@@ -1,8 +1,10 @@
 import 'package:flutter/widgets.dart';
+import 'package:insulink/src/pump/demo_pod.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
-import 'package:insulink/src/pump/pod_delivery_gate.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
+import 'package:insulink/src/pump/protocol/pod_basal_command.dart';
+import 'package:insulink/src/pump/protocol/pod_basal_program.dart';
 import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
 import 'package:insulink/src/pump/protocol/pod_control_commands.dart';
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
@@ -11,24 +13,23 @@ import 'package:insulink/src/pump/protocol/pod_session.dart';
 import 'package:insulink/src/pump/protocol/pod_stop_delivery_command.dart';
 import 'package:insulink/src/pump/protocol/pod_temp_basal_command.dart';
 import 'package:insulink/src/pump/pod_basal_delivery.dart';
+import 'package:insulink/src/pump/pod_running_bolus.dart';
 
 /// The UI's view of the pod, and the few operations it can start.
 ///
 /// Each operation opens a session, does one thing, and closes it — the pod does
 /// not hold a link open, so there is no connection to keep alive between taps.
 ///
-/// [suspendDelivery] and [deactivatePod] never consult [PodDeliveryGate]. A pod
-/// that is already delivering must stay stoppable whatever any setting says;
-/// only the paths that START delivery are gated.
+/// What a delivery is allowed to be is decided by [PodDeliveryGuard], on the dose
+/// and the pod's own reported state — not by a mode the user can be in.
 class PodController extends ChangeNotifier {
-  PodController({required this.store, required this.gate})
+  PodController({required this.store})
       : _sequence = store.commandSequence,
-        _connection = PodConnection(store: store);
+        _connection = podConnectionFor(store);
 
   static const int _fixedNonce = 0;
 
   final PodStore store;
-  final PodDeliveryGate gate;
   final PodConnection _connection;
 
   /// The pod command sequence number, a persisted 4-bit counter.
@@ -82,8 +83,195 @@ class PodController extends ChangeNotifier {
         // Remember that WE stopped it, so the background watch does not report a
         // deliberate suspend as the pod having stopped on its own.
         await store.setSuspendedByUs(true);
+        // A suspend-everything cuts a running bolus short as well, so its record
+        // has to be closed here too, or the overview keeps counting a dose the
+        // pod has stopped delivering.
+        await _endRunningBolus();
         _absorb(response);
       });
+
+  /// Puts the pod back on its schedule after a suspend.
+  ///
+  /// Resuming IS programming the basal schedule: the pod has no separate resume,
+  /// and a suspend leaves it holding no schedule to go back to. So the caller
+  /// passes the profile it should run, exactly as an activation does.
+  ///
+  /// Without this a suspended pod could only ever be deactivated, which means
+  /// thrown away — a full pod in the bin for the sake of a pause.
+  Future<void> resumeDelivery(PodBasalProgram program) =>
+      _programBasal('resume delivery', program);
+
+  /// Sends an edited basal profile to a pod that is already running.
+  ///
+  /// The pod holds its whole schedule itself and runs it unattended, so editing
+  /// the profile in the app changes nothing until it is sent. Until then the app
+  /// would show one schedule while the pod delivered another.
+  Future<void> applyBasalProfile(PodBasalProgram program) =>
+      _programBasal('send the basal profile', program);
+
+  /// Programs [program] and records it as the schedule the POD is now running.
+  ///
+  /// Recording it matters as much as sending it: the ledger that feeds the
+  /// forecasting model bills against these rates, so a pod reprogrammed without
+  /// updating them would have its insulin booked at the old schedule.
+  Future<void> _programBasal(String what, PodBasalProgram program) =>
+      _withSession(what, (session) async {
+        final response = await session.run(PodProgramBasalCommand(
+          uniqueId: store.uniqueId!,
+          sequenceNumber: _nextSequence,
+          nonce: _fixedNonce,
+          program: program,
+          now: DateTime.now(),
+        ));
+        await store.saveBasalRates(hourlyRatesOf(program));
+        await store.setSuspendedByUs(false);
+        _absorb(response);
+      });
+
+  /// One rate per hour, sampled from [program] at the middle of each hour so a
+  /// half-hour boundary cannot land on the wrong side of it.
+  static List<double> hourlyRatesOf(PodBasalProgram program) {
+    final midnight = DateTime(2026);
+    return [
+      for (var hour = 0; hour < 24; hour++)
+        program.rateAt(midnight.add(Duration(hours: hour, minutes: 15))),
+    ];
+  }
+
+  /// Whether the pod is running a schedule other than [program].
+  ///
+  /// Answered from the rates the pod was PROGRAMMED with, not from the user's
+  /// profile, because that is the only record of what the pod is actually doing.
+  bool runsDifferentBasalThan(PodBasalProgram program) {
+    final onPod = store.basalRates;
+    if (!hasPod || onPod == null) {
+      return false;
+    }
+    final wanted = hourlyRatesOf(program);
+    for (var hour = 0; hour < 24; hour++) {
+      if ((onPod[hour] - wanted[hour]).abs() > 1e-9) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Picks up a pod the activation wizard just paired.
+  ///
+  /// The wizard writes through the same store, but nothing tells this controller
+  /// to look again — so the page it returns to would keep saying there is no pod
+  /// until it is rebuilt from scratch.
+  Future<void> adoptActivatedPod() async {
+    await store.reload();
+    notifyListeners();
+    await refreshIfStale();
+  }
+
+  /// Forgets the stopped-bolus notice once the user has seen it.
+  void clearCancelledBolus() {
+    _cancelledBolus = null;
+    notifyListeners();
+  }
+
+  /// Reads the pod when what is on screen is too old to act on.
+  ///
+  /// The pump page opens on this. Without it the page sits on "not read yet" until
+  /// the user asks, which means it cannot say whether the pod is delivering — and
+  /// a page that cannot say that has to show the control that STOPS delivery,
+  /// even when the pod is in fact already stopped.
+  ///
+  /// Bounded by the same window the delivery guard uses, so opening the page twice
+  /// in a minute costs one session, not two.
+  Future<void> refreshIfStale() async {
+    if (!hasPod || _busy) {
+      return;
+    }
+    final age = statusAge;
+    if (age != null && age <= _statusFreshFor) {
+      return;
+    }
+    await refresh();
+  }
+
+  /// How long a status stays worth trusting. Matches [PodDeliveryGuard].
+  static const Duration _statusFreshFor = Duration(minutes: 2);
+
+  /// The bolus the pod is working through, or null once it has run its course.
+  ///
+  /// Cleared lazily, on the way past: the record only matters while it is live,
+  /// and clearing it on a timer would need a timer running for a pod that is
+  /// usually doing nothing.
+  PodRunningBolus? get runningBolus {
+    final bolus = store.runningBolus;
+    if (bolus == null || bolus.isFinished(DateTime.now())) {
+      return null;
+    }
+    return bolus;
+  }
+
+  /// Tells listeners a bolus started. Called by [BolusDelivery], which writes the
+  /// record through the store rather than through this class.
+  void notifyRunningBolusChanged() => notifyListeners();
+
+  /// Stops the bolus in progress and corrects the log to what the pod gave.
+  ///
+  /// The stop is a targeted one: basal keeps running, because a user cutting a
+  /// bolus short is not asking to be taken off insulin entirely.
+  ///
+  /// The delivered amount is taken from the clock at the moment the stop went
+  /// out, floored to a whole pulse. That is off by at most one pulse and errs
+  /// towards understating what was given — the recoverable direction, since a
+  /// user can always log more, while insulin credited but never received would
+  /// suppress a correction they need.
+  Future<void> cancelBolus() async {
+    if (runningBolus == null) {
+      return;
+    }
+    await _withSession('stop the bolus', (session) async {
+      final response = await session.run(PodStopDeliveryCommand(
+        uniqueId: store.uniqueId!,
+        sequenceNumber: _nextSequence,
+        nonce: _fixedNonce,
+        target: PodDeliveryTarget.bolus,
+      ));
+      await _endRunningBolus();
+      _absorb(response);
+    });
+  }
+
+  /// Closes the books on a bolus the pod has just been told to stop.
+  ///
+  /// Called from every path that stops one, not only from [cancelBolus]: a
+  /// suspend-everything and a deactivation both cut a running bolus short too,
+  /// and leaving the record behind would keep a progress bar counting insulin
+  /// that is no longer flowing.
+  ///
+  /// Does nothing when no bolus was running, so the callers need no condition.
+  Future<void> _endRunningBolus() async {
+    final bolus = runningBolus;
+    if (bolus == null) {
+      await store.clearRunningBolus();
+      return;
+    }
+    final given = bolus.deliveredUnits(DateTime.now());
+    await store.amendDelivery(bolus.startedAt, given);
+    await store.clearRunningBolus();
+    _cancelledBolus = (programmed: bolus.programmedUnits, given: given);
+  }
+
+  /// What a stopped bolus actually amounted to, until the next operation clears
+  /// it. The user has to be told, because the meal it was logged against still
+  /// carries the full dose.
+  ({double programmed, double given})? get cancelledBolus => _cancelledBolus;
+
+  ({double programmed, double given})? _cancelledBolus;
+
+  /// Whether the pod last reported itself stopped, so the page can offer the way
+  /// back rather than a second stop.
+  ///
+  /// A pod that has not been read is NOT treated as suspended: with no reading to
+  /// go on, the control that stops delivery is the one that has to be there.
+  bool get isSuspended => _status?.delivery.isSuspended ?? false;
 
   /// Ends the pod's life so it can be removed, then forgets it.
   ///
@@ -97,6 +285,7 @@ class PodController extends ChangeNotifier {
           nonce: _fixedNonce,
         ));
         _absorb(response);
+        await _endRunningBolus();
         final stopped = _status?.delivery.isSuspended ?? false;
         if (stopped) {
           await store.forgetPod();
@@ -170,19 +359,14 @@ class PodController extends ChangeNotifier {
   /// than implying nothing happened.
   Future<void> _withSession(
     String what,
-    Future<void> Function(PodSession session) body, {
-    bool requiresGate = false,
-  }) async {
+    Future<void> Function(PodSession session) body,
+  ) async {
     if (_busy) {
-      return;
-    }
-    if (requiresGate && !gate.allowsDelivery) {
-      _failure = 'Pod delivery is locked';
-      notifyListeners();
       return;
     }
     _busy = true;
     _failure = null;
+    _cancelledBolus = null;
     notifyListeners();
     try {
       await _resyncFromStorage();
@@ -193,7 +377,10 @@ class PodController extends ChangeNotifier {
       await PumpSync().sync(store, status: _status);
     } on PodCommandOutcomeUnknown catch (error) {
       _failure = 'The pod may have acted on this — check the pod. ${error.message}';
-    } on Exception catch (error) {
+    } catch (error) {
+      // Catch-all, not `on Exception`: a plugin that throws an `Error` would
+      // otherwise vanish into an unhandled async error and the page would show
+      // nothing at all about why the operation did nothing.
       _failure = 'Could not $what: $error';
     } finally {
       await _connection.close();
@@ -221,11 +408,7 @@ class PodController extends ChangeNotifier {
   /// because only the first one is safe to treat as "no insulin was given". A
   /// [PodCommandOutcomeUnknown] therefore propagates.
   ///
-  /// Gated by [PodDeliveryGate] — this is a path that starts a delivery.
   Future<PodResponse> sendBolus(PodBolusAmount amount) async {
-    if (!gate.allowsDelivery) {
-      throw StateError('Pod delivery is locked');
-    }
     final uniqueId = store.uniqueId;
     if (uniqueId == null) {
       throw StateError('No pod is paired');
@@ -268,7 +451,7 @@ class PodController extends ChangeNotifier {
 
   /// Runs a temporary basal rate for a set time.
   ///
-  /// Gated: this changes what the pod delivers. The stretch is stored BEFORE the
+  /// The stretch is stored BEFORE the
   /// command goes out, so a confirmation lost in transit leaves the ledger
   /// crediting the temporary rate rather than the schedule — understating insulin
   /// is recoverable, claiming insulin the pod may not have delivered is not.
@@ -288,13 +471,12 @@ class PodController extends ChangeNotifier {
           reminder: const PodProgramReminder(atEnd: true),
         ));
         _absorb(response);
-      }, requiresGate: true);
+      });
 
   /// Ends a running temporary basal, returning the pod to its schedule.
   ///
-  /// Not gated: this only ever returns delivery to what the user already
-  /// programmed, and a control that undoes a change must not be harder to reach
-  /// than the one that made it.
+  /// Only ever returns delivery to what the user already programmed, so it asks
+  /// for nothing beyond the tap.
   Future<void> cancelTemporaryBasal() =>
       _withSession('cancel temporary basal', (session) async {
         final response = await session.run(PodStopDeliveryCommand(

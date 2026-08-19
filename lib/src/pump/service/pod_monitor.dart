@@ -107,7 +107,10 @@ class PodMonitor {
       // resumes that counter from.
       await _closeQuietly();
       await _consume(status, alarm);
-    } on Exception catch (error) {
+    } catch (error) {
+      // Catch-all, so a plugin that throws an `Error` still counts as a failed
+      // poll and still lets the scan fallback come round, rather than escaping
+      // into the service tick.
       _failedPolls++;
       onLog('pod poll failed (${_failedPolls}x): $error');
     } finally {

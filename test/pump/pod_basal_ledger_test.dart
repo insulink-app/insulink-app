@@ -121,4 +121,50 @@ void main() {
       expect(store.basalCountedTo, isNull);
     });
   });
+
+  group('the basal total is what the user is shown', () {
+    /// Kept apart from the pending queue, which is emptied the moment the account
+    /// accepts it. A total that vanished on every successful sync would be no use
+    /// on a log page.
+    test('it survives the queue being drained', () async {
+      await store.addBasalDelivery(
+        at: DateTime(2026, 3, 1, 9),
+        units: 0.25,
+        countedTo: DateTime(2026, 3, 1, 9),
+      );
+      await store.addBasalDelivery(
+        at: DateTime(2026, 3, 1, 9, 15),
+        units: 0.25,
+        countedTo: DateTime(2026, 3, 1, 9, 15),
+      );
+
+      await store.clearBasalDeliveries(2);
+
+      expect(store.pendingBasalDeliveries, isEmpty);
+      expect(store.basalDeliveredTotal, closeTo(0.5, 1e-9));
+    });
+
+    /// A window the pod spent suspended is booked as nothing, and the total has
+    /// to reflect that rather than the schedule it did not run.
+    test('a window that delivered nothing adds nothing', () async {
+      await store.addBasalDelivery(
+        at: DateTime(2026, 3, 1, 9),
+        units: 0,
+        countedTo: DateTime(2026, 3, 1, 9),
+      );
+
+      expect(store.basalDeliveredTotal, 0);
+    });
+
+    test('a fresh pod starts at zero', () async {
+      await store.addBasalDelivery(
+        at: DateTime(2026, 3, 1, 9),
+        units: 1.5,
+        countedTo: DateTime(2026, 3, 1, 9),
+      );
+      await store.forgetPod();
+
+      expect(store.basalDeliveredTotal, 0);
+    });
+  });
 }

@@ -14,8 +14,17 @@ The **driver is complete and verified offline**, up to but not including a live
 pod. Every byte-level encoder and decoder is pinned by captured vectors, and the
 pairing, session and activation SEQUENCES are exercised against a scripted pod
 that computes its own side of the handshake. None of it has touched real
-hardware, so delivery is locked behind [PodDeliveryGate](../lib/src/pump/pod_delivery_gate.dart),
-which is off by default.
+hardware yet.
+
+There is deliberately **no global "allow delivery" switch**. One existed and was
+removed: a toggle everyone has to turn on before the feature works protects
+nothing — it only trains the user to click past warnings, and it is off precisely
+when the pod most needs commanding. What actually constrains a delivery is
+[`PodDeliveryGuard`](../lib/src/pump/protocol/pod_delivery_guard.dart), which
+judges the DOSE against the pod's own freshly-read state, plus the biometric in
+front of the cannula and the read-back that has to name the bolus before a unit
+is recorded. Those hold on every path, every time, and none of them can be
+switched off.
 
 | Layer | State | Verified by |
 |-------|-------|-------------|
@@ -53,7 +62,7 @@ which is off by default.
 | BLE link + scanner | written | **unverified — needs hardware** |
 | Pump page: status, stop, deactivate, acknowledge alerts | done | builds and analyses; not exercised on a device |
 
-Tests: `flutter test test/pump/` (323) and `cd rust && cargo test` (9). The
+Tests: `flutter test test/pump/` (326) and `cd rust && cargo test` (9). The
 pairing and flow tests load the host Rust library, so `cargo build` has to have
 run first.
 
@@ -64,9 +73,8 @@ run first.
 
 ### Bolus delivery from the injection sheet
 
-The injection sheet delivers through the pod when one is paired and the delivery
-gate is open, and otherwise behaves exactly as it did before — the user injects
-and the app records it. `BolusDelivery` (`lib/src/injection/bolus_delivery.dart`)
+The injection sheet delivers through the pod when one is paired, and otherwise
+behaves exactly as it did before — the user injects and the app records it. `BolusDelivery` (`lib/src/injection/bolus_delivery.dart`)
 makes that choice; `PodDeliveryGuard` runs in front of the pod with the user's own
 `ProfileBolusState.maxBolus` as its ceiling, so the limit the sheet already
 enforces is the limit the pump enforces.
@@ -547,6 +555,24 @@ Biometric-only, no PIN fallback, is deliberate — but a phone with no fingerpri
 enrolled failed at the cannula step, with the pod primed, bound and attached. The
 explanation screen now says so before priming, and the declined message names the
 missing enrolment as a possible cause.
+
+**17. The wizard could not be left while it was searching.** The back arrow was
+hidden for the whole busy stage and there was no cancel, so a scan that found
+nothing held the screen for up to a minute with no way out. The back arrow, the
+system back gesture and a stop button now all work mid-operation, all through
+`PodActivationExit`, which warns first and says the honest thing: what already
+happened to the pod cannot be undone, but nothing is lost, because every step is
+recorded before the next one runs and the wizard resumes from it. Stopping ends
+the scan (`PodScanner.stop`) and drops the link rather than waiting out the
+timeout, and `scanForSingle` skips its retry when the user has stopped.
+
+**18. A plugin `Error` left the wizard spinning forever.** The activation caught
+`on Exception`, and flutter_blue_plus throws an `Error` on a platform it does not
+support. Anything of that shape escaped, the stage stayed on `priming`, and the
+spinner never stopped — the one state the user could not get out of. Found by the
+test written for finding #17. `PodActivationController`, `PodController` and
+`PodMonitor` now catch everything on those paths. The controller also stops
+notifying once disposed, since the user can now leave while a call is in flight.
 
 Also hardened: a stale control word left over from a finished exchange is discarded
 instead of aborting the next send (a pending request-to-send still stops it, since

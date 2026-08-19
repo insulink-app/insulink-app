@@ -42,7 +42,7 @@
     },
     "notification": {
       "title": "Benachrichtigungen",
-      "body": "Glukose-Alarme warnen dich bei hohen und niedrigen Werten — auch wenn die App geschlossen ist. Erlaube Benachrichtigungen, damit du sie nicht verpasst."
+      "body": "Glukose-Alarme warnen dich bei hohen und niedrigen Werten, auch wenn die App geschlossen ist. Erlaube Benachrichtigungen, damit du sie nicht verpasst."
     },
     "dnd": {
       "title": "Kritische Alarme",
@@ -158,7 +158,7 @@
     },
     "boxes": {
       "all": "Alle Werte",
-      "all_hint": "Alle Werte — auch die, deren Box du auf der Übersicht ausgeblendet hast. Tippe einen an, um den Verlauf zu sehen oder einen neuen einzutragen."
+      "all_hint": "Alle Werte, auch die, deren Box du auf der Übersicht ausgeblendet hast. Tippe einen an, um den Verlauf zu sehen oder einen neuen einzutragen."
     }
   },
   "analysis": {
@@ -251,7 +251,7 @@
         "account": "LibreView-Konto-ID (optional)",
         "account_hint": "Leer lassen ist okay. Für die Übernahme eines bereits aktivierten Sensors die numerische LibreView-Konto-ID eintragen.",
         "scanning": "Halte den Sensor an dein Handy…",
-        "failed": "NFC-Scan fehlgeschlagen — bitte erneut versuchen.",
+        "failed": "NFC-Scan fehlgeschlagen. Bitte erneut versuchen.",
         "done": "Sensor gescannt",
         "cancel": "Scan abbrechen",
         "connecting": "Verbinde mit Sensor…"
@@ -269,7 +269,7 @@
       "stop_sensor": "Sensor stoppen",
       "stop_sensor_confirm": "Stopp",
       "end_session_title": "Sitzung beenden?",
-      "end_session_body": "Das Auslesen wird gestoppt. Die Kopplung bleibt erhalten – du kannst dich später wieder verbinden.",
+      "end_session_body": "Das Auslesen wird gestoppt. Die Kopplung bleibt erhalten, du kannst dich später wieder verbinden.",
       "stop_sensor_title": "Sensor stoppen?",
       "stop_sensor_body": "Der Sensor wird entkoppelt: gespeicherter Schlüssel und Verlauf werden gelöscht. Der physische Sensor läuft weiter.",
       "forget_auth_reason": "Bestätige, um diesen Sensor zu vergessen"
@@ -353,13 +353,10 @@
       "suspend": "Abgabe stoppen",
       "deactivate": "Pod deaktivieren",
       "silence": "Warnungen quittieren",
-      "activate": "Pod aktivieren"
-    },
-    "gate": {
-      "_": "Abgabe gesperrt",
-      "body": "Der DASH-Treiber ist nur gegen aufgezeichnete Protokolldaten geprüft, nie an einem echten Pod. Aktivierung, Basal und Bolus bleiben gesperrt, bis das an Hardware bestätigt wurde.",
-      "enable": "Abgabe an ungeprüfter Hardware freigeben",
-      "warning": "Nur freigeben, wenn du bereit bist, den Pod zu überwachen und im Zweifel abzunehmen."
+      "activate": "Pod aktivieren",
+      "deactivate_confirm": "Deaktivieren",
+      "resume": "Abgabe fortsetzen",
+      "deactivate_auth_reason": "Deaktivieren des Pods bestätigen"
     },
     "stop": {
       "_": "Abgabe stoppen?",
@@ -398,47 +395,57 @@
     },
     "restore": {
       "_": "Pod aus deinem Konto",
-      "body": "Für dein Konto ist ein Pod gespeichert, lokal aber keiner. Du kannst ihn übernehmen, ohne neu zu koppeln — nötig etwa nach einem App-Reset, damit du einen laufenden Pod weiter steuern und stoppen kannst.",
+      "body": "Für dein Konto ist ein Pod gespeichert, lokal aber keiner. Du kannst ihn übernehmen, ohne neu zu koppeln. Das ist etwa nach einem App-Reset nötig, damit du einen laufenden Pod weiter steuern und stoppen kannst.",
       "remaining": "Restlaufzeit: #",
       "use": "Pod übernehmen"
     },
     "activate": {
       "title": "Pod aktivieren",
       "explain_title": "Pod aktivieren",
-      "explain_body": "Fülle den Pod mit Insulin und lege ihn bereit — noch nicht an den Körper. Insulink sucht ihn dann und bereitet ihn vor. Der Fingerabdruck gibt später die Kanüle frei – richte ihn auf diesem Handy ein, bevor du startest.",
-      "binding": "Die Aktivierung bindet den Pod dauerhaft an diese App. Danach kann dein PDM diesen Pod nicht mehr steuern — das lässt sich nicht rückgängig machen. Solange der Pod läuft, ist Insulink das Einzige, was ihn stoppen kann.",
+      "explain_body": "Fülle den Pod mit Insulin und lege ihn bereit, noch nicht an den Körper. Insulink sucht ihn dann und bereitet ihn vor. Der Fingerabdruck gibt später die Kanüle frei. Richte ihn auf diesem Handy ein, bevor du startest.",
+      "binding": "Die Aktivierung bindet den Pod dauerhaft an diese App. Danach kann dein PDM diesen Pod nicht mehr steuern, und das lässt sich nicht rückgängig machen. Solange der Pod läuft, ist Insulink das Einzige, was ihn stoppen kann.",
       "priming_title": "Pod wird vorbereitet",
       "priming_body": "Der Pod wird gekoppelt und füllt seine Mechanik. Halte das Telefon in seiner Nähe.",
       "attach_title": "Pod jetzt anlegen",
-      "attach_body": "Der Pod ist vorbereitet. Entferne die Schutzfolie und klebe ihn auf die gewählte Stelle. Beim Weitertippen bestätigst du per Fingerabdruck — erst danach setzt der Pod die Kanüle in den Körper.",
-      "primed_units": "Vorbereitung: # U",
-      "starting_title": "Abgabe wird gestartet",
-      "starting_body": "Basalprofil und Alarme werden programmiert, danach setzt der Pod die Kanüle.",
+      "attach_body": "Der Pod ist vorbereitet und wartet. Jetzt kommt er auf den Körper.",
+      "starting_title": "Kanüle wird gesetzt",
+      "starting_body": "Der Pod bekommt seinen Zeitplan und setzt die Kanüle. Nur wenige Sekunden.",
       "running_title": "Pod läuft",
       "running_body": "Der Pod gibt jetzt dein Basal ab. Restlaufzeit und Reservoir findest du auf der Pumpenseite.",
       "failed_title": "Aktivierung abgebrochen",
-      "failed_body": "Du kannst es mit demselben Pod erneut versuchen — bereits erledigte Schritte werden nicht wiederholt. Oder verwirf den Pod und nimm einen neuen.",
+      "failed_body": "Du kannst es mit demselben Pod erneut versuchen. Bereits erledigte Schritte werden nicht wiederholt. Oder verwirf den Pod und nimm einen neuen.",
       "basal_problem": "Das aktive Basalprofil kann der Pod nicht übernehmen.",
       "start": "Pod suchen und vorbereiten",
-      "attached": "Pod ist angelegt — weiter",
+      "attached": "Pod ist angelegt, weiter",
       "retry": "Erneut versuchen",
       "discard": "Pod verwerfen",
       "done": "Fertig",
       "working": "Bitte warten …",
       "confirm_reason": "Bestätige das Setzen der Kanüle",
-      "confirm_declined": "Nicht bestätigt – die Kanüle wurde nicht gesetzt. Der Pod ist unverändert, du kannst es erneut versuchen. Falls auf dem Handy kein Fingerabdruck eingerichtet ist, richte ihn zuerst in den Systemeinstellungen ein.",
+      "confirm_declined": "Nicht bestätigt. Die Kanüle wurde nicht gesetzt. Der Pod ist unverändert, du kannst es erneut versuchen. Falls auf dem Handy kein Fingerabdruck eingerichtet ist, richte ihn zuerst in den Systemeinstellungen ein.",
       "attach_resume_title": "Aktivierung fortsetzen",
-      "attach_resume_body": "Der Pod ist bereits angelegt. Die Aktivierung wurde unterbrochen — beim Weitertippen wird nur nachgeholt, was noch fehlt.",
-      "locked": "Die Insulinabgabe ist gesperrt. Gib sie auf der Pumpenseite frei, um einen Pod zu aktivieren.",
+      "attach_resume_body": "Der Pod ist bereits angelegt. Die Aktivierung wurde unterbrochen. Beim Weitertippen wird nur nachgeholt, was noch fehlt.",
       "no_permission": "Insulink braucht die Bluetooth-Berechtigung, um den Pod zu finden. Erteile sie in den Systemeinstellungen und versuche es erneut.",
-      "discard_refused": "Dieser Pod hat die Kanüle bereits im Körper und gibt möglicherweise Insulin ab. Nicht verwerfen – beende ihn zuerst auf der Pumpen-Seite, das deaktiviert ihn sicher."
+      "discard_refused": "Dieser Pod hat die Kanüle bereits im Körper und gibt möglicherweise Insulin ab. Nicht verwerfen. Beende ihn zuerst auf der Pumpenseite, das deaktiviert ihn sicher.",
+      "stop_title": "Vorgang abbrechen?",
+      "stop_clean": "Es wurde noch kein Pod angesprochen. Der Abbruch verändert nichts, du kannst jederzeit neu suchen.",
+      "stop_started": "Der Pod ist bereits gekoppelt. Was schon passiert ist, lässt sich nicht rückgängig machen, aber es geht nichts verloren: Insulink merkt sich den Stand und du kannst hier später genau dort weitermachen.",
+      "stop_keep": "Weitersuchen",
+      "stop_confirm": "Abbrechen",
+      "stop": "Vorgang abbrechen",
+      "stopping": "Wird abgebrochen …",
+      "attach_step_1": "Stelle *reinigen* und trocknen lassen.",
+      "attach_step_2": "Beide *Schutzfolien* abziehen.",
+      "attach_step_3": "Pod aufkleben und *fest andrücken*.",
+      "attach_step_4": "Weiter tippen, mit *Fingerabdruck* bestätigen.",
+      "attach_step_5": "Erst dann setzt der Pod die *Kanüle*. Kurz spürbar."
     },
     "life": {
       "title": "Pod-Laufzeit"
     },
     "temp": {
       "title": "Temporäres Basal",
-      "body": "Ändert die Basalrate für eine begrenzte Zeit — etwa weniger vor dem Sport. Danach läuft dein Zeitplan von selbst weiter.",
+      "body": "Ändert die Basalrate für eine begrenzte Zeit, etwa weniger vor dem Sport. Danach läuft dein Zeitplan von selbst weiter.",
       "percent": "Anteil der geplanten Rate",
       "duration": "Dauer",
       "duration_value": "# Std # Min",
@@ -446,7 +453,47 @@
       "summary_stop": "Die Pumpe gibt in dieser Zeit kein Basal ab",
       "apply": "Temporäres Basal starten",
       "set": "Temporäres Basal",
-      "running": "Temporär: # E/Std — beenden"
+      "running": "Temporär # E/Std beenden"
+    },
+    "type": {
+      "dash": "Omnipod DASH"
+    },
+    "info": {
+      "title": "Pod-Daten"
+    },
+    "resume": {
+      "_": "Abgabe fortsetzen?",
+      "body": "Der Pod bekommt dein aktives Basalprofil zurück und liefert wieder nach Zeitplan.",
+      "confirm": "Fortsetzen"
+    },
+    "log": {
+      "_": "Abgegebenes Insulin",
+      "empty": "Noch nichts abgegeben.",
+      "dated": "# #",
+      "kind": {
+        "bolus": "Bolus",
+        "prime": "Vorbereitung",
+        "cannula": "Kanüle"
+      },
+      "basal_total": "Basal insgesamt",
+      "bolus_total": "Bolus insgesamt",
+      "total": "Seit Pod-Start"
+    },
+    "bolus": {
+      "running": "Bolus läuft",
+      "progress": "# von # E",
+      "stop": "Stoppen",
+      "stopped": "Bolus gestoppt. Abgegeben wurden # von # E. Der Eintrag im Abgabeprotokoll wurde korrigiert, deine Mahlzeit noch nicht.",
+      "remaining": "noch #",
+      "sending": "Bolus wird gesendet",
+      "units": "# E",
+      "not_delivered": "Der Bolus wurde nicht abgegeben. In der Mahlzeit ist deshalb kein Insulin eingetragen.",
+      "stop_title": "Bolus stoppen?",
+      "stop_body": "Der Rest der Dosis wird nicht mehr abgegeben. Was bereits geflossen ist, bleibt im Körper."
+    },
+    "basal": {
+      "out_of_date": "Dein Basalprofil wurde geändert. Der Pod läuft noch mit dem alten Zeitplan.",
+      "send": "Profil an den Pod senden"
     }
   },
   "google_health": {
@@ -622,7 +669,7 @@
       "height": "Körpergröße",
       "estimate_note": "Distanz und Kalorien sind Schätzungen aus deinen Schritten.",
       "height_note": "Die Körpergröße wird für die BMI-Berechnung verwendet.",
-      "permission": "Bewegungs-Berechtigung fehlt – Schritte können nicht gezählt werden.",
+      "permission": "Bewegungsberechtigung fehlt. Schritte können nicht gezählt werden.",
       "detail": {
         "empty": "Noch keine Aktivitätsdaten. Synchronisiere Google Health.",
         "latest": "Zuletzt",
@@ -703,7 +750,7 @@
       "ended_elsewhere_confirm": "Verstanden",
       "free": "Freies Training",
       "add_exercise": "Übung hinzufügen",
-      "no_exercise": "Noch keine Übung gewählt. Füge deine erste hinzu — sie gilt nur für dieses Training.",
+      "no_exercise": "Noch keine Übung gewählt. Füge deine erste hinzu, sie gilt nur für dieses Training.",
       "eta": "Ende ~#",
       "next_exercise": "Nächste Übung",
       "pick_next": "Was kommt als nächstes?"
@@ -779,16 +826,16 @@
       "heart_rate": "Herzfrequenz",
       "splits": "Tempo pro Kilometer",
       "km_label": "km #",
-      "location_denied": "Standort-Berechtigung fehlt – Training kann nicht aufgezeichnet werden.",
+      "location_denied": "Standortberechtigung fehlt. Training kann nicht aufgezeichnet werden.",
       "detected": "automatisch",
-      "detected_prompt": "Training erkannt – stimmt das?",
+      "detected_prompt": "Training erkannt. Stimmt das?",
       "show_more": "Mehr anzeigen",
       "all": "Alle Trainings",
       "empty": "Noch keine Trainings"
     },
     "detect_notification": {
       "title": "Training erkannt",
-      "body": "# · # Min. – bestätigen?",
+      "body": "# · # Min. Bestätigen?",
       "confirm": "Bestätigen",
       "reject": "Verwerfen"
     },
@@ -907,7 +954,7 @@
       "auth_reason": "Bestätige, um die Stummschaltung zu aktivieren",
       "warning": {
         "title": "Stummschaltung aktivieren?",
-        "body": "Bei aktiver Stummschaltung erhältst du KEINE Alarme – auch nicht bei gefährlich niedrigem oder hohem Blutzucker. Eine Unterzuckerung kann unbemerkt bleiben und lebensbedrohlich werden. Aktiviere sie nur, wenn du deine Werte anderweitig im Blick behältst.",
+        "body": "Bei aktiver Stummschaltung erhältst du KEINE Alarme, auch nicht bei gefährlich niedrigem oder hohem Blutzucker. Eine Unterzuckerung kann unbemerkt bleiben und lebensbedrohlich werden. Aktiviere sie nur, wenn du deine Werte anderweitig im Blick behältst.",
         "confirm": "Aktivieren"
       },
       "mode": {
@@ -1062,19 +1109,19 @@
   "alarm": {
     "channel": {
       "low_warning": {
-        "name": "Zucker niedrig — Warnung",
+        "name": "Warnung bei niedrigem Zucker",
         "desc": "Warnung bei niedrigem Zuckerwert."
       },
       "low_urgent": {
-        "name": "Zucker niedrig — Alarm",
+        "name": "Alarm bei niedrigem Zucker",
         "desc": "Starker Alarm bei kritisch niedrigem Zuckerwert."
       },
       "high_warning": {
-        "name": "Zucker hoch — Warnung",
+        "name": "Warnung bei hohem Zucker",
         "desc": "Warnung bei hohem Zuckerwert."
       },
       "high_urgent": {
-        "name": "Zucker hoch — Alarm",
+        "name": "Alarm bei hohem Zucker",
         "desc": "Starker Alarm bei kritisch hohem Zuckerwert."
       },
       "warning": {
@@ -1143,7 +1190,7 @@
         "body": "Nur noch # E im Pod. Plane einen Wechsel."
       },
       "alarm": {
-        "title": "Pod-Alarm — Abgabe gestoppt",
+        "title": "Pod-Alarm: Abgabe gestoppt",
         "occlusion": "Der Pod meldet eine Verstopfung. Es wurde kein Insulin abgegeben. Pod wechseln.",
         "empty": "Das Reservoir ist leer. Pod wechseln.",
         "expired": "Der Pod ist abgelaufen und hat gestoppt. Pod wechseln.",

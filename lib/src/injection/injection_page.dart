@@ -4,6 +4,7 @@ import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/injection/active_insulin.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
+import 'package:insulink/src/injection/bolus_dispatcher.dart';
 import 'package:insulink/src/injection/injection_confirm_page.dart';
 import 'package:insulink/src/injection/injection_products_tab.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -13,7 +14,6 @@ import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
-import 'package:insulink/src/pump/pod_delivery_gate.dart';
 import 'package:provider/provider.dart';
 import 'package:insulink/src/theme/brand_tints.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -162,7 +162,6 @@ class _InjectionSheetState extends State<InjectionSheet> {
     final bolusSettings = context.read<ProfileBolusState>();
     return BolusDelivery(
       controller: context.read<PodController>(),
-      gate: context.read<PodDeliveryGate>(),
       maxBolusUnits: bolusSettings.maxBolus.toDouble(),
       maxUnitsPerHour: bolusSettings.maxBolus.toDouble(),
     );
@@ -190,7 +189,17 @@ class _InjectionSheetState extends State<InjectionSheet> {
     if (outcome == null || !mounted) {
       return;
     }
-    await _record(meals, glucose, outcome);
+    final meal = await _record(meals, glucose, outcome);
+    if (outcome.isPending && mounted) {
+      // Handed over, not delivered: the dispatcher carries it from here and
+      // writes the insulin onto this exact meal once the pod names it back.
+      context.read<BolusDispatcher>().submit(
+            delivery: _delivery,
+            units: bolus,
+            deliveredLastHour: _activeInsulin,
+            meal: meal,
+          );
+    }
     if (mounted) {
       navigator.pop();
     }
@@ -204,21 +213,21 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// pump dose therefore logs the meal WITHOUT insulin: understating it can be
   /// corrected by logging the dose afterwards, whereas insulin in the log that
   /// never reached the body would suppress the next dose through IOB.
-  Future<void> _record(
+  Future<Meal> _record(
     MealState meals,
     int glucose,
     BolusDeliveryResult outcome,
   ) async {
-    await meals.addMeal(
-      Meal(
-        time: DateTime.now(),
-        carbs: _carbs,
-        glucoseMgdl: glucose,
-        bolus: outcome.recordedUnits,
-        entries: _productEntries,
-        deliveredByPump: outcome.byPump,
-      ),
+    final meal = Meal(
+      time: DateTime.now(),
+      carbs: _carbs,
+      glucoseMgdl: glucose,
+      bolus: outcome.recordedUnits,
+      entries: _productEntries,
+      deliveredByPump: outcome.byPump,
     );
+    await meals.addMeal(meal);
+    return meal;
   }
 
   @override

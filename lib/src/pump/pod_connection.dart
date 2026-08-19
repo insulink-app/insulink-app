@@ -31,6 +31,7 @@ class PodConnection {
 
   PodBleLink? _link;
   PodSession? _openedSession;
+  bool _stopped = false;
 
   /// The link currently held, if any, so a caller can close it.
   PodBleLink? get link => _link;
@@ -53,6 +54,7 @@ class PodConnection {
     bool stillAdvertisingUnactivated = false,
     bool allowScan = true,
   }) async {
+    _stopped = false;
     final uniqueId = store.uniqueId;
     final longTermKey = store.longTermKey;
     if (uniqueId == null || longTermKey == null) {
@@ -104,8 +106,10 @@ class PodConnection {
   Future<PodActivationSession> beginActivation({
     required Future<bool> Function(DiscoveredPod pod) confirmIrreversible,
   }) async {
+    _stopped = false;
     final pod = await scanner.scanForSingle(
       wantedPodId: DiscoveredPod.unactivatedPodId,
+      isCancelled: () => _stopped,
     );
     if (!await confirmIrreversible(pod)) {
       throw PodLinkException('Pairing cancelled before it began');
@@ -168,6 +172,7 @@ class PodConnection {
         ? (await scanner.scanForSingle(
             wantedPodId: advertisedPodId,
             preferredAddress: store.bleAddress,
+            isCancelled: () => _stopped,
           )).device
         : _storedDevice();
     final link = PodBleLink(device);
@@ -191,6 +196,19 @@ class PodConnection {
       throw PodLinkException('No pod address stored — connect once from the app');
     }
     return BluetoothDevice.fromId(address);
+  }
+
+  /// Cuts short whatever is in flight: ends a running scan and drops the link, so
+  /// the call waiting on either fails instead of running to its timeout.
+  ///
+  /// Nothing stored is discarded. Every activation step is written before the next
+  /// one runs, so an attempt stopped here RESUMES from where it got to rather than
+  /// starting over — which matters, because starting over would re-send commands
+  /// the pod has already carried out.
+  Future<void> stop() async {
+    _stopped = true;
+    await scanner.stop();
+    await close();
   }
 
   /// Holds on to the session so its counter can be persisted when the link is

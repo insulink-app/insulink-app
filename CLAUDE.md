@@ -90,6 +90,10 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
 - **2-space indentation.**
 - **Localize everything.** No hard-coded user-facing strings — every displayed
   string goes through the localization layer (`assets/locales/*.json`).
+- **No dash as punctuation in a user-facing string** — no `—`, no `–`, no ` - `.
+  Use a comma, a colon or a full stop instead; a hyphen inside a word is fine
+  (`Glukose-Alarme`). `test/localization/locale_punctuation_test.dart` fails the
+  suite on one. Details and examples: `docs/LOCALIZATION.md`.
 - **JSON uses `snake_case` keys.** The locale files are **nested objects** per
   section (`{"profile": {"glucose": {"target": …}}}`); both loaders flatten them
   on load to the dot-separated keys the app looks up (`profile.glucose.target`)
@@ -576,6 +580,15 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `flutter_blue_plus` 2.x: `device.connect(license: License.nonprofit)` is required.
 - Auth char uses **indications**; control/backfill are subscribed only AFTER
   auth (subscribing them early makes the sensor drop the connection).
+- **Do not re-add the `camera` package.** It was a direct dependency that nothing
+  imported, and it pulls `camera_android_camerax`, whose CameraX 1.6.0 does not put
+  `androidx.concurrent:concurrent-futures` on the compile classpath — javac then
+  fails reading the type annotations on `SurfaceRequest`
+  (`Klassendatei für androidx.concurrent.futures.CallbackToFutureAdapter nicht
+  gefunden`). **Release only**; `flutter test`/`analyze` never see it. `mobile_scanner`
+  brings its own CameraX and compiles fine, so scanning is unaffected. If `camera` is
+  ever genuinely needed, add `androidx.concurrent:concurrent-futures` to that module's
+  compile classpath rather than reverting this.
 - **QR/DataMatrix scan (mobile_scanner) needs R8 keep rules** in
   `android/app/proguard-rules.pro` (wired via `proguardFiles` in the release
   buildType). Flutter enables R8 for release; mobile_scanner's bundled keep
