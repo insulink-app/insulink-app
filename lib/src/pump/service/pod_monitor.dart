@@ -8,7 +8,7 @@ import 'package:insulink/src/pump/protocol/pod_session.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 import 'package:insulink/src/pump/service/pod_alarms.dart';
 import 'package:insulink/src/pump/insulin_sync.dart';
-import 'package:insulink/src/pump/pod_basal_delivery.dart';
+import 'package:insulink/src/pump/pod_basal_booking.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 
 /// Watches the paired pod from the background service, so its warnings arrive
@@ -191,37 +191,11 @@ class PodMonitor {
   /// meal records, but basal is a continuous drip that is often about half a day's
   /// insulin, so insulin-on-board built from boluses alone is built from half the
   /// insulin.
-  ///
-  /// Booked from the programmed schedule, gated on the pod reporting that it is
-  /// actually delivering. A suspended or alarming pod books nothing — which is the
-  /// point, because those are exactly the windows where the model would otherwise
-  /// assume insulin that never arrived.
   Future<void> _recordBasal(PodStatusResponse status) async {
-    final rates = store.basalRates;
-    final countedTo = store.basalCountedTo;
-    if (rates == null || countedTo == null) {
+    final units = await PodBasalBooking(store, now: now).book(status);
+    if (units == null) {
       return;
     }
-    final until = now();
-    if (!until.isAfter(countedTo)) {
-      return;
-    }
-    if (!status.delivery.isBasalRunning && !status.delivery.isTempBasalRunning) {
-      // Nothing was delivered, but the window is still closed — otherwise the next
-      // poll would book this stretch as if the pod had been running through it.
-      await store.addBasalDelivery(at: until, units: 0, countedTo: until);
-      onLog('pod basal: none delivered (${status.delivery.name})');
-      return;
-    }
-    final temporary = store.temporaryBasal;
-    final units = PodBasalDelivery(rates, temporary: temporary)
-        .unitsBetween(countedTo, until);
-    await store.addBasalDelivery(at: until, units: units, countedTo: until);
-    // Retired only once the ledger has billed past its end, so the window that
-    // straddles the end is still split at the right rate.
-    if (temporary != null && !until.isBefore(temporary.end)) {
-      await store.clearTemporaryBasal();
-    }
-    onLog('pod basal: ${units.toStringAsFixed(3)} U since $countedTo');
+    onLog('pod basal: ${units.toStringAsFixed(3)} U booked');
   }
 }

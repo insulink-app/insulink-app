@@ -7,6 +7,7 @@ import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_alarm.dart';
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
+import 'package:insulink/src/localization/enum_locale_key.dart';
 import 'package:insulink/src/pump/service/pod_alarm_channels.dart';
 
 /// Pod warnings raised from the service isolate, so they reach the user with the
@@ -47,6 +48,7 @@ class PodAlarmManager {
   static const _alarmId = 113;
   static const _unreachableId = 114;
   static const _stoppedId = 115;
+  static const _loopStoppedId = 116;
 
   /// One-shot flag names, stored per pod.
   static const _expirySlug = 'expiry';
@@ -201,6 +203,32 @@ class PodAlarmManager {
         'alarm.pod.unreachable.body',
         silence.inMinutes,
       ),
+      notificationDetails: NotificationDetails(android: await _channels.warning()),
+    );
+  }
+
+  /// Says that the automation switched itself back to the basal schedule.
+  ///
+  /// An automated system that stops without saying so is worse than one that was
+  /// never started: the user goes on believing their delivery is being managed.
+  /// Called only when the loop stopped ITSELF; switching it off by hand needs no
+  /// notification, because the person who did it is holding the phone.
+  ///
+  /// The warning channel rather than the urgent one, and it respects silent mode.
+  /// Nothing dangerous has happened: the pod has gone back to the schedule the
+  /// user programmed, which is exactly where it belongs when nothing is deciding
+  /// for it.
+  ///
+  /// The body reuses the strings the pump page shows for the same cause, so the
+  /// notification and the page cannot come to say different things.
+  Future<void> loopStopped(PodLoopStop cause) async {
+    if ((await ProfileSilentState.load()).mutesNotifications) {
+      return;
+    }
+    await _plugin.show(
+      id: _loopStoppedId,
+      title: await _strings.get('alarm.pod.loop_stopped.title'),
+      body: await _strings.get('pump.loop.stopped.${cause.localeKey}'),
       notificationDetails: NotificationDetails(android: await _channels.warning()),
     );
   }

@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/pump/pod_basal_delivery.dart';
+import 'package:insulink/src/pump/loop/loop_decision.dart';
+import 'package:insulink/src/pump/loop/loop_limits.dart';
 import 'package:insulink/src/pump/pod_running_bolus.dart';
 
 /// Everything about a paired pod that has to outlive the process.
@@ -18,6 +20,7 @@ import 'package:insulink/src/pump/pod_running_bolus.dart';
 /// requirement across isolates.
 part 'pod_basal_ledger.dart';
 part 'pod_delivery_log.dart';
+part 'loop/loop_journal.dart';
 
 class PodStore {
   PodStore(this._storage, this._cache);
@@ -53,6 +56,10 @@ class PodStore {
   static const _kDeliveryLog = 'pod.delivery_log';
   static const _kRunningBolus = 'pod.running_bolus';
   static const _kPendingBolus = 'pod.pending_bolus';
+  static const _kLoopMode = 'pod.loop_mode';
+  static const _kLoopStop = 'pod.loop_stop';
+  static const _kLoopCycles = 'pod.loop_cycles';
+  static const _kUnconfirmedBoluses = 'pod.unconfirmed_boluses';
 
   /// Roughly two days of 15-minute samples. Past that the oldest are dropped:
   /// insulin history that old is no longer shaping a forecast, and an unbounded
@@ -215,6 +222,10 @@ class PodStore {
       _kDeliveryLog,
       _kRunningBolus,
       _kPendingBolus,
+      _kLoopMode,
+      _kLoopStop,
+      _kLoopCycles,
+      _kUnconfirmedBoluses,
     ]) {
       await _remove(key);
     }

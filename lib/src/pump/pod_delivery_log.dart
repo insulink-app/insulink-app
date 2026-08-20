@@ -169,4 +169,61 @@ extension PodDeliveryLog on PodStore {
             entry.kind == PodDeliveryKind.bolus && entry.at.isAfter(since))
         .fold<double>(0, (sum, entry) => sum + entry.units);
   }
+
+  /// Boluses the pod may or may not have delivered.
+  ///
+  /// A bolus whose outcome is unknown is deliberately recorded in NEITHER the
+  /// meal log nor [deliveryLog]. That is the right call for the user's own
+  /// calculator: understating insulin there is recoverable by logging it
+  /// afterwards, while overstating it would suppress a correction they need.
+  ///
+  /// The automation needs the opposite assumption and cannot ask anyone. If the
+  /// dose did go in, a loop blind to it would add insulin on top of it, and the
+  /// insulin the loop is allowed to add is computed from how much is already on
+  /// board. So the possibility is kept here, read only by the loop, which treats
+  /// it as delivered.
+  ///
+  /// The two readers disagreeing is the point: each assumes whatever is
+  /// conservative for what it does next.
+  List<PodDelivery> get unconfirmedBoluses {
+    final encoded = _cache[PodStore._kUnconfirmedBoluses];
+    if (encoded == null || encoded.isEmpty) {
+      return const [];
+    }
+    try {
+      return [
+        for (final entry in jsonDecode(encoded) as List<dynamic>)
+          PodDelivery.fromJson(entry as Map<String, dynamic>),
+      ];
+    } on FormatException {
+      return const [];
+    }
+  }
+
+  /// Notes a bolus that may have been delivered, dropping any old enough that no
+  /// insulin model would still count them.
+  Future<void> recordUnconfirmedBolus(PodDelivery bolus) async {
+    final cutoff = bolus.at.subtract(const Duration(hours: 24));
+    final kept = [
+      bolus,
+      ...unconfirmedBoluses.where((entry) => entry.at.isAfter(cutoff)),
+    ];
+    await _set(
+      PodStore._kUnconfirmedBoluses,
+      jsonEncode([for (final entry in kept.take(20)) entry.toJson()]),
+    );
+  }
+
+  /// Units still active from boluses that may have been delivered, decaying
+  /// linearly over [insulinDuration] exactly as [ActiveInsulin] decays a bolus.
+  double unconfirmedBolusUnits(Duration insulinDuration, {DateTime? now}) {
+    final at = now ?? DateTime.now();
+    var units = 0.0;
+    for (final bolus in unconfirmedBoluses) {
+      final elapsed = at.difference(bolus.at).inSeconds;
+      final fraction = 1 - elapsed / insulinDuration.inSeconds;
+      units += bolus.units * fraction.clamp(0.0, 1.0);
+    }
+    return units;
+  }
 }

@@ -608,7 +608,11 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `docs/OMNIPOD.md` — **Omnipod DASH** pump: implementation status, the four
   protocol layers (fragments/messages/security/commands), and the hazard
   analysis — including why there is no read-only mode and what each guard in
-  `lib/src/pump/protocol/` defends against.
+  `lib/src/pump/protocol/` defends against. Automated delivery is
+  `docs/LOOP.md`.
+- `docs/LOOP.md` — **automated delivery**: why it is temp-basal-only, the pod's
+  own expiry as the fallback to basal, the trust boundary on sensor data, and
+  the layered limits that bound how much insulin it can add.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
 - `docs/DESIGN.md` — the theme/colour-role system: the two accents, the three

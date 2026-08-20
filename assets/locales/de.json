@@ -499,6 +499,61 @@
     "basal": {
       "out_of_date": "Dein Basalprofil wurde geändert. Der Pod läuft noch mit dem alten Zeitplan.",
       "send": "Profil an den Pod senden"
+    },
+    "loop": {
+      "title": "Automatische Abgabe",
+      "mode": {
+        "off": "Aus",
+        "observing": "Beobachten",
+        "engaged": "Aktiv"
+      },
+      "hint": {
+        "off": "Der Pod läuft dein eigenes Basalprogramm.",
+        "observing": "Jede Entscheidung wird berechnet und protokolliert. Abgegeben wird nichts.",
+        "engaged": "Die Automatik ersetzt dein Basalprogramm alle fünf Minuten durch eine berechnete temporäre Rate."
+      },
+      "no_cycle": "Noch keine Entscheidung berechnet.",
+      "last": "Zuletzt #: # U/h, #",
+      "reason": {
+        "holding_schedule": "auf Kurs",
+        "correcting": "korrigiert",
+        "easing_off": "nimmt zurück",
+        "suspended_low": "gestoppt, Glukose zu niedrig",
+        "suspended_falling": "gestoppt, Glukose fällt",
+        "no_glucose": "keine verwertbaren Sensordaten",
+        "pod_unavailable": "Pod nicht bereit",
+        "limits_invalid": "Grenzwerte unstimmig",
+        "clock_unreliable": "Uhrzeit zurückgestellt"
+      },
+      "bound": {
+        "max_rate": "(durch die Ratenobergrenze begrenzt)",
+        "max_iob": "(durch das aktive Insulin begrenzt)",
+        "hypo_headroom": "(durch den Abstand zur Stoppschwelle begrenzt)",
+        "hourly_ceiling": "(durch die Stundengrenze begrenzt)",
+        "reservoir": "(durch den Reservoirstand begrenzt)"
+      },
+      "stopped": {
+        "pod_unreachable": "Die Automatik wurde beendet, weil der Pod länger nicht erreichbar war. Der Pod läuft wieder auf deinem Basalprogramm.",
+        "pod_not_delivering": "Die Automatik wurde beendet, weil der Pod nicht mehr abgibt.",
+        "no_pod": "Die Automatik wurde beendet, weil kein aktiver Pod vorhanden ist.",
+        "limits_invalid": "Die Automatik wurde beendet, weil die Grenzwerte nicht zusammenpassen."
+      },
+      "blocked": {
+        "no_pod": "Dafür muss ein aktiver Pod verbunden sein.",
+        "no_schedule": "Dem Pod muss zuerst ein Basalprogramm übertragen werden.",
+        "limits": "Die Grenzwerte passen nicht zusammen. Prüfe Stoppschwelle und Zielwert im Profil."
+      },
+      "warning": {
+        "title": "Automatische Insulinabgabe",
+        "body": "Die App gibt dann selbstständig Insulin ab, auch während du schläfst. Sie ist kein Medizinprodukt und klinisch nicht geprüft. Miss weiterhin gegen und halte Traubenzucker bereit.",
+        "confirm": "Verstanden, aktivieren"
+      },
+      "auth_reason": "Automatische Insulinabgabe aktivieren",
+      "journal": "Entscheidungen der Automatik",
+      "not_sent": "nicht gesendet",
+      "at_glucose": "bei # mg/dL, # mg/dL pro Minute",
+      "on_board": "# U aktiv",
+      "schedule_was": "Basalprogramm # U/h"
     }
   },
   "google_health": {
@@ -1047,7 +1102,8 @@
       "nutrition_goals": "ernährung ziele tagesziele kohlenhydrate eiweiß protein wasser trinken",
       "hr_zones": "puls pulszonen herzfrequenz zonen bpm erhöht hoch grün orange rot",
       "sleep": "schlaf schlafqualität tiefschlaf einschlafen unterbrechung schlafindex zielbereich",
-      "battery": "akku batterie energie sparen strom stromsparen gps ortung standort erkennung laufzeit"
+      "battery": "akku batterie energie sparen strom stromsparen gps ortung standort erkennung laufzeit",
+      "loop": "automatische abgabe automatik loop closed loop insulin"
     },
     "prediction": {
       "_": "Vorhersage",
@@ -1072,6 +1128,22 @@
     },
     "pod_bolus_beep": {
       "description": "Der Pod piept, wenn ein Bolus fertig abgegeben ist."
+    },
+    "loop": {
+      "_": "Automatische Abgabe",
+      "description": "Grenzen, innerhalb derer die Automatik Insulin abgeben darf.",
+      "suspend_below": {
+        "_": "Abgabe stoppen unter",
+        "value": "# mg/dL"
+      },
+      "max_rate": {
+        "_": "Höchste Basalrate",
+        "value": "# U/h"
+      },
+      "max_iob": {
+        "_": "Höchstes aktives Insulin",
+        "value": "# U"
+      }
     }
   },
   "injection": {
@@ -1217,6 +1289,9 @@
       "unreachable": {
         "title": "Kein Kontakt zum Pod",
         "body": "Seit # Minuten keine Verbindung. Der Pod gibt weiter ab, aber die App kann ihn nicht steuern oder stoppen."
+      },
+      "loop_stopped": {
+        "title": "Automatik beendet"
       }
     }
   },

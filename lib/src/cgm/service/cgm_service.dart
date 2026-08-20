@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:async';
 import 'dart:io';
 
@@ -30,6 +31,10 @@ import '../cgm_store.dart';
 import '../../pump/pod_store.dart';
 import '../../pump/service/pod_alarms.dart';
 import '../../pump/service/pod_monitor.dart';
+import '../../pump/loop/loop_glucose.dart';
+import '../../pump/loop/loop_runner.dart';
+import '../../nutrition/meal/meal_store.dart';
+import '../../injection/active_insulin.dart';
 import '../../libre3/libre3_connection.dart';
 import '../../libre3/libre3_crypto.dart';
 
@@ -57,6 +62,7 @@ class CgmTaskHandler extends TaskHandler {
   CgmStore? _store;
   FlutterLocalNotificationsPlugin? _notifications;
   PodMonitor? _podMonitor;
+  PodLoopRunner? _podLoop;
 
   /// The pod store, kept between ticks. Reloaded at the poll cadence rather than
   /// every tick: a fresh `readAll()` on secure storage is not free, and nothing
@@ -417,7 +423,11 @@ class CgmTaskHandler extends TaskHandler {
     // Same reasoning as the band: the pod rides this service rather than getting
     // its own, so it never competes for the BLE scanner. Its own tick decides
     // whether a poll is due; the contact-free warnings run every time.
-    unawaited(_tickPodMonitor());
+    //
+    // Chained, not parallel: both hold a real session on the one pod, and the
+    // pod's link is exclusive. Each tick decides for itself whether it is due,
+    // so chaining costs nothing on the ticks where neither is.
+    unawaited(_tickPodMonitor().then((_) => _tickPodLoop()));
     // Apply Confirm/Reject taps buffered by the notification-action isolate,
     // which can't reach secure storage itself (see SportStore.recordTrainingDecision).
     unawaited(_applyTrainingDecisions());
@@ -686,6 +696,56 @@ class CgmTaskHandler extends TaskHandler {
     unawaited(monitor.start(knownOnly: true));
   }
 
+  /// Runs one automated cycle if the automation is on and one is due.
+  ///
+  /// Reads glucose out of the archive this same isolate writes, so the loop sees
+  /// a reading as soon as it lands rather than one tick later.
+  Future<void> _tickPodLoop() async {
+    final notifications = _notifications;
+    if (notifications == null) {
+      return;
+    }
+    try {
+      final store = await _freshPodStore();
+      if (!store.hasPod) {
+        _podLoop = null;
+        return;
+      }
+      final runner = _podLoop ??= PodLoopRunner(
+        store: store,
+        readGlucose: _readLoopGlucose,
+        readMealIob: _readMealIob,
+        onLog: _log,
+        notifyStopped: PodAlarmManager(notifications).loopStopped,
+      );
+      await runner.tick();
+    } on Exception catch (error) {
+      _log('pod loop tick failed: $error');
+    }
+  }
+
+  /// The sensor input the automation is allowed to decide on, or an unusable one
+  /// when there is no store yet. Validation lives in [LoopGlucose]; this only
+  /// hands it the window it measures over.
+  Future<LoopGlucose> _readLoopGlucose() async {
+    final store = _store;
+    final now = DateTime.now();
+    if (store == null) {
+      return LoopGlucose.from(SplayTreeMap<int, int>(), now: now);
+    }
+    return LoopGlucose.from(
+      store.archiveRange(now.subtract(LoopGlucose.trendWindow), now),
+      now: now,
+    );
+  }
+
+  /// Insulin still working from the user's own boluses. Every logged meal carries
+  /// the bolus it was dosed with, so the meal log is the dose history.
+  Future<double> _readMealIob(Duration insulinDuration) async {
+    final meals = await const MealStore().loadMeals();
+    return ActiveInsulin(insulinDuration).units(meals);
+  }
+
   /// Runs the pod watch, building it on first use.
   Future<void> _tickPodMonitor() async {
     final notifications = _notifications;
@@ -710,6 +770,10 @@ class CgmTaskHandler extends TaskHandler {
   }
 
   /// The pod store, re-read at most once per poll interval.
+  ///
+  /// The automation re-reads it for itself on every cycle it runs, because the
+  /// mode it reads there decides whether insulin is programmed. This one only
+  /// has to be fresh enough to notice a pod appearing.
   ///
   /// A pod is paired in the UI isolate, so this one only ever learns about it by
   /// re-reading storage — but doing that on every 30 s tick would decrypt the

@@ -3,6 +3,7 @@ import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/base/pinned_header_scroll.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/loop/loop_mode_card.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_restore_card.dart';
 import 'package:insulink/src/pump/pod_status_attributes.dart';
@@ -89,6 +90,8 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
         const SizedBox(height: 4),
         ..._notices(context, controller),
         const PodBasalOutOfDateNotice(),
+        const PodLoopModeCard(),
+        const SizedBox(height: 14),
         SensorSectionList(sections: sections),
       ],
     );

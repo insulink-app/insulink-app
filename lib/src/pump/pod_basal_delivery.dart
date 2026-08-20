@@ -103,6 +103,7 @@ class PodTemporaryBasal {
     required this.unitsPerHour,
     required this.start,
     required this.end,
+    this.automated = false,
   });
 
   factory PodTemporaryBasal.fromJson(Map<String, dynamic> json) {
@@ -110,6 +111,7 @@ class PodTemporaryBasal {
       unitsPerHour: (json['units_per_hour'] as num).toDouble(),
       start: DateTime.fromMillisecondsSinceEpoch((json['start'] as num).toInt()),
       end: DateTime.fromMillisecondsSinceEpoch((json['end'] as num).toInt()),
+      automated: json['automated'] == true,
     );
   }
 
@@ -117,10 +119,20 @@ class PodTemporaryBasal {
   final DateTime start;
   final DateTime end;
 
+  /// Whether the automation set this, rather than the user.
+  ///
+  /// The ledger does not care, but the automation does: a rate the USER chose is
+  /// an instruction, and replacing it on the next cycle would quietly undo the
+  /// temp basal someone set before going running. Defaults to false so a rate
+  /// stored before this existed is treated as the user's, which is the reading
+  /// that leaves it alone.
+  final bool automated;
+
   Map<String, dynamic> toJson() => {
         'units_per_hour': unitsPerHour,
         'start': start.millisecondsSinceEpoch,
         'end': end.millisecondsSinceEpoch,
+        if (automated) 'automated': true,
       };
 
   /// Whether [moment] falls inside the stretch. The end is exclusive, so the
@@ -133,5 +145,6 @@ class PodTemporaryBasal {
         unitsPerHour: unitsPerHour,
         start: start,
         end: moment.isBefore(start) ? start : moment,
+        automated: automated,
       );
 }

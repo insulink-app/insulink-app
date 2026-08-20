@@ -13,6 +13,7 @@ import 'package:insulink/src/profile/notifications/profile_live_notification_sta
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
+import 'package:insulink/src/pump/loop/loop_settings.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/request/request.dart';
@@ -79,6 +80,14 @@ class ProfileSettings {
       "pod_insulin_alert": "${await NotificationSetting.podInsulin.load()}",
       "pod_insulin_units": "${await NotificationThreshold.podInsulin.load()}",
       "pod_bolus_beep": "${await NotificationSetting.podBolusBeep.load()}",
+      // The automated-delivery ceilings. The MODE is deliberately not here: a
+      // pod belongs to the device that activated it, so which device is
+      // automating is not an account-wide setting. The limits are, and a user
+      // who has tuned them should not have to tune them again on a new phone.
+      LoopSettings.suspendBelow.storageKey:
+          "${await LoopSettings.suspendBelow.load()}",
+      LoopSettings.maxRate.storageKey: "${await LoopSettings.maxRate.load()}",
+      LoopSettings.maxIob.storageKey: "${await LoopSettings.maxIob.load()}",
       // Two booleans, not one enum: the panel coerces `silent_mode` to a bool
       // and writes it back, so the tone-only mute needs a key of its own.
       "silent_mode": "${silent.mode == SilentMode.all}",

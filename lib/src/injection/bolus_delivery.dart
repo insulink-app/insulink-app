@@ -135,6 +135,26 @@ class BolusDelivery {
     }
   }
 
+  /// An outcome nobody can resolve, noted where the automation will find it.
+  ///
+  /// Zero units still reach the meal log, because the user can log the dose
+  /// themselves once they have looked at the pod and inventing it for them would
+  /// suppress a correction they may need. The automation cannot look at the pod
+  /// and cannot ask, so it gets the opposite assumption: the dose was given. The
+  /// insulin it is allowed to add is computed from what is already on board, and
+  /// a loop blind to a dose that did go in would add on top of it.
+  Future<BolusDeliveryResult> _unknown(
+    String message,
+    PodBolusAmount amount,
+  ) async {
+    await controller.store.recordUnconfirmedBolus(PodDelivery(
+      at: DateTime.now(),
+      units: amount.units,
+      kind: PodDeliveryKind.bolus,
+    ));
+    return BolusDeliveryResult.unknown(message);
+  }
+
   /// Whether the pod's answer actually shows the bolus it was just given.
   ///
   /// A reply is not agreement. The pod answers a command sequence number it has
@@ -187,11 +207,12 @@ class BolusDelivery {
         return BolusDeliveryResult.refused('Pod refused it: ${response.error.name}');
       }
       if (response is! PodStatusResponse) {
-        return const BolusDeliveryResult.unknown('The pod gave an unclear answer');
+        return _unknown('The pod gave an unclear answer', amount);
       }
       if (!_confirmsBolus(response)) {
-        return const BolusDeliveryResult.unknown(
+        return _unknown(
           'The pod answered but does not report a bolus running',
+          amount,
         );
       }
       // Logged only once the pod has named the bolus back, never before: an entry
@@ -215,7 +236,7 @@ class BolusDelivery {
     } on PodBolusRefused catch (refusal) {
       return BolusDeliveryResult.refused(refusal.reason);
     } on PodCommandOutcomeUnknown catch (error) {
-      return BolusDeliveryResult.unknown(error.message);
+      return _unknown(error.message, amount);
     } on Exception catch (error) {
       return BolusDeliveryResult.refused('$error');
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/device_lifespan.dart';
 import 'package:insulink/src/base/device_lifespan_bar.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/loop/loop_overview_line.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_reservoir_level.dart';
 import 'package:insulink/src/theme/status_colors.dart';
@@ -39,6 +40,7 @@ class OverviewPodLife extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         OverviewPodReservoir(controller: controller),
+        const PodLoopOverviewLine(),
       ],
     );
   }

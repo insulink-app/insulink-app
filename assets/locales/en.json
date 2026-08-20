@@ -499,6 +499,61 @@
     "basal": {
       "out_of_date": "Your basal profile has changed. The pod is still running the old schedule.",
       "send": "Send profile to the pod"
+    },
+    "loop": {
+      "title": "Automated delivery",
+      "mode": {
+        "off": "Off",
+        "observing": "Observing",
+        "engaged": "Active"
+      },
+      "hint": {
+        "off": "The pod runs your own basal schedule.",
+        "observing": "Every decision is computed and logged. Nothing is delivered.",
+        "engaged": "The automation replaces your basal schedule with a computed temporary rate every five minutes."
+      },
+      "no_cycle": "No decision computed yet.",
+      "last": "Last at #: # U/h, #",
+      "reason": {
+        "holding_schedule": "on course",
+        "correcting": "correcting",
+        "easing_off": "easing off",
+        "suspended_low": "stopped, glucose too low",
+        "suspended_falling": "stopped, glucose falling",
+        "no_glucose": "no usable sensor data",
+        "pod_unavailable": "pod not ready",
+        "limits_invalid": "limits inconsistent",
+        "clock_unreliable": "clock moved backwards"
+      },
+      "bound": {
+        "max_rate": "(held by the rate ceiling)",
+        "max_iob": "(held by active insulin)",
+        "hypo_headroom": "(held by the room left above the stop threshold)",
+        "hourly_ceiling": "(held by the hourly ceiling)",
+        "reservoir": "(held by the reservoir level)"
+      },
+      "stopped": {
+        "pod_unreachable": "The automation stopped because the pod was out of reach for a while. The pod is back on your basal schedule.",
+        "pod_not_delivering": "The automation stopped because the pod is no longer delivering.",
+        "no_pod": "The automation stopped because there is no active pod.",
+        "limits_invalid": "The automation stopped because the limits do not fit together."
+      },
+      "blocked": {
+        "no_pod": "An active pod has to be connected for this.",
+        "no_schedule": "A basal schedule has to be sent to the pod first.",
+        "limits": "The limits do not fit together. Check the stop threshold and the target in your profile."
+      },
+      "warning": {
+        "title": "Automated insulin delivery",
+        "body": "The app will then deliver insulin on its own, including while you sleep. It is not a medical device and has not been clinically tested. Keep checking against a meter and keep fast sugar within reach.",
+        "confirm": "Understood, turn on"
+      },
+      "auth_reason": "Turn on automated insulin delivery",
+      "journal": "Automation decisions",
+      "not_sent": "not sent",
+      "at_glucose": "at # mg/dL, # mg/dL per minute",
+      "on_board": "# U active",
+      "schedule_was": "schedule # U/h"
     }
   },
   "google_health": {
@@ -1047,7 +1102,8 @@
       "nutrition_goals": "nutrition goals daily carbs protein water hydration",
       "hr_zones": "pulse heart rate zones bpm elevated high green orange red",
       "sleep": "sleep quality deep sleep onset interruptions sleep index target range",
-      "battery": "battery power energy saver save drain gps location tracking detection runtime"
+      "battery": "battery power energy saver save drain gps location tracking detection runtime",
+      "loop": "automated delivery automation loop closed loop insulin"
     },
     "prediction": {
       "_": "Prediction",
@@ -1072,6 +1128,22 @@
     },
     "pod_bolus_beep": {
       "description": "The pod beeps once a bolus has finished delivering."
+    },
+    "loop": {
+      "_": "Automated delivery",
+      "description": "The bounds the automation may deliver insulin within.",
+      "suspend_below": {
+        "_": "Stop delivery below",
+        "value": "# mg/dL"
+      },
+      "max_rate": {
+        "_": "Highest basal rate",
+        "value": "# U/h"
+      },
+      "max_iob": {
+        "_": "Highest active insulin",
+        "value": "# U"
+      }
     }
   },
   "injection": {
@@ -1217,6 +1289,9 @@
       "unreachable": {
         "title": "No contact with the pod",
         "body": "No connection for # minutes. The pod keeps delivering, but the app cannot command or stop it."
+      },
+      "loop_stopped": {
+        "title": "Automation stopped"
       }
     }
   },

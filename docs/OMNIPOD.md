@@ -352,6 +352,13 @@ suspend and deactivate a pod reliably, or it must not activate one at all.
 | Bolus larger than the reservoir | partial delivery, wrong IOB | refused when the pod reports a measurable reservoir |
 | Pod in alarm or not running | command silently ignored | lifecycle checked before every bolus |
 | Delivery command reaching a pod mid-activation | undefined | `PodLifecycleStatus.acceptsDelivery` gates it |
+| Automation dosing on stale or impossible sensor data | wrong dose from a number that describes nothing | `LoopGlucose` refuses data over 12 min old, outside 30 to 500 mg/dL, moving faster than 8 mg/dL per min, or with too few points to measure a trend; no decision can be computed without one |
+| Automation stacking its own corrections | escalating dose nobody chose | its own excess above the schedule counts as insulin on board (`PodLoopJournal.loopIobUnits`), so each cycle sees what the last one gave |
+| Automation driving glucose into severe hypoglycaemia | the hazard the whole feature is bounded by | the insulin it may add is capped at what fits between glucose and the suspend threshold, measured over the WHOLE fuse rather than the cycle, so the guarded case is the loop dying immediately after programming. Swept in `loop_hypo_bound_test.dart` |
+| Automation left running by a phone that dies | unattended delivery with nothing able to stop it | every automated rate is a temp basal lasting one fuse; the POD returns to the stored schedule when it expires, with no app involved |
+| Automation silently overriding a rate the user set | a temp basal set for sport undone without notice | `PodTemporaryBasal.automated` distinguishes them and the loop defers to the user's, except for a suspension |
+| Automation dosing on top of a bolus nobody could confirm | stacked dose from insulin the loop cannot see | an unconfirmed bolus is recorded in `PodStore.unconfirmedBoluses` and counted as delivered BY THE LOOP only; the user's own calculator still counts it as not given, because the conservative assumption differs per reader |
+| Automation stopping without the user noticing | delivery believed managed when it is not | every self-stop raises a notification, and the overview keeps showing it until the user acts |
 
 Two design rules that came out of this and should not be relaxed:
 
@@ -361,6 +368,9 @@ Two design rules that came out of this and should not be relaxed:
 2. **The stop path carries no arithmetic.** `PodStopDeliveryCommand` contains no
    computed dose — only which streams to halt — so there is no number in it that
    can be wrong. It must never be placed behind a check that can fail closed.
+
+The automated-delivery layer has its own hazard reasoning in `docs/LOOP.md`,
+including why it clamps where the rest of this driver refuses.
 
 ## Protocol notes
 
