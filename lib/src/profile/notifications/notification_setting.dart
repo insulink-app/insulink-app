@@ -44,6 +44,17 @@ class NotificationSetting {
     'profile.pod_insulin.description',
   );
 
+  /// Whether the POD itself beeps when a bolus finishes.
+  ///
+  /// Not a phone notification like the rest of these, but the same shape of
+  /// preference, so it rides the same plumbing: one key, default ON, read fresh
+  /// wherever it is needed. The pod is told about it in the bolus command, so a
+  /// change applies to the next dose without touching the pod in between.
+  static const podBolusBeep = NotificationSetting(
+    'pod_bolus_beep',
+    'profile.pod_bolus_beep.description',
+  );
+
   Future<bool> load() async =>
       (await const FlutterSecureStorage().read(key: storageKey)) != 'false';
 

@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
 import 'package:insulink/src/google_health/intraday_pulse_store.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Mirrors the granular intraday pulse curve to the user's backend account and
 /// pulls it back on sign-in, so the curve can be reconstructed from the account
@@ -77,11 +77,11 @@ class PulseSync {
   /// server's live pulse (the panel's running-routine vitals bar). Drives the
   /// [pushLive] cadence, so 1 Hz costs only run while something is watching.
   void _adoptViewerFlag(Response? response) {
-    if (response == null) {
+    final body = response.jsonObject;
+    if (body == null) {
       return;
     }
-    final body = jsonDecode(response.body);
-    _liveViewer = body is Map && body['live'] == true;
+    _liveViewer = body['live'] == true;
   }
 
   void push(Set<String> dayKeys) {
@@ -117,10 +117,10 @@ class PulseSync {
     final response = await Request.get(
       url: '/health/pulse/find/',
     ).send(context);
-    if (response == null) {
+    final body = response.jsonObject;
+    if (body == null) {
       return;
     }
-    final body = jsonDecode(response.body);
     if (body['success'] != true || body['samples'] is! List) {
       return;
     }

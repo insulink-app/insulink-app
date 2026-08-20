@@ -70,8 +70,17 @@ class ScriptedPodController extends PodController {
     _readAt = DateTime.now();
   }
 
+  /// Mirrors the real one: the pod is read on the same link, the guard judges
+  /// that status, and only then does the dose go out.
   @override
-  Future<PodResponse> sendBolus(PodBolusAmount amount) async {
+  Future<PodResponse> sendBolus(
+    PodBolusAmount amount, {
+    required String? Function(PodStatusResponse status) refuseIf,
+  }) async {
+    final refusal = refuseIf(PodStatusResponse(_statusBody));
+    if (refusal != null) {
+      throw PodBolusRefused(refusal);
+    }
     sent.add(amount);
     return reply(amount);
   }

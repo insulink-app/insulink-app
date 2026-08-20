@@ -113,8 +113,6 @@ class BolusDelivery {
     if (!usesPump || units <= 0) {
       return BolusDeliveryResult.loggedOnly(units);
     }
-    // Recorded before anything is sent, so a process that dies between here and
-    // the pod's answer leaves evidence that a dose may be running.
     final PodBolusAmount amount;
     try {
       amount = PodBolusAmount.fromUnits(units);
@@ -122,29 +120,8 @@ class BolusDelivery {
       return BolusDeliveryResult.refused(error.message);
     }
 
-    await controller.refresh();
-    final status = controller.status;
-    final readAt = controller.statusReadAt;
-    if (status == null || readAt == null) {
-      return BolusDeliveryResult.refused(
-        controller.failure ?? 'Could not read the pod',
-      );
-    }
-
-    final decision = PodDeliveryGuard(
-      maxBolusUnits: maxBolusUnits,
-      maxUnitsPerHour: maxUnitsPerHour,
-    ).checkBolus(
-      amount: amount,
-      status: status,
-      statusAge: DateTime.now().difference(readAt),
-      deliveredLastHour: deliveredLastHour,
-    );
-    if (!decision.isAllowed) {
-      return BolusDeliveryResult.refused(
-        decision.detail ?? decision.refusal!.name,
-      );
-    }
+    // Recorded before anything is sent, so a process that dies between here and
+    // the pod's answer leaves evidence that a dose may be running.
     await controller.store.startPendingBolus(PodRunningBolus(
       startedAt: DateTime.now(),
       pulses: amount.pulses,
@@ -152,7 +129,7 @@ class BolusDelivery {
           PodProgramBolusCommand.defaultEighthSecondsBetweenPulses,
     ));
     try {
-      return await _send(amount);
+      return await _send(amount, deliveredLastHour);
     } finally {
       await controller.store.clearPendingBolus();
     }
@@ -169,10 +146,43 @@ class BolusDelivery {
   bool _confirmsBolus(PodStatusResponse status) =>
       status.delivery.isBolusing || status.bolusPulsesRemaining > 0;
 
+  /// Why this dose must not go out, judged against the state the pod reported
+  /// moments earlier ON THE SAME LINK, or null when it may.
+  ///
+  /// The status carries no age here by construction: it was read on the very link
+  /// that is about to carry the dose, so there is no window in which the pod could
+  /// change underneath the decision. That used to cost a second BLE session, and
+  /// the pod hung up on it.
+  String? _refusalFor(
+    PodBolusAmount amount,
+    PodStatusResponse status,
+    double deliveredLastHour,
+  ) {
+    final decision = PodDeliveryGuard(
+      maxBolusUnits: maxBolusUnits,
+      maxUnitsPerHour: maxUnitsPerHour,
+    ).checkBolus(
+      amount: amount,
+      status: status,
+      statusAge: Duration.zero,
+      deliveredLastHour: deliveredLastHour,
+    );
+    if (decision.isAllowed) {
+      return null;
+    }
+    return decision.detail ?? decision.refusal!.name;
+  }
+
   /// Sends the programmed bolus and maps the pod's answer onto an outcome.
-  Future<BolusDeliveryResult> _send(PodBolusAmount amount) async {
+  Future<BolusDeliveryResult> _send(
+    PodBolusAmount amount,
+    double deliveredLastHour,
+  ) async {
     try {
-      final response = await controller.sendBolus(amount);
+      final response = await controller.sendBolus(
+        amount,
+        refuseIf: (status) => _refusalFor(amount, status, deliveredLastHour),
+      );
       if (response is PodNakResponse) {
         return BolusDeliveryResult.refused('Pod refused it: ${response.error.name}');
       }
@@ -202,6 +212,8 @@ class BolusDelivery {
       ));
       controller.notifyRunningBolusChanged();
       return BolusDeliveryResult.delivered(amount.units);
+    } on PodBolusRefused catch (refusal) {
+      return BolusDeliveryResult.refused(refusal.reason);
     } on PodCommandOutcomeUnknown catch (error) {
       return BolusDeliveryResult.unknown(error.message);
     } on Exception catch (error) {

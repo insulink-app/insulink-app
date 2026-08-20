@@ -358,7 +358,8 @@
       "deactivate_confirm": "Deactivate",
       "resume": "Resume delivery",
       "deactivate_auth_reason": "Confirm deactivating the pod",
-      "resume_activation": "Continue activation"
+      "resume_activation": "Continue activation",
+      "test_beep": "Play test beep"
     },
     "stop": {
       "_": "Stop delivery?",
@@ -890,7 +891,8 @@
       "new_password": "New password",
       "password_changed": "Your password has been changed.",
       "password_error": "Could not change the password. Check your current password.",
-      "show_password": "Show password"
+      "show_password": "Show password",
+      "logout_keeps_pod": "A paired pod is kept. It belongs to the device, not the account, and keeps running until you deactivate it."
     },
     "language": {
       "_": "Language",
@@ -1063,6 +1065,9 @@
         "_": "Insulin left in the pod",
         "value": "below # U"
       }
+    },
+    "pod_bolus_beep": {
+      "description": "The pod beeps once a bolus has finished delivering."
     }
   },
   "injection": {

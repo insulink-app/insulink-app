@@ -358,7 +358,8 @@
       "deactivate_confirm": "Deaktivieren",
       "resume": "Abgabe fortsetzen",
       "deactivate_auth_reason": "Deaktivieren des Pods bestätigen",
-      "resume_activation": "Aktivierung fortsetzen"
+      "resume_activation": "Aktivierung fortsetzen",
+      "test_beep": "Testton abspielen"
     },
     "stop": {
       "_": "Abgabe stoppen?",
@@ -890,7 +891,8 @@
       "new_password": "Neues Passwort",
       "password_changed": "Dein Passwort wurde geändert.",
       "password_error": "Passwort konnte nicht geändert werden. Prüfe dein aktuelles Passwort.",
-      "show_password": "Passwort anzeigen"
+      "show_password": "Passwort anzeigen",
+      "logout_keeps_pod": "Ein gekoppelter Pod bleibt erhalten. Er gehört zum Gerät, nicht zum Konto, und läuft weiter, bis du ihn deaktivierst."
     },
     "language": {
       "_": "Sprache",
@@ -1063,6 +1065,9 @@
         "_": "Restmenge im Pod",
         "value": "unter # E"
       }
+    },
+    "pod_bolus_beep": {
+      "description": "Der Pod piept, wenn ein Bolus fertig abgegeben ist."
     }
   },
   "injection": {

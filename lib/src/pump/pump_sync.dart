@@ -6,6 +6,7 @@ import 'package:http/http.dart' show Response;
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Mirrors the paired pod to the user's backend account, so a reinstall or a
 /// factory reset does not strand a pod that is still on the body.
@@ -58,15 +59,6 @@ class PumpSync {
   /// All three counters are included so a restored app resumes near where it left
   /// off. They are only as fresh as the last sync — see [PodStore.adoptFromBackend]
   /// for why being behind is recoverable and being keyless is not.
-  /// The reconnect record as the account would hold it, or null while no pod is
-  /// fully paired.
-  ///
-  /// Exposed so it can be written somewhere a person can reach: while the account
-  /// copy is failing, this string is the ONLY way back to a bound pod, and a key
-  /// that exists in exactly one place on one phone is one factory reset away from
-  /// a pod nobody can stop.
-  String? backupRecord(PodStore store) => _data(store, null);
-
   String? _data(PodStore store, PodStatusResponse? status) {
     final uniqueId = store.uniqueId;
     final longTermKey = store.longTermKey;
@@ -121,7 +113,7 @@ class PumpSync {
       debugPrint('pump sync: register REJECTED, ${_describe(response)}');
       return false;
     }
-    final id = jsonDecode(response!.body)['pump_id'];
+    final id = response.jsonObject?['pump_id'];
     if (id == null) {
       debugPrint('pump sync: register returned no pump_id');
       return false;
@@ -179,7 +171,10 @@ class PumpSync {
     if (!_isSuccess(response)) {
       return null;
     }
-    final body = jsonDecode(response!.body);
+    final body = response.jsonObject;
+    if (body == null) {
+      return null;
+    }
     final id = body['id'];
     final data = body['data'];
     if (id == null || data is! String) {
@@ -203,16 +198,7 @@ class PumpSync {
     return 'status ${response.statusCode}, body: $shown';
   }
 
-  bool _isSuccess(Response? response) {
-    if (response == null) {
-      return false;
-    }
-    try {
-      return jsonDecode(response.body)['success'] == true;
-    } catch (_) {
-      return false;
-    }
-  }
+  bool _isSuccess(Response? response) => response.isApiSuccess;
 }
 
 /// A backend pod decoded into what the local store needs to adopt it.

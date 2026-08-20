@@ -9,7 +9,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
-import 'package:insulink/src/pump/pod_key_backup.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
@@ -435,9 +434,6 @@ class _AppLifecycleState extends State<_AppLifecycle>
     if (!mounted) {
       return;
     }
-    // TEMPORARY: writes the pod's reconnect record to the log so it can be kept
-    // by hand while the account copy is failing. Remove with pod_key_backup.dart.
-    PodKeyBackup(context.read<PodController>().store).printToLog();
     context.read<SportActivityState>().startIfPermitted();
     context.read<CardioTrainingState>().reloadPending();
     // A dose the app was still sending when it was killed. Resolved against the

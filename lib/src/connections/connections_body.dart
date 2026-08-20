@@ -5,6 +5,7 @@ import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_delivery_log_page.dart';
+import 'package:insulink/src/pump/pump_actions.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
 import 'package:provider/provider.dart';
@@ -40,7 +41,7 @@ void openPumpPage(BuildContext context) {
       builder: (_) => ConnectionSubPage(
         title: title,
         body: const PumpBodyContent(),
-        actions: const [PodDeliveryLogButton()],
+        actions: const [PodTestBeepButton(), PodDeliveryLogButton()],
       ),
     ),
   );
@@ -84,7 +85,7 @@ class ConnectionsBodyContent extends StatelessWidget {
           icon: PhosphorIconsFill.syringe,
           labelKey: "pump.label",
           page: const PumpBodyContent(),
-          actions: const [PodDeliveryLogButton()],
+          actions: const [PodTestBeepButton(), PodDeliveryLogButton()],
         ),
         const SizedBox(height: 14),
         ConnectionRow(

@@ -66,6 +66,15 @@ class PodScanner {
   ///
   /// [wantedPodId] filters to one pod; pass [DiscoveredPod.unactivatedPodId] to
   /// look for a fresh pod, or an activated pod's id to reconnect to it.
+  /// [stopAt] is the address whose appearance ends the scan early.
+  ///
+  /// Without it the scan runs its whole window even though the pod was seen in
+  /// the first second, and every pod operation pays that as dead time. Only ever
+  /// passed when the exact device is already known, because stopping early gives
+  /// up the chance to notice a SECOND pod answering to the same id — a risk worth
+  /// taking to reconnect to a pod we can name, and not worth taking while pairing
+  /// one we cannot.
+  ///
   /// [filtered] false scans for everything and sorts the results out here.
   ///
   /// The filtered scan is the right one to prefer: Android returns fewer results
@@ -76,12 +85,19 @@ class PodScanner {
     required int wantedPodId,
     Duration timeout = const Duration(seconds: 30),
     bool filtered = true,
+    String? stopAt,
   }) async {
     final found = <String, DiscoveredPod>{};
     final seen = <String>{};
+    final wantedAppeared = Completer<void>();
     final subscription = FlutterBluePlus.scanResults.listen((results) {
       for (final result in results) {
         _inspect(result, wantedPodId, found, seen);
+      }
+      if (stopAt != null &&
+          found.containsKey(stopAt) &&
+          !wantedAppeared.isCompleted) {
+        wantedAppeared.complete();
       }
     });
     try {
@@ -91,7 +107,10 @@ class PodScanner {
         withServices: filtered ? [Guid(podScanServiceUuid)] : const [],
         timeout: timeout,
       );
-      await FlutterBluePlus.isScanning.where((running) => !running).first;
+      await Future.any([
+        FlutterBluePlus.isScanning.where((running) => !running).first,
+        wantedAppeared.future,
+      ]);
     } finally {
       await subscription.cancel();
       await FlutterBluePlus.stopScan();
@@ -124,7 +143,11 @@ class PodScanner {
     bool Function()? isCancelled,
   }) async {
     bool cancelled() => isCancelled?.call() ?? false;
-    var found = await scan(wantedPodId: wantedPodId, timeout: timeout);
+    var found = await scan(
+      wantedPodId: wantedPodId,
+      timeout: timeout,
+      stopAt: preferredAddress,
+    );
     if (found.isEmpty && !cancelled()) {
       // Second pass unfiltered. A filter that does not match returns the same
       // silence as an absent pod, and this is what tells them apart — including
@@ -133,6 +156,7 @@ class PodScanner {
         wantedPodId: wantedPodId,
         timeout: timeout,
         filtered: false,
+        stopAt: preferredAddress,
       );
     }
     if (cancelled()) {

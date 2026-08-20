@@ -221,3 +221,24 @@ class PodBasalOutOfDateNotice extends StatelessWidget {
     );
   }
 }
+
+
+/// Asks the pod to beep, as an icon in the pump page header.
+///
+/// A test, not an operation: it changes nothing about delivery, so it belongs
+/// beside the log rather than among the controls that do. Sitting in the header
+/// keeps it findable without putting it near anything that moves insulin.
+class PodTestBeepButton extends StatelessWidget {
+  const PodTestBeepButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<PodController>();
+    return IconButton(
+      onPressed:
+          controller.isBusy || !controller.hasPod ? null : controller.playTestBeep,
+      tooltip: Locales.string(context, 'pump.action.test_beep'),
+      icon: const Icon(PhosphorIconsBold.speakerHigh, size: 22),
+    );
+  }
+}

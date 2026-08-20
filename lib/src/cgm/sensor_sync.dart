@@ -8,6 +8,7 @@ import 'package:insulink/src/inventory/inventory_item.dart';
 import 'package:insulink/src/inventory/inventory_store.dart';
 import 'package:insulink/src/inventory/inventory_sync.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Mirrors the paired sensor to the user's backend account so a fresh install
 /// can offer to restore it (see [fetchCurrent]).
@@ -124,7 +125,7 @@ class SensorSync {
     if (!_isSuccess(response)) {
       return;
     }
-    final id = jsonDecode(response!.body)['sensor_id'];
+    final id = response.jsonObject?['sensor_id'];
     if (id != null) {
       await store.saveBackendSensorId(key, '$id');
       await store.saveBackendSyncedData(key, data);
@@ -168,7 +169,10 @@ class SensorSync {
     if (!_isSuccess(response)) {
       return null;
     }
-    final body = jsonDecode(response!.body);
+    final body = response.jsonObject;
+    if (body == null) {
+      return null;
+    }
     final id = body['id'];
     final data = body['data'];
     if (id == null || data is! String) {
@@ -197,7 +201,7 @@ class SensorSync {
       return false;
     }
     try {
-      return jsonDecode(response.body)['success'] == true;
+      return response.isApiSuccess;
     } catch (_) {
       return false;
     }

@@ -1,8 +1,8 @@
-import 'dart:convert';
 
 import 'package:http/http.dart' show Response;
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Pushes pod basal deliveries to the account, where the forecasting sidecar
 /// reads them.
@@ -40,7 +40,7 @@ class InsulinSync {
       return false;
     }
     try {
-      return jsonDecode(response.body)['success'] == true;
+      return response.isApiSuccess;
     } catch (_) {
       return false;
     }

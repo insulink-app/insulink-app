@@ -16,13 +16,18 @@ class ScriptedScanner extends PodScanner {
   /// Whether each successive scan used the service-uuid filter.
   final List<bool> filters = <bool>[];
 
+  /// The address each successive scan was told to stop at, if any.
+  final List<String?> stopTargets = <String?>[];
+
   @override
   Future<List<DiscoveredPod>> scan({
     required int wantedPodId,
     Duration timeout = const Duration(seconds: 30),
     bool filtered = true,
+    String? stopAt,
   }) async {
     filters.add(filtered);
+    stopTargets.add(stopAt);
     final round = scans < rounds.length ? rounds[scans] : const <DiscoveredPod>[];
     scans++;
     return round;
@@ -172,6 +177,36 @@ void main() {
 
       expect(scanner.scans, 2);
       expect(pod.device.remoteId.str, 'AA:AA:AA:AA:AA:AA');
+    });
+  });
+
+  group('a scan ends as soon as the known pod appears', () {
+    /// Without this the scan runs its whole window even though the pod was seen
+    /// in the first second, and every pod operation pays that as dead time.
+    test('a reconnect names the address to stop at', () async {
+      final scanner = ScriptedScanner([
+        [podAt('AA:AA:AA:AA:AA:AA')],
+      ]);
+
+      await scanner.scanForSingle(
+        wantedPodId: 4241,
+        preferredAddress: 'AA:AA:AA:AA:AA:AA',
+      );
+
+      expect(scanner.stopTargets, ['AA:AA:AA:AA:AA:AA']);
+    });
+
+    /// Pairing has no address yet, and stopping early would give up the chance
+    /// to notice a second pod answering to the same id. Activating the wrong pod
+    /// is irreversible, so that scan runs its full window.
+    test('a pairing scan stops at nothing', () async {
+      final scanner = ScriptedScanner([
+        [podAt('AA:AA:AA:AA:AA:AA', podId: DiscoveredPod.unactivatedPodId)],
+      ]);
+
+      await scanner.scanForSingle(wantedPodId: DiscoveredPod.unactivatedPodId);
+
+      expect(scanner.stopTargets, [null]);
     });
   });
 }

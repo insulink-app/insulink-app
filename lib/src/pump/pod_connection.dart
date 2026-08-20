@@ -34,6 +34,23 @@ class PodConnection {
   PodSession? _openedSession;
   bool _stopped = false;
 
+  /// When the last link was dropped, so the next one can let the pod settle.
+  static DateTime? _lastClosedAt;
+
+  /// How long the pod is left alone between one link closing and the next
+  /// opening.
+  ///
+  /// Real hardware refuses a session established immediately after the previous
+  /// link closed: it accepts the connection, takes the first EAP message, and
+  /// then hangs up with REMOTE_USER_TERMINATED. Every pair of back-to-back
+  /// operations hit it — a status read followed by a beep, a status read followed
+  /// by a bolus.
+  ///
+  /// Static because it is a property of the POD, not of one connection object:
+  /// the page and the background watch build their own, and the pod does not care
+  /// which of them just hung up.
+  static const Duration _settleAfterClose = Duration(seconds: 3);
+
   /// The link currently held, if any, so a caller can close it.
   PodBleLink? get link => _link;
 
@@ -54,6 +71,7 @@ class PodConnection {
   /// Fitbit monitor's known-band-only rule for the same reason.
   Future<PodSession> openSession({bool allowScan = true}) async {
     _stopped = false;
+    await _letThePodSettle();
     final uniqueId = store.uniqueId;
     final longTermKey = store.longTermKey;
     if (uniqueId == null || longTermKey == null) {
@@ -166,20 +184,64 @@ class PodConnection {
     );
   }
 
+  /// How long a speculative connect to the remembered address may take before
+  /// the scan is worth the wait instead.
+  ///
+  /// Short on purpose: a pod on the body advertises often and answers in about a
+  /// second. Waiting the full connect timeout here would make the fast path
+  /// slower than the slow one whenever the pod is genuinely away.
+  static const Duration _directConnectTimeout = Duration(seconds: 8);
+
+  /// Opens a link to the pod, preferring the address we already know.
+  ///
+  /// Scanning is the fallback, not the default. A paired pod's address does not
+  /// change, so a direct connect skips the scan entirely — and a scan is not free:
+  /// it competes with the CGM's for the one radio, and Android throttles an app
+  /// that starts them too often.
   Future<PodMessageIo> _connect(
     int advertisedPodId, {
     bool allowScan = true,
   }) async {
-    final device = allowScan
-        ? (await scanner.scanForSingle(
-            wantedPodId: advertisedPodId,
-            preferredAddress: store.bleAddress,
-            isCancelled: () => _stopped,
-          )).device
-        : _storedDevice();
+    final remembered = store.bleAddress;
+    if (remembered != null && remembered.isNotEmpty) {
+      try {
+        return await _openLink(
+          BluetoothDevice.fromId(remembered),
+          timeout: _directConnectTimeout,
+        );
+      } on Exception catch (error) {
+        if (!allowScan || _stopped) {
+          rethrow;
+        }
+        // The half-open link has to go before another is opened, or the app ends
+        // up holding two GATT clients to one pod.
+        await close();
+        _stopped = false;
+        scanner.onLog?.call('direct connect failed, falling back to a scan: '
+            '$error');
+      }
+    }
+    if (!allowScan) {
+      throw PodLinkException(
+        'No pod address stored — connect once from the app',
+      );
+    }
+    final found = await scanner.scanForSingle(
+      wantedPodId: advertisedPodId,
+      preferredAddress: remembered,
+      isCancelled: () => _stopped,
+    );
+    return _openLink(found.device);
+  }
+
+  Future<PodMessageIo> _openLink(
+    BluetoothDevice device, {
+    Duration? timeout,
+  }) async {
     final link = PodBleLink(device);
     _link = link;
     await link.open(
+      timeout: timeout ?? const Duration(seconds: 20),
       hello: PodControlWord.helloFrom(PodAddressPair.controllerId),
     );
     final messageIo = PodMessageIo(link);
@@ -187,18 +249,17 @@ class PodConnection {
     return messageIo;
   }
 
-  /// The pod at its remembered address.
-  ///
-  /// A cold process that has never SEEN this address may fail to connect to it —
-  /// the same OS quirk the G7 reconnect documents. The caller recovers by allowing
-  /// one scan after a few failures ([PodMonitor.scanAfterFailures]), which teaches
-  /// the OS the address without leaving a scanner running.
-  BluetoothDevice _storedDevice() {
-    final address = store.bleAddress;
-    if (address == null || address.isEmpty) {
-      throw PodLinkException('No pod address stored — connect once from the app');
+  /// Waits out the rest of [_settleAfterClose] since the last link closed.
+  Future<void> _letThePodSettle() async {
+    final closedAt = _lastClosedAt;
+    if (closedAt == null) {
+      return;
     }
-    return BluetoothDevice.fromId(address);
+    final since = DateTime.now().difference(closedAt);
+    if (since >= _settleAfterClose) {
+      return;
+    }
+    await Future<void>.delayed(_settleAfterClose - since);
   }
 
   /// Cuts short whatever is in flight: ends a running scan and drops the link, so
@@ -237,6 +298,9 @@ class PodConnection {
         await store.saveMessageSequence(session.keys.messageSequence);
       }
     } finally {
+      if (link != null) {
+        _lastClosedAt = DateTime.now();
+      }
       await link?.close();
     }
   }

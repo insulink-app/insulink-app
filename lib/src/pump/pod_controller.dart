@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/demo_pod.dart';
+import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
@@ -301,6 +302,24 @@ class PodController extends ChangeNotifier {
         }
       });
 
+  /// Makes the pod beep now, and re-states its reminder beeps while it is there.
+  ///
+  /// The only way to ask a pod for a sound on demand. Worth having: it answers
+  /// whether the pod is in earshot and whether its beeper still works, which is
+  /// exactly what you want to know BEFORE relying on it for an occlusion at three
+  /// in the morning.
+  ///
+  /// Carries no nonce and starts no delivery, so it is safe to press at any time.
+  Future<void> playTestBeep() => _withSession('beep', (session) async {
+        final beepAtEnd = await NotificationSetting.podBolusBeep.load();
+        final response = await session.run(PodProgramBeepsCommand(
+          uniqueId: store.uniqueId!,
+          sequenceNumber: _nextSequence,
+          bolusReminder: PodProgramReminder(atEnd: beepAtEnd),
+        ));
+        _absorb(response);
+      });
+
   /// Acknowledges the pod's alerts so it stops beeping.
   Future<void> silenceAlerts() => _withSession('silence', (session) async {
         final active = _status?.activeAlerts;
@@ -417,23 +436,43 @@ class PodController extends ChangeNotifier {
   /// because only the first one is safe to treat as "no insulin was given". A
   /// [PodCommandOutcomeUnknown] therefore propagates.
   ///
-  Future<PodResponse> sendBolus(PodBolusAmount amount) async {
+  /// Reads the pod and delivers in ONE session, with [refuseIf] judging the
+  /// status that comes back. Two sessions back to back is what a separate status
+  /// read used to cost, and the pod hangs up on the second: it drops a link
+  /// opened immediately after the previous one closed. One session is also the
+  /// truer check — the state the guard judges IS the state the pod is in when the
+  /// dose is programmed, with no window in between for it to change.
+  ///
+  Future<PodResponse> sendBolus(
+    PodBolusAmount amount, {
+    required String? Function(PodStatusResponse status) refuseIf,
+  }) async {
     final uniqueId = store.uniqueId;
     if (uniqueId == null) {
       throw StateError('No pod is paired');
     }
     _busy = true;
     _failure = null;
+    _cancelledBolus = null;
     notifyListeners();
     try {
       await _resyncFromStorage();
       final session = await _connection.openSession();
+      final status = await _readStatus(session);
+      _absorb(status);
+      final refusal = refuseIf(status);
+      if (refusal != null) {
+        throw PodBolusRefused(refusal);
+      }
+      // Asked fresh each time rather than held: the toggle lives in secure
+      // storage and may have been changed on the panel since this screen opened.
+      final beepAtEnd = await NotificationSetting.podBolusBeep.load();
       final response = await session.run(PodProgramBolusCommand(
         uniqueId: uniqueId,
         sequenceNumber: _nextSequence,
         nonce: _fixedNonce,
         amount: amount,
-        reminder: const PodProgramReminder(atEnd: true),
+        reminder: PodProgramReminder(atEnd: beepAtEnd),
       ));
       await store.saveCommandSequence(_sequence);
       await _connection.close();
@@ -508,4 +547,18 @@ class PodController extends ChangeNotifier {
         ? temporary
         : null;
   }
+}
+
+/// Thrown when a guard refused a bolus against the pod's freshly read state.
+///
+/// Distinct from a failure: nothing went wrong and nothing was sent, so the
+/// caller may treat it as "no insulin was given" — which is exactly the
+/// distinction a delivery path must never blur.
+class PodBolusRefused implements Exception {
+  PodBolusRefused(this.reason);
+
+  final String reason;
+
+  @override
+  String toString() => 'PodBolusRefused: $reason';
 }

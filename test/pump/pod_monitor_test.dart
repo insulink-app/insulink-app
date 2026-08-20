@@ -219,4 +219,5 @@ void main() {
       expect(connection.attempts, greaterThan(0));
     });
   });
+
 }

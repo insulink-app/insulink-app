@@ -78,6 +78,7 @@ class ProfileSettings {
       "pod_expiry_hours": "${await NotificationThreshold.podExpiry.load()}",
       "pod_insulin_alert": "${await NotificationSetting.podInsulin.load()}",
       "pod_insulin_units": "${await NotificationThreshold.podInsulin.load()}",
+      "pod_bolus_beep": "${await NotificationSetting.podBolusBeep.load()}",
       // Two booleans, not one enum: the panel coerces `silent_mode` to a bool
       // and writes it back, so the tone-only mute needs a key of its own.
       "silent_mode": "${silent.mode == SilentMode.all}",

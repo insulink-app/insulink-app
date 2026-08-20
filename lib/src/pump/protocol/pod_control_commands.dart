@@ -144,3 +144,43 @@ class PodSilenceAlertsCommand extends PodCommand {
         [PodAlert.encode(alerts)],
       ]));
 }
+
+/// Sets the pod's reminder beeps, and optionally makes it beep right now.
+///
+/// The immediate beep is the only way to ask a pod to make a sound on demand: it
+/// answers whether the pod is in earshot and whether its beeper still works,
+/// which is worth knowing before relying on it for an occlusion at three in the
+/// morning.
+///
+/// The three reminders are re-stated on every send, because the pod holds one set
+/// and this command replaces all of it. Leaving one out silences it.
+class PodProgramBeepsCommand extends PodCommand {
+  PodProgramBeepsCommand({
+    required super.uniqueId,
+    required super.sequenceNumber,
+    this.immediateBeep = PodBeep.fourTimesBipBeep,
+    this.basalReminder = const PodProgramReminder(),
+    this.tempBasalReminder = const PodProgramReminder(),
+    this.bolusReminder = const PodProgramReminder(),
+    super.multiCommand,
+  });
+
+  /// Sounded once, as soon as the pod takes the command.
+  final PodBeep immediateBeep;
+
+  final PodProgramReminder basalReminder;
+  final PodProgramReminder tempBasalReminder;
+  final PodProgramReminder bolusReminder;
+
+  @override
+  PodCommandType get type => PodCommandType.programBeeps;
+
+  @override
+  Uint8List get encoded => appendCrc(joinParts([
+        buildHeader(6),
+        [type.value, 0x04, immediateBeep.value],
+        basalReminder.encoded,
+        tempBasalReminder.encoded,
+        bolusReminder.encoded,
+      ]));
+}
