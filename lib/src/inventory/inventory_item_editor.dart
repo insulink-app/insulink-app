@@ -34,6 +34,10 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
   late ItemType _type = widget.existing?.type ?? ItemType.other;
   late SensorBrand _brand =
       widget.existing?.sensorBrand ?? SensorBrand.other;
+  // Defaults to the pump the app drives, since that is the only one it can
+  // decrement automatically.
+  late PumpBrand _pumpBrand =
+      widget.existing?.pumpBrand ?? PumpBrand.omnipodDash;
 
   @override
   void dispose() {
@@ -77,25 +81,32 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
       anchorMs: DateTime.now().millisecondsSinceEpoch,
       type: _type,
       sensorBrand: _type == ItemType.sensor ? _brand : null,
+      pumpBrand: _type == ItemType.pump ? _pumpBrand : null,
       deliveries: _deliveries,
     );
     context.read<InventoryState>().addOrUpdate(item);
     Navigator.pop(context);
   }
 
-  /// How long a unit lasts. Sensors and pumps have known run times; only an
-  /// "other" item takes the value the user typed.
+  /// Whether the user has to say how long a unit lasts, because the chosen
+  /// hardware has no known figure.
+  bool get _needsManualDuration => switch (_type) {
+    ItemType.sensor => _brand.typicalDaysPerUnit == null,
+    ItemType.pump => _pumpBrand.typicalDaysPerUnit == null,
+    ItemType.other => true,
+  };
+
+  /// How long a unit lasts: the known figure for known hardware, otherwise what
+  /// the user typed. Zero means "do not forecast".
   double _resolveDaysPerUnit() {
-    switch (_type) {
-      case ItemType.sensor:
-        return _brand.typicalDaysPerUnit ?? 0;
-      case ItemType.pump:
-        // ponytail: Omnipod DASH pod (~72 h) — the only supported pump; keyed
-        // off a PumpBrand once the app models pump brands like sensor brands.
-        return 3;
-      case ItemType.other:
-        return double.tryParse(_daysPerUnit.text.replaceAll(',', '.')) ?? 0;
-    }
+    final known = switch (_type) {
+      ItemType.sensor => _brand.typicalDaysPerUnit,
+      ItemType.pump => _pumpBrand.typicalDaysPerUnit,
+      ItemType.other => null,
+    };
+    return known ??
+        double.tryParse(_daysPerUnit.text.replaceAll(',', '.')) ??
+        0;
   }
 
   /// Animate a conditional field in/out (the brand + days fields). A null child
@@ -284,21 +295,30 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
           ),
           _reveal(
             'brand',
-            _type == ItemType.sensor
-                ? _dropdown<SensorBrand>(
-                    'inventory.brand',
-                    _brand,
-                    SensorBrand.values,
-                    (brand) => 'inventory.brand_${brand.wireKey}',
-                    (brand) => setState(() => _brand = brand),
-                  )
-                : null,
+            switch (_type) {
+              ItemType.sensor => _dropdown<SensorBrand>(
+                  'inventory.brand',
+                  _brand,
+                  SensorBrand.values,
+                  (brand) => 'inventory.brand_${brand.wireKey}',
+                  (brand) => setState(() => _brand = brand),
+                ),
+              ItemType.pump => _dropdown<PumpBrand>(
+                  'inventory.brand',
+                  _pumpBrand,
+                  PumpBrand.values,
+                  (brand) => 'inventory.pump_brand_${brand.wireKey}',
+                  (brand) => setState(() => _pumpBrand = brand),
+                ),
+              ItemType.other => null,
+            },
           ),
-          // Sensors and pumps have known run times (derived on save); only for
-          // "other" does the user enter how long a unit lasts.
+          // Known hardware carries its own run time; everything else takes the
+          // number the user types. That covers an "other" item as before, and now
+          // also a sensor or pump brand the app has no figure for.
           _reveal(
             'days',
-            _type == ItemType.other
+            _needsManualDuration
                 ? TextField(
                     controller: _daysPerUnit,
                     keyboardType:

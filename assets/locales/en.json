@@ -586,7 +586,9 @@
     "empty": "No supplies tracked yet",
     "delete_confirm": "Delete this item?",
     "event_delivery": "Delivery",
-    "event_run_out": "Supply runs out"
+    "event_run_out": "Supply runs out",
+    "pump_brand_omnipod_dash": "Omnipod DASH",
+    "pump_brand_other": "Other"
   },
   "nutrition": {
     "label": "Nutrition",

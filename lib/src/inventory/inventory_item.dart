@@ -1,8 +1,9 @@
 /// How urgently an item needs restocking, derived (never stored).
 enum StockStatus { ok, low, shortage }
 
-/// What kind of supply an item is. Only [sensor] items carry a [SensorBrand]
-/// and take part in the auto-decrement when a new sensor is paired.
+/// What kind of supply an item is. A [sensor] carries a [SensorBrand] and a
+/// [pump] a [PumpBrand]; both take part in the auto-decrement when a new one is
+/// paired.
 enum ItemType {
   sensor('sensor'),
   pump('pump'),
@@ -46,6 +47,38 @@ enum SensorBrand {
   }
 }
 
+/// Which pump a pod item restocks, so a newly activated pod pulls one from the
+/// matching item.
+///
+/// Shaped exactly like [SensorBrand], because it does the same job: it names the
+/// hardware so the right item is decremented, and it carries the run time so the
+/// user does not have to look it up.
+enum PumpBrand {
+  omnipodDash('omnipod_dash'),
+  other('other');
+
+  const PumpBrand(this.wireKey);
+  final String wireKey;
+
+  /// Days one unit lasts. A DASH pod is rated for 72 hours; the extra 8 hours of
+  /// grace are deliberately NOT counted, because stock planning should assume the
+  /// pod is replaced on schedule rather than run into its reserve.
+  double? get typicalDaysPerUnit => switch (this) {
+    PumpBrand.omnipodDash => 3,
+    PumpBrand.other => null,
+  };
+
+  static PumpBrand? fromWireKey(String? key) {
+    if (key == null) {
+      return null;
+    }
+    return PumpBrand.values.firstWhere(
+      (brand) => brand.wireKey == key,
+      orElse: () => PumpBrand.other,
+    );
+  }
+}
+
 /// One scheduled delivery: when it arrives and how many units.
 class Delivery {
   const Delivery({required this.atEpochMs, required this.quantity});
@@ -77,6 +110,7 @@ class InventoryItem {
     required this.anchorMs,
     this.type = ItemType.other,
     this.sensorBrand,
+    this.pumpBrand,
     this.deliveries = const [],
   });
 
@@ -97,6 +131,9 @@ class InventoryItem {
 
   /// The CGM this item restocks — set only when [type] is [ItemType.sensor].
   final SensorBrand? sensorBrand;
+
+  /// The pump this item restocks — set only when [type] is [ItemType.pump].
+  final PumpBrand? pumpBrand;
   final List<Delivery> deliveries;
 
   /// Epoch-ms the time-based consumption is measured from. Reset whenever the
@@ -172,6 +209,19 @@ class InventoryItem {
     return runOutDate(now)!.isBefore(cutoff) ? StockStatus.low : StockStatus.ok;
   }
 
+  /// Whether a unit leaves this item when hardware is PAIRED rather than as time
+  /// passes.
+  ///
+  /// True for anything the app actually pairs: a sensor, and a pod of a pump the
+  /// driver supports. Counting those by elapsed time as well would take two units
+  /// out of stock for one piece of hardware.
+  ///
+  /// A pump the app cannot pair ([PumpBrand.other]) is not in that group, so it
+  /// falls back to the time-based estimate like any other supply.
+  bool get isConsumedOnPairing =>
+      type == ItemType.sensor ||
+      (type == ItemType.pump && pumpBrand == PumpBrand.omnipodDash);
+
   /// Fraction of the base stock still on hand, clamped to 0..1 for the bar.
   double get stockFraction {
     if (baseStock <= 0) {
@@ -180,15 +230,15 @@ class InventoryItem {
     return (stock / baseStock).clamp(0.0, 1.0);
   }
 
-  /// Apply elapsed-time consumption for NON-sensor items that have a per-unit
+  /// Apply elapsed-time consumption for items that have a per-unit
   /// duration: one unit is consumed per [daysPerUnit] elapsed since [anchorMs],
   /// with the anchor advanced by the consumed periods (the remainder is kept).
-  /// Sensors return unchanged — they are decremented on pairing instead.
+  /// Items decremented on pairing return unchanged; see [isConsumedOnPairing].
   /// Returns the same instance when nothing is due, so callers can skip a write.
   // ponytail: accrued lazily on load/refresh, no background timer — a unit
   // "ticks off" the next time the app reads the inventory, not on the second.
   InventoryItem withTimeDecay(DateTime now) {
-    if (type == ItemType.sensor || daysPerUnit <= 0 || stock <= 0) {
+    if (isConsumedOnPairing || daysPerUnit <= 0 || stock <= 0) {
       return this;
     }
     final elapsedDays =
@@ -212,6 +262,7 @@ class InventoryItem {
     anchorMs: anchorMs ?? this.anchorMs,
     type: type,
     sensorBrand: sensorBrand,
+    pumpBrand: pumpBrand,
     deliveries: deliveries,
   );
 
@@ -225,6 +276,7 @@ class InventoryItem {
         DateTime.now().millisecondsSinceEpoch,
     type: ItemType.fromWireKey(json['type'] as String?),
     sensorBrand: SensorBrand.fromWireKey(json['sensor_brand'] as String?),
+    pumpBrand: PumpBrand.fromWireKey(json['pump_brand'] as String?),
     deliveries: (json['deliveries'] as List? ?? [])
         .cast<Map<String, dynamic>>()
         .map(Delivery.fromJson)
@@ -240,6 +292,7 @@ class InventoryItem {
     'anchor_ms': anchorMs,
     'type': type.wireKey,
     if (sensorBrand != null) 'sensor_brand': sensorBrand!.wireKey,
+    if (pumpBrand != null) 'pump_brand': pumpBrand!.wireKey,
     'deliveries': deliveries.map((delivery) => delivery.toJson()).toList(),
   };
 }

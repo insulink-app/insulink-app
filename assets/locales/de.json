@@ -586,7 +586,9 @@
     "empty": "Noch kein Zubehör erfasst",
     "delete_confirm": "Diesen Eintrag wirklich löschen?",
     "event_delivery": "Lieferung",
-    "event_run_out": "Vorrat aufgebraucht"
+    "event_run_out": "Vorrat aufgebraucht",
+    "pump_brand_omnipod_dash": "Omnipod DASH",
+    "pump_brand_other": "Andere"
   },
   "nutrition": {
     "label": "Ernährung",

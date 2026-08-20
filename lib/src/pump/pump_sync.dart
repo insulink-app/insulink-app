@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
+import 'package:insulink/src/inventory/inventory_item.dart';
+import 'package:insulink/src/inventory/inventory_store.dart';
+import 'package:insulink/src/inventory/inventory_sync.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 import 'package:insulink/src/request/request.dart';
@@ -121,7 +124,20 @@ class PumpSync {
     await store.saveBackendPumpId('$id');
     await store.saveBackendSyncedData(data);
     debugPrint('pump sync: registered as pump $id');
+    await _consumeFromInventory();
     return true;
+  }
+
+  /// Takes one pod out of the inventory, once per pod.
+  ///
+  /// A successful REGISTER is the one moment a pod becomes newly known: an
+  /// adopted or already-mirrored pod takes the update path and never lands here,
+  /// and the backend id stored just above dedups every later sync. So the pod is
+  /// counted exactly once, the same rule the sensor follows.
+  Future<void> _consumeFromInventory() async {
+    if (await const InventoryStore().consumePump(PumpBrand.omnipodDash)) {
+      InventorySync().push();
+    }
   }
 
   Future<bool> _update(PodStore store, String pumpId, String data) async {
