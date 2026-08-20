@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/pump/protocol/pod_command.dart';
 import 'package:insulink/src/pump/protocol/pod_ids.dart';
 
 void main() {
@@ -34,6 +35,35 @@ void main() {
       for (final value in [0, 1, 4241, 4242, 136326825, 0xFFFFFFFE]) {
         expect(PodId.fromInt(value).value, value);
       }
+    });
+  });
+
+  group('which replies count as coming from our pod', () {
+    const addresses = PodAddressPair(podUniqueId: 4241);
+
+    test('the assigned id is ours', () {
+      expect(addresses.acceptsReplyFrom(4241), isTrue);
+    });
+
+    /// A pod answers with the unassigned id until it has been GIVEN one, two
+    /// commands into an activation. Refusing it failed the version read at the
+    /// start of every real activation.
+    test('a pod that has no id yet is ours too', () {
+      expect(addresses.acceptsReplyFrom(podUnassignedUniqueId), isTrue);
+    });
+
+    test('anything else is refused', () {
+      expect(addresses.acceptsReplyFrom(4242), isFalse);
+      expect(addresses.acceptsReplyFrom(136326825), isFalse);
+      expect(addresses.acceptsReplyFrom(0), isFalse);
+    });
+
+    /// Before an id is assigned the pair derives one from the controller, and a
+    /// reply from that pod is still ours.
+    test('an unactivated pair accepts its derived id', () {
+      const pending = PodAddressPair(podUniqueId: null);
+      expect(pending.acceptsReplyFrom(pending.podId.value), isTrue);
+      expect(pending.acceptsReplyFrom(podUnassignedUniqueId), isTrue);
     });
   });
 }

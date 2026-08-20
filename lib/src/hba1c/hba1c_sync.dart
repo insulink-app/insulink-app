@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/hba1c/hba1c_entry.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Mirrors the HbA1c readings to the user's backend account (`/health/hba1c/…`,
 /// its own table) and pulls them back on sign-in.
@@ -45,10 +45,10 @@ class Hba1cSync {
   /// tell "nothing stored" from "could not ask" and leave local data alone.
   Future<List<Hba1cEntry>?> pull(BuildContext? context) async {
     final response = await Request.get(url: '/health/hba1c/find/').send(context);
-    if (response == null) {
+    final body = response.jsonObject;
+    if (body == null) {
       return null;
     }
-    final body = jsonDecode(response.body);
     if (body['success'] != true || body['readings'] is! List) {
       return null;
     }

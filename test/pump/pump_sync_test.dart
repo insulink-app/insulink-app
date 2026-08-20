@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
+
+import 'fake_secure_storage.dart';
 
 /// A blob shaped exactly like the one `PumpSync` writes.
 Map<String, dynamic> blob({Map<String, dynamic> overrides = const {}}) => {
@@ -108,6 +111,38 @@ void main() {
         'last_lifecycle': 'runningAboveMinimumVolume',
       }));
       expect(restore.uniqueId, 4241);
+    });
+  });
+
+  group('the account copy is caught up without duplicating it', () {
+    late Map<String, String> backing;
+    late PodStore store;
+
+    setUp(() async {
+      backing = <String, String>{};
+      store = PodStore(FakeSecureStorage(backing), backing);
+    });
+
+    test('a pod already registered is never pushed again', () async {
+      await store.savePairing(
+        uniqueId: 4241,
+        longTermKey: FakeSecureStorage.dummyKey,
+        lotNumber: 1,
+        podSequenceNumber: 2,
+        activatedAt: DateTime(2026, 3, 1),
+      );
+      await store.saveBackendPumpId('pump-1');
+
+      // Already on file, so nothing is sent and the existing id stands.
+      expect(await PumpSync().ensureMirrored(store), isTrue);
+      expect(store.backendPumpId, 'pump-1');
+    });
+
+    /// With no pod there is nothing to mirror, and asking the account would be a
+    /// pointless request on every app start.
+    test('an unpaired app mirrors nothing', () async {
+      expect(await PumpSync().ensureMirrored(store), isFalse);
+      expect(store.backendPumpId, isNull);
     });
   });
 }

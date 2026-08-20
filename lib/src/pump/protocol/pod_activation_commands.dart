@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:insulink/src/pump/protocol/pod_activation_state.dart';
 import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
 import 'package:insulink/src/pump/protocol/pod_command.dart';
@@ -89,7 +90,9 @@ class PodActivationCommands {
   /// Runs a command that should be answered with a status, turning a refusal into
   /// a clear failure instead of letting activation continue past it.
   Future<PodStatusResponse> expectStatus(PodCommand command) async {
+    debugPrint('pod activation: -> ${command.type.name}');
     final response = await sendCommand(command);
+    debugPrint('pod activation: <- $response');
     if (response is PodStatusResponse) {
       return response;
     }

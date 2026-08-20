@@ -346,7 +346,8 @@
       "no_alerts": "Keine",
       "last_read": "Zuletzt gelesen",
       "never_read": "Noch nicht gelesen",
-      "stale": "Dieser Status ist veraltet. Vor jeder Entscheidung neu lesen."
+      "stale": "Dieser Status ist veraltet. Vor jeder Entscheidung neu lesen.",
+      "unfinished": "Dieser Pod ist gekoppelt, aber noch nicht aktiv. Setze die Aktivierung fort, damit er Insulin abgibt."
     },
     "action": {
       "refresh": "Status lesen",
@@ -356,7 +357,8 @@
       "activate": "Pod aktivieren",
       "deactivate_confirm": "Deaktivieren",
       "resume": "Abgabe fortsetzen",
-      "deactivate_auth_reason": "Deaktivieren des Pods bestätigen"
+      "deactivate_auth_reason": "Deaktivieren des Pods bestätigen",
+      "resume_activation": "Aktivierung fortsetzen"
     },
     "stop": {
       "_": "Abgabe stoppen?",

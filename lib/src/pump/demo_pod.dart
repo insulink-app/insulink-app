@@ -23,7 +23,7 @@ import 'package:insulink/src/pump/protocol/session_cipher.dart';
 ///
 /// **To remove:** set [demoPodEnabled] to false, then delete this file and the
 /// two `podConnectionFor` call sites (`PodController`, `PodActivationController`).
-const bool demoPodEnabled = true;
+const bool demoPodEnabled = false;
 
 /// The one place that decides whether the app talks to a radio or to this file.
 PodConnection podConnectionFor(PodStore store) =>
@@ -74,10 +74,7 @@ class DemoPodConnection extends PodConnection {
   }
 
   @override
-  Future<PodSession> openSession({
-    bool stillAdvertisingUnactivated = false,
-    bool allowScan = true,
-  }) async {
+  Future<PodSession> openSession({bool allowScan = true}) async {
     _stopped = false;
     await Future<void>.delayed(const Duration(seconds: 1));
     if (_stopped) {

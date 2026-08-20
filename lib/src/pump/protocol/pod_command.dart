@@ -26,6 +26,18 @@ enum PodCommandType {
 /// The address a pod answers to before it has been given its own unique id.
 const int podUnassignedUniqueId = 0xFFFFFFFF;
 
+/// The nonce every command that carries one must send.
+///
+/// The DASH pod dropped its predecessor's rolling nonce for a FIXED value, and it
+/// is not zero: `0x494E532E`, the ASCII bytes `INS.`. The reference driver hard
+/// codes the same number with the note "the Omnipod Dash seems to use a fixed
+/// nonce", and its published command vectors all carry it.
+///
+/// A pod refuses a wrong one. It answered ours with a NAK code that does not even
+/// appear in the reference's error list, which is what an undocumented
+/// nonce-mismatch looks like from the outside.
+const int podFixedNonce = 0x494E532E;
+
 /// Shared framing for everything sent to the pod: a 6-byte header carrying the
 /// pod id, the command sequence number and the body length, and a trailing
 /// CRC-16 over the whole thing.

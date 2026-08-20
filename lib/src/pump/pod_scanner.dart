@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:insulink/src/pump/protocol/pod_link.dart';
 
@@ -36,7 +37,21 @@ class DiscoveredPod {
 /// activating the wrong pod is irreversible, and two pods in range is exactly
 /// when a wrong guess is most likely.
 class PodScanner {
-  const PodScanner();
+  const PodScanner({this.onLog});
+
+  /// Where the scan reports what it saw. Without it a failed search is a bare
+  /// "no pod found" with nothing behind it, which is no help at all when the pod
+  /// is lying right there beeping.
+  final void Function(String line)? onLog;
+
+  void _log(String line) {
+    final sink = onLog;
+    if (sink == null) {
+      debugPrint('pod scan: $line');
+      return;
+    }
+    sink(line);
+  }
 
   static const int _expectedServiceIds = 9;
   static const String _mainServiceId = podAdvertisedServiceId;
@@ -51,28 +66,37 @@ class PodScanner {
   ///
   /// [wantedPodId] filters to one pod; pass [DiscoveredPod.unactivatedPodId] to
   /// look for a fresh pod, or an activated pod's id to reconnect to it.
+  /// [filtered] false scans for everything and sorts the results out here.
+  ///
+  /// The filtered scan is the right one to prefer: Android returns fewer results
+  /// and delivers them with the screen off. But a service-uuid filter that does
+  /// not match returns silence that is indistinguishable from an absent pod, so
+  /// the fallback exists to tell those two apart.
   Future<List<DiscoveredPod>> scan({
     required int wantedPodId,
     Duration timeout = const Duration(seconds: 30),
+    bool filtered = true,
   }) async {
     final found = <String, DiscoveredPod>{};
+    final seen = <String>{};
     final subscription = FlutterBluePlus.scanResults.listen((results) {
       for (final result in results) {
-        final pod = _read(result);
-        if (pod != null && pod.podId == wantedPodId) {
-          found[result.device.remoteId.str] = pod;
-        }
+        _inspect(result, wantedPodId, found, seen);
       }
     });
     try {
+      _log('started, filter=${filtered ? podAdvertisedServiceId : 'none'}, '
+          'want=0x${wantedPodId.toRadixString(16)}');
       await FlutterBluePlus.startScan(
-        withServices: [Guid(podScanServiceUuid)],
+        withServices: filtered ? [Guid(podScanServiceUuid)] : const [],
         timeout: timeout,
       );
       await FlutterBluePlus.isScanning.where((running) => !running).first;
     } finally {
       await subscription.cancel();
       await FlutterBluePlus.stopScan();
+      _log('finished, ${seen.length} device(s) seen, '
+          '${found.length} matching pod(s)');
     }
     return found.values.toList();
   }
@@ -102,7 +126,14 @@ class PodScanner {
     bool cancelled() => isCancelled?.call() ?? false;
     var found = await scan(wantedPodId: wantedPodId, timeout: timeout);
     if (found.isEmpty && !cancelled()) {
-      found = await scan(wantedPodId: wantedPodId, timeout: timeout);
+      // Second pass unfiltered. A filter that does not match returns the same
+      // silence as an absent pod, and this is what tells them apart — including
+      // in the log, which now names every device it saw and why it passed on it.
+      found = await scan(
+        wantedPodId: wantedPodId,
+        timeout: timeout,
+        filtered: false,
+      );
     }
     if (cancelled()) {
       throw PodLinkException('Pod search stopped');
@@ -130,6 +161,39 @@ class PodScanner {
     throw PodLinkException(
       '${found.length} pods in range — move away from the others and retry',
     );
+  }
+
+  /// Records one scan result and says why it was or was not taken.
+  ///
+  /// Every rejection is logged with the advertisement that caused it. A pod that
+  /// is seen but thrown out looks exactly like a pod that is not there, and the
+  /// two need completely different fixes.
+  void _inspect(
+    ScanResult result,
+    int wantedPodId,
+    Map<String, DiscoveredPod> found,
+    Set<String> seen,
+  ) {
+    final address = result.device.remoteId.str;
+    if (!seen.add(address)) {
+      return;
+    }
+    final ids = result.advertisementData.serviceUuids
+        .map((uuid) => _shortId(uuid))
+        .toList();
+    final pod = _read(result);
+    if (pod == null) {
+      _log('ignored $address, ${ids.length} service id(s) $ids');
+      return;
+    }
+    if (pod.podId != wantedPodId) {
+      _log('ignored $address, pod 0x${pod.podId.toRadixString(16)} '
+          'is not the one wanted');
+      return;
+    }
+    _log('found $address, pod 0x${pod.podId.toRadixString(16)}, '
+        'lot ${pod.lotNumber}, seq ${pod.podSequenceNumber}');
+    found[address] = pod;
   }
 
   /// Reads a pod's identity out of its advertisement, or null if the

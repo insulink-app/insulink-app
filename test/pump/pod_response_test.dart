@@ -103,4 +103,23 @@ void main() {
           throwsA(isA<PodKeyedPayloadException>()));
     });
   });
+
+  /// Captured from a real pod during the first hardware activation, decrypted.
+  ///
+  /// Byte 6 is 52 and byte 7 is 10. The PRIME is the larger of the two, and the
+  /// reference's field names say the opposite of what its own code does with
+  /// them. Reading them the wrong way round primed with 0.5 U instead of 2.6 U
+  /// and waited a fifth of the time before talking to a still-delivering pod.
+  test('a real pod reports the prime before the cannula volume', () {
+    final body = hex(
+      '011b1388100834' '0a500b0700010600' '040308' '9a21d1' '000ecedc' '00001091',
+    );
+    final response = PodSetUniqueIdResponse(body);
+
+    expect(response.primePulses, 52);
+    expect(response.cannulaInsertionPulses, 10);
+    expect(response.primePumpRateEighthSeconds, 8);
+    expect(response.expirationHours, 80);
+    expect(response.uniqueId, 4241);
+  });
 }

@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/google_health/google_health_models.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Mirrors the Google Health day archive (resting HR, sleep + stages, blood
 /// oxygen, hypnogram) to the user's backend account and pulls it back on sign-in,
@@ -33,10 +33,10 @@ class GoogleHealthSync {
   /// clobbered, so the connected flag and any locally-newer days survive.
   Future<void> pull(BuildContext? context) async {
     final response = await Request.get(url: '/health/days/find/').send(context);
-    if (response == null) {
+    final body = response.jsonObject;
+    if (body == null) {
       return;
     }
-    final body = jsonDecode(response.body);
     if (body['success'] != true || body['days'] is! List) {
       return;
     }

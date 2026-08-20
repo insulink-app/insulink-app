@@ -305,6 +305,14 @@ class PodStore {
 
   Future<void> saveActivationStep(String step) => _set(_kActivationStep, step);
 
+  /// Whether the pod finished activating and is running insulin.
+  ///
+  /// A pod can be PAIRED without being activated: the key is stored the moment it
+  /// exists, which is several commands before the pod starts delivering. Such a
+  /// pod refuses everything but the activation sequence, answering anything else
+  /// with an illegal-command-state NAK, so nothing may poll it.
+  bool get isActivated => _cache[_kActivationStep] == 'running';
+
   /// What the pod reported about itself during activation, as JSON.
   ///
   /// Kept because the commands that produce it are one-shot: a resumed activation

@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:insulink/src/pump/protocol/message_packet.dart';
 import 'package:insulink/src/pump/protocol/payload_fragments.dart';
 import 'package:insulink/src/pump/protocol/payload_reassembler.dart';
@@ -17,9 +17,27 @@ import 'package:insulink/src/pump/protocol/pod_link.dart';
 /// sends a burst and the queue can surface them out of order, and throwing one
 /// away means asking for it again and hoping the reorder does not repeat.
 class PodMessageIo {
-  PodMessageIo(this.link);
+  PodMessageIo(this.link, {this.onLog});
 
-  static const Duration _controlTimeout = Duration(seconds: 5);
+  /// Reports each step of a transfer, so a stalled exchange says WHERE it stalled
+  /// rather than only that it did.
+  final void Function(String line)? onLog;
+
+  void _log(String line) {
+    final sink = onLog;
+    if (sink == null) {
+      debugPrint('pod io: $line');
+      return;
+    }
+    sink(line);
+  }
+
+  /// How long the pod gets to answer a control word.
+  ///
+  /// Generous on purpose. The pod answers most exchanges in milliseconds, but it
+  /// also does key generation between them, and a timeout that fires early turns
+  /// a slow pod into a failed pairing — which costs a pod.
+  static const Duration _controlTimeout = Duration(seconds: 15);
   static const Duration _fragmentTimeout = Duration(seconds: 5);
   static const int _maxFragmentTries = 4;
 
@@ -28,6 +46,7 @@ class PodMessageIo {
   /// Announces our controller id. Written once per connection, before anything
   /// else — the pod ignores traffic from a controller that has not said hello.
   Future<void> sayHello(int controllerId) {
+    _log('hello from controller $controllerId');
     return link.write(
       PodCharacteristic.command,
       PodControlWord.helloFrom(controllerId),
@@ -45,9 +64,11 @@ class PodMessageIo {
     link.flush(PodCharacteristic.data);
 
     await link.write(PodCharacteristic.command, PodControlWord.requestToSend.frame);
+    _log('waiting for clearToSend');
     await _expectControl(PodControlWord.clearToSend);
 
     final fragments = PodFragmenter(message.toBytes()).fragments;
+    _log('sending ${message.type.name}, ${fragments.length} fragment(s)');
     for (var index = 0; index < fragments.length; index++) {
       await link.write(PodCharacteristic.data, fragments[index]);
       await _resendIfNacked(fragments, index);
@@ -79,9 +100,12 @@ class PodMessageIo {
   /// Returns null when the pod did not ask to send within the timeout, which is
   /// a normal outcome rather than an error — the caller decides whether to wait
   /// again or give up.
-  Future<MessagePacket?> receiveMessage({bool expectRequestToSend = true}) async {
+  Future<MessagePacket?> receiveMessage({
+    bool expectRequestToSend = true,
+    Duration? timeout,
+  }) async {
     if (expectRequestToSend) {
-      final asked = await _readControl(_controlTimeout);
+      final asked = await _readControl(timeout ?? _controlTimeout);
       if (asked != PodControlWord.requestToSend) {
         return null;
       }
@@ -91,6 +115,8 @@ class PodMessageIo {
     try {
       final payload = await _readFragments();
       await link.write(PodCharacteristic.command, PodControlWord.success.frame);
+      _log('received ${payload.length} bytes: '
+          '${payload.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}');
       return MessagePacket.parse(payload);
     } on PodFragmentException catch (error) {
       final word = error.message.contains('CRC')
@@ -165,6 +191,18 @@ class PodMessageIo {
     }
   }
 
+  /// What is sitting unread on a characteristic, for a failure to report.
+  ///
+  /// A timeout that can also say "and nothing was waiting either" rules out a
+  /// whole class of causes without another run at a pod.
+  String _peekHex(PodCharacteristic characteristic) {
+    final frame = link.peek(characteristic);
+    if (frame == null) {
+      return 'empty';
+    }
+    return frame.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ');
+  }
+
   Future<PodControlWord?> _readControl(Duration timeout) async {
     final frame = await link.read(PodCharacteristic.command, timeout);
     if (frame == null || frame.isEmpty) {
@@ -178,6 +216,9 @@ class PodMessageIo {
     if (word == expected) {
       return;
     }
+    _log('expected ${expected.name}, got ${word?.name ?? 'nothing'}; '
+        'queued command=${_peekHex(PodCharacteristic.command)}, '
+        'data=${_peekHex(PodCharacteristic.data)}');
     if (word == PodControlWord.fail) {
       throw PodLinkException('Pod rejected the message (fail)');
     }

@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:insulink/src/pump/protocol/pod_command.dart';
 
 /// A 4-byte node address on the pod's message bus. The controller (this app)
 /// and the pod each have one, and every message carries both.
@@ -56,6 +57,16 @@ class PodAddressPair {
   final int? podUniqueId;
 
   PodId get myId => PodId.fromInt(controllerId);
+
+  /// Whether a reply carrying [replyId] came from the pod we are talking to.
+  ///
+  /// [podUnassignedUniqueId] counts, and has to: a pod answers with it until it
+  /// has been GIVEN its id, which happens two commands into an activation. The
+  /// version read that precedes it is answered by a pod that does not yet know
+  /// what to call itself, so refusing that id fails the first command of every
+  /// activation.
+  bool acceptsReplyFrom(int replyId) =>
+      replyId == podId.value || replyId == podUnassignedUniqueId;
 
   PodId get podId {
     final assigned = podUniqueId;

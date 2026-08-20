@@ -346,7 +346,8 @@
       "no_alerts": "None",
       "last_read": "Last read",
       "never_read": "Not read yet",
-      "stale": "This status is stale. Read it again before deciding anything."
+      "stale": "This status is stale. Read it again before deciding anything.",
+      "unfinished": "This pod is paired but not running yet. Continue the activation so it starts delivering."
     },
     "action": {
       "refresh": "Read status",
@@ -356,7 +357,8 @@
       "activate": "Activate pod",
       "deactivate_confirm": "Deactivate",
       "resume": "Resume delivery",
-      "deactivate_auth_reason": "Confirm deactivating the pod"
+      "deactivate_auth_reason": "Confirm deactivating the pod",
+      "resume_activation": "Continue activation"
     },
     "stop": {
       "_": "Stop delivery?",

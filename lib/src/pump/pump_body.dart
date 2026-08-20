@@ -50,7 +50,9 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-        child: controller.hasPod ? _pod(context, controller) : _setup(),
+        child: controller.hasPod && controller.store.isActivated
+            ? _pod(context, controller)
+            : _setup(),
       ),
     );
   }
@@ -64,8 +66,12 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
     );
   }
 
-  /// Without a pod there is nothing to detail, so the setup box stands on its
-  /// own — no heading over an empty page, and nothing to scroll it away with.
+  /// Without a RUNNING pod there is nothing to detail, so the setup box stands on
+  /// its own: no heading over an empty page, and nothing to scroll it away with.
+  ///
+  /// A pod that is paired but not yet activated lands here too. It refuses
+  /// everything but the activation sequence, so a status page for it would be a
+  /// page of failures; what it needs is the wizard finished.
   Widget _setup() {
     return const SingleChildScrollView(child: PodSetupBox());
   }
@@ -137,6 +143,9 @@ class PodSetupBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    // A pod can be PAIRED without running: the key is stored several commands
+    // before delivery starts. That pod needs the wizard finished, not a new one.
+    final paired = context.watch<PodController>().hasPod;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -148,13 +157,13 @@ class PodSetupBox extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const PodRestoreCard(),
-          const EmptyState(
+          EmptyState(
             icon: PhosphorIconsBold.syringe,
-            titleKey: 'pump.status.no_pod',
+            titleKey: paired ? 'pump.activate.title' : 'pump.status.no_pod',
           ),
           const SizedBox(height: 8),
           LocaleText(
-            'pump.status.no_pod_hint',
+            paired ? 'pump.status.unfinished' : 'pump.status.no_pod_hint',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
           ),

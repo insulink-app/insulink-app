@@ -1,11 +1,11 @@
 // Context is optional UI feedback forwarded to RequestReset.reset, which guards
 // `mounted` itself — forwarding a stale one across these gaps is harmless.
 // ignore_for_file: use_build_context_synchronously
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 import 'package:insulink/src/request/request_reset.dart';
 
 class RequestRefresh {
@@ -32,10 +32,13 @@ class RequestRefresh {
       url: "/refresh/",
       body: <String, String>{"refresh_token": refreshToken},
     ).send(context);
-    if (response == null || response.statusCode == 409) {
+    if (response?.statusCode == 409) {
       return false;
     }
-    var responseBody = jsonDecode(response.body);
+    final responseBody = response.jsonObject;
+    if (responseBody == null) {
+      return false;
+    }
     if (responseBody["success"] == false) {
       // A concurrent refresh (the other isolate) may have already rotated the
       // token out from under us — the server then rejects OUR now-stale one. If

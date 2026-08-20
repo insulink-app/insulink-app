@@ -13,11 +13,16 @@ class ScriptedScanner extends PodScanner {
 
   int scans = 0;
 
+  /// Whether each successive scan used the service-uuid filter.
+  final List<bool> filters = <bool>[];
+
   @override
   Future<List<DiscoveredPod>> scan({
     required int wantedPodId,
     Duration timeout = const Duration(seconds: 30),
+    bool filtered = true,
   }) async {
+    filters.add(filtered);
     final round = scans < rounds.length ? rounds[scans] : const <DiscoveredPod>[];
     scans++;
     return round;
@@ -93,6 +98,19 @@ void main() {
 
       expect(scanner.scans, 2);
       expect(pod.device.remoteId.str, 'AA:AA:AA:AA:AA:AA');
+    });
+
+    /// A service-uuid filter that does not match returns the same silence as an
+    /// absent pod. The second pass drops the filter so the two can be told
+    /// apart, in the log as well as in the result.
+    test('the second attempt drops the service filter', () async {
+      final scanner = ScriptedScanner([]);
+
+      await expectLater(
+        () => scanner.scanForSingle(wantedPodId: 4241),
+        throwsA(isA<PodLinkException>()),
+      );
+      expect(scanner.filters, [true, false]);
     });
 
     test('a single hit does not scan a second time', () async {

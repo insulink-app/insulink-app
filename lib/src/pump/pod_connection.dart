@@ -1,4 +1,5 @@
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:insulink/src/base/rust_core.dart';
 import 'package:insulink/src/pump/pod_ble_link.dart';
 import 'package:insulink/src/pump/pod_scanner.dart';
 import 'package:insulink/src/pump/pod_store.dart';
@@ -41,29 +42,24 @@ class PodConnection {
   /// Retries once after a resynchronisation, because the pod's answer to a stale
   /// EAP sequence number is the corrected value — the second attempt uses it.
   /// Anything else is not retried here.
-  /// [stillAdvertisingUnactivated] is for a pod that was paired but has not yet
-  /// been given its id: it already answers on the address we will assign, but it
-  /// still ADVERTISES the discovery address, so a scan has to look for that one.
-  /// Only an interrupted activation is in that state.
+  /// A paired pod is always looked up by its ASSIGNED id. It adopts the address
+  /// it was given in SP1 the moment pairing completes, long before the activation
+  /// command that formally sets its id: real hardware advertises 0x1091 while
+  /// still reporting lifecycle `filled`. There is no state in which a paired pod
+  /// answers to the discovery address, so nothing looks for it here.
   /// [allowScan] false connects straight to the stored BLE address instead of
   /// scanning. The background service passes false: a scan there would compete
   /// with the CGM's, and Android wedges its scanner when two things scan around
   /// the clock — the documented multi-hour "0 devices found" stall. Mirrors the
   /// Fitbit monitor's known-band-only rule for the same reason.
-  Future<PodSession> openSession({
-    bool stillAdvertisingUnactivated = false,
-    bool allowScan = true,
-  }) async {
+  Future<PodSession> openSession({bool allowScan = true}) async {
     _stopped = false;
     final uniqueId = store.uniqueId;
     final longTermKey = store.longTermKey;
     if (uniqueId == null || longTermKey == null) {
       throw PodLinkException('No pod is paired');
     }
-    final messageIo = await _connect(
-      stillAdvertisingUnactivated ? DiscoveredPod.unactivatedPodId : uniqueId,
-      allowScan: allowScan,
-    );
+    final messageIo = await _connect(uniqueId, allowScan: allowScan);
     final addresses = PodAddressPair(podUniqueId: uniqueId);
 
     for (var attempt = 0; attempt < 2; attempt++) {
@@ -107,6 +103,11 @@ class PodConnection {
     required Future<bool> Function(DiscoveredPod pod) confirmIrreversible,
   }) async {
     _stopped = false;
+    // The X25519 exchange below runs in Rust, and this isolate has never needed
+    // it before: the CGM's crypto lives in the service isolate, which brings the
+    // bridge up itself. Done before the scan so a missing bridge fails here,
+    // rather than after a pod has been found and is waiting to be paired.
+    await RustCore.ensureInitialised();
     final pod = await scanner.scanForSingle(
       wantedPodId: DiscoveredPod.unactivatedPodId,
       isCancelled: () => _stopped,
@@ -116,9 +117,10 @@ class PodConnection {
     }
     final link = PodBleLink(pod.device);
     _link = link;
-    await link.open();
+    await link.open(
+      hello: PodControlWord.helloFrom(PodAddressPair.controllerId),
+    );
     final messageIo = PodMessageIo(link);
-    await messageIo.sayHello(PodAddressPair.controllerId);
 
     const addresses = PodAddressPair(podUniqueId: null);
     final podUniqueId = addresses.podId.value;
@@ -177,9 +179,10 @@ class PodConnection {
         : _storedDevice();
     final link = PodBleLink(device);
     _link = link;
-    await link.open();
+    await link.open(
+      hello: PodControlWord.helloFrom(PodAddressPair.controllerId),
+    );
     final messageIo = PodMessageIo(link);
-    await messageIo.sayHello(PodAddressPair.controllerId);
     await store.saveBleAddress(device.remoteId.str);
     return messageIo;
   }

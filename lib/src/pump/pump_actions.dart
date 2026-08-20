@@ -23,12 +23,21 @@ class PodActivateButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<PodController>();
+    // A pod that is already paired needs the wizard FINISHED, not started, and
+    // the button has to say so: tapping "activate a pod" when one is half
+    // activated reads like it would fetch a second one.
+    final unfinished = controller.hasPod;
     return FilledButton.icon(
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
       onPressed:
           controller.isBusy ? null : () => openPodActivation(context),
-      icon: const Icon(PhosphorIconsBold.plus, size: 20),
-      label: LocaleText('pump.action.activate'),
+      icon: Icon(
+        unfinished ? PhosphorIconsBold.arrowRight : PhosphorIconsBold.plus,
+        size: 20,
+      ),
+      label: LocaleText(
+        unfinished ? 'pump.action.resume_activation' : 'pump.action.activate',
+      ),
     );
   }
 }

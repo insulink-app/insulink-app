@@ -31,10 +31,7 @@ class UnreachableConnection extends PodConnection {
   int attempts = 0;
 
   @override
-  Future<PodSession> openSession({
-    bool stillAdvertisingUnactivated = false,
-    bool allowScan = true,
-  }) async {
+  Future<PodSession> openSession({bool allowScan = true}) async {
     attempts++;
     scanAllowed = allowScan;
     throw PodLinkException('no pod in range');
@@ -64,14 +61,18 @@ void main() {
         now: () => clock,
       );
 
-  Future<void> pairPod({Duration age = const Duration(hours: 1)}) =>
-      store.savePairing(
-        uniqueId: 4241,
-        longTermKey: Uint8List.fromList(List<int>.filled(16, 7)),
-        lotNumber: 1,
-        podSequenceNumber: 2,
-        activatedAt: clock.subtract(age),
-      );
+  /// A pod that finished activating. The watch only ever looks at a RUNNING pod,
+  /// so every case here starts from one.
+  Future<void> pairPod({Duration age = const Duration(hours: 1)}) async {
+    await store.savePairing(
+      uniqueId: 4241,
+      longTermKey: Uint8List.fromList(List<int>.filled(16, 7)),
+      lotNumber: 1,
+      podSequenceNumber: 2,
+      activatedAt: clock.subtract(age),
+    );
+    await store.saveActivationStep('running');
+  }
 
   setUp(() async {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
@@ -188,6 +189,34 @@ void main() {
       await pairPod(age: const Duration(hours: 90));
       await buildMonitor().tick();
       expect(store.alarmNotified('expired'), isTrue);
+    });
+  });
+
+  group('a pod that has not finished activating is left alone', () {
+    /// Such a pod answers everything but the activation sequence with an
+    /// illegal-command-state NAK, and an activation is very likely running on
+    /// that link right now. Polling it competes for the radio with the wizard
+    /// trying to finish it.
+    test('a paired but unactivated pod is never polled', () async {
+      await store.savePairing(
+        uniqueId: 4241,
+        longTermKey: Uint8List.fromList(List<int>.filled(16, 7)),
+        lotNumber: 1,
+        podSequenceNumber: 2,
+        activatedAt: clock,
+      );
+
+      await buildMonitor().tick();
+
+      expect(connection.attempts, 0);
+    });
+
+    test('the same pod is polled once its activation finished', () async {
+      await pairPod();
+
+      await buildMonitor().tick();
+
+      expect(connection.attempts, greaterThan(0));
     });
   });
 }

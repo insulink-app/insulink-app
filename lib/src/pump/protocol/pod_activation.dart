@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:insulink/src/pump/protocol/pod_activation_commands.dart';
 import 'package:insulink/src/pump/protocol/pod_activation_state.dart';
 import 'package:insulink/src/pump/protocol/pod_alerts_command.dart';
@@ -36,8 +37,8 @@ class PodActivation {
   });
 
   /// The DASH pod does not use the rolling nonce its predecessor did; a fixed
-  /// value is what the reference implementations send.
-  static const int fixedNonce = 0;
+  /// value is what the reference implementations send. See [podFixedNonce].
+  static const int fixedNonce = podFixedNonce;
 
   /// Sends one command and returns the pod's reply.
   ///
@@ -248,9 +249,11 @@ class PodActivation {
   }
 
   Future<PodVersionResponse> _readVersion() async {
+    debugPrint('pod activation: -> getVersion');
     final response = await sendCommand(
       PodGetVersionCommand(sequenceNumber: _nextSequence),
     );
+    debugPrint('pod activation: <- $response');
     if (response is! PodVersionResponse) {
       throw PodActivationException('Pod did not report its version: $response');
     }
@@ -262,6 +265,7 @@ class PodActivation {
   }
 
   Future<PodSetUniqueIdResponse> _setIdentity(PodVersionResponse version) async {
+    debugPrint('pod activation: -> setUniqueId $podUniqueId');
     final response = await sendCommand(PodSetUniqueIdCommand(
       uniqueId: podUniqueId,
       sequenceNumber: _nextSequence,
@@ -269,6 +273,7 @@ class PodActivation {
       podSequenceNumber: version.podSequenceNumber,
       activatedAt: now(),
     ));
+    debugPrint('pod activation: <- $response');
     if (response is! PodSetUniqueIdResponse) {
       throw PodActivationException('Pod did not accept its identity: $response');
     }

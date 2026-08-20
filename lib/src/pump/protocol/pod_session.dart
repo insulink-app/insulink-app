@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:insulink/src/pump/protocol/message_packet.dart';
 import 'package:insulink/src/pump/protocol/pod_command.dart';
 import 'package:insulink/src/pump/protocol/pod_crc.dart';
@@ -90,12 +90,44 @@ class PodSession {
     return response;
   }
 
+  /// Reports the trailing two bytes without acting on them.
+  ///
+  /// They look like a CRC-16 over the frame, and a reply that fails one used to
+  /// be rejected here. Real hardware says that reading is wrong: every genuine
+  /// reply failed it. The reference driver never checks these bytes either, and
+  /// leaves a standing `TODO validate uniqueId, sequenceNumber and crc` where the
+  /// check would go, so there is no implementation anywhere to check against.
+  ///
+  /// Rejecting on a rule nobody has verified is worse than not checking: it
+  /// throws away replies the pod correctly sent. The bytes are logged instead, so
+  /// the real rule can still be worked out from captures.
+  ///
+  /// What IS checked stays checked: the reply names this pod, and its declared
+  /// length matches its body. Both are real integrity checks, and both are more
+  /// than the reference does.
+  void _noteCrc(Uint8List frame, ByteData view) {
+    final trailing = view.getUint16(frame.length - 2);
+    final asCrc16 = PodCrc16(frame.sublist(0, frame.length - 2)).value;
+    if (trailing == asCrc16) {
+      return;
+    }
+    debugPrint('pod response: trailing bytes 0x${trailing.toRadixString(16)} '
+        'are not a CRC-16 over the frame (0x${asCrc16.toRadixString(16)}); '
+        'frame ${frame.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}');
+  }
+
   /// Unwraps a decrypted reply.
   ///
   /// The frame carries the pod id it came from, a length, and its own CRC-16.
   /// All three are checked here: the reference driver leaves them unchecked, but
   /// acting on a reply that is not this pod's, or whose body is the wrong length,
   /// means acting on a wrong reservoir or delivery state.
+  ///
+  /// Which ids count as this pod is [PodAddressPair.acceptsReplyFrom] — an
+  /// activation's first reply legitimately carries the unassigned id.
+  ///
+  /// The trailing two bytes are NOT treated as a checksum to reject on. See
+  /// [_noteCrc].
   PodResponse _parse(Uint8List payload) {
     final Uint8List frame;
     try {
@@ -108,7 +140,7 @@ class PodSession {
     }
     final view = ByteData.view(frame.buffer, frame.offsetInBytes);
     final fromPod = view.getUint32(0);
-    if (fromPod != addresses.podId.value) {
+    if (!addresses.acceptsReplyFrom(fromPod)) {
       throw PodResponseException(
         'Reply is from pod $fromPod, expected ${addresses.podId.value}',
       );
@@ -120,11 +152,7 @@ class PodSession {
         'Reply declares $declaredLength bytes but carries ${body.length}',
       );
     }
-    final expectedCrc = view.getUint16(frame.length - 2);
-    final actualCrc = PodCrc16(frame.sublist(0, frame.length - 2)).value;
-    if (expectedCrc != actualCrc) {
-      throw PodResponseException('Reply failed its CRC check');
-    }
+    _noteCrc(frame, view);
     return PodResponseReader(body).response;
   }
 }

@@ -65,6 +65,13 @@ class PodMonitor {
     if (!store.hasPod) {
       return;
     }
+    // A pod that is paired but not yet activated answers everything except the
+    // activation sequence with an illegal-command-state NAK, and an activation
+    // is very likely running on that link right now. Polling it would compete
+    // for the radio with the wizard that is trying to finish it.
+    if (!store.isActivated) {
+      return;
+    }
     await _runQuietly('expiry check', () => alarms.checkExpiry(store));
     await _runQuietly('reachability check', () => alarms.checkReachable(store));
     if (_isPollDue) {

@@ -82,8 +82,9 @@ class ScriptedPod {
     body[1] = 0x1b;
     body[4] = 16; // pump rate, eighth seconds per pulse
     body[5] = 8; // prime pump rate: one pulse per second
-    body[6] = cannulaPulses;
-    body[7] = primePulses;
+    // Byte 6 is the prime, byte 7 the cannula. See PodSetUniqueIdResponse.
+    body[6] = primePulses;
+    body[7] = cannulaPulses;
     body[8] = 80; // expiration hours
     body[16] = PodLifecycleStatus.uniqueIdSet.value;
     ByteData.view(body.buffer)

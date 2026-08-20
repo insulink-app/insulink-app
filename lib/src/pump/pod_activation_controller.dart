@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/demo_pod.dart';
 import 'package:insulink/src/pump/pod_ble_permissions.dart';
@@ -167,7 +168,13 @@ class PodActivationController extends ChangeNotifier {
   }
 
   /// Whether an activation was interrupted and can be picked up.
-  bool get canResume => storedStep != PodActivationStep.notStarted &&
+  ///
+  /// A PAIRED pod counts even with no step recorded. The key is stored the
+  /// instant it exists, which is before the first step is written, so a failure
+  /// in between leaves exactly that: a pod bound to this app that no protocol
+  /// step describes. Treating it as "nothing to resume" would strand it.
+  bool get canResume =>
+      (storedStep != PodActivationStep.notStarted || store.hasPod) &&
       storedStep != PodActivationStep.running;
 
   /// Places the user at the right stage for a stored activation, so reopening the
@@ -205,6 +212,9 @@ class PodActivationController extends ChangeNotifier {
       }
       await _logActivationDelivery(PodDeliveryKind.prime);
       _enter(PodActivationStage.attachPod);
+      // The user now leaves the phone to attach the pod, which is the longest
+      // gap in the whole activation. Mirror before it, not after.
+      await _mirrorPairing();
     } catch (error) {
       _stoppedOrFailed(error);
     } finally {
@@ -263,6 +273,44 @@ class PodActivationController extends ChangeNotifier {
     }
   }
 
+  /// Pushes the pairing to the account as soon as the key exists.
+  ///
+  /// The key is what makes a pod reachable, and it cannot be renegotiated: a pod
+  /// answers only the controller that activated it, once, for good. Storing it
+  /// locally is not enough on its own, because the device holding it can be
+  /// reset, reinstalled or lost — and a pod already bound to a key nobody has is
+  /// a pod that will keep delivering with nothing able to stop it.
+  ///
+  /// So this runs at pairing time and again before the user walks off to attach
+  /// the pod, rather than waiting for the activation to finish. Everything
+  /// between those points is a window in which the local copy is the only copy.
+  ///
+  /// Never allowed to fail the activation: a pod in hand beats a mirror, and the
+  /// next successful operation pushes the same blob again.
+  Future<void> _mirrorPairing() async {
+    final mirrored = await _mirrorQuietly();
+    if (mirrored) {
+      debugPrint('pod activation: key mirrored to the account');
+      return;
+    }
+    // Said out loud, not swallowed. This is the only copy of a credential that
+    // cannot be renegotiated, and the user is the only one who can decide
+    // whether to carry on without it.
+    debugPrint('pod activation: the account copy of the key FAILED');
+    _failure = 'The pod is paired, but its key could not be saved to your '
+        'account. Resetting the app would lose this pod for good.';
+    _notify();
+  }
+
+  Future<bool> _mirrorQuietly() async {
+    try {
+      return await PumpSync().sync(store);
+    } catch (error) {
+      debugPrint('pod activation: mirroring the key THREW: $error');
+      return false;
+    }
+  }
+
   /// Records what an activation step consumed from the reservoir.
   ///
   /// Neither volume reaches the user, but both leave the reservoir, so a log that
@@ -317,6 +365,7 @@ class PodActivationController extends ChangeNotifier {
       );
       _podUniqueId = started.podUniqueId;
       _session = started.session;
+      await _mirrorPairing();
       return _activationOn(started.podUniqueId);
     }
     _session = await _openSession();
@@ -324,12 +373,14 @@ class PodActivationController extends ChangeNotifier {
   }
 
   /// Opens a session on a pod that is already paired.
+  ///
+  /// Always looks for the ASSIGNED id. A pod adopts the address it was given in
+  /// SP1 as soon as pairing completes, well before the activation command that
+  /// formally sets its id — real hardware advertises 0x1091 while still reporting
+  /// lifecycle `filled`. Searching for the discovery address here found nothing
+  /// and stalled every resumed activation.
   Future<PodSession> _openSession({bool allowScan = true}) async {
-    return _connection.openSession(
-      stillAdvertisingUnactivated:
-          storedStep.isBefore(PodActivationStep.identitySet),
-      allowScan: allowScan,
-    );
+    return _connection.openSession(allowScan: allowScan);
   }
 
   /// Drops the spent link and opens a fresh one.
@@ -396,6 +447,8 @@ class PodActivationController extends ChangeNotifier {
   /// not support — would otherwise escape and leave the wizard stuck on its
   /// spinner, which is the one state the user cannot get out of.
   void _stoppedOrFailed(Object error) {
+    debugPrint('pod activation: ${_stopped ? 'stopped' : 'threw'} '
+        'at ${storedStep.name}: $error');
     if (_stopped) {
       restoreStage();
       return;
@@ -404,6 +457,7 @@ class PodActivationController extends ChangeNotifier {
   }
 
   void _enter(PodActivationStage stage) {
+    debugPrint('pod activation: ${stage.name} (step ${storedStep.name})');
     _stage = stage;
     if (stage != PodActivationStage.failed) {
       _failure = null;
@@ -426,6 +480,7 @@ class PodActivationController extends ChangeNotifier {
   }
 
   void _fail(String reason, {String? messageKey}) {
+    debugPrint('pod activation: FAILED at ${storedStep.name}: $reason');
     _failure = reason;
     _failureKey = messageKey;
     _stage = PodActivationStage.failed;

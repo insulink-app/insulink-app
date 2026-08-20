@@ -108,8 +108,17 @@ class PodSetUniqueIdResponse extends PodResponse {
     pulseVolumeTenThousandthMicroLitre = view.getUint16(2);
     pumpRateEighthSeconds = body[4];
     primePumpRateEighthSeconds = body[5];
-    cannulaInsertionPulses = body[6];
-    primePulses = body[7];
+    // Byte 6 is the PRIME and byte 7 is the CANNULA, despite the reference
+    // naming them the other way round: it calls byte 6
+    // `numberOfEngagingClutchDrivePulses` and byte 7 `numberOfPrimePulses`, then
+    // assigns byte 6 to the FIRST prime bolus and byte 7 to the SECOND. Real
+    // hardware agrees: it reports 52 and 10, and the pod reports
+    // `engagingClutchDrive` while running the first of the two.
+    //
+    // Reading them the other way primed with 0.5 U instead of 2.6 U and waited a
+    // fifth of the time before speaking to a pod that was still delivering.
+    primePulses = body[6];
+    cannulaInsertionPulses = body[7];
     expirationHours = body[8];
     firmwareVersion = '${body[9]}.${body[10]}.${body[11]}';
     lifecycle = PodLifecycleStatus.byValue(body[16]);
@@ -126,11 +135,12 @@ class PodSetUniqueIdResponse extends PodResponse {
   /// Pulse spacing the pod wants for priming and cannula insertion.
   late final int primePumpRateEighthSeconds;
 
-  /// Pulses the pod asks for to seat the cannula. Pod-reported, never guessed —
-  /// this delivers insulin.
+  /// Pulses the pod asks for to seat the cannula, from byte 7. Pod-reported,
+  /// never guessed — this delivers insulin. Typically 10, so 0.5 U.
   late final int cannulaInsertionPulses;
 
-  /// Pulses the pod asks for to prime itself. Pod-reported, never guessed.
+  /// Pulses the pod asks for to prime itself, from byte 6. Pod-reported, never
+  /// guessed. Typically 52, so 2.6 U.
   late final int primePulses;
   late final int expirationHours;
   late final String firmwareVersion;

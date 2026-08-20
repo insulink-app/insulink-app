@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
 import 'package:insulink/src/pump/pod_store.dart';
@@ -27,19 +27,25 @@ class PumpSync {
   ///
   /// Cheap and idempotent: the blob is compared against what the backend last
   /// accepted, so an unchanged pod costs nothing.
-  Future<void> sync(PodStore store, {PodStatusResponse? status}) async {
+  ///
+  /// Returns whether the account now holds the current blob. Callers that mirror
+  /// the KEY have to look at that: this is the only copy of a credential that
+  /// cannot be renegotiated, and a silent failure here is the difference between
+  /// a recoverable app reset and a pod nobody can ever stop.
+  Future<bool> sync(PodStore store, {PodStatusResponse? status}) async {
     final data = _data(store, status);
     if (data == null) {
-      return;
+      debugPrint('pump sync: nothing to mirror, no pod fully paired');
+      return false;
     }
     final pumpId = store.backendPumpId;
     if (pumpId == null) {
-      await _register(store, data);
-      return;
+      return _register(store, data);
     }
-    if (store.backendSyncedData != data) {
-      await _update(store, pumpId, data);
+    if (store.backendSyncedData == data) {
+      return true;
     }
+    return _update(store, pumpId, data);
   }
 
   /// The reconnect identity, or null while no pod is fully paired.
@@ -52,6 +58,15 @@ class PumpSync {
   /// All three counters are included so a restored app resumes near where it left
   /// off. They are only as fresh as the last sync — see [PodStore.adoptFromBackend]
   /// for why being behind is recoverable and being keyless is not.
+  /// The reconnect record as the account would hold it, or null while no pod is
+  /// fully paired.
+  ///
+  /// Exposed so it can be written somewhere a person can reach: while the account
+  /// copy is failing, this string is the ONLY way back to a bound pod, and a key
+  /// that exists in exactly one place on one phone is one factory reset away from
+  /// a pod nobody can stop.
+  String? backupRecord(PodStore store) => _data(store, null);
+
   String? _data(PodStore store, PodStatusResponse? status) {
     final uniqueId = store.uniqueId;
     final longTermKey = store.longTermKey;
@@ -93,7 +108,7 @@ class PumpSync {
         .millisecondsSinceEpoch;
   }
 
-  Future<void> _register(PodStore store, String data) async {
+  Future<bool> _register(PodStore store, String data) async {
     final response = await Request.post(
       url: '/pump/register/',
       body: {
@@ -103,29 +118,63 @@ class PumpSync {
       },
     ).send(null);
     if (!_isSuccess(response)) {
-      return;
+      debugPrint('pump sync: register REJECTED, ${_describe(response)}');
+      return false;
     }
     final id = jsonDecode(response!.body)['pump_id'];
-    if (id != null) {
-      await store.saveBackendPumpId('$id');
-      await store.saveBackendSyncedData(data);
+    if (id == null) {
+      debugPrint('pump sync: register returned no pump_id');
+      return false;
     }
+    await store.saveBackendPumpId('$id');
+    await store.saveBackendSyncedData(data);
+    debugPrint('pump sync: registered as pump $id');
+    return true;
   }
 
-  Future<void> _update(PodStore store, String pumpId, String data) async {
+  Future<bool> _update(PodStore store, String pumpId, String data) async {
     final response = await Request.post(
       url: '/pump/update/',
       body: {'pump_id': pumpId, 'data': data},
     ).send(null);
-    if (_isSuccess(response)) {
-      await store.saveBackendSyncedData(data);
+    if (!_isSuccess(response)) {
+      debugPrint('pump sync: update REJECTED, ${_describe(response)}');
+      return false;
     }
+    await store.saveBackendSyncedData(data);
+    debugPrint('pump sync: updated pump $pumpId');
+    return true;
+  }
+
+  /// Makes sure the account holds this pod, catching up if it never did.
+  ///
+  /// The ordinary mirror only runs off a successful pod operation, so a pod that
+  /// is paired but not yet activated is never pushed: the background watch skips
+  /// it and the activation has not reached its end. That left the only copy of an
+  /// unrecoverable key on one phone.
+  ///
+  /// Duplicate-safe. A registration whose reply was lost would otherwise be
+  /// repeated, so the account is ASKED first: a pod already on file with our id
+  /// is adopted by its existing id rather than registered a second time.
+  Future<bool> ensureMirrored(PodStore store, {BuildContext? context}) async {
+    if (!store.hasPod || store.backendPumpId != null) {
+      return store.backendPumpId != null;
+    }
+    final onFile = await fetchCurrent(context);
+    if (onFile != null && onFile.uniqueId == store.uniqueId) {
+      debugPrint('pump sync: account already holds this pod, adopting '
+          '${onFile.pumpId} instead of registering again');
+      await store.saveBackendPumpId(onFile.pumpId);
+      return sync(store);
+    }
+    debugPrint('pump sync: account has no copy of this pod, registering');
+    return sync(store);
   }
 
   /// The account's current pod as a restorable identity, or null if there is
   /// none, it has expired, or the response was malformed. Call from the UI
   /// isolate, where an expired token can still be refreshed.
-  Future<PodRestore?> fetchCurrent(BuildContext context) async {
+  Future<PodRestore?> fetchCurrent(BuildContext? context) async {
     final response = await Request.get(url: '/pump/current/').send(context);
     if (!_isSuccess(response)) {
       return null;
@@ -141,6 +190,17 @@ class PumpSync {
     } catch (_) {
       return null;
     }
+  }
+
+  /// What came back, for a log line. A silent rejection is the one thing this
+  /// path must never produce.
+  String _describe(Response? response) {
+    if (response == null) {
+      return 'no response (offline, or the API is unreachable)';
+    }
+    final body = response.body;
+    final shown = body.length > 200 ? '${body.substring(0, 200)}…' : body;
+    return 'status ${response.statusCode}, body: $shown';
   }
 
   bool _isSuccess(Response? response) {

@@ -16,6 +16,7 @@ import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 import 'package:insulink/src/google_health/sleep_targets_state.dart';
 import 'package:insulink/src/inventory/inventory_store.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_store.dart';
@@ -146,10 +147,10 @@ class ProfileSettings {
     final response = await Request.get(
       url: "/user/settings/find/",
     ).send(context);
-    if (response == null) {
+    final body = response.jsonObject;
+    if (body == null) {
       return;
     }
-    final body = jsonDecode(response.body);
     if (body["success"] != true) {
       return;
     }

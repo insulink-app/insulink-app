@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/demo_pod.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
@@ -6,6 +7,7 @@ import 'package:insulink/src/pump/pump_sync.dart';
 import 'package:insulink/src/pump/protocol/pod_basal_command.dart';
 import 'package:insulink/src/pump/protocol/pod_basal_program.dart';
 import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
+import 'package:insulink/src/pump/protocol/pod_command.dart';
 import 'package:insulink/src/pump/protocol/pod_control_commands.dart';
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
@@ -27,7 +29,7 @@ class PodController extends ChangeNotifier {
       : _sequence = store.commandSequence,
         _connection = podConnectionFor(store);
 
-  static const int _fixedNonce = 0;
+  static const int _fixedNonce = podFixedNonce;
 
   final PodStore store;
   final PodConnection _connection;
@@ -182,8 +184,13 @@ class PodController extends ChangeNotifier {
   ///
   /// Bounded by the same window the delivery guard uses, so opening the page twice
   /// in a minute costs one session, not two.
+  ///
+  /// A pod that is paired but not yet ACTIVATED is left alone: it refuses a status
+  /// request with an illegal-command-state NAK, because in that state it accepts
+  /// only the activation sequence. Asking anyway is noise on a link that has an
+  /// activation waiting to finish on it.
   Future<void> refreshIfStale() async {
-    if (!hasPod || _busy) {
+    if (!hasPod || _busy || !store.isActivated) {
       return;
     }
     final age = statusAge;
@@ -376,11 +383,13 @@ class PodController extends ChangeNotifier {
       await _connection.close();
       await PumpSync().sync(store, status: _status);
     } on PodCommandOutcomeUnknown catch (error) {
+      debugPrint('pod: $what outcome UNKNOWN: ${error.message}');
       _failure = 'The pod may have acted on this — check the pod. ${error.message}';
     } catch (error) {
       // Catch-all, not `on Exception`: a plugin that throws an `Error` would
       // otherwise vanish into an unhandled async error and the page would show
       // nothing at all about why the operation did nothing.
+      debugPrint('pod: $what FAILED: $error');
       _failure = 'Could not $what: $error';
     } finally {
       await _connection.close();

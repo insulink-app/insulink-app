@@ -64,7 +64,6 @@ class PodPairing {
       addresses.podId.address,
       Uint8List.fromList(_openingStatusRequest),
     ]));
-
     _sequence++;
     await _send(_controllerOffer.encode([keyExchange.offer]));
     keyExchange.acceptPodOffer(_expect(_controllerOffer, await _receive('pod key offer')));
@@ -108,6 +107,10 @@ class PodPairing {
     return messageIo.sendMessage(MessagePacket(
       type: PodMessageType.pairing,
       source: addresses.myId,
+      // The not-activated broadcast id, verified against AndroidAPS master:
+      // LTKExchanger sends every pairing message to Ids.notActivated()
+      // (0xFFFFFFFE), while the id the pod will be GIVEN travels only inside
+      // SP1's payload. An earlier "fix" here to the assigned id was wrong.
       destination: PodId.notActivated,
       payload: payload,
       sequenceNumber: _sequence,
