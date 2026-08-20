@@ -7,9 +7,17 @@ import 'package:insulink/src/pump/protocol/pod_activation_state.dart';
 
 import 'package:insulink/src/pump/pod_ble_permissions.dart';
 
+import '../support/secure_storage_mock.dart';
 import 'fake_secure_storage.dart';
 
 void main() {
+  // The controller builds a real PodConnection when none is injected, and that
+  // now claims the cross-isolate link lease before it reaches the radio. The
+  // lease lives in secure storage, so the binding has to exist for the failure
+  // these tests are about to be the one they expect.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  installSecureStorageMock();
+
   late Map<String, String> backing;
   late PodStore store;
 

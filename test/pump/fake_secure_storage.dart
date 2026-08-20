@@ -45,6 +45,18 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
   }
 
   @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async =>
+      backing[key];
+
+  @override
   Future<Map<String, String>> readAll({
     AppleOptions? iOptions,
     AndroidOptions? aOptions,

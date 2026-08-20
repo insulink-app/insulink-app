@@ -8,6 +8,7 @@ import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_link.dart';
 import 'package:insulink/src/pump/protocol/pod_session.dart';
 import 'package:insulink/src/pump/service/pod_alarms.dart';
+import 'package:insulink/src/pump/pod_retry.dart';
 import 'package:insulink/src/pump/service/pod_monitor.dart';
 
 import '../support/secure_storage_mock.dart';
@@ -53,11 +54,15 @@ void main() {
   late List<String> log;
   late DateTime clock;
 
-  PodMonitor buildMonitor() => PodMonitor(
+  /// One connect attempt per poll, so `connection.attempts` counts POLLS. The
+  /// retry has its own test below; mixing the two would make every cadence
+  /// assertion here a multiple of the retry count.
+  PodMonitor buildMonitor({PodRetry? retry}) => PodMonitor(
         store: store,
         alarms: alarms,
         onLog: log.add,
         connection: connection,
+        retry: retry ?? const PodRetry(attempts: 1),
         now: () => clock,
       );
 
@@ -152,6 +157,21 @@ void main() {
       await monitor.tick();
       expect(connection.scanAllowed, isTrue);
       expect(connection.attempts, PodMonitor.scanAfterFailures + 1);
+    });
+
+    /// The pod drops links, refuses a session opened too soon after the last
+    /// one, and goes quiet when asked for several things in a row. Most of that
+    /// happens during the connect, with no command sent, so a poll tries more
+    /// than once before giving up. The next poll is a quarter of an hour away.
+    test('one poll makes several connect attempts before giving up', () async {
+      await pairPod();
+      final monitor = buildMonitor(
+        retry: const PodRetry(attempts: 3, firstDelay: Duration.zero),
+      );
+
+      await monitor.tick();
+
+      expect(connection.attempts, 3);
     });
 
     test('a pod that answers resets the failure count', () async {

@@ -1,4 +1,5 @@
 import 'package:insulink/src/pump/pod_connection.dart';
+import 'package:insulink/src/pump/pod_link_lease.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_alarm.dart';
 import 'package:insulink/src/pump/protocol/pod_alarm_status_response.dart';
@@ -9,6 +10,7 @@ import 'package:insulink/src/pump/protocol/pod_responses.dart';
 import 'package:insulink/src/pump/service/pod_alarms.dart';
 import 'package:insulink/src/pump/insulin_sync.dart';
 import 'package:insulink/src/pump/pod_basal_booking.dart';
+import 'package:insulink/src/pump/pod_retry.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 
 /// Watches the paired pod from the background service, so its warnings arrive
@@ -33,8 +35,19 @@ class PodMonitor {
     required this.alarms,
     required this.onLog,
     PodConnection? connection,
+    this.retry = const PodRetry(),
     this.now = DateTime.now,
-  }) : _connection = connection ?? PodConnection(store: store);
+  }) : _connection =
+            connection ?? PodConnection(store: store, lease: serviceLease);
+
+  /// The link lease both halves of the background service share.
+  ///
+  /// One owner for the whole isolate, not one per feature: the watch and the
+  /// automation run chained on the same tick and must not exclude each other,
+  /// while both must exclude the UI. No patience, because the service's work is
+  /// periodic and coming back later is free.
+  static const PodLinkLease serviceLease =
+      PodLinkLease('the background service');
 
   /// How often the pod is actually contacted. The pod's own beeper is the primary
   /// alarm for anything urgent, so this trades promptness for the pod's battery
@@ -48,6 +61,11 @@ class PodMonitor {
   final PodStore store;
   final PodAlarmManager alarms;
   final void Function(String line) onLog;
+
+  /// How a failed connect is repeated. Injectable so tests can assert on the
+  /// poll cadence without waiting out the real backoff.
+  final PodRetry retry;
+
   final DateTime Function() now;
 
   final PodConnection _connection;
@@ -93,7 +111,14 @@ class PodMonitor {
     _lastPollAttempt = now();
     final mayScan = _failedPolls >= scanAfterFailures;
     try {
-      final session = await _connection.openSession(allowScan: mayScan);
+      // Retried inside the poll as well as between polls. Reading a status
+      // changes nothing about the pod, so repeating it is free, and the next
+      // poll is a quarter of an hour away — long enough for a warning to be
+      // late over a link that would have come up on a second try.
+      final session = await retry.copyWith(onLog: onLog).run(
+        'poll',
+        () => _openAndSettle(mayScan),
+      );
       final status = await _read(session, PodStatusPage.defaultPage);
       if (status is! PodStatusResponse) {
         _failedPolls++;
@@ -123,6 +148,17 @@ class PodMonitor {
     } finally {
       await _closeQuietly();
       _polling = false;
+    }
+  }
+
+  /// Opens a session, dropping the link if it fails so the next attempt starts
+  /// from nothing rather than inheriting a half-open one.
+  Future<PodSession> _openAndSettle(bool mayScan) async {
+    try {
+      return await _connection.openSession(allowScan: mayScan);
+    } catch (error) {
+      await _closeQuietly();
+      rethrow;
     }
   }
 

@@ -6,6 +6,8 @@ import 'package:insulink/src/pump/loop/loop_pod_commands.dart';
 import 'package:insulink/src/pump/loop/loop_safety.dart';
 import 'package:insulink/src/pump/pod_basal_booking.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
+import 'package:insulink/src/pump/pod_retry.dart';
+import 'package:insulink/src/pump/service/pod_monitor.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
@@ -37,8 +39,10 @@ class PodLoopRunner {
     required this.onLog,
     required this.notifyStopped,
     PodConnection? connection,
+    this.retry = const PodRetry(),
     this.now = DateTime.now,
-  }) : _connection = connection ?? PodConnection(store: store);
+  }) : _connection = connection ??
+            PodConnection(store: store, lease: PodMonitor.serviceLease);
 
   /// How often a cycle runs. Matches the interval a G7 delivers on, because a
   /// cycle without a new reading can only repeat the last decision.
@@ -68,6 +72,10 @@ class PodLoopRunner {
   /// stops quietly leaves them believing delivery is still being managed, which
   /// is worse than never having started it.
   final Future<void> Function(PodLoopStop cause) notifyStopped;
+
+  /// How a failed connect is repeated. Injectable so tests run without waiting
+  /// out the real backoff.
+  final PodRetry retry;
 
   final DateTime Function() now;
 
@@ -128,10 +136,13 @@ class PodLoopRunner {
       return;
     }
     final glucose = await readGlucose();
-    final session = await _connection.openSession(allowScan: false);
-    final commands =
-        LoopPodCommands(store: store, session: session, now: now);
-    final status = await commands.readStatus();
+    // Only the connect and the status read are inside the retry. Both leave the
+    // pod untouched, so repeating them is free, and getting a suspension onto a
+    // pod sooner is worth a few seconds. Everything after this point may change
+    // what the pod is doing and runs exactly once.
+    final attempt = retry.copyWith(onLog: onLog);
+    final commands = await attempt.run('loop connect', _open);
+    final status = await attempt.run('loop status', commands.readStatus);
     await store.markSeen(now());
     await PodBasalBooking(store, now: now).book(status);
     final decision = _journalIsAhead
@@ -154,6 +165,17 @@ class PodLoopRunner {
     if (status.lifecycle == PodLifecycleStatus.alarm ||
         !status.lifecycle.isRunning) {
       await _disengage(PodLoopStop.podNotDelivering);
+    }
+  }
+
+  /// Opens a session, dropping the link if it fails so a retry starts clean.
+  Future<LoopPodCommands> _open() async {
+    try {
+      final session = await _connection.openSession(allowScan: false);
+      return LoopPodCommands(store: store, session: session, now: now);
+    } catch (error) {
+      await _closeQuietly();
+      rethrow;
     }
   }
 

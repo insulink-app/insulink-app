@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/demo_pod.dart';
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
+import 'package:insulink/src/pump/pod_retry.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 import 'package:insulink/src/pump/protocol/pod_basal_command.dart';
@@ -26,13 +27,20 @@ import 'package:insulink/src/pump/pod_running_bolus.dart';
 /// What a delivery is allowed to be is decided by [PodDeliveryGuard], on the dose
 /// and the pod's own reported state — not by a mode the user can be in.
 class PodController extends ChangeNotifier {
-  PodController({required this.store})
-      : _sequence = store.commandSequence,
-        _connection = podConnectionFor(store);
+  PodController({
+    required this.store,
+    this.retry = const PodRetry(),
+    PodConnection? connection,
+  })  : _sequence = store.commandSequence,
+        _connection = connection ?? podConnectionFor(store);
 
   static const int _fixedNonce = podFixedNonce;
 
   final PodStore store;
+
+  /// How a failed operation is repeated. Injectable so tests need not wait out
+  /// the real backoff.
+  final PodRetry retry;
   final PodConnection _connection;
 
   /// The pod command sequence number, a persisted 4-bit counter.
@@ -383,6 +391,14 @@ class PodController extends ChangeNotifier {
   /// A [PodCommandOutcomeUnknown] is reported as exactly that: the command may
   /// have taken effect, so the message tells the user to check the pod rather
   /// than implying nothing happened.
+  ///
+  /// Retried while the failure left the pod untouched (see [PodRetry]), because
+  /// most of what goes wrong here goes wrong during the connect and handshake,
+  /// and telling the user it did not work when a second attempt would have
+  /// worked is its own wrong answer. The retry starts at [_resyncFromStorage],
+  /// so every attempt re-reads the PERSISTED command counter and therefore sends
+  /// the same sequence number. That is what lets the pod recognise a repeat, and
+  /// it is also why a failed attempt must not save the counter.
   Future<void> _withSession(
     String what,
     Future<void> Function(PodSession session) body,
@@ -395,9 +411,7 @@ class PodController extends ChangeNotifier {
     _cancelledBolus = null;
     notifyListeners();
     try {
-      await _resyncFromStorage();
-      final session = await _connection.openSession();
-      await body(session);
+      await retry.copyWith(onLog: debugPrint).run(what, () => _attempt(body));
       await store.saveCommandSequence(_sequence);
       await _connection.close();
       await PumpSync().sync(store, status: _status);
@@ -414,6 +428,22 @@ class PodController extends ChangeNotifier {
       await _connection.close();
       _busy = false;
       notifyListeners();
+    }
+  }
+
+  /// One try at [body] against a fresh session, dropping the link if it fails.
+  ///
+  /// The link is closed before the error escapes so the next attempt starts from
+  /// nothing rather than inheriting a half-open one, and so the settle window the
+  /// pod needs between links is measured from now.
+  Future<void> _attempt(Future<void> Function(PodSession session) body) async {
+    try {
+      await _resyncFromStorage();
+      final session = await _connection.openSession();
+      await body(session);
+    } catch (error) {
+      await _connection.close();
+      rethrow;
     }
   }
 
@@ -447,14 +477,39 @@ class PodController extends ChangeNotifier {
     PodBolusAmount amount, {
     required String? Function(PodStatusResponse status) refuseIf,
   }) async {
-    final uniqueId = store.uniqueId;
-    if (uniqueId == null) {
+    if (store.uniqueId == null) {
       throw StateError('No pod is paired');
     }
     _busy = true;
     _failure = null;
     _cancelledBolus = null;
     notifyListeners();
+    try {
+      return await retry
+          .copyWith(onLog: debugPrint)
+          .run('send bolus', () => _attemptBolus(amount, refuseIf));
+    } finally {
+      await _connection.close();
+      _busy = false;
+      notifyListeners();
+    }
+  }
+
+  /// One try: open a session, read the pod, judge it, program the dose.
+  ///
+  /// Everything before the bolus command is safe to repeat. Opening a session,
+  /// reading a status and judging it change nothing about the pod, so a link that
+  /// dropped during any of them leaves a pod that has been asked for nothing.
+  ///
+  /// The bolus command is where that stops. If it goes out and is not answered,
+  /// [PodCommandOutcomeUnknown] escapes and [PodRetry] will not repeat it, because
+  /// the pod may be delivering and a second attempt would be a second dose. The
+  /// guard reading `isBolusing` cannot be relied on to catch that either: a small
+  /// bolus can finish between the two attempts and leave the pod looking idle.
+  Future<PodResponse> _attemptBolus(
+    PodBolusAmount amount,
+    String? Function(PodStatusResponse status) refuseIf,
+  ) async {
     try {
       await _resyncFromStorage();
       final session = await _connection.openSession();
@@ -468,7 +523,7 @@ class PodController extends ChangeNotifier {
       // storage and may have been changed on the panel since this screen opened.
       final beepAtEnd = await NotificationSetting.podBolusBeep.load();
       final response = await session.run(PodProgramBolusCommand(
-        uniqueId: uniqueId,
+        uniqueId: store.uniqueId!,
         sequenceNumber: _nextSequence,
         nonce: _fixedNonce,
         amount: amount,
@@ -479,10 +534,11 @@ class PodController extends ChangeNotifier {
       await PumpSync().sync(store, status: _status);
       _absorb(response);
       return response;
-    } finally {
+    } on PodBolusRefused {
+      rethrow;
+    } catch (error) {
       await _connection.close();
-      _busy = false;
-      notifyListeners();
+      rethrow;
     }
   }
 

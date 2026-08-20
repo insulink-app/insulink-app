@@ -1,6 +1,7 @@
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:insulink/src/base/rust_core.dart';
 import 'package:insulink/src/pump/pod_ble_link.dart';
+import 'package:insulink/src/pump/pod_link_lease.dart';
 import 'package:insulink/src/pump/pod_scanner.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/key_exchange.dart';
@@ -25,10 +26,16 @@ class PodConnection {
   PodConnection({
     required this.store,
     this.scanner = const PodScanner(),
+    this.lease = const PodLinkLease('the app'),
   });
 
   final PodStore store;
   final PodScanner scanner;
+
+  /// Who is holding the pod's link. The UI isolate and the service isolate each
+  /// pass their own, so neither can connect while the other is mid-session; see
+  /// [PodLinkLease] for what happens when they do.
+  final PodLinkLease lease;
 
   PodBleLink? _link;
   PodSession? _openedSession;
@@ -71,6 +78,7 @@ class PodConnection {
   /// Fitbit monitor's known-band-only rule for the same reason.
   Future<PodSession> openSession({bool allowScan = true}) async {
     _stopped = false;
+    await lease.take();
     await _letThePodSettle();
     final uniqueId = store.uniqueId;
     final longTermKey = store.longTermKey;
@@ -121,6 +129,7 @@ class PodConnection {
     required Future<bool> Function(DiscoveredPod pod) confirmIrreversible,
   }) async {
     _stopped = false;
+    await lease.take();
     // The X25519 exchange below runs in Rust, and this isolate has never needed
     // it before: the CGM's crypto lives in the service isolate, which brings the
     // bridge up itself. Done before the scan so a missing bridge fails here,
@@ -302,6 +311,7 @@ class PodConnection {
         _lastClosedAt = DateTime.now();
       }
       await link?.close();
+      await lease.release();
     }
   }
 }

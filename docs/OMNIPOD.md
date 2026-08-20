@@ -346,7 +346,7 @@ suspend and deactivate a pod reliably, or it must not activate one at all.
 | Corrupted frame accepted as a command | arbitrary pod behaviour | CRC-16 per command, CRC-32 per reassembled payload, AES-CCM tag per message; all three refuse rather than pass through |
 | Forged or replayed pod message | false status → wrong dosing decision | AES-CCM authenticates the 16-byte header as associated data; nonce counter carries a direction bit so the two sides never share a nonce |
 | Man-in-the-middle during pairing | attacker-chosen key | pod confirmation value compared in constant time before pairing is accepted; low-order X25519 points rejected in Rust |
-| Retried command delivered twice | double dose | 4-bit command sequence number — the pod recognises and ignores a repeat. **Never reuse a number for a different command and never skip one** |
+| Retried command delivered twice | double dose | 4-bit command sequence number — the pod recognises and ignores a repeat. **Never reuse a number for a different command and never skip one**. `PodRetry` only repeats failures that happened BEFORE a command was sent, and a failed attempt never persists the counter, so every retry sends the same number |
 | Stale pod status | bolus stacked on a running one | `PodDeliveryGuard` refuses any bolus decided on a status older than 2 min |
 | Repeat taps / retry loop | stacked doses | rolling one-hour ceiling in `PodDeliveryGuard`, on top of the per-bolus cap |
 | Bolus larger than the reservoir | partial delivery, wrong IOB | refused when the pod reports a measurable reservoir |
@@ -359,6 +359,69 @@ suspend and deactivate a pod reliably, or it must not activate one at all.
 | Automation silently overriding a rate the user set | a temp basal set for sport undone without notice | `PodTemporaryBasal.automated` distinguishes them and the loop defers to the user's, except for a suspension |
 | Automation dosing on top of a bolus nobody could confirm | stacked dose from insulin the loop cannot see | an unconfirmed bolus is recorded in `PodStore.unconfirmedBoluses` and counted as delivered BY THE LOOP only; the user's own calculator still counts it as not given, because the conservative assumption differs per reader |
 | Automation stopping without the user noticing | delivery believed managed when it is not | every self-stop raises a notification, and the overview keeps showing it until the user acts |
+| UI and background service on the pod at once | both sessions collapse; looks like a pod that blocks under load | `PodLinkLease` in secure storage, the only thing both isolates can see. One owner per isolate; the UI waits the service out, the service comes back next tick |
+
+### Only one part of the app may hold the link
+
+The pod's link is exclusive, and the app reaches for it from **two isolates**:
+the UI when the user taps something, and the foreground service for the
+background poll and the automation. Neither can see the other's state, so both
+connect, and the symptom is not obvious:
+
+```
+pod link: connected to 64:00:9C:68:56:42      <- twice, interleaved
+pod link: -> command 06 01 04 00 00 10 92     <- twice
+pod poll failed:    ERROR_GATT_WRITE_REQUEST_BUSY
+pod refresh failed: Expected success, got abort
+```
+
+`pod poll` is the service, `pod refresh` is the UI. Android answers the second
+writer with `ERROR_GATT_WRITE_REQUEST_BUSY`, the pod gives up on both sessions,
+and the whole thing **reads as a pod that blocks when it is sent too many
+commands**. It is not; it is the app competing with itself.
+
+`PodLinkLease` holds a lease in secure storage, which is the only state both
+isolates share. Load-bearing details:
+
+- **A lease, not a lock.** A holder that is killed never releases anything, so it
+  expires by itself (90 s). One crash must not put the pod out of reach.
+- **One owner per ISOLATE, not per feature.** The background watch and the
+  automation run chained on the same tick, so a separate owner each would have
+  them locking one another out. Both are `the background service`.
+- **Taken by write-then-read-back**, not check-then-write. Two isolates can pass
+  the check at the same instant; only one write lands last, and reading back is
+  what tells the loser it lost.
+- **The two sides have opposite patience.** A tap has to happen and a poll is
+  seconds long, so the UI waits up to 12 s. The service's work is periodic, so it
+  gives up at once and comes back on the next tick.
+- `PodLinkBusy` is thrown before anything reaches the pod, so `PodRetry` repeats
+  it like any other pre-command failure.
+
+### Retrying a pod operation
+
+The link is fragile: it drops, it refuses a session opened too soon after the
+last one closed, and it goes quiet under repeated commands. Most of that happens
+during the connect and the handshake, with **no command sent**, so reporting it
+to the user as a failure when a second attempt would have worked is its own wrong
+answer. `PodRetry` repeats those, with a doubling wait on top of the settle
+window `PodConnection` already keeps.
+
+The boundary it exists to hold is what may NOT be repeated, and it is a
+deny-list rather than a list of retryable errors, so an unforeseen failure gets
+another chance and only outcomes known to be unsafe are excluded:
+
+| Outcome | Repeated | Why |
+|---------|----------|-----|
+| link never came up, handshake failed, session refused | yes | the pod was asked for nothing |
+| anything unclassified | yes | it is far more likely to be a link problem than a delivered dose |
+| `PodCommandOutcomeUnknown` | **never** | the command went out and was not answered. The pod may have run it, and repeating it is a second dose |
+| `PodBolusRefused` | no | a guard declined against the pod's freshly read state; repeating changes nothing |
+| `LoopCommandRefused` | no | the pod itself declined |
+
+For a bolus this means the retry covers the session, the status read and the
+guard, and stops at the command. **The `isBolusing` guard cannot be leaned on as
+the backstop here**: a small dose can finish between two attempts and leave the
+pod looking idle, so the rule has to be the outcome type, not the pod's state.
 
 Two design rules that came out of this and should not be relaxed:
 

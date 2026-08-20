@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
+import 'package:insulink/src/pump/pod_link_lease.dart';
 import 'package:insulink/src/pump/pod_scanner.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_command.dart';
@@ -26,8 +27,14 @@ import 'package:insulink/src/pump/protocol/session_cipher.dart';
 const bool demoPodEnabled = false;
 
 /// The one place that decides whether the app talks to a radio or to this file.
-PodConnection podConnectionFor(PodStore store) =>
-    demoPodEnabled ? DemoPodConnection(store: store) : PodConnection(store: store);
+PodConnection podConnectionFor(PodStore store) => demoPodEnabled
+    ? DemoPodConnection(store: store)
+    : PodConnection(store: store, lease: uiLease);
+
+/// The link lease the UI isolate holds. It waits for the background service to
+/// finish rather than failing: a tap has to happen, and a poll is seconds long.
+const PodLinkLease uiLease =
+    PodLinkLease('the app', patience: Duration(seconds: 12));
 
 /// How long the fake search takes. Long enough to watch the spinner and try the
 /// cancel button, short enough not to be tedious.

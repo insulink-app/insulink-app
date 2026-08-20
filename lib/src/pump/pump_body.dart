@@ -60,9 +60,21 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
 
   /// With a pod: the status box pins to the top and the detail list scrolls up
   /// into its place, exactly as the sensor page behaves.
+  ///
+  /// The automation switch rides in the pinned part rather than at the top of the
+  /// list. It is a control over what the pump does with every basal minute, not a
+  /// fact about the pod, and putting it here also puts the gap the pinned header
+  /// keeps BELOW it instead of between it and the status box.
   Widget _pod(BuildContext context, PodController controller) {
     return PinnedHeaderScroll(
-      header: PodStatusBox(controller: controller),
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PodStatusBox(controller: controller),
+          const SizedBox(height: 12),
+          const PodLoopModeCard(),
+        ],
+      ),
       child: _details(context, controller),
     );
   }
@@ -90,8 +102,6 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
         const SizedBox(height: 4),
         ..._notices(context, controller),
         const PodBasalOutOfDateNotice(),
-        const PodLoopModeCard(),
-        const SizedBox(height: 14),
         SensorSectionList(sections: sections),
       ],
     );

@@ -7,6 +7,7 @@ import 'package:insulink/src/pump/loop/loop_limits.dart';
 import 'package:insulink/src/pump/loop/loop_runner.dart';
 import 'package:insulink/src/pump/pod_basal_delivery.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
+import 'package:insulink/src/pump/pod_retry.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_command.dart';
 import 'package:insulink/src/pump/protocol/pod_control_commands.dart';
@@ -81,6 +82,11 @@ class ScriptedConnection extends PodConnection {
 
   final ScriptedSession session;
   bool reachable = true;
+
+  /// Attempts after which the pod answers, for the case where a link comes up
+  /// on a later try rather than never.
+  int? recoverAfter;
+
   int opened = 0;
   bool scanAsked = false;
 
@@ -88,7 +94,8 @@ class ScriptedConnection extends PodConnection {
   Future<PodSession> openSession({bool allowScan = true}) async {
     opened++;
     scanAsked = allowScan;
-    if (!reachable) {
+    final recovered = recoverAfter != null && opened >= recoverAfter!;
+    if (!reachable && !recovered) {
       throw PodLinkException('no pod in range');
     }
     return session;
@@ -139,9 +146,12 @@ void main() {
     announced = <PodLoopStop>[];
   });
 
+  /// One connect attempt per cycle unless a test says otherwise, so
+  /// `connection.opened` counts CYCLES. The retry has its own test below.
   PodLoopRunner runnerWith({
     LoopGlucose? glucose,
     double mealIob = 0,
+    PodRetry? retry,
   }) {
     return PodLoopRunner(
       store: store,
@@ -150,6 +160,7 @@ void main() {
       onLog: log.add,
       notifyStopped: (cause) async => announced.add(cause),
       connection: connection,
+      retry: retry ?? const PodRetry(attempts: 1),
       now: () => clock,
     );
   }
@@ -686,6 +697,36 @@ void main() {
 
       expect(programs, greaterThan(1));
       expect(cancels, programs);
+    });
+  });
+
+  group('a link that fails is tried again inside the cycle', () {
+    /// Getting a decision onto the pod sooner is worth a few seconds, and most
+    /// of what fails here fails during the connect, with no command sent.
+    test('a cycle retries the connect before giving up', () async {
+      await store.saveLoopMode(PodLoopMode.engaged);
+      connection.reachable = false;
+
+      await runnerWith(
+        retry: const PodRetry(attempts: 3, firstDelay: Duration.zero),
+      ).tick();
+
+      expect(connection.opened, 3);
+    });
+
+    /// A link that comes up on the second try leaves a cycle that worked, not a
+    /// cycle that was reported as failed.
+    test('a link that comes up on a later try still delivers', () async {
+      await store.saveLoopMode(PodLoopMode.engaged);
+      connection.reachable = false;
+      connection.recoverAfter = 2;
+
+      await runnerWith(
+        retry: const PodRetry(attempts: 3, firstDelay: Duration.zero),
+      ).tick();
+
+      expect(session.commandsOfType<PodProgramTempBasalCommand>(), hasLength(1));
+      expect(store.loopCycles.single.delivered, isTrue);
     });
   });
 
