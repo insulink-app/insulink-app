@@ -476,11 +476,13 @@
       "kind": {
         "bolus": "Bolus",
         "prime": "Vorbereitung",
-        "cannula": "Kanüle"
+        "cannula": "Kanüle",
+        "basal": "Basal"
       },
       "basal_total": "Basal insgesamt",
       "bolus_total": "Bolus insgesamt",
-      "total": "Seit Pod-Start"
+      "total": "Seit Pod-Start",
+      "hour_span": "# bis #"
     },
     "bolus": {
       "running": "Bolus läuft",

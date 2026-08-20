@@ -106,8 +106,56 @@ extension PodBasalLedger on PodStore {
         PodStore._kBasalTotal,
         '${basalDeliveredTotal + units}',
       );
+      await _addBasalHour(at, units);
     }
     await _set(PodStore._kBasalCountedTo, '${countedTo.millisecondsSinceEpoch}');
+  }
+
+  /// Basal booked per hour, oldest first, for the history page.
+  ///
+  /// Hourly rather than per booking: the watch books every quarter of an hour, and
+  /// a pod's life would be three hundred rows of nothing anyone reads. An hour is
+  /// the granularity a person actually thinks in.
+  ///
+  /// A separate record from the queue the account drains AND from the running
+  /// total, because it answers a different question: not "how much", but "when".
+  List<PodBasalHour> get basalHours {
+    final encoded = _cache[PodStore._kBasalHours];
+    if (encoded == null || encoded.isEmpty) {
+      return const [];
+    }
+    try {
+      final entries = jsonDecode(encoded) as List<dynamic>;
+      return [
+        for (final entry in entries)
+          PodBasalHour.fromJson(entry as Map<String, dynamic>),
+      ];
+    } on FormatException {
+      return const [];
+    }
+  }
+
+  /// Adds [units] to the hour [at] falls in, merging with what that hour already
+  /// holds.
+  Future<void> _addBasalHour(DateTime at, double units) async {
+    final hour = DateTime(at.year, at.month, at.day, at.hour);
+    final entries = [...basalHours];
+    final index = entries.indexWhere((entry) => entry.hour == hour);
+    if (index >= 0) {
+      entries[index] = PodBasalHour(
+        hour: hour,
+        units: entries[index].units + units,
+      );
+    } else {
+      entries.add(PodBasalHour(hour: hour, units: units));
+    }
+    final kept = entries.length > PodStore._maxBasalHours
+        ? entries.sublist(entries.length - PodStore._maxBasalHours)
+        : entries;
+    await _set(
+      PodStore._kBasalHours,
+      jsonEncode([for (final entry in kept) entry.toJson()]),
+    );
   }
 
   /// Every unit of basal this pod has delivered, as booked by the background
@@ -137,4 +185,27 @@ extension PodBasalLedger on PodStore {
   /// Roughly two days of 15-minute samples. Past that the oldest are dropped:
   /// insulin history that old is no longer shaping a forecast, and an unbounded
   /// queue in secure storage is its own problem.
+}
+
+/// One hour's worth of basal, as the background watch booked it.
+///
+/// The hour is a wall-clock hour, so it lines up with what the user reads on a
+/// clock and with the schedule the pod runs its slots on.
+class PodBasalHour {
+  const PodBasalHour({required this.hour, required this.units});
+
+  factory PodBasalHour.fromJson(Map<String, dynamic> json) => PodBasalHour(
+        hour: DateTime.fromMillisecondsSinceEpoch((json['at'] as num).toInt()),
+        units: (json['units'] as num).toDouble(),
+      );
+
+  /// The start of the hour this covers.
+  final DateTime hour;
+
+  final double units;
+
+  Map<String, dynamic> toJson() => {
+        'at': hour.millisecondsSinceEpoch,
+        'units': units,
+      };
 }

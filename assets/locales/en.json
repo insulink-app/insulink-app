@@ -476,11 +476,13 @@
       "kind": {
         "bolus": "Bolus",
         "prime": "Priming",
-        "cannula": "Cannula"
+        "cannula": "Cannula",
+        "basal": "Basal"
       },
       "basal_total": "Basal total",
       "bolus_total": "Bolus total",
-      "total": "Since pod start"
+      "total": "Since pod start",
+      "hour_span": "# to #"
     },
     "bolus": {
       "running": "Bolus running",

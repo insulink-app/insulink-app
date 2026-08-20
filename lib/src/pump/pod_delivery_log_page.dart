@@ -3,6 +3,7 @@ import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pod_log_entry.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -47,7 +48,7 @@ class PodDeliveryLogPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = context.watch<PodController>().store.deliveryLog;
+    final entries = PodLogEntry.timeline(context.watch<PodController>().store);
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
@@ -73,14 +74,14 @@ class PodDeliveryLogPage extends StatelessWidget {
     );
   }
 
-  Widget _list(BuildContext context, List<PodDelivery> entries) {
+  Widget _list(BuildContext context, List<PodLogEntry> entries) {
     final scheme = Theme.of(context).colorScheme;
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
       itemCount: entries.length,
       separatorBuilder: (_, _) =>
           Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.06)),
-      itemBuilder: (_, index) => _PodDeliveryRow(entry: entries[index]),
+      itemBuilder: (_, index) => _PodLogRow(entry: entries[index]),
     );
   }
 }
@@ -158,11 +159,11 @@ class PodDeliverySummary extends StatelessWidget {
   }
 }
 
-/// One logged delivery: when, what for, and how much.
-class _PodDeliveryRow extends StatelessWidget {
-  const _PodDeliveryRow({required this.entry});
+/// One line of the history: when, what for, and how much.
+class _PodLogRow extends StatelessWidget {
+  const _PodLogRow({required this.entry});
 
-  final PodDelivery entry;
+  final PodLogEntry entry;
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +184,7 @@ class _PodDeliveryRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: LocaleText(
-              'pump.log.kind.${entry.kind.name}',
+              entry.labelKey,
               style: TextStyle(
                 fontSize: 13,
                 color: scheme.onSurface.withValues(alpha: 0.6),
@@ -197,7 +198,7 @@ class _PodDeliveryRow extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w600,
               fontFeatures: const [FontFeature.tabularFigures()],
-              color: _isDose ? scheme.onSurface : context.warning,
+              color: entry.isDose ? scheme.onSurface : context.warning,
             ),
           ),
         ],
@@ -205,17 +206,19 @@ class _PodDeliveryRow extends StatelessWidget {
     );
   }
 
-  /// Whether this insulin went into the user. The two activation volumes did not,
-  /// so they are toned differently rather than reading as doses.
-  bool get _isDose => entry.kind == PodDeliveryKind.bolus;
-
-  /// Date and time, or just the time for today, since most of the list is today.
+  /// The time, as a span for an hour of basal and as a moment for a dose. Older
+  /// than today gains its date, since most of the list is today.
   String _clock(BuildContext context) {
     final now = DateTime.now();
     final sameDay = entry.at.year == now.year &&
         entry.at.month == now.month &&
         entry.at.day == now.day;
-    final time = '${_two(entry.at.hour)}:${_two(entry.at.minute)}';
+    final start = '${_two(entry.at.hour)}:${_two(entry.at.minute)}';
+    final time = entry.spansAnHour
+        ? Locales.string(context, 'pump.log.hour_span')
+            .replaceFirst('#', start)
+            .replaceFirst('#', '${_two((entry.at.hour + 1) % 24)}:00')
+        : start;
     if (sameDay) {
       return time;
     }

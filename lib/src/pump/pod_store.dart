@@ -45,6 +45,7 @@ class PodStore {
   static const _kBasalRates = 'pod.basal_rates';
   static const _kBasalDelivered = 'pod.basal_delivered';
   static const _kBasalTotal = 'pod.basal_total';
+  static const _kBasalHours = 'pod.basal_hours';
   static const _kBasalCountedTo = 'pod.basal_counted_to';
   static const _kTempBasal = 'pod.temp_basal';
   static const _kActivationFacts = 'pod.activation_facts';
@@ -57,6 +58,10 @@ class PodStore {
   /// insulin history that old is no longer shaping a forecast, and an unbounded
   /// queue in secure storage is its own problem.
   static const int _maxPendingDeliveries = 200;
+
+  /// Hours of basal history kept. A pod lives 80 hours, so this covers its whole
+  /// life with room to spare and still bounds what sits in secure storage.
+  static const int _maxBasalHours = 120;
 
   /// One-shot alarm flags, keyed by the pod they belong to so a new pod warns
   /// again. See [podKey].
@@ -202,6 +207,7 @@ class PodStore {
       _kBasalRates,
       _kBasalDelivered,
       _kBasalTotal,
+      _kBasalHours,
       _kBasalCountedTo,
       _kTempBasal,
       _kActivationFacts,
