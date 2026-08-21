@@ -285,7 +285,10 @@ class _InjectionSheetState extends State<InjectionSheet> {
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 10),
-        InjectionProductsTab(onItemsChanged: _onProductItems),
+        InjectionProductsTab(
+          onItemsChanged: _onProductItems,
+          manualCarbs: _manualCarbs,
+        ),
       ],
     );
   }

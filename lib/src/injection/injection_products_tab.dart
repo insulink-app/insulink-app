@@ -33,9 +33,20 @@ class _Item {
 /// [onItemsChanged] so the sheet sums their carbs into the same bolus
 /// calculation as the manual field AND can log them with the meal.
 class InjectionProductsTab extends StatefulWidget {
-  const InjectionProductsTab({super.key, required this.onItemsChanged});
+  const InjectionProductsTab({
+    super.key,
+    required this.onItemsChanged,
+    required this.manualCarbs,
+  });
 
   final void Function(List<MealEntry> items) onItemsChanged;
+
+  /// Carbohydrates typed into the field above this list.
+  ///
+  /// Passed in only so the total can include them. The bolus has always been
+  /// computed from both, but the total shown here counted the products alone, so
+  /// the one number on screen disagreed with the dose being suggested from it.
+  final double manualCarbs;
 
   @override
   State<InjectionProductsTab> createState() => _InjectionProductsTabState();
@@ -44,7 +55,10 @@ class InjectionProductsTab extends StatefulWidget {
 class _InjectionProductsTabState extends State<InjectionProductsTab> {
   final List<_Item> _items = [];
 
-  double get _totalCarbs => _items.fold(0, (sum, item) => sum + item.carbs);
+  double get _productCarbs => _items.fold(0, (sum, item) => sum + item.carbs);
+
+  /// Everything the bolus is computed from: the products plus the typed amount.
+  double get _totalCarbs => _productCarbs + widget.manualCarbs;
 
   void _notify() {
     setState(() {});
@@ -90,7 +104,7 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
         for (final item in _items) _row(item),
         const SizedBox(height: 4),
         _addButton(),
-        if (_items.isNotEmpty) _total(),
+        if (_items.isNotEmpty || widget.manualCarbs > 0) _total(),
       ],
     );
   }

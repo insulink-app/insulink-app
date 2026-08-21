@@ -17,13 +17,30 @@ import 'package:provider/provider.dart';
 /// routinely off, and a manually created product isn't in OFF at all — it came
 /// back blank). Only an unknown barcode is looked up remotely, and an unknown
 /// one that OFF doesn't have either opens a blank editor carrying the code.
-Future<void> scanAndEditProduct(BuildContext context) async {
+///
+/// [onKnown] changes what an ALREADY SAVED product means. On the nutrition page
+/// a scan is how you find a product to edit, so the editor is right. In the bolus
+/// picker the same scan is how you CHOOSE one, and stopping at the editor puts a
+/// form in front of somebody who has already said which product they mean; the
+/// picker passes a callback that carries it straight on to the amount instead.
+///
+/// Only the saved case is diverted. A product found on Open Food Facts is not
+/// yet the user's, and its carbohydrate figure is routinely wrong, so it still
+/// goes through the editor to be looked at before a dose is computed from it.
+Future<void> scanAndEditProduct(
+  BuildContext context, {
+  void Function(FoodProduct product)? onKnown,
+}) async {
   final barcode = await scanBarcode(context);
   if (barcode == null || !context.mounted) {
     return;
   }
   final known = context.read<FoodState>().findByBarcode(barcode);
   if (known != null) {
+    if (onKnown != null) {
+      onKnown(known);
+      return;
+    }
     await showFoodEditor(context, product: known);
     return;
   }
@@ -59,7 +76,16 @@ void openFoodSearch(BuildContext context) {
 /// offer the same options. Each action saves into the product list, so a picker
 /// watching that list sees the new entry immediately.
 class FoodAddActions extends StatelessWidget {
-  const FoodAddActions({super.key});
+  const FoodAddActions({super.key, this.onScanRequested});
+
+  /// Takes the scan over entirely, instead of this widget running it.
+  ///
+  /// The bolus picker passes one because the scanner is a full-screen page
+  /// pushed ON TOP of the picker sheet: scanning from inside it means the sheet
+  /// is revealed again the moment the scanner pops, then closes on its way to
+  /// the amount, which looks like a stray popup opening and shutting. The picker
+  /// closes itself first and scans afterwards.
+  final VoidCallback? onScanRequested;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +105,7 @@ class FoodAddActions extends StatelessWidget {
         IconButton(
           visualDensity: VisualDensity.compact,
           icon: const Icon(PhosphorIconsBold.qrCode, size: 22),
-          onPressed: () => scanAndEditProduct(context),
+          onPressed: onScanRequested ?? () => scanAndEditProduct(context),
         ),
       ],
     );
