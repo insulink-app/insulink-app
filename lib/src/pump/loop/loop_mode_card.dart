@@ -15,14 +15,14 @@ import 'package:provider/provider.dart';
 
 /// The switch that hands basal delivery to the automation, on the pump page.
 ///
-/// Three positions rather than two. Observation sits between off and engaged
-/// because it is how the automation is checked against a real day: it decides
-/// every cycle and writes each one to the log, and programs nothing. Anyone
-/// turning this on for the first time should spend a while there.
+/// Two positions, and OFF is not idle: it keeps deciding and writing each cycle
+/// to the journal, it just never programs anything. So the way to check the
+/// automation against a real day is simply to leave it off and read the journal,
+/// which is what anyone would want from a switch they have not flipped yet.
 ///
 /// Engaging asks twice, the way muting alarms does: a warning that has to be
-/// read, then the device biometric. Both other positions are one tap, because
-/// only one direction of this switch can hurt anyone.
+/// read, then the device biometric. Turning it off is one tap, because only one
+/// direction of this switch can hurt anyone.
 class PodLoopModeCard extends StatefulWidget {
   const PodLoopModeCard({super.key});
 
@@ -73,13 +73,17 @@ class _PodLoopModeCardState extends State<PodLoopModeCard> {
     PodController controller,
     PodLoopMode current,
   ) {
-    final scheme = Theme.of(context).colorScheme;
     return [
       for (final mode in PodLoopMode.values)
         (
           labelKey: 'pump.loop.mode.${mode.name}',
           selected: mode == current,
-          fill: mode == PodLoopMode.engaged ? scheme.primary : null,
+          // No custom fill. ProfileSegments draws a selected label in `surface`,
+          // which on dark is near-black and makes only 3.6:1 on the primary
+          // indigo; the default fill is the near-white `onSurface` and reads
+          // cleanly in both themes. The warning and the biometric are what mark
+          // this choice as the consequential one, not a colour.
+          fill: null,
           onTap: controller.isBusy || mode == current
               ? null
               : () => _pick(context, controller, mode),

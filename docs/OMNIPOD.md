@@ -397,6 +397,23 @@ isolates share. Load-bearing details:
 - `PodLinkBusy` is thrown before anything reaches the pod, so `PodRetry` repeats
   it like any other pre-command failure.
 
+### The pump page opens on a cached status
+
+`PodStatusCache` keeps the last status any isolate read, as the raw frame plus a
+timestamp. Two jobs:
+
+- **The page opens on something.** Without it every visit began blank, several
+  seconds of a spinner before the page could say whether the pod was delivering.
+- **The automation can decide while switched off**, from a status somebody else
+  already paid for.
+
+Both isolates write it, so the UI benefits from the background poll and the poll
+benefits from the UI. Two freshness windows, deliberately different: two minutes
+is how fresh a status must be to DOSE against (`PodController.statusFreshFor`,
+matching `PodDeliveryGuard`), five is how old the shown one may get before opening
+the page reads the pod again. Conflating them is what made every page open cost a
+BLE session.
+
 ### Retrying a pod operation
 
 The link is fragile: it drops, it refuses a session opened too soon after the

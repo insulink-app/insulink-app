@@ -55,6 +55,14 @@ class NotificationSetting {
     'profile.pod_bolus_beep.description',
   );
 
+  /// Whether the pod beeps when a temporary basal rate is set or cancelled BY
+  /// HAND. The automation is silent regardless: it changes the rate every five
+  /// minutes, and a confirmation tone that often is not a confirmation.
+  static const podTempBasalBeep = NotificationSetting(
+    'pod_temp_basal_beep',
+    'profile.pod_temp_basal_beep.description',
+  );
+
   Future<bool> load() async =>
       (await const FlutterSecureStorage().read(key: storageKey)) != 'false';
 

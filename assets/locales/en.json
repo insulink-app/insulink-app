@@ -93,7 +93,15 @@
       "empty": "no readings yet",
       "hour": "#:00",
       "now": "Now",
-      "show_meals": "Show meals"
+      "show_meals": "Show meals",
+      "insulin": {
+        "_": "Insulin",
+        "basal": "Basal # U",
+        "bolus": "Bolus # U",
+        "empty": "No insulin was delivered in this window.",
+        "at_moment": "Bolus at #",
+        "over_hour": "Basal, # to #"
+      }
     },
     "time_in_range": "Time in Range",
     "time_in_range_window": "Last 24 h",
@@ -346,7 +354,7 @@
       "no_alerts": "None",
       "last_read": "Last read",
       "never_read": "Not read yet",
-      "stale": "This status is stale. Read it again before deciding anything.",
+      "stale": "Status is stale. Tap to read it again.",
       "unfinished": "This pod is paired but not running yet. Continue the activation so it starts delivering."
     },
     "action": {
@@ -456,7 +464,12 @@
       "summary_stop": "The pump delivers no basal during this time",
       "apply": "Start temporary basal",
       "set": "Temporary basal",
-      "running": "End temporary # U/h"
+      "running": "End temporary # U/h",
+      "end": {
+        "title": "End the temporary basal?",
+        "body": "The pod goes back to your basal schedule instead of # U/h.",
+        "confirm": "End"
+      }
     },
     "type": {
       "dash": "Omnipod DASH"
@@ -504,12 +517,10 @@
       "title": "Automated delivery",
       "mode": {
         "off": "Off",
-        "observing": "Observing",
         "engaged": "Active"
       },
       "hint": {
-        "off": "The pod runs your own basal schedule.",
-        "observing": "Every decision is computed and logged. Nothing is delivered.",
+        "off": "The pod runs your basal schedule. The automation still decides each cycle and logs what it would have delivered.",
         "engaged": "The automation replaces your basal schedule with a computed temporary rate every five minutes."
       },
       "no_cycle": "No decision computed yet.",
@@ -546,7 +557,7 @@
       "warning": {
         "title": "Automated insulin delivery",
         "body": "The app will then deliver insulin on its own, including while you sleep. It is not a medical device and has not been clinically tested. Keep checking against a meter and keep fast sugar within reach.",
-        "confirm": "Understood, turn on"
+        "confirm": "Turn on"
       },
       "auth_reason": "Turn on automated insulin delivery",
       "journal": "Automation decisions",
@@ -1144,6 +1155,9 @@
         "_": "Highest active insulin",
         "value": "# U"
       }
+    },
+    "pod_temp_basal_beep": {
+      "description": "Tone on a manual temporary basal"
     }
   },
   "injection": {

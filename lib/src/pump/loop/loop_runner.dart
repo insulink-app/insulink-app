@@ -110,6 +110,7 @@ class PodLoopRunner {
       // programmed onto their pod afterwards.
       await store.reload();
       if (store.loopMode == PodLoopMode.off) {
+        await _cycleOnPaper();
         return;
       }
       await _cycle();
@@ -121,6 +122,39 @@ class PodLoopRunner {
       _running = false;
     }
   }
+
+  /// Works out what the automation WOULD have done, and writes it down.
+  ///
+  /// This is what OFF means. The question anyone asks about an automation they
+  /// have not switched on is what it would have done, and it can be answered for
+  /// free: the decision is made from the status the background watch already
+  /// read, so no session is opened, no radio is used and the pod's battery is
+  /// untouched. Nothing is ever programmed from here.
+  ///
+  /// A missing or old cached status simply produces no entry. A hypothetical is
+  /// not worth waking the pod for.
+  Future<void> _cycleOnPaper() async {
+    if (!store.hasPod || !store.isActivated) {
+      return;
+    }
+    final status = store.lastStatus;
+    final readAt = store.lastStatusAt;
+    if (status == null || readAt == null || _isTooOldToImagineWith(readAt)) {
+      return;
+    }
+    final limits = await LoopLimits.load();
+    if (!limits.isUsable) {
+      return;
+    }
+    final glucose = await readGlucose();
+    final decision = await _decide(limits, glucose, status);
+    await _record(decision, delivered: false);
+  }
+
+  /// How old a cached status may be to reason from while switched off. Generous,
+  /// because nothing is delivered on the answer.
+  bool _isTooOldToImagineWith(DateTime readAt) =>
+      now().difference(readAt) > const Duration(minutes: 30);
 
   Future<void> _cycle() async {
     if (!store.hasPod || !store.isActivated) {
@@ -242,12 +276,6 @@ class PodLoopRunner {
     LoopDecision decision,
     PodStatusResponse status,
   ) async {
-    if (store.loopMode == PodLoopMode.observing) {
-      await _record(decision, delivered: false);
-      onLog('loop (observing) would run ${decision.unitsPerHour} U/h: '
-          '${decision.reason.name}');
-      return;
-    }
     if (!decision.isActionable) {
       await _revert(commands, status);
       await _record(decision, delivered: false);

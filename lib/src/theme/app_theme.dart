@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
+import 'package:insulink/src/theme/insulin_colors.dart';
 import 'package:insulink/src/theme/stat_box_colors.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
@@ -207,6 +208,15 @@ class AppTheme {
         warning: _lightWarning,
         positive: _lightPositive,
       ),
+      // Bolus is the deep brand indigo, basal the same hue with most of its
+      // weight drained out. Measured against the light surface (#E8E8E8), not
+      // white: a first pass at #9AA6D8 read fine on paper and made 1.94 against
+      // the page it actually sits on. This one makes 2.39 there and still holds
+      // 2.33 against the bolus standing on it.
+      const InsulinColors(
+        basal: Color(0xFF8894CE),
+        bolus: Color(0xFF45569F),
+      ),
     ],
   );
 
@@ -312,6 +322,12 @@ class AppTheme {
         danger: _darkDanger,
         warning: _darkWarning,
         positive: _darkPositive,
+      ),
+      // The pair swaps weight on dark: the LIGHTER indigo is the loud one, and
+      // basal steps down towards the surface instead of up off it.
+      const InsulinColors(
+        basal: Color(0xFF5C6BA6),
+        bolus: Color(0xFF9DACEA),
       ),
     ],
   );

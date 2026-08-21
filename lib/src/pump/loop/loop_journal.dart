@@ -1,14 +1,19 @@
 part of '../pod_store.dart';
 
-/// Whether the automation is running, and how far it is trusted.
+/// Whether the automation is delivering.
+///
+/// Two positions, not three. An earlier version had a middle "observing" setting
+/// that computed without delivering, which turned out to be what OFF should
+/// always have meant: the question a user asks about an automation they have not
+/// switched on is what it WOULD have done, and answering it costs nothing.
 enum PodLoopMode {
-  /// The pod runs the user's basal schedule. Nothing is automated.
+  /// The pod runs the user's basal schedule. Cycles are still computed and
+  /// written to the journal, so the automation can be watched against a real day
+  /// before it is trusted, but nothing is ever programmed.
+  ///
+  /// Those cycles cost no radio: they are decided from the status the background
+  /// watch already read, not from a session opened to ask again.
   off,
-
-  /// Every cycle is computed and written to the journal, and nothing is ever
-  /// programmed. The way to watch what the automation WOULD have done against a
-  /// real day before letting it act.
-  observing,
 
   /// Cycles are computed and programmed onto the pod.
   engaged,

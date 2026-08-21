@@ -166,25 +166,48 @@ void main() {
   }
 
   group('the switch decides whether anything reaches the pod', () {
-    test('nothing happens while the automation is off', () async {
-      await runnerWith().tick();
 
-      expect(connection.opened, 0);
-      expect(store.loopCycles, isEmpty);
-    });
-
-    /// Observation is how a loop is watched against a real day before it is
-    /// trusted. It has to read the pod to decide anything, but it must never
-    /// program it.
-    test('observing records a decision and programs nothing', () async {
-      await store.saveLoopMode(PodLoopMode.observing);
+    /// OFF is not idle. The question anyone asks about an automation they have
+    /// not switched on is what it WOULD have done, and it can be answered for
+    /// free from the status the background watch already read.
+    test('off still decides, and writes it down', () async {
+      await store.saveLastStatus(PodStatusResponse(statusBody()), clock);
 
       await runnerWith().tick();
 
-      expect(session.commandsOfType<PodProgramTempBasalCommand>(), isEmpty);
       expect(store.loopCycles, hasLength(1));
       expect(store.loopCycles.single.delivered, isFalse);
       expect(store.loopCycles.single.unitsPerHour, greaterThan(1.0));
+    });
+
+    /// A hypothetical is not worth waking the pod for, so deciding on paper
+    /// opens no session at all.
+    test('deciding while off uses no radio', () async {
+      await store.saveLastStatus(PodStatusResponse(statusBody()), clock);
+
+      await runnerWith().tick();
+
+      expect(connection.opened, 0);
+      expect(session.sent, isEmpty);
+    });
+
+    test('nothing is written without a status to reason from', () async {
+      await runnerWith().tick();
+
+      expect(store.loopCycles, isEmpty);
+    });
+
+    /// Reasoning from a status hours old would put a decision in the journal
+    /// that describes a pod nobody has looked at.
+    test('a stale cached status produces no entry', () async {
+      await store.saveLastStatus(
+        PodStatusResponse(statusBody()),
+        clock.subtract(const Duration(hours: 2)),
+      );
+
+      await runnerWith().tick();
+
+      expect(store.loopCycles, isEmpty);
     });
 
     test('engaged programs the rate it decided on', () async {
@@ -231,6 +254,21 @@ void main() {
       expect(session.sent.first, isA<PodGetStatusCommand>());
       expect(session.sent[1], isA<PodStopDeliveryCommand>());
       expect(session.sent[2], isA<PodProgramTempBasalCommand>());
+    });
+
+    /// The automation replaces its rate every five minutes and each replacement
+    /// cancels the last. A stop beeps by default, which is right when a person
+    /// asked for it and is a beep twelve times an hour all night when nobody did.
+    test('the cancel the automation sends is silent', () async {
+      await store.saveLoopMode(PodLoopMode.engaged);
+      delivery = PodDeliveryStatus.tempBasalActive;
+
+      await runnerWith().tick();
+
+      final cancel = session.commandsOfType<PodStopDeliveryCommand>().single;
+      final frame = cancel.encoded;
+
+      expect(frame[frame.length - 3] >> 4, PodBeep.silent.value);
     });
 
     test('no cancel is sent when the pod is not running one', () async {

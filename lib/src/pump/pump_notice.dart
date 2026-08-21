@@ -40,14 +40,6 @@ class PumpNotice extends StatelessWidget {
           tone: NoticeTone.danger,
         );
 
-  /// The shown status is older than the delivery guard will accept.
-  const PumpNotice.stale()
-      : this._(
-          textKey: 'pump.status.stale',
-          icon: PhosphorIconsBold.clockCountdown,
-          tone: NoticeTone.warning,
-        );
-
   /// The fingerprint in front of the cannula was declined. Deliberately not an
   /// error: nothing went wrong and the pod is untouched, so it explains rather
   /// than alarms.

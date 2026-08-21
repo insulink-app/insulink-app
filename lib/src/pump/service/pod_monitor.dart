@@ -126,6 +126,7 @@ class PodMonitor {
         return;
       }
       await store.markSeen(now());
+      await store.saveLastStatus(status, now());
       // A routine status only says the pod IS alarming, never why. The reason is
       // on the alarm page, so it is fetched in the same session rather than left
       // to the next poll — a user told "your pod stopped" needs to know whether

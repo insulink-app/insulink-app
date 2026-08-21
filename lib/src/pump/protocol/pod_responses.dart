@@ -20,7 +20,7 @@ abstract class PodResponse {
 /// The pod's routine status: what it is delivering, how far into its life it
 /// is, and how much insulin is left.
 class PodStatusResponse extends PodResponse {
-  PodStatusResponse(Uint8List body) {
+  PodStatusResponse(this.body) {
     if (body.length < 10) {
       throw PodResponseException('Status response too short: ${body.length}');
     }
@@ -36,6 +36,10 @@ class PodStatusResponse extends PodResponse {
     minutesSinceActivation = (tail >> 10) & 0x1FFF;
     reservoirPulsesRemaining = tail & 0x3FF;
   }
+
+  /// The frame this was decoded from, kept so a status can be stored and read
+  /// back later without a second decoder that could drift from this one.
+  final Uint8List body;
 
   /// The value the pod reports while the reservoir still holds more than it
   /// measures precisely. Treat it as "plenty", never as a number.

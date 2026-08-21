@@ -80,6 +80,8 @@ class ProfileSettings {
       "pod_insulin_alert": "${await NotificationSetting.podInsulin.load()}",
       "pod_insulin_units": "${await NotificationThreshold.podInsulin.load()}",
       "pod_bolus_beep": "${await NotificationSetting.podBolusBeep.load()}",
+      "pod_temp_basal_beep":
+          "${await NotificationSetting.podTempBasalBeep.load()}",
       // The automated-delivery ceilings. The MODE is deliberately not here: a
       // pod belongs to the device that activated it, so which device is
       // automating is not an account-wide setting. The limits are, and a user

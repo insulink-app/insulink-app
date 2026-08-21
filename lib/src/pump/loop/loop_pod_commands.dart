@@ -42,6 +42,7 @@ class LoopPodCommands {
     if (response is! PodStatusResponse) {
       throw StateError('pod answered a status request with $response');
     }
+    await store.saveLastStatus(response, now());
     return response;
   }
 
@@ -99,6 +100,13 @@ class LoopPodCommands {
   }
 
   /// Ends the running temporary rate, putting the pod back on its own schedule.
+  ///
+  /// Silent, unlike every other stop in the app. A cancel beeps by default so the
+  /// user can hear that the pod acted, which is right when a person asked for it.
+  /// The automation replaces its rate every five minutes and each replacement
+  /// cancels the last, so the same default is a beep twelve times an hour, all
+  /// night. A sound that means "something happened" stops meaning anything when
+  /// nothing has.
   Future<void> cancelTempBasal() async {
     await _run(
       (sequence) => PodStopDeliveryCommand(
@@ -106,6 +114,7 @@ class LoopPodCommands {
         sequenceNumber: sequence,
         nonce: podFixedNonce,
         target: PodDeliveryTarget.tempBasal,
+        beep: PodBeep.silent,
       ),
     );
     final running = store.temporaryBasal;

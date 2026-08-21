@@ -158,6 +158,8 @@ class _ProfilePageState extends State<ProfilePage> {
         SizedBox(height: 10),
         NotificationThresholdCard(NotificationThreshold.podInsulin),
         NotificationToggle(NotificationSetting.podBolusBeep),
+        SizedBox(height: 10),
+        NotificationToggle(NotificationSetting.podTempBasalBeep),
       ],
     ),
     (

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/empty_state.dart';
-import 'package:insulink/src/base/pinned_header_scroll.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/loop/loop_mode_card.dart';
@@ -58,24 +57,26 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
     );
   }
 
-  /// With a pod: the status box pins to the top and the detail list scrolls up
-  /// into its place, exactly as the sensor page behaves.
+  /// With a pod: status box, the automation switch, then the details, all in one
+  /// ordinary scroll.
   ///
-  /// The automation switch rides in the pinned part rather than at the top of the
-  /// list. It is a control over what the pump does with every basal minute, not a
-  /// fact about the pod, and putting it here also puts the gap the pinned header
-  /// keeps BELOW it instead of between it and the status box.
+  /// Deliberately NOT the sensor page's pinned-and-fading header. That behaviour
+  /// suits a box that is only ever read: it dissolves as the detail list takes
+  /// its place. This page's top holds a CONTROL, and a control that fades while
+  /// you scroll towards the list underneath it is both distracting and, past half
+  /// transparency, no longer tappable. Scrolling here just moves the page.
   Widget _pod(BuildContext context, PodController controller) {
-    return PinnedHeaderScroll(
-      header: Column(
+    return SingleChildScrollView(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           PodStatusBox(controller: controller),
           const SizedBox(height: 12),
           const PodLoopModeCard(),
+          const SizedBox(height: 18),
+          _details(context, controller),
         ],
       ),
-      child: _details(context, controller),
     );
   }
 
@@ -123,28 +124,23 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
     );
   }
 
-  /// A pump failure and a stale reading both stay on screen until the next
-  /// action replaces them — never timed out, because neither is something to
-  /// miss.
+  /// A pump failure stays on screen until the next action replaces it, never
+  /// timed out, because it is not something to miss.
+  ///
+  /// A stale READING is not in here. It is the ordinary resting state of a pod
+  /// nobody has just read, so a card explaining it sat on the page most of the
+  /// time it was open. It is marked with a dot on the refresh button instead
+  /// (see [PodRefreshButton]), which puts the notice on the control that fixes
+  /// it.
   List<Widget> _notices(BuildContext context, PodController controller) {
     return [
       if (controller.failure != null) ...[
         PumpNotice.failure(controller.failure!),
         const SizedBox(height: 14),
       ],
-      if (_isStale(controller)) ...[
-        const PumpNotice.stale(),
-        const SizedBox(height: 14),
-      ],
     ];
   }
 
-  /// Whether the shown status is too old to base anything on. Matches the window
-  /// the delivery guard enforces, so the UI and the guard agree.
-  bool _isStale(PodController controller) {
-    final age = controller.statusAge;
-    return age != null && age > const Duration(minutes: 2);
-  }
 }
 
 /// The pinned box before a pod is paired: adopt the account's pod, or activate a

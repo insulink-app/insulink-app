@@ -58,23 +58,31 @@ The thirty minutes is not a dose. It is how long the pod keeps going if nobody
 tells it anything else, and the only insulin it can ever add on its own is the
 tail of the last rate, bounded by the hypo headroom that rate was granted.
 
-## Three positions, not two
+## Two positions, and OFF is not idle
 
 `PodLoopMode`, in `loop/loop_journal.dart`:
 
-| Mode | Decides | Programs |
-|------|---------|----------|
-| `off` | no | no, the pod runs the user's schedule |
-| `observing` | every cycle, written to the journal | **no** |
-| `engaged` | every cycle | yes |
+| Mode | Decides | Programs | Radio |
+|------|---------|----------|-------|
+| `off` | every cycle, written to the journal | **no** | **none** |
+| `engaged` | every cycle | yes | one session per cycle |
 
-`observing` exists so the automation can be watched against a real day before it
-is allowed to act. Anyone turning this on for the first time should spend a while
-there and read the journal.
+An earlier version had a third "observing" setting between them. It turned out to
+be what OFF should always have meant: the question anyone asks about an
+automation they have not switched on is what it WOULD have done, and answering it
+costs nothing. So the way to check the automation against a real day is simply to
+leave it off and read the journal.
+
+**Deciding while off uses no radio at all.** It reasons from the status the
+background watch already read (`PodStatusCache`), not from a session opened to
+ask again — a hypothetical is not worth waking the pod for. A cached status older
+than 30 minutes produces no entry rather than a decision describing a pod nobody
+has looked at.
 
 Engaging asks twice: a warning that has to be read, then the device biometric.
-The other two directions are one tap, because only one direction of this switch
-can hurt anyone.
+Turning it off is one tap, because only one direction of this switch can hurt
+anyone, and a check in front of the direction that STOPS insulin is a check that
+can fail closed.
 
 ## One cycle
 

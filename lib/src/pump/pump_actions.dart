@@ -7,6 +7,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_activation_page.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
 import 'package:insulink/src/pump/pod_basal_adapter.dart';
+import 'package:insulink/src/pump/pod_basal_delivery.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pump_notice.dart';
 import 'package:insulink/src/pump/pod_temp_basal_sheet.dart';
@@ -53,11 +54,56 @@ class PodRefreshButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<PodController>();
+    final stale = _isStale(controller);
     return IconButton(
       onPressed: controller.isBusy ? null : controller.refresh,
-      tooltip: Locales.string(context, 'pump.action.refresh'),
-      icon: const Icon(PhosphorIconsBold.arrowsClockwise, size: 20),
+      tooltip: Locales.string(
+        context,
+        stale ? 'pump.status.stale' : 'pump.action.refresh',
+      ),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(PhosphorIconsBold.arrowsClockwise, size: 20),
+          if (stale) _staleDot(context),
+        ],
+      ),
     );
+  }
+
+  /// A dot on the control that fixes it, instead of a banner saying so.
+  ///
+  /// The old notice was a full-width card explaining that the reading was a few
+  /// minutes old, which is the ordinary resting state of a pod nobody has just
+  /// read: the page carried a warning most of the time it was open, and a warning
+  /// that is always there is one nobody reads. The dot says the same thing where
+  /// the answer is, and the tooltip still spells it out.
+  Widget _staleDot(BuildContext context) {
+    return Positioned(
+      right: -1,
+      top: -1,
+      child: Container(
+        width: 7,
+        height: 7,
+        decoration: BoxDecoration(
+          color: context.warning,
+          shape: BoxShape.circle,
+          // Cut out of the icon rather than floating on it, so the dot reads as
+          // a mark ON the control at any icon size.
+          border: Border.all(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            width: 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Whether the shown status is too old to base a delivery on. The same window
+  /// the guard enforces, read from the controller rather than repeated.
+  bool _isStale(PodController controller) {
+    final age = controller.statusAge;
+    return age != null && age > PodController.statusFreshFor;
   }
 }
 
@@ -87,13 +133,62 @@ class PodTempBasalButton extends StatelessWidget {
         minimumSize: const Size.fromHeight(46),
         side: BorderSide(color: context.warning.withValues(alpha: 0.4)),
       ),
-      onPressed: controller.isBusy ? null : controller.cancelTemporaryBasal,
+      onPressed: controller.isBusy
+          ? null
+          : () => _confirmEnd(context, controller, temporary),
       icon: const Icon(PhosphorIconsBold.prohibit, size: 20),
       label: Text(
         Locales.string(context, 'pump.temp.running')
             .replaceFirst('#', temporary.unitsPerHour.toStringAsFixed(2)),
       ),
     );
+  }
+
+  /// Asks before ending it, because the button sits where a mis-tap is easy and
+  /// what it does is not obvious from its name.
+  ///
+  /// Ending a temporary rate does not merely stop something: it hands delivery
+  /// back to the schedule. The common case is a rate of zero set before sport,
+  /// where "end" means insulin STARTS again. A tap that resumes delivery is
+  /// worth one question.
+  ///
+  /// Deliberately not the emergency stop, which suspends everything and stays
+  /// one tap: a control that halts insulin must never be behind a step that can
+  /// fail closed.
+  void _confirmEnd(
+    BuildContext context,
+    PodController controller,
+    PodTemporaryBasal temporary,
+  ) {
+    Alert(
+      icon: PhosphorIconsBold.prohibit,
+      iconColor: context.warning,
+      content: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const LocaleText(
+              'pump.temp.end.title',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              Locales.string(context, 'pump.temp.end.body').replaceFirst(
+                '#',
+                temporary.unitsPerHour.toStringAsFixed(2),
+              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14, height: 1.35),
+            ),
+          ],
+        ),
+      ),
+      cancelButton: true,
+      confirmButtonText: 'pump.temp.end.confirm',
+      callback: controller.cancelTemporaryBasal,
+    ).show(context);
   }
 }
 

@@ -140,17 +140,22 @@ void main() {
     test('turning it back on clears the reason it stopped', () async {
       await store.stopLoop(PodLoopStop.podUnreachable);
 
-      await LoopSwitch(controller).setMode(PodLoopMode.observing);
+      await LoopSwitch(controller).setMode(PodLoopMode.engaged);
 
       expect(store.loopStop, isNull);
-      expect(store.loopMode, PodLoopMode.observing);
+      expect(store.loopMode, PodLoopMode.engaged);
     });
   });
 
-  test('observing needs the same pod as engaging', () async {
+  /// Switching OFF must never be refused, whatever state the pod is in. It is
+  /// the direction that stops insulin, and a check that can fail closed has no
+  /// business in front of it.
+  test('turning it off is never blocked', () async {
+    await store.saveLoopMode(PodLoopMode.engaged);
     await store.forgetPod();
+    await store.saveLoopMode(PodLoopMode.engaged);
 
-    expect(await LoopSwitch(controller).setMode(PodLoopMode.observing),
-        'pump.loop.blocked.no_pod');
+    expect(await LoopSwitch(controller).setMode(PodLoopMode.off), isNull);
+    expect(store.loopMode, PodLoopMode.off);
   });
 }

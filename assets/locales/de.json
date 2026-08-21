@@ -93,7 +93,15 @@
       "empty": "Noch keine Messwerte",
       "hour": "# Uhr",
       "now": "Jetzt",
-      "show_meals": "Mahlzeiten anzeigen"
+      "show_meals": "Mahlzeiten anzeigen",
+      "insulin": {
+        "_": "Insulin",
+        "basal": "Basal # U",
+        "bolus": "Bolus # U",
+        "empty": "In diesem Zeitraum wurde kein Insulin abgegeben.",
+        "at_moment": "Bolus um # Uhr",
+        "over_hour": "Basal, # bis # Uhr"
+      }
     },
     "time_in_range": "Zeit im Zielbereich",
     "time_in_range_window": "Letzte 24h",
@@ -346,7 +354,7 @@
       "no_alerts": "Keine",
       "last_read": "Zuletzt gelesen",
       "never_read": "Noch nicht gelesen",
-      "stale": "Dieser Status ist veraltet. Vor jeder Entscheidung neu lesen.",
+      "stale": "Status ist veraltet. Tippen zum Neulesen.",
       "unfinished": "Dieser Pod ist gekoppelt, aber noch nicht aktiv. Setze die Aktivierung fort, damit er Insulin abgibt."
     },
     "action": {
@@ -456,7 +464,12 @@
       "summary_stop": "Die Pumpe gibt in dieser Zeit kein Basal ab",
       "apply": "Temporäres Basal starten",
       "set": "Temporäres Basal",
-      "running": "Temporär # E/Std beenden"
+      "running": "Temporär # E/Std beenden",
+      "end": {
+        "title": "Temporäres Basal beenden?",
+        "body": "Der Pod läuft dann wieder auf deinem Basalprogramm statt auf # U/h.",
+        "confirm": "Beenden"
+      }
     },
     "type": {
       "dash": "Omnipod DASH"
@@ -504,12 +517,10 @@
       "title": "Automatische Abgabe",
       "mode": {
         "off": "Aus",
-        "observing": "Beobachten",
         "engaged": "Aktiv"
       },
       "hint": {
-        "off": "Der Pod läuft dein eigenes Basalprogramm.",
-        "observing": "Jede Entscheidung wird berechnet und protokolliert. Abgegeben wird nichts.",
+        "off": "Der Pod läuft dein Basalprogramm. Die Automatik rechnet trotzdem mit und protokolliert, was sie abgegeben hätte.",
         "engaged": "Die Automatik ersetzt dein Basalprogramm alle fünf Minuten durch eine berechnete temporäre Rate."
       },
       "no_cycle": "Noch keine Entscheidung berechnet.",
@@ -546,7 +557,7 @@
       "warning": {
         "title": "Automatische Insulinabgabe",
         "body": "Die App gibt dann selbstständig Insulin ab, auch während du schläfst. Sie ist kein Medizinprodukt und klinisch nicht geprüft. Miss weiterhin gegen und halte Traubenzucker bereit.",
-        "confirm": "Verstanden, aktivieren"
+        "confirm": "Aktivieren"
       },
       "auth_reason": "Automatische Insulinabgabe aktivieren",
       "journal": "Entscheidungen der Automatik",
@@ -1144,6 +1155,9 @@
         "_": "Höchstes aktives Insulin",
         "value": "# U"
       }
+    },
+    "pod_temp_basal_beep": {
+      "description": "Ton bei manuellem temporärem Basal"
     }
   },
   "injection": {

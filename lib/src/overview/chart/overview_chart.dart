@@ -33,6 +33,7 @@ class OverviewChart extends StatefulWidget {
     this.maxYmgdl = 300,
     this.showMeals = false,
     this.meals = const [],
+    this.onWindowChanged,
   });
 
   final SplayTreeMap<int, int> byTime;
@@ -59,6 +60,24 @@ class OverviewChart extends StatefulWidget {
   /// axis show real clock times instead of hours-ago offsets.
   final DateTime? sensorStart;
 
+  /// The wall-clock stretch now on screen, reported whenever it changes.
+  ///
+  /// For a second chart drawn underneath this one: two graphs stacked over
+  /// different stretches of time would invite exactly the comparison they cannot
+  /// support. Only fired when the window actually moves, and after the frame,
+  /// because a listener that rebuilds would otherwise call back into this build.
+  ///
+  /// [liveEdge] is where the measured data stops and the forecast begins, which
+  /// is not the same as the end of the window: the window reaches past the last
+  /// reading to show the prediction. A chart of things that have HAPPENED has to
+  /// stop there, or it draws the last hour of insulin across a stretch of time
+  /// that has not occurred yet.
+  ///
+  /// Never fired without a [sensorStart]: session seconds cannot be placed on a
+  /// clock without one.
+  final void Function(DateTime from, DateTime to, DateTime liveEdge)?
+      onWindowChanged;
+
   @override
   State<OverviewChart> createState() => _OverviewChartState();
 }
@@ -67,6 +86,10 @@ class _OverviewChartState extends State<OverviewChart>
     with SingleTickerProviderStateMixin {
   static const _kRangeKey = 'chart_range_hours';
   static const _storage = FlutterSecureStorage();
+
+  /// The last window handed to [OverviewChart.onWindowChanged], so panning and
+  /// zooming report once each and an ordinary rebuild reports nothing.
+  (int, int, int)? _reportedWindow;
 
   /// Visible time window in hours. The selector jumps to 6 / 12 / 24, but a
   /// two-finger pinch zooms it continuously between these bounds. The session
@@ -305,6 +328,30 @@ class _OverviewChartState extends State<OverviewChart>
     }
   }
 
+  /// Tells a listener which stretch of wall-clock time is on screen.
+  ///
+  /// After the frame, not during it: a listener that calls `setState` would
+  /// otherwise rebuild this widget from inside its own build.
+  void _reportWindow(int fromSecs, int toSecs, int liveSecs) {
+    final report = widget.onWindowChanged;
+    final start = widget.sensorStart;
+    if (report == null ||
+        start == null ||
+        _reportedWindow == (fromSecs, toSecs, liveSecs)) {
+      return;
+    }
+    _reportedWindow = (fromSecs, toSecs, liveSecs);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        report(
+          start.add(Duration(seconds: fromSecs)),
+          start.add(Duration(seconds: toSecs)),
+          start.add(Duration(seconds: liveSecs)),
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final glucose = context.watch<ProfileGlucoseState>();
@@ -448,10 +495,12 @@ class _OverviewChartState extends State<OverviewChart>
     final shift = anchor == null
         ? 0.0
         : (anchor.minute * 60 + anchor.second) / 3600.0;
+    final cutoffSecs = (windowEndSecs - effectiveRange * 3600).round();
+    _reportWindow(cutoffSecs, windowEndSecs, latestSecs);
     final series = GlucoseChartSeries(
       entries: entries,
       latestSecs: latestSecs,
-      cutoff: (windowEndSecs - effectiveRange * 3600).round(),
+      cutoff: cutoffSecs,
       windowEnd: windowEndSecs,
       shift: shift,
       glucose: glucose,

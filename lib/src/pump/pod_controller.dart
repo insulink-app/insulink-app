@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/demo_pod.dart';
@@ -32,6 +33,11 @@ class PodController extends ChangeNotifier {
     this.retry = const PodRetry(),
     PodConnection? connection,
   })  : _sequence = store.commandSequence,
+        // Opens on the last status anyone read, usually the background poll's.
+        // Without it the page began every visit blank, several seconds of a
+        // spinner before it could say whether the pod was even delivering.
+        _status = store.lastStatus,
+        _statusReadAt = store.lastStatusAt,
         _connection = connection ?? podConnectionFor(store);
 
   static const int _fixedNonce = podFixedNonce;
@@ -203,14 +209,24 @@ class PodController extends ChangeNotifier {
       return;
     }
     final age = statusAge;
-    if (age != null && age <= _statusFreshFor) {
+    if (age != null && age <= _refreshOnOpenAfter) {
       return;
     }
     await refresh();
   }
 
-  /// How long a status stays worth trusting. Matches [PodDeliveryGuard].
-  static const Duration _statusFreshFor = Duration(minutes: 2);
+  /// How long a status stays worth trusting for a DELIVERY. Matches
+  /// [PodDeliveryGuard], and drives the stale notice on the page.
+  static const Duration statusFreshFor = Duration(minutes: 2);
+
+  /// How old the shown status may be before opening the page reads the pod again.
+  ///
+  /// Deliberately longer than [_statusFreshFor], because these are different
+  /// questions. Two minutes is how fresh a status must be to DOSE against; it is
+  /// far too strict for whether a page needs to open a radio link before it can
+  /// draw. The background watch refreshes the cache on its own poll anyway, so
+  /// most visits now find it recent and read nothing.
+  static const Duration _refreshOnOpenAfter = Duration(minutes: 5);
 
   /// The bolus the pod is working through, or null once it has run its course.
   ///
@@ -372,6 +388,10 @@ class PodController extends ChangeNotifier {
     if (response is PodStatusResponse) {
       _status = response;
       _statusReadAt = DateTime.now();
+      // Kept for the next page open, and for the automation to decide from while
+      // it is switched off. Not awaited: the screen has the value already, and a
+      // keystore write is not something a status read should wait on.
+      unawaited(store.saveLastStatus(response, _statusReadAt!));
       return;
     }
     if (response is PodNakResponse) {
@@ -561,6 +581,11 @@ class PodController extends ChangeNotifier {
   /// is recoverable, claiming insulin the pod may not have delivered is not.
   Future<void> setTemporaryBasal(PodTempBasalRate rate) =>
       _withSession('set temporary basal', (session) async {
+        // Asked fresh each time rather than held, like the bolus beep: the toggle
+        // lives in secure storage and may have been changed since this screen
+        // opened. Only the manual path reads it; the automation is silent
+        // regardless, because it changes the rate every five minutes.
+        final beeps = await NotificationSetting.podTempBasalBeep.load();
         final started = DateTime.now();
         await store.saveTemporaryBasal(PodTemporaryBasal(
           unitsPerHour: rate.unitsPerHour,
@@ -572,7 +597,7 @@ class PodController extends ChangeNotifier {
           sequenceNumber: _nextSequence,
           nonce: _fixedNonce,
           rate: rate,
-          reminder: const PodProgramReminder(atEnd: true),
+          reminder: PodProgramReminder(atEnd: beeps),
         ));
         _absorb(response);
       });
@@ -583,11 +608,13 @@ class PodController extends ChangeNotifier {
   /// for nothing beyond the tap.
   Future<void> cancelTemporaryBasal() =>
       _withSession('cancel temporary basal', (session) async {
+        final beeps = await NotificationSetting.podTempBasalBeep.load();
         final response = await session.run(PodStopDeliveryCommand(
           uniqueId: store.uniqueId!,
           sequenceNumber: _nextSequence,
           nonce: _fixedNonce,
           target: PodDeliveryTarget.tempBasal,
+          beep: beeps ? PodBeep.longSingleBeep : PodBeep.silent,
         ));
         final running = store.temporaryBasal;
         if (running != null) {
