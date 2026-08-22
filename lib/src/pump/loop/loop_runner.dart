@@ -315,20 +315,21 @@ class PodLoopRunner {
 
   /// Cancels the running temporary rate, then programs the new one.
   ///
-  /// Cancel first, and only when the pod says one is running, mirroring the
-  /// reference driver. It also orders the failure modes the right way round: if
-  /// the cancel lands and the program does not, the pod falls back to the user's
-  /// schedule, which is the outcome to fail towards.
+  /// The cancel is inside [LoopPodCommands.programTempBasal], not here: leaving
+  /// it to the caller is exactly how the basal-schedule path came to be missing
+  /// it. This only reports what the pod said it was delivering. The order is
+  /// what makes the failure modes fall the right way round: if the cancel lands
+  /// and the program does not, the pod returns to the user's own schedule.
   Future<void> _program(
     LoopPodCommands commands,
     LoopDecision decision,
     PodStatusResponse status,
   ) async {
-    if (status.delivery.isTempBasalRunning) {
-      await commands.cancelTempBasal();
-    }
     try {
-      await commands.programTempBasal(decision.unitsPerHour);
+      await commands.programTempBasal(
+        decision.unitsPerHour,
+        running: status.delivery.isTempBasalRunning,
+      );
     } on LoopCommandRefused catch (refusal) {
       // Recorded, not swallowed. A refusal is a thing that happened to a dosing
       // decision, and a journal that only holds the cycles which worked cannot

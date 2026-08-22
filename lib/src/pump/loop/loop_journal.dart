@@ -119,8 +119,16 @@ extension PodLoopJournal on PodStore {
         orElse: () => PodLoopMode.off,
       );
 
-  Future<void> saveLoopMode(PodLoopMode mode) =>
-      _set(PodStore._kLoopMode, mode.name);
+  /// Switching it ON also starts the automation record, so the basal analysis
+  /// knows from which moment an hour without an entry is an hour the automation
+  /// stayed out of. Hours before the first time it was ever engaged need no
+  /// clearing: nothing could have been running.
+  Future<void> saveLoopMode(PodLoopMode mode) async {
+    if (mode != PodLoopMode.off) {
+      await startAutomationRecord();
+    }
+    await _set(PodStore._kLoopMode, mode.name);
+  }
 
   /// Why the automation stopped by itself, or null when the user stopped it or
   /// it is still running.

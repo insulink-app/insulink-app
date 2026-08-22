@@ -5,7 +5,6 @@ import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/injection/active_insulin.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
-import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/injection/active_insulin_chart.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -58,10 +57,14 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
       context.watch<ProfileBolusState>().insulinDuration,
     );
     final doses = insulin.activeDoses(meals);
-    _syncTicker(doses.isNotEmpty);
+    final parts = _onBoard(context, meals);
+    _syncTicker(doses.isNotEmpty || parts.beyondBoluses > 0);
     return Scaffold(
       appBar: AppBar(title: LocaleText('overview.active_insulin')),
-      body: doses.isEmpty
+      // Empty only when there is genuinely NO insulin working. The dose list can
+      // be empty while the pump is still delivering above the schedule, and
+      // saying "no active doses" there would deny insulin that is in the body.
+      body: parts.total <= 0
           ? EmptyState(
               icon: PhosphorIconsBold.drop,
               titleKey: 'overview.active_insulin.empty',
@@ -69,16 +72,9 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 64),
               children: [
-                _totalHeader(context, insulin, meals, _onBoard(context, meals)),
+                _totalHeader(context, insulin, meals, parts),
                 const SizedBox(height: 24),
-                SizedBox(
-                  height: 180,
-                  child: ActiveInsulinChart(
-                    points: insulin.curve(meals),
-                    now: DateTime.now(),
-                  ),
-                ),
-                const SizedBox(height: 24),
+                ..._curve(insulin, meals),
                 LocaleText(
                   'overview.active_insulin.doses',
                   style: const TextStyle(
@@ -87,7 +83,9 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                if (doses.isEmpty) _noDosesNote(context),
                 for (final dose in doses) _doseCard(context, insulin, dose),
+                ..._pumpCard(context, parts),
               ],
             ),
     );
@@ -100,6 +98,81 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
     return InsulinOnBoard(
       context.watch<ProfileBolusState>().insulinDuration,
     ).parts(meals, pod: context.watch<PodController>().store);
+  }
+
+  /// The decay curve, drawn only when there is one.
+  ///
+  /// It is built from the meal log, so an insulin-on-board made up ENTIRELY of
+  /// pump insulin leaves it empty. [ActiveInsulinChart] reads `points.first` and
+  /// `points.last`, so an empty list threw during layout and left the grey
+  /// 180-pixel box its failed render was sitting in. Two points are also the
+  /// least that can be a line.
+  List<Widget> _curve(ActiveInsulin insulin, List<Meal> meals) {
+    final points = insulin.curve(meals);
+    if (points.length < 2) {
+      return const [];
+    }
+    return [
+      SizedBox(
+        height: 180,
+        child: ActiveInsulinChart(points: points, now: DateTime.now()),
+      ),
+      const SizedBox(height: 24),
+    ];
+  }
+
+  /// Says why the dose list is empty while the total is not.
+  Widget _noDosesNote(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: LocaleText(
+        'overview.active_insulin.no_doses',
+        style: TextStyle(
+          fontSize: 13,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  /// The pump's own share as its own entry, so the list adds up to the total
+  /// above it. It is not a dose card: nobody chose it and there is nothing to
+  /// tap through to.
+  List<Widget> _pumpCard(BuildContext context, InsulinOnBoardParts parts) {
+    if (parts.beyondBoluses <= 0.05) {
+      return const [];
+    }
+    final scheme = Theme.of(context).colorScheme;
+    return [
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: scheme.onSurface.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(PhosphorIconsBold.repeat, size: 18,
+                color: scheme.onSurfaceVariant),
+            const SizedBox(width: 12),
+            Expanded(
+              child: LocaleText(
+                'overview.active_insulin.from_pump',
+                style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+              ),
+            ),
+            Text(
+              Locales.string(
+                context,
+                'injection.bolus.value',
+                params: [parts.beyondBoluses.toStringAsFixed(2)],
+              ),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    ];
   }
 
   Widget _totalHeader(
@@ -139,7 +212,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
               'injection.active_insulin_pump',
               params: [parts.beyondBoluses.toStringAsFixed(1)],
             ),
-            style: TextStyle(fontSize: 13, color: context.accent),
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
           ),
         ],
         if (until != null) ...[

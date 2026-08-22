@@ -133,17 +133,70 @@ class PodController extends ChangeNotifier {
   /// updating them would have its insulin booked at the old schedule.
   Future<void> _programBasal(String what, PodBasalProgram program) =>
       _withSession(what, (session) async {
-        final response = await session.run(PodProgramBasalCommand(
-          uniqueId: store.uniqueId!,
-          sequenceNumber: _nextSequence,
-          nonce: _fixedNonce,
-          program: program,
-          now: DateTime.now(),
-        ));
+        final response = await _programBasalDelivery(
+          session,
+          () => PodProgramBasalCommand(
+            uniqueId: store.uniqueId!,
+            sequenceNumber: _nextSequence,
+            nonce: _fixedNonce,
+            program: program,
+            now: DateTime.now(),
+          ),
+        );
         await store.saveBasalRates(hourlyRatesOf(program));
         await store.setSuspendedByUs(false);
         _absorb(response);
       });
+
+  /// **The only way a basal schedule or a temporary rate is programmed.**
+  ///
+  /// The pod holds ONE basal delivery. A program arriving while a temporary rate
+  /// is in progress leaves it with two answers to the same question, and a real
+  /// pod answered exactly that with alarm 0x31 and a stopped delivery: an edited
+  /// profile was sent while the automation held 0.0 U/h. So the temporary rate is
+  /// ended first, in this session, before the new program goes out.
+  ///
+  /// It exists as a chokepoint rather than as a step each caller remembers,
+  /// because that is precisely what failed: three call sites needed the step and
+  /// one of them did not have it. A caller that reaches for
+  /// [PodProgramBasalCommand] or [PodProgramTempBasalCommand] without coming
+  /// through here is the bug coming back.
+  ///
+  /// **Judged from the POD, not from the app.** [activeTemporaryBasal] is what
+  /// this app believes, and the automation runs in the other isolate: it can set
+  /// a rate this isolate's cache has never seen, and the store would then say
+  /// there is nothing to cancel while the pod is mid-delivery. The status is read
+  /// fresh here, in the same session, and its answer is the one that counts.
+  Future<PodResponse> _programBasalDelivery(
+    PodSession session,
+    PodCommand Function() build,
+  ) async {
+    final status = await _readStatus(session);
+    _absorb(status);
+    if (status.delivery.isTempBasalRunning) {
+      await _endRunningTempBasal(session);
+    }
+    return session.run(build());
+  }
+
+  /// Ends a temporary rate the pod says it is running.
+  ///
+  /// Silent, because the user asked for a profile or a rate change and not for a
+  /// cancel: a beep here would report a step they never took.
+  Future<void> _endRunningTempBasal(PodSession session) async {
+    final response = await session.run(PodStopDeliveryCommand(
+      uniqueId: store.uniqueId!,
+      sequenceNumber: _nextSequence,
+      nonce: _fixedNonce,
+      target: PodDeliveryTarget.tempBasal,
+      beep: PodBeep.silent,
+    ));
+    final running = store.temporaryBasal;
+    if (running != null) {
+      await store.saveTemporaryBasal(running.endedAt(DateTime.now()));
+    }
+    _absorb(response);
+  }
 
   /// One rate per hour, sampled from [program] at the middle of each hour so a
   /// half-hour boundary cannot land on the wrong side of it.
@@ -307,9 +360,17 @@ class PodController extends ChangeNotifier {
 
   /// Ends the pod's life so it can be removed, then forgets it.
   ///
-  /// The pod is only forgotten once it reports itself stopped. Dropping the key
-  /// while it still delivers would leave insulin running with nothing able to
-  /// command it.
+  /// The pod is only forgotten once it reports that it can no longer deliver.
+  /// Dropping the key while it still delivers would leave insulin running with
+  /// nothing able to command it.
+  ///
+  /// Judged on the LIFECYCLE, not on the delivery status. A deactivated pod
+  /// reports `PodLifecycleStatus.deactivated`, and its delivery byte is not
+  /// required to read as a plain `suspended`; asking only that question left a
+  /// pod that had genuinely shut down looking alive to the app, still paired,
+  /// with no way to let go of it. [PodLifecycleStatus.acceptsDelivery] is the
+  /// question actually being asked, and it also covers a pod in `alarm`, which
+  /// has stopped for good and is never coming back either.
   Future<void> deactivatePod() => _withSession('deactivate', (session) async {
         final response = await session.run(PodDeactivateCommand(
           uniqueId: store.uniqueId!,
@@ -318,13 +379,51 @@ class PodController extends ChangeNotifier {
         ));
         _absorb(response);
         await _endRunningBolus();
-        final stopped = _status?.delivery.isSuspended ?? false;
-        if (stopped) {
+        if (_reportsItCannotDeliver) {
           await store.forgetPod();
         } else {
-          _failure = 'Pod did not confirm it stopped — it was NOT forgotten';
+          _failure = 'Pod did not confirm it stopped. It was NOT forgotten';
         }
       });
+
+  /// Whether the pod's own last answer says it is not delivering and cannot be
+  /// made to.
+  bool get _reportsItCannotDeliver {
+    final status = _status;
+    if (status == null) {
+      return false;
+    }
+    return !status.lifecycle.acceptsDelivery || status.delivery.isSuspended;
+  }
+
+  /// Drops a pod the app can no longer reach, WITHOUT deactivating it.
+  ///
+  /// The way out of a pod that has stopped where the app could not see it: it
+  /// shut down on its own, or a deactivation half-succeeded, and the app is left
+  /// holding a pairing for something that is never going to answer again. Every
+  /// other path to forgetting requires the pod to confirm it stopped, so without
+  /// this there was no way out at all and the pump page stayed occupied by a pod
+  /// that no longer exists.
+  ///
+  /// It cannot check anything, which is the whole point: the pod is not
+  /// answering. **The user is the check**, because they can see whether the thing
+  /// is still on their body, so the UI states the consequence plainly and asks
+  /// for the device biometric. A pod can never be paired a second time, so a key
+  /// dropped while the pod is still delivering leaves nothing able to stop it.
+  /// Available even while an operation is in flight, which is the whole point:
+  /// what makes a pod unreachable is that the attempt to reach it is not
+  /// finishing, so a control gated on "not busy" is unreachable exactly when it
+  /// is needed. The attempt is stopped rather than waited out, and [_withSession]
+  /// declines to write this pod's state back once the pairing is gone.
+  Future<void> forgetUnreachablePod() async {
+    await _connection.stop();
+    await store.forgetPod();
+    _status = null;
+    _statusReadAt = null;
+    _failure = null;
+    _busy = false;
+    notifyListeners();
+  }
 
   /// Makes the pod beep now, and re-states its reminder beeps while it is there.
   ///
@@ -432,9 +531,17 @@ class PodController extends ChangeNotifier {
     notifyListeners();
     try {
       await retry.copyWith(onLog: debugPrint).run(what, () => _attempt(body));
-      await store.saveCommandSequence(_sequence);
+      // Only for a pod we still have. [forgetUnreachablePod] can land while an
+      // operation is in flight, precisely because that operation is what will
+      // not finish, and writing this pod's counters back afterwards would put
+      // half of it into the keystore again.
+      if (store.hasPod) {
+        await store.saveCommandSequence(_sequence);
+      }
       await _connection.close();
-      await PumpSync().sync(store, status: _status);
+      if (store.hasPod) {
+        await PumpSync().sync(store, status: _status);
+      }
     } on PodCommandOutcomeUnknown catch (error) {
       debugPrint('pod: $what outcome UNKNOWN: ${error.message}');
       _failure = 'The pod may have acted on this — check the pod. ${error.message}';
@@ -592,13 +699,16 @@ class PodController extends ChangeNotifier {
           start: started,
           end: started.add(Duration(minutes: rate.minutes)),
         ));
-        final response = await session.run(PodProgramTempBasalCommand(
-          uniqueId: store.uniqueId!,
-          sequenceNumber: _nextSequence,
-          nonce: _fixedNonce,
-          rate: rate,
-          reminder: PodProgramReminder(atEnd: beeps),
-        ));
+        final response = await _programBasalDelivery(
+          session,
+          () => PodProgramTempBasalCommand(
+            uniqueId: store.uniqueId!,
+            sequenceNumber: _nextSequence,
+            nonce: _fixedNonce,
+            rate: rate,
+            reminder: PodProgramReminder(atEnd: beeps),
+          ),
+        );
         _absorb(response);
       });
 

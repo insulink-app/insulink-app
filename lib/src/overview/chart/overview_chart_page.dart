@@ -5,6 +5,8 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
+import 'package:insulink/src/overview/chart/chart_sync.dart';
+import 'package:insulink/src/overview/chart/glucose_chart_bounds.dart';
 import 'package:insulink/src/overview/chart/insulin_bar_chart.dart';
 import 'package:insulink/src/overview/chart/insulin_chart_series.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
@@ -38,22 +40,55 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
 
   bool _showMeals = false;
 
-  /// The stretch the glucose chart is showing, so the insulin chart underneath
-  /// covers the same one. Null until the chart has laid out once, or whenever
-  /// there is no sensor session to place session seconds on a clock with.
-  DateTime? _windowFrom;
-  DateTime? _windowTo;
+  /// What the two charts share so they behave as one: the window, the axis
+  /// labels, the scrub, and where a pinch is applied.
+  final ChartSync _sync = ChartSync();
 
-  /// Where the measured glucose stops and the forecast begins. The insulin chart
-  /// stops there too, since it draws things that have happened.
-  DateTime? _liveEdge;
+  /// The two-finger gesture, measured over the WHOLE pair rather than over the
+  /// glucose chart alone, so pinching and dragging on the insulin underneath
+  /// moves the same window. Mirrors the pointer bookkeeping fl_chart's own
+  /// scrubbing needs left alone.
+  final Map<int, Offset> _pinchPointers = {};
+  double? _pinchLastDistance;
+  Offset? _pinchLastFocal;
+  final GlobalKey _pairKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
+    _sync.addListener(_onSyncChanged);
     _loadShowMeals();
     _refreshInsulin();
   }
+
+  @override
+  void dispose() {
+    _sync.removeListener(_onSyncChanged);
+    _sync.dispose();
+    super.dispose();
+  }
+
+  /// Rebuilds so the insulin chart is handed a series over the CURRENT window.
+  ///
+  /// The window is read here, in the page's build, but the page listened to
+  /// nothing: panning or zooming the glucose chart moved its own window and left
+  /// the insulin chart holding the series built for the previous one, which is
+  /// the pair drifting apart. A scrub is not a window change and is already
+  /// handled by the chart that draws it, so it is skipped.
+  void _onSyncChanged() {
+    final from = _sync.from;
+    final to = _sync.to;
+    if (!mounted || (from == _shownFrom && to == _shownTo)) {
+      return;
+    }
+    setState(() {
+      _shownFrom = from;
+      _shownTo = to;
+    });
+  }
+
+  DateTime? _shownFrom;
+  DateTime? _shownTo;
 
   /// Re-reads the pod store so the insulin chart shows what the background
   /// service has booked since this isolate last looked.
@@ -86,35 +121,100 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
     }
   }
 
-  /// Follows the glucose chart's window, so panning or zooming it moves the
-  /// insulin underneath with it.
-  void _adoptWindow(DateTime from, DateTime to, DateTime liveEdge) {
-    if (_windowFrom == from && _windowTo == to && _liveEdge == liveEdge) {
+  void _onPointerDown(PointerDownEvent event) {
+    _pinchPointers[event.pointer] = event.position;
+    if (_pinchPointers.length == 2) {
+      _pinchLastDistance = _pinchDistance();
+      _pinchLastFocal = _pinchFocal();
+    }
+    _sync.gesturing = _pinchPointers.length > 1;
+  }
+
+  /// Hands a two-finger move to whoever owns the range, as a scale and a
+  /// sideways travel. Anywhere over the pair counts, which is what makes the two
+  /// charts zoom and scroll as one surface.
+  void _onPointerMove(PointerMoveEvent event) {
+    if (!_pinchPointers.containsKey(event.pointer)) {
       return;
     }
-    setState(() {
-      _windowFrom = from;
-      _windowTo = to;
-      _liveEdge = liveEdge;
-    });
+    _pinchPointers[event.pointer] = event.position;
+    final last = _pinchLastDistance;
+    if (_pinchPointers.length != 2 || last == null) {
+      return;
+    }
+    final distance = _pinchDistance();
+    if (distance <= 0) {
+      return;
+    }
+    final box = _pairKey.currentContext?.findRenderObject() as RenderBox?;
+    final focal = _pinchFocal();
+    final travel = _pinchLastFocal == null ? 0.0 : focal.dx - _pinchLastFocal!.dx;
+    _pinchLastDistance = distance;
+    _pinchLastFocal = focal;
+    _sync.onPinch?.call(
+      scale: distance / last,
+      focalTravelX: travel,
+      plotWidth: (box?.size.width ?? 0) - InsulinBarChart.axisInset,
+      focalFraction: _focalFraction(box, focal),
+    );
+  }
+
+  /// The gesture is only over once the LAST finger lifts, not once it drops
+  /// below two. Clearing it at two would let the finger still on the glass start
+  /// scrubbing in the middle of a pinch being released.
+  void _onPointerUp(PointerEvent event) {
+    _pinchPointers.remove(event.pointer);
+    if (_pinchPointers.length < 2) {
+      _pinchLastDistance = null;
+      _pinchLastFocal = null;
+    }
+    if (_pinchPointers.isEmpty) {
+      _sync.gesturing = false;
+    }
+  }
+
+  double _pinchDistance() {
+    final points = _pinchPointers.values.toList();
+    return (points[0] - points[1]).distance;
+  }
+
+  Offset _pinchFocal() {
+    final points = _pinchPointers.values.toList();
+    return (points[0] + points[1]) / 2;
+  }
+
+  /// Where the pinch sits across the plot, so the time under the fingers can be
+  /// held in place. Falls back to the right edge when the geometry is unknown.
+  double _focalFraction(RenderBox? box, Offset focal) {
+    if (box == null) {
+      return 1;
+    }
+    final plotWidth = box.size.width - InsulinBarChart.axisInset;
+    if (plotWidth <= 0) {
+      return 1;
+    }
+    final localX = box.globalToLocal(focal).dx;
+    return ((localX - InsulinBarChart.axisInset) / plotWidth).clamp(0.0, 1.0);
   }
 
   /// The insulin that went in over the same stretch. Nothing is drawn until the
   /// window is known: a chart over a guessed stretch of time, sitting under one
   /// over a real stretch, would be read as if the two lined up.
   Widget _insulin(List<Meal> meals) {
-    final from = _windowFrom;
-    final to = _windowTo;
+    final from = _sync.from;
+    final to = _sync.to;
     if (from == null || to == null) {
       return const SizedBox.shrink();
     }
     return InsulinBarChart(
+      sync: _sync,
+      showMeals: _showMeals,
       series: InsulinChartSeries(
         basalHours: context.watch<PodController>().store.basalHours,
         meals: meals,
         from: from,
         to: to,
-        liveEdge: _liveEdge,
+        liveEdge: _sync.liveEdge,
       ),
     );
   }
@@ -123,6 +223,7 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
   Widget build(BuildContext context) {
     final meals = context.watch<MealState>().meals;
     final controller = context.watch<CgmController>();
+    final bounds = GlucoseChartBounds(controller.chartHistory.values);
     return Scaffold(
       appBar: AppBar(
         title: LocaleText('overview.glucose'),
@@ -136,31 +237,48 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
           ),
         ],
       ),
-      // Glucose above, the insulin that moved it below, sharing one window. The
-      // split leaves the glucose chart nearly the room it had while giving the
-      // insulin enough height for a bolus and an hour of basal to be told apart.
+      // Glucose above, the insulin that moved it below, sharing one window.
       body: Padding(
         // Room under the insulin chart so its legend is not pressed against the
         // bottom edge of the screen.
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-        child: Column(
-          children: [
-            Expanded(
-              flex: 60,
-              child: OverviewChart(
-                byTime: controller.chartHistory,
-                sensorStart: controller.sensorStart,
-                navigable: true,
-                showMeals: _showMeals,
-                meals: meals,
-                onWindowChanged: _adoptWindow,
+        child: Listener(
+          key: _pairKey,
+          onPointerDown: _onPointerDown,
+          onPointerMove: _onPointerMove,
+          onPointerUp: _onPointerUp,
+          onPointerCancel: _onPointerUp,
+          child: Column(
+            children: [
+              // The glucose chart is deliberately NOT given every pixel it can
+              // take. Fitted to the readings it no longer needs the height it
+              // used to, and a chart that runs to the bottom of the screen reads
+              // as something the page ran out of room for.
+              Expanded(
+                flex: 46,
+                child: OverviewChart(
+                  byTime: controller.chartHistory,
+                  sensorStart: controller.sensorStart,
+                  navigable: true,
+                  showMeals: _showMeals,
+                  meals: meals,
+                  sync: _sync,
+                  // The same fit the overview uses, rather than a fixed 0 to 300
+                  // that spends most of the picture on ranges nobody reaches.
+                  minYmgdl: bounds.minMgdl,
+                  maxYmgdl: bounds.maxMgdl,
+                ),
               ),
-            ),
-            // No gap and no divider between them: they share one time axis, and
-            // anything drawn in between reads as a border around two separate
-            // pictures rather than one stacked pair.
-            Expanded(flex: 25, child: _insulin(meals)),
-          ],
+              // No gap and no divider between them: they share one time axis,
+              // and anything drawn in between reads as a border around two
+              // separate pictures rather than one stacked pair. The axis labels
+              // sit under the LOWER chart, which is what closes the seam.
+              Expanded(flex: 26, child: _insulin(meals)),
+              // Breathing room at the foot of the page, taken from the charts
+              // rather than added under them, so it scales with the screen.
+              const Spacer(flex: 12),
+            ],
+          ),
         ),
       ),
     );

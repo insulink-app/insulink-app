@@ -15,7 +15,6 @@ import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_store.dart';
-import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:insulink/src/theme/brand_tints.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -371,57 +370,32 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// in the bolus field is never an unexplained one. Hidden while nothing is
   /// active: "0.0 U on board" carries no information and would only make the
   /// sheet look busier.
+  /// The insulin already working, as ONE number.
+  ///
+  /// Not split into what came from a dose and what came from the pump. The
+  /// suggestion below is computed from the total, so the total is what explains
+  /// it; a breakdown here invites doing arithmetic on a sheet where the only
+  /// question is how much to give now. The split is on the active-insulin page
+  /// for anyone who wants it.
   Widget _activeInsulinNote() {
-    final parts = _onBoard;
-    if (parts.total <= 0) {
+    final units = _activeInsulin;
+    if (units <= 0) {
       return const SizedBox.shrink();
     }
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            Locales.string(
-              context,
-              'injection.active_insulin',
-              params: [parts.total.toStringAsFixed(1)],
-            ),
-            style: TextStyle(
-              fontSize: 13,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-          ..._beyondBolusesNote(parts, scheme),
-        ],
-      ),
-    );
-  }
-
-  /// Names the part of the insulin on board that the user did not dose.
-  ///
-  /// Without it a suggestion can come out several units lower than expected for
-  /// no visible reason, which is the sort of thing that gets a calculator
-  /// overruled by hand. The number it is subtracting has to be on screen.
-  List<Widget> _beyondBolusesNote(
-    InsulinOnBoardParts parts,
-    ColorScheme scheme,
-  ) {
-    if (parts.beyondBoluses <= 0.05) {
-      return const [];
-    }
-    return [
-      const SizedBox(height: 2),
-      Text(
+      child: Text(
         Locales.string(
           context,
-          'injection.active_insulin_pump',
-          params: [parts.beyondBoluses.toStringAsFixed(1)],
+          'injection.active_insulin',
+          params: [units.toStringAsFixed(1)],
         ),
-        style: TextStyle(fontSize: 12, color: context.accent),
+        style: TextStyle(
+          fontSize: 13,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
       ),
-    ];
+    );
   }
 }
 

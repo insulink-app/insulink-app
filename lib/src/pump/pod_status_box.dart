@@ -60,6 +60,10 @@ class PodStatusBox extends StatelessWidget {
           const PodTempBasalButton(),
           const SizedBox(height: 10),
           const PodDeactivateButton(),
+          const SizedBox(height: 10),
+          // Last, because it is the answer to a pod that is already gone rather
+          // than a way of ending one. Deactivating is what a working pod gets.
+          const PodForgetButton(),
         ],
       ),
     );

@@ -355,4 +355,41 @@ void main() {
       }
     });
   });
+
+  /// The bar the pointer picked has to compare equal to the bar being painted.
+  ///
+  /// [InsulinChartSeries.bars] hands out fresh objects, so under identity the
+  /// painter matched nothing: it dimmed every bar to a third and highlighted
+  /// none, which showed up as the whole chart fading out instead of one block
+  /// being picked out.
+  group('a picked bar is recognisable when it is painted', () {
+    final hour = DateTime(2026, 5, 4, 9);
+    final series = InsulinChartSeries(
+      basalHours: [PodBasalHour(hour: hour, units: 0.8)],
+      meals: const [],
+      from: hour,
+      to: hour.add(const Duration(hours: 2)),
+    );
+
+    test('the same bar read twice compares equal', () {
+      expect(series.bars.first, series.bars.first);
+    });
+
+    test('a picked bar is found again among the painted ones', () {
+      final picked = series.nearest(0.2);
+
+      expect(series.bars.contains(picked), isTrue);
+    });
+
+    test('two different bars stay different', () {
+      final other = InsulinChartSeries(
+        basalHours: [PodBasalHour(hour: hour, units: 0.9)],
+        meals: const [],
+        from: hour,
+        to: hour.add(const Duration(hours: 2)),
+      );
+
+      expect(series.bars.first == other.bars.first, isFalse);
+    });
+  });
 }

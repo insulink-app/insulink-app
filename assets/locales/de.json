@@ -156,13 +156,15 @@
     "active_insulin": {
       "_": "Aktives Insulin",
       "title": "Insulin",
-      "summary": "Letzte Dosis # um ## · aktiv bis ###",
+      "summary": "Letzte Dosis # um ##",
       "until": "Noch aktiv bis #",
       "doses": "Aktive Dosen",
       "total": "Gesamt aktiv",
       "remaining": "# E aktiv",
       "of_bolus": "von # E Bolus",
-      "empty": "Keine aktiven Insulindosen."
+      "empty": "Keine aktiven Insulindosen.",
+      "no_doses": "Keine selbst gespritzte Dosis wirkt gerade.",
+      "from_pump": "Über dem Basalprogramm abgegeben"
     },
     "boxes": {
       "all": "Alle Werte",
@@ -367,7 +369,10 @@
       "resume": "Abgabe fortsetzen",
       "deactivate_auth_reason": "Deaktivieren des Pods bestätigen",
       "resume_activation": "Aktivierung fortsetzen",
-      "test_beep": "Testton abspielen"
+      "test_beep": "Testton abspielen",
+      "forget": "Pod vergessen",
+      "forget_confirm": "Vergessen",
+      "forget_auth_reason": "Vergessen des Pods bestätigen"
     },
     "stop": {
       "_": "Abgabe stoppen?",
@@ -565,6 +570,10 @@
       "at_glucose": "bei # mg/dL, # mg/dL pro Minute",
       "on_board": "# U aktiv",
       "schedule_was": "Basalprogramm # U/h"
+    },
+    "forget": {
+      "_": "Diesen Pod vergessen?",
+      "body": "Nur für einen Pod, der nicht mehr am Körper ist oder bereits gestoppt hat. Die App verwirft seinen Schlüssel, und ein Pod lässt sich nie erneut koppeln. Gibt dieser noch ab, kann ihn danach nichts mehr stoppen."
     }
   },
   "google_health": {
@@ -1158,6 +1167,19 @@
     },
     "pod_temp_basal_beep": {
       "description": "Ton bei manuellem temporärem Basal"
+    },
+    "tuning": {
+      "_": "Basal-Vorschlag",
+      "description": "Wertet gespeicherte Glukose aus. Es zählen nur Stunden, in denen weder Essen noch ein Bolus noch die Automatik im Spiel waren.",
+      "not_enough": "Nicht genug auswertbare Stunden in diesem Zeitraum. Nimm einen längeren, oder warte auf ein paar ruhige Nächte.",
+      "window": {
+        "d7": "7 Tage",
+        "d30": "30 Tage",
+        "d90": "90 Tage"
+      },
+      "generate": "Vorschlag berechnen",
+      "no_change": "Nichts zu ändern, kein neues Profil angelegt. Dein Profil passt zu diesen Stunden.",
+      "profile_name": "Vorschlag # Tage, #"
     }
   },
   "injection": {

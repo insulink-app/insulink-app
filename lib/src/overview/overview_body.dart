@@ -10,6 +10,7 @@ import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/battery_saver_banner.dart';
 import 'package:insulink/src/overview/overview_running_bolus.dart';
+import 'package:insulink/src/overview/chart/glucose_chart_bounds.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
 import 'package:insulink/src/overview/overview_active_insulin.dart';
@@ -240,8 +241,9 @@ class _ChartPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final niceMin = _niceMinMgdl();
-    final niceMax = _niceMaxMgdl();
+    final bounds = GlucoseChartBounds(byTime.values);
+    final niceMin = bounds.minMgdl;
+    final niceMax = bounds.maxMgdl;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => Navigator.of(context).push(
@@ -285,29 +287,5 @@ class _ChartPreview extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  /// Y-axis top (mg/dL): the peak rounded up to the next 50, floored at 200 so
-  /// the target band stays visible. A low day uses less space; a high day more.
-  int _niceMaxMgdl() {
-    final values = byTime.values;
-    if (values.isEmpty) {
-      return 200;
-    }
-    final peak = values.reduce((a, b) => a > b ? a : b);
-    final rounded = ((peak + 20) / 50).ceil() * 50;
-    return rounded < 200 ? 200 : rounded;
-  }
-
-  /// Y-axis bottom (mg/dL): ~50 when nothing dips lower, else rounded down to the
-  /// next 50 — so a normal day starts at 50 instead of wasting space down to 0.
-  int _niceMinMgdl() {
-    final values = byTime.values;
-    if (values.isEmpty) {
-      return 50;
-    }
-    final low = values.reduce((a, b) => a < b ? a : b);
-    final floor = (low / 50).floor() * 50;
-    return floor > 50 ? 50 : floor;
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/pump/loop/loop_pod_commands.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pod_link_lease.dart';
 import 'package:insulink/src/pump/pod_retry.dart';
 import 'package:insulink/src/pump/protocol/pod_link.dart';
 import 'package:insulink/src/pump/protocol/pod_session.dart';
@@ -119,5 +120,24 @@ void main() {
         ),
       );
     });
+  });
+
+  /// A busy link is not a pod failure and nothing was sent, so repeating it is
+  /// safe. It is excluded anyway: [PodLinkLease] already waits as long as the
+  /// caller asked it to, so a retry is a second wait loop stacked on the first,
+  /// and it turns one lost race into three real connect attempts against a radio
+  /// another part of the app is using.
+  test('a busy link is not retried', () async {
+    var attempts = 0;
+
+    await expectLater(
+      const PodRetry(attempts: 3, firstDelay: Duration.zero).run('poll', () {
+        attempts++;
+        throw PodLinkBusy('the app');
+      }),
+      throwsA(isA<PodLinkBusy>()),
+    );
+
+    expect(attempts, 1);
   });
 }

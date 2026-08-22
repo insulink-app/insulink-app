@@ -12,9 +12,12 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_detail_sheet.dart';
+import 'package:insulink/src/overview/chart/chart_sync.dart';
 import 'package:insulink/src/overview/chart/chart_window.dart';
+import 'package:insulink/src/overview/chart/chart_x_axis.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
+import 'package:insulink/src/overview/chart/mirrored_readout.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
@@ -33,7 +36,7 @@ class OverviewChart extends StatefulWidget {
     this.maxYmgdl = 300,
     this.showMeals = false,
     this.meals = const [],
-    this.onWindowChanged,
+    this.sync,
   });
 
   final SplayTreeMap<int, int> byTime;
@@ -60,23 +63,16 @@ class OverviewChart extends StatefulWidget {
   /// axis show real clock times instead of hours-ago offsets.
   final DateTime? sensorStart;
 
-  /// The wall-clock stretch now on screen, reported whenever it changes.
+  /// What this chart shares with the insulin chart stacked under it: the window,
+  /// the axis labels, and the scrub.
   ///
-  /// For a second chart drawn underneath this one: two graphs stacked over
-  /// different stretches of time would invite exactly the comparison they cannot
-  /// support. Only fired when the window actually moves, and after the frame,
-  /// because a listener that rebuilds would otherwise call back into this build.
+  /// Non-null means the pair is drawn as one graph, which moves the axis labels
+  /// down to the lower chart and makes a scrub on either show a readout on both.
+  /// Null is a chart standing on its own (the overview preview).
   ///
-  /// [liveEdge] is where the measured data stops and the forecast begins, which
-  /// is not the same as the end of the window: the window reaches past the last
-  /// reading to show the prediction. A chart of things that have HAPPENED has to
-  /// stop there, or it draws the last hour of insulin across a stretch of time
-  /// that has not occurred yet.
-  ///
-  /// Never fired without a [sensorStart]: session seconds cannot be placed on a
-  /// clock without one.
-  final void Function(DateTime from, DateTime to, DateTime liveEdge)?
-      onWindowChanged;
+  /// The window is never reported without a [sensorStart]: session seconds
+  /// cannot be placed on a clock without one.
+  final ChartSync? sync;
 
   @override
   State<OverviewChart> createState() => _OverviewChartState();
@@ -87,9 +83,13 @@ class _OverviewChartState extends State<OverviewChart>
   static const _kRangeKey = 'chart_range_hours';
   static const _storage = FlutterSecureStorage();
 
-  /// The last window handed to [OverviewChart.onWindowChanged], so panning and
-  /// zooming report once each and an ordinary rebuild reports nothing.
+  /// The last window handed to [OverviewChart.sync], so panning and zooming
+  /// report once each and an ordinary rebuild reports nothing.
   (int, int, int)? _reportedWindow;
+
+  /// The axis from the last build, so a touch can be turned into a fraction
+  /// across the plot without redoing the window arithmetic.
+  ChartXAxis? _axis;
 
   /// Visible time window in hours. The selector jumps to 6 / 12 / 24, but a
   /// two-finger pinch zooms it continuously between these bounds. The session
@@ -169,6 +169,9 @@ class _OverviewChartState extends State<OverviewChart>
   void initState() {
     super.initState();
     _loadRange();
+    widget.sync
+      ?..addListener(_onSyncChanged)
+      ..onPinch = applyPinch;
     _pulse = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
@@ -178,7 +181,44 @@ class _OverviewChartState extends State<OverviewChart>
   }
 
   @override
+  void didUpdateWidget(OverviewChart old) {
+    super.didUpdateWidget(old);
+    if (old.sync == widget.sync) {
+      return;
+    }
+    old.sync
+      ?..removeListener(_onSyncChanged)
+      ..onPinch = null;
+    widget.sync
+      ?..addListener(_onSyncChanged)
+      ..onPinch = applyPinch;
+  }
+
+  /// Whether a readout driven from the chart below is on screen, so this chart
+  /// redraws when that ENDS as well as when it starts.
+  ///
+  /// Rebuilding only while the mirror is wanted left the tooltip standing after
+  /// the finger lifted: clearing the scrub turns the flag off, and a listener
+  /// that reads the flag would then decide there was nothing to do.
+  bool _showingMirror = false;
+
+  /// Redraws for a scrub that came from the chart below. A window change is this
+  /// chart's own doing and has already rebuilt it.
+  void _onSyncChanged() {
+    final sync = widget.sync!;
+    final wanted = sync.scrubMirrored && sync.scrub != null;
+    if (!mounted || (!wanted && !_showingMirror)) {
+      return;
+    }
+    _showingMirror = wanted;
+    setState(() {});
+  }
+
+  @override
   void dispose() {
+    widget.sync
+      ?..removeListener(_onSyncChanged)
+      ..onPinch = null;
     _pulse.dispose();
     _phase.dispose();
     super.dispose();
@@ -234,29 +274,48 @@ class _OverviewChartState extends State<OverviewChart>
       return;
     }
     final box = _plotKey.currentContext?.findRenderObject() as RenderBox?;
-    final plotWidth = (box?.size.width ?? 0) - _axisInset;
     final focal = _pinchFocalGlobal();
+    // Both previous values are read BEFORE they are replaced. Overwriting the
+    // distance first makes every scale exactly 1.0, which is a pinch that
+    // silently does nothing.
+    final previousDistance = _pinchLastDistance!;
+    final travel = _pinchLastFocal == null ? 0.0 : focal.dx - _pinchLastFocal!.dx;
+    _pinchLastDistance = distance;
+    _pinchLastFocal = focal;
+    applyPinch(
+      scale: distance / previousDistance,
+      focalTravelX: travel,
+      plotWidth: (box?.size.width ?? 0) - _axisInset,
+      focalFraction: _focalFraction(box),
+    );
+  }
 
+  /// Applies a two-finger gesture, wherever over the pair it was measured.
+  ///
+  /// Public and registered on the shared [ChartSync] because the range and the
+  /// scroll position live here: a pinch over the insulin chart underneath has to
+  /// move THIS window, or the two would drift apart and stop being one graph.
+  void applyPinch({
+    required double scale,
+    required double focalTravelX,
+    required double plotWidth,
+    required double focalFraction,
+  }) {
+    if (scale <= 0) {
+      return;
+    }
     final oldRange = _rangeHours;
     final newRange =
-        (oldRange / (distance / _pinchLastDistance!)).clamp(
-      _minRangeHours,
-      _maxRangeHours,
-    );
+        (oldRange / scale).clamp(_minRangeHours, _maxRangeHours);
     // Zoom: hold the time under the fingers in place — the window to the RIGHT
     // of the focal point is what a range change adds to / removes from the
     // scroll-back offset.
-    final fromRight = 1.0 - _focalFraction(box);
-    var deltaSecs = (oldRange - newRange) * 3600 * fromRight;
+    var deltaSecs = (oldRange - newRange) * 3600 * (1.0 - focalFraction);
     // Pan: convert the focal point's sideways travel to time (fingers moving
     // right pulls older data into view, i.e. scrolls back).
-    if (plotWidth > 0 && _pinchLastFocal != null) {
-      final focalTravelX = focal.dx - _pinchLastFocal!.dx;
+    if (plotWidth > 0) {
       deltaSecs += focalTravelX * newRange * 3600 / plotWidth;
     }
-
-    _pinchLastDistance = distance;
-    _pinchLastFocal = focal;
     setState(() {
       _rangeHours = newRange;
       _panSecs = (_panSecs + deltaSecs.round()).clamp(0, 1 << 30);
@@ -316,37 +375,72 @@ class _OverviewChartState extends State<OverviewChart>
     }
     if (!event.isInterestedForInteractions || spots == null || spots.isEmpty) {
       _lastTouchedIndex = null;
+      widget.sync?.setScrub(null);
       return;
     }
     final touch = spots.firstWhere(
       (spot) => spot.barIndex == _touchBarIndex,
       orElse: () => spots.first,
     );
+    widget.sync?.setScrub(_axis?.fractionOf(touch.x));
     if (touch.spotIndex != _lastTouchedIndex) {
       _lastTouchedIndex = touch.spotIndex;
       HapticFeedback.selectionClick();
     }
   }
 
-  /// Tells a listener which stretch of wall-clock time is on screen.
+  /// The spot to draw a readout on because the chart BELOW is being scrubbed, so
+  /// one finger produces one reading across the pair. Null while this chart owns
+  /// the gesture, which leaves fl_chart's own touch handling to draw it.
+  int? _mirroredSpot(List<FlSpot> touchSpots) {
+    final sync = widget.sync;
+    final axis = _axis;
+    if (sync == null || axis == null || !sync.scrubMirrored) {
+      return null;
+    }
+    final fraction = sync.scrub;
+    if (fraction == null || touchSpots.isEmpty) {
+      return null;
+    }
+    final wanted = axis.minX + fraction * (axis.maxX - axis.minX);
+    var nearest = 0;
+    for (var index = 1; index < touchSpots.length; index++) {
+      if ((touchSpots[index].x - wanted).abs() <
+          (touchSpots[nearest].x - wanted).abs()) {
+        nearest = index;
+      }
+    }
+    return nearest;
+  }
+
+  /// Hands the pair the stretch of wall-clock time on screen and the labels for
+  /// it.
   ///
-  /// After the frame, not during it: a listener that calls `setState` would
-  /// otherwise rebuild this widget from inside its own build.
-  void _reportWindow(int fromSecs, int toSecs, int liveSecs) {
-    final report = widget.onWindowChanged;
+  /// After the frame, not during it: the chart below rebuilds on this, and doing
+  /// that from inside this build would rebuild this widget from its own build.
+  void _reportWindow(
+    BuildContext context,
+    ChartXAxis axis,
+    int fromSecs,
+    int toSecs,
+    int liveSecs,
+  ) {
+    final sync = widget.sync;
     final start = widget.sensorStart;
-    if (report == null ||
+    if (sync == null ||
         start == null ||
         _reportedWindow == (fromSecs, toSecs, liveSecs)) {
       return;
     }
     _reportedWindow = (fromSecs, toSecs, liveSecs);
+    final ticks = axis.ticks(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        report(
-          start.add(Duration(seconds: fromSecs)),
-          start.add(Duration(seconds: toSecs)),
-          start.add(Duration(seconds: liveSecs)),
+        sync.reportWindow(
+          from: start.add(Duration(seconds: fromSecs)),
+          to: start.add(Duration(seconds: toSecs)),
+          liveEdge: start.add(Duration(seconds: liveSecs)),
+          ticks: ticks,
         );
       }
     });
@@ -375,16 +469,30 @@ class _OverviewChartState extends State<OverviewChart>
         ),
         const SizedBox(height: 24),
         Expanded(
-          child: Listener(
-            key: _plotKey,
-            onPointerDown: _onPinchPointerDown,
-            onPointerMove: _onPinchPointerMove,
-            onPointerUp: _onPinchPointerUp,
-            onPointerCancel: _onPinchPointerUp,
-            child: _chart(byTime, glucose, colors),
-          ),
+          child: _pinchable(_chart(byTime, glucose, colors)),
         ),
       ],
+    );
+  }
+
+  /// Watches for a two-finger gesture, unless something above is already doing
+  /// it for the whole pair.
+  ///
+  /// Both at once would apply every pinch TWICE, at the square of the intended
+  /// zoom. When the chart is stacked with another, the gesture belongs to the
+  /// pair rather than to either half, so the outer one wins and this only keeps
+  /// its key, which the focal-point arithmetic needs.
+  Widget _pinchable(Widget chart) {
+    if (widget.sync != null) {
+      return KeyedSubtree(key: _plotKey, child: chart);
+    }
+    return Listener(
+      key: _plotKey,
+      onPointerDown: _onPinchPointerDown,
+      onPointerMove: _onPinchPointerMove,
+      onPointerUp: _onPinchPointerUp,
+      onPointerCancel: _onPinchPointerUp,
+      child: chart,
     );
   }
 
@@ -496,7 +604,14 @@ class _OverviewChartState extends State<OverviewChart>
         ? 0.0
         : (anchor.minute * 60 + anchor.second) / 3600.0;
     final cutoffSecs = (windowEndSecs - effectiveRange * 3600).round();
-    _reportWindow(cutoffSecs, windowEndSecs, latestSecs);
+    final axis = ChartXAxis(
+      shift: shift,
+      rangeHours: effectiveRange,
+      rightEdgeHours: rightEdgeHours,
+      anchor: anchor,
+    );
+    _axis = axis;
+    _reportWindow(context, axis, cutoffSecs, windowEndSecs, latestSecs);
     final series = GlucoseChartSeries(
       entries: entries,
       latestSecs: latestSecs,
@@ -524,7 +639,11 @@ class _OverviewChartState extends State<OverviewChart>
     // points, so scrubbing snaps to a single value in either region (not to the
     // zone bars, which share boundary points, or the interpolated crossings).
     _touchBarIndex = bars.length;
-    bars.add(_touchBar([...series.realSpots, ...prediction.touchSpots]));
+    final touchSpots = [...series.realSpots, ...prediction.touchSpots];
+    bars.add(_touchBar(touchSpots));
+    // Which spot a scrub on the chart below is pointing at, drawn as an overlay
+    // rather than handed to fl_chart. See [MirroredReadout] for why.
+    final mirrored = _mirroredSpot(touchSpots);
     // Meal overlay: a marker line per logged meal (drawn by GlucoseLineChart)
     // plus a transparent bar of tappable dots appended here, so a tap resolves
     // to a meal via its spot index.
@@ -559,9 +678,7 @@ class _OverviewChartState extends State<OverviewChart>
       bars: bars,
       betweenBars: [if (prediction.band != null) prediction.band!],
       touchBarIndex: _touchBarIndex,
-      shift: shift,
-      rangeHours: effectiveRange,
-      anchor: anchor,
+      axis: axis,
       glucose: glucose,
       colors: colors,
       onChartTouch: _onChartTouch,
@@ -571,18 +688,73 @@ class _OverviewChartState extends State<OverviewChart>
       maxYmgdl: widget.maxYmgdl,
       highlightSpot: widget.preview ? highlightSpot : null,
       pulse: pulse,
-      rightEdgeHours: rightEdgeHours,
+      // The labels move under the insulin chart whenever one is stacked below,
+      // so the two plots touch and read as one picture with one axis.
+      showBottomTitles: widget.sync == null,
       mealMarkers: mealMarkers,
     );
     // Only the overview preview pulses; the detail page renders once (no per-
     // frame relayout of the full chart).
     if (!widget.preview) {
-      return chart(0);
+      return _withMirror(chart(0), touchSpots, mirrored, axis, glucose);
     }
     return ValueListenableBuilder<double>(
       valueListenable: _phase,
       builder: (context, phase, _) => chart(phase),
     );
+  }
+
+  /// Lays the readout for a scrub on the chart below over this one.
+  ///
+  /// An overlay because fl_chart discards a tooltip set from outside: see
+  /// [MirroredReadout]. Nothing is added while this chart owns the gesture, where
+  /// its own touch handling draws it.
+  Widget _withMirror(
+    Widget chart,
+    List<FlSpot> touchSpots,
+    int? mirrored,
+    ChartXAxis axis,
+    ProfileGlucoseState glucose,
+  ) {
+    final fraction = widget.sync?.scrub;
+    if (mirrored == null || fraction == null || mirrored >= touchSpots.length) {
+      return chart;
+    }
+    final spot = touchSpots[mirrored];
+    final digits = glucose.unit == GlucoseUnit.mmol ? 1 : 0;
+    // Past the latest reading is the forecast, marked as an estimate exactly as
+    // this chart's own tooltip marks it.
+    final estimate = spot.x > axis.shift ? '~' : '';
+    return Stack(
+      children: [
+        Positioned.fill(child: chart),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: MirroredReadout(
+              fraction: fraction,
+              value: '$estimate${spot.y.toStringAsFixed(digits)} '
+                  '${glucose.unit.label}',
+              time: _clockAt(axis, spot.x),
+              leftInset: _axisInset,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The wall-clock time at an x, the same mapping the axis labels use.
+  String _clockAt(ChartXAxis axis, double x) {
+    final anchor = axis.anchor;
+    if (anchor == null) {
+      return '';
+    }
+    final time = anchor.add(
+      Duration(seconds: ((x - axis.shift) * 3600).round()),
+    );
+    return MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(TimeOfDay.fromDateTime(time));
   }
 
   /// Forecast horizon in hours past the latest reading (0 when there is no live

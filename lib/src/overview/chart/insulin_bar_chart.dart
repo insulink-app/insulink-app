@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/overview/chart/chart_sync.dart';
 import 'package:insulink/src/overview/chart/insulin_bar_painter.dart';
 import 'package:insulink/src/overview/chart/insulin_chart_series.dart';
 import 'package:insulink/src/theme/insulin_colors.dart';
@@ -17,9 +18,22 @@ import 'package:insulink/src/theme/insulin_colors.dart';
 /// is several, so the boluses do tower over the basal, and that is the true
 /// proportion rather than something to correct for with a second scale.
 class InsulinBarChart extends StatefulWidget {
-  const InsulinBarChart({super.key, required this.series});
+  const InsulinBarChart({
+    super.key,
+    required this.series,
+    required this.sync,
+    this.showMeals = false,
+  });
 
   final InsulinChartSeries series;
+
+  /// What this chart shares with the glucose chart above: the window, the axis
+  /// labels it draws for the pair, and the scrub either of them starts.
+  final ChartSync sync;
+
+  /// Whether the glucose chart's meal lines are on, so they can be continued
+  /// through this one.
+  final bool showMeals;
 
   /// The width of the left axis strip. Must equal the glucose chart's leftTitles
   /// `reservedSize`, which is what makes the two x axes the same axis.
@@ -34,8 +48,43 @@ class InsulinBarChart extends StatefulWidget {
 }
 
 class _InsulinBarChartState extends State<InsulinBarChart> {
-  InsulinBar? _touched;
-  double? _scrub;
+  /// Where the pointer is, which is the SHARED scrub rather than one of this
+  /// chart's own: a finger on the glucose chart above has to read out here too,
+  /// and a finger here has to read out up there.
+  double? get _scrub => widget.sync.scrub;
+
+  InsulinBar? get _touched {
+    final fraction = _scrub;
+    return fraction == null ? null : widget.series.nearest(fraction);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.sync.addListener(_onSyncChanged);
+  }
+
+  @override
+  void didUpdateWidget(InsulinBarChart old) {
+    super.didUpdateWidget(old);
+    if (old.sync == widget.sync) {
+      return;
+    }
+    old.sync.removeListener(_onSyncChanged);
+    widget.sync.addListener(_onSyncChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.sync.removeListener(_onSyncChanged);
+    super.dispose();
+  }
+
+  void _onSyncChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,10 +137,13 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
                     basal: colors.basal,
                     bolus: colors.bolus,
                     labelColor: theme.colorScheme.onSurfaceVariant,
+                    mealColor: theme.colorScheme.onSurfaceVariant,
                     scrubColor:
                         theme.colorScheme.onSurface.withValues(alpha: 0.35),
                     leftInset: InsulinBarChart.axisInset,
                     bolusWidth: InsulinBarChart.bolusWidth,
+                    ticks: widget.sync.ticks,
+                    mealFractions: _mealFractions(),
                     scrubFraction: _scrub,
                     highlighted: _touched,
                   ),
@@ -111,7 +163,8 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
   /// what made the two charts read as two unrelated things.
   ///
   /// It follows the scrub and flips to the other side near the right edge, so it
-  /// never runs off the plot.
+  /// never runs off the plot, and it sits at the BOTTOM: the bars hang from the
+  /// top now, and a readout pinned up there would cover the thing it describes.
   List<Widget> _tooltip(BuildContext context, double width) {
     final touched = _touched;
     final fraction = _scrub;
@@ -124,7 +177,7 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
     final flip = x > width - _tooltipWidth - 8;
     return [
       Positioned(
-        top: 0,
+        bottom: InsulinBarPainter.bottomInset + 4,
         left: flip ? null : x + 8,
         right: flip ? width - x + 8 : null,
         child: Container(
@@ -180,31 +233,33 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
 
   String _two(int value) => value.toString().padLeft(2, '0');
 
+  /// Where the glucose chart's meal lines cross this one. Empty while the
+  /// overlay is off, so the two charts show the markers together or not at all.
+  List<double> _mealFractions() {
+    if (!widget.showMeals) {
+      return const [];
+    }
+    return [
+      for (final meal in widget.series.visibleMeals)
+        widget.series.fractionOf(meal.time),
+    ];
+  }
+
+  /// Publishes the pointer to the pair rather than keeping it, so the chart
+  /// above draws its own readout at the same instant.
   void _pick(BuildContext context, double localX) {
     final box = context.findRenderObject() as RenderBox?;
     final width = (box?.size.width ?? 0) - InsulinBarChart.axisInset;
     if (width <= 0) {
       return;
     }
-    final fraction =
-        ((localX - InsulinBarChart.axisInset) / width).clamp(0.0, 1.0);
-    final nearest = widget.series.nearest(fraction);
-    if (nearest != _touched || fraction != _scrub) {
-      setState(() {
-        _touched = nearest;
-        _scrub = fraction;
-      });
-    }
+    widget.sync.setScrub(
+      ((localX - InsulinBarChart.axisInset) / width).clamp(0.0, 1.0),
+      mirrored: true,
+    );
   }
 
-  void _clear() {
-    if (_touched != null || _scrub != null) {
-      setState(() {
-        _touched = null;
-        _scrub = null;
-      });
-    }
-  }
+  void _clear() => widget.sync.setScrub(null);
 
   /// The key, with each kind's total beside it, UNDER the plot. Above it, it sat
   /// between the two charts and read as a divider between them; the whole point

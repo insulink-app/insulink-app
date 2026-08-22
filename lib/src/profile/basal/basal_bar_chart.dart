@@ -10,6 +10,8 @@ class BasalBarChart extends StatelessWidget {
   const BasalBarChart({
     super.key,
     required this.rates,
+    this.maxValue = BasalProfile.maxRate,
+    this.minValue = 0,
     this.selectedHour,
     this.onChanged,
     this.onSelect,
@@ -17,6 +19,12 @@ class BasalBarChart extends StatelessWidget {
   });
 
   final List<double> rates;
+
+  /// The range a drag paints across. Defaults to the basal rate range; the
+  /// correction-factor editor passes its own, which is the only thing that made
+  /// this chart basal-specific.
+  final double maxValue;
+  final double minValue;
   final int? selectedHour;
   final void Function(int hour, double rate)? onChanged;
   final void Function(int hour)? onSelect;
@@ -42,13 +50,14 @@ class BasalBarChart extends StatelessWidget {
     final hour = _hourAt(local, width);
     onSelect?.call(hour);
     final fraction = (1 - local.dy / (height - _labelHeight)).clamp(0.0, 1.0);
-    onChanged?.call(hour, fraction * BasalProfile.maxRate);
+    onChanged?.call(hour, minValue + fraction * (maxValue - minValue));
     HapticFeedback.selectionClick();
   }
 
   @override
   Widget build(BuildContext context) {
-    final scale = rates.fold(0.5, (m, r) => r > m ? r : m);
+    final scale = rates.fold(minValue > 0 ? maxValue : 0.5,
+        (m, r) => r > m ? r : m);
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;

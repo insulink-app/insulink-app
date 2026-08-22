@@ -1,5 +1,6 @@
 import 'package:insulink/src/pump/loop/loop_pod_commands.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pod_link_lease.dart';
 import 'package:insulink/src/pump/protocol/pod_session.dart';
 
 /// Runs a pod operation again when the attempt failed before anything reached
@@ -83,9 +84,16 @@ class PodRetry {
   ///  * [PodBolusRefused] is a guard declining the dose against the pod's own
   ///    freshly read state. Nothing about repeating the request changes it.
   ///  * [LoopCommandRefused] is the pod itself declining. Same.
+  ///  * [PodLinkBusy] is another part of the app holding the link. Safe to
+  ///    repeat, but pointless: [PodLinkLease] already waits as long as the
+  ///    caller wants to, so retrying is a SECOND wait loop stacked on the first.
+  ///    It turns one lost race into three real connect attempts against a radio
+  ///    somebody else is using, which is the contention rather than a cure for
+  ///    it. The service comes back on its next tick and the UI tells the user.
   static bool mayRetry(Object error) {
     return error is! PodCommandOutcomeUnknown &&
         error is! PodBolusRefused &&
-        error is! LoopCommandRefused;
+        error is! LoopCommandRefused &&
+        error is! PodLinkBusy;
   }
 }

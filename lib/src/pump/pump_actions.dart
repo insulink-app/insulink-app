@@ -280,6 +280,74 @@ class PodDeactivateButton extends StatelessWidget {
   }
 }
 
+/// Drops a pod the app cannot reach any more, without deactivating it.
+///
+/// The way out of a pod that stopped where the app could not see it: it shut
+/// itself down, or a deactivation half-succeeded, and the pump page is left
+/// occupied by something that will never answer again. Every other path to
+/// forgetting waits for the pod to confirm it stopped, so without this there was
+/// no way out at all.
+///
+/// Gated like the deactivation, and worded harder. Nothing here can be checked,
+/// because the pod is not answering: the user is the check, since they are the
+/// one who can see whether it is still on their body.
+class PodForgetButton extends StatelessWidget {
+  const PodForgetButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.read<PodController>();
+    // NOT gated on isBusy, unlike every other control here. What makes a pod
+    // unreachable is that the attempt to reach it is not finishing, so a way out
+    // that waits for the app to stop trying is no way out at all.
+    return DangerActionButton(
+      labelKey: 'pump.action.forget',
+      icon: PhosphorIconsBold.linkBreak,
+      onPressed: () => _confirm(context, controller),
+    );
+  }
+
+  void _confirm(BuildContext context, PodController controller) {
+    Alert(
+      icon: PhosphorIconsBold.warning,
+      iconColor: context.danger,
+      content: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            LocaleText('pump.forget',
+                textAlign: TextAlign.center,
+                style:
+                    const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            LocaleText('pump.forget.body',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14)),
+          ],
+        ),
+      ),
+      cancelButton: true,
+      confirmButtonText: 'pump.action.forget_confirm',
+      confirmButtonColor: Theme.of(context).colorScheme.error,
+      callback: () => _authThenForget(context, controller),
+    ).show(context);
+  }
+
+  Future<void> _authThenForget(
+    BuildContext context,
+    PodController controller,
+  ) async {
+    final confirmed = await BiometricAuth().confirm(
+      Locales.string(context, 'pump.action.forget_auth_reason'),
+      allowDeviceCredential: true,
+    );
+    if (confirmed) {
+      await controller.forgetUnreachablePod();
+    }
+  }
+}
+
 
 /// Offers to send an edited basal profile to a pod that is still running the old
 /// one.

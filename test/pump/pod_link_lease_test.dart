@@ -131,9 +131,17 @@ void main() {
     });
   });
 
-  /// Nothing was sent to the pod, so the operation is repeated rather than
-  /// reported. That is what turns a collision into a short wait.
-  test('a busy link is something the retry policy repeats', () {
-    expect(PodRetry.mayRetry(PodLinkBusy('the app')), isTrue);
+  /// Repeating it is SAFE, because nothing reached the pod. It is excluded
+  /// anyway, because the waiting policy belongs to the lease and only to the
+  /// lease: the UI waits [patience] for a tap to go through, and the service
+  /// waits nothing at all because coming back on its next tick is free. A retry
+  /// on top overrode both, turning the service's deliberate "give up at once"
+  /// into three real connect attempts against a radio the UI was using, and
+  /// making a user's tap wait out a second round of patience after the first.
+  ///
+  /// Repeated in [PodRetry] at the behavioural level; this pins the policy where
+  /// the reasoning for it lives.
+  test('a busy link is left to the lease rather than retried', () {
+    expect(PodRetry.mayRetry(PodLinkBusy('the app')), isFalse);
   });
 }

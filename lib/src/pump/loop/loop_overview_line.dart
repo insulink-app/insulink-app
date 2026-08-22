@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/enum_locale_key.dart';
-import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_store.dart';
@@ -34,11 +33,10 @@ class PodLoopOverviewLine extends StatelessWidget {
 
   Widget _running(BuildContext context, PodStore store, PodLoopMode mode) {
     final scheme = Theme.of(context).colorScheme;
-    final engaged = mode == PodLoopMode.engaged;
     return _line(
       context,
       icon: PhosphorIconsBold.repeat,
-      color: engaged ? context.accent : scheme.onSurfaceVariant,
+      color: scheme.onSurfaceVariant,
       text: _label(context, store, mode),
     );
   }

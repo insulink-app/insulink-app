@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/overview/chart/chart_dashes.dart';
+import 'package:insulink/src/overview/chart/chart_x_axis.dart';
 import 'package:insulink/src/overview/chart/insulin_chart_series.dart';
 
 /// Draws the insulin at its real position in time, in the glucose chart's visual
@@ -30,6 +32,9 @@ class InsulinBarPainter extends CustomPainter {
     required this.scrubColor,
     required this.leftInset,
     required this.bolusWidth,
+    required this.mealColor,
+    this.ticks = const [],
+    this.mealFractions = const [],
     this.scrubFraction,
     this.highlighted,
   });
@@ -41,6 +46,15 @@ class InsulinBarPainter extends CustomPainter {
   final Color scrubColor;
   final double leftInset;
   final double bolusWidth;
+  final Color mealColor;
+
+  /// The shared axis' labels, drawn under THIS chart because it is the lower of
+  /// the pair. See [ChartXAxis].
+  final List<ChartTick> ticks;
+
+  /// Where the glucose chart's meal lines cross, so each runs through both
+  /// charts instead of stopping at the border between them.
+  final List<double> mealFractions;
 
   /// Where the pointer is across the window, for the scrub line.
   final double? scrubFraction;
@@ -58,6 +72,19 @@ class InsulinBarPainter extends CustomPainter {
   static const double scrubWidth = 1.5;
   static const List<double> scrubDash = [4, 4];
 
+  /// The meal marker, matching the glucose chart's dashes exactly: the line is
+  /// one line, and two halves drawn differently would give that away.
+  static const double mealWidth = 1.5;
+  static const List<double> mealDash = [3, 4];
+
+  /// Room under the plot for the axis labels, the same strip fl_chart reserves
+  /// for them on the chart above.
+  static const double bottomInset = 24;
+
+  /// Room above the baseline so the topmost axis label is not cut off by the
+  /// edge. The bars hang DOWN from that baseline, so nothing else needs it.
+  static const double topPad = 8;
+
   @override
   void paint(Canvas canvas, Size size) {
     final plotWidth = size.width - leftInset;
@@ -65,9 +92,11 @@ class InsulinBarPainter extends CustomPainter {
       return;
     }
     _paintGrid(canvas, size);
+    _paintMeals(canvas, size, plotWidth);
     _paintBasal(canvas, size, plotWidth);
     _paintBoluses(canvas, size, plotWidth);
     _paintScrub(canvas, size, plotWidth);
+    _paintTicks(canvas, size, plotWidth);
   }
 
   void _paintGrid(Canvas canvas, Size size) {
@@ -76,16 +105,57 @@ class InsulinBarPainter extends CustomPainter {
       ..strokeWidth = gridWidth;
     for (var value = 0.0; value <= series.axisMax + 1e-9; value += series.axisStep) {
       final y = _yFor(value, size.height);
-      _dashedLine(canvas, Offset(leftInset, y), Offset(size.width, y), paint,
+      paintDashedLine(canvas, Offset(leftInset, y), Offset(size.width, y), paint,
           gridDash);
       _paintLabel(canvas, value, y);
+    }
+  }
+
+  /// The glucose chart's meal lines, continued through this one.
+  void _paintMeals(Canvas canvas, Size size, double plotWidth) {
+    final paint = Paint()
+      ..color = mealColor.withValues(alpha: 0.35)
+      ..strokeWidth = mealWidth;
+    for (final fraction in mealFractions) {
+      final x = leftInset + fraction * plotWidth;
+      paintDashedLine(
+        canvas,
+        Offset(x, 0),
+        Offset(x, size.height - bottomInset),
+        paint,
+        mealDash,
+      );
+    }
+  }
+
+  /// The shared axis' labels, centred on their tick and kept inside the plot at
+  /// both ends so the first and last are not clipped to half a time.
+  void _paintTicks(Canvas canvas, Size size, double plotWidth) {
+    for (final tick in ticks) {
+      final text = TextPainter(
+        text: TextSpan(
+          text: tick.label,
+          style: TextStyle(fontSize: 10, color: labelColor),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      final centre = leftInset + tick.fraction * plotWidth;
+      final left = (centre - text.width / 2)
+          .clamp(leftInset, size.width - text.width);
+      text.paint(canvas, Offset(left, size.height - bottomInset + 6));
     }
   }
 
   /// Basal as the hour it covers, so it reads as delivery that was running
   /// rather than an event at the top of the hour.
   ///
-  /// An hour that only partly fits is drawn clipped, at its FULL height, because
+  /// Hangs DOWN from a baseline at the top, mirroring the glucose line above it.
+  /// Insulin is the thing that pulls glucose down, and a chart of it growing
+  /// upward towards the curve it opposes reads as the two agreeing. Hung the
+  /// other way the pair shares one edge and the taller the bar, the further it
+  /// reaches from the line it acted on.
+  ///
+  /// An hour that only partly fits is drawn clipped, at its FULL length, because
   /// that is the rate the hour ran. Its cut side gets a square corner and no
   /// separating gap: a rounded corner says "the band ends here", and this one
   /// does not, it runs on past the edge of the window.
@@ -105,12 +175,12 @@ class InsulinBarPainter extends CustomPainter {
         RRect.fromRectAndCorners(
           Rect.fromLTRB(
             left,
-            _yFor(bar.units, size.height),
-            right.clamp(left + 1, size.width),
             baseline,
+            right.clamp(left + 1, size.width),
+            _yFor(bar.units, size.height),
           ),
-          topLeft: startsBefore ? Radius.zero : corner,
-          topRight: endsAfter ? Radius.zero : corner,
+          bottomLeft: startsBefore ? Radius.zero : corner,
+          bottomRight: endsAfter ? Radius.zero : corner,
         ),
         Paint()..color = basal.withValues(alpha: _alphaFor(bar)),
       );
@@ -127,9 +197,9 @@ class InsulinBarPainter extends CustomPainter {
         RRect.fromRectAndRadius(
           Rect.fromLTRB(
             centre - bolusWidth / 2,
-            _yFor(bar.units, size.height),
-            centre + bolusWidth / 2,
             baseline,
+            centre + bolusWidth / 2,
+            _yFor(bar.units, size.height),
           ),
           const Radius.circular(3),
         ),
@@ -152,7 +222,13 @@ class InsulinBarPainter extends CustomPainter {
     final paint = Paint()
       ..color = scrubColor
       ..strokeWidth = scrubWidth;
-    _dashedLine(canvas, Offset(x, 0), Offset(x, size.height), paint, scrubDash);
+    paintDashedLine(
+      canvas,
+      Offset(x, 0),
+      Offset(x, size.height - bottomInset),
+      paint,
+      scrubDash,
+    );
   }
 
   void _paintLabel(Canvas canvas, double value, double y) {
@@ -169,39 +245,13 @@ class InsulinBarPainter extends CustomPainter {
   String _format(double value) =>
       value >= 10 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
 
-  /// Where a value sits vertically. A pixel is left at the bottom for the
-  /// baseline itself, so the shortest bar is still a visible tick.
+  /// Where a value sits vertically, measured DOWN from the baseline at the top.
+  ///
+  /// A pixel is left below the baseline itself, so the shortest bar is still a
+  /// visible tick rather than nothing at all.
   double _yFor(double units, double height) {
-    final usable = height - 2;
-    return usable - (units / series.axisMax) * usable + 1;
-  }
-
-  void _dashedLine(
-    Canvas canvas,
-    Offset from,
-    Offset to,
-    Paint paint,
-    List<double> dash,
-  ) {
-    final total = (to - from).distance;
-    if (total <= 0) {
-      return;
-    }
-    final step = (to - from) / total;
-    var drawn = 0.0;
-    var on = true;
-    while (drawn < total) {
-      final length = (on ? dash[0] : dash[1]).clamp(0.0, total - drawn);
-      if (on) {
-        canvas.drawLine(
-          from + step * drawn,
-          from + step * (drawn + length),
-          paint,
-        );
-      }
-      drawn += length;
-      on = !on;
-    }
+    final usable = height - bottomInset - topPad - 2;
+    return topPad + (units / series.axisMax) * usable + 1;
   }
 
   @override
@@ -211,6 +261,8 @@ class InsulinBarPainter extends CustomPainter {
         old.scrubFraction != scrubFraction ||
         old.basal != basal ||
         old.bolus != bolus ||
-        old.bolusWidth != bolusWidth;
+        old.bolusWidth != bolusWidth ||
+        old.ticks != ticks ||
+        old.mealFractions != mealFractions;
   }
 }

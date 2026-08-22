@@ -5,7 +5,6 @@ import 'package:insulink/src/injection/active_insulin.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
-import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/injection/active_insulin_sparkline.dart';
 import 'package:insulink/src/injection/active_insulin_page.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -94,29 +93,6 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
     );
   }
 
-  /// Names the part of the number that did not come from a logged dose.
-  ///
-  /// The headline is the TRUE total now, and the curve below it is still drawn
-  /// from the meal log alone, so without this line the two would silently
-  /// disagree. It is also the line that answers "why is my insulin on board
-  /// higher than what I injected".
-  List<Widget> _pumpShare(BuildContext context, InsulinOnBoardParts parts) {
-    if (parts.beyondBoluses <= 0.05) {
-      return const [];
-    }
-    return [
-      const SizedBox(height: 2),
-      Text(
-        Locales.string(
-          context,
-          'injection.active_insulin_pump',
-          params: [parts.beyondBoluses.toStringAsFixed(1)],
-        ),
-        style: TextStyle(fontSize: 12, color: context.accent),
-      ),
-    ];
-  }
-
   /// Re-reads the pod store once when the box appears.
   ///
   /// The automation runs in the background service isolate and the store serves
@@ -136,7 +112,6 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
     List<Meal> meals,
   ) {
     final now = DateTime.now();
-    final until = insulin.activeUntil(meals, now: now);
     // Newest dose still on board. activeDoses is already sorted newest-first and
     // drops meals logged without a bolus, so the first entry is the last real
     // injection — no separate scan of the meal log.
@@ -154,7 +129,6 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _headline(context, parts.total),
-        ..._pumpShare(context, parts),
         if (curve.length >= 2) ...[
           const SizedBox(height: 10),
           SizedBox(
@@ -162,13 +136,12 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
             child: ActiveInsulinSparkline(points: curve, now: now),
           ),
         ],
-        if (until != null && lastDose != null) ...[
+        if (lastDose != null) ...[
           const SizedBox(height: 8),
           Text(
             Locales.string(context, 'overview.active_insulin.summary', params: [
               _units(context, lastDose.bolus),
               TimeOfDay.fromDateTime(lastDose.time).format(context),
-              TimeOfDay.fromDateTime(until).format(context),
             ]),
             style: TextStyle(
               fontSize: 12,

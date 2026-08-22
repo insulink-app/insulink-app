@@ -23,6 +23,7 @@ part 'pod_basal_ledger.dart';
 part 'pod_delivery_log.dart';
 part 'loop/loop_journal.dart';
 part 'pod_status_cache.dart';
+part 'automation_record.dart';
 
 class PodStore {
   PodStore(this._storage, this._cache);
@@ -63,6 +64,11 @@ class PodStore {
   static const _kLoopCycles = 'pod.loop_cycles';
   static const _kUnconfirmedBoluses = 'pod.unconfirmed_boluses';
   static const _kLastStatus = 'pod.last_status';
+
+  // Deliberately NOT under the `pod.` prefix and NOT cleared by [forgetPod]:
+  // this is the user's insulin history, and a pod lives eighty hours.
+  static const _kAutomationHours = 'automation.excess_hours';
+  static const _kAutomationSince = 'automation.covered_since';
 
   /// Roughly two days of 15-minute samples. Past that the oldest are dropped:
   /// insulin history that old is no longer shaping a forecast, and an unbounded

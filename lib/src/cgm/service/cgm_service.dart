@@ -427,7 +427,7 @@ class CgmTaskHandler extends TaskHandler {
     // Chained, not parallel: both hold a real session on the one pod, and the
     // pod's link is exclusive. Each tick decides for itself whether it is due,
     // so chaining costs nothing on the ticks where neither is.
-    unawaited(_tickPodMonitor().then((_) => _tickPodLoop()));
+    unawaited(_tickPodChain());
     // Apply Confirm/Reject taps buffered by the notification-action isolate,
     // which can't reach secure storage itself (see SportStore.recordTrainingDecision).
     unawaited(_applyTrainingDecisions());
@@ -694,6 +694,37 @@ class CgmTaskHandler extends TaskHandler {
       monitor.addListener(_onBackgroundHr);
     }
     unawaited(monitor.start(knownOnly: true));
+  }
+
+  /// Whether the pod chain from a previous tick is still running.
+  bool _podChainRunning = false;
+
+  /// The watch and then the automation, and never two of those at once.
+  ///
+  /// The watchdog fires every thirty seconds; a poll or a cycle that has to
+  /// connect, hand-shake, read and program takes longer than that whenever the
+  /// link is difficult, which is exactly when it is retried three times with a
+  /// backoff between. Started with `unawaited`, the next tick then joined the
+  /// one still running, and the two could not exclude each other: they share a
+  /// lease owner ON PURPOSE, so that the watch and the automation can run
+  /// chained on one tick. That is what put two sessions on the one pod.
+  ///
+  /// A tick that arrives while the last is still going is simply dropped. Both
+  /// halves decide for themselves whether they are due, so nothing is lost by
+  /// skipping one, and the pod is better served by the run in progress finishing
+  /// than by a second one competing with it.
+  Future<void> _tickPodChain() async {
+    if (_podChainRunning) {
+      _log('pod tick skipped: the previous one is still running');
+      return;
+    }
+    _podChainRunning = true;
+    try {
+      await _tickPodMonitor();
+      await _tickPodLoop();
+    } finally {
+      _podChainRunning = false;
+    }
   }
 
   /// Runs one automated cycle if the automation is on and one is due.

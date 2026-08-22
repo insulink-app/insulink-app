@@ -24,6 +24,26 @@ class InsulinBar {
   /// The hour in progress stops at the live edge rather than at the full hour,
   /// because the rest of it has not happened yet.
   final DateTime coversUntil;
+
+  /// Compared by VALUE, which the highlighting depends on.
+  ///
+  /// [InsulinChartSeries.bars] used to build fresh objects on every read, so the
+  /// bar the pointer picked was never the same instance as the one being
+  /// painted. Under identity the painter therefore matched nothing: it dimmed
+  /// every bar to a third and highlighted none, which showed up as the whole
+  /// chart fading out instead of one block being picked out. The list is now
+  /// computed once as well, but a chart must not depend on that to know which
+  /// bar it is drawing.
+  @override
+  bool operator ==(Object other) =>
+      other is InsulinBar &&
+      other.at == at &&
+      other.coversUntil == coversUntil &&
+      other.units == units &&
+      other.isBolus == isBolus;
+
+  @override
+  int get hashCode => Object.hash(at, coversUntil, units, isBolus);
 }
 
 /// Turns the insulin history into bars for a stretch of wall-clock time.
@@ -43,7 +63,7 @@ class InsulinBar {
 /// which is the only record of it and already includes whatever the automation
 /// delivered in the schedule's place.
 class InsulinChartSeries {
-  const InsulinChartSeries({
+  InsulinChartSeries({
     required this.basalHours,
     required this.meals,
     required this.from,
@@ -76,7 +96,11 @@ class InsulinChartSeries {
   /// 09:00 hour entirely, even though half of it was on screen, so a band the
   /// user could see the rest of simply vanished at the left edge. The painter
   /// clips what hangs over; that is the drawing's job, not the filter's.
-  List<InsulinBar> get bars {
+  /// Computed once: the painter asks for the axis top once per bar it draws, and
+  /// each of those walked this list again.
+  late final List<InsulinBar> bars = _buildBars();
+
+  List<InsulinBar> _buildBars() {
     final bars = <InsulinBar>[
       for (final hour in basalHours)
         if (hour.units > 0 && _overlapsWindow(hour.hour, _basalEnd(hour.hour)))
@@ -111,7 +135,9 @@ class InsulinChartSeries {
 
   /// The tallest bar. Never zero, so an empty window still draws a sane scale
   /// rather than collapsing.
-  double get maxUnits {
+  late final double maxUnits = _maxUnits();
+
+  double _maxUnits() {
     final tallest = bars.fold<double>(0, (top, bar) => bar.units > top ? bar.units : top);
     return tallest > 0 ? tallest : 1;
   }
@@ -122,7 +148,9 @@ class InsulinChartSeries {
   /// Round numbers because the reader is meant to judge a bar against them at a
   /// glance. An axis topping out at the tallest bar plus a fixed percentage puts
   /// its lines at 2.4 and 4.8 units, which nobody can measure against.
-  double get axisStep {
+  late final double axisStep = _axisStep();
+
+  double _axisStep() {
     for (final step in const [0.5, 1.0, 2.0, 5.0, 10.0, 20.0]) {
       if (maxUnits / step <= 4) {
         return step;
@@ -133,7 +161,7 @@ class InsulinChartSeries {
 
   /// The top of the axis: the tallest bar raised to the next whole step, so the
   /// tallest bar reaches the top line instead of floating below an arbitrary one.
-  double get axisMax => (maxUnits / axisStep).ceil() * axisStep;
+  late final double axisMax = (maxUnits / axisStep).ceil() * axisStep;
 
   /// Basal in the window, counting an hour that only partly overlaps it by the
   /// share that does.
@@ -156,6 +184,15 @@ class InsulinChartSeries {
       .fold<double>(0, (sum, bar) => sum + bar.units);
 
   bool get isEmpty => bars.isEmpty;
+
+  /// The meals inside the window, so their marker lines can be carried down from
+  /// the glucose chart and run through this one as well.
+  ///
+  /// Two dashes stopping at a border read as two charts; one line crossing both
+  /// is what makes a meal, the glucose after it and the insulin for it a single
+  /// picture.
+  List<Meal> get visibleMeals =>
+      [for (final meal in meals) if (_coversMoment(meal.time)) meal];
 
   /// How much of [start] to [end] falls inside the window, from 0 to 1.
   double _visibleShareOf(DateTime start, DateTime end) {

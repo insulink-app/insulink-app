@@ -17,6 +17,22 @@ class PodBasalBooking {
   final PodStore store;
   final DateTime Function() now;
 
+  /// Insulin delivered in the window ABOVE what the schedule alone would have
+  /// given, which is what the automation added.
+  ///
+  /// Never negative: a window below the schedule withheld background insulin,
+  /// which is not extra insulin having been given.
+  double _excessOver(
+    List<double> rates,
+    DateTime from,
+    DateTime to,
+    double delivered,
+  ) {
+    final scheduled = PodBasalDelivery(rates).unitsBetween(from, to);
+    final excess = delivered - scheduled;
+    return excess > 0 ? excess : 0;
+  }
+
   /// Books the window that has passed and returns the units, or null when there
   /// was nothing to book.
   ///
@@ -41,6 +57,10 @@ class PodBasalBooking {
     final units = PodBasalDelivery(rates, temporary: temporary)
         .unitsBetween(countedTo, until);
     await store.addBasalDelivery(at: until, units: units, countedTo: until);
+    await store.recordAutomationExcess(
+      until,
+      _excessOver(rates, countedTo, until, units),
+    );
     if (temporary != null && !until.isBefore(temporary.end)) {
       await store.clearTemporaryBasal();
     }

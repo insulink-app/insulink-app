@@ -613,6 +613,9 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `docs/LOOP.md` — **automated delivery**: why it is temp-basal-only, the pod's
   own expiry as the fallback to basal, the trust boundary on sensor data, and
   the layered limits that bound how much insulin it can add.
+- `docs/TUNING.md` — the weekly **basal suggestion**: why it attributes nothing,
+  which hours it throws away and why that is the feature working, and why there
+  is no button that applies it.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
 - `docs/DESIGN.md` — the theme/colour-role system: the two accents, the three

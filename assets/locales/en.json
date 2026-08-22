@@ -156,13 +156,15 @@
     "active_insulin": {
       "_": "Active insulin",
       "title": "Insulin",
-      "summary": "Last dose # at ## · active until ###",
+      "summary": "Last dose # at ##",
       "until": "Active until #",
       "doses": "Active doses",
       "total": "Total active",
       "remaining": "# U active",
       "of_bolus": "of # U bolus",
-      "empty": "No active insulin doses."
+      "empty": "No active insulin doses.",
+      "no_doses": "No dose you injected is working right now.",
+      "from_pump": "Delivered above the basal schedule"
     },
     "boxes": {
       "all": "All values",
@@ -367,7 +369,10 @@
       "resume": "Resume delivery",
       "deactivate_auth_reason": "Confirm deactivating the pod",
       "resume_activation": "Continue activation",
-      "test_beep": "Play test beep"
+      "test_beep": "Play test beep",
+      "forget": "Forget pod",
+      "forget_confirm": "Forget",
+      "forget_auth_reason": "Confirm forgetting the pod"
     },
     "stop": {
       "_": "Stop delivery?",
@@ -565,6 +570,10 @@
       "at_glucose": "at # mg/dL, # mg/dL per minute",
       "on_board": "# U active",
       "schedule_was": "schedule # U/h"
+    },
+    "forget": {
+      "_": "Forget this pod?",
+      "body": "Only for a pod that is off your body or has already stopped. The app drops its key, and a pod can never be paired again, so if this one is still delivering nothing will be able to stop it."
     }
   },
   "google_health": {
@@ -1158,6 +1167,19 @@
     },
     "pod_temp_basal_beep": {
       "description": "Tone on a manual temporary basal"
+    },
+    "tuning": {
+      "_": "Basal suggestion",
+      "description": "Reads the stored glucose. Only hours with no food, no bolus and no automation involved are counted.",
+      "not_enough": "Not enough usable hours in this window. Try a longer one, or wait for a few quiet nights.",
+      "window": {
+        "d7": "7 days",
+        "d30": "30 days",
+        "d90": "90 days"
+      },
+      "generate": "Calculate a suggestion",
+      "no_change": "Nothing to change, no new profile created. Yours fits these hours.",
+      "profile_name": "Suggestion # days, #"
     }
   },
   "injection": {

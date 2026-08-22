@@ -62,7 +62,20 @@ class LoopPodCommands {
   /// otherwise describe a rate that does not exist. An outcome that is merely
   /// unknown is left standing: the pod may well be running it, and that is the
   /// reading to keep.
-  Future<void> programTempBasal(double unitsPerHour) async {
+  ///
+  /// [running] is what the POD said it was delivering when this cycle read it.
+  /// A temporary rate already in progress is ended before the new one goes out,
+  /// here rather than at the call site: the pod holds ONE basal delivery, and a
+  /// program landing on a running one is what faulted a pod when a basal
+  /// SCHEDULE was sent that way. Leaving the step to the caller is how that
+  /// happened, so neither of the two paths that program a rate can now skip it.
+  Future<void> programTempBasal(
+    double unitsPerHour, {
+    required bool running,
+  }) async {
+    if (running) {
+      await cancelTempBasal();
+    }
     final rate = PodTempBasalRate(
       unitsPerHour: unitsPerHour,
       minutes: LoopLimits.fuse.inMinutes,
