@@ -1198,7 +1198,8 @@
       "pump_refused": "The pump did not deliver the bolus.",
       "pump_unknown": "Unclear whether the pump delivered. Check the pod before dosing again."
     },
-    "next": "Next"
+    "next": "Next",
+    "active_insulin_pump": "of which # U from the pump, not injected by you"
   },
   "service": {
     "connecting": "Connecting…"

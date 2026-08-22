@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
-import 'package:insulink/src/injection/active_insulin.dart';
+import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
 import 'package:insulink/src/injection/injection_confirm_page.dart';
@@ -14,6 +14,8 @@ import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pod_store.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:insulink/src/theme/brand_tints.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -70,6 +72,20 @@ class _InjectionSheetState extends State<InjectionSheet> {
     // Prefill the suggestion from the prefilled glucose (listeners don't fire for
     // the initial text); after the first frame so setState is legal.
     WidgetsBinding.instance.addPostFrameCallback((_) => _recompute());
+    _refreshPumpInsulin();
+  }
+
+  /// Re-reads the pod store before anything is suggested from it.
+  ///
+  /// The automation runs in the background SERVICE isolate and the store serves
+  /// its getters from a cache that is per isolate. Without this the calculator
+  /// would subtract whatever automated insulin this isolate happened to know
+  /// about when the app started, which for a sheet opened hours later is none.
+  Future<void> _refreshPumpInsulin() async {
+    await context.read<PodController>().store.reload();
+    if (mounted) {
+      _recompute();
+    }
   }
 
   @override
@@ -98,16 +114,39 @@ class _InjectionSheetState extends State<InjectionSheet> {
 
   int? get _glucose => int.tryParse(_glucoseController.text);
 
-  /// Units still active from earlier boluses, read from the meal log.
+  /// Everything still working, not just the user's own doses.
+  ///
+  /// It used to be the meal log alone. While the automation runs an elevated
+  /// temporary basal, the insulin it has added is real and was invisible here, so
+  /// the suggestion carried a full correction on top of it. That is the stacking
+  /// hypo this calculator exists to prevent, arriving through the one door it was
+  /// not watching. [InsulinOnBoard] is now the single answer both the calculator
+  /// and the automation ask.
   ///
   /// Deliberately `read`, not `watch`: [_suggested] reaches this from the field
   /// listeners, which run OUTSIDE build, where watch throws. Nothing is lost —
   /// this sheet is the only way to log a dose, so the meal log cannot change
   /// while it is open.
-  double get _activeInsulin {
+  InsulinOnBoardParts get _onBoard {
     final duration = context.read<ProfileBolusState>().insulinDuration;
-    return ActiveInsulin(duration).units(context.read<MealState>().meals);
+    return InsulinOnBoard(duration).parts(
+      context.read<MealState>().meals,
+      pod: context.read<PodController>().store,
+    );
   }
+
+  double get _activeInsulin => _onBoard.total;
+
+  /// Bolus units the pod actually put out within the past hour.
+  ///
+  /// What the delivery guard's rolling ceiling is about, and NOT the same as
+  /// insulin on board: on board reaches back a whole insulin duration and now
+  /// also carries what the automation added, so using it here would refuse a
+  /// legitimate meal bolus because of basal given two hours ago.
+  double get _deliveredLastHour =>
+      context.read<PodController>().store.bolusUnitsWithin(
+            const Duration(hours: 1),
+          );
 
   /// Suggested bolus in units, or null while glucose is empty/invalid.
   double? get _suggested {
@@ -182,7 +221,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
           glucoseMgdl: glucose,
           bolus: bolus,
           delivery: _delivery,
-          deliveredLastHour: _activeInsulin,
+          deliveredLastHour: _deliveredLastHour,
         ),
       ),
     );
@@ -196,7 +235,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
       context.read<BolusDispatcher>().submit(
             delivery: _delivery,
             units: bolus,
-            deliveredLastHour: _activeInsulin,
+            deliveredLastHour: _deliveredLastHour,
             meal: meal,
           );
     }
@@ -333,30 +372,59 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// active: "0.0 U on board" carries no information and would only make the
   /// sheet look busier.
   Widget _activeInsulinNote() {
-    final units = _activeInsulin;
-    if (units <= 0) {
+    final parts = _onBoard;
+    if (parts.total <= 0) {
       return const SizedBox.shrink();
     }
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        Locales.string(
-          context,
-          'injection.active_insulin',
-          params: [units.toStringAsFixed(1)],
-        ),
-        style: TextStyle(
-          fontSize: 13,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            Locales.string(
+              context,
+              'injection.active_insulin',
+              params: [parts.total.toStringAsFixed(1)],
+            ),
+            style: TextStyle(
+              fontSize: 13,
+              color: scheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+          ..._beyondBolusesNote(parts, scheme),
+        ],
       ),
     );
   }
+
+  /// Names the part of the insulin on board that the user did not dose.
+  ///
+  /// Without it a suggestion can come out several units lower than expected for
+  /// no visible reason, which is the sort of thing that gets a calculator
+  /// overruled by hand. The number it is subtracting has to be on screen.
+  List<Widget> _beyondBolusesNote(
+    InsulinOnBoardParts parts,
+    ColorScheme scheme,
+  ) {
+    if (parts.beyondBoluses <= 0.05) {
+      return const [];
+    }
+    return [
+      const SizedBox(height: 2),
+      Text(
+        Locales.string(
+          context,
+          'injection.active_insulin_pump',
+          params: [parts.beyondBoluses.toStringAsFixed(1)],
+        ),
+        style: TextStyle(fontSize: 12, color: context.accent),
+      ),
+    ];
+  }
 }
 
-/// A titled, boxed group inside the bolus sheet: an icon + section title over
-/// the fields that belong together, so the sheet reads as distinct steps
-/// instead of one flat stack of inputs.
 class _InjectionCard extends StatelessWidget {
   const _InjectionCard({
     required this.icon,

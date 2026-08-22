@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/injection/active_insulin.dart';
+import 'package:insulink/src/injection/insulin_on_board.dart';
+import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/injection/active_insulin_chart.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -66,7 +69,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 64),
               children: [
-                _totalHeader(context, insulin, meals),
+                _totalHeader(context, insulin, meals, _onBoard(context, meals)),
                 const SizedBox(height: 24),
                 SizedBox(
                   height: 180,
@@ -90,10 +93,20 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
     );
   }
 
+  /// Everything on board, so this page agrees with the overview box that opened
+  /// it and with the bolus calculator. Three screens showing one quantity have
+  /// to show the same number.
+  InsulinOnBoardParts _onBoard(BuildContext context, List<Meal> meals) {
+    return InsulinOnBoard(
+      context.watch<ProfileBolusState>().insulinDuration,
+    ).parts(meals, pod: context.watch<PodController>().store);
+  }
+
   Widget _totalHeader(
     BuildContext context,
     ActiveInsulin insulin,
     List<Meal> meals,
+    InsulinOnBoardParts parts,
   ) {
     final scheme = Theme.of(context).colorScheme;
     final until = insulin.activeUntil(meals);
@@ -112,10 +125,23 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
           Locales.string(
             context,
             'injection.bolus.value',
-            params: [insulin.units(meals).toStringAsFixed(1)],
+            params: [parts.total.toStringAsFixed(1)],
           ),
           style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
         ),
+        // The dose list below is the meal log, so a total larger than it needs
+        // saying where the rest came from.
+        if (parts.beyondBoluses > 0.05) ...[
+          const SizedBox(height: 2),
+          Text(
+            Locales.string(
+              context,
+              'injection.active_insulin_pump',
+              params: [parts.beyondBoluses.toStringAsFixed(1)],
+            ),
+            style: TextStyle(fontSize: 13, color: context.accent),
+          ),
+        ],
         if (until != null) ...[
           const SizedBox(height: 4),
           Text(

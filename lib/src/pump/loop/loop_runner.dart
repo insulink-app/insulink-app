@@ -1,3 +1,4 @@
+import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/pump/loop/loop_algorithm.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
 import 'package:insulink/src/pump/loop/loop_glucose.dart';
@@ -62,8 +63,10 @@ class PodLoopRunner {
   /// no dependency on the CGM module and can be exercised against fixed data.
   final Future<LoopGlucose> Function() readGlucose;
 
-  /// Insulin on board from the user's own boluses, which reach the loop as logged
-  /// meals. The loop's own contribution is added on top from its journal.
+  /// Insulin on board from the user's own boluses, which reach the loop as
+  /// logged meals. Injected because reading them is a storage call this class
+  /// should not own; everything else on board comes from [InsulinOnBoard], the
+  /// same answer the bolus calculator uses.
   final Future<double> Function(Duration insulinDuration) readMealIob;
 
   final void Function(String line) onLog;
@@ -249,8 +252,9 @@ class PodLoopRunner {
   ) async {
     final at = now();
     final iob = await readMealIob(limits.insulinDuration) +
-        store.loopIobUnits(limits.insulinDuration, now: at) +
-        store.unconfirmedBolusUnits(limits.insulinDuration, now: at);
+        InsulinOnBoard(limits.insulinDuration)
+            .parts(const [], pod: store, now: at)
+            .beyondBoluses;
     final schedule = _scheduledRateAt(at);
     final wanted = LoopAlgorithm(limits).wantedUnitsPerHour(
       glucose: glucose,

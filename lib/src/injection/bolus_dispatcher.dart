@@ -86,7 +86,10 @@ class BolusDispatcher extends ChangeNotifier {
       }
     } catch (error) {
       // Catch-all: an escaping Error would leave this stuck on "sending" with no
-      // way for the user to find out what happened.
+      // way for the user to find out what happened. The command may already have
+      // reached the pod, so the dose is noted as possibly given, exactly as the
+      // delivery path does for an outcome it cannot confirm.
+      await _noteUnconfirmed(units);
       _outcome = BolusDeliveryResult.unknown('$error');
     } finally {
       _inFlight = false;
@@ -101,6 +104,19 @@ class BolusDispatcher extends ChangeNotifier {
   /// circumstance is the dose written onto a meal here — the app cannot tell how
   /// much of it went in, and inventing the number is the one mistake that would
   /// suppress a correction the user needs.
+  /// Records a dose nobody could confirm, so the insulin-on-board every dose
+  /// calculation subtracts includes the possibility that it went in.
+  Future<void> _noteUnconfirmed(double units) async {
+    if (units <= 0) {
+      return;
+    }
+    await controller.store.recordUnconfirmedBolus(PodDelivery(
+      at: DateTime.now(),
+      units: units,
+      kind: PodDeliveryKind.bolus,
+    ));
+  }
+
   Future<void> resolveStranded() async {
     final pending = controller.store.pendingBolus;
     if (pending == null || _inFlight) {
@@ -114,6 +130,11 @@ class BolusDispatcher extends ChangeNotifier {
       await controller.store.startRunningBolus(pending);
       _outcome = null;
     } else {
+      // The pod is not reporting a bolus, which does NOT mean none was given: a
+      // dose sent before the app died has had until now to finish, and a
+      // finished bolus leaves the pod looking idle. So it is noted as possibly
+      // delivered rather than assumed away.
+      await _noteUnconfirmed(pending.programmedUnits);
       _outcome = BolusDeliveryResult.unknown(
         'The app was closed while a bolus was being sent',
       );

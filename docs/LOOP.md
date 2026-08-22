@@ -214,7 +214,18 @@ trends × five insulin-on-board levels × four schedules, asserting the inequali
 on every decision that delivered anything. It also asserts that enough of them
 DID deliver, so a loop that never dosed could not pass it vacuously.
 
-### Insulin on board has three parts
+### Insulin on board has three parts, and ONE definition
+
+`InsulinOnBoard` is that definition, and both the automation and the bolus
+calculator ask it. They did not always: the calculator counted the meal log alone
+while the automation counted the meal log plus its own excess, and the gap
+between those two answers is a real hypoglycaemia. While the automation runs an
+elevated temporary rate the insulin it has added is in the body and was invisible
+to the calculator, which therefore laid a full correction on top of it. At the
+configured ceilings that is up to **4 U, around 140 mg/dL of correction nobody
+needed**.
+
+Two numbers answering one question will drift. There is one now.
 
 The number the hypo headroom is computed from decides how much insulin the loop
 may add, so anything missing from it becomes insulin the loop is willing to
@@ -239,15 +250,14 @@ which is not negative insulin in the body, and counting it as such would enlarge
 the next cycle's allowance on the strength of a dose nobody gave.
 
 **Boluses whose outcome nobody could confirm.** A bolus the pod never answered
-for is deliberately recorded in neither the meal log nor the pod's delivery log
-(`docs/OMNIPOD.md`): understating insulin for the USER is recoverable, because
-they can look at the pod and log it, while overstating it would suppress a
-correction they need.
+for is recorded in neither the meal log nor the pod's delivery log
+(`docs/OMNIPOD.md`), so `PodStore.unconfirmedBoluses` keeps the possibility.
 
-The automation needs the opposite assumption and cannot ask anyone, so
-`PodStore.unconfirmedBoluses` keeps the possibility and the loop counts it as
-delivered. **The two readers disagreeing is the design**, not an inconsistency:
-each assumes whatever is conservative for what it does next.
+Both readers now count it as delivered. An earlier version had them disagree on
+purpose, the calculator assuming not-given so the user could log it themselves.
+That reasoning does not survive the incident above: a dose that MAY be in the body
+is one no correction should be stacked on, and the user is told at the time to
+check the pod, so the under-suggestion is explainable while the hypo is not.
 
 ## Standing down
 
@@ -323,6 +333,7 @@ cannot explain a stretch where none did.
 | automation journal | every cycle with the glucose, trend, insulin on board and schedule it was computed from |
 | delivery log | the insulin itself, per hour of basal, which includes what the automation delivered |
 | notification | each self-stop, once |
+| bolus sheet | the automation's share of insulin on board, named, so a suggestion that comes out low is explainable rather than surprising |
 
 ## A rate the user set is an instruction
 

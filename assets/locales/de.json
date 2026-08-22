@@ -1198,7 +1198,8 @@
       "pump_refused": "Die Pumpe hat den Bolus nicht abgegeben.",
       "pump_unknown": "Unklar, ob die Pumpe abgegeben hat. Prüfe den Pod, bevor du erneut dosierst."
     },
-    "next": "Weiter"
+    "next": "Weiter",
+    "active_insulin_pump": "davon # U aus der Pumpe, nicht selbst gespritzt"
   },
   "service": {
     "connecting": "Verbinde…"

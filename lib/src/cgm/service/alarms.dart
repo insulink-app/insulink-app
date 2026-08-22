@@ -6,9 +6,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'audio_output.dart';
-import '../../injection/active_insulin.dart';
+import '../../injection/insulin_on_board.dart';
 import '../../localization/service_strings.dart';
 import '../../nutrition/meal/meal_store.dart';
+import '../../pump/pod_store.dart';
 import '../../profile/bolus/profile_bolus_state.dart';
 import '../../profile/notifications/notification_setting.dart';
 import '../../profile/notifications/profile_alarm_sound_state.dart';
@@ -557,14 +558,21 @@ class G7AlarmManager {
     return '$line\n$suggestion';
   }
 
-  /// Units still active from earlier boluses, straight from the meal log's store.
+  /// Everything still working, for a notification that SUGGESTS a correction.
+  ///
+  /// The meal log alone is not it. This advisory proposes a dose, so it is the
+  /// same calculation as the injection sheet and has to see the same insulin,
+  /// including what the automation put in above the basal schedule. A suggestion
+  /// blind to that lays a full correction on top of insulin already working.
   ///
   /// This isolate has no providers, so it cannot reach `MealState` the way the
-  /// injection sheet does — [MealStore] is the shared bottom layer both sit on,
-  /// and reading it fresh per advisory is what keeps the two suggestions equal.
+  /// injection sheet does. [MealStore] and [PodStore] are the shared bottom
+  /// layers both sit on, and reading them fresh per advisory is what keeps the
+  /// two suggestions equal.
   Future<double> _activeInsulin(ProfileBolusState bolus) async {
     final meals = await const MealStore().loadMeals();
-    return ActiveInsulin(bolus.insulinDuration).units(meals);
+    final pod = await PodStore.open();
+    return InsulinOnBoard(bolus.insulinDuration).total(meals, pod: pod);
   }
 
   /// The "now → forecast" status line prepended to the advisory body: the
