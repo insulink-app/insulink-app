@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/demo_pod.dart';
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
+import 'package:insulink/src/pump/pod_backup_restore.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
 import 'package:insulink/src/pump/pod_retry.dart';
 import 'package:insulink/src/pump/pod_store.dart';
@@ -380,11 +381,15 @@ class PodController extends ChangeNotifier {
         _absorb(response);
         await _endRunningBolus();
         if (_reportsItCannotDeliver) {
-          await store.forgetPod();
+          await _letGoOfPod();
         } else {
           _failure = 'Pod did not confirm it stopped. It was NOT forgotten';
         }
       });
+
+  /// Forgets the pod locally and tells the account it is gone. See
+  /// [PodBackupRestore.letGo].
+  Future<void> _letGoOfPod() => PodBackupRestore(store).letGo();
 
   /// Whether the pod's own last answer says it is not delivering and cannot be
   /// made to.
@@ -417,7 +422,7 @@ class PodController extends ChangeNotifier {
   /// declines to write this pod's state back once the pairing is gone.
   Future<void> forgetUnreachablePod() async {
     await _connection.stop();
-    await store.forgetPod();
+    await _letGoOfPod();
     _status = null;
     _statusReadAt = null;
     _failure = null;

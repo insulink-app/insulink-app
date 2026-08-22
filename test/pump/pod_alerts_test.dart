@@ -98,4 +98,66 @@ void main() {
     );
     expect(() => command.encoded, throwsArgumentError);
   });
+
+  /// The pod's own alerting is the last warning a user gets while the phone is
+  /// out of range. The packed fields silently wrap a value that does not fit, so
+  /// a wrong number becomes a wrong warning with nothing anywhere saying so.
+  group('a value the wire fields cannot carry is refused', () {
+    PodAlertConfiguration configuration({int duration = 0, int after = 60}) =>
+        PodAlertConfiguration(
+          type: PodAlert.expiration,
+          trigger: PodAlertTrigger.afterMinutes(after),
+          durationMinutes: duration,
+        );
+
+    test('a duration past the 9-bit field throws', () {
+      expect(
+        () => configuration(duration: 512).encoded,
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('the widest duration that fits still encodes', () {
+      expect(configuration(duration: 511).encoded, hasLength(6));
+    });
+
+    /// The one that was reachable: a pod reporting a life shorter than the
+    /// warning turned the subtraction negative, and -120 encodes as 65416.
+    test('a negative trigger throws', () {
+      expect(
+        () => configuration(after: -120).encoded,
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('a trigger past the 16-bit field throws', () {
+      expect(
+        () => configuration(after: 65536).encoded,
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+  });
+
+  /// A pod claiming a life shorter than the warning window is already inside it,
+  /// so it is warned about at once rather than at a negative time.
+  group('a short-lived pod still gets usable alerts', () {
+    test('the trigger never goes negative', () {
+      final alerts = PodProgramAlertsCommand.lifecycleDefaults(
+        expiryMinutes: 300,
+      );
+
+      for (final alert in alerts) {
+        expect(alert.trigger.value, greaterThanOrEqualTo(0));
+        expect(() => alert.encoded, returnsNormally);
+      }
+    });
+
+    test('an ordinary pod is unchanged', () {
+      final alerts = PodProgramAlertsCommand.lifecycleDefaults(
+        expiryMinutes: 80 * 60,
+      );
+
+      expect(alerts.first.trigger.value, 80 * 60 - 7 * 60);
+    });
+  });
 }

@@ -48,11 +48,17 @@ void main() {
       expect(store.basalHours, isEmpty);
     });
 
-    test('forgetting a pod clears its basal history', () async {
+    /// It used to be cleared with the pod, which emptied the insulin chart's
+    /// basal bars the moment a dead pod was let go of. What went into the user
+    /// last Tuesday did not stop having happened because the pod that delivered
+    /// it was discarded, so the ledger outlives it and only its own cap ages it
+    /// out. The pod-scoped RUNNING TOTAL is what still goes.
+    test('forgetting a pod keeps the basal history it recorded', () async {
       await bookBasal(DateTime(2026, 3, 1, 13), 0.8);
       await store.forgetPod();
 
-      expect(store.basalHours, isEmpty);
+      expect(store.basalHours, hasLength(1));
+      expect(store.basalDeliveredTotal, 0);
     });
   });
 

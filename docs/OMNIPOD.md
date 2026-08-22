@@ -48,7 +48,7 @@ switched off.
 | Activation sequence (two phases, resumable) | done | scripted pod; incl. resume not re-delivering insulin |
 | Delivery guard (limits, staleness, reservoir) | done | unit tests |
 | Pod state persistence | done | unit tests over an in-memory keystore |
-| Backend mirror + restore (`/pump/register/`, `/pump/update/`, `/pump/current/`) | done | API controller tests; app side reviewed |
+| Backend mirror + restore (`/pump/register/`, `/pump/update/`, `/pump/current/`, `/pump/discard/`) | done | API controller tests; app side reviewed |
 | Bolus delivery from the injection sheet | done | unit tests over a scripted pod |
 | Alarm status page (0x02) + alarm classification | done | captured page, byte-exact; all 256 codes classified |
 | Basal profile → pod schedule adapter | done | unit tests, incl. every rate the editor can produce |
@@ -113,6 +113,12 @@ Two things worth knowing:
   one refusal, a stale session counter one resynchronisation round, both already
   handled. Being keyless is what is not recoverable, which is why the key is not
   treated as lazily as the counters.
+- **A pod the user says is gone stops being offered, but is not deleted.**
+  `/pump/discard/` stamps `discarded_at` and `/pump/current/` skips a stamped
+  row. The record is the user's pump history and stays in `/pump/history/`;
+  deleting would answer "stop suggesting this" by throwing away the record of a
+  pod that was actually worn. Without it a dead pod was suggested at every launch
+  with no way to say no.
 - **A restore is never offered while a pod is paired locally.** Adopting a second
   identity would replace the key to a pod that may still be delivering.
 - The stored record carries the pod's own expiry, so it ages out with the pod it
@@ -356,6 +362,7 @@ suspend and deactivate a pod reliably, or it must not activate one at all.
 | Automation stacking its own corrections | escalating dose nobody chose | its own excess above the schedule counts as insulin on board (`PodLoopJournal.loopIobUnits`), so each cycle sees what the last one gave |
 | Automation driving glucose into severe hypoglycaemia | the hazard the whole feature is bounded by | the insulin it may add is capped at what fits between glucose and the suspend threshold, measured over the WHOLE fuse rather than the cycle, so the guarded case is the loop dying immediately after programming. Swept in `loop_hypo_bound_test.dart` |
 | Basal schedule programmed over a running temporary rate | pod faults and stops delivering, unattended | the temporary rate is ended first, in the same session, whenever a schedule is programmed (`PodController._endRunningTempBasal`). AndroidAPS opens its own profile change with the same step. This app skipped it and a real pod answered an edited profile, sent while the automation held 0.0 U/h, with alarm 0x31 and a stopped delivery |
+| A packed alert field silently wrapping | the pod's own last-line warning fires at the wrong time, or not at all | `PodAlertConfiguration.encoded` refuses a duration outside its 9-bit field and a trigger outside its 16-bit one instead of masking them. The reachable case: `lifecycleDefaults` subtracts the warning window from the pod's OWN reported lifetime, and a pod reporting less than that turned the trigger negative, which encodes as 65416 minutes |
 | A program landing on a running temporary rate | pod faults and stops delivering, unattended | `PodController._programBasalDelivery` is the ONLY way a schedule or a rate is programmed, and it ends a running temporary rate first. `LoopPodCommands.programTempBasal` does the same for the automation. Both judge it from a status read FROM THE POD, never from the app's own record: the automation runs in the other isolate and can hold a rate this isolate's cache has never seen |
 | The app holding a pod that has already stopped | the pump page is occupied by something that will never answer, with no way out | deactivation is judged on `PodLifecycleStatus.acceptsDelivery`, not on the delivery byte reading as a plain `suspended`, which a deactivated pod is not obliged to report. `forgetUnreachablePod` is the manual way out when the pod answers nothing at all |
 | Two sessions on one pod from the same isolate | both hang up, looks like a pod that blocks under load | the service's watch and automation are chained on one tick AND that chain is gated (`CgmTaskHandler._tickPodChain`), so a 30 s watchdog cannot start a second one over a poll that is still connecting. They share a lease owner deliberately, so the lease cannot separate them and the gate has to |

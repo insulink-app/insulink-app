@@ -214,6 +214,23 @@ class _OverviewChartState extends State<OverviewChart>
     setState(() {});
   }
 
+  /// The tick a finger gets as it crosses a reading, given for a scrub on the
+  /// chart below as well as for one here.
+  ///
+  /// Per READING, not per pixel: it is the same feedback either way round, and a
+  /// buzz on every pointer move would be a rattle rather than a signal.
+  void _buzzForMirror(int? mirrored) {
+    if (_lastMirroredIndex == mirrored) {
+      return;
+    }
+    _lastMirroredIndex = mirrored;
+    if (mirrored != null) {
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  int? _lastMirroredIndex;
+
   @override
   void dispose() {
     widget.sync
@@ -696,6 +713,7 @@ class _OverviewChartState extends State<OverviewChart>
     // Only the overview preview pulses; the detail page renders once (no per-
     // frame relayout of the full chart).
     if (!widget.preview) {
+      _buzzForMirror(mirrored);
       return _withMirror(chart(0), touchSpots, mirrored, axis, glucose);
     }
     return ValueListenableBuilder<double>(
@@ -724,7 +742,9 @@ class _OverviewChartState extends State<OverviewChart>
     final digits = glucose.unit == GlucoseUnit.mmol ? 1 : 0;
     // Past the latest reading is the forecast, marked as an estimate exactly as
     // this chart's own tooltip marks it.
-    final estimate = spot.x > axis.shift ? '~' : '';
+    final forecast = spot.x > axis.shift;
+    final top = glucose.toDisplay(widget.maxYmgdl);
+    final bottom = glucose.toDisplay(widget.minYmgdl);
     return Stack(
       children: [
         Positioned.fill(child: chart),
@@ -732,8 +752,12 @@ class _OverviewChartState extends State<OverviewChart>
           child: IgnorePointer(
             child: MirroredReadout(
               fraction: fraction,
-              value: '$estimate${spot.y.toStringAsFixed(digits)} '
-                  '${glucose.unit.label}',
+              valueFraction: top == bottom
+                  ? 0.5
+                  : ((top - spot.y) / (top - bottom)).clamp(0.0, 1.0),
+              dotColor: forecast ? _predictionGrey() : _zoneColorFor(spot.y),
+              value: '${forecast ? '~' : ''}'
+                  '${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
               time: _clockAt(axis, spot.x),
               leftInset: _axisInset,
             ),
@@ -742,6 +766,25 @@ class _OverviewChartState extends State<OverviewChart>
       ],
     );
   }
+
+  /// The zone colour of a display-unit value, the same rule this chart's own
+  /// touch dot follows.
+  Color _zoneColorFor(double displayed) {
+    final glucose = context.read<ProfileGlucoseState>();
+    final colors = Theme.of(context).extension<GlucoseColors>()!;
+    if (displayed < glucose.toDisplay(glucose.targetLow)) {
+      return colors.low;
+    }
+    if (displayed > glucose.toDisplay(glucose.targetHigh)) {
+      return colors.high;
+    }
+    return colors.inRange;
+  }
+
+  /// A forecast point is not a measured value, so it never wears a glucose zone.
+  Color _predictionGrey() => HSLColor.fromColor(
+        Theme.of(context).colorScheme.onSurface,
+      ).withLightness(0.6).toColor();
 
   /// The wall-clock time at an x, the same mapping the axis labels use.
   String _clockAt(ChartXAxis axis, double x) {

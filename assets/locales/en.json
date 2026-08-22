@@ -413,13 +413,16 @@
       "_": "Pod from your account",
       "body": "Your account has a pod on file but this device has none. You can adopt it without re-pairing. That is what you need after an app reset, so a pod that is still running stays controllable and stoppable.",
       "remaining": "Time left: #",
-      "use": "Adopt pod"
+      "use": "Adopt pod",
+      "discard": "This pod is gone",
+      "discard_title": "Stop offering this pod?",
+      "discard_body": "Say this only for a pod that is no longer on your body. It stays in your pump history, but it will not be offered again, so a pod you are still wearing could not be taken over here afterwards.",
+      "discard_confirm": "Discard"
     },
     "activate": {
       "title": "Activate pod",
       "explain_title": "Activate pod",
-      "explain_body": "Fill the pod with insulin and put it down within reach, not on your body yet. Insulink will find it and prime it. Your fingerprint is what releases the cannula later, so make sure one is set up on this phone before you start.",
-      "binding": "Activating binds the pod to this app for good. Your PDM will no longer be able to control this pod, and that cannot be undone. For as long as the pod runs, Insulink is the only thing that can stop it.",
+      "explain_body": "Fill the pod with insulin and put it down within reach, not on your body yet. Insulink will find it and prime it. Your fingerprint is what releases the cannula later, so make sure one is set up on this phone before you start. An activated pod belongs to this app for good, and your PDM will no longer be able to control it.",
       "priming_title": "Priming the pod",
       "priming_body": "The pod is being paired and is filling its mechanism. Keep the phone near it.",
       "attach_title": "Attach the pod now",

@@ -24,6 +24,8 @@ import 'package:insulink/src/request/response_json.dart';
 /// blob the server never interprets, same best-effort behaviour (a failed sync
 /// is retried on the next call and never blocks pump operation).
 class PumpSync {
+  const PumpSync();
+
   /// The pump type key the backend's `PumpType` enum expects.
   static const String _backendType = 'OMNIPOD_DASH';
 
@@ -182,6 +184,27 @@ class PumpSync {
   /// The account's current pod as a restorable identity, or null if there is
   /// none, it has expired, or the response was malformed. Call from the UI
   /// isolate, where an expired token can still be refreshed.
+  /// Tells the account a stored pump is gone, so it stops being offered.
+  ///
+  /// The record exists so a reinstalled app can reconnect to a pod somebody is
+  /// still wearing. Once that pod is dead it has nothing left to offer, and the
+  /// app went on suggesting it at every launch with no way to say no.
+  ///
+  /// The record is KEPT and only stamped. It is the user's pump history and
+  /// belongs in the log whatever happened to the hardware; what stops is the
+  /// offering, because `/pump/current/` skips a stamped one.
+  Future<bool> discard(String pumpId, BuildContext? context) async {
+    final response = await Request.post(
+      url: '/pump/discard/',
+      body: {'pump_id': pumpId},
+    ).send(context);
+    if (!_isSuccess(response)) {
+      debugPrint('pump sync: discard REJECTED, ${_describe(response)}');
+      return false;
+    }
+    return true;
+  }
+
   Future<PodRestore?> fetchCurrent(BuildContext? context) async {
     final response = await Request.get(url: '/pump/current/').send(context);
     if (!_isSuccess(response)) {

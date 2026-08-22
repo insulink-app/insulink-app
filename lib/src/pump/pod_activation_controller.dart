@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/demo_pod.dart';
 import 'package:insulink/src/pump/pod_ble_permissions.dart';
+import 'package:insulink/src/pump/pod_backup_restore.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_store.dart';
@@ -506,7 +507,10 @@ class PodActivationController extends ChangeNotifier {
       );
       return;
     }
-    await store.forgetPod();
+    // The account, too. Pairing mirrors the key the moment it succeeds, which is
+    // before the cannula goes in, so a pod abandoned here is already on file and
+    // would be offered back at the next launch.
+    await PodBackupRestore(store).letGo();
     _facts = null;
     _podUniqueId = null;
     _enter(PodActivationStage.explaining);

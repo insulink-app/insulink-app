@@ -51,6 +51,9 @@ class PodStore {
   static const _kBasalRates = 'pod.basal_rates';
   static const _kBasalDelivered = 'pod.basal_delivered';
   static const _kBasalTotal = 'pod.basal_total';
+  // Under the `pod.` prefix for historical reasons, but NOT cleared with the
+  // pod: it is the user's insulin history. Renaming it would throw away what
+  // every existing install has already recorded.
   static const _kBasalHours = 'pod.basal_hours';
   static const _kBasalCountedTo = 'pod.basal_counted_to';
   static const _kTempBasal = 'pod.temp_basal';
@@ -75,9 +78,14 @@ class PodStore {
   /// queue in secure storage is its own problem.
   static const int _maxPendingDeliveries = 200;
 
-  /// Hours of basal history kept. A pod lives 80 hours, so this covers its whole
-  /// life with room to spare and still bounds what sits in secure storage.
-  static const int _maxBasalHours = 120;
+  /// Hours of basal history kept, three weeks of them.
+  ///
+  /// It used to be sized to one pod's 80-hour life, which was the wrong measure:
+  /// this outlives the pod that filled it (see [forgetPod]) and it is what the
+  /// insulin chart draws, so what bounds it is how far back somebody might scroll
+  /// rather than how long one pod lasts. Only hours that carried basal are
+  /// stored, so three weeks of them is a small blob.
+  static const int _maxBasalHours = 504;
 
   /// One-shot alarm flags, keyed by the pod they belong to so a new pod warns
   /// again. See [podKey].
@@ -204,6 +212,14 @@ class PodStore {
   ///
   /// Only safe once the pod is known to be stopped: dropping the key while a pod
   /// is still delivering leaves insulin running with nothing able to command it.
+  ///
+  /// **The hourly ledger is NOT cleared**, like the automation record next to it.
+  /// It is what the insulin chart draws, and what went into the user last Tuesday
+  /// did not stop having happened because the pod that delivered it was thrown
+  /// away. Clearing it emptied the chart's basal bars the moment a pod was
+  /// discarded. Its own cap ages it out; a pod change is not what should.
+  /// The RUNNING TOTAL beside it does go, because that one answers "how much has
+  /// this pod given", which is a question about the pod.
   Future<void> forgetPod() async {
     for (final key in const [
       _kUniqueId,
@@ -223,7 +239,6 @@ class PodStore {
       _kBasalRates,
       _kBasalDelivered,
       _kBasalTotal,
-      _kBasalHours,
       _kBasalCountedTo,
       _kTempBasal,
       _kActivationFacts,

@@ -413,13 +413,16 @@
       "_": "Pod aus deinem Konto",
       "body": "Für dein Konto ist ein Pod gespeichert, lokal aber keiner. Du kannst ihn übernehmen, ohne neu zu koppeln. Das ist etwa nach einem App-Reset nötig, damit du einen laufenden Pod weiter steuern und stoppen kannst.",
       "remaining": "Restlaufzeit: #",
-      "use": "Pod übernehmen"
+      "use": "Pod übernehmen",
+      "discard": "Dieser Pod existiert nicht mehr",
+      "discard_title": "Diesen Pod nicht mehr vorschlagen?",
+      "discard_body": "Sage das nur für einen Pod, der nicht mehr am Körper ist. Er bleibt in deinem Pumpenverlauf, wird aber nicht mehr vorgeschlagen. Einen Pod, den du noch trägst, kannst du hier danach nicht mehr übernehmen.",
+      "discard_confirm": "Verwerfen"
     },
     "activate": {
       "title": "Pod aktivieren",
       "explain_title": "Pod aktivieren",
-      "explain_body": "Fülle den Pod mit Insulin und lege ihn bereit, noch nicht an den Körper. Insulink sucht ihn dann und bereitet ihn vor. Der Fingerabdruck gibt später die Kanüle frei. Richte ihn auf diesem Handy ein, bevor du startest.",
-      "binding": "Die Aktivierung bindet den Pod dauerhaft an diese App. Danach kann dein PDM diesen Pod nicht mehr steuern, und das lässt sich nicht rückgängig machen. Solange der Pod läuft, ist Insulink das Einzige, was ihn stoppen kann.",
+      "explain_body": "Fülle den Pod mit Insulin und lege ihn bereit, noch nicht an den Körper. Insulink sucht ihn dann und bereitet ihn vor. Der Fingerabdruck gibt später die Kanüle frei, richte ihn auf diesem Handy ein, bevor du startest. Ein aktivierter Pod gehört dauerhaft zu dieser App, dein PDM kann ihn danach nicht mehr steuern.",
       "priming_title": "Pod wird vorbereitet",
       "priming_body": "Der Pod wird gekoppelt und füllt seine Mechanik. Halte das Telefon in seiner Nähe.",
       "attach_title": "Pod jetzt anlegen",

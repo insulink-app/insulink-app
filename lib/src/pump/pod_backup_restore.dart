@@ -2,15 +2,21 @@ import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 
-/// Adopts a pod the user's account was holding after the app lost its own copy.
+/// Moves a pod between the user's account and local storage: adopting one the
+/// account was holding after the app lost its own copy, and letting go of one
+/// that is finished.
 ///
-/// Kept apart from [PodController] because it is the one pump operation that does
-/// not talk to a pod at all — it moves credentials from the account into local
-/// storage, and only then is there a pod to command.
+/// Kept apart from [PodController] because these are the pump operations that do
+/// not talk to a pod at all.
 class PodBackupRestore {
-  const PodBackupRestore(this.store);
+  const PodBackupRestore(this.store, {this.sync = const PumpSync()});
 
   final PodStore store;
+
+  /// How the account is reached. Injectable so the order these steps run in can
+  /// be checked without a server, which is what matters here: the id is read
+  /// before it is cleared.
+  final PumpSync sync;
 
   /// The pod the account is holding for us, or null if there is none, one is
   /// already paired locally, or it has expired.
@@ -21,7 +27,7 @@ class PodBackupRestore {
     if (store.hasPod) {
       return null;
     }
-    final restore = await PumpSync().fetchCurrent(context);
+    final restore = await sync.fetchCurrent(context);
     if (restore == null || restore.isExpired) {
       return null;
     }
@@ -47,5 +53,41 @@ class PodBackupRestore {
       messageSequence: restore.messageSequence,
       bleAddress: restore.bleAddress,
     );
+  }
+
+  /// Forgets a pod locally AND tells the account it is gone.
+  ///
+  /// Both, because the account is what offers a pod back after a reinstall: a
+  /// pod dropped only locally goes on being suggested at every launch, with the
+  /// user having already dealt with it once. Deactivating one, discarding a
+  /// half-finished activation and letting go of an unreachable one all left it
+  /// in that state.
+  ///
+  /// The account is told FIRST, because [PodStore.forgetPod] clears the id it is
+  /// told by. Best-effort though: a phone with no signal must still be able to
+  /// let go of a pod, so a failed call is logged and the local forget happens
+  /// anyway. The offer card's own discard is the way back from that, and it is
+  /// why that button exists separately.
+  Future<void> letGo() async {
+    final pumpId = store.backendPumpId;
+    if (pumpId != null) {
+      await _tellTheAccount(pumpId);
+    }
+    await store.forgetPod();
+  }
+
+  /// Best-effort, and it swallows even a thrown error.
+  ///
+  /// The two failures fall in opposite directions and only one of them is
+  /// recoverable. A pod forgotten locally while the account still holds it is
+  /// offered back by the card, so nothing is lost. A pod the app REFUSES to let
+  /// go of because a network call threw is the state the user was stuck in, with
+  /// no way out at all.
+  Future<void> _tellTheAccount(String pumpId) async {
+    try {
+      await sync.discard(pumpId, null);
+    } catch (error) {
+      debugPrint('pump sync: discard THREW, letting go locally anyway: $error');
+    }
   }
 }

@@ -56,10 +56,6 @@ class PodActivationStageView extends StatelessWidget {
           const SizedBox(height: 20),
           const PodActivationSteps(prefix: 'pump.activate.attach'),
         ],
-        if (controller.stage == PodActivationStage.explaining) ...[
-          const SizedBox(height: 18),
-          _binding(context),
-        ],
         if (basalProblem != null) ...[
           const SizedBox(height: 14),
           _basalWarning(context),
@@ -79,33 +75,6 @@ class PodActivationStageView extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: Icon(_stageIcon, size: 34, color: context.accent),
-      ),
-    );
-  }
-
-  /// The consequence the user has to understand before anything is sent: the pod
-  /// will answer only to this app, and that cannot be undone.
-  Widget _binding(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: context.warning.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.warning.withValues(alpha: 0.24)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(PhosphorIconsFill.warning, size: 18, color: context.warning),
-          const SizedBox(width: 8),
-          Expanded(
-            child: LocaleText(
-              'pump.activate.binding',
-              style: TextStyle(fontSize: 13, color: scheme.onSurface, height: 1.35),
-            ),
-          ),
-        ],
       ),
     );
   }

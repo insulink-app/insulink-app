@@ -167,4 +167,36 @@ void main() {
       expect(store.basalDeliveredTotal, 0);
     });
   });
+
+  /// The insulin chart draws these. What went in last Tuesday did not stop
+  /// having happened because the pod that delivered it was discarded, and
+  /// clearing them emptied the chart's basal bars the moment a dead pod was let
+  /// go of.
+  test('the hourly ledger outlives the pod that filled it', () async {
+    await store.saveBasalRates(List<double>.filled(24, 0.8));
+    await store.addBasalDelivery(
+      at: DateTime(2026, 5, 4, 9, 30),
+      units: 0.4,
+      countedTo: DateTime(2026, 5, 4, 9, 30),
+    );
+
+    await store.forgetPod();
+
+    expect(store.basalHours, hasLength(1));
+    expect(store.basalHours.single.units, closeTo(0.4, 1e-9));
+  });
+
+  /// The running total does go, because that one answers "how much has THIS pod
+  /// given", which is a question about the pod.
+  test('the pod-scoped total does not outlive it', () async {
+    await store.addBasalDelivery(
+      at: DateTime(2026, 5, 4, 9, 30),
+      units: 0.4,
+      countedTo: DateTime(2026, 5, 4, 9, 30),
+    );
+
+    await store.forgetPod();
+
+    expect(store.basalDeliveredTotal, 0);
+  });
 }
