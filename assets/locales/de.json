@@ -519,6 +519,7 @@
     },
     "basal": {
       "out_of_date": "Dein Basalprofil wurde geändert. Der Pod läuft noch mit dem alten Zeitplan.",
+      "unknown": "Die App kennt den Zeitplan des Pods nicht mehr. Er gibt weiter sein Basal ab. Sende dein Profil, damit beide wieder übereinstimmen.",
       "send": "Profil an den Pod senden"
     },
     "loop": {
@@ -559,7 +560,7 @@
       },
       "blocked": {
         "no_pod": "Dafür muss ein aktiver Pod verbunden sein.",
-        "no_schedule": "Dem Pod muss zuerst ein Basalprogramm übertragen werden.",
+        "no_schedule": "Die App kennt den Zeitplan des Pods nicht. Sende zuerst dein Basalprofil an den Pod.",
         "limits": "Die Grenzwerte passen nicht zusammen. Prüfe Stoppschwelle und Zielwert im Profil."
       },
       "warning": {

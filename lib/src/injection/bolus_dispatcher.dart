@@ -82,7 +82,7 @@ class BolusDispatcher extends ChangeNotifier {
       );
       _outcome = outcome;
       if (outcome.recordedUnits > 0) {
-        await meals.updateMeal(meal, meal.copyWith(bolus: outcome.recordedUnits));
+        await _recordAgainstMeal(meal, outcome.recordedUnits);
       }
     } catch (error) {
       // Catch-all: an escaping Error would leave this stuck on "sending" with no
@@ -97,13 +97,21 @@ class BolusDispatcher extends ChangeNotifier {
     }
   }
 
-  /// Resolves a dose the app was still sending when it was killed.
+  /// Writes a confirmed dose onto its meal, and notes it as unattributable when
+  /// the meal is no longer there to carry it.
   ///
-  /// Reads the pod: a bolus it reports running is adopted as exactly that, and
-  /// anything else is reported as unknown rather than guessed. Under no
-  /// circumstance is the dose written onto a meal here — the app cannot tell how
-  /// much of it went in, and inventing the number is the one mistake that would
-  /// suppress a correction the user needs.
+  /// The meal can be gone: deleted while the pod was still working, or replaced
+  /// by a sync pull whose server copy predates it. The insulin went in either
+  /// way, so a write that does not land must not end in silence — recorded where
+  /// the automation reads it, the loop stops adding basal on top of a dose it
+  /// cannot see.
+  Future<void> _recordAgainstMeal(Meal meal, double units) async {
+    if (await meals.updateMeal(meal, meal.copyWith(bolus: units))) {
+      return;
+    }
+    await _noteUnconfirmed(units);
+  }
+
   /// Records a dose nobody could confirm, so the insulin-on-board every dose
   /// calculation subtracts includes the possibility that it went in.
   Future<void> _noteUnconfirmed(double units) async {
@@ -117,6 +125,13 @@ class BolusDispatcher extends ChangeNotifier {
     ));
   }
 
+  /// Resolves a dose the app was still sending when it was killed.
+  ///
+  /// Reads the pod: a bolus it reports running is adopted as exactly that, and
+  /// anything else is reported as unknown rather than guessed. Under no
+  /// circumstance is the dose written onto a meal here — the app cannot tell how
+  /// much of it went in, and inventing the number is the one mistake that would
+  /// suppress a correction the user needs.
   Future<void> resolveStranded() async {
     final pending = controller.store.pendingBolus;
     if (pending == null || _inFlight) {

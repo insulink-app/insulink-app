@@ -154,7 +154,8 @@ class PodSetupBox extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     // A pod can be PAIRED without running: the key is stored several commands
     // before delivery starts. That pod needs the wizard finished, not a new one.
-    final paired = context.watch<PodController>().hasPod;
+    final controller = context.watch<PodController>();
+    final paired = controller.hasPod;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -166,6 +167,15 @@ class PodSetupBox extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const PodRestoreCard(),
+          // A failed read lands here too, and this page used to swallow it: a pod
+          // adopted from the account that could not be reached left the user on
+          // an unexplained offer to resume an activation. The notice belongs
+          // wherever the failure can happen, not only on the page for a pod that
+          // is already known to be running.
+          if (controller.failure != null) ...[
+            PumpNotice.failure(controller.failure!),
+            const SizedBox(height: 14),
+          ],
           EmptyState(
             icon: PhosphorIconsBold.syringe,
             titleKey: paired ? 'pump.activate.title' : 'pump.status.no_pod',

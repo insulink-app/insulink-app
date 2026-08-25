@@ -519,6 +519,7 @@
     },
     "basal": {
       "out_of_date": "Your basal profile has changed. The pod is still running the old schedule.",
+      "unknown": "The app no longer knows the pod's schedule. It goes on delivering its basal. Send your profile so the two agree again.",
       "send": "Send profile to the pod"
     },
     "loop": {
@@ -559,7 +560,7 @@
       },
       "blocked": {
         "no_pod": "An active pod has to be connected for this.",
-        "no_schedule": "A basal schedule has to be sent to the pod first.",
+        "no_schedule": "The app does not know the pod's schedule. Send your basal profile to the pod first.",
         "limits": "The limits do not fit together. Check the stop threshold and the target in your profile."
       },
       "warning": {

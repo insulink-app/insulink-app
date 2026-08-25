@@ -38,6 +38,18 @@ void main() {
   });
 
   group('the pod holds its own schedule, so an edit has to be sent', () {
+    /// This used to assert the opposite, reasoning that a notice about a schedule
+    /// we never captured would be noise. That held only while every paired pod
+    /// had been through the wizard, which saves the rates it programmed. A pod
+    /// adopted from the account has not: the app holds its key and no idea what
+    /// it runs. Treating that as "already matches" hid the only control that
+    /// sends a schedule, while the automation refused to start for want of that
+    /// same schedule, with no way out of it.
+    test('a pod with no schedule on file is flagged, not assumed to match',
+        () async {
+      expect(controller.runsDifferentBasalThan(flat(0.8)), isTrue);
+    });
+
     test('a profile matching what the pod was given is not flagged', () async {
       await store.saveBasalRates(PodController.hourlyRatesOf(flat(0.8)));
       expect(controller.runsDifferentBasalThan(flat(0.8)), isFalse);
@@ -60,12 +72,6 @@ void main() {
             startSlot: 2, endSlot: 48, rateHundredthUnitsPerHour: 80),
       ]);
       expect(controller.runsDifferentBasalThan(edited), isTrue);
-    });
-
-    /// Nothing recorded means nothing to compare against, and a notice telling
-    /// the user to re-send a schedule we never captured would be noise.
-    test('a pod with no recorded schedule is not flagged', () {
-      expect(controller.runsDifferentBasalThan(flat(0.8)), isFalse);
     });
 
     test('the rates are sampled once per hour, inside the hour', () {

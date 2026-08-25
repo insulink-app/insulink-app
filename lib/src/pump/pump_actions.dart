@@ -349,12 +349,13 @@ class PodForgetButton extends StatelessWidget {
 }
 
 
-/// Offers to send an edited basal profile to a pod that is still running the old
-/// one.
+/// Offers to send the basal profile to a pod that is not known to be running it.
 ///
-/// Only appears when the two actually differ. The pod holds its whole schedule
-/// itself, so until this is tapped the app shows one schedule and the pod
-/// delivers another — which is exactly the mismatch worth naming out loud.
+/// Two different situations, and they must not be worded the same. Either the
+/// profile was edited and the pod still runs the old one, or the app has no
+/// record of what the pod was given at all (a pod adopted from the account).
+/// Saying "your profile has changed" in the second case states something that
+/// did not happen, and reads as though the pod had stopped, which it has not.
 class PodBasalOutOfDateNotice extends StatelessWidget {
   const PodBasalOutOfDateNotice({super.key});
 
@@ -370,7 +371,9 @@ class PodBasalOutOfDateNotice extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const PumpNotice.problem('pump.basal.out_of_date'),
+          PumpNotice.problem(controller.knowsPodSchedule
+              ? 'pump.basal.out_of_date'
+              : 'pump.basal.unknown'),
           const SizedBox(height: 10),
           SecondaryActionButton(
             labelKey: 'pump.basal.send',

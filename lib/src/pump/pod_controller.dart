@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/demo_pod.dart';
@@ -84,9 +83,15 @@ class PodController extends ChangeNotifier {
   }
 
   /// Reads the pod's current state.
+  ///
+  /// Through [_absorb] like every other reply. It used to assign the two fields
+  /// itself, which quietly meant the ONE operation whose whole job is reading the
+  /// pod was also the one that never wrote the result down: no cached status for
+  /// the next page open, and nothing for [PodStore.saveLastStatus] to learn the
+  /// activation state from. A pod adopted from the account was read successfully
+  /// and still came back as "activation unfinished".
   Future<void> refresh() => _withSession('refresh', (session) async {
-        _status = await _readStatus(session);
-        _statusReadAt = DateTime.now();
+        await _absorb(await _readStatus(session));
       });
 
   /// Stops every kind of delivery. The path that must work when nothing else
@@ -105,7 +110,7 @@ class PodController extends ChangeNotifier {
         // has to be closed here too, or the overview keeps counting a dose the
         // pod has stopped delivering.
         await _endRunningBolus();
-        _absorb(response);
+        await _absorb(response);
       });
 
   /// Puts the pod back on its schedule after a suspend.
@@ -146,7 +151,7 @@ class PodController extends ChangeNotifier {
         );
         await store.saveBasalRates(hourlyRatesOf(program));
         await store.setSuspendedByUs(false);
-        _absorb(response);
+        await _absorb(response);
       });
 
   /// **The only way a basal schedule or a temporary rate is programmed.**
@@ -173,7 +178,7 @@ class PodController extends ChangeNotifier {
     PodCommand Function() build,
   ) async {
     final status = await _readStatus(session);
-    _absorb(status);
+    await _absorb(status);
     if (status.delivery.isTempBasalRunning) {
       await _endRunningTempBasal(session);
     }
@@ -196,7 +201,7 @@ class PodController extends ChangeNotifier {
     if (running != null) {
       await store.saveTemporaryBasal(running.endedAt(DateTime.now()));
     }
-    _absorb(response);
+    await _absorb(response);
   }
 
   /// One rate per hour, sampled from [program] at the middle of each hour so a
@@ -209,14 +214,34 @@ class PodController extends ChangeNotifier {
     ];
   }
 
+  /// Whether the app still knows which schedule the pod was given.
+  ///
+  /// False after a restore from the account, which brings back the key and the
+  /// counters but no record of what was programmed. The pod is unaffected by
+  /// that: it holds its schedule itself and goes on delivering it. Only the app
+  /// has forgotten, and telling those two apart is the difference between "your
+  /// profile changed" and "we lost track of yours".
+  bool get knowsPodSchedule => store.basalRates != null;
+
   /// Whether the pod is running a schedule other than [program].
   ///
   /// Answered from the rates the pod was PROGRAMMED with, not from the user's
   /// profile, because that is the only record of what the pod is actually doing.
+  ///
+  /// NOT KNOWING counts as different. Only "no pod" answers false here: there is
+  /// nothing to send a schedule to. A paired pod with no record of what it was
+  /// given is the state a restore from the account leaves behind, and treating
+  /// that as "already matches" was a dead end with no way out of it — the notice
+  /// offering to send the profile is hidden exactly when the app has no schedule
+  /// on file, while the automation refuses to start for want of that same
+  /// schedule. Unknown is not agreement; the schedule has to be sent.
   bool runsDifferentBasalThan(PodBasalProgram program) {
-    final onPod = store.basalRates;
-    if (!hasPod || onPod == null) {
+    if (!hasPod) {
       return false;
+    }
+    final onPod = store.basalRates;
+    if (onPod == null) {
+      return true;
     }
     final wanted = hourlyRatesOf(program);
     for (var hour = 0; hour < 24; hour++) {
@@ -258,8 +283,13 @@ class PodController extends ChangeNotifier {
   /// request with an illegal-command-state NAK, because in that state it accepts
   /// only the activation sequence. Asking anyway is noise on a link that has an
   /// activation waiting to finish on it.
+  ///
+  /// A pod with NO activation record is read, though. That is a pod adopted from
+  /// the account ([PodStore.activationUnknown]), which has no wizard waiting on
+  /// its link and is most likely long since running — the read is what finds out,
+  /// and [PodStore.saveLastStatus] writes down what it learns.
   Future<void> refreshIfStale() async {
-    if (!hasPod || _busy || !store.isActivated) {
+    if (!hasPod || _busy || !(store.isActivated || store.activationUnknown)) {
       return;
     }
     final age = statusAge;
@@ -321,7 +351,7 @@ class PodController extends ChangeNotifier {
         target: PodDeliveryTarget.bolus,
       ));
       await _endRunningBolus();
-      _absorb(response);
+      await _absorb(response);
     });
   }
 
@@ -378,7 +408,7 @@ class PodController extends ChangeNotifier {
           sequenceNumber: _nextSequence,
           nonce: _fixedNonce,
         ));
-        _absorb(response);
+        await _absorb(response);
         await _endRunningBolus();
         if (_reportsItCannotDeliver) {
           await _letGoOfPod();
@@ -445,7 +475,7 @@ class PodController extends ChangeNotifier {
           sequenceNumber: _nextSequence,
           bolusReminder: PodProgramReminder(atEnd: beepAtEnd),
         ));
-        _absorb(response);
+        await _absorb(response);
       });
 
   /// Acknowledges the pod's alerts so it stops beeping.
@@ -460,7 +490,7 @@ class PodController extends ChangeNotifier {
           nonce: _fixedNonce,
           alerts: active,
         ));
-        _absorb(response);
+        await _absorb(response);
       });
 
   int get _nextSequence {
@@ -488,14 +518,17 @@ class PodController extends ChangeNotifier {
   /// counter BACKWARDS and reuse a number the pod has already run. The counter is
   /// therefore ours alone, persisted after every operation; a genuine desync is
   /// what the pod's `illegalSecurityCode` refusal is for.
-  void _absorb(PodResponse response) {
+  /// The store write is AWAITED, which it did not used to be. It was fire and
+  /// forget while it only fed the next page open, but it now also carries what
+  /// the pod says about its own activation — and [PodStore] fills its cache after
+  /// the keystore write returns, so an unawaited one loses the race against the
+  /// [notifyListeners] that follows. The page then rebuilt reading the old value
+  /// and, with nothing left to notify it, stayed there.
+  Future<void> _absorb(PodResponse response) async {
     if (response is PodStatusResponse) {
       _status = response;
       _statusReadAt = DateTime.now();
-      // Kept for the next page open, and for the automation to decide from while
-      // it is switched off. Not awaited: the screen has the value already, and a
-      // keystore write is not something a status read should wait on.
-      unawaited(store.saveLastStatus(response, _statusReadAt!));
+      await store.saveLastStatus(response, _statusReadAt!);
       return;
     }
     if (response is PodNakResponse) {
@@ -646,7 +679,7 @@ class PodController extends ChangeNotifier {
       await _resyncFromStorage();
       final session = await _connection.openSession();
       final status = await _readStatus(session);
-      _absorb(status);
+      await _absorb(status);
       final refusal = refuseIf(status);
       if (refusal != null) {
         throw PodBolusRefused(refusal);
@@ -664,7 +697,7 @@ class PodController extends ChangeNotifier {
       await store.saveCommandSequence(_sequence);
       await _connection.close();
       await PumpSync().sync(store, status: _status);
-      _absorb(response);
+      await _absorb(response);
       return response;
     } on PodBolusRefused {
       rethrow;
@@ -714,7 +747,7 @@ class PodController extends ChangeNotifier {
             reminder: PodProgramReminder(atEnd: beeps),
           ),
         );
-        _absorb(response);
+        await _absorb(response);
       });
 
   /// Ends a running temporary basal, returning the pod to its schedule.
@@ -735,7 +768,7 @@ class PodController extends ChangeNotifier {
         if (running != null) {
           await store.saveTemporaryBasal(running.endedAt(DateTime.now()));
         }
-        _absorb(response);
+        await _absorb(response);
       });
 
   /// The temporary rate running right now, or null.

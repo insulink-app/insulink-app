@@ -120,6 +120,29 @@ void main() {
       expect(store.commandSequence, 7);
       expect(store.messageSequence, 91);
     });
+
+    /// Told apart from a half-finished wizard, which always leaves a step behind.
+    /// Only the restored pod is worth opening a link for on sight.
+    test('a restored pod has no activation record at all', () async {
+      await store.adoptFromBackend(
+        pumpId: 'pump-1',
+        uniqueId: 4241,
+        longTermKey: Uint8List.fromList(List<int>.filled(16, 7)),
+        lotNumber: 1,
+        podSequenceNumber: 2,
+        activatedAt: DateTime(2026, 3, 1),
+        expiryHours: 80,
+        eapSequence: 42,
+        commandSequence: 7,
+        messageSequence: 91,
+      );
+
+      expect(store.isActivated, isFalse);
+      expect(store.activationUnknown, isTrue);
+
+      await store.saveActivationStep('priming');
+      expect(store.activationUnknown, isFalse);
+    });
   });
 
   group('the message-packet counter runs across sessions', () {

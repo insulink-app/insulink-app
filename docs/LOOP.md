@@ -347,6 +347,27 @@ a run that has finished. **Intent wins over the automation; it does not win over
 hypoglycaemia.** `PodTemporaryBasal.automated` is what tells the two apart, and it
 defaults to false so a rate stored before that field existed reads as the user's.
 
+## The scheduled rate is an anchor, so it is never guessed
+
+`LoopAlgorithm.wantedUnitsPerHour` is `scheduledUnitsPerHour + correction`, and
+the temporary rate it produces REPLACES the pod's schedule for as long as it runs.
+So the anchor is not bookkeeping: it carries the background insulin, and it goes
+straight into what the pod delivers. The same value is the base of every ceiling
+in `LoopSafety._ceilings` (`schedule + headroom`, `schedule + maxIob budget`,
+`schedule + hourly budget`), so an anchor that is too high lifts the dose AND the
+limits meant to bound it, in step. Only `limits.maxUnitsPerHour` is absolute.
+
+That is why a pod adopted from the account, whose schedule the app has no record
+of, does not simply assume the user's profile is what is running. Assuming the
+anchor would be assuming a dose. `LoopSwitch.setMode` instead PROGRAMS the profile
+before engaging (`_establishSchedule`), which turns the assumption into a fact for
+the cost of one command, and keeps switching the automation on a single action for
+the user. It goes through `PodController.applyBasalProfile`, so the chokepoint
+that ends a running temporary rate first still applies — which is exactly what a
+pod left mid-cycle by a previous install needs. If the send fails, the rates stay
+unset and `blockedReason` keeps refusing: the loop never engages on a schedule
+nobody established.
+
 ## Settings
 
 Three numbers are the automation's own; everything else it needs is already tuned

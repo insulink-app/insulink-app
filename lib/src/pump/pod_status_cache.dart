@@ -47,8 +47,27 @@ extension PodStatusCache on PodStore {
     }
   }
 
-  Future<void> saveLastStatus(PodStatusResponse status, DateTime at) {
-    return _set(
+  /// Stores a status, and takes the pod's own word for whether it is running.
+  ///
+  /// [PodStore.isActivated] used to rest on a purely local note of how far the
+  /// activation wizard got. That note is not part of the pod: a reinstall wipes
+  /// it, and [PodStore.adoptFromBackend] restores every credential without it. So
+  /// a pod that had been delivering for a day came back as "paired, activation
+  /// unfinished" — and everything hangs off that flag, so the pump page offered
+  /// to resume the wizard while the status poll, the background watch and the
+  /// loop all stood down for a pod that was working perfectly.
+  ///
+  /// The pod is the authority on this, and every reply it gives passes through
+  /// here. A lifecycle it reports as running IS an activation that finished,
+  /// whichever install of the app finished it.
+  ///
+  /// One-directional on purpose: a pod that stops running is not un-activated.
+  /// That is a pod change, and it goes through [PodStore.forgetPod].
+  Future<void> saveLastStatus(PodStatusResponse status, DateTime at) async {
+    if (status.lifecycle.isRunning && !isActivated) {
+      await saveActivationStep(PodActivationStep.running.name);
+    }
+    await _set(
       PodStore._kLastStatus,
       jsonEncode({
         'body': base64Encode(status.body),

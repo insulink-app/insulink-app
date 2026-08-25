@@ -28,6 +28,16 @@ class Meal {
   /// carries no product breakdown).
   double get protein => entries.fold(0, (sum, entry) => sum + entry.protein);
 
+  /// Stable identity of this logged meal: the millisecond it was logged at.
+  ///
+  /// Object identity cannot serve as one. A sync pull rebuilds the entire log
+  /// from storage ([MealState.reload]), and every instance a caller is still
+  /// holding is a stranger to the new list from that moment on. Milliseconds
+  /// rather than the [DateTime] itself, because the JSON round trip drops the
+  /// microseconds [DateTime.now] carries — so the reloaded meal would not even
+  /// equal the one that was written.
+  int get logKey => time.millisecondsSinceEpoch;
+
   /// A copy with individual fields replaced — the basis for editing a logged
   /// meal after the fact (see [MealState.updateMeal]).
   Meal copyWith({

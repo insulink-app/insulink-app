@@ -5,6 +5,7 @@ import 'package:insulink/src/pump/pod_basal_delivery.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
 import 'package:insulink/src/pump/loop/loop_limits.dart';
 import 'package:insulink/src/pump/pod_running_bolus.dart';
+import 'package:insulink/src/pump/protocol/pod_activation_state.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 
 /// Everything about a paired pod that has to outlive the process.
@@ -354,6 +355,18 @@ class PodStore {
   /// pod refuses everything but the activation sequence, answering anything else
   /// with an illegal-command-state NAK, so nothing may poll it.
   bool get isActivated => _cache[_kActivationStep] == 'running';
+
+  /// Whether this pod is paired with no record of an activation at all.
+  ///
+  /// That is what [adoptFromBackend] leaves behind: full credentials from the
+  /// account and no local wizard trail, because the trail was never mirrored. It
+  /// is NOT the same as a half-finished activation, which always leaves a step
+  /// behind — so the two can be told apart, and only this one is worth reading a
+  /// pod over. The restore reads the pod itself, but that read fails if the pod
+  /// happens to be out of range, and without this the app then had no way back:
+  /// the offer card does not re-offer a pod that is already paired, and the page
+  /// it lands on refuses to read one it thinks is mid-activation.
+  bool get activationUnknown => hasPod && activationStep == null;
 
   /// What the pod reported about itself during activation, as JSON.
   ///

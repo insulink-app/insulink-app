@@ -54,6 +54,38 @@ void main() {
     expect(store.lastStatusAt, later);
   });
 
+  /// The case a reinstall + restore produces: full credentials, no local trail of
+  /// the activation, and a pod that has been running for a day. Without this the
+  /// pump page offered to resume the wizard, and the poll, the watch and the loop
+  /// all stood down.
+  test('a pod reporting itself running counts as activated', () async {
+    expect(store.isActivated, isFalse);
+
+    await store.saveLastStatus(running, now);
+
+    expect(store.isActivated, isTrue);
+  });
+
+  test('a pod that is not running is left where the wizard had it', () async {
+    await store.saveActivationStep('priming');
+    final alarming = PodStatusResponse(hex('1D1D00A02800000463FF'));
+
+    await store.saveLastStatus(alarming, now);
+
+    expect(store.activationStep, 'priming');
+  });
+
+  /// One-directional: a pod that stops running is not un-activated. That is a pod
+  /// change, and it goes through [PodStore.forgetPod].
+  test('an alarm does not take activation back', () async {
+    await store.saveLastStatus(running, now);
+    final alarming = PodStatusResponse(hex('1D1D00A02800000463FF'));
+
+    await store.saveLastStatus(alarming, now.add(const Duration(minutes: 5)));
+
+    expect(store.isActivated, isTrue);
+  });
+
   test('a corrupted entry reads as nothing rather than throwing', () async {
     backing['pod.last_status'] = 'not json';
     await store.reload();

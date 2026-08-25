@@ -92,6 +92,21 @@ believing a dose went in. `Meal.deliveredByPump` marks the pump-given doses, whi
 are the ones whose recorded amount is worth doubting if a pod later turns out to
 have stopped mid-delivery.
 
+**The link from the confirmed dose back to its meal is by `Meal.logKey`, never by
+object identity.** `BolusDispatcher` writes the meal first with its carbs and no
+insulin, then holds that meal for as long as the pod takes to answer, and only
+then writes the units onto it. `MealState.updateMeal` used to find it with
+`identical()` — but `MealState.reload()` rebuilds the whole list from storage on
+every nutrition sync pull, so a pull landing inside that window turned the write
+into a silent no-op. Observed in the field: the pod delivered 2.2 U, the pump's own
+delivery log showed it, and the meal read 0 U. That is the worst shape this can
+fail in, because `InsulinOnBoard` takes the user's boluses from the meal log
+alone — the loop then dosed on top of insulin already given. `logKey` is
+millisecond-resolution because `DateTime.now()` carries microseconds that the JSON
+round trip drops, so even `time ==` would have missed. `updateMeal` now reports
+whether it landed, and a dose that lands nowhere is recorded through
+`recordUnconfirmedBolus`, which the automation counts.
+
 ### Surviving an app reset
 
 A pod answers only to the controller that activated it, and that binding cannot be
@@ -123,6 +138,55 @@ Two things worth knowing:
   identity would replace the key to a pod that may still be delivering.
 - The stored record carries the pod's own expiry, so it ages out with the pod it
   describes rather than lingering as a usable key.
+- **The activation state is NOT mirrored, and must not be remembered.** It is a
+  local note of how far the wizard got (`pod.activation_step`), and a reinstall
+  wipes it while the pod on the body goes on delivering. A restored pod therefore
+  came back reading "paired, activation unfinished" — and `PodStore.isActivated`
+  gates almost everything: the pump page offered to resume the wizard, while
+  `refreshIfStale`, the background watch and the loop all stood down for a pod
+  that was working perfectly. The pod is the authority instead:
+  `PodStore.saveLastStatus` — the one funnel every status reply from either
+  isolate passes through — promotes the step to `running` whenever the pod
+  reports a running lifecycle. That only works because `PodController.refresh`
+  now goes through `_absorb` like every other reply: it used to assign the two
+  status fields itself, so the one operation whose whole job is reading the pod
+  was also the only one that never wrote the result down. And `_absorb` AWAITS
+  the store write, because `PodStore` fills its cache after the keystore write
+  returns and the `notifyListeners` that follows would otherwise rebuild the page
+  on the old value, with nothing left to notify it again. One-directional: an alarm or a suspend does not
+  take activation back, because that is a pod change and goes through
+  `forgetPod`. `PodStore.activationUnknown` (paired, no step at all) is what
+  tells a restored pod apart from a half-finished wizard, so the pump page may
+  open a link for the first and still leave the second alone.
+
+**The pod is never without a basal program; only the app forgets.** The pod holds
+its whole schedule and runs it unattended, so nothing a phone does — a reinstall
+included — can stop it delivering. What a restore loses is `pod.basal_rates`, the
+app's note of what it last programmed. Three consequences, all fixed and all worth
+keeping fixed:
+
+- `PodController.runsDifferentBasalThan` answered **false** for "no record", which
+  read as "already matches". That hid `PodBasalOutOfDateNotice`, the only control
+  that sends a schedule, while `LoopSwitch.blockedReason` refused to engage for
+  want of that same schedule. A dead end with no way out through the UI. Only "no
+  pod" answers false now: unknown is not agreement. A test asserted the old
+  behaviour on the grounds that a notice about a schedule we never captured would
+  be noise, which held only while every paired pod had been through the wizard
+  (which saves the rates it programmed) — a pod adopted from the account has not.
+- The wording said the wrong thing twice. `pump.loop.blocked.no_schedule` read as
+  though the POD had no program, and the notice claimed "your basal profile has
+  changed" when nothing had changed. `PodController.knowsPodSchedule` splits the
+  two cases and `pump.basal.unknown` names the real one.
+- Switching the automation on now PROGRAMS the profile first when there is no
+  record (`LoopSwitch._establishSchedule`) rather than asking the user for a
+  second action. Why it is sent and not assumed belongs to the loop, and is in
+  `docs/LOOP.md`.
+
+Mirroring `pod.basal_rates` to the account would be sound, and is not an
+assumption: the pod answers only to the controller that activated it, and the blob
+is keyed by its `unique_id`, so the stored record cannot be stale by anyone else's
+hand nor applied to a different pod. It is on the list with the delivery log, the
+unconfirmed boluses and the loop journal, none of which are mirrored today.
 
 ### Pod life and reservoir on the overview
 
