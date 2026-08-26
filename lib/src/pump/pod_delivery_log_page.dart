@@ -11,9 +11,16 @@ import 'package:provider/provider.dart';
 
 /// Opens the delivery log, carrying the pump controller across the route so the
 /// page reads the same store the device page does.
-void openPodDeliveryLog(BuildContext context) {
+///
+/// The store is re-read first: its getters are served from a cache that is PER
+/// ISOLATE, and basal is booked in the background service. Without this the log
+/// listed only what had been booked when the app started, so a phone that had
+/// been open a while showed no basal at all.
+Future<void> openPodDeliveryLog(BuildContext context) async {
   final controller = context.read<PodController>();
-  Navigator.of(context).push(
+  final navigator = Navigator.of(context);
+  await controller.store.reload();
+  await navigator.push(
     MaterialPageRoute<void>(
       builder: (_) => ChangeNotifierProvider<PodController>.value(
         value: controller,

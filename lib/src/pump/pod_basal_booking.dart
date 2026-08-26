@@ -39,10 +39,22 @@ class PodBasalBooking {
   /// Gated on the pod reporting that it is actually delivering: a suspended or
   /// alarming pod books a zero and still closes its window, so the next booking
   /// cannot claim the stretch as if insulin had been running through it.
+  ///
+  /// **A known schedule with no accounting mark opens one here**, rather than
+  /// booking nothing forever. Only the activation wizard used to open the mark,
+  /// so every other way a schedule reaches the store — a pod adopted from the
+  /// account and then sent the profile, a schedule reprogrammed on a pod whose
+  /// mark was cleared — left the ledger permanently shut. Nothing was booked,
+  /// which emptied the insulin chart, the pump history and the samples the
+  /// account gets, with no way back short of a pod change.
   Future<double?> book(PodStatusResponse status) async {
     final rates = store.basalRates;
+    if (rates == null) {
+      return null;
+    }
     final countedTo = store.basalCountedTo;
-    if (rates == null || countedTo == null) {
+    if (countedTo == null) {
+      await store.startBasalAccounting(now());
       return null;
     }
     final until = now();
