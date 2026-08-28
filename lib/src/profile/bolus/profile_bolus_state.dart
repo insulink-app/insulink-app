@@ -58,6 +58,7 @@ class ProfileBolusState extends ChangeNotifier {
   });
 
   int get correctionFactor => _correctionFactor;
+
   int get carbFactor => _carbFactor;
 
   /// Upper bound for a single logged bolus, in units.
@@ -171,8 +172,9 @@ class ProfileBolusState extends ChangeNotifier {
   /// Read all persisted settings (defaults applied per field).
   static Future<ProfileBolusState> load() async {
     final all = await _storage.readAll();
+    final fixed = _readInt(all[_kCorrection], defCorrection);
     return ProfileBolusState(
-      correctionFactor: _readInt(all[_kCorrection], defCorrection),
+      correctionFactor: fixed,
       carbFactor: _readInt(all[_kCarb], defCarb),
       maxBolus: _readInt(all[_kMaxBolus], defMaxBolus),
       insulinDurationH: _readInt(all[_kInsulinDuration], defInsulinDuration),

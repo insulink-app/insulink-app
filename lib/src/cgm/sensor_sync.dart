@@ -8,6 +8,7 @@ import 'package:insulink/src/inventory/inventory_item.dart';
 import 'package:insulink/src/inventory/inventory_store.dart';
 import 'package:insulink/src/inventory/inventory_sync.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Mirrors the paired sensor to the user's backend account so a fresh install
 /// can offer to restore it (see [fetchCurrent]).
@@ -18,6 +19,8 @@ import 'package:insulink/src/request/request.dart';
 /// changes (e.g. a re-pair rotates the session key). [fetchCurrent] runs in the
 /// UI isolate, where [Request] can refresh an expired token.
 class SensorSync {
+  const SensorSync();
+
   /// Register or update the current sensor. Idempotent and cheap: it only POSTs
   /// on the first complete identity and whenever that identity changes.
   Future<void> sync(CgmStore store) async {
@@ -124,7 +127,7 @@ class SensorSync {
     if (!_isSuccess(response)) {
       return;
     }
-    final id = jsonDecode(response!.body)['sensor_id'];
+    final id = response.jsonObject?['sensor_id'];
     if (id != null) {
       await store.saveBackendSensorId(key, '$id');
       await store.saveBackendSyncedData(key, data);
@@ -161,6 +164,29 @@ class SensorSync {
     }
   }
 
+  /// Tells the account a stored sensor is gone, so it stops being offered.
+  ///
+  /// The record is what lets a reinstalled app pick up a sensor still on the
+  /// body, so once that sensor is off it has nothing left to offer and would be
+  /// suggested at every launch. Dismissing the offer used to write a flag on the
+  /// DEVICE, which is no use in the one situation the offer exists for: a fresh
+  /// install has no local flags.
+  ///
+  /// The record is KEPT and only stamped. It is the user's sensor history and
+  /// belongs in the log whatever happened to the hardware; what stops is the
+  /// offering, because `/sensor/current/` skips a stamped one.
+  Future<bool> discard(String sensorId, BuildContext? context) async {
+    final response = await Request.post(
+      url: '/sensor/discard/',
+      body: {'sensor_id': sensorId},
+    ).send(context);
+    if (!_isSuccess(response)) {
+      debugPrint('sensor sync: discard REJECTED');
+      return false;
+    }
+    return true;
+  }
+
   /// The account's current sensor as a restorable identity, or null if there is
   /// none / the response was malformed. Call from the UI isolate.
   Future<SensorRestore?> fetchCurrent(BuildContext context) async {
@@ -168,7 +194,10 @@ class SensorSync {
     if (!_isSuccess(response)) {
       return null;
     }
-    final body = jsonDecode(response!.body);
+    final body = response.jsonObject;
+    if (body == null) {
+      return null;
+    }
     final id = body['id'];
     final data = body['data'];
     if (id == null || data is! String) {
@@ -197,7 +226,7 @@ class SensorSync {
       return false;
     }
     try {
-      return jsonDecode(response.body)['success'] == true;
+      return response.isApiSuccess;
     } catch (_) {
       return false;
     }

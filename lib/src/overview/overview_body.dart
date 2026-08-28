@@ -9,12 +9,15 @@ import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/battery_saver_banner.dart';
+import 'package:insulink/src/overview/overview_running_bolus.dart';
+import 'package:insulink/src/overview/chart/glucose_chart_bounds.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
 import 'package:insulink/src/overview/overview_active_insulin.dart';
 import 'package:insulink/src/overview/overview_boxes.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
 import 'package:insulink/src/overview/overview_section.dart';
+import 'package:insulink/src/overview/overview_pod_life.dart';
 import 'package:insulink/src/overview/overview_sensor_life.dart';
 import 'package:insulink/src/overview/overview_time_in_range.dart';
 import 'package:insulink/src/overview/update/overview_update.dart';
@@ -23,6 +26,7 @@ import 'package:insulink/src/overview/sensor_restore_offer.dart';
 import 'package:insulink/src/profile/battery/profile_battery_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:provider/provider.dart';
 
 class OverviewBody extends AppPageBody {
@@ -70,6 +74,7 @@ class OverviewBodyContent extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         children: [
+          const OverviewRunningBolus(),
           if (silent != SilentMode.off) ...[
             SilentBanner(silent),
             const SizedBox(height: 12),
@@ -213,6 +218,14 @@ class _DataViewState extends State<_DataView> {
           ),
           const SizedBox(height: 16),
         ],
+        if (context.watch<PodController>().hasPod) ...[
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => openPumpPage(context),
+            child: const OverviewSection(child: OverviewPodLife()),
+          ),
+          const SizedBox(height: 16),
+        ],
         const OverviewBoxes(),
       ],
     );
@@ -228,8 +241,9 @@ class _ChartPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final niceMin = _niceMinMgdl();
-    final niceMax = _niceMaxMgdl();
+    final bounds = GlucoseChartBounds(byTime.values);
+    final niceMin = bounds.minMgdl;
+    final niceMax = bounds.maxMgdl;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => Navigator.of(context).push(
@@ -273,29 +287,5 @@ class _ChartPreview extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  /// Y-axis top (mg/dL): the peak rounded up to the next 50, floored at 200 so
-  /// the target band stays visible. A low day uses less space; a high day more.
-  int _niceMaxMgdl() {
-    final values = byTime.values;
-    if (values.isEmpty) {
-      return 200;
-    }
-    final peak = values.reduce((a, b) => a > b ? a : b);
-    final rounded = ((peak + 20) / 50).ceil() * 50;
-    return rounded < 200 ? 200 : rounded;
-  }
-
-  /// Y-axis bottom (mg/dL): ~50 when nothing dips lower, else rounded down to the
-  /// next 50 — so a normal day starts at 50 instead of wasting space down to 0.
-  int _niceMinMgdl() {
-    final values = byTime.values;
-    if (values.isEmpty) {
-      return 50;
-    }
-    final low = values.reduce((a, b) => a < b ? a : b);
-    final floor = (low / 50).floor() * 50;
-    return floor > 50 ? 50 : floor;
   }
 }

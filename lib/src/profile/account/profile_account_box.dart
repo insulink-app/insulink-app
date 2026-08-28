@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
@@ -187,9 +188,17 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
     }
   }
 
+  /// Names the one thing a sign-out does NOT take with it, when there is one.
+  ///
+  /// A user about to sign out with a pod on their body needs to know it stays
+  /// paired and stays delivering: the alternative reading, that signing out also
+  /// gets rid of the pod, would be a dangerous thing to believe.
   void _confirmLogout() {
+    final hasPod = context.read<PodController>().hasPod;
     Alert(
-      description: "profile.account.logout_confirm",
+      description: hasPod
+          ? "profile.account.logout_keeps_pod"
+          : "profile.account.logout_confirm",
       icon: PhosphorIconsBold.warning,
       cancelButton: true,
       confirmButtonText: "profile.account.logout",

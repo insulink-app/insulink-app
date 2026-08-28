@@ -60,21 +60,34 @@ class MealState extends ChangeNotifier {
     NutritionSync().pushMeals();
   }
 
-  /// Replaces a logged meal in place (edit-after-the-fact). Matches by identity,
-  /// so the caller passes the exact instance it holds; a no-op if it's gone.
-  Future<void> updateMeal(Meal old, Meal updated) async {
-    final index = _meals.indexWhere((meal) => identical(meal, old));
+  /// Replaces a logged meal in place (edit-after-the-fact), reporting whether it
+  /// landed on anything.
+  ///
+  /// Matched by [Meal.logKey], NOT by object identity. Identity looked safe and
+  /// was not: [reload] rebuilds the list from storage on every sync pull, so any
+  /// caller holding a meal from before that pull silently wrote into nothing. The
+  /// bolus dispatcher is the one that mattered — it holds its meal for as long as
+  /// the pod takes to answer, and a pull in that window left a confirmed dose off
+  /// the meal it belonged to. The meal then read 0 U with the pump's own log
+  /// showing the delivery, the chart drew no bolus, and the loop, which takes its
+  /// insulin on board from the meal log, dosed on top of insulin already given.
+  Future<bool> updateMeal(Meal old, Meal updated) async {
+    final index = _meals.indexWhere((meal) => meal.logKey == old.logKey);
     if (index < 0) {
-      return;
+      return false;
     }
     _meals[index] = updated;
     notifyListeners();
     await _store.saveMeals(_meals);
     NutritionSync().pushMeals();
+    return true;
   }
 
+  /// Drops a logged meal, matched by [Meal.logKey] for the same reason
+  /// [updateMeal] is: a delete issued from a sheet opened before a pull would
+  /// otherwise leave the meal on screen and in storage.
   Future<void> removeMeal(Meal meal) async {
-    _meals.remove(meal);
+    _meals.removeWhere((logged) => logged.logKey == meal.logKey);
     notifyListeners();
     await _store.saveMeals(_meals);
     NutritionSync().pushMeals();

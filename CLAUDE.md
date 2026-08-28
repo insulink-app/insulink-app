@@ -7,9 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A from-scratch **CGM BLE reader** (Flutter + Rust) for two sensors: the **Dexcom
 G7** (fully working) and the **FreeStyle Libre 3** (in progress — see
 `docs/LIBRE3.md`). It reimplements each sensor's proprietary pairing/auth and
-reads live + historical glucose without the official apps. GPL-3.0; derivative of
-[Juggluco](https://github.com/j-kaltes/Juggluco). Interoperability/research
-project — not a medical device.
+reads live + historical glucose without the official apps. It also drives the
+**Omnipod DASH** pump (`lib/src/pump/`, `docs/OMNIPOD.md`).
+**AGPL-3.0** — the pump driver derives from AndroidAPS (AGPL-3.0); the CGM
+handshake code derives from [Juggluco](https://github.com/j-kaltes/Juggluco) and
+stays GPL-3.0. See `NOTICE` for which file is which, and keep pod protocol code
+OUT of `insulink-api` (AGPL §13 would make the API a network service that must
+publish its source). Interoperability/research project — not a medical device.
 
 The two sensors share everything above the wire layer via a `CgmConnection`
 strategy (`lib/src/cgm/cgm_connection.dart`): both decoders emit a `CgmReading`,
@@ -86,6 +90,10 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
 - **2-space indentation.**
 - **Localize everything.** No hard-coded user-facing strings — every displayed
   string goes through the localization layer (`assets/locales/*.json`).
+- **No dash as punctuation in a user-facing string** — no `—`, no `–`, no ` - `.
+  Use a comma, a colon or a full stop instead; a hyphen inside a word is fine
+  (`Glukose-Alarme`). `test/localization/locale_punctuation_test.dart` fails the
+  suite on one. Details and examples: `docs/LOCALIZATION.md`.
 - **JSON uses `snake_case` keys.** The locale files are **nested objects** per
   section (`{"profile": {"glucose": {"target": …}}}`); both loaders flatten them
   on load to the dot-separated keys the app looks up (`profile.glucose.target`)
@@ -103,7 +111,9 @@ screen when run standalone/unplugged; release/profile (AOT) run fine.
   under `cgm/protocol/`, `libre3/` = the FreeStyle Libre 3 wire code); cross-cutting
   shared code lives in `base/` (shared widgets/primitives — including
   `measurement_chart`/`measurement_row`/`measurement_entry_sheet`, the
-  dated-decimal history UI that weight and HbA1c both render), `localization/`,
+  dated-decimal history UI that weight and HbA1c both render, and
+  `device_lifespan`/`device_lifespan_bar`, the remaining-life segment bar the CGM
+  sensor and the Omnipod pod share), `localization/`,
   `theme/`. Within a large feature, subfolders are themselves features/sub-domains
   (e.g. `cgm/protocol/`, `profile/notifications/`), never technical layers.
 - **Document accumulated knowledge as individual markdown files under `docs/`** —
@@ -205,6 +215,16 @@ dies when the activity is destroyed, so the whole read pipeline runs in a
   whole service (fresh isolate + Rust core + BLE stack). Health is measured by
   **time-since-last-reading, not BLE connection state** (which is normally
   "disconnected" between the G7's 5-min deliveries).
+- **The pod rides this service too** (`pump/service/pod_monitor.dart`, hosted from
+  `onRepeatEvent` like the Fitbit band). It **never scans** — `openSession(allowScan:
+  false)` connects to the stored address — because a second round-the-clock scanner
+  wedges the OS scanner (gotcha #4). Its tick splits into contact-free checks
+  (expiry, "no contact for 45 min") that run every time and a pod poll every 15 min;
+  the split is what keeps the warnings working when the link is down. Pod alarms are
+  in `pump/service/pod_alarms.dart` and share the one notification plugin with
+  `G7AlarmManager`. The same tick books basal delivery into the ledger the
+  forecasting model reads — at the TEMPORARY rate while a temp basal runs, or the
+  scheduled one otherwise. Details + the full warning table: `docs/OMNIPOD.md`.
 - The UI layer is in `cgm_controller.dart` (`CgmController`), not `main.dart`
   — see "App / UI layer" below. `flutter_blue_plus` works in the service
   isolate because FFT registers plugins on its background engine.
@@ -560,6 +580,15 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `flutter_blue_plus` 2.x: `device.connect(license: License.nonprofit)` is required.
 - Auth char uses **indications**; control/backfill are subscribed only AFTER
   auth (subscribing them early makes the sensor drop the connection).
+- **Do not re-add the `camera` package.** It was a direct dependency that nothing
+  imported, and it pulls `camera_android_camerax`, whose CameraX 1.6.0 does not put
+  `androidx.concurrent:concurrent-futures` on the compile classpath — javac then
+  fails reading the type annotations on `SurfaceRequest`
+  (`Klassendatei für androidx.concurrent.futures.CallbackToFutureAdapter nicht
+  gefunden`). **Release only**; `flutter test`/`analyze` never see it. `mobile_scanner`
+  brings its own CameraX and compiles fine, so scanning is unaffected. If `camera` is
+  ever genuinely needed, add `androidx.concurrent:concurrent-futures` to that module's
+  compile classpath rather than reverting this.
 - **QR/DataMatrix scan (mobile_scanner) needs R8 keep rules** in
   `android/app/proguard-rules.pro` (wired via `proguardFiles` in the release
   buildType). Flutter enables R8 for release; mobile_scanner's bundled keep
@@ -576,6 +605,17 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `docs/LIBRE3.md` — **FreeStyle Libre 3** protocol (NFC activation, BLE GATT,
   security handshake), the vendor-blob bridge design + legal caveat, and the
   implementation status (what's done vs. hardware-gated).
+- `docs/OMNIPOD.md` — **Omnipod DASH** pump: implementation status, the four
+  protocol layers (fragments/messages/security/commands), and the hazard
+  analysis — including why there is no read-only mode and what each guard in
+  `lib/src/pump/protocol/` defends against. Automated delivery is
+  `docs/LOOP.md`.
+- `docs/LOOP.md` — **automated delivery**: why it is temp-basal-only, the pod's
+  own expiry as the fallback to basal, the trust boundary on sensor data, and
+  the layered limits that bound how much insulin it can add.
+- `docs/TUNING.md` — the weekly **basal suggestion**: why it attributes nothing,
+  which hours it throws away and why that is the feature working, and why there
+  is no button that applies it.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
 - `docs/DESIGN.md` — the theme/colour-role system: the two accents, the three

@@ -42,6 +42,17 @@ class ProfileBasalState extends ChangeNotifier {
     return _activeIndex;
   }
 
+  /// Adds a ready-made profile and leaves the active one alone.
+  ///
+  /// For the weekly suggestion, which must never switch anyone's basal by
+  /// appearing. It lands beside the others as something to look at, and becomes
+  /// real only when a person picks it.
+  int addInactiveProfile(BasalProfile profile) {
+    _profiles.add(profile);
+    _commit();
+    return _profiles.length - 1;
+  }
+
   void deleteProfile(int index) {
     if (_profiles.length <= 1) {
       return;

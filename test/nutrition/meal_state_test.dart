@@ -74,6 +74,29 @@ void main() {
     expect(state.meals, isEmpty);
   });
 
+  test('a confirmed bolus still lands after a sync pull replaced the log', () async {
+    final state = await MealState.load();
+    final logged = mealAt(DateTime.now(), bolus: 0);
+    await state.addMeal(logged);
+
+    // What the bolus dispatcher lives through: the pod is still answering while
+    // a pull rebuilds every meal in the list from storage.
+    await state.reload();
+
+    expect(await state.updateMeal(logged, logged.copyWith(bolus: 2.2)), isTrue);
+    await state.reload();
+    expect(state.meals.single.bolus, 2.2);
+  });
+
+  test('updating a meal that is gone reports that it did not land', () async {
+    final state = await MealState.load();
+    final logged = mealAt(DateTime(2026, 7, 9, 9));
+    await state.addMeal(logged);
+    await state.removeMeal(logged);
+
+    expect(await state.updateMeal(logged, logged.copyWith(bolus: 2.2)), isFalse);
+  });
+
   test('the log is capped, dropping the oldest meals', () async {
     final state = await MealState.load();
 

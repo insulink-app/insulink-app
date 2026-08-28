@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
+import 'package:insulink/src/request/response_json.dart';
 
 import 'package:flutter/widgets.dart';
 
@@ -48,10 +48,13 @@ class InventorySync {
   /// unless a local change is still queued ([_unsent] — the server never saw it).
   Future<void> pull(BuildContext? context) async {
     final response = await Request.get(url: '/inventory/items/find/').send(context);
-    if (response == null || _unsent) {
+    if (_unsent) {
       return;
     }
-    final body = jsonDecode(response.body);
+    final body = response.jsonObject;
+    if (body == null) {
+      return;
+    }
     if (body['success'] != true || body['items'] is! List) {
       return;
     }

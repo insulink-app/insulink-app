@@ -120,6 +120,18 @@ class Locales {
     return result;
   }
 
+  /// Whether this locale carries [key] at all.
+  ///
+  /// A missing key resolves to `$key` rather than to nothing, so a caller that
+  /// walks a numbered run of keys cannot recognise the end by comparing against
+  /// the key itself — it has to ask.
+  bool has(String key) =>
+      _localizedStings.containsKey(key.replaceAll(' ', '_').toLowerCase());
+
+  /// Whether the active locale carries [key].
+  static bool contains(BuildContext context, String key) =>
+      Localizations.of<Locales>(context, Locales)!.has(key);
+
   static String string(
     BuildContext context,
     String key, {

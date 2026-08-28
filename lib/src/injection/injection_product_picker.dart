@@ -11,8 +11,35 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// add / search / scan actions as the nutrition page ([FoodAddActions]), so a
 /// product can be created on the spot and then picked. Returns the chosen
 /// [FoodProduct] (or null when dismissed).
-Future<FoodProduct?> pickFoodProduct(BuildContext context) {
-  return showModalBottomSheet<FoodProduct>(
+///
+/// **The scan runs between two showings of the sheet, never on top of one.** The
+/// scanner is a full-screen page, so scanning from inside the sheet reveals the
+/// sheet again the instant the scanner pops and then closes it on the way to the
+/// amount, which reads as a stray popup opening and shutting. Here the sheet
+/// closes first. A scan that finds a saved product goes straight on; one that is
+/// cancelled, or that ends in the editor for a product the user has just created,
+/// brings the picker back so they can carry on where they were.
+Future<FoodProduct?> pickFoodProduct(BuildContext context) async {
+  while (true) {
+    if (!context.mounted) {
+      return null;
+    }
+    final outcome = await _showPicker(context);
+    if (outcome == null || outcome.product != null) {
+      return outcome?.product;
+    }
+    if (!context.mounted) {
+      return null;
+    }
+    final scanned = await _scanForPick(context);
+    if (scanned != null) {
+      return scanned;
+    }
+  }
+}
+
+Future<_PickerOutcome?> _showPicker(BuildContext context) {
+  return showModalBottomSheet<_PickerOutcome>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -22,6 +49,26 @@ Future<FoodProduct?> pickFoodProduct(BuildContext context) {
     ),
     builder: (_) => const _ProductPicker(),
   );
+}
+
+/// Scans, and reports back only a product that was ALREADY saved.
+///
+/// An unknown barcode still goes through the editor: a product from Open Food
+/// Facts is not yet the user's, and its carbohydrate figure is routinely wrong,
+/// so it is looked at before a dose is computed from it.
+Future<FoodProduct?> _scanForPick(BuildContext context) async {
+  FoodProduct? scanned;
+  await scanAndEditProduct(context, onKnown: (product) => scanned = product);
+  return scanned;
+}
+
+/// What the picker sheet came back with: a product, or a request to scan.
+class _PickerOutcome {
+  const _PickerOutcome.picked(this.product);
+
+  const _PickerOutcome.scan() : product = null;
+
+  final FoodProduct? product;
 }
 
 class _ProductPicker extends StatefulWidget {
@@ -86,7 +133,10 @@ class _ProductPickerState extends State<_ProductPicker> {
                     ),
                   ),
                 ),
-                const FoodAddActions(),
+                FoodAddActions(
+                  onScanRequested: () => Navigator.of(context)
+                      .pop(const _PickerOutcome.scan()),
+                ),
               ],
             ),
           ),
@@ -153,7 +203,8 @@ class _ProductPickerState extends State<_ProductPicker> {
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => Navigator.of(context).pop(product),
+          onTap: () =>
+              Navigator.of(context).pop(_PickerOutcome.picked(product)),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
             child: Row(

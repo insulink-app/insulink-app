@@ -859,8 +859,25 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Remember the user declined restoring [sensorId] so it isn't offered again.
+  /// Says this sensor is gone: locally, so the card goes at once, and to the
+  /// ACCOUNT, so it stays gone.
+  ///
+  /// The local flag alone was no use in the one situation the offer exists for.
+  /// It is per install, and the card is shown after a reinstall, so the sensor
+  /// came back offering itself every time. Best-effort towards the account,
+  /// including a thrown call: a phone with no signal must still be able to
+  /// dismiss a card.
   Future<void> dismissRestore(String sensorId) async {
     await _store?.setRestoreDismissed(sensorId);
+    await _tellTheAccountSensorIsGone(sensorId);
+  }
+
+  Future<void> _tellTheAccountSensorIsGone(String sensorId) async {
+    try {
+      await const SensorSync().discard(sensorId, null);
+    } catch (error) {
+      _append('telling the account the sensor is gone failed: $error');
+    }
   }
 
   /// Adopt the sensor the backend has on file (offered on a fresh install when
@@ -1047,6 +1064,12 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     final store = _store;
     if (store != null) {
       await EventSync().sync(store, _append);
+    }
+    // The account too, or it offers this sensor straight back after the next
+    // reinstall. Read before the local clear, which is what holds the id.
+    final backendId = _store?.backendSensorId(key);
+    if (backendId != null) {
+      await _tellTheAccountSensorIsGone(backendId);
     }
     await _store?.clearSensor(key);
     _append('sensor forgotten');

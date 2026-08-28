@@ -4,6 +4,8 @@ import 'package:insulink/src/google_health/google_health_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/pod_delivery_log_page.dart';
+import 'package:insulink/src/pump/pump_actions.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
 import 'package:provider/provider.dart';
@@ -26,6 +28,21 @@ void openSensorPage(BuildContext context) {
     MaterialPageRoute<void>(
       builder: (_) =>
           ConnectionSubPage(title: title, body: const SensorBodyContent()),
+    ),
+  );
+}
+
+/// Opens the pump page directly (skipping the connections list), for shortcuts
+/// that are specifically about the pump — e.g. the overview's pod section.
+void openPumpPage(BuildContext context) {
+  final title = Locales.string(context, 'pump.label');
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => ConnectionSubPage(
+        title: title,
+        body: const PumpBodyContent(),
+        actions: const [PodTestBeepButton(), PodDeliveryLogButton()],
+      ),
     ),
   );
 }
@@ -68,6 +85,7 @@ class ConnectionsBodyContent extends StatelessWidget {
           icon: PhosphorIconsFill.syringe,
           labelKey: "pump.label",
           page: const PumpBodyContent(),
+          actions: const [PodTestBeepButton(), PodDeliveryLogButton()],
         ),
         const SizedBox(height: 14),
         ConnectionRow(

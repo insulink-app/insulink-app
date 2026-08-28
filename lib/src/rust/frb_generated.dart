@@ -5,6 +5,7 @@
 
 import 'api/jpake.dart';
 import 'api/simple.dart';
+import 'api/x25519.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -67,7 +68,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 149586542;
+  int get rustContentHash => 1376232026;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -122,6 +123,17 @@ abstract class RustLibApi extends BaseApi {
   String crateApiSimpleGreet({required String name});
 
   Future<void> crateApiSimpleInitApp();
+
+  Uint8List crateApiX25519X25519GeneratePrivateKey();
+
+  Uint8List crateApiX25519X25519PublicFromPrivate({
+    required List<int> privateKey,
+  });
+
+  Uint8List crateApiX25519X25519SharedSecret({
+    required List<int> privateKey,
+    required List<int> peerPublicKey,
+  });
 
   RustArcIncrementStrongCountFnType get rust_arc_increment_strong_count_G7Jpake;
 
@@ -517,6 +529,89 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateApiSimpleInitAppConstMeta =>
       const TaskConstMeta(debugName: "init_app", argNames: []);
+
+  @override
+  Uint8List crateApiX25519X25519GeneratePrivateKey() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_prim_u_8_strict,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiX25519X25519GeneratePrivateKeyConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiX25519X25519GeneratePrivateKeyConstMeta =>
+      const TaskConstMeta(
+        debugName: "x25519_generate_private_key",
+        argNames: [],
+      );
+
+  @override
+  Uint8List crateApiX25519X25519PublicFromPrivate({
+    required List<int> privateKey,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(privateKey, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_prim_u_8_strict,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiX25519X25519PublicFromPrivateConstMeta,
+        argValues: [privateKey],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiX25519X25519PublicFromPrivateConstMeta =>
+      const TaskConstMeta(
+        debugName: "x25519_public_from_private",
+        argNames: ["privateKey"],
+      );
+
+  @override
+  Uint8List crateApiX25519X25519SharedSecret({
+    required List<int> privateKey,
+    required List<int> peerPublicKey,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(privateKey, serializer);
+          sse_encode_list_prim_u_8_loose(peerPublicKey, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_prim_u_8_strict,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiX25519X25519SharedSecretConstMeta,
+        argValues: [privateKey, peerPublicKey],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiX25519X25519SharedSecretConstMeta =>
+      const TaskConstMeta(
+        debugName: "x25519_shared_secret",
+        argNames: ["privateKey", "peerPublicKey"],
+      );
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_G7Jpake => wire

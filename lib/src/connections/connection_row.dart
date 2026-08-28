@@ -10,12 +10,16 @@ class ConnectionRow extends StatelessWidget {
   final Widget page;
   final bool notify;
 
+  /// Header controls the opened page should carry, e.g. the pump's delivery log.
+  final List<Widget> actions;
+
   const ConnectionRow({
     super.key,
     required this.icon,
     required this.labelKey,
     required this.page,
     this.notify = false,
+    this.actions = const [],
   });
 
   @override
@@ -29,7 +33,8 @@ class ConnectionRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => ConnectionSubPage(title: label, body: page),
+            builder: (_) =>
+                ConnectionSubPage(title: label, body: page, actions: actions),
           ),
         ),
         child: Container(
@@ -88,12 +93,25 @@ class ConnectionSubPage extends StatelessWidget {
   final String title;
   final Widget body;
 
-  const ConnectionSubPage({super.key, required this.title, required this.body});
+  /// Controls in the header that belong to this device rather than to the page
+  /// body — the pump's delivery log is one.
+  final List<Widget> actions;
+
+  const ConnectionSubPage({
+    super.key,
+    required this.title,
+    required this.body,
+    this.actions = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(surfaceTintColor: Colors.transparent, title: Text(title)),
+      appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
+        title: Text(title),
+        actions: actions,
+      ),
       body: body,
     );
   }

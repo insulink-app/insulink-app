@@ -9,6 +9,7 @@ import 'package:http/http.dart' show Response;
 import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Talks to the backend `/signin/` and `/signup/` endpoints and persists the
 /// returned tokens. Each method returns `null` on success, or a localization
@@ -58,7 +59,10 @@ class AuthService {
     if (response == null) {
       return "auth.error.network";
     }
-    final body = jsonDecode(response.body);
+    final body = response.jsonObject;
+    if (body == null) {
+      return "auth.error.network";
+    }
     if (body["success"] != true) {
       return invalidKey;
     }

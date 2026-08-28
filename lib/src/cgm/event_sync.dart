@@ -1,8 +1,8 @@
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Mirrors the on-device analysis event log (glucose lows/highs, signal loss,
 /// sensor swap/stop) to the backend account, and pulls it back on sign-in.
@@ -92,10 +92,10 @@ class EventSync {
   /// install shows the full analysis event history.
   Future<void> pullHistory(BuildContext? context) async {
     final response = await Request.get(url: '/event/history/').send(context);
-    if (response == null) {
+    final body = response.jsonObject;
+    if (body == null) {
       return;
     }
-    final body = jsonDecode(response.body);
     if (body['success'] != true) {
       return;
     }

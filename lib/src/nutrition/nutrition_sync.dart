@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
@@ -9,6 +8,7 @@ import 'package:insulink/src/nutrition/hydration/nutrition_store.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_store.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Mirrors the user's nutrition data (the meal log + logged drinks) to their
 /// backend account and pulls it back on sign-in. Same shape as [SportSync]: each
@@ -123,10 +123,13 @@ class NutritionSync {
     String collection,
   ) async {
     final response = await Request.get(url: url).send(context);
-    if (response == null || localWins(collection)) {
+    if (localWins(collection)) {
       return null;
     }
-    final body = jsonDecode(response.body);
+    final body = response.jsonObject;
+    if (body == null) {
+      return null;
+    }
     if (body['success'] != true || body[key] is! List) {
       return null;
     }

@@ -32,6 +32,11 @@ class ActiveInsulinSparkline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    // Same guard as [ActiveInsulinChart]: everything below reads `points.first`
+    // and `points.last`, and an empty list throws during layout.
+    if (points.length < 2) {
+      return const SizedBox.shrink();
+    }
     return LineChart(
       LineChartData(
         minX: 0,

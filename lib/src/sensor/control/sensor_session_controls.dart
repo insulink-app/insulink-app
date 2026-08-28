@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/action_buttons.dart';
 
 import '../../alert/alert.dart';
 import '../../cgm/cgm_controller.dart';
@@ -20,44 +21,23 @@ class SensorSessionControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _endSessionButton(context, scheme),
-        const SizedBox(height: 10),
-        _stopSensorButton(context),
-      ],
-    );
-  }
-
-  Widget _endSessionButton(BuildContext context, ColorScheme scheme) {
-    return FilledButton.tonalIcon(
-      onPressed: _connected ? () => _endSession(context) : null,
-      icon: const Icon(PhosphorIconsBold.stopCircle, size: 20),
-      label: LocaleText('sensor.control.end_session'),
-      style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(46),
-        backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
-        foregroundColor: scheme.onSurface.withValues(alpha: 0.8),
-      ),
-    );
-  }
-
-  Widget _stopSensorButton(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: (_connected || controller.hasSensor)
-          ? () => _stopSensor(context)
-          : null,
-      icon: const Icon(PhosphorIconsBold.linkBreak, size: 20),
-      label: LocaleText('sensor.control.stop_sensor'),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: context.danger,
-        minimumSize: const Size.fromHeight(46),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.4),
+        SecondaryActionButton(
+          labelKey: 'sensor.control.end_session',
+          icon: PhosphorIconsBold.stopCircle,
+          onPressed: _connected ? () => _endSession(context) : null,
         ),
-      ),
+        const SizedBox(height: 10),
+        DangerActionButton(
+          labelKey: 'sensor.control.stop_sensor',
+          icon: PhosphorIconsBold.linkBreak,
+          onPressed: (_connected || controller.hasSensor)
+              ? () => _stopSensor(context)
+              : null,
+        ),
+      ],
     );
   }
 

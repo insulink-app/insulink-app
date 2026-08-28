@@ -8,6 +8,7 @@
 
 import 'api/jpake.dart';
 import 'api/simple.dart';
+import 'api/x25519.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';

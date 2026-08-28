@@ -26,9 +26,21 @@ class ActiveInsulinChart extends StatelessWidget {
     return (peak * 1.15).clamp(1.0, double.infinity);
   }
 
+  /// Two points is the least that can be a line, and everything below reads
+  /// `points.first` and `points.last`.
+  ///
+  /// Guarded HERE rather than only at the call sites. A caller that forgot threw
+  /// during layout and left behind the grey box its failed render was sitting
+  /// in, which is a puzzling thing to be shown and a cheap thing to make
+  /// impossible.
+  bool get _isDrawable => points.length >= 2;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    if (!_isDrawable) {
+      return const SizedBox.shrink();
+    }
     return LineChart(
       LineChartData(
         minX: 0,

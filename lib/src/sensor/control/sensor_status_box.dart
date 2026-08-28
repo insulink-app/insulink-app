@@ -6,7 +6,7 @@ import '../../cgm/cgm_controller.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
-import 'sensor_life_bar.dart';
+import 'package:insulink/src/base/device_lifespan_bar.dart';
 import 'sensor_session_controls.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -54,7 +54,7 @@ class SensorStatusBox extends StatelessWidget {
           _header(context, scheme),
           if (controller.sensorStart != null) ...[
             const SizedBox(height: 18),
-            SensorLifeBar(
+            DeviceLifespanBar(
               start: controller.sensorStart!,
               sessionLengthSec: _sessionLengthSec,
             ),

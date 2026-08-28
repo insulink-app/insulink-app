@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/active_insulin.dart';
+import 'package:insulink/src/injection/insulin_on_board.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/injection/active_insulin_sparkline.dart';
 import 'package:insulink/src/injection/active_insulin_page.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/overview/overview_section.dart';
@@ -56,12 +58,21 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _refreshPumpInsulin();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final meals = context.watch<MealState>().meals;
-    final insulin = ActiveInsulin(
-      context.watch<ProfileBolusState>().insulinDuration,
+    final duration = context.watch<ProfileBolusState>().insulinDuration;
+    final insulin = ActiveInsulin(duration);
+    final parts = InsulinOnBoard(duration).parts(
+      meals,
+      pod: context.watch<PodController>().store,
     );
-    final units = insulin.units(meals);
+    final units = parts.total;
     _syncTicker(units > 0);
     if (units <= 0) {
       return const SizedBox.shrink();
@@ -74,7 +85,7 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
             MaterialPageRoute<void>(builder: (_) => const ActiveInsulinPage()),
           ),
           child: OverviewSection(
-            child: _content(context, units, insulin, meals),
+            child: _content(context, parts, insulin, meals),
           ),
         ),
         const SizedBox(height: 16),
@@ -82,14 +93,25 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
     );
   }
 
+  /// Re-reads the pod store once when the box appears.
+  ///
+  /// The automation runs in the background service isolate and the store serves
+  /// its getters from a cache that is per isolate, so without this the overview
+  /// would show whatever automated insulin this isolate knew about at app start.
+  Future<void> _refreshPumpInsulin() async {
+    await context.read<PodController>().store.reload();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   Widget _content(
     BuildContext context,
-    double units,
+    InsulinOnBoardParts parts,
     ActiveInsulin insulin,
     List<Meal> meals,
   ) {
     final now = DateTime.now();
-    final until = insulin.activeUntil(meals, now: now);
     // Newest dose still on board. activeDoses is already sorted newest-first and
     // drops meals logged without a bolus, so the first entry is the last real
     // injection — no separate scan of the meal log.
@@ -106,7 +128,7 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _headline(context, units),
+        _headline(context, parts.total),
         if (curve.length >= 2) ...[
           const SizedBox(height: 10),
           SizedBox(
@@ -114,13 +136,12 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
             child: ActiveInsulinSparkline(points: curve, now: now),
           ),
         ],
-        if (until != null && lastDose != null) ...[
+        if (lastDose != null) ...[
           const SizedBox(height: 8),
           Text(
             Locales.string(context, 'overview.active_insulin.summary', params: [
               _units(context, lastDose.bolus),
               TimeOfDay.fromDateTime(lastDose.time).format(context),
-              TimeOfDay.fromDateTime(until).format(context),
             ]),
             style: TextStyle(
               fontSize: 12,

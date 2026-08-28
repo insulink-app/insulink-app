@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
-import 'package:insulink/src/injection/active_insulin.dart';
+import 'package:insulink/src/injection/insulin_on_board.dart';
+import 'package:insulink/src/injection/bolus_delivery.dart';
+import 'package:insulink/src/injection/bolus_dispatcher.dart';
 import 'package:insulink/src/injection/injection_confirm_page.dart';
 import 'package:insulink/src/injection/injection_products_tab.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -11,6 +13,8 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
+import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pod_store.dart';
 import 'package:provider/provider.dart';
 import 'package:insulink/src/theme/brand_tints.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -67,6 +71,20 @@ class _InjectionSheetState extends State<InjectionSheet> {
     // Prefill the suggestion from the prefilled glucose (listeners don't fire for
     // the initial text); after the first frame so setState is legal.
     WidgetsBinding.instance.addPostFrameCallback((_) => _recompute());
+    _refreshPumpInsulin();
+  }
+
+  /// Re-reads the pod store before anything is suggested from it.
+  ///
+  /// The automation runs in the background SERVICE isolate and the store serves
+  /// its getters from a cache that is per isolate. Without this the calculator
+  /// would subtract whatever automated insulin this isolate happened to know
+  /// about when the app started, which for a sheet opened hours later is none.
+  Future<void> _refreshPumpInsulin() async {
+    await context.read<PodController>().store.reload();
+    if (mounted) {
+      _recompute();
+    }
   }
 
   @override
@@ -95,16 +113,39 @@ class _InjectionSheetState extends State<InjectionSheet> {
 
   int? get _glucose => int.tryParse(_glucoseController.text);
 
-  /// Units still active from earlier boluses, read from the meal log.
+  /// Everything still working, not just the user's own doses.
+  ///
+  /// It used to be the meal log alone. While the automation runs an elevated
+  /// temporary basal, the insulin it has added is real and was invisible here, so
+  /// the suggestion carried a full correction on top of it. That is the stacking
+  /// hypo this calculator exists to prevent, arriving through the one door it was
+  /// not watching. [InsulinOnBoard] is now the single answer both the calculator
+  /// and the automation ask.
   ///
   /// Deliberately `read`, not `watch`: [_suggested] reaches this from the field
   /// listeners, which run OUTSIDE build, where watch throws. Nothing is lost —
   /// this sheet is the only way to log a dose, so the meal log cannot change
   /// while it is open.
-  double get _activeInsulin {
+  InsulinOnBoardParts get _onBoard {
     final duration = context.read<ProfileBolusState>().insulinDuration;
-    return ActiveInsulin(duration).units(context.read<MealState>().meals);
+    return InsulinOnBoard(duration).parts(
+      context.read<MealState>().meals,
+      pod: context.read<PodController>().store,
+    );
   }
+
+  double get _activeInsulin => _onBoard.total;
+
+  /// Bolus units the pod actually put out within the past hour.
+  ///
+  /// What the delivery guard's rolling ceiling is about, and NOT the same as
+  /// insulin on board: on board reaches back a whole insulin duration and now
+  /// also carries what the automation added, so using it here would refuse a
+  /// legitimate meal bolus because of basal given two hours ago.
+  double get _deliveredLastHour =>
+      context.read<PodController>().store.bolusUnitsWithin(
+            const Duration(hours: 1),
+          );
 
   /// Suggested bolus in units, or null while glucose is empty/invalid.
   double? get _suggested {
@@ -149,6 +190,21 @@ class _InjectionSheetState extends State<InjectionSheet> {
     _recompute();
   }
 
+  /// How the confirmed bolus reaches the body: through a paired pod when there is
+  /// one, otherwise only into the log, exactly as before pump support existed.
+  ///
+  /// The pod's own limits sit underneath, but the ceilings passed here are the
+  /// user's own [ProfileBolusState] settings, so the number the sheet already
+  /// enforces is the number the pump enforces too.
+  BolusDelivery get _delivery {
+    final bolusSettings = context.read<ProfileBolusState>();
+    return BolusDelivery(
+      controller: context.read<PodController>(),
+      maxBolusUnits: bolusSettings.maxBolus.toDouble(),
+      maxUnitsPerHour: bolusSettings.maxBolus.toDouble(),
+    );
+  }
+
   Future<void> _next() async {
     final bolus = _bolus;
     final glucose = _glucose;
@@ -157,27 +213,59 @@ class _InjectionSheetState extends State<InjectionSheet> {
     }
     final navigator = Navigator.of(context);
     final meals = context.read<MealState>();
-    final confirmed = await navigator.push<bool>(
-      MaterialPageRoute<bool>(
+    final outcome = await navigator.push<BolusDeliveryResult>(
+      MaterialPageRoute<BolusDeliveryResult>(
         builder: (_) => InjectionConfirmPage(
           carbs: _carbs,
           glucoseMgdl: glucose,
           bolus: bolus,
+          delivery: _delivery,
+          deliveredLastHour: _deliveredLastHour,
         ),
       ),
     );
-    if (confirmed == true && mounted) {
-      await meals.addMeal(
-        Meal(
-          time: DateTime.now(),
-          carbs: _carbs,
-          glucoseMgdl: glucose,
-          bolus: bolus,
-          entries: _productEntries,
-        ),
-      );
+    if (outcome == null || !mounted) {
+      return;
+    }
+    final meal = await _record(meals, glucose, outcome);
+    if (outcome.isPending && mounted) {
+      // Handed over, not delivered: the dispatcher carries it from here and
+      // writes the insulin onto this exact meal once the pod names it back.
+      context.read<BolusDispatcher>().submit(
+            delivery: _delivery,
+            units: bolus,
+            deliveredLastHour: _deliveredLastHour,
+            meal: meal,
+          );
+    }
+    if (mounted) {
       navigator.pop();
     }
+  }
+
+  /// Writes the meal.
+  ///
+  /// The carbs are certain — the user ate them — so the meal is always recorded.
+  /// The insulin is only recorded at [BolusDeliveryResult.recordedUnits], which
+  /// is zero unless a dose is known to have gone in. A refused or unconfirmed
+  /// pump dose therefore logs the meal WITHOUT insulin: understating it can be
+  /// corrected by logging the dose afterwards, whereas insulin in the log that
+  /// never reached the body would suppress the next dose through IOB.
+  Future<Meal> _record(
+    MealState meals,
+    int glucose,
+    BolusDeliveryResult outcome,
+  ) async {
+    final meal = Meal(
+      time: DateTime.now(),
+      carbs: _carbs,
+      glucoseMgdl: glucose,
+      bolus: outcome.recordedUnits,
+      entries: _productEntries,
+      deliveredByPump: outcome.byPump,
+    );
+    await meals.addMeal(meal);
+    return meal;
   }
 
   @override
@@ -235,7 +323,10 @@ class _InjectionSheetState extends State<InjectionSheet> {
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 10),
-        InjectionProductsTab(onItemsChanged: _onProductItems),
+        InjectionProductsTab(
+          onItemsChanged: _onProductItems,
+          manualCarbs: _manualCarbs,
+        ),
       ],
     );
   }
@@ -279,6 +370,13 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// in the bolus field is never an unexplained one. Hidden while nothing is
   /// active: "0.0 U on board" carries no information and would only make the
   /// sheet look busier.
+  /// The insulin already working, as ONE number.
+  ///
+  /// Not split into what came from a dose and what came from the pump. The
+  /// suggestion below is computed from the total, so the total is what explains
+  /// it; a breakdown here invites doing arithmetic on a sheet where the only
+  /// question is how much to give now. The split is on the active-insulin page
+  /// for anyone who wants it.
   Widget _activeInsulinNote() {
     final units = _activeInsulin;
     if (units <= 0) {
@@ -301,9 +399,6 @@ class _InjectionSheetState extends State<InjectionSheet> {
   }
 }
 
-/// A titled, boxed group inside the bolus sheet: an icon + section title over
-/// the fields that belong together, so the sheet reads as distinct steps
-/// instead of one flat stack of inputs.
 class _InjectionCard extends StatelessWidget {
   const _InjectionCard({
     required this.icon,

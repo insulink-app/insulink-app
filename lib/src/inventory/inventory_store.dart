@@ -30,6 +30,25 @@ class InventoryStore {
     value: jsonEncode(items.map((item) => item.toJson()).toList()),
   );
 
+  /// Take one pod of [brand] out of stock when a new pod is activated.
+  ///
+  /// The same rule as [consumeSensor] and for the same reason: an activation is
+  /// the one moment a pod becomes newly known, and the backend id stored
+  /// alongside it stops a second sync counting it again.
+  Future<bool> consumePump(PumpBrand brand) async {
+    final items = await load();
+    final index = items.indexWhere((item) =>
+        item.type == ItemType.pump &&
+        item.pumpBrand == brand &&
+        item.stock > 0);
+    if (index < 0) {
+      return false;
+    }
+    items[index] = items[index].copyWith(stock: items[index].stock - 1);
+    await save(items);
+    return true;
+  }
+
   /// Take one sensor of [brand] out of stock when a new sensor is paired.
   /// Runs from the foreground-service isolate (no ChangeNotifier, no context),
   /// so it works straight on the store; the caller triggers the backend sync.

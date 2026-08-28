@@ -43,6 +43,20 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
+      # The pod protocol tests dlopen the host Rust core from
+      # rust/target/debug/, so it has to exist before `flutter test`.
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo build (host)
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+
+      - name: Build Rust core (host)
+        working-directory: rust
+        run: cargo build
+
       - name: Test (with coverage)
         run: flutter test --coverage
 

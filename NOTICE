@@ -1,0 +1,61 @@
+Insulink app — licensing and provenance
+=======================================
+
+The app as a whole is conveyed under the **GNU Affero General Public License,
+version 3** (`LICENSE`).
+
+It moved from GPL-3.0 to AGPL-3.0 when the Omnipod DASH driver was added: that
+driver is derived from AndroidAPS, which is AGPL-3.0, and AGPL-3.0 is the only
+licence under which the combined work can be distributed.
+
+Parts that stay under GPL-3.0
+-----------------------------
+
+Some files are derived from GPL-3.0 projects and remain GPL-3.0. They are not
+relicensed here — that is not ours to do. GPL-3.0 section 13 and AGPL-3.0
+section 13 both explicitly permit combining the two into one work, so the
+combination is distributable; the GPL-covered parts keep their own terms, and
+AGPL-3.0 section 13 applies to the combination as such.
+
+GPL-3.0 text: `LICENSE.GPL-3.0`.
+
+| Component | Derived from | Licence |
+|-----------|--------------|---------|
+| `rust/src/api/jpake.rs` — EC-JPAKE for the Dexcom G7 handshake | [Juggluco](https://github.com/j-kaltes/Juggluco) (`ecJPake.cpp`) | GPL-3.0 |
+| `lib/src/cgm/protocol/display_certs.dart` — G7 display certificates | Juggluco | GPL-3.0 |
+| `lib/src/libre3/` — FreeStyle Libre 3 activation and decode | Juggluco | GPL-3.0 |
+| `android/app/src/main/jniLibs/` — Libre 3 key material | Juggluco (`KEYSCrypto.java`) | GPL-3.0 |
+
+Parts under AGPL-3.0
+--------------------
+
+| Component | Derived from | Licence |
+|-----------|--------------|---------|
+| `lib/src/pump/` — the whole Omnipod DASH driver: protocol layout, magic constants, and the known-answer test vectors under `test/pump/` | [AndroidAPS](https://github.com/nightscout/AndroidAPS) (`pump/omnipod/common/bledriver`) | AGPL-3.0 |
+| `rust/src/api/x25519.rs` — X25519 for the pod pairing handshake | AndroidAPS (`X25519KeyGenerator.kt`, `KeyExchange.kt`) | AGPL-3.0 |
+
+Everything else is original Insulink code, licensed AGPL-3.0.
+
+What section 13 means in practice
+---------------------------------
+
+AGPL-3.0 section 13 requires that anyone interacting with a modified version of
+the program **remotely over a network** be offered its Corresponding Source. The
+app is not a network service, so this does not bite today.
+
+It would bite if AGPL-derived code were moved into a module that IS served over a
+network — `insulink-api` in particular. So: **keep the pod driver in the app.**
+`insulink-api` may store pump data as an opaque blob, but must not contain ported
+pod protocol logic, or the API becomes an AGPL network service and has to offer
+its source to every user of it.
+
+Protocol background that carries no code
+----------------------------------------
+
+Reverse-engineering notes consulted for the protocols, from which no code was
+taken: the [openomni wiki](https://github.com/openaps/openomni/wiki) (the
+Eros-level message layer that DASH reuses), [Loop's
+OmniBLE](https://github.com/LoopKit/OmniBLE),
+[DiaBLE](https://github.com/gui-dos/DiaBLE),
+[LoopKit/G7SensorKit](https://github.com/LoopKit/G7SensorKit) and
+[xDrip+](https://github.com/NightscoutFoundation/xDrip).

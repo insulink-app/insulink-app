@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
@@ -229,11 +229,8 @@ class SportSync {
   /// (a refused push, a failed request) leaves it alone: the stamp still
   /// describes the copy this device last saw.
   void _rememberUpdate(Response? response, int startedAtMs) {
-    if (response == null) {
-      return;
-    }
-    final body = jsonDecode(response.body);
-    if (body['success'] != true || body['updated'] is! num) {
+    final body = response.jsonObject;
+    if (body == null || body['success'] != true || body['updated'] is! num) {
       return;
     }
     _knownUpdate = (body['updated'] as num).toInt();
@@ -271,11 +268,8 @@ class SportSync {
     final response = await Request.get(
       url: '/sport/workout/active/find/',
     ).send(context);
-    if (response == null) {
-      return null;
-    }
-    final body = jsonDecode(response.body);
-    if (body['success'] != true) {
+    final body = response.jsonObject;
+    if (body == null || body['success'] != true) {
       return null;
     }
     if (body['workout'] is! Map) {
@@ -333,11 +327,11 @@ class SportSync {
     String collection,
   ) async {
     final response = await Request.get(url: url).send(context);
-    if (response == null || localWins(collection)) {
+    if (localWins(collection)) {
       return null;
     }
-    final body = jsonDecode(response.body);
-    if (body['success'] != true || body[key] is! List) {
+    final body = response.jsonObject;
+    if (body == null || body['success'] != true || body[key] is! List) {
       return null;
     }
     return body[key] as List<dynamic>;

@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:insulink/src/sensor/control/sensor_lifespan.dart';
+import 'package:insulink/src/base/device_lifespan.dart';
 
 /// Standard G7: rated 10 days + ~12 h grace = 907200 s.
 const g7Session = 907200;
 
-SensorLifespan after(Duration elapsed, {int session = g7Session}) {
+DeviceLifespan after(Duration elapsed, {int session = g7Session}) {
   final start = DateTime(2024, 1, 1, 12);
-  return SensorLifespan(
+  return DeviceLifespan(
     start: start,
     sessionLengthSec: session,
     now: start.add(elapsed),
@@ -14,7 +14,7 @@ SensorLifespan after(Duration elapsed, {int session = g7Session}) {
 }
 
 void main() {
-  group('SensorLifespan.totalDays', () {
+  group('DeviceLifespan.totalDays', () {
     test('floors the 10.5-day session to 10 whole days (not 11)', () {
       expect(after(Duration.zero).totalDays, 10);
     });

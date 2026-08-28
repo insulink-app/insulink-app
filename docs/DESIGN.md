@@ -256,3 +256,81 @@ Measured against `surface #1F232A`, for calibrating future changes:
 | `primary` behind white text | ~4.1:1 |
 
 Non-text/graphics need ≥3:1, normal text ≥4.5:1.
+
+## Insulin has its own two colours
+
+`InsulinColors` (`context.insulin.basal` / `.bolus`), a role of its own rather
+than borrowed from anywhere else. `GlucoseColors` is the language of glucose and
+must not move when insulin does, and the accent already means "this is a control
+you can press". Insulin is neither: it is data, with exactly two kinds that have
+to be told apart at a glance.
+
+Both come from the brand indigo, because insulin is not a warning. **Bolus** is
+the stronger of the two, a dose someone chose arriving all at once. **Basal** is
+the quieter one, the background drip the boluses stand on. The pair swaps weight
+between themes: on dark the LIGHTER indigo is the loud one.
+
+| | basal | bolus | basal vs surface | bolus vs surface | basal vs bolus |
+|---|---|---|---|---|---|
+| light | `#8894CE` | `#45569F` | 2.39 | 5.56 | 2.33 |
+| dark | `#5C6BA6` | `#9DACEA` | 3.08 | 7.15 | 2.32 |
+
+Measured against each theme's **surface**, not against white or black. A first
+pass used `#9AA6D8` for light basal, which reads fine against white and makes
+only 1.94 against the `#E8E8E8` page it actually sits on.
+
+`test/theme/insulin_colors_test.dart` pins all three relationships, including
+that neither value is one of the glucose tones.
+
+## The insulin chart borrows the glucose chart's language
+
+The two are stacked and share one time axis, so anything that differs between
+them reads as "two unrelated pictures". Three things had to be copied exactly
+rather than approximated:
+
+| | value | why |
+|---|---|---|
+| left axis strip | `24` | must equal the glucose chart's `reservedSize`, or the plot areas start at different x and every bar sits BESIDE its glucose |
+| gridlines | `blueGrey`, `0.4`, dash `[8, 4]` | fl_chart's `defaultGridLine`, which is what the chart above draws. Solid divider-coloured lines at `1.0` were the first attempt and looked like another chart |
+| scrub + tooltip | dashed `[4, 4]` at `onSurface` 0.35; pill in `inverseSurface` | one gesture across the pair should look like one gesture |
+
+The bars are hand-painted rather than handed to `BarChart`, and that is not
+preference: `BarChart` lays groups out in the order given and spaces them evenly.
+A group's `x` is a label, not a position, so bars drawn that way sit at even
+intervals no matter when the insulin went in, and a chart claiming a shared time
+axis would be showing something else.
+
+**Basal and bolus are different SHAPES, not just different colours.** Basal is an
+hour the pump spent delivering, so it is a band covering that hour; a bolus is a
+moment, so it is a narrower bar standing in front of the band. This is what makes
+the ordinary case legible: a dose almost always lands inside an hour that was also
+running basal, and it reads as having happened DURING that hour rather than
+colliding with it. Two equal bars fighting for the same pixels could only be read
+wrong.
+
+Hit-testing follows the shapes: a band is hit anywhere inside its hour, a spike
+within `bolusReach` of itself, and the bolus wins where both are hit. Measuring to
+the band's START instead was a real bug: a point at :55, plainly inside the hour,
+selected a bolus given at :20.
+
+**Selection follows the shapes too.** A bolus is a moment and is in the window or
+out of it. An hour of basal is a stretch, so it belongs on screen whenever any
+part of it OVERLAPS the window. Requiring its start to be inside was the second
+bug of the same kind: a window opening at 09:30 dropped the 09:00 hour entirely,
+so a band whose remainder was plainly visible vanished at the left edge.
+
+A clipped band is drawn at its FULL height, because that is the rate the hour ran,
+with a square corner and no separating gap on the cut side: a rounded corner says
+"the band ends here", and this one runs on past the edge. The legend answers a
+different question and counts only the share on screen, pro rata, which within an
+hour is exact rather than an approximation because the pump runs one rate through
+it.
+
+## Not every page wants the fading pinned header
+
+`PinnedHeaderScroll` suits a box that is only ever READ: it dissolves as the
+detail list takes its place, and past half transparency it stops accepting
+touches (`IgnorePointer`). The pump page's top holds the automation switch, so it
+uses a plain scroll instead. A control that fades while you scroll towards the
+list underneath it is distracting, and one that silently stops being tappable is
+worse.

@@ -3,6 +3,28 @@
 User-facing strings live in `assets/locales/{de,en}.json`. German is the base
 locale; English is the fallback shape. No hard-coded display strings in code.
 
+## House style for the strings themselves
+
+**No dash as punctuation.** Not an em dash, not an en dash, not a spaced hyphen.
+A dash reads as an afterthought bolted onto a sentence, and the em dash in
+particular reads as machine-written; every one of them can be a comma, a colon or
+a full stop, and the sentence is better for it:
+
+| Instead of | Write |
+|------------|-------|
+| `NFC scan failed — try again.` | `NFC scan failed. Try again.` |
+| `Glucose low — alarm` | `Low glucose alarm` |
+| `Pod alarm — delivery stopped` | `Pod alarm: delivery stopped` |
+| `Temporary: # U/h — end it` | `End temporary # U/h` |
+
+A hyphen INSIDE a word is fine and often required, because German compounds carry
+one: `Glukose-Alarme`, `App-Reset`, `Pod-Alarm`. The rule is about a dash standing
+on its own between words.
+
+`test/localization/locale_punctuation_test.dart` enforces this over both locale
+files, so a new string with a dash fails the suite rather than shipping. If you
+find yourself wanting one, the sentence usually wants splitting in two.
+
 ## Structure & key naming
 
 The files are **nested objects** grouped by section, with `snake_case` leaf
@@ -18,7 +40,7 @@ keys:
     }
   },
   "alarm": {
-    "channel": { "low_urgent": { "name": "Glucose low — alarm" } }
+    "channel": { "low_urgent": { "name": "Low glucose alarm" } }
   }
 }
 ```

@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:insulink/src/overview/chart/chart_x_axis.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 
@@ -13,9 +13,7 @@ class GlucoseLineChart extends StatelessWidget {
     super.key,
     required this.bars,
     required this.touchBarIndex,
-    required this.shift,
-    required this.rangeHours,
-    required this.anchor,
+    required this.axis,
     required this.glucose,
     required this.colors,
     required this.onChartTouch,
@@ -25,7 +23,7 @@ class GlucoseLineChart extends StatelessWidget {
     this.maxYmgdl = 300,
     this.highlightSpot,
     this.pulse = 0,
-    this.rightEdgeHours = 0,
+    this.showBottomTitles = true,
     this.betweenBars = const [],
     this.mealMarkers = const [],
   });
@@ -42,23 +40,14 @@ class GlucoseLineChart extends StatelessWidget {
   /// indexes would shift out from under it.
   final List<BetweenBarsData> betweenBars;
 
-  /// X position (in shifted hours, relative to the latest reading at x=0) of the
-  /// window's RIGHT edge. Live sits at the forecast tip (positive); scrolling
-  /// back moves it left through the readings. The window is always [rangeHours]
-  /// wide, so [minX] follows at `rightEdgeHours - rangeHours`.
-  final double rightEdgeHours;
-
   final List<LineChartBarData> bars;
 
   /// Index of the transparent overlay bar that owns touch.
   final int touchBarIndex;
 
-  /// Phase shift placing full clock hours on integer x (also the max x).
-  final double shift;
-  final double rangeHours;
+  /// The shared time axis: what the window covers, and how an x maps to a clock.
+  final ChartXAxis axis;
 
-  /// Wall-clock time at x == shift; null falls back to "Nh ago" labels.
-  final DateTime? anchor;
   final ProfileGlucoseState glucose;
   final GlucoseColors colors;
   final void Function(FlTouchEvent, LineTouchResponse?) onChartTouch;
@@ -86,24 +75,19 @@ class GlucoseLineChart extends StatelessWidget {
   /// Pulse phase 0..1 driving the highlight dot's halo (animated by the parent).
   final double pulse;
 
+  /// Whether this chart carries the axis labels.
+  ///
+  /// False when a second chart is stacked underneath: the labels belong under
+  /// the LOWER one, so the two plots touch and the pair reads as one picture
+  /// with one axis instead of two charts that happen to be adjacent.
+  final bool showBottomTitles;
+
   double get _minY => glucose.toDisplay(minYmgdl);
 
   double get _maxY => glucose.toDisplay(maxYmgdl);
 
   /// Whole-unit gridlines/ticks that read cleanly in either unit.
   double get _yInterval => glucose.unit == GlucoseUnit.mmol ? 3.0 : 50.0;
-
-  /// Fewer X ticks for wider windows so labels don't crowd; sub-hour steps once
-  /// zoomed right in so a tight window still gets a couple of ticks.
-  double get _xInterval {
-    if (rangeHours <= 2) {
-      return 0.5;
-    }
-    if (rangeHours <= 6) {
-      return 2.0;
-    }
-    return rangeHours <= 12 ? 3.0 : 6.0;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,8 +100,8 @@ class GlucoseLineChart extends StatelessWidget {
         LineChartData(
           minY: _minY,
           maxY: _maxY,
-          minX: shift + rightEdgeHours - rangeHours,
-          maxX: shift + rightEdgeHours,
+          minX: axis.minX,
+          maxX: axis.maxX,
           // Clip to the plot: the forecast line runs to its full horizon, which can
           // extend past the (constant-width) window's right edge — without clipping
           // it would draw out over the margin.
@@ -156,14 +140,14 @@ class GlucoseLineChart extends StatelessWidget {
       ),
       bottomTitles: AxisTitles(
         sideTitles: SideTitles(
-          showTitles: true,
+          showTitles: showBottomTitles,
           reservedSize: 24,
-          interval: _xInterval,
+          interval: axis.interval,
           // Drop the fractional min/max edge ticks so only full hours show.
           minIncluded: false,
           maxIncluded: false,
           getTitlesWidget: (value, _) =>
-              _label(context, _xLabel(context, value)),
+              _label(context, axis.label(context, value)),
         ),
       ),
     );
@@ -215,27 +199,6 @@ class GlucoseLineChart extends StatelessWidget {
     return value == value.roundToDouble()
         ? value.toStringAsFixed(0)
         : value.toStringAsFixed(1);
-  }
-
-  /// value is in shifted hours; (value - shift) hours back from the anchor lands
-  /// on a full clock hour. Without an anchor, fall back to "Nh" offsets.
-  String _xLabel(BuildContext context, double value) {
-    if (anchor == null) {
-      return '${value.toInt()}h';
-    }
-    final time = anchor!.add(
-      Duration(seconds: ((value - shift) * 3600).round()),
-    );
-    // Sub-hour ticks (deep zoom) land off the hour — show the minutes so two
-    // ticks in the same hour don't read as the same label.
-    if (time.minute != 0) {
-      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
-    }
-    return Locales.string(
-      context,
-      'overview.chart.hour',
-      params: ['${time.hour}'],
-    );
   }
 
   /// The two target-range bound lines plus, when the meal overlay is on, a
@@ -336,7 +299,7 @@ class GlucoseLineChart extends StatelessWidget {
     final digits = glucose.unit == GlucoseUnit.mmol ? 1 : 0;
     // Points past the latest reading (x > shift) are the forecast — mark the
     // value as an estimate with a leading "~".
-    final prefix = spot.x > shift ? '~' : '';
+    final prefix = spot.x > axis.shift ? '~' : '';
     return LineTooltipItem(
       '$prefix${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
       TextStyle(
@@ -345,7 +308,7 @@ class GlucoseLineChart extends StatelessWidget {
         fontSize: 13,
       ),
       children: [
-        if (anchor != null)
+        if (axis.anchor != null)
           TextSpan(
             text: '\n${_spotTime(context, spot.x)}',
             style: TextStyle(
@@ -358,10 +321,11 @@ class GlucoseLineChart extends StatelessWidget {
     );
   }
 
-  /// Wall-clock time of a touched spot — `(x - shift)` hours back from [anchor],
-  /// the same mapping the X-axis labels use.
+  /// Wall-clock time of a touched spot, the same mapping the axis labels use.
   String _spotTime(BuildContext context, double x) {
-    final time = anchor!.add(Duration(seconds: ((x - shift) * 3600).round()));
+    final time = axis.anchor!.add(
+      Duration(seconds: ((x - axis.shift) * 3600).round()),
+    );
     return MaterialLocalizations.of(
       context,
     ).formatTimeOfDay(TimeOfDay.fromDateTime(time));
@@ -390,7 +354,7 @@ class GlucoseLineChart extends StatelessWidget {
         // glucose-zone colour — the estimate isn't a measured value.
         getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
           radius: 4,
-          color: spot.x > shift ? predictionColor : _zoneForDisplay(spot.y),
+          color: spot.x > axis.shift ? predictionColor : _zoneForDisplay(spot.y),
           strokeColor: Colors.white,
           strokeWidth: 1.5,
         ),

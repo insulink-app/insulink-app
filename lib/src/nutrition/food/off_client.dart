@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:insulink/src/request/response_json.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -77,7 +78,10 @@ class OffClient {
     if (response.statusCode != 200) {
       return null;
     }
-    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final json = response.jsonObject;
+    if (json == null) {
+      return null;
+    }
     if (json['status'] != 1 || json['product'] is! Map) {
       return null;
     }

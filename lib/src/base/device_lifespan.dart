@@ -1,9 +1,9 @@
 /// Pure remaining-life arithmetic for a sensor session, split out of
-/// [SensorLifeBar] so it stays testable (inject [now] to avoid wall-clock
+/// [DeviceLifespanBar] so it stays testable (inject [now] to avoid wall-clock
 /// flakiness). The bar shows one segment per remaining unit — days normally,
 /// switching to HOURS over the final day so the last day stays meaningful.
-class SensorLifespan {
-  SensorLifespan({
+class DeviceLifespan {
+  DeviceLifespan({
     required this.start,
     required this.sessionLengthSec,
     DateTime? now,

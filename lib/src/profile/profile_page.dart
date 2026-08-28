@@ -17,6 +17,8 @@ import 'package:insulink/src/profile/language/profile_language_selection.dart';
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold_card.dart';
+import 'package:insulink/src/profile/tuning/basal_tuning_card.dart';
+import 'package:insulink/src/pump/loop/loop_settings.dart';
 import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_notification_toggle.dart';
@@ -96,7 +98,11 @@ class _ProfilePageState extends State<ProfilePage> {
       titleKey: "profile.basal",
       icon: PhosphorIconsBold.chartLine,
       searchKey: "profile.search.basal",
-      children: () => const [ProfileBasalSelection()],
+      children: () => const [
+        ProfileBasalSelection(),
+        SizedBox(height: 20),
+        BasalTuningCard(),
+      ],
     ),
     (
       titleKey: "profile.body",
@@ -156,6 +162,23 @@ class _ProfilePageState extends State<ProfilePage> {
         NotificationToggle(NotificationSetting.podInsulin),
         SizedBox(height: 10),
         NotificationThresholdCard(NotificationThreshold.podInsulin),
+        NotificationToggle(NotificationSetting.podBolusBeep),
+        SizedBox(height: 10),
+        NotificationToggle(NotificationSetting.podTempBasalBeep),
+      ],
+    ),
+    (
+      titleKey: "profile.loop",
+      icon: PhosphorIconsBold.repeat,
+      searchKey: "profile.search.loop",
+      children: () => const [
+        LocaleText("profile.loop.description", style: TextStyle(fontSize: 15)),
+        SizedBox(height: 12),
+        NotificationThresholdCard(LoopSettings.suspendBelow),
+        SizedBox(height: 10),
+        NotificationThresholdCard(LoopSettings.maxRate),
+        SizedBox(height: 10),
+        NotificationThresholdCard(LoopSettings.maxIob),
       ],
     ),
     (

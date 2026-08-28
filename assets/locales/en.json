@@ -42,11 +42,11 @@
     },
     "notification": {
       "title": "Notifications",
-      "body": "Glucose alarms warn you about highs and lows — even when the app is closed. Allow notifications so you don't miss them."
+      "body": "Glucose alarms warn you about highs and lows, even when the app is closed. Allow notifications so you don't miss them."
     },
     "dnd": {
       "title": "Critical alarms",
-      "body": "Allow Insulink to bypass Do Not Disturb and silent mode, so an urgent low or high still sounds — even when your phone is muted."
+      "body": "Allow Insulink to bypass Do Not Disturb and silent mode, so an urgent low or high still sounds even when your phone is muted."
     },
     "activity": {
       "title": "Activity & steps",
@@ -93,7 +93,15 @@
       "empty": "no readings yet",
       "hour": "#:00",
       "now": "Now",
-      "show_meals": "Show meals"
+      "show_meals": "Show meals",
+      "insulin": {
+        "_": "Insulin",
+        "basal": "Basal # U",
+        "bolus": "Bolus # U",
+        "empty": "No insulin was delivered in this window.",
+        "at_moment": "Bolus at #",
+        "over_hour": "Basal, # to #"
+      }
     },
     "time_in_range": "Time in Range",
     "time_in_range_window": "Last 24 h",
@@ -148,17 +156,19 @@
     "active_insulin": {
       "_": "Active insulin",
       "title": "Insulin",
-      "summary": "Last dose # at ## · active until ###",
+      "summary": "Last dose # at ##",
       "until": "Active until #",
       "doses": "Active doses",
       "total": "Total active",
       "remaining": "# U active",
       "of_bolus": "of # U bolus",
-      "empty": "No active insulin doses."
+      "empty": "No active insulin doses.",
+      "no_doses": "No dose you injected is working right now.",
+      "from_pump": "Delivered above the basal schedule"
     },
     "boxes": {
       "all": "All values",
-      "all_hint": "Every value — including the ones whose box you hid on the overview. Tap one to see its history or note a new result."
+      "all_hint": "Every value, including the ones whose box you hid on the overview. Tap one to see its history or note a new result."
     }
   },
   "analysis": {
@@ -251,7 +261,7 @@
         "account": "LibreView account ID (optional)",
         "account_hint": "Leave blank for a fresh sensor. To take over an already-activated sensor, enter its numeric LibreView account ID.",
         "scanning": "Hold the sensor to your phone…",
-        "failed": "NFC scan failed — try again.",
+        "failed": "NFC scan failed. Try again.",
         "done": "Sensor scanned",
         "cancel": "Cancel scan",
         "connecting": "Connecting to sensor…"
@@ -269,7 +279,7 @@
       "stop_sensor": "Stop sensor",
       "stop_sensor_confirm": "Stop",
       "end_session_title": "End session?",
-      "end_session_body": "Reading will stop. The pairing is kept — you can reconnect later.",
+      "end_session_body": "Reading will stop. The pairing is kept, so you can reconnect later.",
       "stop_sensor_title": "Stop sensor?",
       "stop_sensor_body": "The sensor will be unpaired: the stored key and history are deleted. The physical sensor keeps running.",
       "forget_auth_reason": "Confirm to forget this sensor"
@@ -331,7 +341,244 @@
     }
   },
   "pump": {
-    "label": "Pump"
+    "label": "Pump",
+    "status": {
+      "_": "Pod status",
+      "no_pod": "No pod paired",
+      "no_pod_hint": "Insulink can pair and control an Omnipod DASH. Pairing binds the pod to this app permanently.",
+      "lifecycle": "State",
+      "delivery": "Delivery",
+      "reservoir": "Reservoir",
+      "reservoir_plenty": "More than it can measure",
+      "age": "Running for",
+      "expires_in": "Expires in",
+      "alerts": "Active alerts",
+      "no_alerts": "None",
+      "last_read": "Last read",
+      "never_read": "Not read yet",
+      "stale": "Status is stale. Tap to read it again.",
+      "unfinished": "This pod is paired but not running yet. Continue the activation so it starts delivering."
+    },
+    "action": {
+      "refresh": "Read status",
+      "suspend": "Stop delivery",
+      "deactivate": "Deactivate pod",
+      "silence": "Acknowledge alerts",
+      "activate": "Activate pod",
+      "deactivate_confirm": "Deactivate",
+      "resume": "Resume delivery",
+      "deactivate_auth_reason": "Confirm deactivating the pod",
+      "resume_activation": "Continue activation",
+      "test_beep": "Play test beep",
+      "forget": "Forget pod",
+      "forget_confirm": "Forget",
+      "forget_auth_reason": "Confirm forgetting the pod"
+    },
+    "stop": {
+      "_": "Stop delivery?",
+      "body": "Stops basal and any running bolus immediately. The pod beeps to confirm.",
+      "confirm": "Stop"
+    },
+    "lifecycle": {
+      "filled": "Filled",
+      "uid_set": "Paired",
+      "priming": "Priming",
+      "basal_set": "Basal programmed",
+      "running": "Running",
+      "running_low": "Running, reservoir low",
+      "alarm": "Alarm",
+      "deactivated": "Deactivated",
+      "unknown": "Unknown"
+    },
+    "delivery": {
+      "suspended": "Stopped",
+      "basal": "Basal",
+      "temp_basal": "Temporary basal",
+      "priming": "Priming",
+      "bolus_basal": "Bolus + basal",
+      "bolus_temp": "Bolus + temp basal",
+      "unknown": "Unknown"
+    },
+    "alert": {
+      "auto_off": "Auto-off",
+      "multi_command": "Multi-command",
+      "expiration_imminent": "Expiry imminent",
+      "user_set_expiration": "Own expiry reminder",
+      "low_reservoir": "Reservoir low",
+      "suspend_in_progress": "Stop in progress",
+      "suspend_ended": "Stop ended",
+      "expiration": "Pod expiring"
+    },
+    "restore": {
+      "_": "Pod from your account",
+      "body": "Your account has a pod on file but this device has none. You can adopt it without re-pairing. That is what you need after an app reset, so a pod that is still running stays controllable and stoppable.",
+      "remaining": "Time left: #",
+      "use": "Adopt pod",
+      "discard": "This pod is gone",
+      "discard_title": "Stop offering this pod?",
+      "discard_body": "Say this only for a pod that is no longer on your body. It stays in your pump history, but it will not be offered again, so a pod you are still wearing could not be taken over here afterwards.",
+      "discard_confirm": "Discard"
+    },
+    "activate": {
+      "title": "Activate pod",
+      "explain_title": "Activate pod",
+      "explain_body": "Fill the pod with insulin and put it down within reach, not on your body yet. Insulink will find it and prime it. Your fingerprint is what releases the cannula later, so make sure one is set up on this phone before you start. An activated pod belongs to this app for good, and your PDM will no longer be able to control it.",
+      "priming_title": "Priming the pod",
+      "priming_body": "The pod is being paired and is filling its mechanism. Keep the phone near it.",
+      "attach_title": "Attach the pod now",
+      "attach_body": "The pod is primed and waiting. Now it goes on your body.",
+      "starting_title": "Inserting the cannula",
+      "starting_body": "The pod gets its schedule and inserts the cannula. Only a few seconds.",
+      "running_title": "Pod is running",
+      "running_body": "The pod is delivering your basal. Time left and reservoir are on the pump page.",
+      "failed_title": "Activation stopped",
+      "failed_body": "You can try again with the same pod. Steps that already ran are not repeated. Or discard the pod and use a new one.",
+      "basal_problem": "The pod cannot take the active basal profile.",
+      "start": "Find and prime pod",
+      "attached": "Pod is attached, continue",
+      "retry": "Try again",
+      "discard": "Discard pod",
+      "done": "Done",
+      "working": "Please wait …",
+      "confirm_reason": "Confirm inserting the cannula",
+      "confirm_declined": "Not confirmed. The cannula was not inserted. The pod is unchanged; you can try again. If your phone has no fingerprint set up, add one in the system settings first.",
+      "attach_resume_title": "Continue activation",
+      "attach_resume_body": "The pod is already attached. The activation was interrupted, so continuing only picks up what is still missing.",
+      "no_permission": "Insulink needs the Bluetooth permission to find the pod. Grant it in the system settings and try again.",
+      "discard_refused": "This pod already has its cannula in your body and may be delivering. Do not discard it. Stop it from the pump page first, which deactivates it safely.",
+      "stop_title": "Stop this?",
+      "stop_clean": "No pod has been contacted yet. Stopping changes nothing, and you can search again whenever you like.",
+      "stop_started": "The pod is already paired. What has happened to it cannot be undone, but nothing is lost: Insulink remembers how far it got and you can pick up right there later.",
+      "stop_keep": "Keep searching",
+      "stop_confirm": "Stop",
+      "stop": "Stop this",
+      "stopping": "Stopping …",
+      "attach_step_1": "*Clean* the site and let it dry.",
+      "attach_step_2": "Peel off *both films*.",
+      "attach_step_3": "Stick the pod on and *press firmly*.",
+      "attach_step_4": "Tap continue, confirm with your *fingerprint*.",
+      "attach_step_5": "Only then does the pod insert the *cannula*. Brief sting."
+    },
+    "life": {
+      "title": "Pod life"
+    },
+    "temp": {
+      "title": "Temporary basal",
+      "body": "Changes the basal rate for a limited time, for instance less before sport. Your schedule resumes on its own afterwards.",
+      "percent": "Share of the scheduled rate",
+      "duration": "Duration",
+      "duration_value": "# h # min",
+      "summary": "The pump delivers # U/h",
+      "summary_stop": "The pump delivers no basal during this time",
+      "apply": "Start temporary basal",
+      "set": "Temporary basal",
+      "running": "End temporary # U/h",
+      "end": {
+        "title": "End the temporary basal?",
+        "body": "The pod goes back to your basal schedule instead of # U/h.",
+        "confirm": "End"
+      }
+    },
+    "type": {
+      "dash": "Omnipod DASH"
+    },
+    "info": {
+      "title": "Pod data"
+    },
+    "resume": {
+      "_": "Resume delivery?",
+      "body": "The pod gets your active basal profile back and follows the schedule again.",
+      "confirm": "Resume"
+    },
+    "log": {
+      "_": "Insulin delivered",
+      "empty": "Nothing delivered yet.",
+      "dated": "# #",
+      "kind": {
+        "bolus": "Bolus",
+        "prime": "Priming",
+        "cannula": "Cannula",
+        "basal": "Basal"
+      },
+      "basal_total": "Basal total",
+      "bolus_total": "Bolus total",
+      "total": "Since pod start",
+      "hour_span": "# to #"
+    },
+    "bolus": {
+      "running": "Bolus running",
+      "progress": "# of # U",
+      "stop": "Stop",
+      "stopped": "Bolus stopped. # of # U were delivered. The delivery log has been corrected, your meal entry has not.",
+      "remaining": "# left",
+      "sending": "Sending bolus",
+      "units": "# U",
+      "not_delivered": "The bolus was not delivered, so no insulin is recorded against the meal.",
+      "stop_title": "Stop the bolus?",
+      "stop_body": "The rest of the dose will not be delivered. What has already gone in stays in."
+    },
+    "basal": {
+      "out_of_date": "Your basal profile has changed. The pod is still running the old schedule.",
+      "unknown": "The app no longer knows the pod's schedule. It goes on delivering its basal. Send your profile so the two agree again.",
+      "send": "Send profile to the pod"
+    },
+    "loop": {
+      "title": "Automated delivery",
+      "mode": {
+        "off": "Off",
+        "engaged": "Active"
+      },
+      "hint": {
+        "off": "The pod runs your basal schedule. The automation still decides each cycle and logs what it would have delivered.",
+        "engaged": "The automation replaces your basal schedule with a computed temporary rate every five minutes."
+      },
+      "no_cycle": "No decision computed yet.",
+      "last": "Last at #: # U/h, #",
+      "reason": {
+        "holding_schedule": "on course",
+        "correcting": "correcting",
+        "easing_off": "easing off",
+        "suspended_low": "stopped, glucose too low",
+        "suspended_falling": "stopped, glucose falling",
+        "no_glucose": "no usable sensor data",
+        "pod_unavailable": "pod not ready",
+        "limits_invalid": "limits inconsistent",
+        "clock_unreliable": "clock moved backwards"
+      },
+      "bound": {
+        "max_rate": "(held by the rate ceiling)",
+        "max_iob": "(held by active insulin)",
+        "hypo_headroom": "(held by the room left above the stop threshold)",
+        "hourly_ceiling": "(held by the hourly ceiling)",
+        "reservoir": "(held by the reservoir level)"
+      },
+      "stopped": {
+        "pod_unreachable": "The automation stopped because the pod was out of reach for a while. The pod is back on your basal schedule.",
+        "pod_not_delivering": "The automation stopped because the pod is no longer delivering.",
+        "no_pod": "The automation stopped because there is no active pod.",
+        "limits_invalid": "The automation stopped because the limits do not fit together."
+      },
+      "blocked": {
+        "no_pod": "An active pod has to be connected for this.",
+        "no_schedule": "The app does not know the pod's schedule. Send your basal profile to the pod first.",
+        "limits": "The limits do not fit together. Check the stop threshold and the target in your profile."
+      },
+      "warning": {
+        "title": "Automated insulin delivery",
+        "body": "The app will then deliver insulin on its own, including while you sleep. It is not a medical device and has not been clinically tested. Keep checking against a meter and keep fast sugar within reach.",
+        "confirm": "Turn on"
+      },
+      "auth_reason": "Turn on automated insulin delivery",
+      "journal": "Automation decisions",
+      "not_sent": "not sent",
+      "at_glucose": "at # mg/dL, # mg/dL per minute",
+      "on_board": "# U active",
+      "schedule_was": "schedule # U/h"
+    },
+    "forget": {
+      "_": "Forget this pod?",
+      "body": "Only for a pod that is off your body or has already stopped. The app drops its key, and a pod can never be paired again, so if this one is still delivering nothing will be able to stop it."
+    }
   },
   "google_health": {
     "label": "Google Health",
@@ -420,7 +667,9 @@
     "empty": "No supplies tracked yet",
     "delete_confirm": "Delete this item?",
     "event_delivery": "Delivery",
-    "event_run_out": "Supply runs out"
+    "event_run_out": "Supply runs out",
+    "pump_brand_omnipod_dash": "Omnipod DASH",
+    "pump_brand_other": "Other"
   },
   "nutrition": {
     "label": "Nutrition",
@@ -506,7 +755,7 @@
       "height": "Body height",
       "estimate_note": "Distance and calories are estimated from your steps.",
       "height_note": "Body height is used to calculate the BMI.",
-      "permission": "Motion permission missing – steps can't be counted.",
+      "permission": "Motion permission missing. Steps can't be counted.",
       "detail": {
         "empty": "No activity data yet. Sync Google Health.",
         "latest": "Latest",
@@ -587,7 +836,7 @@
       "ended_elsewhere_confirm": "Got it",
       "free": "Free workout",
       "add_exercise": "Add exercise",
-      "no_exercise": "No exercise picked yet. Add your first — it counts for this workout only.",
+      "no_exercise": "No exercise picked yet. Add your first; it counts for this workout only.",
       "eta": "ends ~#",
       "next_exercise": "Next exercise",
       "pick_next": "What comes next?"
@@ -663,16 +912,16 @@
       "heart_rate": "Heart rate",
       "splits": "Pace per kilometre",
       "km_label": "km #",
-      "location_denied": "Location permission missing – training can't be recorded.",
+      "location_denied": "Location permission missing. Training can't be recorded.",
       "detected": "automatic",
-      "detected_prompt": "Training detected – is that right?",
+      "detected_prompt": "Training detected. Is that right?",
       "show_more": "Show more",
       "all": "All trainings",
       "empty": "No trainings yet"
     },
     "detect_notification": {
       "title": "Training detected",
-      "body": "# · # min – confirm?",
+      "body": "# · # min. Confirm?",
       "confirm": "Confirm",
       "reject": "Reject"
     },
@@ -725,7 +974,8 @@
       "new_password": "New password",
       "password_changed": "Your password has been changed.",
       "password_error": "Could not change the password. Check your current password.",
-      "show_password": "Show password"
+      "show_password": "Show password",
+      "logout_keeps_pod": "A paired pod is kept. It belongs to the device, not the account, and keeps running until you deactivate it."
     },
     "language": {
       "_": "Language",
@@ -791,7 +1041,7 @@
       "auth_reason": "Confirm to enable silent mode",
       "warning": {
         "title": "Enable silent mode?",
-        "body": "While silent mode is on you will receive NO alarms — not even for dangerously low or high glucose. A hypo can go unnoticed and become life-threatening. Only enable it if you keep an eye on your levels another way.",
+        "body": "While silent mode is on you will receive NO alarms, not even for dangerously low or high glucose. A hypo can go unnoticed and become life-threatening. Only enable it if you keep an eye on your levels another way.",
         "confirm": "Enable"
       },
       "mode": {
@@ -876,7 +1126,8 @@
       "nutrition_goals": "nutrition goals daily carbs protein water hydration",
       "hr_zones": "pulse heart rate zones bpm elevated high green orange red",
       "sleep": "sleep quality deep sleep onset interruptions sleep index target range",
-      "battery": "battery power energy saver save drain gps location tracking detection runtime"
+      "battery": "battery power energy saver save drain gps location tracking detection runtime",
+      "loop": "automated delivery automation loop closed loop insulin"
     },
     "prediction": {
       "_": "Prediction",
@@ -898,6 +1149,41 @@
         "_": "Insulin left in the pod",
         "value": "below # U"
       }
+    },
+    "pod_bolus_beep": {
+      "description": "The pod beeps once a bolus has finished delivering."
+    },
+    "loop": {
+      "_": "Automated delivery",
+      "description": "The bounds the automation may deliver insulin within.",
+      "suspend_below": {
+        "_": "Stop delivery below",
+        "value": "# mg/dL"
+      },
+      "max_rate": {
+        "_": "Highest basal rate",
+        "value": "# U/h"
+      },
+      "max_iob": {
+        "_": "Highest active insulin",
+        "value": "# U"
+      }
+    },
+    "pod_temp_basal_beep": {
+      "description": "Tone on a manual temporary basal"
+    },
+    "tuning": {
+      "_": "Basal suggestion",
+      "description": "Reads the stored glucose. Only hours with no food, no bolus and no automation involved are counted.",
+      "not_enough": "Not enough usable hours in this window. Try a longer one, or wait for a few quiet nights.",
+      "window": {
+        "d7": "7 days",
+        "d30": "30 days",
+        "d90": "90 days"
+      },
+      "generate": "Calculate a suggestion",
+      "no_change": "Nothing to change, no new profile created. Yours fits these hours.",
+      "profile_name": "Suggestion # days, #"
     }
   },
   "injection": {
@@ -932,9 +1218,14 @@
       "button": "Confirm",
       "reason": "Confirm your bolus",
       "success": "Bolus confirmed",
-      "failed": "Authentication failed"
+      "failed": "Authentication failed",
+      "button_pump": "Send bolus to pump",
+      "log_without_bolus": "Log without bolus",
+      "pump_refused": "The pump did not deliver the bolus.",
+      "pump_unknown": "Unclear whether the pump delivered. Check the pod before dosing again."
     },
-    "next": "Next"
+    "next": "Next",
+    "active_insulin_pump": "of which # U from the pump, not injected by you"
   },
   "service": {
     "connecting": "Connecting…"
@@ -942,19 +1233,19 @@
   "alarm": {
     "channel": {
       "low_warning": {
-        "name": "Glucose low — warning",
+        "name": "Low glucose warning",
         "desc": "Warning when glucose is low."
       },
       "low_urgent": {
-        "name": "Glucose low — alarm",
+        "name": "Low glucose alarm",
         "desc": "Strong alarm when glucose is critically low."
       },
       "high_warning": {
-        "name": "Glucose high — warning",
+        "name": "High glucose warning",
         "desc": "Warning when glucose is high."
       },
       "high_urgent": {
-        "name": "Glucose high — alarm",
+        "name": "High glucose alarm",
         "desc": "Strong alarm when glucose is critically high."
       },
       "warning": {
@@ -972,6 +1263,10 @@
       "warning_silent": {
         "name": "Glucose warning (muted)",
         "desc": "Mild warning for a borderline glucose value, without a tone."
+      },
+      "pod_alarm": {
+        "name": "Pod alarms",
+        "desc": "The pod has stopped delivering insulin."
       }
     },
     "advisory": {
@@ -1004,6 +1299,41 @@
     "halftime": {
       "title": "Sensor half used up",
       "body": "Your sensor has reached half of its lifetime."
+    },
+    "pod": {
+      "expiry": {
+        "title": "Pod expiring",
+        "body": "The pod expires in # h. Have a new one ready."
+      },
+      "expired": {
+        "title": "Pod expired",
+        "body": "The pod has reached the end of its life and is no longer delivering insulin. Change it now."
+      },
+      "reservoir": {
+        "title": "Reservoir low",
+        "body": "Only # U left in the pod. Plan a change."
+      },
+      "alarm": {
+        "title": "Pod alarm: delivery stopped",
+        "occlusion": "The pod reports a blockage. No insulin was delivered. Change the pod.",
+        "empty": "The reservoir is empty. Change the pod.",
+        "expired": "The pod has expired and stopped. Change the pod.",
+        "infusion": "The pod reports a delivery discrepancy. What is logged may not match what reached you. Change the pod.",
+        "alert": "A pod alert went unacknowledged and escalated. Check the pod.",
+        "communication": "The pod dropped its radio link. Check the pod.",
+        "fault": "The pod reports an internal fault and has stopped. Change the pod."
+      },
+      "stopped": {
+        "title": "Pod is not delivering",
+        "body": "The pod has stopped without you stopping it. No basal is running. Check the pod."
+      },
+      "unreachable": {
+        "title": "No contact with the pod",
+        "body": "No connection for # minutes. The pod keeps delivering, but the app cannot command or stop it."
+      },
+      "loop_stopped": {
+        "title": "Automation stopped"
+      }
     }
   },
   "hba1c": {

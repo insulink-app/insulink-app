@@ -8,6 +8,7 @@ class Meal {
     required this.glucoseMgdl,
     required this.bolus,
     required this.entries,
+    this.deliveredByPump = false,
   });
 
   final DateTime time;
@@ -16,9 +17,26 @@ class Meal {
   final double bolus;
   final List<MealEntry> entries;
 
+  /// Whether a pump delivered this [bolus] rather than the user injecting it.
+  ///
+  /// Worth keeping apart: if a pod later turns out to have stopped mid-delivery,
+  /// the pump-given doses are the ones whose recorded amount is worth doubting.
+  /// Defaults to false, so every meal logged before pump support reads correctly.
+  final bool deliveredByPump;
+
   /// Total protein across the logged products (0 for a manual carb entry, which
   /// carries no product breakdown).
   double get protein => entries.fold(0, (sum, entry) => sum + entry.protein);
+
+  /// Stable identity of this logged meal: the millisecond it was logged at.
+  ///
+  /// Object identity cannot serve as one. A sync pull rebuilds the entire log
+  /// from storage ([MealState.reload]), and every instance a caller is still
+  /// holding is a stranger to the new list from that moment on. Milliseconds
+  /// rather than the [DateTime] itself, because the JSON round trip drops the
+  /// microseconds [DateTime.now] carries — so the reloaded meal would not even
+  /// equal the one that was written.
+  int get logKey => time.millisecondsSinceEpoch;
 
   /// A copy with individual fields replaced — the basis for editing a logged
   /// meal after the fact (see [MealState.updateMeal]).
@@ -33,6 +51,7 @@ class Meal {
     glucoseMgdl: glucoseMgdl ?? this.glucoseMgdl,
     bolus: bolus ?? this.bolus,
     entries: entries,
+    deliveredByPump: deliveredByPump,
   );
 
   factory Meal.fromJson(Map<String, dynamic> json) => Meal(
@@ -44,6 +63,7 @@ class Meal {
         .cast<Map<String, dynamic>>()
         .map(MealEntry.fromJson)
         .toList(),
+    deliveredByPump: json['delivered_by_pump'] as bool? ?? false,
   );
 
   Map<String, dynamic> toJson() => {
@@ -52,6 +72,7 @@ class Meal {
     'glucose': glucoseMgdl,
     'bolus': bolus,
     'entries': entries.map((entry) => entry.toJson()).toList(),
+    if (deliveredByPump) 'delivered_by_pump': true,
   };
 }
 

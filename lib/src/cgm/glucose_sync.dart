@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/request/request.dart';
+import 'package:insulink/src/request/response_json.dart';
 
 /// Keeps the on-device glucose record and the backend account in step.
 ///
@@ -174,10 +174,10 @@ class GlucoseSync {
   /// Pull the account's stored readings into the local archive (on sign-in).
   Future<void> pullHistory(BuildContext? context) async {
     final response = await Request.get(url: "/glucose/history/").send(context);
-    if (response == null) {
+    final body = response.jsonObject;
+    if (body == null) {
       return;
     }
-    final body = jsonDecode(response.body);
     if (body["success"] != true) {
       return;
     }
