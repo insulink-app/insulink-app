@@ -4,6 +4,7 @@ import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 
+import '../support/locale_pump.dart';
 import '../support/secure_storage_mock.dart';
 
 /// Pumps the real localization stack — [LocaleBuilder] → [LocaleNotifier] →
@@ -45,9 +46,8 @@ void main() {
   ) async {
     installSecureStorageMock();
     await Locales.init(['de', 'en']);
-
     await tester.pumpWidget(app());
-    await tester.pumpAndSettle();
+    await settleLocalized(tester);
     expect(find.text('Glukose'), findsOneWidget);
     expect(find.text('RAW.LITERAL'), findsOneWidget);
 
@@ -57,7 +57,8 @@ void main() {
     expect(Locales.isDirectionRTL(context), isFalse); // German isn't RTL
 
     await tester.tap(find.text('switch'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await settleLocalized(tester);
     expect(find.text('Glucose'), findsOneWidget);
   });
 }

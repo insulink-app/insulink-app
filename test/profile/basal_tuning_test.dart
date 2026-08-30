@@ -1,11 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/profile/tuning/basal_suggestion.dart';
-import 'package:insulink/src/profile/tuning/clean_hour.dart';
+import 'package:insulink/src/profile/tuning/tuning_hour.dart';
+import 'package:insulink/src/profile/tuning/tuning_model.dart';
 
-/// The danger this whole feature has to avoid: attributing a glucose rise to
-/// basal when a meal, a bolus or the automation caused it. A basal raised
-/// because of a forgotten biscuit is a night-time hypoglycaemia days later.
+/// The danger this feature has to keep bounded: attributing a glucose rise to
+/// basal when a meal, a bolus or the automation caused it. It no longer refuses
+/// such hours outright, so what keeps a forgotten biscuit from becoming a
+/// night-time hypoglycaemia is that the other causes are MEASURED and taken off
+/// first, and that whatever is left is capped and taken as a median.
 void main() {
   final monday = DateTime(2026, 5, 4);
 
@@ -17,7 +20,24 @@ void main() {
         entries: const [],
       );
 
-  const finder = CleanHourFinder(insulinDuration: Duration(hours: 3));
+  TuningHour hourWith({
+    required DateTime start,
+    required int fromMgdl,
+    required int toMgdl,
+    double carbsAbsorbed = 0,
+    double insulinActing = 0,
+  }) =>
+      TuningHour(
+        start: start,
+        fromMgdl: fromMgdl,
+        toMgdl: toMgdl,
+        carbsAbsorbed: carbsAbsorbed,
+        insulinActing: insulinActing,
+      );
+
+  const finder = TuningHourFinder(
+    model: TuningModel(insulinDuration: Duration(hours: 3)),
+  );
 
   /// Glucose that rises steadily, so every hour drifts by [perHour].
   int? Function(DateTime) risingFrom(int start, int perHour) {
@@ -25,7 +45,7 @@ void main() {
         start + (moment.difference(monday).inMinutes * perHour / 60).round();
   }
 
-  List<CleanHour> nights({
+  List<TuningHour> nights({
     required List<Meal> meals,
     int perHour = 10,
     double automation = 0,
@@ -40,41 +60,58 @@ void main() {
     );
   }
 
-  group('an hour is dropped unless nothing else can explain it', () {
-    test('a clean night is kept', () {
-      expect(nights(meals: const []), isNotEmpty);
+  group('an hour carries what else was acting in it', () {
+    test('a quiet hour carries nothing', () {
+      final hours = nights(meals: const []);
+
+      expect(hours, isNotEmpty);
+      expect(hours.every((hour) => hour.carbsAbsorbed == 0), isTrue);
+      expect(hours.every((hour) => hour.insulinActing == 0), isTrue);
     });
 
-    /// The forgotten biscuit. Carbs cast a shadow forwards, so the hours after
-    /// them are not evidence about basal.
-    test('carbohydrates disqualify the hours that follow', () {
+    /// The change the user asked for: a meal used to disqualify the four hours
+    /// after it. Now the grams absorbed in each of them are measured, and the
+    /// hour is kept.
+    test('a meal is measured into the hours it feeds, not thrown away', () {
       final hours = nights(
-        meals: [meal(monday.add(const Duration(hours: 2)), carbs: 30)],
+        meals: [meal(monday.add(const Duration(hours: 2)), carbs: 40)],
       );
 
-      final touched = hours.where((hour) =>
+      final fed = hours.where((hour) =>
           hour.start.day == monday.day &&
           hour.start.hour >= 2 &&
           hour.start.hour < 6);
-      expect(touched, isEmpty);
+
+      expect(fed, hasLength(4));
+      // 40 g over the four-hour absorption is 10 g in each of them.
+      expect(fed.every((hour) => (hour.carbsAbsorbed - 10).abs() < 1e-9), isTrue);
     });
 
-    test('a bolus disqualifies the hours it is still working through', () {
+    /// A bolus is the same story, over the insulin duration rather than the
+    /// absorption time.
+    test('a bolus is measured into the hours it works through', () {
       final hours = nights(
         meals: [meal(monday.add(const Duration(hours: 2)), bolus: 3)],
       );
 
-      final touched = hours.where((hour) =>
+      final working = hours.where((hour) =>
           hour.start.day == monday.day &&
           hour.start.hour >= 2 &&
           hour.start.hour < 5);
-      expect(touched, isEmpty);
+
+      expect(working, hasLength(3));
+      expect(working.every((hour) => (hour.insulinActing - 1).abs() < 1e-9),
+          isTrue);
     });
 
-    /// Insulin the automation added is insulin, and an hour carrying it says
-    /// nothing about what the SCHEDULE should have been.
-    test('automated insulin disqualifies an hour', () {
-      expect(nights(meals: const [], automation: 0.4), isEmpty);
+    /// Insulin the automation added is insulin. It is counted like a bolus,
+    /// spread over the same duration.
+    test('automated insulin is counted, not a disqualification', () {
+      final hours = nights(meals: const [], automation: 0.3);
+
+      expect(hours, isNotEmpty);
+      expect(hours.every((hour) => (hour.insulinActing - 0.3).abs() < 1e-9),
+          isTrue);
     });
 
     /// Below and above these the body's own counter-regulation is doing
@@ -116,59 +153,54 @@ void main() {
     });
   });
 
-  /// An unanswerable "was the automation running?" reads as "no", and the hour
-  /// would then count as evidence about the SCHEDULE even though extra insulin
-  /// is what moved its glucose. It would argue for LOWERING a basal rate that
-  /// was never the reason.
-  group('hours the automation record cannot clear are dropped', () {
-    List<CleanHour> over(int days, {DateTime? knownSince}) => finder.find(
+  /// The window used to be clipped to the moment the automation record began,
+  /// which is the first time the loop was ever switched on. Somebody who turned
+  /// it on last week therefore got last week however many months they asked for,
+  /// and every proposal said there was not enough data. Nothing could have been
+  /// running before that moment, so there is nothing to clear.
+  group('the age of the automation record does not clip the window', () {
+    List<TuningHour> over(int days) => finder.find(
           from: monday,
           to: monday.add(Duration(days: days)),
           meals: const [],
           glucoseAt: (_) => 120,
           automationExcessAt: (_) => 0,
-          automationKnownSince: knownSince,
         );
 
-    test('with no pump every hour is usable', () {
+    test('a long window is a long window', () {
       expect(over(5).length, 5 * 24);
-    });
-
-    /// The ledger holds five days, so a thirty day window is still five days of
-    /// answerable hours.
-    test('only hours the record reaches are kept', () {
-      final since = monday.add(const Duration(days: 3));
-
-      final hours = over(5, knownSince: since);
-
-      expect(hours.every((hour) => !hour.start.isBefore(since)), isTrue);
-      expect(hours.length, 2 * 24);
-    });
-
-    test('a record that reaches nothing yields nothing', () {
-      expect(over(5, knownSince: monday.add(const Duration(days: 9))), isEmpty);
+      expect(over(30).length, 30 * 24);
     });
   });
 
-  group('what the clean hours suggest', () {
+  group('what the hours suggest', () {
     final suggest = BasalSuggestion(
       correctionFactor: 50,
+      carbFactor: 10,
       currentRates: List<double>.filled(24, 1.0),
     );
+
+    List<TuningHour> nightly({
+      required int drift,
+      double carbsAbsorbed = 0,
+      double insulinActing = 0,
+      int days = 4,
+    }) =>
+        [
+          for (var day = 0; day < days; day++)
+            hourWith(
+              start: monday.add(Duration(days: day, hours: 3)),
+              fromMgdl: 120,
+              toMgdl: 120 + drift,
+              carbsAbsorbed: carbsAbsorbed,
+              insulinActing: insulinActing,
+            ),
+        ];
 
     /// Glucose rising 10 mg/dL in an hour at a factor of 50 means 0.2 U of
     /// insulin was missing from that hour.
     test('a steady rise asks for more basal', () {
-      final hours = [
-        for (var day = 0; day < 4; day++)
-          CleanHour(
-            start: monday.add(Duration(days: day, hours: 3)),
-            fromMgdl: 120,
-            toMgdl: 130,
-          ),
-      ];
-
-      final hour = suggest.from(hours).single;
+      final hour = suggest.from(nightly(drift: 10)).single;
 
       expect(hour.hour, 3);
       expect(hour.suggested, closeTo(1.2, 1e-9));
@@ -176,42 +208,52 @@ void main() {
     });
 
     test('a steady fall asks for less', () {
-      final hours = [
-        for (var day = 0; day < 4; day++)
-          CleanHour(
-            start: monday.add(Duration(days: day, hours: 3)),
-            fromMgdl: 130,
-            toMgdl: 120,
-          ),
-      ];
-
-      expect(suggest.from(hours).single.suggested, closeTo(0.8, 1e-9));
+      expect(suggest.from(nightly(drift: -10)).single.suggested,
+          closeTo(0.8, 1e-9));
     });
 
-    /// Silence is the honest answer for an hour nobody has clean data for.
-    test('too few clean hours say nothing at all', () {
-      final hours = [
-        for (var day = 0; day < BasalSuggestion.minSamples - 1; day++)
-          CleanHour(
-            start: monday.add(Duration(days: day, hours: 3)),
-            fromMgdl: 120,
-            toMgdl: 160,
-          ),
-      ];
+    /// The point of the whole change: an hour that rose because food was being
+    /// absorbed says nothing about the basal rate, and now says so by measuring
+    /// the food rather than by being discarded. 10 g at 10 g per unit is one
+    /// unit, which at a factor of 50 is exactly the 50 mg/dL observed.
+    test('a rise the food explains asks for no change', () {
+      final hour = suggest.from(nightly(drift: 50, carbsAbsorbed: 10)).single;
 
-      expect(suggest.from(hours), isEmpty);
+      expect(hour.suggested, closeTo(1.0, 1e-9));
+      expect(hour.isChange, isFalse);
+    });
+
+    /// The mirror case: glucose held flat while a bolus was working means the
+    /// basal underneath it was short by exactly that insulin.
+    test('insulin that held an hour flat is credited back', () {
+      final hour = suggest.from(nightly(drift: 0, insulinActing: 0.2)).single;
+
+      expect(hour.suggested, closeTo(1.2, 1e-9));
+    });
+
+    /// The last refusal: when the model carries more than it can be trusted to,
+    /// the answer would be arithmetic about absorption timing rather than a
+    /// reading.
+    test('an hour the model dominates is dropped', () {
+      expect(suggest.from(nightly(drift: 10, carbsAbsorbed: 30)), isEmpty);
+      expect(suggest.from(nightly(drift: 10, insulinActing: 3)), isEmpty);
+    });
+
+    /// Silence is the honest answer for an hour with too little behind it.
+    test('too few hours say nothing at all', () {
+      expect(
+        suggest.from(
+          nightly(drift: 40, days: BasalSuggestion.minSamples - 1),
+        ),
+        isEmpty,
+      );
     });
 
     /// One bad night must not carry an hour, so the middle value decides.
     test('a single outlier night does not move the hour', () {
       final hours = [
-        for (var day = 0; day < 4; day++)
-          CleanHour(
-            start: monday.add(Duration(days: day, hours: 3)),
-            fromMgdl: 120,
-            toMgdl: 122,
-          ),
-        CleanHour(
+        ...nightly(drift: 2),
+        hourWith(
           start: monday.add(const Duration(days: 4, hours: 3)),
           fromMgdl: 120,
           toMgdl: 220,
@@ -225,15 +267,51 @@ void main() {
     });
   });
 
+  /// The reported symptom: adopt a proposal, press again, get another one, and
+  /// the basal walks away. The drift was measured under the OLD rates, so
+  /// putting it on top of rates that already carry it counts it twice.
+  group('hours only count while the schedule they ran under is running', () {
+    test('a schedule that changed mid-window cuts the hours before it', () {
+      final changedAt = monday.add(const Duration(days: 3));
+
+      final hours = finder.find(
+        from: monday,
+        to: monday.add(const Duration(days: 5)),
+        meals: const [],
+        glucoseAt: (_) => 120,
+        automationExcessAt: (_) => 0,
+      );
+      final afterChange =
+          hours.where((hour) => !hour.start.isBefore(changedAt)).toList();
+
+      expect(hours.length, 5 * 24);
+      expect(afterChange.length, 2 * 24,
+          reason: 'the card starts the window at the change');
+    });
+
+    /// Adopting a proposal and pressing again must not repeat it. With the
+    /// hours before the change gone there is nothing left to repeat it FROM.
+    test('nothing is left to say right after a change', () {
+      final suggest = BasalSuggestion(
+        correctionFactor: 50,
+        carbFactor: 10,
+        currentRates: List<double>.filled(24, 1.2),
+      );
+
+      expect(suggest.from(const []), isEmpty);
+    });
+  });
+
   group('a proposal can only ever move a rate a little', () {
     final suggest = BasalSuggestion(
       correctionFactor: 50,
+      carbFactor: 10,
       currentRates: List<double>.filled(24, 1.0),
     );
 
-    List<CleanHour> drifting(int drift) => [
+    List<TuningHour> drifting(int drift) => [
           for (var day = 0; day < 4; day++)
-            CleanHour(
+            hourWith(
               start: monday.add(Duration(days: day, hours: 3)),
               fromMgdl: 120,
               toMgdl: 120 + drift,
@@ -253,6 +331,7 @@ void main() {
     test('it never proposes a negative rate', () {
       final zeroed = BasalSuggestion(
         correctionFactor: 50,
+        carbFactor: 10,
         currentRates: List<double>.filled(24, 0.05),
       );
 
@@ -277,13 +356,14 @@ void main() {
   group('the daily amount is free to change', () {
     final suggest = BasalSuggestion(
       correctionFactor: 50,
+      carbFactor: 10,
       currentRates: List<double>.filled(24, 1.0),
     );
 
-    List<CleanHour> everyHourDrifting(int drift) => [
+    List<TuningHour> everyHourDrifting(int drift) => [
           for (var hour = 0; hour < 24; hour++)
             for (var day = 0; day < 4; day++)
-              CleanHour(
+              hourWith(
                 start: monday.add(Duration(days: day, hours: hour)),
                 fromMgdl: 120,
                 toMgdl: 120 + drift,
@@ -310,16 +390,14 @@ void main() {
     /// Only the hours with evidence move, so a profile that drifted for three
     /// hours a night changes by those three hours and not by a whole day.
     test('hours without evidence keep their rate and their share', () {
-      final hours = [
+      final suggestions = suggest.from([
         for (var day = 0; day < 4; day++)
-          CleanHour(
+          hourWith(
             start: monday.add(Duration(days: day, hours: 3)),
             fromMgdl: 120,
             toMgdl: 130,
           ),
-      ];
-
-      final suggestions = suggest.from(hours);
+      ]);
 
       expect(suggestions, hasLength(1));
       expect(suggestions.single.change, closeTo(0.2, 1e-9));

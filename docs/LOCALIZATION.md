@@ -113,3 +113,16 @@ and a freshly-spawned isolate has no initialized `Locales` state either. They us
 `get(key)` returns the translation; `format(key, value)` substitutes the first
 `#`. Use it for notification text (the service notification, all alarm
 titles/bodies, channel names/descriptions).
+
+## The 50 KB asset threshold (widget tests)
+
+Flutter decodes an asset larger than 50 KB in a **background isolate**, and
+`assets/locales/de.json` crossed that line as the app grew. `pumpAndSettle` waits
+for frames, not for real asynchronous work, so from that moment every widget test
+that renders a `LocaleText` settled with no strings loaded and asserted against
+`$key` placeholders instead. It looks exactly like a broken locale file and is
+not one.
+
+`test/support/locale_pump.dart` is the fix: pump the frame first, so the load is
+under way, then `settleLocalized(tester)` gives it real time and settles. Any new
+widget test that renders localized text needs it.

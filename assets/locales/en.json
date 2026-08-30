@@ -457,7 +457,21 @@
       "attach_step_2": "Peel off *both films*.",
       "attach_step_3": "Stick the pod on and *press firmly*.",
       "attach_step_4": "Tap continue, confirm with your *fingerprint*.",
-      "attach_step_5": "Only then does the pod insert the *cannula*. Brief sting."
+      "attach_step_5": "Only then does the pod insert the *cannula*. Brief sting.",
+      "progress": {
+        "searching": "Looking for a pod nearby …",
+        "found": "Pod found. Pairing now …",
+        "connecting": "Connecting to the pod …",
+        "got_version": "Pod identified, reading its data …",
+        "identity_set": "Pod is bound to Insulink",
+        "activation_alert_set": "Safety alerts set",
+        "priming": "Pod is filling its mechanism. This takes about a minute …",
+        "primed": "Pod is filled and ready",
+        "basal_set": "Basal schedule sent to the pod",
+        "lifecycle_alerts_set": "Expiry and reminder alerts set",
+        "inserting_cannula": "Cannula is going in …",
+        "running": "Pod is delivering"
+      }
     },
     "life": {
       "title": "Pod life"
@@ -1174,16 +1188,25 @@
     },
     "tuning": {
       "_": "Basal suggestion",
-      "description": "Reads the stored glucose. Only hours with no food, no bolus and no automation involved are counted.",
-      "not_enough": "Not enough usable hours in this window. Try a longer one, or wait for a few quiet nights.",
-      "window": {
-        "d7": "7 days",
-        "d30": "30 days",
-        "d90": "90 days"
-      },
+      "description": "Reads the stored glucose of the last 30 days. What food and bolus insulin did in an hour is calculated out, so ordinary days count too, not only quiet nights.",
+      "not_enough": "Not enough usable hours in the last 30 days. Wait until more glucose has been recorded and try again.",
       "generate": "Calculate a suggestion",
-      "no_change": "Nothing to change, no new profile created. Yours fits these hours.",
-      "profile_name": "Suggestion # days, #"
+      "no_change": "Nothing to change, no new profile created. Your profile fits these hours.",
+      "profile_name": "Suggestion # days, #",
+      "factors": {
+        "_": "Factor suggestion",
+        "description": "Reads the doses you logged in the last 30 days against the stored glucose. Other insulin, other food and the automation are calculated out of each window rather than ruling it out.",
+        "apply": "Adopt",
+        "samples": "from # doses",
+        "no_change": "Nothing to change. Your factors fit these doses.",
+        "missing": {
+          "correction": "Correction factor: this needs either corrections without food, or meals where the bolus does not always follow the carbohydrates exactly. When every dose is the grams divided by the ratio, nothing can tell the food and the insulin apart.",
+          "carb": "Carbohydrate factor: this needs at least five logged meals with a bolus, each with glucose recorded across the hours after it.",
+          "duration": "Insulin duration: this needs a quiet stretch after a dose, with no further food until glucose stops falling."
+        },
+        "samples_inferred": "inferred across # meals, not measured directly"
+      },
+      "since_change": "Your basal schedule changed recently. The suggestion only uses hours the running schedule actually ran, so it needs a few days under it before it can say anything."
     }
   },
   "injection": {

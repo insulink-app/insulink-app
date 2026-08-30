@@ -315,7 +315,16 @@ What each warning does:
 | Reservoir below the configured units (default 10) | yes | `NotificationSetting.podInsulin`, one-shot per pod |
 | Pod alarmed — occlusion, empty, infusion error, fault | yes | **none** |
 | Delivery stopped without us asking | yes | **none** |
-| No contact for 45 min | no | silent mode only |
+| No contact for 45 min | no | silent mode, then once an hour while it lasts |
+
+The reachability check runs on every watchdog tick, every thirty seconds, and it
+used to post its notification on each of them. Android replaces a notification of
+the same id, so it read as one notice until the user swiped it away and it came
+back half a minute later, alerting again, for as long as the pod was out of
+range. It is now said once per episode and repeated at most every
+`PodAlarmManager.repeatUnreachableEvery` (one hour), re-armed the moment the pod
+answers: a pod nobody can reach may still be delivering, so the condition is
+worth repeating, at a human interval and not at the watchdog's.
 
 The two ungated ones are deliberate: an alarming or stopped pod is **not delivering
 insulin**, which is not something a user can opt out of being told. Both bypass Do

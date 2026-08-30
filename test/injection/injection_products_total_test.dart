@@ -4,6 +4,7 @@ import 'package:insulink/src/injection/injection_products_tab.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
 
+import '../support/locale_pump.dart';
 import '../support/secure_storage_mock.dart';
 
 /// The one number on screen has to be the one the dose is suggested from.
@@ -36,7 +37,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await settleLocalized(tester);
   }
 
   testWidgets('typed carbs alone still show a total', (tester) async {

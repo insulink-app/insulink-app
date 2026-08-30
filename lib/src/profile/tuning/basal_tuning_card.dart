@@ -8,7 +8,9 @@ import 'package:insulink/src/profile/basal/profile_basal_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/tuning/tuning_controls.dart';
 import 'package:insulink/src/profile/tuning/basal_suggestion.dart';
-import 'package:insulink/src/profile/tuning/clean_hour.dart';
+import 'package:insulink/src/profile/tuning/tuning_hour.dart';
+import 'package:insulink/src/profile/tuning/tuning_glucose.dart';
+import 'package:insulink/src/profile/tuning/tuning_model.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +33,6 @@ class BasalTuningCard extends StatefulWidget {
 }
 
 class _BasalTuningCardState extends State<BasalTuningCard> {
-  int _days = TuningControls.windows.first;
 
   /// What to say when the button produced no profile. Null while it did, because
   /// then the new profile appearing in the list above IS the answer.
@@ -44,11 +45,6 @@ class _BasalTuningCardState extends State<BasalTuningCard> {
       children: [
         TuningControls(
           descriptionKey: 'profile.tuning.description',
-          days: _days,
-          onDays: (days) => setState(() {
-            _days = days;
-            _nothingKey = null;
-          }),
           onGenerate: _generate,
         ),
         ..._nothingNote(context),
@@ -80,17 +76,38 @@ class _BasalTuningCardState extends State<BasalTuningCard> {
     final basal = context.read<ProfileBasalState>();
     final suggestions = _analyse();
     final changes = suggestions.where((hour) => hour.isChange).toList();
+    // Says which stage came up empty, because "not enough data" on its own
+    // cannot tell a missing archive from an hour nobody has three days of.
+    debugPrint('basal tuning: ${TuningControls.windowDays}d -> ${suggestions.length} hours of day, '
+        '${changes.length} changed, schedule running since '
+        '${context.read<ProfileBasalState>().runningSince}');
     if (changes.isNotEmpty) {
       _save(basal, changes);
     }
     setState(() {
       _nothingKey = changes.isNotEmpty
           ? null
-          : suggestions.isEmpty
-              ? 'profile.tuning.not_enough'
-              : 'profile.tuning.no_change';
+          : suggestions.isNotEmpty
+              ? 'profile.tuning.no_change'
+              : _changedRecently()
+                  ? 'profile.tuning.since_change'
+                  : 'profile.tuning.not_enough';
     });
   }
+
+  /// Whether the running schedule was changed inside the analysis period, which
+  /// is the usual reason a freshly adopted proposal has nothing to say yet.
+  bool _changedRecently() {
+    final since = context.read<ProfileBasalState>().runningSince;
+    return since != null &&
+        since.isAfter(DateTime.now()
+            .subtract(const Duration(days: TuningControls.windowDays)));
+  }
+
+  /// The later of the two, and the window start when the schedule changed inside
+  /// it.
+  DateTime _later(DateTime start, DateTime? changedAt) =>
+      changedAt != null && changedAt.isAfter(start) ? changedAt : start;
 
   /// Writes the proposal as a profile of its own, INACTIVE.
   ///
@@ -103,7 +120,7 @@ class _BasalTuningCardState extends State<BasalTuningCard> {
     }
     final now = DateTime.now();
     final name = Locales.string(context, 'profile.tuning.profile_name')
-        .replaceFirst('#', '$_days')
+        .replaceFirst('#', '${TuningControls.windowDays}')
         .replaceFirst('#', '${now.day}.${now.month}.');
     basal.addInactiveProfile(BasalProfile(
       name: name,
@@ -123,29 +140,45 @@ class _BasalTuningCardState extends State<BasalTuningCard> {
     ));
   }
 
-  /// The analysis itself, over the chosen window of stored data.
+  /// The analysis itself, over the last [TuningControls.windowDays] of stored
+  /// data. Every hour with
+  /// readings at both ends counts; what food and bolus insulin did in it is
+  /// measured by [TuningModel] and subtracted rather than disqualifying it.
   List<HourSuggestion> _analyse() {
-    final window = Duration(days: _days);
+    const window = Duration(days: TuningControls.windowDays);
     final bolus = context.read<ProfileBolusState>();
-    final rates = context.read<ProfileBasalState>().active.rates;
+    final basal = context.read<ProfileBasalState>();
+    final rates = basal.active.rates;
     final pod = context.read<PodController>().store;
     final now = DateTime.now();
+    // Only hours the RUNNING schedule actually ran. What this measures is
+    // glucose drifting under given rates, so hours from before the last change
+    // describe a schedule that no longer exists: adding their drift to the rates
+    // that already carry it is how pressing the button twice walked somebody's
+    // basal away from them.
+    final from = _later(now.subtract(window), basal.runningSince);
     final archive = context.read<CgmController>().archiveSince(window);
-    final hours = CleanHourFinder(insulinDuration: bolus.insulinDuration).find(
-      from: now.subtract(window),
+    debugPrint('basal tuning: ${archive.length} archived readings, '
+        '${context.read<MealState>().meals.length} meals');
+    final hours = TuningHourFinder(
+      model: TuningModel(insulinDuration: bolus.insulinDuration),
+    ).find(
+      from: from,
       to: now,
       meals: context.read<MealState>().meals,
-      glucoseAt: (moment) => archive[
-          moment.millisecondsSinceEpoch ~/ Duration.millisecondsPerMinute],
+      // Through [TuningGlucose], NOT a direct lookup: the archive is keyed by
+      // the minute a reading happened, and asking for an exact hour boundary or
+      // dose time misses four times out of five.
+      glucoseAt: TuningGlucose(archive).at,
       // From the durable record, not the loop journal and not the pod's own
       // ledger. The journal keeps one day; the ledger dies with the pod, and a
       // pod lives eighty hours, so anything resting on it was empty the morning
       // after a pod change.
       automationExcessAt: pod.automationExcessInHour,
-      automationKnownSince: pod.automationCoveredSince,
     );
     return BasalSuggestion(
       correctionFactor: bolus.correctionFactor,
+      carbFactor: bolus.carbFactor,
       currentRates: rates,
     ).from(hours);
   }

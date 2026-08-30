@@ -14,11 +14,30 @@ import 'package:insulink/src/profile/basal/basal_profile.dart';
 class ProfileBasalState extends ChangeNotifier {
   static const _key = 'basal_profiles';
   static const _legacyKey = 'basal_profile';
+  static const _kRunningSince = 'basal_running_since';
 
   final List<BasalProfile> _profiles;
   int _activeIndex;
 
-  ProfileBasalState(this._profiles, this._activeIndex);
+  /// Since when the schedule now active has been the one running, or null when
+  /// no change has been recorded yet.
+  ///
+  /// The basal suggestion needs it. What it measures is glucose drifting under
+  /// the rates that were running at the time, so applying that drift to a
+  /// schedule those hours never ran adds a correction twice: the user adopts a
+  /// proposal, presses again, and the same historical drift is put on top of the
+  /// rates that already carry it. See `docs/TUNING.md`.
+  DateTime? _runningSince;
+
+  DateTime? get runningSince => _runningSince;
+
+  ProfileBasalState(this._profiles, this._activeIndex, [this._runningSince]);
+
+  /// The active rates as one string, so a change to the SCHEDULE can be told
+  /// from a change to the list around it. Adding a suggestion beside the others
+  /// or renaming a profile leaves the running schedule alone and must not reset
+  /// the clock the analysis reads.
+  String get _runningRates => active.rates.join(',');
 
   List<BasalProfile> get profiles => List<BasalProfile>.unmodifiable(_profiles);
   int get activeIndex => _activeIndex;
@@ -70,7 +89,19 @@ class ProfileBasalState extends ChangeNotifier {
     _commit();
   }
 
+  /// The running schedule as it was at the last commit, so [_commit] can see a
+  /// change to it.
+  late String _committedRates = _runningRates;
+
   void _commit() {
+    if (_runningRates != _committedRates) {
+      _committedRates = _runningRates;
+      _runningSince = DateTime.now();
+      _storage.write(
+        key: _kRunningSince,
+        value: '${_runningSince!.millisecondsSinceEpoch}',
+      );
+    }
     notifyListeners();
     _storage.write(key: _key, value: _encode());
   }
@@ -84,14 +115,17 @@ class ProfileBasalState extends ChangeNotifier {
 
   static Future<ProfileBasalState> load() async {
     final all = await _storage.readAll();
+    final since = int.tryParse(all[_kRunningSince] ?? '');
+    final runningSince =
+        since == null ? null : DateTime.fromMillisecondsSinceEpoch(since);
     final raw = all[_key];
     if (raw != null && raw.isNotEmpty) {
-      return _decode(raw);
+      return _decode(raw, runningSince);
     }
     return _migrate(all[_legacyKey]);
   }
 
-  static ProfileBasalState _decode(String raw) {
+  static ProfileBasalState _decode(String raw, [DateTime? runningSince]) {
     final map = jsonDecode(raw) as Map<String, dynamic>;
     final profiles = (map['profiles'] as List)
         .map((p) => BasalProfile.fromJson(p as Map<String, dynamic>))
@@ -100,7 +134,11 @@ class ProfileBasalState extends ChangeNotifier {
       return _fresh();
     }
     final active = (map['active'] as num?)?.toInt() ?? 0;
-    return ProfileBasalState(profiles, active.clamp(0, profiles.length - 1));
+    return ProfileBasalState(
+      profiles,
+      active.clamp(0, profiles.length - 1),
+      runningSince,
+    );
   }
 
   /// One-time upgrade from the old single comma-joined-rates key.

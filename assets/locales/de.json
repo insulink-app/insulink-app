@@ -457,7 +457,21 @@
       "attach_step_2": "Beide *Schutzfolien* abziehen.",
       "attach_step_3": "Pod aufkleben und *fest andrücken*.",
       "attach_step_4": "Weiter tippen, mit *Fingerabdruck* bestätigen.",
-      "attach_step_5": "Erst dann setzt der Pod die *Kanüle*. Kurz spürbar."
+      "attach_step_5": "Erst dann setzt der Pod die *Kanüle*. Kurz spürbar.",
+      "progress": {
+        "searching": "Suche nach einem Pod in der Nähe …",
+        "found": "Pod gefunden. Wird gekoppelt …",
+        "connecting": "Verbindung zum Pod wird aufgebaut …",
+        "got_version": "Pod erkannt, Daten werden gelesen …",
+        "identity_set": "Pod ist mit Insulink verbunden",
+        "activation_alert_set": "Sicherheitsalarme gesetzt",
+        "priming": "Pod füllt seine Mechanik. Das dauert etwa eine Minute …",
+        "primed": "Pod ist gefüllt und bereit",
+        "basal_set": "Basalplan an den Pod gesendet",
+        "lifecycle_alerts_set": "Ablauf- und Erinnerungsalarme gesetzt",
+        "inserting_cannula": "Kanüle wird gesetzt …",
+        "running": "Pod gibt Insulin ab"
+      }
     },
     "life": {
       "title": "Pod-Laufzeit"
@@ -1174,16 +1188,25 @@
     },
     "tuning": {
       "_": "Basal-Vorschlag",
-      "description": "Wertet gespeicherte Glukose aus. Es zählen nur Stunden, in denen weder Essen noch ein Bolus noch die Automatik im Spiel waren.",
-      "not_enough": "Nicht genug auswertbare Stunden in diesem Zeitraum. Nimm einen längeren, oder warte auf ein paar ruhige Nächte.",
-      "window": {
-        "d7": "7 Tage",
-        "d30": "30 Tage",
-        "d90": "90 Tage"
-      },
+      "description": "Wertet die gespeicherte Glukose der letzten 30 Tage aus. Was Essen und Bolusinsulin in einer Stunde bewirkt haben, wird herausgerechnet, deshalb zählen auch normale Tage und nicht nur ruhige Nächte.",
+      "not_enough": "Nicht genug auswertbare Stunden in den letzten 30 Tagen. Warte, bis mehr Glukose aufgezeichnet ist, und versuch es dann nochmal.",
       "generate": "Vorschlag berechnen",
       "no_change": "Nichts zu ändern, kein neues Profil angelegt. Dein Profil passt zu diesen Stunden.",
-      "profile_name": "Vorschlag # Tage, #"
+      "profile_name": "Vorschlag # Tage, #",
+      "factors": {
+        "_": "Faktor-Vorschlag",
+        "description": "Wertet deine erfassten Dosen der letzten 30 Tage gegen die gespeicherte Glukose aus. Anderes Insulin, anderes Essen und die Automatik werden aus jedem Fenster herausgerechnet, statt es auszuschließen.",
+        "apply": "Übernehmen",
+        "samples": "aus # Dosen",
+        "no_change": "Nichts zu ändern. Deine Faktoren passen zu diesen Dosen.",
+        "missing": {
+          "correction": "Korrekturfaktor: dafür braucht es entweder Korrekturen ohne Essen, oder Mahlzeiten, bei denen der Bolus nicht immer exakt den Kohlenhydraten folgt. Wenn jede Dosis genau Gramm durch Faktor ist, lassen sich Essen und Insulin nicht auseinanderhalten.",
+          "carb": "Mahlzeitenfaktor: dafür braucht es mindestens fünf erfasste Mahlzeiten mit Bolus, jeweils mit aufgezeichneter Glukose über die Stunden danach.",
+          "duration": "Insulindauer: dafür braucht es nach einer Dosis eine ruhige Strecke, ohne weiteres Essen, bis die Glukose aufhört zu fallen."
+        },
+        "samples_inferred": "aus # Mahlzeiten erschlossen, nicht direkt gemessen"
+      },
+      "since_change": "Dein Basalprofil wurde kürzlich geändert. Der Vorschlag rechnet nur mit Stunden, in denen das laufende Profil auch lief, er braucht also erst ein paar Tage damit."
     }
   },
   "injection": {

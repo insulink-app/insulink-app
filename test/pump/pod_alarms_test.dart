@@ -271,6 +271,41 @@ void main() {
       expect(notifications.shown, [unreachableId]);
     });
 
+    /// The reported spamming: the check runs every thirty seconds, and it used
+    /// to post its notification on each of them. Swiping it away brought it
+    /// straight back, alerting again, for as long as the pod was out of range.
+    test('a standing silence is said once, not on every tick', () async {
+      await pairPod();
+      await store.markSeen(
+        DateTime.now().subtract(PodAlarmManager.unreachableAfter * 2),
+      );
+
+      for (var tick = 0; tick < 10; tick++) {
+        await alarms.checkReachable(store);
+      }
+
+      expect(notifications.shown, [unreachableId]);
+    });
+
+    /// The gate is per episode, not for the life of the pod: a link that comes
+    /// back and drops again is a new thing to say.
+    test('the pod answering again re-arms the warning', () async {
+      await pairPod();
+      await store.markSeen(
+        DateTime.now().subtract(PodAlarmManager.unreachableAfter * 2),
+      );
+      await alarms.checkReachable(store);
+
+      await store.markSeen(DateTime.now());
+      await alarms.checkReachable(store);
+      await store.markSeen(
+        DateTime.now().subtract(PodAlarmManager.unreachableAfter * 2),
+      );
+      await alarms.checkReachable(store);
+
+      expect(notifications.shown, [unreachableId, unreachableId]);
+    });
+
     test('a pod never contacted is not reported as lost', () async {
       await pairPod();
       await alarms.checkReachable(store);

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/base/day_section_header.dart';
 import 'package:insulink/src/localization/locales.dart';
 
+import '../support/locale_pump.dart';
 import '../support/secure_storage_mock.dart';
 
 /// The logbook day headings: named for the days a user thinks of by name, dated
@@ -42,7 +43,7 @@ void main() {
 
     Future<String> label(DateTime day) async {
       await tester.pumpWidget(app(day));
-      await tester.pumpAndSettle();
+      await settleLocalized(tester);
       return tester.widget<Text>(find.byType(Text)).data!;
     }
 

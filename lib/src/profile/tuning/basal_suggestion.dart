@@ -1,5 +1,5 @@
 import 'package:insulink/src/profile/basal/basal_profile.dart';
-import 'package:insulink/src/profile/tuning/clean_hour.dart';
+import 'package:insulink/src/profile/tuning/tuning_hour.dart';
 
 /// What one hour of the day suggests about the basal rate.
 class HourSuggestion {
@@ -19,11 +19,12 @@ class HourSuggestion {
   /// What the clean hours suggest instead, already limited and snapped.
   final double suggested;
 
-  /// How many clean hours went into it. Shown, because a suggestion from three
+  /// How many hours went into it. Shown, because a suggestion from three
   /// nights is a different thing from one built on twelve.
   final int samples;
 
-  /// The typical glucose drift across this hour, in mg/dL.
+  /// The typical UNEXPLAINED glucose movement across this hour, in mg/dL: what
+  /// it did with the effect of food and bolus insulin already taken off.
   final double medianDrift;
 
   double get change => suggested - current;
@@ -31,14 +32,29 @@ class HourSuggestion {
   bool get isChange => change.abs() >= BasalProfile.step / 2;
 }
 
-/// Suggests a basal profile from hours where nothing but basal could have moved
-/// the glucose.
+/// Suggests a basal profile from what an hour's glucose did that food and bolus
+/// insulin do not explain.
 ///
-/// The arithmetic is deliberately the plainest thing that could work: if glucose
-/// drifted up by D mg/dL over a clean hour, the insulin missing for that hour is
-/// D divided by the correction factor, so the rate for that hour wants to be
-/// that much higher. Anything more elaborate would be modelling data this
-/// refuses to collect.
+/// The arithmetic is the plainest thing that could work. Over one hour:
+///
+/// ```
+/// suggested = current + drift / correctionFactor
+///                     + insulinActing
+///                     - carbsAbsorbed / carbFactor
+/// ```
+///
+/// The first term is the old one: glucose that drifted up by D mg/dL was short
+/// of D / correctionFactor units. The other two put back what else was acting,
+/// so an hour after a meal can be used instead of thrown away: the insulin that
+/// worked in that hour was not basal, and the carbohydrates absorbed in it were
+/// not a basal shortfall. On a quiet hour both are zero and this is exactly the
+/// arithmetic it always was.
+///
+/// What that trades away is stated plainly: those two terms come from
+/// [TuningModel], which spreads insulin and carbohydrates EVENLY over their
+/// durations. Real ones peak. So a single hour after a meal is worth little, and
+/// only the median across days, together with the cap below, makes a proposal
+/// out of them.
 ///
 /// **Nothing here is ever applied.** It produces a proposal for a person to read,
 /// and every guard below exists to keep that proposal from being confidently
@@ -54,6 +70,7 @@ class HourSuggestion {
 class BasalSuggestion {
   const BasalSuggestion({
     required this.correctionFactor,
+    required this.carbFactor,
     required this.currentRates,
   });
 
@@ -61,10 +78,14 @@ class BasalSuggestion {
   /// that would have prevented it.
   final int correctionFactor;
 
+  /// The user's carbohydrate factor, which turns the grams absorbed in an hour
+  /// into the insulin they needed.
+  final int carbFactor;
+
   /// The 24 rates currently programmed, one per hour.
   final List<double> currentRates;
 
-  /// Clean hours needed before an hour of the day is worth a word.
+  /// Hours needed before an hour of the day is worth a word.
   static const int minSamples = 3;
 
   /// The most a single proposal may move a rate. A week of nights is thin
@@ -74,12 +95,23 @@ class BasalSuggestion {
   /// Applied when the current rate is so small that a fraction of it is nothing.
   static const double minChangeRoom = 0.1;
 
-  /// One entry per hour that had enough clean data, in hour order. Hours without
-  /// it are absent rather than unchanged: silence is the honest answer.
-  List<HourSuggestion> from(List<CleanHour> hours) {
-    final byHour = <int, List<int>>{};
+  /// The most of an hour's movement that may come from the model rather than
+  /// from the reading, in mg/dL.
+  ///
+  /// The last refusal left. An hour in which food and insulin account for more
+  /// than this is an hour whose answer is mostly arithmetic about absorption
+  /// timing, and that is the part the model is worst at.
+  static const double maxModelledMgdl = 100;
+
+  /// One entry per hour of the day with enough data, in hour order. Hours
+  /// without it are absent rather than unchanged: silence is the honest answer.
+  List<HourSuggestion> from(List<TuningHour> hours) {
+    final byHour = <int, List<double>>{};
     for (final hour in hours) {
-      byHour.putIfAbsent(hour.hourOfDay, () => <int>[]).add(hour.drift);
+      final unexplained = _unexplained(hour);
+      if (unexplained != null) {
+        byHour.putIfAbsent(hour.hourOfDay, () => <double>[]).add(unexplained);
+      }
     }
     final suggestions = <HourSuggestion>[];
     for (var hour = 0; hour < 24; hour++) {
@@ -92,7 +124,18 @@ class BasalSuggestion {
     return suggestions;
   }
 
-  HourSuggestion _forHour(int hour, List<int> drifts) {
+  /// What the hour did that food and insulin do NOT account for, as mg/dL, or
+  /// null when the model carried too much of it to be worth reading.
+  double? _unexplained(TuningHour hour) {
+    final fromInsulin = hour.insulinActing * correctionFactor;
+    final fromCarbs = hour.carbsAbsorbed * correctionFactor / carbFactor;
+    if (fromInsulin > maxModelledMgdl || fromCarbs > maxModelledMgdl) {
+      return null;
+    }
+    return hour.drift + fromInsulin - fromCarbs;
+  }
+
+  HourSuggestion _forHour(int hour, List<double> drifts) {
     final drift = _median(drifts);
     final current = _currentAt(hour);
     final wanted = current + drift / correctionFactor;
@@ -125,12 +168,12 @@ class BasalSuggestion {
     return rate.isFinite && rate > 0 ? rate : 0;
   }
 
-  /// The middle value, so one unusual night does not carry an hour.
-  double _median(List<int> values) {
-    final sorted = List<int>.of(values)..sort();
+  /// The middle value, so one unusual day does not carry an hour.
+  double _median(List<double> values) {
+    final sorted = List<double>.of(values)..sort();
     final middle = sorted.length ~/ 2;
     if (sorted.length.isOdd) {
-      return sorted[middle].toDouble();
+      return sorted[middle];
     }
     return (sorted[middle - 1] + sorted[middle]) / 2;
   }

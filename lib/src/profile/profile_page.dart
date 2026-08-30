@@ -18,6 +18,7 @@ import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold_card.dart';
 import 'package:insulink/src/profile/tuning/basal_tuning_card.dart';
+import 'package:insulink/src/profile/tuning/factor_tuning_card.dart';
 import 'package:insulink/src/pump/loop/loop_settings.dart';
 import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_toggle.dart';
@@ -92,7 +93,11 @@ class _ProfilePageState extends State<ProfilePage> {
       titleKey: "profile.bolus",
       icon: PhosphorIconsBold.pill,
       searchKey: "profile.search.bolus",
-      children: () => const [ProfileBolusSelection()],
+      children: () => const [
+        ProfileBolusSelection(),
+        SizedBox(height: 20),
+        FactorTuningCard(),
+      ],
     ),
     (
       titleKey: "profile.basal",

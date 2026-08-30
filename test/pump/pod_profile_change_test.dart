@@ -64,6 +64,7 @@ void main() {
     );
     connection = RecordingConnection(store);
     controller = PodController(store: store, connection: connection);
+    PodController.stoppedConfirmationDelay = Duration.zero;
   });
 
   /// The POD reports a temporary rate. That, not the app's own record, is what
@@ -209,6 +210,18 @@ void main() {
       expect(store.hasPod, isFalse);
     });
 
+    /// The flaky one the user kept hitting: the pod answers the deactivate
+    /// before it has finished shutting down, so the first reply still reads as
+    /// running. Asking again is what makes it reliable.
+    test('a pod that only settles on the next read is forgotten', () async {
+      connection.session.lifecycleAfterDeactivate = PodLifecycleStatus.deactivated;
+
+      await controller.deactivatePod();
+
+      expect(store.hasPod, isFalse);
+      expect(controller.failure, isNull);
+    });
+
     /// The rule that must not bend: a pod can never be paired twice, so a key
     /// dropped while it still delivers leaves nothing able to stop it.
     test('a pod that is still running is kept', () async {
@@ -281,6 +294,10 @@ class RecordingSession extends PodSession {
   /// Where the pod says it is in its life. What deactivation is judged on.
   PodLifecycleStatus lifecycle = PodLifecycleStatus.runningAboveMinimumVolume;
 
+  /// What the pod becomes once a deactivate has been sent, adopted only from the
+  /// NEXT reply. A real pod answers the deactivate before it has settled.
+  PodLifecycleStatus? lifecycleAfterDeactivate;
+
   /// Completed by a test to release a command it is holding open, so an
   /// operation can be observed mid-flight.
   Completer<void>? hold;
@@ -295,9 +312,13 @@ class RecordingSession extends PodSession {
         command.target == PodDeliveryTarget.tempBasal) {
       delivery = PodDeliveryStatus.basalActive;
     }
-    return PodStatusResponse(
+    final answer = PodStatusResponse(
       statusBody(delivery: delivery, lifecycle: lifecycle),
     );
+    if (command is PodDeactivateCommand && lifecycleAfterDeactivate != null) {
+      lifecycle = lifecycleAfterDeactivate!;
+    }
+    return answer;
   }
 
 }

@@ -75,6 +75,7 @@ class PodActivationController extends ChangeNotifier {
   bool _stopped = false;
   bool _disposed = false;
   PodActivationFacts? _facts;
+  String? _progressKey;
   int? _podUniqueId;
   PodSession? _session;
 
@@ -89,6 +90,12 @@ class PodActivationController extends ChangeNotifier {
   /// A locale key for failures the user has to ACT on, where a raw exception
   /// string would be no help. Preferred over [failure] when present.
   String? get failureKey => _failureKey;
+
+  /// What the activation is doing right now, as a locale key, or null while it
+  /// is not working. Detail under the stage headline, so the user can see the
+  /// pod being found, bound and filled instead of watching one spinner for a
+  /// minute and a half.
+  String? get progressKey => _progressKey;
 
   /// Whether the last attempt stopped because the cannula confirmation was
   /// declined. Not a failure — the pod is untouched — so it reads differently.
@@ -204,6 +211,7 @@ class PodActivationController extends ChangeNotifier {
     }
     _stopped = false;
     _enter(PodActivationStage.priming);
+    _reportProgress('searching');
     try {
       final activation = await _openActivation();
       try {
@@ -362,13 +370,19 @@ class PodActivationController extends ChangeNotifier {
     // second key for a pod that already holds one, which is how a pod is lost.
     if (step == PodActivationStep.notStarted && !store.hasPod) {
       final started = await _connection.beginActivation(
-        confirmIrreversible: (_) async => true,
+        // Called the moment the pod is found and before anything is sent to it,
+        // which is the only place that knows the search is over.
+        confirmIrreversible: (_) async {
+          _reportProgress('found');
+          return true;
+        },
       );
       _podUniqueId = started.podUniqueId;
       _session = started.session;
       await _mirrorPairing();
       return _activationOn(started.podUniqueId);
     }
+    _reportProgress('connecting');
     _session = await _openSession();
     return _activationOn(_podUniqueId ?? store.uniqueId!);
   }
@@ -420,7 +434,10 @@ class PodActivationController extends ChangeNotifier {
     return PodActivation(
       sendCommand: _send,
       podUniqueId: podUniqueId,
-      onStep: (step) => store.saveActivationStep(step.name),
+      onStep: (step) async {
+        await store.saveActivationStep(step.name);
+        _reportProgress(step.name);
+      },
       confirmCannulaInsertion: confirmCannulaInsertion,
       reopenLink: _reopenLink,
       onFacts: (facts) =>
@@ -457,9 +474,19 @@ class PodActivationController extends ChangeNotifier {
     _fail('$error');
   }
 
+  /// Names the activity now under way. [step] carries the protocol step's own
+  /// name, converted to the snake_case the locale files use, so a step added to
+  /// [PodActivationStep] needs only its text and no wiring here.
+  void _reportProgress(String step) {
+    _progressKey = 'pump.activate.progress.'
+        '${step.replaceAllMapped(RegExp('[A-Z]'), (match) => '_${match[0]!.toLowerCase()}')}';
+    _notify();
+  }
+
   void _enter(PodActivationStage stage) {
     debugPrint('pod activation: ${stage.name} (step ${storedStep.name})');
     _stage = stage;
+    _progressKey = null;
     if (stage != PodActivationStage.failed) {
       _failure = null;
       _failureKey = null;

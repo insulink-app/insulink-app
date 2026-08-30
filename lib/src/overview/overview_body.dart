@@ -23,6 +23,7 @@ import 'package:insulink/src/overview/overview_time_in_range.dart';
 import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_states.dart';
 import 'package:insulink/src/overview/sensor_restore_offer.dart';
+import 'package:insulink/src/pump/pod_restore_card.dart';
 import 'package:insulink/src/profile/battery/profile_battery_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -113,12 +114,14 @@ class OverviewBodyContent extends StatelessWidget {
     if (loading) {
       return const SearchingView();
     }
-    // No sensor set up: below the empty prompt, offer the account's stored
-    // sensor (renders nothing unless the backend has one).
+    // No sensor set up: above the empty prompt, offer whatever the account is
+    // holding. Each renders nothing unless the backend has one, and a reinstall
+    // typically has BOTH to pick up: the sensor and the pod on the body.
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SensorRestoreOffer(),
+        PodRestoreCard(),
         Expanded(child: EmptyView()),
       ],
     );
@@ -183,6 +186,11 @@ class _DataViewState extends State<_DataView> {
         // the empty screen, so the restore offer must live here too. Renders
         // nothing unless the backend has a sensor to adopt.
         const SensorRestoreOffer(),
+        // The pod is the same story and the more urgent half of it: the key it
+        // is offering is the ONLY thing that can command a pod still on the
+        // body, and a reinstalled app that never showed the offer here left it
+        // buried on the pump page.
+        const PodRestoreCard(),
         const SizedBox(height: 16),
         OverviewCurrentValue(
           mgdl: controller.currentMgdl,

@@ -12,6 +12,7 @@ import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pump_notice.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 /// Opens the activation wizard.
 ///
@@ -53,8 +54,28 @@ Future<void> openPodActivation(BuildContext context) async {
 /// It can always be left, including mid-search: [PodActivationExit] warns first
 /// and stops the attempt cleanly, and the durable record means coming back
 /// resumes rather than restarts.
-class PodActivationPage extends StatelessWidget {
+class PodActivationPage extends StatefulWidget {
   const PodActivationPage({super.key});
+
+  @override
+  State<PodActivationPage> createState() => _PodActivationPageState();
+}
+
+class _PodActivationPageState extends State<PodActivationPage> {
+  /// The screen stays on for the whole wizard. Priming alone runs close to a
+  /// minute with nothing to tap, and a phone that sleeps mid-activation drops
+  /// the link to a pod that is being filled or has a needle to drive.
+  @override
+  void initState() {
+    super.initState();
+    WakelockPlus.enable();
+  }
+
+  @override
+  void dispose() {
+    WakelockPlus.disable();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

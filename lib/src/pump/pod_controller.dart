@@ -410,12 +410,36 @@ class PodController extends ChangeNotifier {
         ));
         await _absorb(response);
         await _endRunningBolus();
+        await _confirmItStopped(session);
         if (_reportsItCannotDeliver) {
           await _letGoOfPod();
         } else {
-          _failure = 'Pod did not confirm it stopped. It was NOT forgotten';
+          _failure ??= 'Pod did not confirm it stopped. It was NOT forgotten';
         }
       });
+
+  /// Asks the pod again while it still claims it can deliver.
+  ///
+  /// The reply to the deactivate command is not always the settled state: the
+  /// pod answers before it has finished shutting down, and that answer is what
+  /// left a pod that HAD stopped looking alive to the app. It is also the reply
+  /// that may not be a status at all, in which case the state being judged is
+  /// the stale cached one. Re-reading is the whole fix.
+  ///
+  /// ponytail: two extra reads, no state machine. A read that fails escapes to
+  /// [_withSession], which retries the deactivate as a whole; a deactivate is
+  /// safe to repeat.
+  Future<void> _confirmItStopped(PodSession session) async {
+    for (var attempt = 0; attempt < 2 && !_reportsItCannotDeliver; attempt++) {
+      await Future<void>.delayed(stoppedConfirmationDelay);
+      await _absorb(await _readStatus(session));
+    }
+  }
+
+  /// How long the pod is given to settle between confirmation reads. Short
+  /// enough that the user is still watching, long enough to outlast the shutdown.
+  @visibleForTesting
+  static Duration stoppedConfirmationDelay = const Duration(milliseconds: 800);
 
   /// Forgets the pod locally and tells the account it is gone. See
   /// [PodBackupRestore.letGo].

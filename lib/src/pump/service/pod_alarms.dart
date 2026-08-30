@@ -59,6 +59,22 @@ class PodAlarmManager {
   /// polls, so one failed attempt does not cry wolf.
   static const Duration unreachableAfter = Duration(minutes: 45);
 
+  /// How often a link that STAYS down is said again.
+  ///
+  /// The reachability check runs on every watchdog tick, which is every thirty
+  /// seconds, and it used to post its notification on each of them. Android
+  /// replaces a notification of the same id, so it looked like one notice until
+  /// the user swiped it away and it came back half a minute later, alerting
+  /// again, for as long as the pod was out of range. That is the reported
+  /// spamming. The condition is worth repeating, because a pod nobody can reach
+  /// may still be delivering, but at a human interval and not at the watchdog's.
+  static const Duration repeatUnreachableEvery = Duration(hours: 1);
+
+  /// When the unreachable notice was last raised, or null while the link is up.
+  /// Per-isolate, like [_lastAlarmKind]: a restarted service warns again, which
+  /// is the safe direction.
+  DateTime? _unreachableNoticedAt;
+
   /// Warns once the pod has less life left than the user's configured threshold,
   /// and once more when it has actually run out.
   ///
@@ -183,19 +199,29 @@ class PodAlarmManager {
   ///
   /// Local, like [checkExpiry]: it is measured from the last successful read, so
   /// it is exactly the case where nothing else can be read.
+  ///
+  /// Said once per episode and then at most every [repeatUnreachableEvery],
+  /// NOT on every tick that finds the link still down.
   Future<void> checkReachable(PodStore store) async {
     final lastSeen = store.lastSeenAt;
     if (lastSeen == null) {
       return;
     }
-    final silence = DateTime.now().difference(lastSeen);
+    final now = DateTime.now();
+    final silence = now.difference(lastSeen);
     if (silence < unreachableAfter) {
+      _unreachableNoticedAt = null;
       await _plugin.cancel(id: _unreachableId);
       return;
     }
     if ((await ProfileSilentState.load()).mutesNotifications) {
       return;
     }
+    final saidAt = _unreachableNoticedAt;
+    if (saidAt != null && now.difference(saidAt) < repeatUnreachableEvery) {
+      return;
+    }
+    _unreachableNoticedAt = now;
     await _plugin.show(
       id: _unreachableId,
       title: await _strings.get('alarm.pod.unreachable.title'),

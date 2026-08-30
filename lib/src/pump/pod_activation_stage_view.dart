@@ -27,6 +27,7 @@ class PodActivationStageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final progressKey = controller.progressKey;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -48,6 +49,10 @@ class PodActivationStageView extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
+        if (progressKey != null) ...[
+          const SizedBox(height: 18),
+          _progress(context, progressKey),
+        ],
         // Only the attach stage walks through steps. That is where the user has
         // something physical to do in a fixed order, right before the needle goes
         // in; everywhere else the app is working and a checklist would just be
@@ -60,6 +65,39 @@ class PodActivationStageView extends StatelessWidget {
           const SizedBox(height: 14),
           _basalWarning(context),
         ],
+      ],
+    );
+  }
+
+  /// What the activation is doing right now, spelled out under the stage text.
+  ///
+  /// The stage headline covers a minute and a half of work in one sentence, so
+  /// on its own it leaves the user watching a spinner with no way to tell a pod
+  /// that is filling from one the app never found.
+  Widget _progress(BuildContext context, String key) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: context.accent,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Flexible(
+          child: LocaleText(
+            key,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface,
+            ),
+          ),
+        ),
       ],
     );
   }

@@ -613,9 +613,16 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - `docs/LOOP.md` — **automated delivery**: why it is temp-basal-only, the pod's
   own expiry as the fallback to basal, the trust boundary on sensor data, and
   the layered limits that bound how much insulin it can add.
-- `docs/TUNING.md` — the weekly **basal suggestion**: why it attributes nothing,
-  which hours it throws away and why that is the feature working, and why there
-  is no button that applies it.
+- `docs/TUNING.md` — the weekly **basal suggestion**: how food and bolus insulin
+  are measured out of an hour instead of disqualifying it (`TuningModel`), what
+  that linear model costs, which hours are still thrown away, and why there is no
+  button that applies it.
+- `docs/FACTOR_TUNING.md` — the **bolus** suggestion: correction factor, carb
+  factor and insulin duration read backwards out of the dose windows, the least
+  squares fit that gets a correction factor out of plain meals (and the standard
+  error that refuses it when the bolus only ever follows the carbohydrates), the
+  two refusals that keep a wrong factor from claiming insulin is weak, and why
+  each row is adopted by hand.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
 - `docs/DESIGN.md` — the theme/colour-role system: the two accents, the three
