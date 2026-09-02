@@ -176,16 +176,10 @@
     "tab": {
       "ranges": "Ranges",
       "history": "History",
-      "calendar": "Calendar",
       "averages": "Metrics",
       "patterns": "Patterns",
-      "events": "Events"
-    },
-    "calendar": {
-      "good": "Good",
-      "ok": "OK",
-      "fair": "Fair",
-      "poor": "Poor"
+      "events": "Events",
+      "forecast": "Forecast"
     },
     "empty": "No glucose data yet",
     "events": {
@@ -225,6 +219,21 @@
       "in_range": "In Range",
       "low": "Low",
       "very_low": "Very Low"
+    },
+    "forecast": {
+      "horizon": "# min",
+      "skill": "Skill score",
+      "matched": "Scored",
+      "points": "points",
+      "mae": "Mean error",
+      "rmse": "RMSE",
+      "persistence": "RMSE unchanged",
+      "coverage": "Inside band",
+      "empty": "Nothing to score yet",
+      "empty_hint": "Once a model has been trained for you and readings have come in, the forecast is scored here.",
+      "hint": "A skill score above 0 means better than assuming glucose stays where it is. The model is scored on data it was also trained on, so these numbers flatter it.",
+      "unmatched": "No readings to compare against",
+      "unmatched_hint": "Forecasts came back, but this device holds no readings for the times they were made for."
     }
   },
   "sensor": {

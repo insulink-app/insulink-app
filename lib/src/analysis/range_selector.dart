@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/analysis/analysis_segment.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:provider/provider.dart';
@@ -27,8 +28,7 @@ class AnalysisRangeSelector extends StatelessWidget {
             children: [
               for (final days in _presets)
                 Expanded(
-                  child: _segment(
-                    context,
+                  child: AnalysisSegment(
                     selected:
                         !isCustom && controller.statsPreset.inDays == days,
                     onTap: () => controller.statsPreset = Duration(days: days),
@@ -39,8 +39,7 @@ class AnalysisRangeSelector extends StatelessWidget {
                   ),
                 ),
               Expanded(
-                child: _segment(
-                  context,
+                child: AnalysisSegment(
                   selected: isCustom,
                   onTap: () => _pickCustom(context, controller),
                   child: const Icon(
@@ -54,44 +53,6 @@ class AnalysisRangeSelector extends StatelessWidget {
         ),
         if (isCustom) _customCaption(context, controller),
       ],
-    );
-  }
-
-  Widget _segment(
-    BuildContext context, {
-    required bool selected,
-    required VoidCallback onTap,
-    required Widget child,
-  }) {
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    // Plain tappable segment (not a ChoiceChip) so no Material-3 selection
-    // overlay flashes the accent colour on tap. Selection is a grey fill only —
-    // border and size stay constant so the segment never resizes.
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: selected
-                ? onSurface.withValues(alpha: 0.24)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Theme.of(context).dividerColor),
-          ),
-          child: DefaultTextStyle.merge(
-            style: TextStyle(
-              color: onSurface,
-              fontWeight: FontWeight.w500,
-              fontSize: 13,
-            ),
-            child: child,
-          ),
-        ),
-      ),
     );
   }
 

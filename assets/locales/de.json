@@ -176,16 +176,10 @@
     "tab": {
       "ranges": "Bereiche",
       "history": "Verlauf",
-      "calendar": "Kalender",
       "averages": "Kennwerte",
       "patterns": "Muster",
-      "events": "Ereignisse"
-    },
-    "calendar": {
-      "good": "Gut",
-      "ok": "OK",
-      "fair": "Mäßig",
-      "poor": "Schlecht"
+      "events": "Ereignisse",
+      "forecast": "Prognose"
     },
     "empty": "Noch keine Glukosedaten",
     "events": {
@@ -225,6 +219,21 @@
       "in_range": "Im Zielbereich",
       "low": "Niedrig",
       "very_low": "Sehr niedrig"
+    },
+    "forecast": {
+      "horizon": "# Min",
+      "skill": "Skill-Score",
+      "matched": "Bewertet",
+      "points": "Punkte",
+      "mae": "Ø Abweichung",
+      "rmse": "RMSE",
+      "persistence": "RMSE unverändert",
+      "coverage": "Im Band",
+      "empty": "Noch keine Bewertung möglich",
+      "empty_hint": "Sobald ein Modell für dich trainiert ist und Messwerte vorliegen, wird die Vorhersage hier bewertet.",
+      "hint": "Skill-Score über 0 heißt: besser als die Annahme, dass der Wert bleibt, wo er ist. Bewertet wird das Modell auf Daten, mit denen es auch trainiert wurde. Die Werte fallen daher eher zu gut aus.",
+      "unmatched": "Noch keine Messwerte zum Abgleich",
+      "unmatched_hint": "Es liegen Vorhersagen vor, aber für ihren Zeitpunkt keine Messwerte auf diesem Gerät."
     }
   },
   "sensor": {

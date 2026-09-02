@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/demo_pod.dart';
@@ -31,6 +33,7 @@ class PodController extends ChangeNotifier {
   PodController({
     required this.store,
     this.retry = const PodRetry(),
+    this.pumpSync = const PumpSync(),
     PodConnection? connection,
   })  : _sequence = store.commandSequence,
         // Opens on the last status anyone read, usually the background poll's.
@@ -47,6 +50,10 @@ class PodController extends ChangeNotifier {
   /// How a failed operation is repeated. Injectable so tests need not wait out
   /// the real backoff.
   final PodRetry retry;
+
+  /// The backend mirror. Injectable for the same reason [retry] is: a test has
+  /// to be able to make it hang or throw without a network.
+  final PumpSync pumpSync;
   final PodConnection _connection;
 
   /// The pod command sequence number, a persisted 4-bit counter.
@@ -602,7 +609,7 @@ class PodController extends ChangeNotifier {
       }
       await _connection.close();
       if (store.hasPod) {
-        await PumpSync().sync(store, status: _status);
+        _mirrorToBackend();
       }
     } on PodCommandOutcomeUnknown catch (error) {
       debugPrint('pod: $what outcome UNKNOWN: ${error.message}');
@@ -634,6 +641,26 @@ class PodController extends ChangeNotifier {
       await _connection.close();
       rethrow;
     }
+  }
+
+  /// Mirrors the pod to the backend account, without holding up the answer.
+  ///
+  /// Deliberately NOT awaited. This runs after the pod has already acted, so its
+  /// outcome must not change what the caller is told — and awaiting it did both
+  /// of the wrong things: the request layer retries a dead network three times
+  /// against a ten-second timeout, so the mirror could hold the bolus path for
+  /// the best part of a minute BEFORE the dose reached the delivery log, and a
+  /// throw out of it turned a bolus the pod was delivering into a reported
+  /// failure. Closing the app inside that window was enough to have a delivered
+  /// bolus come back as unknown.
+  ///
+  /// The mirror is best-effort by contract ([PumpSync]) — a failed attempt is
+  /// re-sent by the next call — so nothing is lost by letting it run behind.
+  void _mirrorToBackend() {
+    unawaited(pumpSync.sync(store, status: _status).catchError((Object error) {
+      debugPrint('pod: backend mirror failed: $error');
+      return false;
+    }));
   }
 
   /// Re-reads the store and adopts the command counter it holds.
@@ -720,7 +747,7 @@ class PodController extends ChangeNotifier {
       ));
       await store.saveCommandSequence(_sequence);
       await _connection.close();
-      await PumpSync().sync(store, status: _status);
+      _mirrorToBackend();
       await _absorb(response);
       return response;
     } on PodBolusRefused {

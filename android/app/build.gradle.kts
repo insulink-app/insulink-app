@@ -6,7 +6,10 @@ plugins {
 
 android {
     namespace = "de.insulink"
-    compileSdk = flutter.compileSdkVersion
+    // Pinned ahead of `flutter.compileSdkVersion` (36): permission_handler_android
+    // declares an AAR metadata minimum of 37, and the build fails the check
+    // without it. Independent of targetSdk, which still follows Flutter.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -20,8 +23,8 @@ android {
         applicationId = "de.insulink"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        // 26 (Android 8.0) ist die Untergrenze von Health Connect (health-Plugin).
-        // Muss mit rust_builder/android/build.gradle übereinstimmen.
+        // 26 (Android 8.0) is the floor Health Connect imposes (health plugin).
+        // Must match rust_builder/android/build.gradle.
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

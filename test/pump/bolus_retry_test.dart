@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +6,7 @@ import 'package:insulink/src/pump/pod_connection.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_retry.dart';
 import 'package:insulink/src/pump/pod_store.dart';
+import 'package:insulink/src/pump/pump_sync.dart';
 import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
 import 'package:insulink/src/pump/protocol/pod_command.dart';
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
@@ -85,6 +87,31 @@ class FlakyConnection extends PodConnection {
   Future<void> close() async {}
 }
 
+/// A backend mirror that never answers, standing in for the real one on a dead
+/// network: the request layer retries three times against a ten-second timeout.
+class HangingPumpSync implements PumpSync {
+  final Completer<bool> completer = Completer<bool>();
+
+  @override
+  Future<bool> sync(PodStore store, {PodStatusResponse? status}) =>
+      completer.future;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      super.noSuchMethod(invocation);
+}
+
+/// A backend mirror that fails, as one does while the app is being closed.
+class FailingPumpSync implements PumpSync {
+  @override
+  Future<bool> sync(PodStore store, {PodStatusResponse? status}) async =>
+      throw StateError('no network');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      super.noSuchMethod(invocation);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -98,6 +125,7 @@ void main() {
   Future<PodController> controllerWith(
     PodResponse Function() onBolus, {
     int failFirst = 0,
+    PumpSync pumpSync = const PumpSync(),
   }) async {
     installSecureStorageMock();
     backing = <String, String>{};
@@ -117,6 +145,7 @@ void main() {
     return PodController(
       store: store,
       retry: immediate,
+      pumpSync: pumpSync,
       connection: connection,
     );
   }
@@ -194,6 +223,44 @@ void main() {
 
       expect(connection.opened, 1);
       expect(session.bolusesSent, 0);
+    });
+  });
+
+  /// The user's report: an error after a bolus the pod delivered perfectly well,
+  /// when the app was closed right after confirming it.
+  ///
+  /// The mirror to the backend runs AFTER the pod has acted, and used to be
+  /// awaited — so a dead network held the answer for the request layer's three
+  /// retries against a ten-second timeout, and the dose reached the delivery log
+  /// only afterwards. Close the app inside that window and a delivered bolus was
+  /// recorded as unknown.
+  group('the backend mirror after a bolus', () {
+    test("does not hold up the pod's answer", () async {
+      final mirror = HangingPumpSync();
+      final controller = await controllerWith(delivering, pumpSync: mirror);
+
+      final response = await controller
+          .sendBolus(PodBolusAmount.fromUnits(2.0), refuseIf: (_) => null)
+          .timeout(const Duration(seconds: 2));
+
+      expect(response, isA<PodStatusResponse>());
+      expect(mirror.completer.isCompleted, isFalse,
+          reason: 'the answer came back while the mirror was still running');
+    });
+
+    test('does not turn a delivered bolus into a failure', () async {
+      final controller = await controllerWith(
+        delivering,
+        pumpSync: FailingPumpSync(),
+      );
+
+      final response = await controller.sendBolus(
+        PodBolusAmount.fromUnits(2.0),
+        refuseIf: (_) => null,
+      );
+
+      expect(response, isA<PodStatusResponse>());
+      expect(session.bolusesSent, 1, reason: 'and never a second dose');
     });
   });
 }

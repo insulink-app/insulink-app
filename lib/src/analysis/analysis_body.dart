@@ -3,8 +3,8 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/analysis/averages/average_view.dart';
-import 'package:insulink/src/analysis/calendar/calendar_heatmap_view.dart';
 import 'package:insulink/src/analysis/events/event_log_view.dart';
+import 'package:insulink/src/analysis/forecast/forecast_accuracy_view.dart';
 import 'package:insulink/src/analysis/history/glucose_history_view.dart';
 import 'package:insulink/src/analysis/patterns/patterns_view.dart';
 import 'package:insulink/src/analysis/range_selector.dart';
@@ -42,7 +42,7 @@ class AnalysisBodyContent extends StatelessWidget {
     _AnalysisTab('analysis.tab.averages', AverageView()),
     _AnalysisTab('analysis.tab.history', GlucoseHistoryView()),
     _AnalysisTab('analysis.tab.events', EventLogView()),
-    _AnalysisTab('analysis.tab.calendar', CalendarHeatmapView()),
+    _AnalysisTab('analysis.tab.forecast', ForecastAccuracyView()),
   ];
 
   @override
@@ -54,7 +54,7 @@ class AnalysisBodyContent extends StatelessWidget {
         children: [
           // App-style segmented pill selector (mirrors the overview chart's
           // range selector): rounded track + a filled primary pill behind the
-          // active tab. Two rows so four tabs fit without overflowing.
+          // active tab. Two rows so the tabs fit without overflowing.
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
             child: Container(
@@ -84,9 +84,9 @@ class AnalysisBodyContent extends StatelessWidget {
   }
 }
 
-/// The tab selector as two rows of pill segments (chunks of 2) driving the
-/// surrounding [TabController] — so four tabs fit without a scrolling/overflowing
-/// single row. The active segment gets the filled primary pill.
+/// The tab selector as two rows of pill segments (half the tabs each) driving
+/// the surrounding [TabController] — so they fit without a scrolling or
+/// overflowing single row. The active segment gets the filled primary pill.
 class _TwoRowTabs extends StatelessWidget {
   const _TwoRowTabs({required this.labels});
 
@@ -140,12 +140,18 @@ class _TwoRowTabs extends StatelessWidget {
             color: selected ? theme.colorScheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
-            labels[index],
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: selected ? FontWeight.bold : FontWeight.w600,
-              color: selected ? Colors.white : theme.colorScheme.onSurface,
+          // Scaled down rather than clipped: a row holds four tabs since the
+          // forecast one was added, and the longest German labels no longer fit
+          // a quarter of a narrow screen at full size.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              labels[index],
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+                color: selected ? Colors.white : theme.colorScheme.onSurface,
+              ),
             ),
           ),
         ),
