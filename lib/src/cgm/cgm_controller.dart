@@ -277,6 +277,19 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     return archiveSince(_statsPreset);
   }
 
+  /// The currently selected analysis window as an absolute range. The archive
+  /// getters resolve the preset themselves; a backend query cannot, so it reads
+  /// the same selection from here.
+  ({DateTime from, DateTime to}) get statsRange {
+    final from = _statsCustomFrom;
+    final to = _statsCustomTo;
+    if (from != null && to != null) {
+      return (from: from, to: to);
+    }
+    final now = DateTime.now();
+    return (from: now.subtract(_statsPreset), to: now);
+  }
+
   /// The effective length of the currently selected analysis window — the
   /// custom range's span when set, else the preset duration. Drives the history
   /// page's adaptive X-axis (hours vs days vs months).

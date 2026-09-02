@@ -48,10 +48,20 @@ class ForecastBacktest {
 /// the caller shows an empty state rather than an error, because "no model yet"
 /// is the ordinary state of a new account.
 class ForecastBacktestFetcher {
-  Future<ForecastBacktest?> fetch(int horizon, {int hours = 24}) async {
+  /// [from]/[to] are the analysis window the user has selected, so the scored
+  /// stretch is the same one every other analysis view shows.
+  Future<ForecastBacktest?> fetch(
+    int horizon, {
+    required DateTime from,
+    required DateTime to,
+  }) async {
     final response = await Request.post(
       url: '/glucose/predict/backtest/',
-      body: {'horizon': horizon, 'hours': hours},
+      body: {
+        'horizon': horizon,
+        'since': from.millisecondsSinceEpoch,
+        'until': to.millisecondsSinceEpoch,
+      },
     ).send(null);
     if (response == null || response.statusCode != 200) {
       return null;

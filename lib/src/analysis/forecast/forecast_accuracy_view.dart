@@ -34,16 +34,43 @@ class _ForecastAccuracyViewState extends State<ForecastAccuracyView> {
   bool _loading = true;
   ForecastBacktest? _backtest;
 
+  /// The window the running fetch was started for, so a rebuild carrying the
+  /// same analysis range does not re-ask the backend for the same replay.
+  Object? _window;
+
+  /// Counts the fetches, so a slow answer for a window the user has already
+  /// left is dropped instead of overwriting the newer one.
+  int _request = 0;
+
+  /// The range selector above this view drives every analysis, so the scored
+  /// window follows it. The dependency is registered by the watch in [build];
+  /// the fields are set without setState because this runs during the build.
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final controller = context.read<CgmController>();
+    final window = (
+      controller.statsPreset,
+      controller.statsCustomFrom,
+      controller.statsCustomTo,
+    );
+    if (window == _window) {
+      return;
+    }
+    _window = window;
+    _loading = true;
     _load();
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final backtest = await ForecastBacktestFetcher().fetch(_horizon);
-    if (!mounted) {
+    final request = ++_request;
+    final range = context.read<CgmController>().statsRange;
+    final backtest = await ForecastBacktestFetcher().fetch(
+      _horizon,
+      from: range.from,
+      to: range.to,
+    );
+    if (!mounted || request != _request) {
       return;
     }
     setState(() {
@@ -56,7 +83,10 @@ class _ForecastAccuracyViewState extends State<ForecastAccuracyView> {
     if (horizon == _horizon) {
       return;
     }
-    setState(() => _horizon = horizon);
+    setState(() {
+      _horizon = horizon;
+      _loading = true;
+    });
     _load();
   }
 
