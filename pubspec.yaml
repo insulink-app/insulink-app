@@ -51,7 +51,7 @@ dependencies:
   android_id: ^0.5.1
   url_launcher: ^6.3.2
   http: ^1.6.0
-  mobile_scanner: ^7.2.0
+  mobile_scanner: ^7.4.0
   # NFC (ISO 15693) — activates a FreeStyle Libre 3 sensor, which then streams
   # over BLE like the G7. Only used by the Libre 3 pairing flow. flutter_nfc_kit
   # (not nfc_manager 3.x) because it targets a recent compileSdk and exposes raw
