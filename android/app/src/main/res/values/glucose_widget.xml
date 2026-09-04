@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget sits on the launcher, so it follows the SYSTEM light/dark
+     setting (values-night), not the app's own theme setting. The grounds are
+     the app's own light/dark page colours. -->
+<resources>
+    <color name="glucose_widget_background">#F2FAFAFA</color>
+    <color name="glucose_widget_muted">#8A000000</color>
+</resources>

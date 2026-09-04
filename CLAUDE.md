@@ -508,6 +508,27 @@ alarms fire with the app closed. `init()` must be called once per isolate
 - Full design (audio stream, DnD ordering, channel/notification ids) in
   `docs/ALARMS.md`.
 
+### Home-screen widget (`lib/src/home_widget/`)
+
+An Android app widget showing the latest value, its trend arrow and how long ago
+it arrived. `HomeWidgetGlucose.publish` is called from the service isolate's
+`_publishLatest` (the same dedup that feeds the ongoing notification), and the
+native `GlucoseWidgetProvider` only draws what it is handed — value already
+formatted in the user's unit, colour already resolved from the target range — so
+the widget cannot drift away from the app on what is in range.
+
+- **`GlucoseWidgetPlugin` is registered on BOTH engines** (`MainActivity` +
+  `InsulinkApplication`), like the Libre 3 and audio channels: the push happens
+  in the background engine, so a UI-only registration throws
+  `MissingPluginException` exactly when the app is closed.
+- **The age is a `Chronometer`, not a pushed string.** It ticks by itself, so a
+  widget nobody is pushing to visibly ages instead of presenting a stale number
+  as current. Its base is derived from the wall clock (not persisted as elapsed
+  time) so it survives a reboot. `updatePeriodMillis` is 0 — nothing polls.
+- The last value lives in a plain (unencrypted) `SharedPreferences` bucket so
+  the launcher can redraw without waking Dart. It holds nothing that isn't
+  already on screen.
+
 ### Data + persistence
 
 - `glucose.dart`: EGV (`0x4E`) and backfill (`dexbackfill`) decoders. Packed

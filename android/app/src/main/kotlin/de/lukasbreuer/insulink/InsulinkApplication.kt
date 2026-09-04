@@ -7,12 +7,13 @@ import com.pravera.flutter_foreground_task.FlutterForegroundTaskStarter
 import io.flutter.embedding.engine.FlutterEngine
 
 /**
- * Registers the Libre 3 security MethodChannel on the foreground-service isolate.
+ * Registers the app's own MethodChannels on the foreground-service isolate.
  *
- * The read pipeline — and therefore the Libre 3 BLE security handshake — runs in
- * the flutter_foreground_task background engine, NOT the UI engine that
- * [MainActivity] configures. Without registering `insulink/libre3_security`
- * there too, the handshake's `initKeys` call throws MissingPluginException. FFT
+ * The read pipeline — and therefore the Libre 3 BLE security handshake, the
+ * alarm's audio routing and the home-screen widget push — runs in the
+ * flutter_foreground_task background engine, NOT the UI engine that
+ * [MainActivity] configures. Without registering the channels there too, the
+ * first call into one throws MissingPluginException. FFT
  * builds a fresh engine per task and fires [onEngineCreate] before the task
  * starts, so that is where we register the plugin. Doing it from
  * [Application.onCreate] means it also covers a system/sticky service restart,
@@ -24,6 +25,7 @@ class InsulinkApplication : Application() {
             flutterEngine?.let {
                 Libre3SecurityPlugin().register(it)
                 AudioOutputPlugin(applicationContext).register(it)
+                GlucoseWidgetPlugin(applicationContext).register(it)
             }
         }
 

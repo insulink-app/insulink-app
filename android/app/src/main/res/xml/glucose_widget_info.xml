@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- updatePeriodMillis is 0 on purpose: the read pipeline pushes every reading,
+     and the OS minimum of 30 min would be useless for a 5-min sensor anyway. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:initialLayout="@layout/glucose_widget"
+    android:minHeight="40dp"
+    android:minWidth="110dp"
+    android:previewImage="@mipmap/launcher_icon"
+    android:previewLayout="@layout/glucose_widget"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="1"
+    android:targetCellWidth="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

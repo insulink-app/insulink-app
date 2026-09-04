@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="glucose_widget_background">#F215181D</color>
+    <color name="glucose_widget_muted">#99FFFFFF</color>
+</resources>

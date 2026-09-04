@@ -13,5 +13,7 @@ class MainActivity : FlutterFragmentActivity() {
         Libre3SecurityPlugin().register(flutterEngine)
         // Headphone-detection for alarm routing (see AudioOutputPlugin).
         AudioOutputPlugin(applicationContext).register(flutterEngine)
+        // Pushes each reading to the home-screen widget (see GlucoseWidgetPlugin).
+        GlucoseWidgetPlugin(applicationContext).register(flutterEngine)
     }
 }

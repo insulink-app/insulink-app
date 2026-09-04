@@ -10,6 +10,7 @@ import '../../google_health/fitbit_heart_rate_monitor.dart';
 import '../../google_health/google_health_importer.dart';
 import '../../google_health/intraday_pulse_store.dart';
 import '../../google_health/pulse_sync.dart';
+import '../../home_widget/home_widget_glucose.dart';
 import '../../profile/battery/profile_battery_state.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
@@ -187,7 +188,7 @@ class CgmTaskHandler extends TaskHandler {
   DateTime? _lastDeliveryAt;
 
   /// Value+trend the ongoing notification currently shows, so repeats are
-  /// dropped — see [_updateNotification].
+  /// dropped — see [_publishLatest].
   String? _shownNotification;
 
   @override
@@ -297,7 +298,7 @@ class CgmTaskHandler extends TaskHandler {
     final store = _store!;
     final alarms = _alarms!;
     alarms.onReading();
-    _updateNotification(reading.glucoseMgDl, reading.trendMgDlPerMin);
+    _publishLatest(reading.glucoseMgDl, reading.trendMgDlPerMin);
     if (reading.glucoseMgDl != null) {
       alarms.check(reading.glucoseMgDl, reading.trendMgDlPerMin);
       alarms.checkAdvisory(reading.glucoseMgDl, reading.trendMgDlPerMin);
@@ -391,7 +392,7 @@ class CgmTaskHandler extends TaskHandler {
   }
 
   void _handleUpdate() {
-    _updateNotification(_conn?.latestMgDl, _conn?.latestTrendPerMin);
+    _publishLatest(_conn?.latestMgDl, _conn?.latestTrendPerMin);
     FlutterForegroundTask.sendDataToMain({'t': 'update'});
   }
 
@@ -896,11 +897,12 @@ class CgmTaskHandler extends TaskHandler {
     _conn = null;
   }
 
-  /// Update the ongoing service notification with the latest value + trend.
-  /// The user can hide the live value (Android still requires the ongoing
-  /// notification, so it stays unchanged then). The toggle is read fresh so it
-  /// takes effect without a service restart.
-  Future<void> _updateNotification(int? mgdl, double? trendPerMin) async {
+  /// Publish the latest value + trend to the two places that show it while the
+  /// app is closed: the ongoing service notification and the home-screen
+  /// widget. The widget is not gated on the live-value toggle — that setting is
+  /// about the notification Android forces on us, while the widget was placed
+  /// on purpose.
+  Future<void> _publishLatest(int? mgdl, double? trendPerMin) async {
     // Drop repeats before touching prefs: `_handleUpdate` fires per protocol
     // update, so a backfill batch calls this dozens of times a second with the
     // SAME value — two SharedPreferences reads and an `updateService` each,
@@ -911,21 +913,38 @@ class CgmTaskHandler extends TaskHandler {
       return;
     }
     _shownNotification = signature;
-    final showValue = await ProfileLiveNotificationState().load();
-    if (!showValue) {
-      return;
-    }
     if (mgdl == null) {
       return;
     }
     final profile = await ProfileGlucoseState.load();
     final arrow = trendPerMin != null
-        ? ' ${_alarms?.trendArrow(trendPerMin) ?? ''}'
+        ? _alarms?.trendArrow(trendPerMin) ?? ''
         : '';
-    final String text = '${profile.formatWithUnit(mgdl)}$arrow';
+    await HomeWidgetGlucose().publish(
+      profile: profile,
+      mgdl: mgdl,
+      arrow: arrow,
+    );
+    await _updateNotification(profile, mgdl, arrow);
+  }
+
+  /// Update the ongoing service notification with the latest value + trend.
+  /// The user can hide the live value (Android still requires the ongoing
+  /// notification, so it stays unchanged then). The toggle is read fresh so it
+  /// takes effect without a service restart.
+  Future<void> _updateNotification(
+    ProfileGlucoseState profile,
+    int mgdl,
+    String arrow,
+  ) async {
+    final showValue = await ProfileLiveNotificationState().load();
+    if (!showValue) {
+      return;
+    }
+    final suffix = arrow.isEmpty ? '' : ' $arrow';
     FlutterForegroundTask.updateService(
       notificationTitle: 'Insulink',
-      notificationText: text,
+      notificationText: '${profile.formatWithUnit(mgdl)}$suffix',
     );
   }
 }
