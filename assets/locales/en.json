@@ -280,7 +280,9 @@
       "title": "Durability",
       "remaining": "# days left",
       "remaining_hours": "# hours left",
-      "grace": "Grace period · # h left"
+      "remaining_minutes": "# minutes left",
+      "grace": "Grace period · # h left",
+      "grace_minutes": "Grace period · # min left"
     },
     "control": {
       "end_session": "End session",
@@ -654,7 +656,19 @@
     }
   },
   "connections": {
-    "label": "Connections"
+    "label": "Connections",
+    "history": {
+      "sensors": "Sensor history",
+      "pumps": "Pump history",
+      "empty": "No devices recorded yet.",
+      "failed": "The history could not be loaded.",
+      "active": "Active",
+      "discarded": "Removed",
+      "ended": "Finished",
+      "now": "now",
+      "range": "# to ##",
+      "worn": "Worn # of ## d"
+    }
   },
   "inventory": {
     "label": "Inventory",
@@ -1040,6 +1054,9 @@
     "live": {
       "description": "Show glucose value in the ongoing notification"
     },
+    "lockscreen": {
+      "description": "Show the notification on the lock screen"
+    },
     "connection": {
       "description": "Warn when no reading for 15 min"
     },
@@ -1260,7 +1277,13 @@
     "active_insulin_pump": "of which # U from the pump, not injected by you"
   },
   "service": {
-    "connecting": "Connecting…"
+    "connecting": "Connecting…",
+    "channel": {
+      "name": "Glucose connection",
+      "description": "Keeps the sensor connection alive in the background and shows the current value."
+    },
+    "running": "Running in the background",
+    "glucose": "Current glucose value"
   },
   "alarm": {
     "channel": {
@@ -1306,7 +1329,9 @@
       "low_body": "Eat about # g fast carbs (## tablets).",
       "high_title": "High glucose ahead",
       "high_body": "Consider about # units of insulin.",
-      "forecast": "Now #, in ## min ~###"
+      "forecast": "Now #, in ## min ~###",
+      "carbs_action": "Log # g carbs",
+      "bolus_action": "Deliver # U"
     },
     "low": {
       "title": "Glucose low"

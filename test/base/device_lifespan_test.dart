@@ -79,6 +79,40 @@ void main() {
     });
   });
 
+  group('minute mode (final hour)', () {
+    test('the last hour counts in minutes, not in a flat "1 h"', () {
+      // 10 d 11 h 35 min elapsed → 25 min of the 12 h grace remain.
+      final life = after(const Duration(days: 10, hours: 11, minutes: 35));
+      expect(life.minutesMode, isTrue);
+      expect(life.minutesLeft, 25);
+      // The bar keeps its hour segments; only the label changes.
+      expect(life.hoursMode, isTrue);
+      expect(life.totalSegments, 24);
+    });
+
+    test('a partial minute still counts, so it never reads zero', () {
+      final life = after(
+        const Duration(days: 10, hours: 11, minutes: 59, seconds: 30),
+      );
+      expect(life.minutesLeft, 1);
+    });
+
+    test('boundary: exactly one hour left is already minute mode', () {
+      final life = after(const Duration(days: 10, hours: 11));
+      expect(life.minutesMode, isTrue);
+      expect(life.minutesLeft, 60);
+    });
+
+    test('more than an hour left is not minute mode', () {
+      final life = after(const Duration(days: 10, hours: 10, minutes: 59));
+      expect(life.minutesMode, isFalse);
+    });
+
+    test('an expired device is not in minute mode', () {
+      expect(after(const Duration(days: 11)).minutesMode, isFalse);
+    });
+  });
+
   group('expired', () {
     test('past the session end the sensor is expired', () {
       final life = after(const Duration(days: 11));

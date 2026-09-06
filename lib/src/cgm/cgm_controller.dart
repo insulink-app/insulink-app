@@ -3,7 +3,11 @@ import 'dart:collection';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+// NotificationVisibility is hidden here: both plugins define one, and the
+// foreground service's notification is configured with the foreground-task
+// package's version.
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'
+    hide NotificationVisibility;
 import 'package:insulink/src/cgm/service/alarms.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/cgm/service/cgm_service.dart';
@@ -15,6 +19,7 @@ import 'package:insulink/src/cgm/sensor_sync.dart';
 import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/localization/service_strings.dart';
 import 'package:insulink/src/profile/battery/profile_battery_state.dart';
+import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -768,15 +773,42 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     return (scanOk && connectOk) || locOk;
   }
 
-  void _initForegroundTask() {
+  /// Configure the foreground service's own notification, which doubles as the
+  /// glucose readout on the lock screen.
+  ///
+  /// **Two channels, chosen by [NotificationSetting.lockscreenGlucose].**
+  /// Android files an `IMPORTANCE_LOW` notification as "silent", and the lock
+  /// screen setting most phones ship with ("hide silent notifications") then
+  /// leaves it off the lock screen entirely — which is exactly what the user
+  /// does or does not want. So the lock-screen style is `DEFAULT` importance and
+  /// the discreet one is `LOW`. `playSound`/`enableVibration` are false either
+  /// way, and DEFAULT rather than HIGH keeps it from popping up as a heads-up on
+  /// every reading.
+  ///
+  /// **It has to be two channels, and switching needs a service restart.**
+  /// Importance, sound and lock-screen behaviour are frozen when a channel is
+  /// created and no later call moves them, so the setting cannot change one
+  /// channel; it picks a different one, and the service has to be restarted onto
+  /// it ([applyNotificationStyle]). [_pruneChannels] deletes the ones not in use,
+  /// including the retired `insulink` channel from before this split.
+  Future<void> _initForegroundTask() async {
+    final onLockscreen = await NotificationSetting.lockscreenGlucose.load();
+    final channelId = onLockscreen ? _lockscreenChannel : _quietChannel;
+    await _pruneChannels(channelId);
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
-        channelId: 'insulink',
-        channelName: 'Dexcom G7 connection',
-        channelDescription:
-            'Keeps the glucose connection alive in the background.',
-        channelImportance: NotificationChannelImportance.LOW,
-        priority: NotificationPriority.LOW,
+        channelId: channelId,
+        channelName: await _strings.get('service.channel.name'),
+        channelDescription: await _strings.get('service.channel.description'),
+        channelImportance: onLockscreen
+            ? NotificationChannelImportance.DEFAULT
+            : NotificationChannelImportance.LOW,
+        priority: onLockscreen
+            ? NotificationPriority.DEFAULT
+            : NotificationPriority.LOW,
+        playSound: false,
+        enableVibration: false,
+        visibility: NotificationVisibility.VISIBILITY_PUBLIC,
         onlyAlertOnce: true,
       ),
       iosNotificationOptions: const IOSNotificationOptions(),
@@ -797,6 +829,66 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
+  /// The status-bar icon for the service notification.
+  ///
+  /// Without one the plugin falls back to the app's LAUNCHER icon, and Android
+  /// draws a status-bar icon as a silhouette of whatever it is given, so a
+  /// full-colour launcher icon comes out as a plain white circle. This is the
+  /// same monochrome drawable the alarms use, named through a manifest
+  /// `meta-data` entry because that is the only way the plugin takes a drawable.
+  ///
+  /// Only needed at [FlutterForegroundTask.startService]: an `updateService`
+  /// that passes none keeps the stored one.
+  static const _notificationIcon = NotificationIcon(
+    metaDataName: 'de.insulink.NOTIFICATION_ICON',
+  );
+
+  /// The service channel shown on the lock screen, and the discreet one that is
+  /// not. See [_initForegroundTask] for why the style is baked into the id.
+  static const _lockscreenChannel = 'insulink_glucose';
+  static const _quietChannel = 'insulink_glucose_quiet';
+
+  /// Delete every service channel except [keep], so the app's notification
+  /// settings never list entries that control nothing: the style the user turned
+  /// off, and `insulink`, the single channel both of these replaced.
+  Future<void> _pruneChannels(String keep) async {
+    final android = FlutterLocalNotificationsPlugin()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    for (final channelId in const [
+      'insulink',
+      _lockscreenChannel,
+      _quietChannel,
+    ]) {
+      if (channelId != keep) {
+        await android?.deleteNotificationChannel(channelId: channelId);
+      }
+    }
+  }
+
+  /// Move the running service onto the channel the style setting now names.
+  ///
+  /// A restart, because the style lives in the channel and a channel cannot be
+  /// changed after it is created. It also costs a fresh BLE scan, which is why
+  /// nothing else calls this: it is a deliberate tap in the settings, not
+  /// something that can fire on its own. The restart is stamped so the
+  /// stale-data recovery does not immediately restart again on top of it
+  /// (`_restartCooldown`). With no service running there is nothing to do, and
+  /// the next start reads the setting anyway.
+  Future<void> applyNotificationStyle() async {
+    if (!await FlutterForegroundTask.isRunningService || _disposed) {
+      return;
+    }
+    await _initForegroundTask();
+    _lastRestartAt = DateTime.now();
+    await FlutterForegroundTask.restartService();
+    if (_disposed) {
+      return;
+    }
+    await _refreshServiceState();
+  }
+
   /// Start the foreground service that connects and streams glucose. The BLE
   /// work lives in that service isolate, so it survives the app being
   /// backgrounded or closed.
@@ -814,7 +906,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       // The service isolate reads the pairing code from the store on start; the
       // serial stays blank and is resolved to the sensor BLE id by the pipeline.
       await _store?.saveIdentity(serial: '', pairingCode: code.text.trim());
-      _initForegroundTask();
+      await _initForegroundTask();
       // A detection-only service (started by ensureDetectionService) has no
       // connectedDevice FGS type and a stale empty pairing code, so replace it
       // with a fresh, sensor-aware isolate rather than reusing it.
@@ -965,6 +1057,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       serviceTypes: await _serviceTypes(forSensor: forSensor),
       notificationTitle: 'Insulink',
       notificationText: await _strings.get('service.connecting'),
+      notificationIcon: _notificationIcon,
       callback: startCallback,
     );
     if (result is ServiceRequestSuccess) {
@@ -1031,7 +1124,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
         NotificationPermission.granted) {
       return;
     }
-    _initForegroundTask();
+    await _initForegroundTask();
     await _startService(forSensor: false);
     await _refreshServiceState();
   }
@@ -1045,8 +1138,12 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
         NotificationPermission.granted) {
       await FlutterForegroundTask.requestNotificationPermission();
     }
+    // Deliberately no init() here. The plugin is already initialised for this
+    // isolate by AdvisoryActionListener, which sits above the whole app, and
+    // re-initialising would replace ITS response handler with the default one,
+    // so the pre-warning's countermeasure buttons would stop working for the
+    // rest of the session.
     final alarms = G7AlarmManager(FlutterLocalNotificationsPlugin());
-    await alarms.init();
     await alarms.ensureDndAccess();
     await alarms.fireTest(high: high);
   }

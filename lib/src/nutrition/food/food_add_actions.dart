@@ -18,37 +18,36 @@ import 'package:provider/provider.dart';
 /// back blank). Only an unknown barcode is looked up remotely, and an unknown
 /// one that OFF doesn't have either opens a blank editor carrying the code.
 ///
-/// [onKnown] changes what an ALREADY SAVED product means. On the nutrition page
-/// a scan is how you find a product to edit, so the editor is right. In the bolus
-/// picker the same scan is how you CHOOSE one, and stopping at the editor puts a
-/// form in front of somebody who has already said which product they mean; the
-/// picker passes a callback that carries it straight on to the amount instead.
+/// [editKnown] changes what an ALREADY SAVED product means. On the nutrition
+/// page a scan is how you find a product to edit, so the editor is right. In the
+/// bolus picker the same scan is how you CHOOSE one, and stopping at the editor
+/// puts a form in front of somebody who has already said which product they
+/// mean, so it passes false and the product is returned as it stands.
 ///
 /// Only the saved case is diverted. A product found on Open Food Facts is not
 /// yet the user's, and its carbohydrate figure is routinely wrong, so it still
 /// goes through the editor to be looked at before a dose is computed from it.
-Future<void> scanAndEditProduct(
+///
+/// Returns the product the scan settled on: the saved one, or the one the editor
+/// saved. Null when nothing was scanned or the editor was dismissed. The picker
+/// carries that straight on to the portion.
+Future<FoodProduct?> scanAndEditProduct(
   BuildContext context, {
-  void Function(FoodProduct product)? onKnown,
+  bool editKnown = true,
 }) async {
   final barcode = await scanBarcode(context);
   if (barcode == null || !context.mounted) {
-    return;
+    return null;
   }
   final known = context.read<FoodState>().findByBarcode(barcode);
   if (known != null) {
-    if (onKnown != null) {
-      onKnown(known);
-      return;
-    }
-    await showFoodEditor(context, product: known);
-    return;
+    return editKnown ? await showFoodEditor(context, product: known) : known;
   }
   final found = await _lookUp(barcode);
   if (!context.mounted) {
-    return;
+    return null;
   }
-  await showFoodEditor(
+  return await showFoodEditor(
     context,
     product: found ?? FoodProduct.blank(barcode: barcode),
   );
@@ -64,11 +63,11 @@ Future<FoodProduct?> _lookUp(String barcode) async {
   }
 }
 
-/// Opens the product-database search page.
-void openFoodSearch(BuildContext context) {
-  Navigator.of(
-    context,
-  ).push(MaterialPageRoute<void>(builder: (_) => const FoodSearchPage()));
+/// Opens the product-database search page, reporting back the product it saved.
+Future<FoodProduct?> openFoodSearch(BuildContext context) {
+  return Navigator.of(context).push(
+    MaterialPageRoute<FoodProduct>(builder: (_) => const FoodSearchPage()),
+  );
 }
 
 /// The three ways to add a product — manual, database search, barcode scan —
@@ -76,7 +75,7 @@ void openFoodSearch(BuildContext context) {
 /// offer the same options. Each action saves into the product list, so a picker
 /// watching that list sees the new entry immediately.
 class FoodAddActions extends StatelessWidget {
-  const FoodAddActions({super.key, this.onScanRequested});
+  const FoodAddActions({super.key, this.onScanRequested, this.onCreated});
 
   /// Takes the scan over entirely, instead of this widget running it.
   ///
@@ -87,6 +86,14 @@ class FoodAddActions extends StatelessWidget {
   /// closes itself first and scans afterwards.
   final VoidCallback? onScanRequested;
 
+  /// Reports a product the user just CREATED here (manually or off the database
+  /// search), so a picker can take it straight to the portion.
+  ///
+  /// Without it a new product only landed in the list and the user had to go
+  /// find it again, having just typed out every one of its fields. The nutrition
+  /// page passes nothing, because there the list IS the destination.
+  final void Function(FoodProduct product)? onCreated;
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -95,12 +102,12 @@ class FoodAddActions extends StatelessWidget {
         IconButton(
           visualDensity: VisualDensity.compact,
           icon: const Icon(PhosphorIconsBold.plus, size: 24),
-          onPressed: () => showFoodEditor(context),
+          onPressed: () => _report(showFoodEditor(context)),
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
           icon: const Icon(PhosphorIconsBold.magnifyingGlass, size: 24),
-          onPressed: () => openFoodSearch(context),
+          onPressed: () => _report(openFoodSearch(context)),
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
@@ -109,5 +116,14 @@ class FoodAddActions extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Hands a freshly created product to [onCreated] once its sheet or page has
+  /// closed. Dismissed without saving reports nothing.
+  Future<void> _report(Future<FoodProduct?> creating) async {
+    final created = await creating;
+    if (created != null) {
+      onCreated?.call(created);
+    }
   }
 }

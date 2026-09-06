@@ -16,9 +16,9 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// scanner is a full-screen page, so scanning from inside the sheet reveals the
 /// sheet again the instant the scanner pops and then closes it on the way to the
 /// amount, which reads as a stray popup opening and shutting. Here the sheet
-/// closes first. A scan that finds a saved product goes straight on; one that is
-/// cancelled, or that ends in the editor for a product the user has just created,
-/// brings the picker back so they can carry on where they were.
+/// closes first. A scan that settles on a product goes straight on, whether it
+/// was already saved or created in the editor there and then; a cancelled one
+/// brings the picker back so the user can carry on where they were.
 Future<FoodProduct?> pickFoodProduct(BuildContext context) async {
   while (true) {
     if (!context.mounted) {
@@ -51,16 +51,15 @@ Future<_PickerOutcome?> _showPicker(BuildContext context) {
   );
 }
 
-/// Scans, and reports back only a product that was ALREADY saved.
+/// Scans and reports back the product it settled on.
 ///
-/// An unknown barcode still goes through the editor: a product from Open Food
-/// Facts is not yet the user's, and its carbohydrate figure is routinely wrong,
-/// so it is looked at before a dose is computed from it.
-Future<FoodProduct?> _scanForPick(BuildContext context) async {
-  FoodProduct? scanned;
-  await scanAndEditProduct(context, onKnown: (product) => scanned = product);
-  return scanned;
-}
+/// A saved product is taken as chosen (`editKnown: false`) — the user has just
+/// pointed the camera at it. An unknown barcode still goes through the editor: a
+/// product from Open Food Facts is not yet the user's, and its carbohydrate
+/// figure is routinely wrong, so it is looked at before a dose is computed from
+/// it, and what it saves is then the choice.
+Future<FoodProduct?> _scanForPick(BuildContext context) =>
+    scanAndEditProduct(context, editKnown: false);
 
 /// What the picker sheet came back with: a product, or a request to scan.
 class _PickerOutcome {
@@ -136,6 +135,8 @@ class _ProductPickerState extends State<_ProductPicker> {
                 FoodAddActions(
                   onScanRequested: () => Navigator.of(context)
                       .pop(const _PickerOutcome.scan()),
+                  onCreated: (product) => Navigator.of(context)
+                      .pop(_PickerOutcome.picked(product)),
                 ),
               ],
             ),
@@ -144,6 +145,7 @@ class _ProductPickerState extends State<_ProductPicker> {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: TextField(
               controller: _search,
+              autofocus: true,
               decoration: InputDecoration(
                 prefixIcon: const Icon(PhosphorIconsBold.magnifyingGlass),
                 hintText: Locales.string(context, 'injection.products.search'),

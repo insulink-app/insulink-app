@@ -100,9 +100,22 @@ class DeviceLifespanBar extends StatelessWidget {
     );
   }
 
+  /// The remaining time, in the coarsest unit that still says something.
+  ///
+  /// Minutes come BEFORE the grace check on purpose. A device usually spends its
+  /// last hour inside the grace window, and that branch counts in hours, so the
+  /// grace wording would have swallowed the minutes exactly where they matter
+  /// most. It keeps its own wording, because "past its rated life" is worth
+  /// saying whichever unit the number is in.
   String _remainingText(BuildContext context, DeviceLifespan life) {
     if (life.expired) {
       return Locales.string(context, 'sensor.value.expired');
+    }
+    if (life.minutesMode) {
+      final key = life.inGrace
+          ? 'sensor.life.grace_minutes'
+          : 'sensor.life.remaining_minutes';
+      return Locales.string(context, key, params: ['${life.minutesLeft}']);
     }
     if (life.inGrace) {
       return Locales.string(

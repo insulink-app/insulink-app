@@ -121,8 +121,54 @@ so profile changes take effect without restarting the service isolate.
 
 Urgent levels additionally set `fullScreenIntent` + `category: alarm`.
 
+## The ongoing service notification is the lock-screen readout
+
+The foreground service's own notification (`CgmController._initForegroundTask`,
+text from `CgmTaskHandler._updateNotification`) doubles as the glucose value on
+the lock screen. Four things make that work, and each of them was a reason it
+did not:
+
+- **Channel importance is `DEFAULT`, not `LOW`.** Android files an
+  `IMPORTANCE_LOW` notification as "silent", and the lock-screen setting most
+  phones ship with ("hide silent notifications") drops silent ones entirely. The
+  value was being published the whole time and could not be seen without
+  unlocking. `playSound`/`enableVibration` false keep it quiet anyway, and
+  `DEFAULT` rather than `HIGH` keeps it from popping up as a heads-up every five
+  minutes.
+- **The style is the channel, so there are two of them.** Importance, sound and
+  lock-screen behaviour are frozen when a channel is created and no later call
+  moves them. `NotificationSetting.lockscreenGlucose` therefore picks between
+  `insulink_glucose` (DEFAULT) and `insulink_glucose_quiet` (LOW), and
+  `CgmController.applyNotificationStyle` restarts the service onto the other one
+  — a fresh BLE scan, which is why only a deliberate tap in the settings triggers
+  it. `_pruneChannels` deletes whichever are not in use, including `insulink`,
+  the single channel both of these replaced. **Any future change to a channel
+  property needs a new id too.**
+- **The value is the notification TITLE.** The title is the line that survives
+  wherever the shade shrinks the notification: a collapsed group, a narrow lock
+  screen, the status-bar chip. With the value in the body the lock screen showed
+  the word "Insulink" and hid the one number the notification exists for.
+- **The status-bar icon is named explicitly.** `flutter_foreground_task` falls
+  back to the app's LAUNCHER icon when given none, and Android draws a status-bar
+  icon as a silhouette of whatever it gets, so a full-colour launcher icon comes
+  out as a plain white circle. `NotificationIcon(metaDataName:)` points at the
+  `de.insulink.NOTIFICATION_ICON` manifest entry, which resolves to
+  `@drawable/notification` — the same monochrome drawable the alarms use. Only
+  needed at `startService`; an `updateService` that passes none keeps it.
+
+`ProfileLiveNotificationState` (default ON) can hide the value; Android still
+requires the ongoing notification, so it falls back to a neutral line. That
+fallback is written on every reading rather than skipped, or the notification
+sits reading "connecting…" for as long as the service runs.
+
+Note this is separate from the lock SCREEN WIDGET question: `home_widget/` draws
+the home-screen widget and declares `widgetCategory="home_screen"` only.
+
 ## Channel ids and notification ids
 
+- Foreground-service channels `insulink_glucose` / `insulink_glucose_quiet`,
+  service id 256 (see above; `insulink` is the retired predecessor, and whichever
+  of the three is not in use is deleted on init).
 - Glucose alarm channels: `insulink_alarm_{low,high}_{warning,urgent}`, ids =
   `G7AlarmLevel.index` (0–4).
 - Plain warning channel `insulink_alarm_warning` (default sound) for the
@@ -154,6 +200,45 @@ its own `AdvisoryLevel` (`none/low/high`).
   units; low → `suggestedRescueCarbs(…)` grams (÷ 6 g/tablet for the "Plättchen"
   count), correcting toward the target-range midpoint. The user's correction/carb
   factors are the calibration knob.
+
+### Acting on it from the notification itself
+
+The pre-warning carries ONE button that does what it suggests: log the rescue
+carbs (low), or deliver the correction (high). Both are
+`showsUserInterface: true`, so the tap brings the app to the front and the work
+happens in the UI isolate (`AdvisoryActionListener` → `AdvisoryCountermeasure`),
+through the same `MealState` and `BolusDispatcher` the injection sheet uses.
+
+**Two delivery routes, and both must be read.** Android hands such a tap to a
+RUNNING app through the plugin's response callback, but a tap that STARTED the
+app has already happened by the time any Dart can listen, and the plugin keeps
+that one in `getNotificationAppLaunchDetails()` instead. A pre-warning mostly
+fires with the app closed, so reading only the callback is the same as doing
+nothing. The listener reads both and de-dupes on the payload, because a repeated
+meal is a nuisance and a repeated dose is not.
+
+**Why not the background action isolate.** The first version buffered the tap in
+a temp file (the `SportStore.recordTrainingDecision` pattern) for the foreground
+service to apply on its next watchdog tick. Nothing happened, and nothing could
+say why: the tap runs in a bare isolate the plugin spawns through
+`ActionBroadcastReceiver`, and every step from the stored callback handle to the
+file write to the 30-second tick fails silently and identically. It also wrote
+the meal behind the running app's back — `MealState` holds the log in memory, so
+the new meal was invisible and the next one logged in the app overwrote it.
+
+Two rules still hold:
+
+- **The insulin button appears only with a pod paired.** Without one
+  `BolusDelivery` reports `loggedOnly`, which would write insulin nobody injected
+  into the log and suppress the next correction through insulin on board. The
+  countermeasure re-checks `hasPod` for a pod deactivated in between.
+- **Insulin reaches the log only once the pod names it back.** The meal is
+  written with its carbs and no dose; `BolusDispatcher` adds the units on
+  confirmation and surfaces a refusal on the overview.
+
+`CgmController.testAlarm` deliberately does NOT re-`init()` the plugin: that
+would replace the listener's response handler with the default one and the
+buttons would stop working for the rest of the session.
 
 Channel ids, importance and flags are fixed; only the user-facing channel
 name/description are localized. Android freezes a channel's displayed name at

@@ -280,7 +280,9 @@
       "title": "Haltbarkeit",
       "remaining": "noch # Tage",
       "remaining_hours": "noch # Stunden",
-      "grace": "Kulanzzeit · noch # Std."
+      "remaining_minutes": "noch # Minuten",
+      "grace": "Kulanzzeit · noch # Std.",
+      "grace_minutes": "Kulanzzeit · noch # Min."
     },
     "control": {
       "end_session": "Sitzung beenden",
@@ -654,7 +656,19 @@
     }
   },
   "connections": {
-    "label": "Verbindungen"
+    "label": "Verbindungen",
+    "history": {
+      "sensors": "Sensor-Verlauf",
+      "pumps": "Pumpen-Verlauf",
+      "empty": "Noch keine Geräte gespeichert.",
+      "failed": "Verlauf konnte nicht geladen werden.",
+      "active": "Aktiv",
+      "discarded": "Entfernt",
+      "ended": "Beendet",
+      "now": "jetzt",
+      "range": "# bis ##",
+      "worn": "Getragen # von ## d"
+    }
   },
   "inventory": {
     "label": "Inventar",
@@ -1040,6 +1054,9 @@
     "live": {
       "description": "Zuckerwert in der laufenden Benachrichtigung anzeigen"
     },
+    "lockscreen": {
+      "description": "Benachrichtigung auf dem Sperrbildschirm anzeigen"
+    },
     "connection": {
       "description": "Warnen, wenn 15 min kein Wert kommt"
     },
@@ -1260,7 +1277,13 @@
     "active_insulin_pump": "davon # U aus der Pumpe, nicht selbst gespritzt"
   },
   "service": {
-    "connecting": "Verbinde…"
+    "connecting": "Verbinde…",
+    "channel": {
+      "name": "Glukose-Verbindung",
+      "description": "Hält die Verbindung zum Sensor im Hintergrund aufrecht und zeigt den aktuellen Wert."
+    },
+    "running": "Läuft im Hintergrund",
+    "glucose": "Aktueller Glukosewert"
   },
   "alarm": {
     "channel": {
@@ -1306,7 +1329,9 @@
       "low_body": "Iss ca. # g schnelle KH (## Plättchen).",
       "high_title": "Überzucker droht",
       "high_body": "Erwäge ca. # Einheiten Insulin.",
-      "forecast": "Jetzt #, in ## min ~###"
+      "forecast": "Jetzt #, in ## min ~###",
+      "carbs_action": "# g KH verbuchen",
+      "bolus_action": "# E abgeben"
     },
     "low": {
       "title": "Zucker niedrig"

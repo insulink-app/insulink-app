@@ -15,6 +15,7 @@ import '../../profile/battery/profile_battery_state.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/notifications/profile_live_notification_state.dart';
 import '../../rust/frb_generated.dart';
+import '../../localization/service_strings.dart';
 import '../../sport/sport_store.dart';
 import '../../sport/sport_sync.dart';
 import '../../sport/training/activity_recognition_sampler.dart';
@@ -190,6 +191,10 @@ class CgmTaskHandler extends TaskHandler {
   /// Value+trend the ongoing notification currently shows, so repeats are
   /// dropped — see [_publishLatest].
   String? _shownNotification;
+
+  /// Localized text for the ongoing notification. This isolate has no
+  /// [BuildContext], so it reads the persisted language itself.
+  final ServiceStrings _serviceStrings = ServiceStrings();
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
@@ -929,9 +934,18 @@ class CgmTaskHandler extends TaskHandler {
   }
 
   /// Update the ongoing service notification with the latest value + trend.
-  /// The user can hide the live value (Android still requires the ongoing
-  /// notification, so it stays unchanged then). The toggle is read fresh so it
-  /// takes effect without a service restart.
+  ///
+  /// **The value is the TITLE, not the body.** This notification is the app's
+  /// lock-screen glucose readout, and the title is the line that survives every
+  /// place the shade shrinks it: a collapsed group, a narrow lock screen, the
+  /// status-bar chip. With the value in the body the lock screen showed the word
+  /// "Insulink" and hid the one number the notification exists for.
+  ///
+  /// The user can hide the live value; Android still requires the ongoing
+  /// notification, so it falls back to a neutral line rather than disappearing.
+  /// That fallback is written every time too, because leaving the notification
+  /// untouched left it reading "connecting…" for as long as the service ran. The
+  /// toggle is read fresh so it takes effect without a service restart.
   Future<void> _updateNotification(
     ProfileGlucoseState profile,
     int mgdl,
@@ -939,12 +953,16 @@ class CgmTaskHandler extends TaskHandler {
   ) async {
     final showValue = await ProfileLiveNotificationState().load();
     if (!showValue) {
+      FlutterForegroundTask.updateService(
+        notificationTitle: 'Insulink',
+        notificationText: await _serviceStrings.get('service.running'),
+      );
       return;
     }
     final suffix = arrow.isEmpty ? '' : ' $arrow';
     FlutterForegroundTask.updateService(
-      notificationTitle: 'Insulink',
-      notificationText: '${profile.formatWithUnit(mgdl)}$suffix',
+      notificationTitle: '${profile.formatWithUnit(mgdl)}$suffix',
+      notificationText: await _serviceStrings.get('service.glucose'),
     );
   }
 }

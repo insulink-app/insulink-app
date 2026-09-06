@@ -21,6 +21,7 @@ import '../../sport/sport_store.dart';
 import '../../sport/training/cardio_models.dart';
 import '../cgm_store.dart';
 import '../glucose_prediction.dart';
+import 'advisory_action.dart';
 
 /// Notification-action ids for the "training detected" confirm prompt.
 const String _trainingConfirmAction = 'training_confirm';
@@ -108,6 +109,11 @@ enum AdvisoryLevel { none, low, high }
 ///
 /// Sensitivity is what the low side needs; the high side needs specificity.
 typedef AdvisoryForecast = ({double low, double high, double bandLow});
+
+/// A pre-warning's text and the countermeasure it proposes: grams of fast carbs
+/// for a predicted low, insulin units for a predicted high. The number is kept
+/// apart from the sentence because the notification button carries it out.
+typedef AdvisorySuggestion = ({String body, double amount});
 
 /// Watches live EGV readings and raises local notifications when glucose
 /// crosses into a low/high zone. Runs inside the foreground-service isolate
@@ -218,11 +224,21 @@ class G7AlarmManager {
 
   /// Initialise the notification plugin. Must run once per isolate before
   /// [check] (mirrors `RustLib.init()`).
-  Future<void> init() async {
+  ///
+  /// [onResponse] is the FOREGROUND handler: taps that bring the app to the
+  /// front, which is how the pre-warning's countermeasure buttons are answered
+  /// (see [AdvisoryActionListener]). The UI isolate passes its own; the service
+  /// isolate has no screen and leaves it at the training handler.
+  ///
+  /// The BACKGROUND handler stays [trainingNotificationAction] in either isolate:
+  /// it is the one action that does not show anything, so it is the one that has
+  /// to run in the bare isolate the plugin spawns.
+  Future<void> init({DidReceiveNotificationResponseCallback? onResponse}) async {
     const android = AndroidInitializationSettings('notification');
     await _plugin.initialize(
       settings: const InitializationSettings(android: android),
-      onDidReceiveNotificationResponse: trainingNotificationAction,
+      onDidReceiveNotificationResponse:
+          onResponse ?? trainingNotificationAction,
       onDidReceiveBackgroundNotificationResponse: trainingNotificationAction,
     );
   }
@@ -395,10 +411,14 @@ class G7AlarmManager {
     if (silent.mutesNotifications) {
       return;
     }
-    await _showAdvisory(
+    final advisory = await _advisoryBody(
       level,
-      await _advisoryBody(level, mgdl, trendPerMin, forecast, glucose),
+      mgdl,
+      trendPerMin,
+      forecast,
+      glucose,
     );
+    await _showAdvisory(level, mgdl, advisory);
     if (!silent.mutesSound) {
       await _playAdvisorySound(level);
     }
@@ -518,7 +538,7 @@ class G7AlarmManager {
   /// Dosing off the predicted PEAK (what this used to do) always exceeded the
   /// calculator, because the advisory only fires while the peak is still ahead of
   /// the current value.
-  Future<String> _advisoryBody(
+  Future<AdvisorySuggestion> _advisoryBody(
     AdvisoryLevel level,
     int mgdl,
     double trendPerMin,
@@ -543,7 +563,7 @@ class G7AlarmManager {
         grams.ceil(),
         tablets,
       ]);
-      return '$line\n$suggestion';
+      return (body: '$line\n$suggestion', amount: grams.ceilToDouble());
     }
     final units = bolus.suggestedBolus(
       carbs: 0,
@@ -555,7 +575,7 @@ class G7AlarmManager {
       'alarm.advisory.high_body',
       units.toStringAsFixed(1),
     );
-    return '$line\n$suggestion';
+    return (body: '$line\n$suggestion', amount: units);
   }
 
   /// Everything still working, for a notification that SUGGESTS a correction.
@@ -593,18 +613,67 @@ class G7AlarmManager {
     ]);
   }
 
-  /// Post the advisory pre-warning notification.
-  Future<void> _showAdvisory(AdvisoryLevel level, String body) async {
+  /// Post the advisory pre-warning notification, with the button that carries
+  /// out its suggestion. The payload carries the two numbers that button acts on
+  /// (see [AdvisoryRequest]).
+  Future<void> _showAdvisory(
+    AdvisoryLevel level,
+    int mgdl,
+    AdvisorySuggestion advisory,
+  ) async {
     final titleKey = level == AdvisoryLevel.low
         ? 'alarm.advisory.low_title'
         : 'alarm.advisory.high_title';
     await _plugin.show(
       id: _advisoryId,
       title: await _strings.get(titleKey),
-      body: body,
+      body: advisory.body,
       notificationDetails: NotificationDetails(
-        android: await _advisoryChannel(),
+        android: await _advisoryChannel(await _advisoryAction(level, advisory)),
       ),
+      payload: AdvisoryRequest.encode(advisory.amount, mgdl),
+    );
+  }
+
+  /// The one button offered next to a pre-warning: log the rescue carbs, or
+  /// deliver the correction.
+  ///
+  /// Both bring the app to the front (`showsUserInterface`) rather than running
+  /// in the background. The work needs the meal log, the pod and the user's own
+  /// settings, all of which live in the UI isolate, and it means the user SEES
+  /// what their tap did instead of having to trust that something happened.
+  ///
+  /// The insulin button appears ONLY with a pod paired. Without one the app can
+  /// merely record a dose the user would still have to inject themselves, and a
+  /// button that logs insulin nobody gave suppresses the next correction through
+  /// insulin on board. So that case gets no button at all and the notification
+  /// stays what it was: a suggestion to act on in the app.
+  Future<AndroidNotificationAction?> _advisoryAction(
+    AdvisoryLevel level,
+    AdvisorySuggestion advisory,
+  ) async {
+    if (level == AdvisoryLevel.low) {
+      return AndroidNotificationAction(
+        advisoryCarbsAction,
+        await _strings.format(
+          'alarm.advisory.carbs_action',
+          advisory.amount.round(),
+        ),
+        showsUserInterface: true,
+        cancelNotification: true,
+      );
+    }
+    if (!(await PodStore.open()).hasPod) {
+      return null;
+    }
+    return AndroidNotificationAction(
+      advisoryBolusAction,
+      await _strings.format(
+        'alarm.advisory.bolus_action',
+        advisory.amount.toStringAsFixed(1),
+      ),
+      showsUserInterface: true,
+      cancelNotification: true,
     );
   }
 
@@ -880,7 +949,9 @@ class G7AlarmManager {
   /// Silent, DnD-bypassing channel for the predictive advisory pre-warning. A
   /// predicted low is safety-relevant, so it bypasses DnD like the glucose
   /// alarms, but it is a heads-up (not a full-screen in-progress emergency).
-  Future<AndroidNotificationDetails> _advisoryChannel() async {
+  Future<AndroidNotificationDetails> _advisoryChannel(
+    AndroidNotificationAction? action,
+  ) async {
     return AndroidNotificationDetails(
       'insulink_alarm_advisory',
       await _strings.get('alarm.channel.advisory.name'),
@@ -891,6 +962,7 @@ class G7AlarmManager {
       channelBypassDnd: true,
       vibrationPattern: Int64List.fromList(_advisoryVibrationPattern),
       enableVibration: true,
+      actions: action == null ? null : [action],
     );
   }
 

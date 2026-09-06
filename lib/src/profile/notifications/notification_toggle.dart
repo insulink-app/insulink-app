@@ -4,9 +4,15 @@ import 'package:insulink/src/profile/profile_toggle_row.dart';
 
 /// Settings toggle for one [NotificationSetting] (expiry, halftime, training …).
 class NotificationToggle extends StatefulWidget {
-  const NotificationToggle(this.setting, {super.key});
+  const NotificationToggle(this.setting, {super.key, this.onApplied});
 
   final NotificationSetting setting;
+
+  /// Run after the new value is stored, for a setting that something has to act
+  /// on rather than merely read later. Most of these are read fresh wherever
+  /// they matter and need nothing; the lock-screen style has to restart the
+  /// service (see [ProfileLockscreenToggle]).
+  final Future<void> Function()? onApplied;
 
   @override
   State<NotificationToggle> createState() => _NotificationToggleState();
@@ -28,7 +34,10 @@ class _NotificationToggleState extends State<NotificationToggle> {
           value: _enabled,
           onChanged: (value) async {
             await widget.setting.save(value);
-            setState(() => _enabled = value);
+            if (mounted) {
+              setState(() => _enabled = value);
+            }
+            await widget.onApplied?.call();
           },
         );
       },

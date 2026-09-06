@@ -8,6 +8,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
+import 'package:insulink/src/injection/advisory_action_listener.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
@@ -267,7 +268,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
               previous ?? BolusDispatcher(controller: controller, meals: prefs.meals),
         ),
       ],
-      child: _AppLifecycle(child: child),
+      child: _AppLifecycle(child: AdvisoryActionListener(child: child)),
     );
   }
 

@@ -63,10 +63,12 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
     });
   }
 
+  /// Opens the editor on a search hit and closes the page, reporting whatever
+  /// the editor saved so a picker can take it straight to the portion.
   Future<void> _pick(FoodProduct product) async {
-    await showFoodEditor(context, product: product);
+    final saved = await showFoodEditor(context, product: product);
     if (mounted) {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(saved);
     }
   }
 

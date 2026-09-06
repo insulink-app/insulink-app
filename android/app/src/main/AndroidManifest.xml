@@ -120,6 +120,15 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Status-bar icon for the foreground service's notification, looked up
+             by name from Dart (NotificationIcon.metaDataName). Without it
+             flutter_foreground_task falls back to the LAUNCHER icon, and Android
+             flattens a full-colour icon to a silhouette — which for ours is a
+             plain white circle. Same monochrome drawable the alarms use. -->
+        <meta-data
+            android:name="de.insulink.NOTIFICATION_ICON"
+            android:resource="@drawable/notification" />
+
         <!-- flutter_foreground_task: hosts the background isolate that keeps the
              G7 BLE link + read pipeline alive while the app is closed. The
              "connectedDevice" type is the correct FGS type for an ongoing BLE

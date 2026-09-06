@@ -21,6 +21,16 @@ class DeviceLifespan {
   /// sensor hasn't expired) — the final day matters most, so show it in hours.
   bool get hoursMode => remainingSecs > 0 && remainingSecs <= 86400;
 
+  /// The last hour, where hours stop saying anything: "1 h left" reads the same
+  /// with fifty-nine minutes to go as with one, and this is the window in which
+  /// the user has to decide whether a replacement fits before the device stops.
+  /// Only the LABEL switches to minutes; the bar stays on its hour segments,
+  /// since sixty rectangles say less than one does.
+  bool get minutesMode => remainingSecs > 0 && remainingSecs <= 3600;
+
+  /// Whole minutes left, rounded up so the current minute still counts.
+  int get minutesLeft => (remainingSecs / 60).ceil().clamp(1, 60);
+
   /// Whole rated days. The reported session length includes a ~12 h grace
   /// period past the rated lifetime (10 d → 907200 s = 10.5 d), so floor — not
   /// round — to avoid showing an extra day (a 10-day sensor as "11").

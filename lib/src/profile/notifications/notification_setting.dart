@@ -32,6 +32,16 @@ class NotificationSetting {
     'profile.advisory.description',
   );
 
+  /// Whether the ongoing glucose notification is prominent enough for the lock
+  /// screen. Off makes it discreet, which on most phones means it stops
+  /// appearing there at all — see `CgmController._initForegroundTask` for why
+  /// that is a channel choice rather than a flag, and why changing it restarts
+  /// the service.
+  static const lockscreenGlucose = NotificationSetting(
+    'lockscreen_glucose',
+    'profile.lockscreen.description',
+  );
+
   /// Pod lifetime/reservoir warnings. Their thresholds are the matching
   /// [NotificationThreshold]s. Nothing fires on them yet — no pod is connected;
   /// the pump feature reads both once it is.

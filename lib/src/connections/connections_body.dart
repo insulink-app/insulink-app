@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/connections/connection_row.dart';
+import 'package:insulink/src/connections/history/device_history_page.dart';
+import 'package:insulink/src/connections/history/device_history_sync.dart';
 import 'package:insulink/src/google_health/google_health_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -26,8 +28,13 @@ void openSensorPage(BuildContext context) {
   final title = Locales.string(context, 'sensor.label');
   Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) =>
-          ConnectionSubPage(title: title, body: const SensorBodyContent()),
+      builder: (_) => ConnectionSubPage(
+        title: title,
+        body: const SensorBodyContent(),
+        actions: const [
+          DeviceHistoryButton(kind: DeviceHistoryKind.sensors),
+        ],
+      ),
     ),
   );
 }
@@ -41,7 +48,11 @@ void openPumpPage(BuildContext context) {
       builder: (_) => ConnectionSubPage(
         title: title,
         body: const PumpBodyContent(),
-        actions: const [PodTestBeepButton(), PodDeliveryLogButton()],
+        actions: const [
+          PodTestBeepButton(),
+          PodDeliveryLogButton(),
+          DeviceHistoryButton(kind: DeviceHistoryKind.pumps),
+        ],
       ),
     ),
   );
@@ -76,6 +87,9 @@ class ConnectionsBodyContent extends StatelessWidget {
           icon: PhosphorIconsFill.drop,
           labelKey: "sensor.label",
           page: const SensorBodyContent(),
+          actions: const [
+            DeviceHistoryButton(kind: DeviceHistoryKind.sensors),
+          ],
           // The sensor's only notification is the "no sensor" attention dot,
           // mirrored here from the navigator badge.
           notify: !hasSensor,
@@ -85,7 +99,11 @@ class ConnectionsBodyContent extends StatelessWidget {
           icon: PhosphorIconsFill.syringe,
           labelKey: "pump.label",
           page: const PumpBodyContent(),
-          actions: const [PodTestBeepButton(), PodDeliveryLogButton()],
+          actions: const [
+            PodTestBeepButton(),
+            PodDeliveryLogButton(),
+            DeviceHistoryButton(kind: DeviceHistoryKind.pumps),
+          ],
         ),
         const SizedBox(height: 14),
         ConnectionRow(

@@ -644,6 +644,9 @@ the widget cannot drift away from the app on what is in range.
   error that refuses it when the bolus only ever follows the carbohydrates), the
   two refusals that keep a wrong factor from claiming insulin is weak, and why
   each row is adopted by hand.
+- `docs/DEVICE_HISTORY.md` — the sensor/pod history read off the account: why
+  `registered_at` is not a start, how "when did it come off" is worked out, and
+  the panel copy of the same rules.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
 - `docs/DESIGN.md` — the theme/colour-role system: the two accents, the three

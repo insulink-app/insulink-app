@@ -22,6 +22,7 @@ import 'package:insulink/src/profile/tuning/factor_tuning_card.dart';
 import 'package:insulink/src/pump/loop/loop_settings.dart';
 import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_toggle.dart';
+import 'package:insulink/src/profile/notifications/profile_lockscreen_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_notification_toggle.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_band_toggle.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_horizon.dart';
@@ -147,6 +148,8 @@ class _ProfilePageState extends State<ProfilePage> {
         ProfileNotificationToggle(),
         SizedBox(height: 10),
         ProfileLiveNotificationToggle(),
+        SizedBox(height: 10),
+        ProfileLockscreenToggle(),
         SizedBox(height: 10),
         ProfileConnectionToggle(),
         SizedBox(height: 10),

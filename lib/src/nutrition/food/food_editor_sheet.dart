@@ -10,8 +10,13 @@ import 'package:provider/provider.dart';
 /// Full editor for a product — used to add one manually, to complete the fields
 /// a barcode scan left blank, and to edit an existing product. Saves into
 /// [FoodState] (keyed by barcode, so editing replaces).
-Future<void> showFoodEditor(BuildContext context, {FoodProduct? product}) {
-  return showModalBottomSheet<void>(
+///
+/// Returns the SAVED product, or null when the sheet was dismissed without
+/// saving. The bolus product picker needs it: a product created there is the one
+/// the user is about to dose for, so it goes straight on to the portion instead
+/// of having to be found again in the list.
+Future<FoodProduct?> showFoodEditor(BuildContext context, {FoodProduct? product}) {
+  return showModalBottomSheet<FoodProduct>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -88,8 +93,9 @@ class _FoodEditorSheetState extends State<_FoodEditorSheet> {
   }
 
   void _save() {
-    context.read<FoodState>().addProduct(_build());
-    Navigator.pop(context);
+    final saved = _build();
+    context.read<FoodState>().addProduct(saved);
+    Navigator.pop(context, saved);
   }
 
   @override
