@@ -60,7 +60,7 @@ dependencies:
   pedometer: ^4.2.0
   flutter_activity_recognition: ^4.0.0
   health: ^13.3.2
-  geolocator: ^13.0.2
+  geolocator: ^14.0.3
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
   wakelock_plus: ^1.6.1
