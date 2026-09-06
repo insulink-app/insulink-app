@@ -3,10 +3,10 @@ import 'package:insulink/src/sport/activity/tile_layout_state.dart';
 export 'package:insulink/src/sport/activity/tile_layout_state.dart';
 
 /// Box layout of the Sport "Today" grid. Defaults: the four activity boxes plus
-/// resting HR, sleep and the live heart rate (SpO2 hidden until the user enables it).
+/// resting HR, sleep and the live heart rate.
 class TodayLayoutState extends TileLayoutState<TodayTile> {
   static const key = 'sport.today_layout';
-  static const _defaultHidden = {TodayTile.spo2, TodayTile.hba1c};
+  static const _defaultHidden = {TodayTile.hba1c};
 
   TodayLayoutState(super.order, super.hidden);
 

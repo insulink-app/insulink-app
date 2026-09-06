@@ -362,14 +362,8 @@ class PodLoopRunner {
 
   /// The user's own scheduled rate for the hour [at] falls in, which every
   /// decision is anchored on.
-  double _scheduledRateAt(DateTime at) {
-    final rates = store.basalRates;
-    if (rates == null || rates.length != 24) {
-      return 0;
-    }
-    final rate = rates[at.hour];
-    return rate.isFinite && rate > 0 ? rate : 0;
-  }
+  double _scheduledRateAt(DateTime at) =>
+      store.scheduledUnitsPerHourAt(at) ?? 0;
 
   Future<void> _record(LoopDecision decision, {required bool delivered}) {
     return store.recordLoopCycle(PodLoopCycle(

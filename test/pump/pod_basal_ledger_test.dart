@@ -199,4 +199,26 @@ void main() {
 
     expect(store.basalDeliveredTotal, 0);
   });
+
+  /// The automation anchors every decision on the user's own scheduled rate for
+  /// the hour, so an unknown schedule has to read as unknown rather than as zero.
+  group('the scheduled rate for an hour', () {
+    final noon = DateTime(2026, 5, 12, 12, 30);
+
+    test('an unread schedule shows nothing, never a zero', () {
+      expect(store.scheduledUnitsPerHourAt(noon), isNull);
+    });
+
+    test('the hour the moment falls in is the one returned', () async {
+      await store.saveBasalRates([
+        for (var hour = 0; hour < 24; hour++) hour * 0.05,
+      ]);
+      expect(store.scheduledUnitsPerHourAt(noon), closeTo(0.60, 1e-9));
+    });
+
+    test('a scheduled zero is a real rate and is reported as one', () async {
+      await store.saveBasalRates(List<double>.filled(24, 0));
+      expect(store.scheduledUnitsPerHourAt(noon), 0);
+    });
+  });
 }

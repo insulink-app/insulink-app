@@ -7,7 +7,7 @@ import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/request/response_json.dart';
 
 /// Mirrors the Google Health day archive (resting HR, sleep + stages, blood
-/// oxygen, hypnogram) to the user's backend account and pulls it back on sign-in,
+/// hypnogram) to the user's backend account and pulls it back on sign-in,
 /// like [SportSync]. [push] debounces a best-effort replace-all of the whole
 /// archive (null context — the app always holds the complete list, so replace-all
 /// keeps it correct); [pull] runs in the UI isolate on sign-in and merges the

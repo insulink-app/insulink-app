@@ -8,7 +8,6 @@ class GoogleHealthDay {
   final String dateKey;
   final int? restingHr;
   final int? sleepMinutes;
-  final int? spo2;
   final int? respiratoryRate;
   final SleepStages? sleepStages;
 
@@ -20,7 +19,6 @@ class GoogleHealthDay {
     required this.dateKey,
     this.restingHr,
     this.sleepMinutes,
-    this.spo2,
     this.respiratoryRate,
     this.sleepStages,
     this.sleepTimeline,
@@ -30,7 +28,6 @@ class GoogleHealthDay {
     'd': dateKey,
     if (restingHr != null) 'rhr': restingHr,
     if (sleepMinutes != null) 'sleep': sleepMinutes,
-    if (spo2 != null) 'spo2': spo2,
     if (respiratoryRate != null) 'rr': respiratoryRate,
     if (sleepStages != null) 'stages': sleepStages!.toJson(),
     if (sleepTimeline != null)
@@ -42,7 +39,6 @@ class GoogleHealthDay {
         dateKey: json['d'] as String,
         restingHr: json['rhr'] as int?,
         sleepMinutes: json['sleep'] as int?,
-        spo2: json['spo2'] as int?,
         respiratoryRate: json['rr'] as int?,
         sleepStages: json['stages'] == null
             ? null
@@ -60,13 +56,12 @@ class GoogleHealthDay {
   int? value(GoogleHealthMetric metric) => switch (metric) {
     GoogleHealthMetric.restingHr => restingHr,
     GoogleHealthMetric.sleep => sleepMinutes,
-    GoogleHealthMetric.spo2 => spo2,
     GoogleHealthMetric.respiratoryRate => respiratoryRate,
   };
 }
 
 /// Which daily Google Health metric a detail page shows (the archive-backed tiles).
-enum GoogleHealthMetric { restingHr, sleep, spo2, respiratoryRate }
+enum GoogleHealthMetric { restingHr, sleep, respiratoryRate }
 
 /// The four sleep stages of one night, in minutes, summed from Health Connect's
 /// per-stage records (SLEEP_DEEP/REM/LIGHT/AWAKE).

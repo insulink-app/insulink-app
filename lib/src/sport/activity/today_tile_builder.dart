@@ -30,7 +30,6 @@ IconData todayTileIcon(TodayTile tile) => switch (tile) {
   TodayTile.restingHr => PhosphorIconsBold.heartbeat,
   TodayTile.sleep => PhosphorIconsBold.moon,
   TodayTile.heartRate => PhosphorIconsFill.heart,
-  TodayTile.spo2 => PhosphorIconsBold.drop,
   TodayTile.respiratoryRate => PhosphorIconsBold.wind,
   TodayTile.hba1c => PhosphorIconsBold.testTube,
 };
@@ -44,7 +43,6 @@ String todayTileLabelKey(TodayTile tile) => switch (tile) {
   TodayTile.restingHr => 'google_health.resting_hr',
   TodayTile.sleep => 'google_health.sleep',
   TodayTile.heartRate => 'google_health.heart_rate',
-  TodayTile.spo2 => 'google_health.spo2',
   TodayTile.respiratoryRate => 'google_health.respiratory_rate',
   TodayTile.hba1c => 'hba1c._',
 };
@@ -148,15 +146,6 @@ class TodayTileBuilder {
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const HeartRatePage()),
           ),
-        );
-      case TodayTile.spo2:
-        return _metric(
-          context,
-          icon,
-          label,
-          health.latestSpo2,
-          '%',
-          GoogleHealthMetric.spo2,
         );
       case TodayTile.respiratoryRate:
         return _metric(

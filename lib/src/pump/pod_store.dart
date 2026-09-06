@@ -21,6 +21,7 @@ import 'package:insulink/src/pump/protocol/pod_responses.dart';
 /// in-memory cache so the read path never awaits, and the same [reload]
 /// requirement across isolates.
 part 'pod_basal_ledger.dart';
+part 'pod_contact_log.dart';
 part 'pod_delivery_log.dart';
 part 'loop/loop_journal.dart';
 part 'pod_status_cache.dart';
@@ -48,6 +49,7 @@ class PodStore {
   static const _kBackendPumpId = 'pod.backend_pump_id';
   static const _kBackendData = 'pod.backend_synced_data';
   static const _kLastSeenAt = 'pod.last_seen_at';
+  static const _kContactLog = 'pod.contact_log';
   static const _kSuspendedByUs = 'pod.suspended_by_us';
   static const _kBasalRates = 'pod.basal_rates';
   static const _kBasalDelivered = 'pod.basal_delivered';
@@ -198,8 +200,13 @@ class PodStore {
     return millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);
   }
 
-  Future<void> markSeen(DateTime moment) =>
-      _set(_kLastSeenAt, '${moment.millisecondsSinceEpoch}');
+  /// Note that the pod answered just now: the newest moment for the staleness
+  /// warnings, and an entry in [PodContactLog] for the connection page. Both
+  /// here, so no caller can record one without the other.
+  Future<void> markSeen(DateTime moment) async {
+    await _set(_kLastSeenAt, '${moment.millisecondsSinceEpoch}');
+    await _appendContact(moment);
+  }
 
   /// Whether WE stopped the pod, so a suspended pod is not reported as having
   /// stopped on its own. Set when a suspend is sent, cleared when delivery is
@@ -236,6 +243,7 @@ class PodStore {
       _kBackendPumpId,
       _kBackendData,
       _kLastSeenAt,
+      _kContactLog,
       _kSuspendedByUs,
       _kBasalRates,
       _kBasalDelivered,

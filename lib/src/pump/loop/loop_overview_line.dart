@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/localization/enum_locale_key.dart';
+import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_store.dart';
+import 'package:insulink/src/theme/brand_tints.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
@@ -13,78 +14,130 @@ import 'package:provider/provider.dart';
 /// belong only on a device sub-page. Someone glancing at the overview should be
 /// able to tell whether software is dosing them.
 ///
-/// It renders nothing in the ordinary case of an automation that was never
-/// turned on, with one exception: an automation that stopped ITSELF still shows,
-/// because that is precisely the state a user is most likely to be wrong about.
-/// The notification says it once; this keeps saying it until they act.
+/// **Being OFF is stated as loudly as being on.** This used to render nothing at
+/// all for an automation that was never engaged, on the grounds that it was the
+/// resting state. It is not: a pod user who believes the loop is running when it
+/// is not will read every flat line on the chart as the automation working. The
+/// off state is therefore an amber panel like every other "this is not what you
+/// probably assume" strip in the app, and tapping it goes to the switch.
 class PodLoopOverviewLine extends StatelessWidget {
   const PodLoopOverviewLine({super.key});
 
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PodController>().store;
-    final mode = store.loopMode;
     final stop = store.loopStop;
-    if (mode == PodLoopMode.off) {
-      return stop == null ? const SizedBox.shrink() : _stopped(context, stop);
+    if (store.loopMode == PodLoopMode.engaged) {
+      return _engaged(context, store);
     }
-    return _running(context, store, mode);
+    return _panel(
+      context,
+      icon: PhosphorIconsFill.warning,
+      color: context.warning,
+      background: context.warning.withValues(alpha: 0.15),
+      title: Locales.string(
+        context,
+        stop == null
+            ? 'pump.loop.overview.off'
+            : 'pump.loop.overview.stopped',
+      ),
+    );
   }
 
-  Widget _running(BuildContext context, PodStore store, PodLoopMode mode) {
+  /// Running: the same shape, in the brand tint rather than amber, so the two
+  /// states read as one thing in two positions rather than as a warning that
+  /// appears out of nowhere.
+  ///
+  /// **The rate is the point of this panel.** "The automation is on" says nothing
+  /// about what it is doing to you; the number it has the pod running does. Only
+  /// the automation's OWN rate is shown: between its rates the pod is back on the
+  /// user's schedule, and putting that number here would read as something the
+  /// automation had decided.
+  Widget _engaged(BuildContext context, PodStore store) {
     final scheme = Theme.of(context).colorScheme;
-    return _line(
+    return _panel(
       context,
       icon: PhosphorIconsBold.repeat,
       color: scheme.onSurfaceVariant,
-      text: _label(context, store, mode),
+      background: scheme.tintPanel,
+      title: Locales.string(context, 'pump.loop.overview.engaged'),
+      value: _automatedRate(store),
     );
   }
 
-  /// The mode, plus the rate it is actually running when there is one. A mode on
-  /// its own does not say whether anything is happening.
-  String _label(BuildContext context, PodStore store, PodLoopMode mode) {
-    final name = Locales.string(context, 'pump.loop.mode.${mode.name}');
-    final prefix = Locales.string(context, 'pump.loop.title');
+  /// The rate the automation has the pod running, or null while none of its
+  /// rates covers this moment.
+  String? _automatedRate(PodStore store) {
     final running = store.temporaryBasal;
-    if (mode != PodLoopMode.engaged ||
-        running == null ||
+    if (running == null ||
         !running.automated ||
         !running.covers(DateTime.now())) {
-      return '$prefix: $name';
+      return null;
     }
-    return '$prefix: $name, ${running.unitsPerHour.toStringAsFixed(2)} U/h';
+    return '${running.unitsPerHour.toStringAsFixed(2)} U/h';
   }
 
-  Widget _stopped(BuildContext context, PodLoopStop stop) {
-    return _line(
-      context,
-      icon: PhosphorIconsBold.warning,
-      color: context.warning,
-      text: Locales.string(context, 'pump.loop.stopped.${stop.localeKey}'),
-    );
-  }
-
-  Widget _line(
+  /// One line, deliberately. This sits on the overview between the pod's life bar
+  /// and its reservoir, and a two-line panel there pushed everything below it off
+  /// the first screen. What a stopped automation stopped FOR is a sentence long
+  /// and lives on the pump page, one tap through the caret.
+  Widget _panel(
     BuildContext context, {
     required IconData icon,
     required Color color,
-    required String text,
+    required Color background,
+    required String title,
+    String? value,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(fontSize: 12, color: color),
+      padding: const EdgeInsets.only(top: 10),
+      child: Material(
+        color: background,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => openPumpPage(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+                if (value != null) ...[
+                  const SizedBox(width: 10),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 4),
+                Icon(
+                  PhosphorIconsBold.caretRight,
+                  size: 14,
+                  color: scheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

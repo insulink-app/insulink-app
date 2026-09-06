@@ -3,7 +3,7 @@ import 'package:insulink/src/google_health/google_health_importer.dart';
 import 'package:insulink/src/sport/activity/health_importer.dart';
 
 /// The ONE place that asks the user for Health Connect access: the union of what
-/// [GoogleHealthImporter] reads (pulse, sleep, SpO2, respiratory rate) and what
+/// [GoogleHealthImporter] reads (pulse, sleep, respiratory rate) and what
 /// [HealthImporter] reads (steps, distance, calories, weight), plus the "read
 /// past data" grant everything older than 30 days needs.
 ///

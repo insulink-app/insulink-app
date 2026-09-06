@@ -180,6 +180,9 @@ the home-screen widget and declares `widgetCategory="home_screen"` only.
 - Training-detected id `102`, halftime id `103`.
 - Advisory pre-warning id `104`, channel `insulink_alarm_advisory` (silent,
   DnD-bypassing like the glucose alarms, own tone `alarm_advisory.wav`).
+- Advisory outcome id `105`, same channel, no action of its own. Its own id so
+  the report on an accepted countermeasure does not replace an advisory that is
+  still relevant.
 
 ## Predictive advisory pre-warning (`checkAdvisory`)
 
@@ -204,41 +207,55 @@ its own `AdvisoryLevel` (`none/low/high`).
 ### Acting on it from the notification itself
 
 The pre-warning carries ONE button that does what it suggests: log the rescue
-carbs (low), or deliver the correction (high). Both are
-`showsUserInterface: true`, so the tap brings the app to the front and the work
-happens in the UI isolate (`AdvisoryActionListener` → `AdvisoryCountermeasure`),
-through the same `MealState` and `BolusDispatcher` the injection sheet uses.
+carbs (low), or deliver the correction (high). Both run in the background
+(`showsUserInterface` false), because a pre-warning arrives on a locked phone and
+an action that brings the app to the front means unlocking the device and
+watching it launch before anything happens. Three hops:
 
-**Two delivery routes, and both must be read.** Android hands such a tap to a
-RUNNING app through the plugin's response callback, but a tap that STARTED the
-app has already happened by the time any Dart can listen, and the plugin keeps
-that one in `getNotificationAppLaunchDetails()` instead. A pre-warning mostly
-fires with the app closed, so reading only the callback is the same as doing
-nothing. The listener reads both and de-dupes on the payload, because a repeated
-meal is a nuisance and a repeated dose is not.
+1. **The tap** lands in `serviceNotificationAction` (`alarms.dart`), the single
+   dispatcher the plugin allows per isolate. It routes on `actionId` to the
+   pre-warning handler or the existing training Confirm/Reject one.
+2. **The buffer** is a plain file (`AdvisoryActionStore`), written synchronously
+   with `dart:io` so it completes before that isolate is torn down. Exactly the
+   `SportStore.recordTrainingDecision` pattern, including the reason the payload
+   carries the writable *path*: the action isolate cannot resolve its own temp
+   dir reliably, so the service isolate resolves it when it posts the
+   notification. Payload is `amount\nglucoseMgdl\nfilePath`.
+3. **The work** happens on the next 30 s watchdog tick and at service start, in
+   the service isolate (`AdvisoryActionRunner`): the carbs become a `Meal` in
+   `MealStore`; the bolus goes through the same `BolusDelivery` the injection
+   sheet uses, on `PodMonitor.serviceLease` so it cannot connect while the pod
+   poll or the automation holds the link, and capped by the same
+   `ProfileBolusState` ceilings.
 
-**Why not the background action isolate.** The first version buffered the tap in
-a temp file (the `SportStore.recordTrainingDecision` pattern) for the foreground
-service to apply on its next watchdog tick. Nothing happened, and nothing could
-say why: the tap runs in a bare isolate the plugin spawns through
-`ActionBroadcastReceiver`, and every step from the stored callback handle to the
-file write to the 30-second tick fails silently and identically. It also wrote
-the meal behind the running app's back — `MealState` holds the log in memory, so
-the new meal was invisible and the next one logged in the app overwrote it.
+Four rules that are load-bearing, each of them a bug that got here first:
 
-Two rules still hold:
+- **The dose is snapped onto the pod's 0.05 U pulse grid** where the notification
+  is composed (`PodBolusAmount.snapToPulse`), so the number the button shows is
+  the number that goes out. The calculator returns real numbers — 1.01502045 U —
+  and `PodBolusAmount.fromUnits` refuses those, correctly. The injection sheet
+  never hit it because the user reads the dose off a field rounded to one
+  decimal; a notification has no such field. The button label therefore carries
+  TWO decimals: the grid has values one decimal cannot name.
+- **Every outcome is reported back as a notification (id 105), failures
+  included**, and the runner catches anything a request throws. The user tapped a
+  button on a locked phone and will see nothing else, so a tap that produced no
+  insulin must never look like one that did.
+- **The UI re-reads the meal log on resume** (`MealState.reload` in
+  `_AppLifecycle`). `MealState` holds the log in memory, so a meal the service
+  wrote was both invisible in the app AND overwritten by the next one logged in
+  it.
+- **The insulin button appears only with a pod paired, and only for a dose above
+  one pulse.** Without a pod `BolusDelivery` reports `loggedOnly`, which would
+  write insulin nobody injected into the log and suppress the next correction
+  through insulin on board. The runner re-checks `hasPod` for a pod deactivated
+  in between, and a request is dropped rather than sent as a zero dose.
 
-- **The insulin button appears only with a pod paired.** Without one
-  `BolusDelivery` reports `loggedOnly`, which would write insulin nobody injected
-  into the log and suppress the next correction through insulin on board. The
-  countermeasure re-checks `hasPod` for a pod deactivated in between.
-- **Insulin reaches the log only once the pod names it back.** The meal is
-  written with its carbs and no dose; `BolusDispatcher` adds the units on
-  confirmation and surfaces a refusal on the overview.
-
-`CgmController.testAlarm` deliberately does NOT re-`init()` the plugin: that
-would replace the listener's response handler with the default one and the
-buttons would stop working for the rest of the session.
+A request expires after `AdvisoryRequest.validFor` (15 min): the dose was sized
+for the glucose that was on screen when the notification was posted, and one the
+service only finds after a reboot would deliver it against a body that has moved
+on. The file is cleared before the requests are applied, so a delivery that
+throws cannot be retried into a second dose.
 
 Channel ids, importance and flags are fixed; only the user-facing channel
 name/description are localized. Android freezes a channel's displayed name at

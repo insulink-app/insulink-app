@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/overview/chart/chart_x_axis.dart';
+import 'package:insulink/src/overview/chart/meal_label_rows.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 
@@ -212,13 +213,29 @@ class GlucoseLineChart extends StatelessWidget {
         _boundLine(glucose.targetLow, colors.low),
         _boundLine(glucose.targetHigh, colors.high),
       ],
-      verticalLines: [
-        for (final marker in mealMarkers) _mealLine(marker, mealColor),
-      ],
+      verticalLines: _mealLines(mealColor),
     );
   }
 
-  VerticalLine _mealLine(({double x, Meal meal}) marker, Color color) {
+  /// One dashed line per meal, with the labels of meals logged close together
+  /// stacked downward so they cannot print over each other
+  /// ([MealLabelRows]).
+  List<VerticalLine> _mealLines(Color color) {
+    final rows = MealLabelRows(spanX: axis.maxX - axis.minX)
+        .assign([for (final marker in mealMarkers) marker.x]);
+    return [
+      for (var index = 0; index < mealMarkers.length; index++)
+        _mealLine(mealMarkers[index], color, rows[index]),
+    ];
+  }
+
+  /// [row] is how many label heights this one is dropped by, so a cluster reads
+  /// as a staircase instead of a smear.
+  VerticalLine _mealLine(
+    ({double x, Meal meal}) marker,
+    Color color,
+    int row,
+  ) {
     return VerticalLine(
       x: marker.x,
       color: color.withValues(alpha: 0.35),
@@ -229,7 +246,7 @@ class GlucoseLineChart extends StatelessWidget {
       label: VerticalLineLabel(
         show: true,
         alignment: Alignment.topRight,
-        padding: const EdgeInsets.only(left: 3, bottom: 2),
+        padding: EdgeInsets.only(left: 3, top: row * _mealLabelHeight),
         style: TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.bold,
@@ -239,6 +256,10 @@ class GlucoseLineChart extends StatelessWidget {
       ),
     );
   }
+
+  /// One label's line height at font size 9, which is what a stacked label drops
+  /// by. A shade more than the glyphs need, so two rows are visibly two rows.
+  static const double _mealLabelHeight = 11;
 
   HorizontalLine _boundLine(int mgdl, Color color) {
     return HorizontalLine(

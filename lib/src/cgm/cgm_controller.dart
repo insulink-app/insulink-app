@@ -1138,12 +1138,8 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
         NotificationPermission.granted) {
       await FlutterForegroundTask.requestNotificationPermission();
     }
-    // Deliberately no init() here. The plugin is already initialised for this
-    // isolate by AdvisoryActionListener, which sits above the whole app, and
-    // re-initialising would replace ITS response handler with the default one,
-    // so the pre-warning's countermeasure buttons would stop working for the
-    // rest of the session.
     final alarms = G7AlarmManager(FlutterLocalNotificationsPlugin());
+    await alarms.init();
     await alarms.ensureDndAccess();
     await alarms.fireTest(high: high);
   }

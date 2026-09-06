@@ -1,40 +1,60 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/cgm/service/advisory_action.dart';
 
-/// The notification payload is the whole hand-off from the pre-warning to the
-/// app, and one of the two things it carries decides a dose, so a payload that
-/// cannot be read has to come back as nothing rather than as a guess.
+File get _requestFile =>
+    File('${Directory.systemTemp.path}/insulink_advisory_requests');
+
+/// The hand-off between the bare notification-action isolate and the service
+/// isolate is a plain text file, so its one line is the whole contract: a
+/// malformed line must be dropped rather than deliver something, and a request
+/// the service only finds much later must not be carried out at all.
 void main() {
-  test('a carbs tap round-trips through the payload', () {
-    final request = AdvisoryRequest.parse(
-      advisoryCarbsAction,
-      AdvisoryRequest.encode(18, 74),
+  setUp(() {
+    if (_requestFile.existsSync()) {
+      _requestFile.deleteSync();
+    }
+  });
+
+  test('round-trips recorded requests through the file, in order', () async {
+    const store = AdvisoryActionStore();
+    store.record('bolus', 2.5, 214);
+    store.record('carbs', 18.0, 74);
+    final drained = await store.drain();
+
+    expect(drained.map((request) => request.isBolus), [true, false]);
+    expect(drained.map((request) => request.amount), [2.5, 18.0]);
+    expect(drained.map((request) => request.glucoseMgdl), [214, 74]);
+    expect(drained.every((request) => !request.isStale), isTrue);
+  });
+
+  test('a drain clears the file, so a tap cannot be carried out twice', () async {
+    const store = AdvisoryActionStore();
+    store.record('bolus', 2.5, 214);
+    expect(await store.drain(), hasLength(1));
+    expect(await store.drain(), isEmpty);
+  });
+
+  test('drops a malformed line instead of guessing at it', () {
+    expect(AdvisoryRequest.parse('bolus:2.5:214'), isNull);
+    expect(AdvisoryRequest.parse('bolus:two:214:1'), isNull);
+    expect(AdvisoryRequest.parse('bolus:2.5:high:1'), isNull);
+    expect(AdvisoryRequest.parse(''), isNull);
+  });
+
+  test('drops a dose of nothing rather than sending a zero bolus', () {
+    expect(AdvisoryRequest.parse('bolus:0.0:214:1'), isNull);
+    expect(AdvisoryRequest.parse('bolus:-1.0:214:1'), isNull);
+  });
+
+  test('treats a request older than its window as stale', () {
+    final old = AdvisoryRequest(
+      isBolus: true,
+      amount: 2.5,
+      glucoseMgdl: 214,
+      at: DateTime.now().subtract(AdvisoryRequest.validFor * 2),
     );
-    expect(request, isNotNull);
-    expect(request!.isBolus, isFalse);
-    expect(request.amount, 18);
-    expect(request.glucoseMgdl, 74);
-  });
-
-  test('a bolus tap keeps its fractional units', () {
-    final request = AdvisoryRequest.parse(
-      advisoryBolusAction,
-      AdvisoryRequest.encode(2.4, 214),
-    );
-    expect(request!.isBolus, isTrue);
-    expect(request.amount, closeTo(2.4, 1e-9));
-  });
-
-  test('a tap that is not ours is ignored', () {
-    expect(AdvisoryRequest.parse('training_confirm', '18.0\n74'), isNull);
-    expect(AdvisoryRequest.parse(null, '18.0\n74'), isNull);
-  });
-
-  test('an unreadable payload yields nothing, never a guessed dose', () {
-    expect(AdvisoryRequest.parse(advisoryBolusAction, null), isNull);
-    expect(AdvisoryRequest.parse(advisoryBolusAction, '2.4'), isNull);
-    expect(AdvisoryRequest.parse(advisoryBolusAction, 'two\n214'), isNull);
-    expect(AdvisoryRequest.parse(advisoryBolusAction, '2.4\nhigh'), isNull);
-    expect(AdvisoryRequest.parse(advisoryBolusAction, '0.0\n214'), isNull);
+    expect(old.isStale, isTrue);
   });
 }

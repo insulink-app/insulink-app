@@ -15,7 +15,6 @@ enum OverviewBox {
   restingHr,
   sleep,
   heartRate,
-  spo2,
   respiratoryRate,
   carbs,
   protein,

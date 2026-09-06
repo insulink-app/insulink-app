@@ -8,7 +8,6 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
-import 'package:insulink/src/injection/advisory_action_listener.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
@@ -268,7 +267,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
               previous ?? BolusDispatcher(controller: controller, meals: prefs.meals),
         ),
       ],
-      child: _AppLifecycle(child: AdvisoryActionListener(child: child)),
+      child: _AppLifecycle(child: child),
     );
   }
 
@@ -437,6 +436,11 @@ class _AppLifecycleState extends State<_AppLifecycle>
     }
     context.read<SportActivityState>().startIfPermitted();
     context.read<CardioTrainingState>().reloadPending();
+    // Re-read the meal log: the background service writes to it when the user
+    // accepts a countermeasure from a pre-warning notification, and this state
+    // holds the log in memory. Without this the new meal is invisible AND the
+    // next one logged in the app saves the stale list over it.
+    unawaited(context.read<MealState>().reload());
     // A dose the app was still sending when it was killed. Resolved against the
     // pod rather than assumed either way — the one thing that must not happen is
     // the app quietly forgetting that insulin might be running.

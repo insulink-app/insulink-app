@@ -13,7 +13,6 @@ class OverviewLayoutState extends TileLayoutState<OverviewBox> {
     OverviewBox.restingHr,
     OverviewBox.sleep,
     OverviewBox.heartRate,
-    OverviewBox.spo2,
     OverviewBox.carbs,
     OverviewBox.protein,
     OverviewBox.bolus,

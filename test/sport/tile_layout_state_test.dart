@@ -16,11 +16,11 @@ void main() {
 
   test('parsing nothing yields every tile in declaration order', () {
     final parsed = TileLayoutState.parse(null, TodayTile.values, {
-      TodayTile.spo2,
+      TodayTile.respiratoryRate,
     });
 
     expect(parsed.order, TodayTile.values);
-    expect(parsed.hidden, {TodayTile.spo2});
+    expect(parsed.hidden, {TodayTile.respiratoryRate});
   });
 
   test('parsing appends tiles a stored older layout does not know', () {
@@ -30,12 +30,12 @@ void main() {
     ], const {TodayTile.steps});
 
     final parsed = TileLayoutState.parse(raw, TodayTile.values, {
-      TodayTile.spo2,
+      TodayTile.respiratoryRate,
     });
 
     expect(parsed.order.take(2), [TodayTile.weight, TodayTile.steps]);
     expect(parsed.order.toSet(), TodayTile.values.toSet());
-    expect(parsed.hidden, {TodayTile.steps, TodayTile.spo2});
+    expect(parsed.hidden, {TodayTile.steps, TodayTile.respiratoryRate});
   });
 
   test('an unknown tile name in the blob is dropped, not crashed on', () {
@@ -55,20 +55,20 @@ void main() {
     final parsed = TileLayoutState.parse(
       jsonEncode({'order': 'broken'}),
       TodayTile.values,
-      {TodayTile.spo2},
+      {TodayTile.respiratoryRate},
     );
 
     expect(parsed.order.toSet(), TodayTile.values.toSet());
-    expect(parsed.hidden, {TodayTile.spo2});
+    expect(parsed.hidden, {TodayTile.respiratoryRate});
   });
 
   test('setVisible flips the tile and persists the layout', () async {
     final layout = TodayLayoutState(TodayTile.values.toList(), {
-      TodayTile.spo2,
+      TodayTile.respiratoryRate,
     });
 
-    await layout.setVisible(TodayTile.spo2, true);
-    expect(layout.isVisible(TodayTile.spo2), isTrue);
+    await layout.setVisible(TodayTile.respiratoryRate, true);
+    expect(layout.isVisible(TodayTile.respiratoryRate), isTrue);
 
     await layout.setVisible(TodayTile.steps, false);
     expect(layout.isVisible(TodayTile.steps), isFalse);
@@ -118,21 +118,18 @@ void main() {
   test('load falls back to the defaults, then reads back what was saved', () async {
     final fresh = await TodayLayoutState.load();
     expect(fresh.order, TodayTile.values);
-    expect(fresh.isVisible(TodayTile.spo2), isFalse);
+    expect(fresh.isVisible(TodayTile.hba1c), isFalse);
 
-    await fresh.setVisible(TodayTile.spo2, true);
+    await fresh.setVisible(TodayTile.hba1c, true);
 
     final reloaded = await TodayLayoutState.load();
-    expect(reloaded.isVisible(TodayTile.spo2), isTrue);
+    expect(reloaded.isVisible(TodayTile.hba1c), isTrue);
   });
 
   test('the raw blob for the settings sync defaults before anything is saved', () async {
     expect(
       await TodayLayoutState.loadRaw(),
-      TileLayoutState.encode(TodayTile.values, const {
-        TodayTile.spo2,
-        TodayTile.hba1c,
-      }),
+      TileLayoutState.encode(TodayTile.values, const {TodayTile.hba1c}),
     );
 
     backing[TodayLayoutState.key] = 'stored';

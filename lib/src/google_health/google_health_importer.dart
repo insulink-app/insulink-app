@@ -22,7 +22,7 @@ class GoogleHealthImport {
 }
 
 /// Reads the Google Health-specific metrics from Google Health (Health Connect):
-/// resting heart rate, sleep, blood oxygen (daily) and the latest heart rate.
+/// resting heart rate, sleep, respiratory rate (daily) and the latest heart rate.
 /// The Google Health app syncs these into Health Connect, so this reuses the same
 /// `health` plugin as HealthImporter — no BLE, no Google Health Web API. 30-day window
 /// (tiles need only the latest day; leaves room for a future history chart).
@@ -47,7 +47,6 @@ class GoogleHealthImporter {
     HealthDataType.HEART_RATE,
     HealthDataType.RESTING_HEART_RATE,
     HealthDataType.SLEEP_SESSION,
-    HealthDataType.BLOOD_OXYGEN,
     HealthDataType.RESPIRATORY_RATE,
     ..._stageTypes,
   ];
@@ -72,7 +71,6 @@ class GoogleHealthImporter {
       start,
       now,
     );
-    final spo2 = await _dailyLast(HealthDataType.BLOOD_OXYGEN, start, now);
     final respiratory = await _dailyLast(
       HealthDataType.RESPIRATORY_RATE,
       start,
@@ -83,13 +81,13 @@ class GoogleHealthImporter {
     final latest = await _latestHr(now.subtract(const Duration(days: 1)), now);
     return GoogleHealthImport(
       GoogleHealthImportResult.success,
-      days: _mergeDays(resting, sleep, spo2, respiratory, segments),
+      days: _mergeDays(resting, sleep, respiratory, segments),
       latestHr: latest.hr,
       latestHrAtMs: latest.atMs,
     );
   }
 
-  // Per-day last numeric value of an instantaneous type (resting HR, SpO2).
+  // Per-day last numeric value of an instantaneous type (resting HR, breaths).
   Future<Map<String, int>> _dailyLast(
     HealthDataType type,
     DateTime start,
@@ -273,14 +271,12 @@ class GoogleHealthImporter {
   List<GoogleHealthDay> _mergeDays(
     Map<String, int> resting,
     Map<String, int> sleep,
-    Map<String, int> spo2,
     Map<String, int> respiratory,
     Map<String, List<SleepSegment>> segments,
   ) {
     final keys = {
       ...resting.keys,
       ...sleep.keys,
-      ...spo2.keys,
       ...respiratory.keys,
       ...segments.keys,
     };
@@ -290,7 +286,6 @@ class GoogleHealthImporter {
           dateKey: key,
           restingHr: resting[key],
           sleepMinutes: sleep[key],
-          spo2: spo2[key],
           respiratoryRate: respiratory[key],
           sleepStages: segments[key] == null
               ? null

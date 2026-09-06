@@ -7,6 +7,7 @@ import 'package:insulink/src/base/page.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/connections/connections_body.dart';
+import 'package:insulink/src/connections/status/connection_status_page.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/battery_saver_banner.dart';
 import 'package:insulink/src/overview/overview_running_bolus.dart';
@@ -50,15 +51,26 @@ class OverviewBody extends AppPageBody {
 /// Header title for the overview: the "next reading" clock, which used to sit
 /// in the top-right corner of the chart view. Watches the controller itself so
 /// only this widget rebuilds when a new reading arrives.
+///
+/// Tapping it opens the connection page. The clock is already the thing the user
+/// looks at when they wonder whether anything is still arriving, so "is it still
+/// connected, and when did it last say anything" belongs behind it.
 class _OverviewTitle extends StatelessWidget {
   const _OverviewTitle();
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
-    return OverviewUpdate(
-      lastUpdate: controller.lastUpdate,
-      intervalSec: controller.sensorType.readingIntervalSec,
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => openConnectionStatus(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: OverviewUpdate(
+          lastUpdate: controller.lastUpdate,
+          intervalSec: controller.sensorType.readingIntervalSec,
+        ),
+      ),
     );
   }
 }

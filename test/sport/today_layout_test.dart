@@ -10,22 +10,22 @@ void main() {
           TodayTile.steps,
           TodayTile.restingHr,
           TodayTile.weight,
-          TodayTile.spo2,
+          TodayTile.respiratoryRate,
         ],
-        {TodayTile.spo2},
+        {TodayTile.respiratoryRate},
       );
 
       // Not connected: Google Health tiles filtered out, order + hidden preserved.
       expect(layout.visible(false), [TodayTile.steps, TodayTile.weight]);
 
-      // Connected: restingHr appears in its slot; spo2 stays hidden.
+      // Connected: restingHr appears in its slot; respiratoryRate stays hidden.
       expect(layout.visible(true), [
         TodayTile.steps,
         TodayTile.restingHr,
         TodayTile.weight,
       ]);
 
-      expect(layout.isVisible(TodayTile.spo2), isFalse);
+      expect(layout.isVisible(TodayTile.respiratoryRate), isFalse);
       expect(layout.isVisible(TodayTile.steps), isTrue);
     },
   );

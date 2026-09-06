@@ -12,8 +12,8 @@ void main() {
     expect(back.dateKey, '2026-07-04');
     expect(back.restingHr, 58);
     expect(back.sleepMinutes, 440);
-    expect(back.spo2, isNull);
-    expect(day.toJson().containsKey('spo2'), isFalse);
+    expect(back.respiratoryRate, isNull);
+    expect(day.toJson().containsKey('rr'), isFalse);
   });
 
   test('formatSleepMinutes renders Xh Ym and – for null', () {

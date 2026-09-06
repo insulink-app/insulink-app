@@ -56,6 +56,21 @@ extension PodBasalLedger on PodStore {
   Future<void> saveBasalRates(List<double> rates) =>
       _set(PodStore._kBasalRates, jsonEncode(rates));
 
+  /// The user's own scheduled rate for the hour [at] falls in, or null when the
+  /// app does not know the schedule the pod is running.
+  ///
+  /// Null rather than zero, deliberately. Zero is a real rate that means the pod
+  /// is delivering nothing, and a screen that shows it because the schedule was
+  /// never read would be claiming something it cannot know.
+  double? scheduledUnitsPerHourAt(DateTime at) {
+    final rates = basalRates;
+    if (rates == null) {
+      return null;
+    }
+    final rate = rates[at.hour];
+    return rate.isFinite && rate >= 0 ? rate : null;
+  }
+
   /// How far basal delivery has already been accounted for, so a window is never
   /// counted twice nor left out.
   DateTime? get basalCountedTo {

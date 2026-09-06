@@ -593,6 +593,11 @@
         "body": "The app will then deliver insulin on its own, including while you sleep. It is not a medical device and has not been clinically tested. Keep checking against a meter and keep fast sugar within reach.",
         "confirm": "Turn on"
       },
+      "overview": {
+        "off": "Automated delivery is off",
+        "stopped": "Automated delivery has stopped",
+        "engaged": "Automated delivery is active"
+      },
       "auth_reason": "Turn on automated insulin delivery",
       "journal": "Automation decisions",
       "not_sent": "not sent",
@@ -616,7 +621,6 @@
     "resting_hr": "Resting HR",
     "sleep": "Sleep",
     "heart_rate": "Heart rate",
-    "spo2": "Blood oxygen",
     "respiratory_rate": "Respiratory rate",
     "status": {
       "connected": "Connected",
@@ -668,6 +672,15 @@
       "now": "now",
       "range": "# to ##",
       "worn": "Worn # of ## d"
+    },
+    "status": {
+      "title": "Reception",
+      "window": "Last # hours",
+      "last_contact": "# ago",
+      "never": "no contact yet",
+      "not_set_up": "not set up",
+      "slice_covered": "# to ##, data received",
+      "slice_gap": "# to ##, no data"
     }
   },
   "inventory": {
@@ -1331,7 +1344,12 @@
       "high_body": "Consider about # units of insulin.",
       "forecast": "Now #, in ## min ~###",
       "carbs_action": "Log # g carbs",
-      "bolus_action": "Deliver # U"
+      "bolus_action": "Deliver # U",
+      "outcome_title": "Advance warning",
+      "carbs_logged": "Logged # g carbs.",
+      "bolus_done": "Delivered # U and logged it.",
+      "bolus_failed": "No insulin was delivered. Please check in the app.",
+      "failed": "The action failed. Please check in the app."
     },
     "low": {
       "title": "Glucose low"

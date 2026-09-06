@@ -17,11 +17,10 @@
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
-    <!-- Fitbit (via Health Connect): Herzfrequenz, Ruhepuls, Schlaf, SpO2 -->
+    <!-- Fitbit (via Health Connect): Herzfrequenz, Ruhepuls, Schlaf -->
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
-    <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
     <uses-permission android:name="android.permission.health.READ_RESPIRATORY_RATE" />
     <!-- Erlaubt das Lesen von Daten älter als 30 Tage (komplette Historie) -->
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />

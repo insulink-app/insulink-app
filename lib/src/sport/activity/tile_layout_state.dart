@@ -14,7 +14,6 @@ enum TodayTile {
   restingHr,
   sleep,
   heartRate,
-  spo2,
   respiratoryRate,
   hba1c,
 }

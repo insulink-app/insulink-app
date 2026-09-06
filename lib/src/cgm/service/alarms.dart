@@ -10,6 +10,7 @@ import '../../injection/insulin_on_board.dart';
 import '../../localization/service_strings.dart';
 import '../../nutrition/meal/meal_store.dart';
 import '../../pump/pod_store.dart';
+import '../../pump/protocol/pod_bolus_command.dart';
 import '../../profile/bolus/profile_bolus_state.dart';
 import '../../profile/notifications/notification_setting.dart';
 import '../../profile/notifications/profile_alarm_sound_state.dart';
@@ -56,6 +57,41 @@ void trainingNotificationAction(NotificationResponse response) {
   } else if (response.actionId == _trainingRejectAction) {
     store.recordTrainingDecision('reject', id, filePath: filePath);
   }
+}
+
+/// Routes an action tap to the feature that owns it. One entry point because
+/// `flutter_local_notifications` takes exactly one callback per isolate.
+@pragma('vm:entry-point')
+void serviceNotificationAction(NotificationResponse response) {
+  final actionId = response.actionId;
+  if (actionId == advisoryCarbsAction || actionId == advisoryBolusAction) {
+    _advisoryNotificationAction(actionId!, response.payload);
+    return;
+  }
+  trainingNotificationAction(response);
+}
+
+/// Buffers an accepted pre-warning countermeasure for the service isolate.
+///
+/// Runs in the same bare isolate [trainingNotificationAction] does, so it cannot
+/// log a meal or reach the pod itself; it only writes the request down. The
+/// payload is "amount\nglucoseMgdl\nwritableFilePath" (see [_showAdvisory]).
+void _advisoryNotificationAction(String actionId, String? payload) {
+  final parts = (payload ?? '').split('\n');
+  if (parts.length != 3) {
+    return;
+  }
+  final amount = double.tryParse(parts[0]);
+  final glucoseMgdl = int.tryParse(parts[1]);
+  if (amount == null || glucoseMgdl == null) {
+    return;
+  }
+  const AdvisoryActionStore().record(
+    actionId == advisoryBolusAction ? 'bolus' : 'carbs',
+    amount,
+    glucoseMgdl,
+    filePath: parts[2],
+  );
 }
 
 /// Glucose alarm severity. The enum order is the notification id, NOT a ranking
@@ -157,6 +193,10 @@ class G7AlarmManager {
   /// Notification id for the predictive glucose advisory pre-warning.
   static const _advisoryId = 104;
 
+  /// Notification id for the report on a countermeasure accepted from it. Its
+  /// own id so it does not replace an advisory that is still relevant.
+  static const _advisoryOutcomeId = 105;
+
   /// How often the shade is checked while a tone plays, to notice the alarm
   /// notification being swiped away ([_silenceWhenDismissed]). Short enough that
   /// the tone cuts off as the swipe finishes, long enough not to poll per frame.
@@ -225,21 +265,12 @@ class G7AlarmManager {
   /// Initialise the notification plugin. Must run once per isolate before
   /// [check] (mirrors `RustLib.init()`).
   ///
-  /// [onResponse] is the FOREGROUND handler: taps that bring the app to the
-  /// front, which is how the pre-warning's countermeasure buttons are answered
-  /// (see [AdvisoryActionListener]). The UI isolate passes its own; the service
-  /// isolate has no screen and leaves it at the training handler.
-  ///
-  /// The BACKGROUND handler stays [trainingNotificationAction] in either isolate:
-  /// it is the one action that does not show anything, so it is the one that has
-  /// to run in the bare isolate the plugin spawns.
-  Future<void> init({DidReceiveNotificationResponseCallback? onResponse}) async {
+  Future<void> init() async {
     const android = AndroidInitializationSettings('notification');
     await _plugin.initialize(
       settings: const InitializationSettings(android: android),
-      onDidReceiveNotificationResponse:
-          onResponse ?? trainingNotificationAction,
-      onDidReceiveBackgroundNotificationResponse: trainingNotificationAction,
+      onDidReceiveNotificationResponse: serviceNotificationAction,
+      onDidReceiveBackgroundNotificationResponse: serviceNotificationAction,
     );
   }
 
@@ -565,11 +596,13 @@ class G7AlarmManager {
       ]);
       return (body: '$line\n$suggestion', amount: grams.ceilToDouble());
     }
-    final units = bolus.suggestedBolus(
-      carbs: 0,
-      glucoseMgdl: mgdl,
-      targetMgdl: glucose.targetMid,
-      iobUnits: await _activeInsulin(bolus),
+    final units = PodBolusAmount.snapToPulse(
+      bolus.suggestedBolus(
+        carbs: 0,
+        glucoseMgdl: mgdl,
+        targetMgdl: glucose.targetMid,
+        iobUnits: await _activeInsulin(bolus),
+      ),
     );
     final suggestion = await _strings.format(
       'alarm.advisory.high_body',
@@ -614,8 +647,11 @@ class G7AlarmManager {
   }
 
   /// Post the advisory pre-warning notification, with the button that carries
-  /// out its suggestion. The payload carries the two numbers that button acts on
-  /// (see [AdvisoryRequest]).
+  /// out its suggestion.
+  ///
+  /// The payload is "amount\nglucoseMgdl\nwritableFilePath" — the numbers the
+  /// action needs, plus the hand-off path resolved HERE because the action-tap
+  /// isolate cannot resolve its own (see [AdvisoryActionStore.requestFilePath]).
   Future<void> _showAdvisory(
     AdvisoryLevel level,
     int mgdl,
@@ -631,17 +667,20 @@ class G7AlarmManager {
       notificationDetails: NotificationDetails(
         android: await _advisoryChannel(await _advisoryAction(level, advisory)),
       ),
-      payload: AdvisoryRequest.encode(advisory.amount, mgdl),
+      payload: '${advisory.amount}\n$mgdl\n'
+          '${const AdvisoryActionStore().requestFilePath}',
     );
   }
 
   /// The one button offered next to a pre-warning: log the rescue carbs, or
   /// deliver the correction.
   ///
-  /// Both bring the app to the front (`showsUserInterface`) rather than running
-  /// in the background. The work needs the meal log, the pod and the user's own
-  /// settings, all of which live in the UI isolate, and it means the user SEES
-  /// what their tap did instead of having to trust that something happened.
+  /// Both run in the BACKGROUND (`showsUserInterface` left false). A pre-warning
+  /// arrives on a locked phone, and an action that brings the app to the front
+  /// means unlocking the device and watching it launch before anything happens.
+  /// The tap is buffered instead ([AdvisoryActionStore]) and the service isolate
+  /// carries it out within a watchdog tick, reporting back with a notification of
+  /// its own so the user still learns what became of it.
   ///
   /// The insulin button appears ONLY with a pod paired. Without one the app can
   /// merely record a dose the user would still have to inject themselves, and a
@@ -659,21 +698,39 @@ class G7AlarmManager {
           'alarm.advisory.carbs_action',
           advisory.amount.round(),
         ),
-        showsUserInterface: true,
         cancelNotification: true,
       );
     }
-    if (!(await PodStore.open()).hasPod) {
+    // Nothing to offer when the correction snapped to zero (under one 0.05 U
+    // pulse) or when no pod is paired.
+    if (advisory.amount <= 0 || !(await PodStore.open()).hasPod) {
       return null;
     }
     return AndroidNotificationAction(
       advisoryBolusAction,
       await _strings.format(
         'alarm.advisory.bolus_action',
-        advisory.amount.toStringAsFixed(1),
+        // Two decimals: this button DELIVERS the number it shows, and the pod's
+        // 0.05 U grid has values one decimal cannot name (1.05 would read 1.0).
+        advisory.amount.toStringAsFixed(2),
       ),
-      showsUserInterface: true,
       cancelNotification: true,
+    );
+  }
+
+  /// Report what became of a countermeasure the user accepted from the
+  /// pre-warning. Same silent channel, no action of its own.
+  Future<void> notifyAdvisoryOutcome(
+    String bodyKey,
+    List<Object> values,
+  ) async {
+    await _plugin.show(
+      id: _advisoryOutcomeId,
+      title: await _strings.get('alarm.advisory.outcome_title'),
+      body: await _strings.formatAll(bodyKey, values),
+      notificationDetails: NotificationDetails(
+        android: await _advisoryChannel(null),
+      ),
     );
   }
 

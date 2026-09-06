@@ -20,7 +20,6 @@ class GoogleHealthMetricList extends StatelessWidget {
           _fmt(health.todayRestingHr, 'bpm'),
         ),
         _row(context, 'google_health.heart_rate', _fmt(health.latestHr, 'bpm')),
-        _row(context, 'google_health.spo2', _fmt(health.latestSpo2, '%')),
         _row(
           context,
           'google_health.respiratory_rate',

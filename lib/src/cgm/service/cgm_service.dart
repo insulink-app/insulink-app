@@ -22,6 +22,7 @@ import '../../sport/training/activity_recognition_sampler.dart';
 import '../../sport/training/background_location_sampler.dart';
 import '../../sport/training/cardio_detection_runner.dart';
 import '../../profile/prediction/profile_prediction_state.dart';
+import 'advisory_action_runner.dart';
 import 'alarms.dart';
 import '../cgm_connection.dart';
 import '../event_sync.dart';
@@ -212,6 +213,7 @@ class CgmTaskHandler extends TaskHandler {
       _activitySampler.start();
     }
     unawaited(_applyTrainingDecisions());
+    unawaited(_applyAdvisoryActions());
     // Host the live band the whole time this service runs, so bpm keeps
     // streaming with the app backgrounded OR fully closed — no dependence on the
     // dying UI isolate to hand it over. Known-band-only (never scans), so it is a
@@ -437,6 +439,19 @@ class CgmTaskHandler extends TaskHandler {
     // Apply Confirm/Reject taps buffered by the notification-action isolate,
     // which can't reach secure storage itself (see SportStore.recordTrainingDecision).
     unawaited(_applyTrainingDecisions());
+    unawaited(_applyAdvisoryActions());
+  }
+
+  /// Carry out the countermeasures accepted from a pre-warning notification.
+  /// Buffered by the same bare action-tap isolate the training prompt uses, so
+  /// the meal log and the pod are only reachable from here. Runs at service
+  /// start too, so a tap the process died on is not lost until the next tick.
+  Future<void> _applyAdvisoryActions() async {
+    final alarms = _alarms;
+    if (alarms == null) {
+      return;
+    }
+    await AdvisoryActionRunner(alarms).run();
   }
 
   /// Drain the buffered Confirm/Reject taps and push the confirmed trainings to

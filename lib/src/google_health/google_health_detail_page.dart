@@ -13,7 +13,7 @@ import 'package:insulink/src/sport/sport_range_selector.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// History overview of a daily Google Health metric (resting HR / sleep / SpO2) from the
+/// History overview of a daily Google Health metric (resting HR / sleep) from the
 /// persistent Health archive — the Google Health analogue of [ActivityDetailPage]:
 /// header (latest + average), a bar chart with range picker and a day list.
 class GoogleHealthDetailPage extends StatefulWidget {
@@ -51,14 +51,12 @@ class _GoogleHealthDetailPageState extends State<GoogleHealthDetailPage> {
   String get _labelKey => switch (widget.metric) {
     GoogleHealthMetric.restingHr => 'google_health.resting_hr',
     GoogleHealthMetric.sleep => 'google_health.sleep',
-    GoogleHealthMetric.spo2 => 'google_health.spo2',
     GoogleHealthMetric.respiratoryRate => 'google_health.respiratory_rate',
   };
 
   String? get _unit => switch (widget.metric) {
     GoogleHealthMetric.restingHr => 'bpm',
     GoogleHealthMetric.sleep => null,
-    GoogleHealthMetric.spo2 => '%',
     GoogleHealthMetric.respiratoryRate => 'rpm',
   };
 

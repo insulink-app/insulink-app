@@ -245,7 +245,6 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
   int? get latestHr => _latestHr;
   int? get todayRestingHr => _latestOf((day) => day.restingHr);
   int? get lastSleepMinutes => _latestOf((day) => day.sleepMinutes);
-  int? get latestSpo2 => _latestOf((day) => day.spo2);
   int? get latestRespiratoryRate => _latestOf((day) => day.respiratoryRate);
 
   int? _latestOf(int? Function(GoogleHealthDay) pick) {

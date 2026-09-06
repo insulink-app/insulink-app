@@ -47,6 +47,25 @@ class PodBolusAmount {
     return PodBolusAmount.fromPulses(hundredths ~/ unitHundredthsPerPulse);
   }
 
+  /// [units] snapped DOWN onto the pod's pulse grid, so a computed dose can be
+  /// delivered as it stands.
+  ///
+  /// The bolus calculator works in real numbers and routinely lands on something
+  /// like 1.01502045 U, which [PodBolusAmount.fromUnits] refuses — correctly, it
+  /// is not a dose the pod can meter. The injection sheet never hit that because
+  /// the user reads the number off a field rounded to one decimal; a dose carried
+  /// out straight from a notification has no such field, so it is snapped here.
+  ///
+  /// DOWN rather than to nearest, because nobody is looking at this number. Half
+  /// a pulse (0.025 U) less than the calculation asked for is nothing; half a
+  /// pulse more is insulin it did not ask for.
+  static double snapToPulse(double units) {
+    if (units.isNaN || units.isInfinite || units <= 0) {
+      return 0;
+    }
+    return ((units * 100) / unitHundredthsPerPulse).floor() * pulseUnits;
+  }
+
   /// Builds an amount from a pulse count.
   factory PodBolusAmount.fromPulses(int pulses) {
     if (pulses <= 0) {
