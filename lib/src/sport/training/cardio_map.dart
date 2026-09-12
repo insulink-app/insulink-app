@@ -8,7 +8,34 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// Fit padding for framing the whole route — matches the initial camera fit.
 const _routeFitPadding = EdgeInsets.all(40);
 
-/// OpenStreetMap map with the training route as a polyline. [live] keeps the map
+/// Esri's Gray Canvas basemaps: a quiet grey map with a real dark counterpart,
+/// which is what a route line wants behind it. No API key.
+///
+/// They replaced CartoDB's Positron/Dark Matter, which CARTO now stamps "API
+/// KEY REQUIRED" across, and plain OpenStreetMap, whose single busy style had
+/// to be inverted into a dark mode that looked like a photo negative. Esri
+/// splits a style in two: the [_lightBase] map and the [_lightLabels] place
+/// names over it, both drawn UNDER the route.
+const _esri = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas';
+const _lightBase = '$_esri/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+const _lightLabels =
+    '$_esri/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}';
+const _darkBase = '$_esri/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+const _darkLabels =
+    '$_esri/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}';
+
+/// The deepest zoom Esri actually draws. Past it the service answers with a
+/// placeholder tile reading "Map data not yet available" — so without this the
+/// map fills with that text the moment the user zooms in one step too far.
+/// [TileLayer.maxNativeZoom] scales the z16 tile up instead.
+const _maxNativeZoom = 16;
+
+/// How far the DARK base map is dimmed. Esri's dark canvas is a mid grey
+/// (its land is ~#4D4D4F); at this scale the land comes out around #2A2A2B,
+/// just above the app's dark surface (#1F232A) instead of glowing against it.
+const _darkDim = 0.55;
+
+/// Basemap with the training route as a polyline. [live] keeps the map
 /// viewport controlled by the caller (recenter while recording); otherwise it
 /// zooms to the whole route. Shared by the recording and detail pages.
 class CardioMap extends StatelessWidget {
@@ -60,22 +87,8 @@ class CardioMap extends StatelessWidget {
             : null,
       ),
       children: [
-        TileLayer(
-          // CartoDB light/dark matching the app theme.
-          urlTemplate: isDark
-              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-              : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-          subdomains: const ['a', 'b', 'c', 'd'],
-          retinaMode: RetinaMode.isHighDensity(context),
-          userAgentPackageName: 'de.insulink.app',
-          // dark_all is very dark — lift brightness/contrast so streets and
-          // details stay visible while keeping the dark look.
-          tileBuilder: isDark ? _brightenDarkTiles : null,
-          // Degrade quietly without network (e.g. in the emulator) instead of
-          // logging every missing tile as an exception.
-          evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
-          errorTileCallback: (tile, error, stackTrace) {},
-        ),
+        _tiles(isDark ? _darkBase : _lightBase, dim: isDark),
+        _tiles(isDark ? _darkLabels : _lightLabels),
         if (route.length >= 2)
           PolylineLayer(
             polylines: [
@@ -188,19 +201,35 @@ class CardioMap extends StatelessWidget {
     );
   }
 
-  /// Brightens + adds a little contrast to the very dark CartoDB dark tiles so
-  /// streets and details are legible, without abandoning the dark look. The 5×4
-  /// matrix scales each RGB channel by 1.45 and lifts it by +22 (0–255).
-  Widget _brightenDarkTiles(
-    BuildContext context,
-    Widget tile,
-    TileImage image,
-  ) {
+  /// One tile layer of the basemap. Two of them are stacked (map, then place
+  /// names), so the settings that matter live in one place.
+  ///
+  /// [dim] darkens the tile, and is what the two-layer split buys us: Esri's
+  /// dark canvas is a mid grey that glows against this app's much darker page,
+  /// but dimming the whole map would take the place names down with it. Only
+  /// the BASE layer is dimmed; the labels stay as bright as they were.
+  Widget _tiles(String urlTemplate, {bool dim = false}) {
+    return TileLayer(
+      urlTemplate: urlTemplate,
+      maxNativeZoom: _maxNativeZoom,
+      userAgentPackageName: 'de.insulink.app',
+      tileBuilder: dim ? _dimTiles : null,
+      // Degrade quietly without network (e.g. in the emulator) instead of
+      // logging every missing tile as an exception.
+      evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
+      errorTileCallback: (tile, error, stackTrace) {},
+    );
+  }
+
+  /// Scales the base map's brightness to [_darkDim] so its land lands just
+  /// above the app's own dark surface: a shade lighter, so the map still reads
+  /// as a panel on the page rather than a hole in it.
+  Widget _dimTiles(BuildContext context, Widget tile, TileImage image) {
     return ColorFiltered(
       colorFilter: const ColorFilter.matrix(<double>[
-        1.45, 0, 0, 0, 22, //
-        0, 1.45, 0, 0, 22, //
-        0, 0, 1.45, 0, 22, //
+        _darkDim, 0, 0, 0, 0, //
+        0, _darkDim, 0, 0, 0, //
+        0, 0, _darkDim, 0, 0, //
         0, 0, 0, 1, 0, //
       ]),
       child: tile,

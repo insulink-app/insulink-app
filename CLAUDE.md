@@ -682,10 +682,10 @@ the widget cannot drift away from the app on what is in range.
   the panel copy of the same rules.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
-- `docs/MAP.md` — the route map's tiles: why plain OpenStreetMap and not a keyed
+- `docs/MAP.md` — the route map's tiles: why Esri Gray Canvas and not a keyed
   provider (CARTO now stamps "API KEY REQUIRED" across the tiles it still
-  serves), how dark mode is made out of the one light style, and the attribution
-  both clients must keep.
+  serves) nor plain OSM, why a style is two layers, why `maxNativeZoom` is
+  load-bearing, and the attribution both clients must keep.
 - `docs/DESIGN.md` — the theme/colour-role system: the two accents, the three
   foreground tones, the affordance shapes, both surface ladders, Flutter's
   silent `ColorScheme` fallbacks, and the measured contrast values.
