@@ -63,7 +63,8 @@ class ChartSync extends ChangeNotifier {
     required double focalTravelX,
     required double plotWidth,
     required double focalFraction,
-  })? onPinch;
+  })?
+  onPinch;
 
   bool get hasWindow => from != null && to != null;
 

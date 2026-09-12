@@ -482,11 +482,7 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     };
     return LineTooltipItem(
       text,
-      TextStyle(
-        color: color,
-        fontWeight: FontWeight.bold,
-        fontSize: 13,
-      ),
+      TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
       children: showTime
           ? [
               TextSpan(

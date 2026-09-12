@@ -63,9 +63,9 @@ class OverviewPodReservoir extends StatelessWidget {
   final PodController controller;
 
   PodReservoirLevel get _level => PodReservoirLevel(
-        hasStatus: controller.status != null,
-        units: controller.status?.reservoirUnits,
-      );
+    hasStatus: controller.status != null,
+    units: controller.status?.reservoirUnits,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -112,10 +112,7 @@ class OverviewPodReservoir extends StatelessWidget {
       borderRadius: BorderRadius.circular(3),
       child: Stack(
         children: [
-          Container(
-            height: 9,
-            color: scheme.onSurface.withValues(alpha: 0.12),
-          ),
+          Container(height: 9, color: scheme.onSurface.withValues(alpha: 0.12)),
           FractionallySizedBox(
             widthFactor: level.fraction,
             child: Container(

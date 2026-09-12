@@ -71,10 +71,12 @@ class PodStopDeliveryCommand extends PodCommand {
   PodCommandType get type => PodCommandType.stopDelivery;
 
   @override
-  Uint8List get encoded => appendCrc(joinParts([
-        buildHeader(7),
-        [type.value, 0x05],
-        bigEndian32(nonce),
-        [((beep.value << 4) | target.bits) & 0xFF],
-      ]));
+  Uint8List get encoded => appendCrc(
+    joinParts([
+      buildHeader(7),
+      [type.value, 0x05],
+      bigEndian32(nonce),
+      [((beep.value << 4) | target.bits) & 0xFF],
+    ]),
+  );
 }

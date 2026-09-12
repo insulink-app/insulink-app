@@ -221,8 +221,9 @@ class GlucoseLineChart extends StatelessWidget {
   /// stacked downward so they cannot print over each other
   /// ([MealLabelRows]).
   List<VerticalLine> _mealLines(Color color) {
-    final rows = MealLabelRows(spanX: axis.maxX - axis.minX)
-        .assign([for (final marker in mealMarkers) marker.x]);
+    final rows = MealLabelRows(
+      spanX: axis.maxX - axis.minX,
+    ).assign([for (final marker in mealMarkers) marker.x]);
     return [
       for (var index = 0; index < mealMarkers.length; index++)
         _mealLine(mealMarkers[index], color, rows[index]),
@@ -231,11 +232,7 @@ class GlucoseLineChart extends StatelessWidget {
 
   /// [row] is how many label heights this one is dropped by, so a cluster reads
   /// as a staircase instead of a smear.
-  VerticalLine _mealLine(
-    ({double x, Meal meal}) marker,
-    Color color,
-    int row,
-  ) {
+  VerticalLine _mealLine(({double x, Meal meal}) marker, Color color, int row) {
     return VerticalLine(
       x: marker.x,
       color: color.withValues(alpha: 0.35),
@@ -375,7 +372,9 @@ class GlucoseLineChart extends StatelessWidget {
         // glucose-zone colour — the estimate isn't a measured value.
         getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
           radius: 4,
-          color: spot.x > axis.shift ? predictionColor : _zoneForDisplay(spot.y),
+          color: spot.x > axis.shift
+              ? predictionColor
+              : _zoneForDisplay(spot.y),
           strokeColor: Colors.white,
           strokeWidth: 1.5,
         ),

@@ -203,12 +203,13 @@ class BackgroundLocationSampler {
       return;
     }
     _streamTier = tier;
-    _stream = Geolocator.getPositionStream(
-      locationSettings: _streamSettings(tier),
-    ).listen(
-      _onStreamFix,
-      onError: (Object error) => _onLog('location stream error: $error'),
-    );
+    _stream =
+        Geolocator.getPositionStream(
+          locationSettings: _streamSettings(tier),
+        ).listen(
+          _onStreamFix,
+          onError: (Object error) => _onLog('location stream error: $error'),
+        );
     _onLog('location: ${tier.name} stream started');
   }
 

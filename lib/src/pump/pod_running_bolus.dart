@@ -37,18 +37,17 @@ class PodRunningBolus {
   final int eighthSecondsBetweenPulses;
 
   Map<String, dynamic> toJson() => {
-        'started_at': startedAt.millisecondsSinceEpoch,
-        'pulses': pulses,
-        'eighth_seconds_between_pulses': eighthSecondsBetweenPulses,
-      };
+    'started_at': startedAt.millisecondsSinceEpoch,
+    'pulses': pulses,
+    'eighth_seconds_between_pulses': eighthSecondsBetweenPulses,
+  };
 
   /// Total units this bolus was programmed for.
   double get programmedUnits => pulses * PodBolusAmount.pulseUnits;
 
   /// How long the whole bolus takes.
-  Duration get duration => Duration(
-        milliseconds: pulses * eighthSecondsBetweenPulses * 125,
-      );
+  Duration get duration =>
+      Duration(milliseconds: pulses * eighthSecondsBetweenPulses * 125);
 
   /// Pulses the pod has finished, FLOORED.
   ///

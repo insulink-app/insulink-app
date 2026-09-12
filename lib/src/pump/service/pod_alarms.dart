@@ -155,7 +155,9 @@ class PodAlarmManager {
       id: _alarmId,
       title: await _strings.get('alarm.pod.alarm.title'),
       body: await _strings.get(_alarmBodyKey(alarm.kind)),
-      notificationDetails: NotificationDetails(android: await _channels.urgent()),
+      notificationDetails: NotificationDetails(
+        android: await _channels.urgent(),
+      ),
     );
   }
 
@@ -190,7 +192,9 @@ class PodAlarmManager {
       id: _stoppedId,
       title: await _strings.get('alarm.pod.stopped.title'),
       body: await _strings.get('alarm.pod.stopped.body'),
-      notificationDetails: NotificationDetails(android: await _channels.urgent()),
+      notificationDetails: NotificationDetails(
+        android: await _channels.urgent(),
+      ),
     );
   }
 
@@ -229,7 +233,9 @@ class PodAlarmManager {
         'alarm.pod.unreachable.body',
         silence.inMinutes,
       ),
-      notificationDetails: NotificationDetails(android: await _channels.warning()),
+      notificationDetails: NotificationDetails(
+        android: await _channels.warning(),
+      ),
     );
   }
 
@@ -255,7 +261,9 @@ class PodAlarmManager {
       id: _loopStoppedId,
       title: await _strings.get('alarm.pod.loop_stopped.title'),
       body: await _strings.get('pump.loop.stopped.${cause.localeKey}'),
-      notificationDetails: NotificationDetails(android: await _channels.warning()),
+      notificationDetails: NotificationDetails(
+        android: await _channels.warning(),
+      ),
     );
   }
 
@@ -288,17 +296,19 @@ class PodAlarmManager {
       body: bodyArgument == null
           ? await _strings.get(bodyKey)
           : await _strings.format(bodyKey, bodyArgument),
-      notificationDetails: NotificationDetails(android: await _channels.warning()),
+      notificationDetails: NotificationDetails(
+        android: await _channels.warning(),
+      ),
     );
   }
 
   String _alarmBodyKey(PodAlarmKind kind) => switch (kind) {
-        PodAlarmKind.occlusion => 'alarm.pod.alarm.occlusion',
-        PodAlarmKind.emptyReservoir => 'alarm.pod.alarm.empty',
-        PodAlarmKind.expired => 'alarm.pod.alarm.expired',
-        PodAlarmKind.infusionError => 'alarm.pod.alarm.infusion',
-        PodAlarmKind.escalatedAlert => 'alarm.pod.alarm.alert',
-        PodAlarmKind.communication => 'alarm.pod.alarm.communication',
-        _ => 'alarm.pod.alarm.fault',
-      };
+    PodAlarmKind.occlusion => 'alarm.pod.alarm.occlusion',
+    PodAlarmKind.emptyReservoir => 'alarm.pod.alarm.empty',
+    PodAlarmKind.expired => 'alarm.pod.alarm.expired',
+    PodAlarmKind.infusionError => 'alarm.pod.alarm.infusion',
+    PodAlarmKind.escalatedAlert => 'alarm.pod.alarm.alert',
+    PodAlarmKind.communication => 'alarm.pod.alarm.communication',
+    _ => 'alarm.pod.alarm.fault',
+  };
 }

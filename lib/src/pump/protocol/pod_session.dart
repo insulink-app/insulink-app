@@ -28,11 +28,14 @@ class PodSession {
     required this.addresses,
     required this.keys,
   }) : cipher = SessionCipher(
-          nonce: keys.nonce,
-          confidentialityKey: keys.confidentialityKey,
-        );
+         nonce: keys.nonce,
+         confidentialityKey: keys.confidentialityKey,
+       );
 
-  static const PodKeyedPayload _commandEnvelope = PodKeyedPayload(['S0.0=', ',G0.0']);
+  static const PodKeyedPayload _commandEnvelope = PodKeyedPayload([
+    'S0.0=',
+    ',G0.0',
+  ]);
   static const PodKeyedPayload _responseEnvelope = PodKeyedPayload(['0.0=']);
 
   final PodMessageIo messageIo;
@@ -49,14 +52,16 @@ class PodSession {
   Future<void> sendCommand(PodCommand command) async {
     keys.messageSequence++;
     final envelope = _commandEnvelope.encode([command.encoded, Uint8List(0)]);
-    final message = cipher.encrypt(MessagePacket(
-      type: PodMessageType.encrypted,
-      source: addresses.myId,
-      destination: addresses.podId,
-      payload: envelope,
-      sequenceNumber: keys.messageSequence,
-      eqos: 1,
-    ));
+    final message = cipher.encrypt(
+      MessagePacket(
+        type: PodMessageType.encrypted,
+        source: addresses.myId,
+        destination: addresses.podId,
+        payload: envelope,
+        sequenceNumber: keys.messageSequence,
+        eqos: 1,
+      ),
+    );
     try {
       await messageIo.sendMessage(message);
     } on PodLinkException catch (error) {
@@ -77,15 +82,17 @@ class PodSession {
     final response = _parse(plain.payload);
 
     keys.messageSequence++;
-    final acknowledgement = cipher.encrypt(MessagePacket(
-      type: PodMessageType.encrypted,
-      source: addresses.myId,
-      destination: addresses.podId,
-      payload: Uint8List(0),
-      sequenceNumber: keys.messageSequence,
-      ack: true,
-      ackNumber: received.sequenceNumber + 1,
-    ));
+    final acknowledgement = cipher.encrypt(
+      MessagePacket(
+        type: PodMessageType.encrypted,
+        source: addresses.myId,
+        destination: addresses.podId,
+        payload: Uint8List(0),
+        sequenceNumber: keys.messageSequence,
+        ack: true,
+        ackNumber: received.sequenceNumber + 1,
+      ),
+    );
     await messageIo.sendMessage(acknowledgement);
     return response;
   }
@@ -111,9 +118,11 @@ class PodSession {
     if (trailing == asCrc16) {
       return;
     }
-    debugPrint('pod response: trailing bytes 0x${trailing.toRadixString(16)} '
-        'are not a CRC-16 over the frame (0x${asCrc16.toRadixString(16)}); '
-        'frame ${frame.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}');
+    debugPrint(
+      'pod response: trailing bytes 0x${trailing.toRadixString(16)} '
+      'are not a CRC-16 over the frame (0x${asCrc16.toRadixString(16)}); '
+      'frame ${frame.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}',
+    );
   }
 
   /// Unwraps a decrypted reply.

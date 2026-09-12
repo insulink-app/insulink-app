@@ -24,7 +24,9 @@ class Hba1cSync {
   Future<void> _send(List<Hba1cEntry> entries) async {
     await Request.post(
       url: '/health/hba1c/sync/',
-      body: {'readings': [for (final entry in entries) _body(entry)]},
+      body: {
+        'readings': [for (final entry in entries) _body(entry)],
+      },
     ).send(null);
   }
 
@@ -44,7 +46,9 @@ class Hba1cSync {
   /// The account's readings, or null when the request failed — so the caller can
   /// tell "nothing stored" from "could not ask" and leave local data alone.
   Future<List<Hba1cEntry>?> pull(BuildContext? context) async {
-    final response = await Request.get(url: '/health/hba1c/find/').send(context);
+    final response = await Request.get(
+      url: '/health/hba1c/find/',
+    ).send(context);
     final body = response.jsonObject;
     if (body == null) {
       return null;

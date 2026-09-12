@@ -73,7 +73,8 @@ class WorkoutSnapshot {
       WorkoutSnapshot(
         routineId: json['routine'] as String,
         routineName: json['name'] as String? ?? '',
-        items: (json['items'] as List?)
+        items:
+            (json['items'] as List?)
                 ?.cast<Map<String, dynamic>>()
                 .map(RoutineItem.fromJson)
                 .toList() ??

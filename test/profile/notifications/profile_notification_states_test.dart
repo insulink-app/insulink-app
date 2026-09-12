@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/profile/notifications/alarm_tone.dart';
 import 'package:insulink/src/profile/notifications/profile_alarm_sound_state.dart';
+import 'package:insulink/src/profile/notifications/profile_alarm_tone_state.dart';
 import 'package:insulink/src/profile/notifications/profile_connection_state.dart';
 
 import '../../support/secure_storage_mock.dart';
@@ -32,4 +34,15 @@ void main() {
     await ProfileAlarmSoundState().save(false);
     expect(await ProfileConnectionState().load(), isTrue);
   });
+
+  test(
+    'each alarm stores its tone under its own key, classic by default',
+    () async {
+      final state = ProfileAlarmToneState();
+      expect(await state.load(AlarmSlot.lowUrgent), AlarmTone.classic);
+      await state.save(AlarmSlot.lowUrgent, AlarmTone.short);
+      expect(await state.load(AlarmSlot.lowUrgent), AlarmTone.short);
+      expect(await state.load(AlarmSlot.lowWarning), AlarmTone.classic);
+    },
+  );
 }

@@ -8,7 +8,10 @@ import 'package:insulink/src/pump/protocol/string_prefix_codec.dart';
 /// What a completed pairing yields: the pod's long-term key and the message
 /// sequence number the first session must continue from.
 class PodPairingResult {
-  const PodPairingResult({required this.longTermKey, required this.messageSequence});
+  const PodPairingResult({
+    required this.longTermKey,
+    required this.messageSequence,
+  });
 
   final Uint8List longTermKey;
   final int messageSequence;
@@ -37,7 +40,17 @@ class PodPairing {
   /// A serialised get-status command, which the pod expects as the second field
   /// of the opening pairing message.
   static const List<int> _openingStatusRequest = [
-    0xff, 0xc3, 0x2d, 0xbd, 0x08, 0x03, 0x0e, 0x01, 0x00, 0x00, 0x8a,
+    0xff,
+    0xc3,
+    0x2d,
+    0xbd,
+    0x08,
+    0x03,
+    0x0e,
+    0x01,
+    0x00,
+    0x00,
+    0x8a,
   ];
 
   static const PodKeyedPayload _opening = PodKeyedPayload(['SP1=', ',SP2=']);
@@ -60,13 +73,17 @@ class PodPairing {
   int _sequence = 1;
 
   Future<PodPairingResult> negotiate() async {
-    await _send(_opening.encode([
-      addresses.podId.address,
-      Uint8List.fromList(_openingStatusRequest),
-    ]));
+    await _send(
+      _opening.encode([
+        addresses.podId.address,
+        Uint8List.fromList(_openingStatusRequest),
+      ]),
+    );
     _sequence++;
     await _send(_controllerOffer.encode([keyExchange.offer]));
-    keyExchange.acceptPodOffer(_expect(_controllerOffer, await _receive('pod key offer')));
+    keyExchange.acceptPodOffer(
+      _expect(_controllerOffer, await _receive('pod key offer')),
+    );
 
     // The key exists now. Store it before sending our confirmation: the pod may
     // keep it the moment that message lands, and everything after this point can
@@ -104,17 +121,19 @@ class PodPairing {
   }
 
   Future<void> _send(Uint8List payload) {
-    return messageIo.sendMessage(MessagePacket(
-      type: PodMessageType.pairing,
-      source: addresses.myId,
-      // The not-activated broadcast id, verified against AndroidAPS master:
-      // LTKExchanger sends every pairing message to Ids.notActivated()
-      // (0xFFFFFFFE), while the id the pod will be GIVEN travels only inside
-      // SP1's payload. An earlier "fix" here to the assigned id was wrong.
-      destination: PodId.notActivated,
-      payload: payload,
-      sequenceNumber: _sequence,
-    ));
+    return messageIo.sendMessage(
+      MessagePacket(
+        type: PodMessageType.pairing,
+        source: addresses.myId,
+        // The not-activated broadcast id, verified against AndroidAPS master:
+        // LTKExchanger sends every pairing message to Ids.notActivated()
+        // (0xFFFFFFFE), while the id the pod will be GIVEN travels only inside
+        // SP1's payload. An earlier "fix" here to the assigned id was wrong.
+        destination: PodId.notActivated,
+        payload: payload,
+        sequenceNumber: _sequence,
+      ),
+    );
   }
 
   Future<MessagePacket> _receive(String what) async {

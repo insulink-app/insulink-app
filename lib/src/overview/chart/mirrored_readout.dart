@@ -60,10 +60,9 @@ class MirroredReadout extends StatelessWidget {
                   x: x,
                   valueFraction: valueFraction,
                   dotColor: dotColor,
-                  line: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.35),
+                  line: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.35),
                 ),
               ),
             ),

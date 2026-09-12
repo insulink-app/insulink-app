@@ -98,11 +98,9 @@ class PodConnection {
           eapSequence: eapSequence,
           messageSequence: store.messageSequence,
         ).establish();
-        return _remember(PodSession(
-          messageIo: messageIo,
-          addresses: addresses,
-          keys: keys,
-        ));
+        return _remember(
+          PodSession(messageIo: messageIo, addresses: addresses, keys: keys),
+        );
       } on PodSessionResyncRequired catch (resync) {
         await store.saveSynchronizedEapSequence(resync.synchronizedEapSequence);
       }
@@ -184,11 +182,9 @@ class PodConnection {
     ).establish();
 
     return PodActivationSession(
-      session: _remember(PodSession(
-        messageIo: messageIo,
-        addresses: addresses,
-        keys: keys,
-      )),
+      session: _remember(
+        PodSession(messageIo: messageIo, addresses: addresses, keys: keys),
+      ),
       podUniqueId: podUniqueId,
     );
   }
@@ -226,8 +222,10 @@ class PodConnection {
         // up holding two GATT clients to one pod.
         await close();
         _stopped = false;
-        scanner.onLog?.call('direct connect failed, falling back to a scan: '
-            '$error');
+        scanner.onLog?.call(
+          'direct connect failed, falling back to a scan: '
+          '$error',
+        );
       }
     }
     if (!allowScan) {
@@ -319,7 +317,10 @@ class PodConnection {
 /// A session on a pod that is being activated, with the id the activation will
 /// assign to it.
 class PodActivationSession {
-  const PodActivationSession({required this.session, required this.podUniqueId});
+  const PodActivationSession({
+    required this.session,
+    required this.podUniqueId,
+  });
 
   final PodSession session;
   final int podUniqueId;

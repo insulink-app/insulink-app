@@ -43,7 +43,10 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
   /// arrives via [MealState] notifying, which rebuilds and restarts the tick.
   void _syncTicker(bool active) {
     if (active && _tick == null) {
-      _tick = Timer.periodic(const Duration(minutes: 1), (_) => setState(() {}));
+      _tick = Timer.periodic(
+        const Duration(minutes: 1),
+        (_) => setState(() {}),
+      );
     } else if (!active && _tick != null) {
       _tick!.cancel();
       _tick = null;
@@ -152,8 +155,11 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
         ),
         child: Row(
           children: [
-            Icon(PhosphorIconsBold.repeat, size: 18,
-                color: scheme.onSurfaceVariant),
+            Icon(
+              PhosphorIconsBold.repeat,
+              size: 18,
+              color: scheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: LocaleText(

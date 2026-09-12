@@ -103,10 +103,19 @@ class InsulinBarPainter extends CustomPainter {
     final paint = Paint()
       ..color = gridColor
       ..strokeWidth = gridWidth;
-    for (var value = 0.0; value <= series.axisMax + 1e-9; value += series.axisStep) {
+    for (
+      var value = 0.0;
+      value <= series.axisMax + 1e-9;
+      value += series.axisStep
+    ) {
       final y = _yFor(value, size.height);
-      paintDashedLine(canvas, Offset(leftInset, y), Offset(size.width, y), paint,
-          gridDash);
+      paintDashedLine(
+        canvas,
+        Offset(leftInset, y),
+        Offset(size.width, y),
+        paint,
+        gridDash,
+      );
       _paintLabel(canvas, value, y);
     }
   }
@@ -140,8 +149,10 @@ class InsulinBarPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
       final centre = leftInset + tick.fraction * plotWidth;
-      final left = (centre - text.width / 2)
-          .clamp(leftInset, size.width - text.width);
+      final left = (centre - text.width / 2).clamp(
+        leftInset,
+        size.width - text.width,
+      );
       text.paint(canvas, Offset(left, size.height - bottomInset + 6));
     }
   }
@@ -164,10 +175,12 @@ class InsulinBarPainter extends CustomPainter {
     for (final bar in series.bars.where((entry) => !entry.isBolus)) {
       final startsBefore = series.fractionOf(bar.at) <= 0;
       final endsAfter = series.fractionOf(bar.coversUntil) >= 1;
-      final left = leftInset +
+      final left =
+          leftInset +
           series.fractionOf(bar.at) * plotWidth +
           (startsBefore ? 0 : 0.5);
-      final right = leftInset +
+      final right =
+          leftInset +
           series.fractionOf(bar.coversUntil) * plotWidth -
           (endsAfter ? 0 : 0.5);
       final corner = const Radius.circular(2);

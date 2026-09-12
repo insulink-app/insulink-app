@@ -8,9 +8,9 @@ import 'package:insulink/src/localization/locale_text.dart';
 /// which is where the user already looks when they wonder whether anything is
 /// still arriving.
 Future<void> openConnectionStatus(BuildContext context) {
-  return Navigator.of(context).push(
-    MaterialPageRoute<void>(builder: (_) => const ConnectionStatusPage()),
-  );
+  return Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const ConnectionStatusPage()));
 }
 
 /// Sensor, pump and band side by side: when each was last heard from, and where
@@ -81,5 +81,4 @@ class _ConnectionStatusPageState extends State<ConnectionStatusPage> {
       ),
     );
   }
-
 }

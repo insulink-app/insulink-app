@@ -50,7 +50,10 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
   /// which rebuilds and restarts the tick.
   void _syncTicker(bool active) {
     if (active && _tick == null) {
-      _tick = Timer.periodic(const Duration(minutes: 1), (_) => setState(() {}));
+      _tick = Timer.periodic(
+        const Duration(minutes: 1),
+        (_) => setState(() {}),
+      );
     } else if (!active && _tick != null) {
       _tick!.cancel();
       _tick = null;
@@ -68,10 +71,9 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
     final meals = context.watch<MealState>().meals;
     final duration = context.watch<ProfileBolusState>().insulinDuration;
     final insulin = ActiveInsulin(duration);
-    final parts = InsulinOnBoard(duration).parts(
-      meals,
-      pod: context.watch<PodController>().store,
-    );
+    final parts = InsulinOnBoard(
+      duration,
+    ).parts(meals, pod: context.watch<PodController>().store);
     final units = parts.total;
     _syncTicker(units > 0);
     if (units <= 0) {
@@ -139,10 +141,14 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
         if (lastDose != null) ...[
           const SizedBox(height: 8),
           Text(
-            Locales.string(context, 'overview.active_insulin.summary', params: [
-              _units(context, lastDose.bolus),
-              TimeOfDay.fromDateTime(lastDose.time).format(context),
-            ]),
+            Locales.string(
+              context,
+              'overview.active_insulin.summary',
+              params: [
+                _units(context, lastDose.bolus),
+                TimeOfDay.fromDateTime(lastDose.time).format(context),
+              ],
+            ),
             style: TextStyle(
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurfaceVariant,

@@ -251,9 +251,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
       actions: [
         IconButton(
           icon: Icon(
-            _runner.isPaused
-                ? PhosphorIconsFill.play
-                : PhosphorIconsBold.pause,
+            _runner.isPaused ? PhosphorIconsFill.play : PhosphorIconsBold.pause,
           ),
           tooltip: Locales.string(
             context,

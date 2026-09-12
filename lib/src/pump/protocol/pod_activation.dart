@@ -103,7 +103,8 @@ class PodActivation {
   final DateTime Function() now;
   final Future<void> Function(Duration duration) wait;
 
-  static Future<void> _realWait(Duration duration) => Future<void>.delayed(duration);
+  static Future<void> _realWait(Duration duration) =>
+      Future<void>.delayed(duration);
 
   late final PodActivationCommands _commands = PodActivationCommands(
     sendCommand: sendCommand,
@@ -121,18 +122,18 @@ class PodActivation {
   ///
   /// Runs with the pod still off the body. Returns what the pod reported, which
   /// phase two needs.
-  Future<PodActivationFacts> primePod({
-    required PodActivationStep from,
-  }) async {
+  Future<PodActivationFacts> primePod({required PodActivationStep from}) async {
     final facts = await _identifyPod(from);
 
     if (from.isBefore(PodActivationStep.activationAlertSet)) {
-      await _commands.expectStatus(PodProgramAlertsCommand(
-        uniqueId: facts.uniqueId,
-        sequenceNumber: _nextSequence,
-        nonce: nonce,
-        configurations: PodProgramAlertsCommand.unfinishedActivation(),
-      ));
+      await _commands.expectStatus(
+        PodProgramAlertsCommand(
+          uniqueId: facts.uniqueId,
+          sequenceNumber: _nextSequence,
+          nonce: nonce,
+          configurations: PodProgramAlertsCommand.unfinishedActivation(),
+        ),
+      );
       await onStep(PodActivationStep.activationAlertSet);
     }
 
@@ -158,25 +159,29 @@ class PodActivation {
     required PodBasalProgram basalProgram,
   }) async {
     if (from.isBefore(PodActivationStep.basalSet)) {
-      await _commands.expectStatus(PodProgramBasalCommand(
-        uniqueId: facts.uniqueId,
-        sequenceNumber: _nextSequence,
-        nonce: nonce,
-        program: basalProgram,
-        now: now(),
-      ));
+      await _commands.expectStatus(
+        PodProgramBasalCommand(
+          uniqueId: facts.uniqueId,
+          sequenceNumber: _nextSequence,
+          nonce: nonce,
+          program: basalProgram,
+          now: now(),
+        ),
+      );
       await onStep(PodActivationStep.basalSet);
     }
 
     if (from.isBefore(PodActivationStep.lifecycleAlertsSet)) {
-      await _commands.expectStatus(PodProgramAlertsCommand(
-        uniqueId: facts.uniqueId,
-        sequenceNumber: _nextSequence,
-        nonce: nonce,
-        configurations: PodProgramAlertsCommand.lifecycleDefaults(
-          expiryMinutes: facts.expirationHours * 60,
+      await _commands.expectStatus(
+        PodProgramAlertsCommand(
+          uniqueId: facts.uniqueId,
+          sequenceNumber: _nextSequence,
+          nonce: nonce,
+          configurations: PodProgramAlertsCommand.lifecycleDefaults(
+            expiryMinutes: facts.expirationHours * 60,
+          ),
         ),
-      ));
+      );
       await onStep(PodActivationStep.lifecycleAlertsSet);
     }
 
@@ -185,7 +190,10 @@ class PodActivation {
     }
 
     if (from.isBefore(PodActivationStep.running)) {
-      final status = await _commands.awaitDeliveryIdle(facts.uniqueId, 'cannula insertion');
+      final status = await _commands.awaitDeliveryIdle(
+        facts.uniqueId,
+        'cannula insertion',
+      );
       if (!status.lifecycle.isRunning) {
         throw PodActivationException(
           'Pod finished activation in state ${status.lifecycle.name}',
@@ -258,24 +266,32 @@ class PodActivation {
       throw PodActivationException('Pod did not report its version: $response');
     }
     if (response.lifecycle == PodLifecycleStatus.alarm) {
-      throw PodActivationException('Pod is already in alarm and cannot be used');
+      throw PodActivationException(
+        'Pod is already in alarm and cannot be used',
+      );
     }
     await onStep(PodActivationStep.gotVersion);
     return response;
   }
 
-  Future<PodSetUniqueIdResponse> _setIdentity(PodVersionResponse version) async {
+  Future<PodSetUniqueIdResponse> _setIdentity(
+    PodVersionResponse version,
+  ) async {
     debugPrint('pod activation: -> setUniqueId $podUniqueId');
-    final response = await sendCommand(PodSetUniqueIdCommand(
-      uniqueId: podUniqueId,
-      sequenceNumber: _nextSequence,
-      lotNumber: version.lotNumber,
-      podSequenceNumber: version.podSequenceNumber,
-      activatedAt: now(),
-    ));
+    final response = await sendCommand(
+      PodSetUniqueIdCommand(
+        uniqueId: podUniqueId,
+        sequenceNumber: _nextSequence,
+        lotNumber: version.lotNumber,
+        podSequenceNumber: version.podSequenceNumber,
+        activatedAt: now(),
+      ),
+    );
     debugPrint('pod activation: <- $response');
     if (response is! PodSetUniqueIdResponse) {
-      throw PodActivationException('Pod did not accept its identity: $response');
+      throw PodActivationException(
+        'Pod did not accept its identity: $response',
+      );
     }
     if (response.primePulses <= 0 || response.cannulaInsertionPulses <= 0) {
       throw PodActivationException(

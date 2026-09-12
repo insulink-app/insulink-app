@@ -29,7 +29,9 @@ class PodBasalSegment {
     final end = (endHour * 2).round();
     final hundredths = (unitsPerHour * 100).round();
     if ((hundredths / 100 - unitsPerHour).abs() > 1e-9) {
-      throw PodBasalProgramException('Rate $unitsPerHour U/h is finer than 0.01 U/h');
+      throw PodBasalProgramException(
+        'Rate $unitsPerHour U/h is finer than 0.01 U/h',
+      );
     }
     return PodBasalSegment(
       startSlot: start,
@@ -111,7 +113,9 @@ class PodBasalProgram {
   }
 
   double get totalDailyUnits => segments.fold<double>(
-      0, (sum, segment) => sum + segment.unitsPerHour * segment.slotCount / 2);
+    0,
+    (sum, segment) => sum + segment.unitsPerHour * segment.slotCount / 2,
+  );
 
   /// Whole pulses per slot, alternating the odd pulse within each segment.
   List<int> get pulsesPerSlot {

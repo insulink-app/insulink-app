@@ -31,8 +31,9 @@ class _InventoryCalendarPageState extends State<InventoryCalendarPage> {
   Widget build(BuildContext context) {
     final items = context.watch<InventoryState>().items;
     final events = InventoryEvent.upcoming(items, DateTime.now());
-    final dayEvents =
-        events.where((event) => sameDay(event.date, _selectedDay)).toList();
+    final dayEvents = events
+        .where((event) => sameDay(event.date, _selectedDay))
+        .toList();
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
@@ -54,10 +55,9 @@ class _InventoryCalendarPageState extends State<InventoryCalendarPage> {
               child: LocaleText(
                 'inventory.no_events',
                 style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ),
@@ -90,8 +90,13 @@ class _EventRow extends StatelessWidget {
         isDelivery ? 'inventory.event_delivery' : 'inventory.event_run_out',
       ),
       trailing: isDelivery
-          ? Text(Locales.string(context, 'inventory.units',
-              params: ['${event.quantity}']))
+          ? Text(
+              Locales.string(
+                context,
+                'inventory.units',
+                params: ['${event.quantity}'],
+              ),
+            )
           : null,
     );
   }

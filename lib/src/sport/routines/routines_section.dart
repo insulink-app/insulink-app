@@ -50,7 +50,9 @@ class RoutinesSection extends StatelessWidget {
                   icon: const Icon(PhosphorIconsBold.barbell, size: 20),
                   tooltip: Locales.string(context, 'sport.exercises'),
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const ExercisesPage()),
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ExercisesPage(),
+                    ),
                   ),
                 ),
               ],

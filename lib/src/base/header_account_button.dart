@@ -41,10 +41,7 @@ class _HeaderAccountButtonState extends State<HeaderAccountButton> {
           radius: 20,
           backgroundColor: theme.colorScheme.primary,
           child: initial.isEmpty
-              ? Icon(
-                  PhosphorIconsBold.user,
-                  color: theme.colorScheme.onPrimary,
-                )
+              ? Icon(PhosphorIconsBold.user, color: theme.colorScheme.onPrimary)
               : Text(
                   initial[0].toUpperCase(),
                   style: TextStyle(

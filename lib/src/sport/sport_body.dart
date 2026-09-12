@@ -107,17 +107,22 @@ class _SportBodyContentState extends State<SportBodyContent> {
     // sync that brings nothing new causes no rebuild — the hitch this used to be.
     // A pending training the detection service wrote IS a storage change, so it
     // still reaches reloadPending here.
-    await const SyncReload().ifChanged(SportStore.syncedKeys, () => SportSync().pull(context), (changed) async {
-      if (!mounted) {
-        return;
-      }
-      await Future.wait([
-        if (SportStore.weightSyncedKeys.any(changed.contains)) sport.reload(),
-        if (SportStore.librarySyncedKeys.any(changed.contains)) training.reload(),
-        if (SportStore.cardioSyncedKeys.any(changed.contains))
-          cardio.reloadPending(),
-      ]);
-    });
+    await const SyncReload().ifChanged(
+      SportStore.syncedKeys,
+      () => SportSync().pull(context),
+      (changed) async {
+        if (!mounted) {
+          return;
+        }
+        await Future.wait([
+          if (SportStore.weightSyncedKeys.any(changed.contains)) sport.reload(),
+          if (SportStore.librarySyncedKeys.any(changed.contains))
+            training.reload(),
+          if (SportStore.cardioSyncedKeys.any(changed.contains))
+            cardio.reloadPending(),
+        ]);
+      },
+    );
   }
 
   /// Refreshes the Google Health metrics, then — while connected — imports

@@ -9,6 +9,7 @@ import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/training/km_splits.dart';
+import 'package:insulink/src/sport/training/pending_training_actions.dart';
 import 'package:insulink/src/sport/training/track_interpolation.dart';
 import 'package:insulink/src/sport/training/training_metrics_chart.dart';
 import 'package:insulink/src/sport/training/training_splits_panel.dart';
@@ -120,6 +121,7 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
           ),
         ],
       ),
+      bottomNavigationBar: _pendingBar(state, training),
       body: CustomScrollView(
         controller: _scroll,
         slivers: [
@@ -136,6 +138,27 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Confirm / Reject, but only while this training is still an unconfirmed
+  /// detection. It is what makes a tap on the detection notification a complete
+  /// flow: look at what was detected, then decide on it, without going back to
+  /// the Sport tab to find the prompt card again. Deciding leaves the page —
+  /// a rejected training no longer exists, and a confirmed one is no longer
+  /// this screen's subject.
+  Widget? _pendingBar(CardioTrainingState state, CardioTraining training) {
+    if (!state.isPending(training.id)) {
+      return null;
+    }
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: PendingTrainingActions(
+          training.id,
+          onDecided: () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }

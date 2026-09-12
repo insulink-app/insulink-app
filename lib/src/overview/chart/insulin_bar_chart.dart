@@ -138,8 +138,9 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
                     bolus: colors.bolus,
                     labelColor: theme.colorScheme.onSurfaceVariant,
                     mealColor: theme.colorScheme.onSurfaceVariant,
-                    scrubColor:
-                        theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                    scrubColor: theme.colorScheme.onSurface.withValues(
+                      alpha: 0.35,
+                    ),
                     leftInset: InsulinBarChart.axisInset,
                     bolusWidth: InsulinBarChart.bolusWidth,
                     ticks: widget.sync.ticks,
@@ -202,8 +203,9 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
               Text(
                 _describe(context, touched),
                 style: TextStyle(
-                  color: theme.colorScheme.onInverseSurface
-                      .withValues(alpha: 0.7),
+                  color: theme.colorScheme.onInverseSurface.withValues(
+                    alpha: 0.7,
+                  ),
                   fontSize: 11,
                 ),
               ),
@@ -224,9 +226,7 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
         ? 'overview.chart.insulin.at_moment'
         : 'overview.chart.insulin.over_hour';
     final line = Locales.string(context, key).replaceFirst('#', _clock(bar.at));
-    return bar.isBolus
-        ? line
-        : line.replaceFirst('#', _clock(bar.coversUntil));
+    return bar.isBolus ? line : line.replaceFirst('#', _clock(bar.coversUntil));
   }
 
   String _clock(DateTime at) => '${_two(at.hour)}:${_two(at.minute)}';
@@ -269,11 +269,19 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
     return Row(
       children: [
         SizedBox(width: InsulinBarChart.axisInset),
-        _key(context, colors.basal, 'overview.chart.insulin.basal',
-            widget.series.basalUnits),
+        _key(
+          context,
+          colors.basal,
+          'overview.chart.insulin.basal',
+          widget.series.basalUnits,
+        ),
         const SizedBox(width: 14),
-        _key(context, colors.bolus, 'overview.chart.insulin.bolus',
-            widget.series.bolusUnits),
+        _key(
+          context,
+          colors.bolus,
+          'overview.chart.insulin.bolus',
+          widget.series.bolusUnits,
+        ),
       ],
     );
   }
@@ -294,8 +302,10 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
         ),
         const SizedBox(width: 5),
         Text(
-          Locales.string(context, labelKey)
-              .replaceFirst('#', units.toStringAsFixed(1)),
+          Locales.string(
+            context,
+            labelKey,
+          ).replaceFirst('#', units.toStringAsFixed(1)),
           style: TextStyle(
             fontSize: 12,
             color: Theme.of(context).colorScheme.onSurfaceVariant,

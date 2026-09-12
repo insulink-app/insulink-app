@@ -10,6 +10,7 @@ import '../../pump/pod_controller.dart';
 import '../../pump/pod_store.dart';
 import '../../pump/service/pod_monitor.dart';
 import 'advisory_action.dart';
+import 'advisory_delivery.dart';
 import 'alarms.dart';
 
 /// Carries out the countermeasures the user accepted from a pre-warning
@@ -27,13 +28,25 @@ class AdvisoryActionRunner {
 
   /// Apply everything buffered since the last tick. Cheap (one existence check)
   /// when nothing was tapped.
-  Future<void> run() async {
+  ///
+  /// A lapsed offer ([AdvisoryRequest.isStale]) is refused and SAID so. The
+  /// user pressed a button on a locked phone and will see nothing else, so a
+  /// tap that produced no insulin must never look like one that did — the same
+  /// rule the failure paths below follow.
+  /// Returns whether anything was applied, so the caller can tell the UI to
+  /// re-read — a delivery the app knows nothing about is one the user would
+  /// only learn of from a notification they may never see.
+  Future<bool> run() async {
+    var applied = false;
     for (final request in await const AdvisoryActionStore().drain()) {
+      applied = true;
       if (request.isStale) {
+        await _alarms.notifyAdvisoryOutcome('alarm.advisory.expired', const []);
         continue;
       }
       await _apply(request);
     }
+    return applied;
   }
 
   /// One request, with anything it throws turned into a message rather than an
@@ -70,7 +83,10 @@ class AdvisoryActionRunner {
   Future<void> _deliverBolus(AdvisoryRequest request) async {
     final store = await PodStore.open();
     if (!store.hasPod) {
-      await _alarms.notifyAdvisoryOutcome('alarm.advisory.bolus_failed', const []);
+      await _alarms.notifyAdvisoryOutcome(
+        'alarm.advisory.bolus_failed',
+        const [],
+      );
       return;
     }
     final delivery = await _deliveryFor(store);
@@ -79,7 +95,10 @@ class AdvisoryActionRunner {
       deliveredLastHour: store.bolusUnitsWithin(const Duration(hours: 1)),
     );
     if (outcome.recordedUnits <= 0) {
-      await _alarms.notifyAdvisoryOutcome('alarm.advisory.bolus_failed', const []);
+      await _alarms.notifyAdvisoryOutcome(
+        'alarm.advisory.bolus_failed',
+        const [],
+      );
       return;
     }
     await _logMeal(
@@ -88,6 +107,7 @@ class AdvisoryActionRunner {
       bolus: outcome.recordedUnits,
       byPump: true,
     );
+    await const AdvisoryDeliveryStore().record(outcome.recordedUnits);
     await _alarms.notifyAdvisoryOutcome('alarm.advisory.bolus_done', [
       outcome.recordedUnits.toStringAsFixed(2),
     ]);
@@ -120,14 +140,16 @@ class AdvisoryActionRunner {
   }) async {
     const store = MealStore();
     final meals = await store.loadMeals();
-    meals.add(Meal(
-      time: DateTime.now(),
-      carbs: carbs,
-      glucoseMgdl: request.glucoseMgdl,
-      bolus: bolus,
-      entries: const [],
-      deliveredByPump: byPump,
-    ));
+    meals.add(
+      Meal(
+        time: DateTime.now(),
+        carbs: carbs,
+        glucoseMgdl: request.glucoseMgdl,
+        bolus: bolus,
+        entries: const [],
+        deliveredByPump: byPump,
+      ),
+    );
     await store.saveMeals(meals);
     NutritionSync().pushMeals();
   }

@@ -31,27 +31,31 @@ class PodGetStatusCommand extends PodCommand {
   PodCommandType get type => PodCommandType.getStatus;
 
   @override
-  Uint8List get encoded => appendCrc(joinParts([
-        buildHeader(3),
-        [type.value, 0x01, page.value],
-      ]));
+  Uint8List get encoded => appendCrc(
+    joinParts([
+      buildHeader(3),
+      [type.value, 0x01, page.value],
+    ]),
+  );
 }
 
 /// Reads firmware, lot and sequence number from a pod that has not been
 /// assigned an id yet — the first command of an activation.
 class PodGetVersionCommand extends PodCommand {
   PodGetVersionCommand({required super.sequenceNumber, super.multiCommand})
-      : super(uniqueId: podUnassignedUniqueId);
+    : super(uniqueId: podUnassignedUniqueId);
 
   @override
   PodCommandType get type => PodCommandType.getVersion;
 
   @override
-  Uint8List get encoded => appendCrc(joinParts([
-        buildHeader(6),
-        [type.value, 0x04],
-        bigEndian32(uniqueId),
-      ]));
+  Uint8List get encoded => appendCrc(
+    joinParts([
+      buildHeader(6),
+      [type.value, 0x04],
+      bigEndian32(uniqueId),
+    ]),
+  );
 }
 
 /// Binds a pod to this controller.
@@ -78,23 +82,25 @@ class PodSetUniqueIdCommand extends PodCommand {
   PodCommandType get type => PodCommandType.setUniqueId;
 
   @override
-  Uint8List get encoded => appendCrc(joinParts([
-        buildHeader(21, addressedTo: podUnassignedUniqueId),
-        [type.value, 0x13],
-        bigEndian32(uniqueId),
-        [0x14, 0x04],
-        _encodedActivationTime,
-        bigEndian32(lotNumber),
-        bigEndian32(podSequenceNumber),
-      ]));
+  Uint8List get encoded => appendCrc(
+    joinParts([
+      buildHeader(21, addressedTo: podUnassignedUniqueId),
+      [type.value, 0x13],
+      bigEndian32(uniqueId),
+      [0x14, 0x04],
+      _encodedActivationTime,
+      bigEndian32(lotNumber),
+      bigEndian32(podSequenceNumber),
+    ]),
+  );
 
   Uint8List get _encodedActivationTime => Uint8List.fromList([
-        activatedAt.month,
-        activatedAt.day,
-        activatedAt.year % 100,
-        activatedAt.hour,
-        activatedAt.minute,
-      ]);
+    activatedAt.month,
+    activatedAt.day,
+    activatedAt.year % 100,
+    activatedAt.hour,
+    activatedAt.minute,
+  ]);
 }
 
 /// Ends the pod's life: stops delivery and puts it into deactivated state so it
@@ -113,11 +119,13 @@ class PodDeactivateCommand extends PodCommand {
   PodCommandType get type => PodCommandType.deactivate;
 
   @override
-  Uint8List get encoded => appendCrc(joinParts([
-        buildHeader(6),
-        [type.value, 0x04],
-        bigEndian32(nonce),
-      ]));
+  Uint8List get encoded => appendCrc(
+    joinParts([
+      buildHeader(6),
+      [type.value, 0x04],
+      bigEndian32(nonce),
+    ]),
+  );
 }
 
 /// Acknowledges pod alerts so it stops beeping. Does not change delivery.
@@ -137,12 +145,14 @@ class PodSilenceAlertsCommand extends PodCommand {
   PodCommandType get type => PodCommandType.silenceAlerts;
 
   @override
-  Uint8List get encoded => appendCrc(joinParts([
-        buildHeader(7),
-        [type.value, 0x05],
-        bigEndian32(nonce),
-        [PodAlert.encode(alerts)],
-      ]));
+  Uint8List get encoded => appendCrc(
+    joinParts([
+      buildHeader(7),
+      [type.value, 0x05],
+      bigEndian32(nonce),
+      [PodAlert.encode(alerts)],
+    ]),
+  );
 }
 
 /// Sets the pod's reminder beeps, and optionally makes it beep right now.
@@ -176,11 +186,13 @@ class PodProgramBeepsCommand extends PodCommand {
   PodCommandType get type => PodCommandType.programBeeps;
 
   @override
-  Uint8List get encoded => appendCrc(joinParts([
-        buildHeader(6),
-        [type.value, 0x04, immediateBeep.value],
-        basalReminder.encoded,
-        tempBasalReminder.encoded,
-        bolusReminder.encoded,
-      ]));
+  Uint8List get encoded => appendCrc(
+    joinParts([
+      buildHeader(6),
+      [type.value, 0x04, immediateBeep.value],
+      basalReminder.encoded,
+      tempBasalReminder.encoded,
+      bolusReminder.encoded,
+    ]),
+  );
 }

@@ -51,7 +51,11 @@ class SportStore {
   /// would force needless rebuilds) and `active_workout`/`activity_archive`,
   /// which have their own owners and are not reloaded by the tab's sync.
   static const weightSyncedKeys = <String>[_kWeight];
-  static const librarySyncedKeys = <String>[_kExercises, _kRoutines, _kSessions];
+  static const librarySyncedKeys = <String>[
+    _kExercises,
+    _kRoutines,
+    _kSessions,
+  ];
   static const cardioSyncedKeys = <String>[_kTrainings, _kPendingTrainings];
 
   /// The union — what [SyncReload] watches to decide whether the pull changed

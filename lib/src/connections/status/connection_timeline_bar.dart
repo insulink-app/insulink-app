@@ -103,10 +103,7 @@ class _ConnectionTimelineBarState extends State<ConnectionTimelineBar> {
         const Spacer(),
         Text(
           _contactText(context),
-          style: TextStyle(
-            fontSize: 12,
-            color: _contactColor(context, scheme),
-          ),
+          style: TextStyle(fontSize: 12, color: _contactColor(context, scheme)),
         ),
       ],
     );

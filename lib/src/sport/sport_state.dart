@@ -114,10 +114,7 @@ class SportState extends ChangeNotifier {
     required DateTime at,
   }) async {
     _weights.remove(original);
-    final updated = WeightEntry(
-      atEpochMs: at.millisecondsSinceEpoch,
-      kg: kg,
-    );
+    final updated = WeightEntry(atEpochMs: at.millisecondsSinceEpoch, kg: kg);
     _weights
       ..add(updated)
       ..sort((first, second) => first.atEpochMs.compareTo(second.atEpochMs));

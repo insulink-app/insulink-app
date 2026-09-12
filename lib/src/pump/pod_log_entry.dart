@@ -18,20 +18,20 @@ class PodLogEntry {
 
   /// A discrete delivery: the bolus, or one of the two activation volumes.
   factory PodLogEntry.fromDelivery(PodDelivery delivery) => PodLogEntry._(
-        at: delivery.at,
-        units: delivery.units,
-        labelKey: 'pump.log.kind.${delivery.kind.name}',
-        isDose: delivery.kind == PodDeliveryKind.bolus,
-      );
+    at: delivery.at,
+    units: delivery.units,
+    labelKey: 'pump.log.kind.${delivery.kind.name}',
+    isDose: delivery.kind == PodDeliveryKind.bolus,
+  );
 
   /// One wall-clock hour of basal.
   factory PodLogEntry.fromBasalHour(PodBasalHour hour) => PodLogEntry._(
-        at: hour.hour,
-        units: hour.units,
-        labelKey: 'pump.log.kind.basal',
-        isDose: false,
-        spansAnHour: true,
-      );
+    at: hour.hour,
+    units: hour.units,
+    labelKey: 'pump.log.kind.basal',
+    isDose: false,
+    spansAnHour: true,
+  );
 
   final DateTime at;
   final double units;
@@ -50,7 +50,8 @@ class PodLogEntry {
   /// given during it rather than at the end of the list.
   static List<PodLogEntry> timeline(PodStore store) {
     final entries = <PodLogEntry>[
-      for (final delivery in store.deliveryLog) PodLogEntry.fromDelivery(delivery),
+      for (final delivery in store.deliveryLog)
+        PodLogEntry.fromDelivery(delivery),
       for (final hour in store.basalHours) PodLogEntry.fromBasalHour(hour),
     ]..sort((left, right) => right.at.compareTo(left.at));
     return entries;

@@ -43,6 +43,20 @@ class CardioTrainingState extends ChangeNotifier {
   List<CardioTraining> get pendingTrainings =>
       List.unmodifiable(_pending.reversed);
 
+  /// The training with [id], confirmed or still pending, or null when neither
+  /// list holds it any more (rejected, or deleted on another device).
+  CardioTraining? trainingById(String id) {
+    for (final training in [..._trainings, ..._pending]) {
+      if (training.id == id) {
+        return training;
+      }
+    }
+    return null;
+  }
+
+  /// Whether [id] is a detection still awaiting the user's decision.
+  bool isPending(String id) => _pending.any((training) => training.id == id);
+
   /// Confirm a pending detection → it becomes a normal training (and syncs).
   Future<void> confirmDetected(String id) async {
     final index = _pending.indexWhere((training) => training.id == id);

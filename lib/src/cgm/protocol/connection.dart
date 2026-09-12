@@ -441,7 +441,8 @@ class G7Connection implements CgmConnection {
         _log('connect abandoned mid-handshake');
         return;
       }
-      transport = null; // adopted as _transport above — the finally must not close it
+      transport =
+          null; // adopted as _transport above — the finally must not close it
       _autoConnectFailures = 0; // this cycle reached streaming — clear fallback
       onConnectionState?.call(true);
       _log('connected — streaming');

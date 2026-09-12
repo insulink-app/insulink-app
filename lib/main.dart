@@ -37,7 +37,9 @@ import 'package:insulink/src/sport/activity/health_importer.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_state.dart';
+import 'package:insulink/src/sport/training/cardio_detail_page.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
+import 'package:insulink/src/sport/training/detected_training_tap.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/theme/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -114,6 +116,11 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   /// being recreated per generation.
   ProfileThemeState? _themeState;
 
+  /// Reaches the app's [Navigator] from OUTSIDE it: [_AppLifecycle] sits above
+  /// the Navigator (it wraps the [MaterialApp]'s child), so it cannot look one
+  /// up, and a notification tap has to be able to push a page.
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
@@ -177,9 +184,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         // and sensor pages.
         ChangeNotifierProvider(create: (_) => CgmController()..init()),
       ],
-      child: preferences == null
-          ? const _SplashHold()
-          : _rootApp(preferences),
+      child: preferences == null ? const _SplashHold() : _rootApp(preferences),
     );
   }
 
@@ -205,6 +210,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   ) {
     return MaterialApp(
       title: 'Insulink',
+      navigatorKey: _navigatorKey,
       scrollBehavior: const BouncyScrollBehavior(),
       themeMode: themeState.themeMode,
       theme: AppTheme.light,
@@ -264,10 +270,11 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
             meals: prefs.meals,
           ),
           update: (_, controller, previous) =>
-              previous ?? BolusDispatcher(controller: controller, meals: prefs.meals),
+              previous ??
+              BolusDispatcher(controller: controller, meals: prefs.meals),
         ),
       ],
-      child: _AppLifecycle(child: child),
+      child: _AppLifecycle(navigatorKey: _navigatorKey, child: child),
     );
   }
 
@@ -296,7 +303,10 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
     }
     try {
       final before = _preferenceKeys(await storage.readAll());
-      await AccountSync().pullAll(null, withHistory: await AccountSync.historyDue());
+      await AccountSync().pullAll(
+        null,
+        withHistory: await AccountSync.historyDue(),
+      );
       if (!mapEquals(before, _preferenceKeys(await storage.readAll()))) {
         await _reload();
       }
@@ -394,8 +404,9 @@ class _SplashHold extends StatelessWidget {
 /// re-read the pending auto-detected trainings the background service may have
 /// written while we were away.
 class _AppLifecycle extends StatefulWidget {
-  const _AppLifecycle({required this.child});
+  const _AppLifecycle({required this.navigatorKey, required this.child});
 
+  final GlobalKey<NavigatorState> navigatorKey;
   final Widget child;
 
   @override
@@ -408,11 +419,14 @@ class _AppLifecycleState extends State<_AppLifecycle>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    DetectedTrainingTap.requested.addListener(_openDetectedTraining);
+    unawaited(DetectedTrainingTap.start());
     WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
   }
 
   @override
   void dispose() {
+    DetectedTrainingTap.requested.removeListener(_openDetectedTraining);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -435,7 +449,7 @@ class _AppLifecycleState extends State<_AppLifecycle>
       return;
     }
     context.read<SportActivityState>().startIfPermitted();
-    context.read<CardioTrainingState>().reloadPending();
+    unawaited(_reloadCardio());
     // Re-read the meal log: the background service writes to it when the user
     // accepts a countermeasure from a pre-warning notification, and this state
     // holds the log in memory. Without this the new meal is invisible AND the
@@ -448,10 +462,38 @@ class _AppLifecycleState extends State<_AppLifecycle>
     // Catches up the account copy of a pod's key when it never landed: the
     // ordinary mirror only runs off a successful pod operation, and a pod that
     // is paired but not yet activated never produces one.
-    unawaited(
-      PumpSync().ensureMirrored(context.read<PodController>().store),
-    );
+    unawaited(PumpSync().ensureMirrored(context.read<PodController>().store));
     unawaited(_refreshHealth());
+  }
+
+  /// Re-read what the detection service wrote, THEN show a training the user
+  /// tapped its notification for. In that order: a tap that launched the app
+  /// names a detection this state has not read yet.
+  Future<void> _reloadCardio() async {
+    await context.read<CardioTrainingState>().reloadPending();
+    if (mounted) {
+      _openDetectedTraining();
+    }
+  }
+
+  /// Open the detected training a notification tap asked for, as if it had been
+  /// opened from the Sport tab. Silently drops a training that is gone by now
+  /// (rejected from the notification's own button, deleted elsewhere).
+  void _openDetectedTraining() {
+    final id = DetectedTrainingTap.requested.value;
+    if (id == null || !mounted) {
+      return;
+    }
+    final training = context.read<CardioTrainingState>().trainingById(id);
+    if (training == null) {
+      return;
+    }
+    DetectedTrainingTap.requested.value = null;
+    widget.navigatorKey.currentState?.push(
+      MaterialPageRoute<void>(
+        builder: (_) => CardioDetailPage(training: training),
+      ),
+    );
   }
 
   /// Refreshes the Google Health metrics and, while connected, imports today's

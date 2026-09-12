@@ -155,8 +155,7 @@ class BasalSuggestion {
     final room = current * maxChangeFraction;
     final allowed = room > minChangeRoom ? room : minChangeRoom;
     final capped = wanted.clamp(current - allowed, current + allowed);
-    final snapped =
-        (capped / BasalProfile.step).round() * BasalProfile.step;
+    final snapped = (capped / BasalProfile.step).round() * BasalProfile.step;
     return snapped > 0 ? snapped : 0;
   }
 

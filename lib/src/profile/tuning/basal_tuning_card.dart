@@ -33,7 +33,6 @@ class BasalTuningCard extends StatefulWidget {
 }
 
 class _BasalTuningCardState extends State<BasalTuningCard> {
-
   /// What to say when the button produced no profile. Null while it did, because
   /// then the new profile appearing in the list above IS the answer.
   String? _nothingKey;
@@ -78,9 +77,11 @@ class _BasalTuningCardState extends State<BasalTuningCard> {
     final changes = suggestions.where((hour) => hour.isChange).toList();
     // Says which stage came up empty, because "not enough data" on its own
     // cannot tell a missing archive from an hour nobody has three days of.
-    debugPrint('basal tuning: ${TuningControls.windowDays}d -> ${suggestions.length} hours of day, '
-        '${changes.length} changed, schedule running since '
-        '${context.read<ProfileBasalState>().runningSince}');
+    debugPrint(
+      'basal tuning: ${TuningControls.windowDays}d -> ${suggestions.length} hours of day, '
+      '${changes.length} changed, schedule running since '
+      '${context.read<ProfileBasalState>().runningSince}',
+    );
     if (changes.isNotEmpty) {
       _save(basal, changes);
     }
@@ -88,10 +89,10 @@ class _BasalTuningCardState extends State<BasalTuningCard> {
       _nothingKey = changes.isNotEmpty
           ? null
           : suggestions.isNotEmpty
-              ? 'profile.tuning.no_change'
-              : _changedRecently()
-                  ? 'profile.tuning.since_change'
-                  : 'profile.tuning.not_enough';
+          ? 'profile.tuning.no_change'
+          : _changedRecently()
+          ? 'profile.tuning.since_change'
+          : 'profile.tuning.not_enough';
     });
   }
 
@@ -100,8 +101,11 @@ class _BasalTuningCardState extends State<BasalTuningCard> {
   bool _changedRecently() {
     final since = context.read<ProfileBasalState>().runningSince;
     return since != null &&
-        since.isAfter(DateTime.now()
-            .subtract(const Duration(days: TuningControls.windowDays)));
+        since.isAfter(
+          DateTime.now().subtract(
+            const Duration(days: TuningControls.windowDays),
+          ),
+        );
   }
 
   /// The later of the two, and the window start when the schedule changed inside
@@ -122,22 +126,24 @@ class _BasalTuningCardState extends State<BasalTuningCard> {
     final name = Locales.string(context, 'profile.tuning.profile_name')
         .replaceFirst('#', '${TuningControls.windowDays}')
         .replaceFirst('#', '${now.day}.${now.month}.');
-    basal.addInactiveProfile(BasalProfile(
-      name: name,
-      rates: rates,
-      // No peaks. They are an input to the editor's curve GENERATOR, not a
-      // description of these rates, and the ones on the profile this was
-      // measured against describe a different day. Carrying them over would
-      // attach a shape to hours that came from measurement. The editor does not
-      // regenerate on open, so the measured rates stand; asking it to generate
-      // there is asking for a curve INSTEAD of the measurement, and gets an
-      // obviously flat one rather than a plausible-looking wrong one.
-      peaks: const [],
-      // The daily amount follows the hours rather than being held constant: a
-      // profile that gave too little overnight needs more insulin, not the same
-      // amount shuffled around the clock.
-      dailyTotal: rates.fold<double>(0, (sum, rate) => sum + rate),
-    ));
+    basal.addInactiveProfile(
+      BasalProfile(
+        name: name,
+        rates: rates,
+        // No peaks. They are an input to the editor's curve GENERATOR, not a
+        // description of these rates, and the ones on the profile this was
+        // measured against describe a different day. Carrying them over would
+        // attach a shape to hours that came from measurement. The editor does not
+        // regenerate on open, so the measured rates stand; asking it to generate
+        // there is asking for a curve INSTEAD of the measurement, and gets an
+        // obviously flat one rather than a plausible-looking wrong one.
+        peaks: const [],
+        // The daily amount follows the hours rather than being held constant: a
+        // profile that gave too little overnight needs more insulin, not the same
+        // amount shuffled around the clock.
+        dailyTotal: rates.fold<double>(0, (sum, rate) => sum + rate),
+      ),
+    );
   }
 
   /// The analysis itself, over the last [TuningControls.windowDays] of stored
@@ -158,24 +164,27 @@ class _BasalTuningCardState extends State<BasalTuningCard> {
     // basal away from them.
     final from = _later(now.subtract(window), basal.runningSince);
     final archive = context.read<CgmController>().archiveSince(window);
-    debugPrint('basal tuning: ${archive.length} archived readings, '
-        '${context.read<MealState>().meals.length} meals');
-    final hours = TuningHourFinder(
-      model: TuningModel(insulinDuration: bolus.insulinDuration),
-    ).find(
-      from: from,
-      to: now,
-      meals: context.read<MealState>().meals,
-      // Through [TuningGlucose], NOT a direct lookup: the archive is keyed by
-      // the minute a reading happened, and asking for an exact hour boundary or
-      // dose time misses four times out of five.
-      glucoseAt: TuningGlucose(archive).at,
-      // From the durable record, not the loop journal and not the pod's own
-      // ledger. The journal keeps one day; the ledger dies with the pod, and a
-      // pod lives eighty hours, so anything resting on it was empty the morning
-      // after a pod change.
-      automationExcessAt: pod.automationExcessInHour,
+    debugPrint(
+      'basal tuning: ${archive.length} archived readings, '
+      '${context.read<MealState>().meals.length} meals',
     );
+    final hours =
+        TuningHourFinder(
+          model: TuningModel(insulinDuration: bolus.insulinDuration),
+        ).find(
+          from: from,
+          to: now,
+          meals: context.read<MealState>().meals,
+          // Through [TuningGlucose], NOT a direct lookup: the archive is keyed by
+          // the minute a reading happened, and asking for an exact hour boundary or
+          // dose time misses four times out of five.
+          glucoseAt: TuningGlucose(archive).at,
+          // From the durable record, not the loop journal and not the pod's own
+          // ledger. The journal keeps one day; the ledger dies with the pod, and a
+          // pod lives eighty hours, so anything resting on it was empty the morning
+          // after a pod change.
+          automationExcessAt: pod.automationExcessInHour,
+        );
     return BasalSuggestion(
       correctionFactor: bolus.correctionFactor,
       carbFactor: bolus.carbFactor,

@@ -112,11 +112,11 @@ class LoopGlucose {
   double projected(int minutes) => mgdl + trendPerMinute * minutes;
 
   static LoopGlucose _unusable(LoopGlucoseProblem problem) => LoopGlucose._(
-        mgdl: 0,
-        at: DateTime.fromMillisecondsSinceEpoch(0),
-        trendPerMinute: 0,
-        problem: problem,
-      );
+    mgdl: 0,
+    at: DateTime.fromMillisecondsSinceEpoch(0),
+    trendPerMinute: 0,
+    problem: problem,
+  );
 
   /// The readings inside [trendWindow] of the newest one, as (minute, mg/dL).
   ///

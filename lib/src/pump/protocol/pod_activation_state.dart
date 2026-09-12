@@ -60,14 +60,14 @@ class PodActivationFacts {
   }
 
   Map<String, dynamic> toJson() => {
-        'unique_id': uniqueId,
-        'lot_number': lotNumber,
-        'pod_sequence_number': podSequenceNumber,
-        'prime_pulses': primePulses,
-        'cannula_insertion_pulses': cannulaInsertionPulses,
-        'prime_pump_rate_eighth_seconds': primePumpRateEighthSeconds,
-        'expiration_hours': expirationHours,
-      };
+    'unique_id': uniqueId,
+    'lot_number': lotNumber,
+    'pod_sequence_number': podSequenceNumber,
+    'prime_pulses': primePulses,
+    'cannula_insertion_pulses': cannulaInsertionPulses,
+    'prime_pump_rate_eighth_seconds': primePumpRateEighthSeconds,
+    'expiration_hours': expirationHours,
+  };
 
   /// How long a pulse train of [pulses] takes at the pod's prime rate.
   Duration deliveryTimeFor(int pulses) {

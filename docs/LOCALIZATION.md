@@ -3,6 +3,21 @@
 User-facing strings live in `assets/locales/{de,en}.json`. German is the base
 locale; English is the fallback shape. No hard-coded display strings in code.
 
+## Never load a locale file with `rootBundle.loadString`
+
+`AssetBundle.loadString` hands anything from **50 KiB up** to `compute`, i.e. a
+real isolate. Under `testWidgets`' fake clock that isolate never completes, so
+the `Locales` delegate's future stays pending and **every widget test renders a
+blank screen** — `find.text(...)` simply finds nothing, with no error pointing
+at localization. The day `en.json` crossed 50 KiB, one unrelated sport test
+started failing; `de.json` had been over the line for a while without symptoms
+only because those tests resolve to `en`.
+
+So both loaders (`Locales.load`, `ServiceStrings.get`) call `rootBundle.load`
+and `utf8.decode` the bytes themselves. Keep it that way, and don't reach for
+`loadString` in a new one. The decode costs microseconds; the isolate cost was
+also real in the service isolate, which resolved strings per notification.
+
 ## House style for the strings themselves
 
 **No dash as punctuation.** Not an em dash, not an en dash, not a spaced hyphen.

@@ -63,7 +63,10 @@ class PodMessageIo {
     await _clearStaleControl();
     link.flush(PodCharacteristic.data);
 
-    await link.write(PodCharacteristic.command, PodControlWord.requestToSend.frame);
+    await link.write(
+      PodCharacteristic.command,
+      PodControlWord.requestToSend.frame,
+    );
     _log('waiting for clearToSend');
     await _expectControl(PodControlWord.clearToSend);
 
@@ -110,13 +113,18 @@ class PodMessageIo {
         return null;
       }
     }
-    await link.write(PodCharacteristic.command, PodControlWord.clearToSend.frame);
+    await link.write(
+      PodCharacteristic.command,
+      PodControlWord.clearToSend.frame,
+    );
 
     try {
       final payload = await _readFragments();
       await link.write(PodCharacteristic.command, PodControlWord.success.frame);
-      _log('received ${payload.length} bytes: '
-          '${payload.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}');
+      _log(
+        'received ${payload.length} bytes: '
+        '${payload.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}',
+      );
       return MessagePacket.parse(payload);
     } on PodFragmentException catch (error) {
       final word = error.message.contains('CRC')
@@ -165,7 +173,10 @@ class PodMessageIo {
           earlyArrivals[frame[0]] = frame;
         }
       }
-      await link.write(PodCharacteristic.command, PodControlWord.nackFor(index));
+      await link.write(
+        PodCharacteristic.command,
+        PodControlWord.nackFor(index),
+      );
     }
     throw PodFragmentException('Pod never sent fragment $index');
   }
@@ -181,7 +192,9 @@ class PodMessageIo {
       await link.read(PodCharacteristic.command, _controlTimeout);
       final missing = pending.length > 1 ? pending[1] : 0;
       if (missing >= fragments.length) {
-        throw PodLinkException('Pod asked to resend fragment $missing, which does not exist');
+        throw PodLinkException(
+          'Pod asked to resend fragment $missing, which does not exist',
+        );
       }
       await link.write(PodCharacteristic.data, fragments[missing]);
       return;
@@ -200,7 +213,9 @@ class PodMessageIo {
     if (frame == null) {
       return 'empty';
     }
-    return frame.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ');
+    return frame
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join(' ');
   }
 
   Future<PodControlWord?> _readControl(Duration timeout) async {
@@ -216,12 +231,16 @@ class PodMessageIo {
     if (word == expected) {
       return;
     }
-    _log('expected ${expected.name}, got ${word?.name ?? 'nothing'}; '
-        'queued command=${_peekHex(PodCharacteristic.command)}, '
-        'data=${_peekHex(PodCharacteristic.data)}');
+    _log(
+      'expected ${expected.name}, got ${word?.name ?? 'nothing'}; '
+      'queued command=${_peekHex(PodCharacteristic.command)}, '
+      'data=${_peekHex(PodCharacteristic.data)}',
+    );
     if (word == PodControlWord.fail) {
       throw PodLinkException('Pod rejected the message (fail)');
     }
-    throw PodLinkException('Expected ${expected.name}, got ${word?.name ?? 'nothing'}');
+    throw PodLinkException(
+      'Expected ${expected.name}, got ${word?.name ?? 'nothing'}',
+    );
   }
 }

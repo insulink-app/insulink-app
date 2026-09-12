@@ -8,6 +8,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 // package's version.
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'
     hide NotificationVisibility;
+import 'package:insulink/src/cgm/service/advisory_delivery.dart';
 import 'package:insulink/src/cgm/service/alarms.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/cgm/service/cgm_service.dart';
@@ -534,6 +535,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     code.text = store.pairingCode ?? '';
     _restoreFromCache(store);
     _prediction = await _predictionCache.load();
+    _advisoryDelivery = await const AdvisoryDeliveryStore().load();
     notifyListeners();
     // Show the cached forecast immediately, then fetch a fresh one (kept on
     // failure) so a reload isn't blank until the next reading.
@@ -722,6 +724,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// Requires reloading the store's in-memory cache since the writes happened
   /// in the service isolate.
   Future<void> _reloadFromStore() async {
+    await _readAdvisoryDelivery();
     final store = _store;
     if (store == null) {
       return;
@@ -1197,6 +1200,30 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _onResumed();
     }
+  }
+
+  /// Insulin the service gave from a notification button while the app was not
+  /// involved, or null once the user has seen it. Mirrored here like everything
+  /// else the service isolate writes, and re-read on the same two triggers: a
+  /// resume, and the service's own "something changed" ping.
+  AdvisoryDelivery? get advisoryDelivery => _advisoryDelivery;
+  AdvisoryDelivery? _advisoryDelivery;
+
+  Future<void> _readAdvisoryDelivery() async {
+    _advisoryDelivery = await const AdvisoryDeliveryStore().load();
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
+  /// Take the delivery banner down. Cleared in storage too, so it does not come
+  /// back on the next reload.
+  Future<void> dismissAdvisoryDelivery() async {
+    _advisoryDelivery = null;
+    if (!_disposed) {
+      notifyListeners();
+    }
+    await const AdvisoryDeliveryStore().clear();
   }
 
   /// On resume: catch up on whatever the service persisted while we were away,

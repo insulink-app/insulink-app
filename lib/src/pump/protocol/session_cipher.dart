@@ -11,7 +11,7 @@ import 'package:pointycastle/export.dart';
 /// space — reuse would break the confidentiality of the whole session.
 class SessionNonce {
   SessionNonce({required this.prefix, required this.sequence})
-      : assert(prefix.length == 8);
+    : assert(prefix.length == 8);
 
   final Uint8List prefix;
   int sequence;
@@ -44,7 +44,7 @@ class PodDecryptException implements Exception {
 /// replayed or re-addressed packet does not verify.
 class SessionCipher {
   SessionCipher({required this.nonce, required this.confidentialityKey})
-      : assert(confidentialityKey.length == 16);
+    : assert(confidentialityKey.length == 16);
 
   static const int tagSize = 8;
 
@@ -52,7 +52,9 @@ class SessionCipher {
   final Uint8List confidentialityKey;
 
   MessagePacket encrypt(MessagePacket message) {
-    final header = message.toBytes(forEncryption: true).sublist(0, MessagePacket.headerSize);
+    final header = message
+        .toBytes(forEncryption: true)
+        .sublist(0, MessagePacket.headerSize);
     final sealed = _run(
       forEncryption: true,
       nonce: nonce.next(podIsReceiver: true),
@@ -76,12 +78,16 @@ class SessionCipher {
       );
       return message.withPayload(opened);
     } on InvalidCipherTextException catch (error) {
-      throw PodDecryptException('Authentication tag mismatch: ${error.message}');
+      throw PodDecryptException(
+        'Authentication tag mismatch: ${error.message}',
+      );
     } on StateError catch (error) {
       // PointyCastle reports a failed CCM tag as a StateError, not as an
       // InvalidCipherTextException. Both have to land on the same path: an
       // unauthenticated payload must never reach the response parser.
-      throw PodDecryptException('Authentication tag mismatch: ${error.message}');
+      throw PodDecryptException(
+        'Authentication tag mismatch: ${error.message}',
+      );
     }
   }
 
@@ -94,7 +100,12 @@ class SessionCipher {
     final cipher = CCMBlockCipher(AESEngine())
       ..init(
         forEncryption,
-        AEADParameters(KeyParameter(confidentialityKey), tagSize * 8, nonce, header),
+        AEADParameters(
+          KeyParameter(confidentialityKey),
+          tagSize * 8,
+          nonce,
+          header,
+        ),
       );
     final out = Uint8List(cipher.getOutputSize(input.length));
     final written = cipher.processBytes(input, 0, input.length, out, 0);

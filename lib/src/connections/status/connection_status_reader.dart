@@ -69,8 +69,7 @@ class ConnectionStatusReader {
       icon: PhosphorIconsBold.watch,
       lastContact: samples.isEmpty ? null : samples.last.at,
       covered: timeline.cover([
-        for (final sample in samples)
-          sample.at.millisecondsSinceEpoch ~/ 60000,
+        for (final sample in samples) sample.at.millisecondsSinceEpoch ~/ 60000,
       ]),
     );
   }

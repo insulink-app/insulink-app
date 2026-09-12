@@ -172,8 +172,10 @@ class PumpSync {
     }
     final onFile = await fetchCurrent(context);
     if (onFile != null && onFile.uniqueId == store.uniqueId) {
-      debugPrint('pump sync: account already holds this pod, adopting '
-          '${onFile.pumpId} instead of registering again');
+      debugPrint(
+        'pump sync: account already holds this pod, adopting '
+        '${onFile.pumpId} instead of registering again',
+      );
       await store.saveBackendPumpId(onFile.pumpId);
       return sync(store);
     }
@@ -220,7 +222,10 @@ class PumpSync {
       return null;
     }
     try {
-      return PodRestore.fromBlob('$id', jsonDecode(data) as Map<String, dynamic>);
+      return PodRestore.fromBlob(
+        '$id',
+        jsonDecode(data) as Map<String, dynamic>,
+      );
     } catch (_) {
       return null;
     }

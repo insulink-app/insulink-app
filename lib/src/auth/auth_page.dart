@@ -119,9 +119,7 @@ class _AuthPageState extends State<AuthPage> {
         labelText: Locales.string(context, 'auth.password'),
         suffixIcon: IconButton(
           icon: Icon(
-            _showPassword
-                ? PhosphorIconsBold.eyeSlash
-                : PhosphorIconsBold.eye,
+            _showPassword ? PhosphorIconsBold.eyeSlash : PhosphorIconsBold.eye,
           ),
           onPressed: () => setState(() => _showPassword = !_showPassword),
         ),

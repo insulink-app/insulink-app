@@ -23,15 +23,22 @@ class ServiceStrings {
   /// The translation for [key] in the active locale, or [key] if unavailable.
   Future<String> get(String key) async {
     try {
-      final raw = await rootBundle.loadString(
+      final data = await rootBundle.load(
         'assets/locales/${await _language()}.json',
       );
-      final map = json.decode(raw) as Map<String, dynamic>;
+      final map = json.decode(_decode(data)) as Map<String, dynamic>;
       return _resolve(map, key) ?? key;
     } catch (_) {
       return key;
     }
   }
+
+  /// Decode the bundle bytes in place. `rootBundle.loadString` would spawn an
+  /// isolate per call once a locale file passes 50 KiB (see [Locales.load]),
+  /// and this runs in the service isolate on every notification.
+  String _decode(ByteData data) => utf8.decode(
+    data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+  );
 
   /// Walk the nested locale JSON along the dot-separated [key]. When the path
   /// lands on a node that also has children, its own value lives under `_`

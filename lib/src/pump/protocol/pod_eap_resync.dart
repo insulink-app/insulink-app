@@ -45,7 +45,9 @@ class PodEapResync {
       amf: Uint8List.fromList(Milenage.resyncAmf),
     );
     if (!constantTimeEquals(verified.macS, verified.receivedMacS)) {
-      throw PodSessionException('Pod resynchronisation failed its own signature');
+      throw PodSessionException(
+        'Pod resynchronisation failed its own signature',
+      );
     }
     throw PodSessionResyncRequired(decodeEapSequence(offered));
   }

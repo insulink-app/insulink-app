@@ -10,6 +10,7 @@ import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/connections/status/connection_status_page.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/battery_saver_banner.dart';
+import 'package:insulink/src/overview/advisory_bolus_notice.dart';
 import 'package:insulink/src/overview/overview_running_bolus.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_bounds.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
@@ -88,6 +89,7 @@ class OverviewBodyContent extends StatelessWidget {
       child: Column(
         children: [
           const OverviewRunningBolus(),
+          const AdvisoryBolusNotice(),
           if (silent != SilentMode.off) ...[
             SilentBanner(silent),
             const SizedBox(height: 12),
@@ -163,9 +165,9 @@ class _DataView extends StatefulWidget {
 }
 
 class _DataViewState extends State<_DataView> {
-  late final ScrollController _scroll =
-      ScrollController(initialScrollOffset: _overviewScrollOffset)
-        ..addListener(_remember);
+  late final ScrollController _scroll = ScrollController(
+    initialScrollOffset: _overviewScrollOffset,
+  )..addListener(_remember);
 
   void _remember() {
     if (_scroll.hasClients) {
@@ -267,9 +269,7 @@ class _ChartPreview extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const OverviewChartPage(),
-        ),
+        MaterialPageRoute<void>(builder: (_) => const OverviewChartPage()),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

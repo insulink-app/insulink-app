@@ -26,7 +26,10 @@ class InsulinColors extends ThemeExtension<InsulinColors> {
 
   @override
   InsulinColors copyWith({Color? basal, Color? bolus}) {
-    return InsulinColors(basal: basal ?? this.basal, bolus: bolus ?? this.bolus);
+    return InsulinColors(
+      basal: basal ?? this.basal,
+      bolus: bolus ?? this.bolus,
+    );
   }
 
   @override

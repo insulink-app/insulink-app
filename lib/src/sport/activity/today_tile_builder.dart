@@ -164,16 +164,20 @@ class TodayTileBuilder {
   /// The newest lab result, or an em dash until one is entered — the box stays
   /// tappable either way, because an empty box that opens the page is how the
   /// user notes their first reading.
-  SportSummaryTile _hba1cTile(BuildContext context, IconData icon, String label) {
+  SportSummaryTile _hba1cTile(
+    BuildContext context,
+    IconData icon,
+    String label,
+  ) {
     final latest = hba1c.latest;
     return SportSummaryTile(
       icon: icon,
       labelKey: label,
       value: latest == null ? '–' : sportDecimal(latest.percent, 1),
       unit: latest == null ? null : '%',
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const Hba1cPage()),
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const Hba1cPage())),
     );
   }
 

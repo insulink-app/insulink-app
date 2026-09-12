@@ -117,13 +117,13 @@ extension PodBasalLedger on PodStore {
       await _set(PodStore._kBasalDelivered, jsonEncode(capped));
       // Kept apart from the queue above, which is drained the moment the account
       // accepts it. This is what the user is shown, and it has to survive that.
-      await _set(
-        PodStore._kBasalTotal,
-        '${basalDeliveredTotal + units}',
-      );
+      await _set(PodStore._kBasalTotal, '${basalDeliveredTotal + units}');
       await _addBasalHour(at, units);
     }
-    await _set(PodStore._kBasalCountedTo, '${countedTo.millisecondsSinceEpoch}');
+    await _set(
+      PodStore._kBasalCountedTo,
+      '${countedTo.millisecondsSinceEpoch}',
+    );
   }
 
   /// Basal booked per hour, oldest first, for the history page.
@@ -210,9 +210,9 @@ class PodBasalHour {
   const PodBasalHour({required this.hour, required this.units});
 
   factory PodBasalHour.fromJson(Map<String, dynamic> json) => PodBasalHour(
-        hour: DateTime.fromMillisecondsSinceEpoch((json['at'] as num).toInt()),
-        units: (json['units'] as num).toDouble(),
-      );
+    hour: DateTime.fromMillisecondsSinceEpoch((json['at'] as num).toInt()),
+    units: (json['units'] as num).toDouble(),
+  );
 
   /// The start of the hour this covers.
   final DateTime hour;
@@ -220,7 +220,7 @@ class PodBasalHour {
   final double units;
 
   Map<String, dynamic> toJson() => {
-        'at': hour.millisecondsSinceEpoch,
-        'units': units,
-      };
+    'at': hour.millisecondsSinceEpoch,
+    'units': units,
+  };
 }

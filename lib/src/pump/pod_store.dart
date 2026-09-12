@@ -213,8 +213,7 @@ class PodStore {
   /// programmed again.
   bool get suspendedByUs => _cache[_kSuspendedByUs] == 'true';
 
-  Future<void> setSuspendedByUs(bool value) =>
-      _set(_kSuspendedByUs, '$value');
+  Future<void> setSuspendedByUs(bool value) => _set(_kSuspendedByUs, '$value');
 
   /// Forgets the pod entirely, after it has been deactivated or discarded.
   ///
@@ -263,7 +262,10 @@ class PodStore {
     ]) {
       await _remove(key);
     }
-    for (final key in _cache.keys.where((key) => key.startsWith('pod.notified.')).toList()) {
+    for (final key
+        in _cache.keys
+            .where((key) => key.startsWith('pod.notified.'))
+            .toList()) {
       await _remove(key);
     }
   }

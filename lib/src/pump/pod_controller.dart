@@ -35,13 +35,13 @@ class PodController extends ChangeNotifier {
     this.retry = const PodRetry(),
     this.pumpSync = const PumpSync(),
     PodConnection? connection,
-  })  : _sequence = store.commandSequence,
-        // Opens on the last status anyone read, usually the background poll's.
-        // Without it the page began every visit blank, several seconds of a
-        // spinner before it could say whether the pod was even delivering.
-        _status = store.lastStatus,
-        _statusReadAt = store.lastStatusAt,
-        _connection = connection ?? podConnectionFor(store);
+  }) : _sequence = store.commandSequence,
+       // Opens on the last status anyone read, usually the background poll's.
+       // Without it the page began every visit blank, several seconds of a
+       // spinner before it could say whether the pod was even delivering.
+       _status = store.lastStatus,
+       _statusReadAt = store.lastStatusAt,
+       _connection = connection ?? podConnectionFor(store);
 
   static const int _fixedNonce = podFixedNonce;
 
@@ -98,27 +98,28 @@ class PodController extends ChangeNotifier {
   /// activation state from. A pod adopted from the account was read successfully
   /// and still came back as "activation unfinished".
   Future<void> refresh() => _withSession('refresh', (session) async {
-        await _absorb(await _readStatus(session));
-      });
+    await _absorb(await _readStatus(session));
+  });
 
   /// Stops every kind of delivery. The path that must work when nothing else
   /// does, so it is not gated and carries no computed dose.
-  Future<void> suspendDelivery() =>
-      _withSession('suspend', (session) async {
-        final response = await session.run(PodStopDeliveryCommand.suspendAll(
-          uniqueId: store.uniqueId!,
-          sequenceNumber: _nextSequence,
-          nonce: _fixedNonce,
-        ));
-        // Remember that WE stopped it, so the background watch does not report a
-        // deliberate suspend as the pod having stopped on its own.
-        await store.setSuspendedByUs(true);
-        // A suspend-everything cuts a running bolus short as well, so its record
-        // has to be closed here too, or the overview keeps counting a dose the
-        // pod has stopped delivering.
-        await _endRunningBolus();
-        await _absorb(response);
-      });
+  Future<void> suspendDelivery() => _withSession('suspend', (session) async {
+    final response = await session.run(
+      PodStopDeliveryCommand.suspendAll(
+        uniqueId: store.uniqueId!,
+        sequenceNumber: _nextSequence,
+        nonce: _fixedNonce,
+      ),
+    );
+    // Remember that WE stopped it, so the background watch does not report a
+    // deliberate suspend as the pod having stopped on its own.
+    await store.setSuspendedByUs(true);
+    // A suspend-everything cuts a running bolus short as well, so its record
+    // has to be closed here too, or the overview keeps counting a dose the
+    // pod has stopped delivering.
+    await _endRunningBolus();
+    await _absorb(response);
+  });
 
   /// Puts the pod back on its schedule after a suspend.
   ///
@@ -197,13 +198,15 @@ class PodController extends ChangeNotifier {
   /// Silent, because the user asked for a profile or a rate change and not for a
   /// cancel: a beep here would report a step they never took.
   Future<void> _endRunningTempBasal(PodSession session) async {
-    final response = await session.run(PodStopDeliveryCommand(
-      uniqueId: store.uniqueId!,
-      sequenceNumber: _nextSequence,
-      nonce: _fixedNonce,
-      target: PodDeliveryTarget.tempBasal,
-      beep: PodBeep.silent,
-    ));
+    final response = await session.run(
+      PodStopDeliveryCommand(
+        uniqueId: store.uniqueId!,
+        sequenceNumber: _nextSequence,
+        nonce: _fixedNonce,
+        target: PodDeliveryTarget.tempBasal,
+        beep: PodBeep.silent,
+      ),
+    );
     final running = store.temporaryBasal;
     if (running != null) {
       await store.saveTemporaryBasal(running.endedAt(DateTime.now()));
@@ -351,12 +354,14 @@ class PodController extends ChangeNotifier {
       return;
     }
     await _withSession('stop the bolus', (session) async {
-      final response = await session.run(PodStopDeliveryCommand(
-        uniqueId: store.uniqueId!,
-        sequenceNumber: _nextSequence,
-        nonce: _fixedNonce,
-        target: PodDeliveryTarget.bolus,
-      ));
+      final response = await session.run(
+        PodStopDeliveryCommand(
+          uniqueId: store.uniqueId!,
+          sequenceNumber: _nextSequence,
+          nonce: _fixedNonce,
+          target: PodDeliveryTarget.bolus,
+        ),
+      );
       await _endRunningBolus();
       await _absorb(response);
     });
@@ -410,20 +415,22 @@ class PodController extends ChangeNotifier {
   /// question actually being asked, and it also covers a pod in `alarm`, which
   /// has stopped for good and is never coming back either.
   Future<void> deactivatePod() => _withSession('deactivate', (session) async {
-        final response = await session.run(PodDeactivateCommand(
-          uniqueId: store.uniqueId!,
-          sequenceNumber: _nextSequence,
-          nonce: _fixedNonce,
-        ));
-        await _absorb(response);
-        await _endRunningBolus();
-        await _confirmItStopped(session);
-        if (_reportsItCannotDeliver) {
-          await _letGoOfPod();
-        } else {
-          _failure ??= 'Pod did not confirm it stopped. It was NOT forgotten';
-        }
-      });
+    final response = await session.run(
+      PodDeactivateCommand(
+        uniqueId: store.uniqueId!,
+        sequenceNumber: _nextSequence,
+        nonce: _fixedNonce,
+      ),
+    );
+    await _absorb(response);
+    await _endRunningBolus();
+    await _confirmItStopped(session);
+    if (_reportsItCannotDeliver) {
+      await _letGoOfPod();
+    } else {
+      _failure ??= 'Pod did not confirm it stopped. It was NOT forgotten';
+    }
+  });
 
   /// Asks the pod again while it still claims it can deliver.
   ///
@@ -500,29 +507,33 @@ class PodController extends ChangeNotifier {
   ///
   /// Carries no nonce and starts no delivery, so it is safe to press at any time.
   Future<void> playTestBeep() => _withSession('beep', (session) async {
-        final beepAtEnd = await NotificationSetting.podBolusBeep.load();
-        final response = await session.run(PodProgramBeepsCommand(
-          uniqueId: store.uniqueId!,
-          sequenceNumber: _nextSequence,
-          bolusReminder: PodProgramReminder(atEnd: beepAtEnd),
-        ));
-        await _absorb(response);
-      });
+    final beepAtEnd = await NotificationSetting.podBolusBeep.load();
+    final response = await session.run(
+      PodProgramBeepsCommand(
+        uniqueId: store.uniqueId!,
+        sequenceNumber: _nextSequence,
+        bolusReminder: PodProgramReminder(atEnd: beepAtEnd),
+      ),
+    );
+    await _absorb(response);
+  });
 
   /// Acknowledges the pod's alerts so it stops beeping.
   Future<void> silenceAlerts() => _withSession('silence', (session) async {
-        final active = _status?.activeAlerts;
-        if (active == null || active.isEmpty) {
-          return;
-        }
-        final response = await session.run(PodSilenceAlertsCommand(
-          uniqueId: store.uniqueId!,
-          sequenceNumber: _nextSequence,
-          nonce: _fixedNonce,
-          alerts: active,
-        ));
-        await _absorb(response);
-      });
+    final active = _status?.activeAlerts;
+    if (active == null || active.isEmpty) {
+      return;
+    }
+    final response = await session.run(
+      PodSilenceAlertsCommand(
+        uniqueId: store.uniqueId!,
+        sequenceNumber: _nextSequence,
+        nonce: _fixedNonce,
+        alerts: active,
+      ),
+    );
+    await _absorb(response);
+  });
 
   int get _nextSequence {
     _sequence = (_sequence + 1) & 0x0f;
@@ -530,10 +541,12 @@ class PodController extends ChangeNotifier {
   }
 
   Future<PodStatusResponse> _readStatus(PodSession session) async {
-    final response = await session.run(PodGetStatusCommand(
-      uniqueId: store.uniqueId!,
-      sequenceNumber: _nextSequence,
-    ));
+    final response = await session.run(
+      PodGetStatusCommand(
+        uniqueId: store.uniqueId!,
+        sequenceNumber: _nextSequence,
+      ),
+    );
     if (response is PodStatusResponse) {
       return response;
     }
@@ -613,7 +626,8 @@ class PodController extends ChangeNotifier {
       }
     } on PodCommandOutcomeUnknown catch (error) {
       debugPrint('pod: $what outcome UNKNOWN: ${error.message}');
-      _failure = 'The pod may have acted on this — check the pod. ${error.message}';
+      _failure =
+          'The pod may have acted on this — check the pod. ${error.message}';
     } catch (error) {
       // Catch-all, not `on Exception`: a plugin that throws an `Error` would
       // otherwise vanish into an unhandled async error and the page would show
@@ -657,10 +671,12 @@ class PodController extends ChangeNotifier {
   /// The mirror is best-effort by contract ([PumpSync]) — a failed attempt is
   /// re-sent by the next call — so nothing is lost by letting it run behind.
   void _mirrorToBackend() {
-    unawaited(pumpSync.sync(store, status: _status).catchError((Object error) {
-      debugPrint('pod: backend mirror failed: $error');
-      return false;
-    }));
+    unawaited(
+      pumpSync.sync(store, status: _status).catchError((Object error) {
+        debugPrint('pod: backend mirror failed: $error');
+        return false;
+      }),
+    );
   }
 
   /// Re-reads the store and adopts the command counter it holds.
@@ -738,13 +754,15 @@ class PodController extends ChangeNotifier {
       // Asked fresh each time rather than held: the toggle lives in secure
       // storage and may have been changed on the panel since this screen opened.
       final beepAtEnd = await NotificationSetting.podBolusBeep.load();
-      final response = await session.run(PodProgramBolusCommand(
-        uniqueId: store.uniqueId!,
-        sequenceNumber: _nextSequence,
-        nonce: _fixedNonce,
-        amount: amount,
-        reminder: PodProgramReminder(atEnd: beepAtEnd),
-      ));
+      final response = await session.run(
+        PodProgramBolusCommand(
+          uniqueId: store.uniqueId!,
+          sequenceNumber: _nextSequence,
+          nonce: _fixedNonce,
+          amount: amount,
+          reminder: PodProgramReminder(atEnd: beepAtEnd),
+        ),
+      );
       await store.saveCommandSequence(_sequence);
       await _connection.close();
       _mirrorToBackend();
@@ -775,31 +793,35 @@ class PodController extends ChangeNotifier {
   /// command goes out, so a confirmation lost in transit leaves the ledger
   /// crediting the temporary rate rather than the schedule — understating insulin
   /// is recoverable, claiming insulin the pod may not have delivered is not.
-  Future<void> setTemporaryBasal(PodTempBasalRate rate) =>
-      _withSession('set temporary basal', (session) async {
-        // Asked fresh each time rather than held, like the bolus beep: the toggle
-        // lives in secure storage and may have been changed since this screen
-        // opened. Only the manual path reads it; the automation is silent
-        // regardless, because it changes the rate every five minutes.
-        final beeps = await NotificationSetting.podTempBasalBeep.load();
-        final started = DateTime.now();
-        await store.saveTemporaryBasal(PodTemporaryBasal(
+  Future<void> setTemporaryBasal(PodTempBasalRate rate) => _withSession(
+    'set temporary basal',
+    (session) async {
+      // Asked fresh each time rather than held, like the bolus beep: the toggle
+      // lives in secure storage and may have been changed since this screen
+      // opened. Only the manual path reads it; the automation is silent
+      // regardless, because it changes the rate every five minutes.
+      final beeps = await NotificationSetting.podTempBasalBeep.load();
+      final started = DateTime.now();
+      await store.saveTemporaryBasal(
+        PodTemporaryBasal(
           unitsPerHour: rate.unitsPerHour,
           start: started,
           end: started.add(Duration(minutes: rate.minutes)),
-        ));
-        final response = await _programBasalDelivery(
-          session,
-          () => PodProgramTempBasalCommand(
-            uniqueId: store.uniqueId!,
-            sequenceNumber: _nextSequence,
-            nonce: _fixedNonce,
-            rate: rate,
-            reminder: PodProgramReminder(atEnd: beeps),
-          ),
-        );
-        await _absorb(response);
-      });
+        ),
+      );
+      final response = await _programBasalDelivery(
+        session,
+        () => PodProgramTempBasalCommand(
+          uniqueId: store.uniqueId!,
+          sequenceNumber: _nextSequence,
+          nonce: _fixedNonce,
+          rate: rate,
+          reminder: PodProgramReminder(atEnd: beeps),
+        ),
+      );
+      await _absorb(response);
+    },
+  );
 
   /// Ends a running temporary basal, returning the pod to its schedule.
   ///
@@ -808,13 +830,15 @@ class PodController extends ChangeNotifier {
   Future<void> cancelTemporaryBasal() =>
       _withSession('cancel temporary basal', (session) async {
         final beeps = await NotificationSetting.podTempBasalBeep.load();
-        final response = await session.run(PodStopDeliveryCommand(
-          uniqueId: store.uniqueId!,
-          sequenceNumber: _nextSequence,
-          nonce: _fixedNonce,
-          target: PodDeliveryTarget.tempBasal,
-          beep: beeps ? PodBeep.longSingleBeep : PodBeep.silent,
-        ));
+        final response = await session.run(
+          PodStopDeliveryCommand(
+            uniqueId: store.uniqueId!,
+            sequenceNumber: _nextSequence,
+            nonce: _fixedNonce,
+            target: PodDeliveryTarget.tempBasal,
+            beep: beeps ? PodBeep.longSingleBeep : PodBeep.silent,
+          ),
+        );
         final running = store.temporaryBasal;
         if (running != null) {
           await store.saveTemporaryBasal(running.endedAt(DateTime.now()));

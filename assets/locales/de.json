@@ -145,6 +145,7 @@
       "until": "bis #",
       "end": "zum Beenden tippen"
     },
+    "advisory_bolus": "# E über die Benachrichtigung abgegeben, um # Uhr.",
     "restore": {
       "title": "Vorherigen Sensor verwenden?",
       "body": "In deinem Konto ist ein Sensor hinterlegt. Übernimm ihn, um ohne erneutes Koppeln weiterzulesen.",
@@ -1088,6 +1089,24 @@
     "alarmsound": {
       "description": "Alarmton bei hohem/niedrigem Zucker abspielen"
     },
+    "alarmtone": {
+      "_": "Alarmtöne",
+      "description": "Wähle den Ton für jeden Alarm. Tippe einen Stil an, um ihn zu hören. Jeder Stil bleibt eindeutig: fallende Töne bedeuten niedrig, steigende hoch, drei Motive statt zwei bedeuten dringend. \"Aus\" schaltet nur diesen einen Alarm stumm, die anderen bleiben hörbar.",
+      "slot": {
+        "low_warning": "Niedriger Zucker",
+        "low_urgent": "Dringend niedriger Zucker",
+        "high_warning": "Hoher Zucker",
+        "high_urgent": "Dringend hoher Zucker",
+        "advisory_low": "Vorwarnung niedrig",
+        "advisory_high": "Vorwarnung hoch"
+      },
+      "tone": {
+        "classic": "Lang",
+        "short": "Kurz",
+        "ping": "Ping",
+        "off": "Aus"
+      }
+    },
     "silent": {
       "_": "Stummschaltung",
       "description": "Alarme stummschalten",
@@ -1172,6 +1191,7 @@
       "basal": "basalrate basal profil kurve omnipod pod insulin stunde",
       "body": "körpermaße schrittlänge körpergröße größe bmi gewicht schritte distanz",
       "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose ablauf halbzeit halbwertszeit sensor training pod pumpe insulin restmenge",
+      "alarmtone": "alarmton ton töne klang melodie klingelton kurz niedrig hoch dringend vorwarnung aus stumm lautlos",
       "silent": "stumm lautlos ruhe stören nicht dnd ton töne vibration",
       "developer": "entwickler debug logs erweitert protokoll",
       "prediction": "vorhersage prognose forecast zukunft trend verlauf minuten",
@@ -1339,9 +1359,7 @@
     },
     "advisory": {
       "low_title": "Unterzucker droht",
-      "low_body": "Iss ca. # g schnelle KH (## Plättchen).",
       "high_title": "Überzucker droht",
-      "high_body": "Erwäge ca. # Einheiten Insulin.",
       "forecast": "Jetzt #, in ## min ~###",
       "carbs_action": "# g KH verbuchen",
       "bolus_action": "# E abgeben",
@@ -1349,6 +1367,7 @@
       "carbs_logged": "# g KH verbucht.",
       "bolus_done": "# E abgegeben und verbucht.",
       "bolus_failed": "Insulin wurde nicht abgegeben. Bitte in der App prüfen.",
+      "expired": "Der Vorschlag war nicht mehr aktuell. Es wurde nichts übernommen.",
       "failed": "Aktion fehlgeschlagen. Bitte in der App prüfen."
     },
     "low": {

@@ -15,7 +15,10 @@ import 'package:provider/provider.dart';
 /// saving. The bolus product picker needs it: a product created there is the one
 /// the user is about to dose for, so it goes straight on to the portion instead
 /// of having to be found again in the list.
-Future<FoodProduct?> showFoodEditor(BuildContext context, {FoodProduct? product}) {
+Future<FoodProduct?> showFoodEditor(
+  BuildContext context, {
+  FoodProduct? product,
+}) {
   return showModalBottomSheet<FoodProduct>(
     context: context,
     isScrollControlled: true,

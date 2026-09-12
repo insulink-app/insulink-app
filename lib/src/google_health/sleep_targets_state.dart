@@ -36,12 +36,11 @@ class SleepTargets {
     SleepTargetRange? timeToSolid,
     SleepTargetRange? deep,
     SleepTargetRange? interruption,
-  }) =>
-      SleepTargets(
-        timeToSolid: timeToSolid ?? this.timeToSolid,
-        deep: deep ?? this.deep,
-        interruption: interruption ?? this.interruption,
-      );
+  }) => SleepTargets(
+    timeToSolid: timeToSolid ?? this.timeToSolid,
+    deep: deep ?? this.deep,
+    interruption: interruption ?? this.interruption,
+  );
 
   /// Defaults: fall asleep within ~30 min, ~1.5–2.5 h deep sleep, and few
   /// awakenings.
@@ -65,10 +64,14 @@ class SleepTargets {
 
   factory SleepTargets.fromJson(Map<String, dynamic> json) => SleepTargets(
     timeToSolid: SleepTargetRange.fromJson(
-        (json['time_to_solid'] as Map).cast<String, dynamic>()),
-    deep: SleepTargetRange.fromJson((json['deep'] as Map).cast<String, dynamic>()),
+      (json['time_to_solid'] as Map).cast<String, dynamic>(),
+    ),
+    deep: SleepTargetRange.fromJson(
+      (json['deep'] as Map).cast<String, dynamic>(),
+    ),
     interruption: SleepTargetRange.fromJson(
-        (json['interruption'] as Map).cast<String, dynamic>()),
+      (json['interruption'] as Map).cast<String, dynamic>(),
+    ),
   );
 
   static Future<SleepTargets> load() async {

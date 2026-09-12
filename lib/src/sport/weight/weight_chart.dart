@@ -16,7 +16,8 @@ class WeightChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return MeasurementChart(
       points: [
-        for (final entry in weights) (atEpochMs: entry.atEpochMs, value: entry.kg),
+        for (final entry in weights)
+          (atEpochMs: entry.atEpochMs, value: entry.kg),
       ],
       unit: 'kg',
       goal: goalKg,

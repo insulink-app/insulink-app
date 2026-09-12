@@ -88,10 +88,8 @@ class Delivery {
 
   DateTime get date => DateTime.fromMillisecondsSinceEpoch(atEpochMs);
 
-  factory Delivery.fromJson(Map<String, dynamic> json) => Delivery(
-    atEpochMs: json['at'] as int,
-    quantity: json['quantity'] as int,
-  );
+  factory Delivery.fromJson(Map<String, dynamic> json) =>
+      Delivery(atEpochMs: json['at'] as int, quantity: json['quantity'] as int);
 
   Map<String, dynamic> toJson() => {'at': atEpochMs, 'quantity': quantity};
 }
@@ -158,14 +156,20 @@ class InventoryItem {
       return null;
     }
     return now.add(
-      Duration(milliseconds: (stock / perDay * Duration.millisecondsPerDay).round()),
+      Duration(
+        milliseconds: (stock / perDay * Duration.millisecondsPerDay).round(),
+      ),
     );
   }
 
   /// The next delivery still to come, or null if none is scheduled.
   Delivery? nextDelivery(DateTime now) {
     final upcoming =
-        deliveries.where((delivery) => delivery.atEpochMs >= now.millisecondsSinceEpoch).toList()
+        deliveries
+            .where(
+              (delivery) => delivery.atEpochMs >= now.millisecondsSinceEpoch,
+            )
+            .toList()
           ..sort((left, right) => left.atEpochMs.compareTo(right.atEpochMs));
     return upcoming.isEmpty ? null : upcoming.first;
   }
@@ -175,9 +179,11 @@ class InventoryItem {
   double projectedStockBefore(DateTime now, DateTime target) {
     final consumed = perDay * _daysBetween(now, target);
     final incoming = deliveries
-        .where((delivery) =>
-            delivery.atEpochMs >= now.millisecondsSinceEpoch &&
-            delivery.atEpochMs < target.millisecondsSinceEpoch)
+        .where(
+          (delivery) =>
+              delivery.atEpochMs >= now.millisecondsSinceEpoch &&
+              delivery.atEpochMs < target.millisecondsSinceEpoch,
+        )
         .fold(0, (sum, delivery) => sum + delivery.quantity);
     return stock - consumed + incoming;
   }
@@ -248,7 +254,8 @@ class InventoryItem {
       return this;
     }
     final consumed = due > stock ? stock : due;
-    final advancedAnchor = anchorMs +
+    final advancedAnchor =
+        anchorMs +
         (consumed * daysPerUnit * Duration.millisecondsPerDay).round();
     return copyWith(stock: stock - consumed, anchorMs: advancedAnchor);
   }
@@ -272,8 +279,8 @@ class InventoryItem {
     stock: json['stock'] as int,
     baseStock: json['base_stock'] as int? ?? json['stock'] as int,
     daysPerUnit: (json['days_per_unit'] as num?)?.toDouble() ?? 0,
-    anchorMs: json['anchor_ms'] as int? ??
-        DateTime.now().millisecondsSinceEpoch,
+    anchorMs:
+        json['anchor_ms'] as int? ?? DateTime.now().millisecondsSinceEpoch,
     type: ItemType.fromWireKey(json['type'] as String?),
     sensorBrand: SensorBrand.fromWireKey(json['sensor_brand'] as String?),
     pumpBrand: PumpBrand.fromWireKey(json['pump_brand'] as String?),

@@ -42,10 +42,7 @@ int? _averagePastSeconds(String routineId, List<WorkoutSession> sessions) {
 /// for a timed exercise) plus its rest. Used where no past session applies — a
 /// routine never run, and the running workout's prediction before its first set
 /// gives a pace to extrapolate.
-int plannedRoutineSeconds(
-  SportRoutine routine,
-  List<SportExercise> exercises,
-) {
+int plannedRoutineSeconds(SportRoutine routine, List<SportExercise> exercises) {
   var seconds = 0;
   for (final item in routine.items) {
     final exercise = _exerciseById(exercises, item.exerciseId);

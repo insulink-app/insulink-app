@@ -24,16 +24,18 @@ class InventoryItemEditor extends StatefulWidget {
 
 class _InventoryItemEditorState extends State<InventoryItemEditor> {
   late final _name = TextEditingController(text: widget.existing?.name ?? '');
-  late final _stock =
-      TextEditingController(text: '${widget.existing?.stock ?? ''}');
-  late final _baseStock =
-      TextEditingController(text: '${widget.existing?.baseStock ?? ''}');
-  late final _daysPerUnit =
-      TextEditingController(text: '${widget.existing?.daysPerUnit ?? ''}');
+  late final _stock = TextEditingController(
+    text: '${widget.existing?.stock ?? ''}',
+  );
+  late final _baseStock = TextEditingController(
+    text: '${widget.existing?.baseStock ?? ''}',
+  );
+  late final _daysPerUnit = TextEditingController(
+    text: '${widget.existing?.daysPerUnit ?? ''}',
+  );
   late final List<Delivery> _deliveries = [...?widget.existing?.deliveries];
   late ItemType _type = widget.existing?.type ?? ItemType.other;
-  late SensorBrand _brand =
-      widget.existing?.sensorBrand ?? SensorBrand.other;
+  late SensorBrand _brand = widget.existing?.sensorBrand ?? SensorBrand.other;
   // Defaults to the pump the app drives, since that is the only one it can
   // decrement automatically.
   late PumpBrand _pumpBrand =
@@ -72,7 +74,8 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
     }
     final stock = int.tryParse(_stock.text) ?? 0;
     final item = InventoryItem(
-      id: widget.existing?.id ??
+      id:
+          widget.existing?.id ??
           DateTime.now().microsecondsSinceEpoch.toString(),
       name: name,
       stock: stock,
@@ -160,15 +163,17 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: scheme.onSurface.withValues(alpha: 0.04),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
       ),
       menuStyle: MenuStyle(
-        backgroundColor:
-            WidgetStatePropertyAll(scheme.surfaceContainerHighest),
+        backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainerHighest),
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
@@ -199,18 +204,22 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
             padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border:
-                  Border.all(color: scheme.onSurface.withValues(alpha: 0.07)),
+              border: Border.all(
+                color: scheme.onSurface.withValues(alpha: 0.07),
+              ),
             ),
             child: Row(
               children: [
                 Icon(PhosphorIconsBold.truck, size: 18, color: scheme.primary),
                 const SizedBox(width: 12),
                 Expanded(
-                    child: Text(DateFormat.yMMMd(locale).format(delivery.date))),
+                  child: Text(DateFormat.yMMMd(locale).format(delivery.date)),
+                ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: scheme.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -258,7 +267,10 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
                 },
               ),
             ),
-          IconButton(icon: const Icon(PhosphorIconsBold.check), onPressed: _save),
+          IconButton(
+            icon: const Icon(PhosphorIconsBold.check),
+            onPressed: _save,
+          ),
         ],
       ),
       body: ListView(
@@ -267,7 +279,8 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
           TextField(
             controller: _name,
             decoration: InputDecoration(
-                labelText: Locales.string(context, 'inventory.name')),
+              labelText: Locales.string(context, 'inventory.name'),
+            ),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -275,7 +288,8 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
-                labelText: Locales.string(context, 'inventory.stock')),
+              labelText: Locales.string(context, 'inventory.stock'),
+            ),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -283,7 +297,8 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
-                labelText: Locales.string(context, 'inventory.base_stock')),
+              labelText: Locales.string(context, 'inventory.base_stock'),
+            ),
           ),
           const SizedBox(height: 16),
           _dropdown<ItemType>(
@@ -293,26 +308,23 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
             (type) => 'inventory.type_${type.wireKey}',
             (type) => setState(() => _type = type),
           ),
-          _reveal(
-            'brand',
-            switch (_type) {
-              ItemType.sensor => _dropdown<SensorBrand>(
-                  'inventory.brand',
-                  _brand,
-                  SensorBrand.values,
-                  (brand) => 'inventory.brand_${brand.wireKey}',
-                  (brand) => setState(() => _brand = brand),
-                ),
-              ItemType.pump => _dropdown<PumpBrand>(
-                  'inventory.brand',
-                  _pumpBrand,
-                  PumpBrand.values,
-                  (brand) => 'inventory.pump_brand_${brand.wireKey}',
-                  (brand) => setState(() => _pumpBrand = brand),
-                ),
-              ItemType.other => null,
-            },
-          ),
+          _reveal('brand', switch (_type) {
+            ItemType.sensor => _dropdown<SensorBrand>(
+              'inventory.brand',
+              _brand,
+              SensorBrand.values,
+              (brand) => 'inventory.brand_${brand.wireKey}',
+              (brand) => setState(() => _brand = brand),
+            ),
+            ItemType.pump => _dropdown<PumpBrand>(
+              'inventory.brand',
+              _pumpBrand,
+              PumpBrand.values,
+              (brand) => 'inventory.pump_brand_${brand.wireKey}',
+              (brand) => setState(() => _pumpBrand = brand),
+            ),
+            ItemType.other => null,
+          }),
           // Known hardware carries its own run time; everything else takes the
           // number the user types. That covers an "other" item as before, and now
           // also a sensor or pump brand the app has no figure for.
@@ -321,11 +333,15 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
             _needsManualDuration
                 ? TextField(
                     controller: _daysPerUnit,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: InputDecoration(
-                        labelText:
-                            Locales.string(context, 'inventory.days_per_unit')),
+                      labelText: Locales.string(
+                        context,
+                        'inventory.days_per_unit',
+                      ),
+                    ),
                   )
                 : null,
           ),
@@ -333,8 +349,10 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              LocaleText('inventory.deliveries',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              LocaleText(
+                'inventory.deliveries',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               IconButton(
                 icon: const Icon(PhosphorIconsBold.plus),
                 onPressed: () => _editDelivery(),
@@ -345,14 +363,12 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
             LocaleText(
               'inventory.no_deliveries',
               style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.5),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
-          for (final delivery in _deliveries)
-            _deliveryTile(delivery, locale),
+          for (final delivery in _deliveries) _deliveryTile(delivery, locale),
         ],
       ),
     );

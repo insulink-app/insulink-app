@@ -31,9 +31,7 @@ void openSensorPage(BuildContext context) {
       builder: (_) => ConnectionSubPage(
         title: title,
         body: const SensorBodyContent(),
-        actions: const [
-          DeviceHistoryButton(kind: DeviceHistoryKind.sensors),
-        ],
+        actions: const [DeviceHistoryButton(kind: DeviceHistoryKind.sensors)],
       ),
     ),
   );
@@ -87,9 +85,7 @@ class ConnectionsBodyContent extends StatelessWidget {
           icon: PhosphorIconsFill.drop,
           labelKey: "sensor.label",
           page: const SensorBodyContent(),
-          actions: const [
-            DeviceHistoryButton(kind: DeviceHistoryKind.sensors),
-          ],
+          actions: const [DeviceHistoryButton(kind: DeviceHistoryKind.sensors)],
           // The sensor's only notification is the "no sensor" attention dot,
           // mirrored here from the navigator badge.
           notify: !hasSensor,

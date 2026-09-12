@@ -150,7 +150,8 @@ class MessagePacket {
     }
     final flagsOne = frame[2];
     final flagsTwo = frame[3];
-    final version = (_get(flagsOne, 0) << 2) | (_get(flagsOne, 1) << 1) | _get(flagsOne, 2);
+    final version =
+        (_get(flagsOne, 0) << 2) | (_get(flagsOne, 1) << 1) | _get(flagsOne, 2);
     if (version != 0) {
       throw PodMessageException('Unsupported message version: $version');
     }
@@ -161,9 +162,12 @@ class MessagePacket {
           (_get(flagsTwo, 4) << 3),
     );
     final size = (frame[6] << 3) | (frame[7] >> 5);
-    final end = headerSize + size + (type == PodMessageType.encrypted ? _tagSize : 0);
+    final end =
+        headerSize + size + (type == PodMessageType.encrypted ? _tagSize : 0);
     if (frame.length < end) {
-      throw PodMessageException('Frame truncated: need $end, got ${frame.length}');
+      throw PodMessageException(
+        'Frame truncated: need $end, got ${frame.length}',
+      );
     }
     return MessagePacket(
       type: type,
@@ -173,7 +177,10 @@ class MessagePacket {
       sequenceNumber: frame[4],
       ack: _get(flagsTwo, 0) != 0,
       ackNumber: frame[5],
-      eqos: _get(flagsOne, 7) | (_get(flagsOne, 6) << 1) | (_get(flagsOne, 5) << 2),
+      eqos:
+          _get(flagsOne, 7) |
+          (_get(flagsOne, 6) << 1) |
+          (_get(flagsOne, 5) << 2),
       priority: _get(flagsTwo, 1) != 0,
       lastMessage: _get(flagsTwo, 2) != 0,
       gateway: _get(flagsTwo, 3) != 0,

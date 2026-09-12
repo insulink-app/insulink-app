@@ -46,7 +46,10 @@ List<WeeklyBucket> weeklyWorkouts(
   final currentWeek = _weekStart(DateTime.now());
   final counts = <int, int>{};
   for (var offset = weeks - 1; offset >= 0; offset -= 1) {
-    counts[currentWeek.subtract(Duration(days: offset * 7)).millisecondsSinceEpoch] = 0;
+    counts[currentWeek
+            .subtract(Duration(days: offset * 7))
+            .millisecondsSinceEpoch] =
+        0;
   }
   for (final session in sessions) {
     final key = _weekStart(
@@ -103,11 +106,17 @@ List<RoutineSeries> routineComparison(
     for (final run in runs) {
       final value = workoutScore(run);
       points.add(
-        RoutinePoint(atMs: run.startedAtMs, value: value, delta: value - previous),
+        RoutinePoint(
+          atMs: run.startedAtMs,
+          value: value,
+          delta: value - previous,
+        ),
       );
       previous = value;
     }
-    series.add(RoutineSeries(name: nameById[routineId] ?? untitled, points: points));
+    series.add(
+      RoutineSeries(name: nameById[routineId] ?? untitled, points: points),
+    );
   });
   return series;
 }

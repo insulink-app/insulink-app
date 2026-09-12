@@ -19,12 +19,12 @@ class Milenage {
     required this.rand,
     Uint8List? auts,
     Uint8List? amf,
-  })  : assert(key.length == 16),
-        assert(sqn.length == 6),
-        assert(rand.length == 16),
-        _aes = PodAes(key),
-        auts = auts ?? Uint8List(autsSize),
-        amf = amf ?? Uint8List.fromList(defaultAmf) {
+  }) : assert(key.length == 16),
+       assert(sqn.length == 6),
+       assert(rand.length == 16),
+       _aes = PodAes(key),
+       auts = auts ?? Uint8List(autsSize),
+       amf = amf ?? Uint8List.fromList(defaultAmf) {
     _derive();
   }
 
@@ -67,12 +67,17 @@ class Milenage {
 
     final sqnAmf = Uint8List.fromList(sqn + amf + sqn + amf);
     final macInput = _rotated(xorBytes(sqnAmf, opc), 8, null);
-    final macFull = xorBytes(_aes.encryptBlock(xorBytes(macInput, randEncrypted)), opc);
+    final macFull = xorBytes(
+      _aes.encryptBlock(xorBytes(macInput, randEncrypted)),
+      opc,
+    );
     macS = macFull.sublist(8, 16);
     autn = Uint8List.fromList(xorBytes(ak, sqn) + amf + macFull.sublist(0, 8));
 
-    final akStar =
-        xorBytes(_aes.encryptBlock(_rotated(randMasked, 4, 8)), opc).sublist(0, 6);
+    final akStar = xorBytes(
+      _aes.encryptBlock(_rotated(randMasked, 4, 8)),
+      opc,
+    ).sublist(0, 6);
     synchronizationSqn = xorBytes(akStar, auts.sublist(0, 6));
     receivedMacS = auts.sublist(6, 14);
   }

@@ -20,14 +20,14 @@ enum PodBeepRepetition {
 /// volume.
 class PodAlertTrigger {
   const PodAlertTrigger.afterMinutes(int minutes)
-      : value = minutes,
-        onReservoir = false;
+    : value = minutes,
+      onReservoir = false;
 
   /// [microLitres] is compared against the reservoir; 200 is roughly 20 U at the
   /// pod's 0.05 U pulse.
   const PodAlertTrigger.belowReservoir(int microLitres)
-      : value = microLitres,
-        onReservoir = true;
+    : value = microLitres,
+      onReservoir = true;
 
   final int value;
   final bool onReservoir;
@@ -139,12 +139,14 @@ class PodProgramAlertsCommand extends PodCommand {
       throw ArgumentError('Refusing to send an empty alert configuration');
     }
     final bodyLength = configurations.length * 6 + 4;
-    return appendCrc(joinParts([
-      buildHeader(bodyLength + 2),
-      [type.value, bodyLength],
-      bigEndian32(nonce),
-      for (final configuration in configurations) configuration.encoded,
-    ]));
+    return appendCrc(
+      joinParts([
+        buildHeader(bodyLength + 2),
+        [type.value, bodyLength],
+        bigEndian32(nonce),
+        for (final configuration in configurations) configuration.encoded,
+      ]),
+    );
   }
 
   /// The alert set an activation programs: warn the user before the pod expires,
@@ -159,8 +161,10 @@ class PodProgramAlertsCommand extends PodCommand {
     int lowReservoirMicroLitres = 200,
   }) {
     final warnAfter = _minutesInto(expiryMinutes, warnBeforeExpiryMinutes);
-    final imminentAfter =
-        _minutesInto(expiryMinutes, imminentBeforeExpiryMinutes);
+    final imminentAfter = _minutesInto(
+      expiryMinutes,
+      imminentBeforeExpiryMinutes,
+    );
     return [
       PodAlertConfiguration(
         type: PodAlert.expiration,

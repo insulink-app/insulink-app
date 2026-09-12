@@ -54,9 +54,11 @@ class PodStatusResponse extends PodResponse {
   late final int minutesSinceActivation;
   late final int reservoirPulsesRemaining;
 
-  double get totalUnitsDelivered => totalPulsesDelivered * PodBolusAmount.pulseUnits;
+  double get totalUnitsDelivered =>
+      totalPulsesDelivered * PodBolusAmount.pulseUnits;
 
-  double get bolusUnitsRemaining => bolusPulsesRemaining * PodBolusAmount.pulseUnits;
+  double get bolusUnitsRemaining =>
+      bolusPulsesRemaining * PodBolusAmount.pulseUnits;
 
   /// Units left in the reservoir, or null while the pod reports "plenty".
   double? get reservoirUnits => reservoirPulsesRemaining == reservoirUnknown
@@ -66,7 +68,8 @@ class PodStatusResponse extends PodResponse {
   Duration get age => Duration(minutes: minutesSinceActivation);
 
   @override
-  String toString() => 'PodStatusResponse($lifecycle, $delivery, '
+  String toString() =>
+      'PodStatusResponse($lifecycle, $delivery, '
       'reservoir=$reservoirUnits U, age=$age, alerts=$activeAlerts)';
 }
 
@@ -97,7 +100,8 @@ class PodVersionResponse extends PodResponse {
   late final int uniqueId;
 
   @override
-  String toString() => 'PodVersionResponse(fw=$firmwareVersion, ble=$bleVersion, '
+  String toString() =>
+      'PodVersionResponse(fw=$firmwareVersion, ble=$bleVersion, '
       'lot=$lotNumber, seq=$podSequenceNumber, $lifecycle)';
 }
 
@@ -154,7 +158,8 @@ class PodSetUniqueIdResponse extends PodResponse {
   late final int uniqueId;
 
   @override
-  String toString() => 'PodSetUniqueIdResponse(id=$uniqueId, lot=$lotNumber, $lifecycle)';
+  String toString() =>
+      'PodSetUniqueIdResponse(id=$uniqueId, lot=$lotNumber, $lifecycle)';
 }
 
 /// The pod refusing a command, and why.
@@ -182,5 +187,6 @@ class PodNakResponse extends PodResponse {
   late final PodLifecycleStatus? lifecycle;
 
   @override
-  String toString() => 'PodNakResponse($error, lifecycle=$lifecycle, resync=$resyncCount)';
+  String toString() =>
+      'PodNakResponse($error, lifecycle=$lifecycle, resync=$resyncCount)';
 }

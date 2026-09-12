@@ -38,7 +38,7 @@ class PodMonitor {
     this.retry = const PodRetry(),
     this.now = DateTime.now,
   }) : _connection =
-            connection ?? PodConnection(store: store, lease: serviceLease);
+           connection ?? PodConnection(store: store, lease: serviceLease);
 
   /// The link lease both halves of the background service share.
   ///
@@ -46,8 +46,9 @@ class PodMonitor {
   /// automation run chained on the same tick and must not exclude each other,
   /// while both must exclude the UI. No patience, because the service's work is
   /// periodic and coming back later is free.
-  static const PodLinkLease serviceLease =
-      PodLinkLease('the background service');
+  static const PodLinkLease serviceLease = PodLinkLease(
+    'the background service',
+  );
 
   /// How often the pod is actually contacted. The pod's own beeper is the primary
   /// alarm for anything urgent, so this trades promptness for the pod's battery
@@ -115,10 +116,9 @@ class PodMonitor {
       // changes nothing about the pod, so repeating it is free, and the next
       // poll is a quarter of an hour away — long enough for a warning to be
       // late over a link that would have come up on a second try.
-      final session = await retry.copyWith(onLog: onLog).run(
-        'poll',
-        () => _openAndSettle(mayScan),
-      );
+      final session = await retry
+          .copyWith(onLog: onLog)
+          .run('poll', () => _openAndSettle(mayScan));
       final status = await _read(session, PodStatusPage.defaultPage);
       if (status is! PodStatusResponse) {
         _failedPolls++;
@@ -166,11 +166,13 @@ class PodMonitor {
   /// Sends one status request and returns whatever the pod answered.
   Future<PodResponse> _read(PodSession session, PodStatusPage page) async {
     final sequence = (store.commandSequence + 1) & 0x0f;
-    final response = await session.run(PodGetStatusCommand(
-      uniqueId: store.uniqueId!,
-      sequenceNumber: sequence,
-      page: page,
-    ));
+    final response = await session.run(
+      PodGetStatusCommand(
+        uniqueId: store.uniqueId!,
+        sequenceNumber: sequence,
+        page: page,
+      ),
+    );
     await store.saveCommandSequence(sequence);
     return response;
   }
@@ -197,11 +199,20 @@ class PodMonitor {
   /// Feeds everything that needs a live status.
   Future<void> _consume(PodStatusResponse status, PodAlarm alarm) async {
     await _runQuietly('alarm check', () => alarms.checkAlarm(alarm));
-    await _runQuietly('delivery check', () => alarms.checkDelivering(store, status));
-    await _runQuietly('reservoir check', () => alarms.checkReservoir(store, status));
+    await _runQuietly(
+      'delivery check',
+      () => alarms.checkDelivering(store, status),
+    );
+    await _runQuietly(
+      'reservoir check',
+      () => alarms.checkReservoir(store, status),
+    );
     await _runQuietly('reachability check', () => alarms.checkReachable(store));
     await _runQuietly('basal accounting', () => _recordBasal(status));
-    await _runQuietly('backend mirror', () => PumpSync().sync(store, status: status));
+    await _runQuietly(
+      'backend mirror',
+      () => PumpSync().sync(store, status: status),
+    );
     await _runQuietly('insulin push', () => InsulinSync().push(store));
     onLog('pod status: $status, alarm: $alarm');
   }

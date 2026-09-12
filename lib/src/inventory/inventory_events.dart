@@ -20,26 +20,33 @@ class InventoryEvent {
   /// All upcoming events across [items], sorted by date. Run-out events are
   /// only meaningful while consumption is happening, so items with no rate
   /// contribute none.
-  static List<InventoryEvent> upcoming(List<InventoryItem> items, DateTime now) {
+  static List<InventoryEvent> upcoming(
+    List<InventoryItem> items,
+    DateTime now,
+  ) {
     final events = <InventoryEvent>[];
     for (final item in items) {
       for (final delivery in item.deliveries) {
         if (delivery.atEpochMs >= now.millisecondsSinceEpoch) {
-          events.add(InventoryEvent(
-            kind: InventoryEventKind.delivery,
-            date: delivery.date,
-            itemName: item.name,
-            quantity: delivery.quantity,
-          ));
+          events.add(
+            InventoryEvent(
+              kind: InventoryEventKind.delivery,
+              date: delivery.date,
+              itemName: item.name,
+              quantity: delivery.quantity,
+            ),
+          );
         }
       }
       final runOut = item.runOutDate(now);
       if (runOut != null) {
-        events.add(InventoryEvent(
-          kind: InventoryEventKind.runOut,
-          date: runOut,
-          itemName: item.name,
-        ));
+        events.add(
+          InventoryEvent(
+            kind: InventoryEventKind.runOut,
+            date: runOut,
+            itemName: item.name,
+          ),
+        );
       }
     }
     events.sort((left, right) => left.date.compareTo(right.date));

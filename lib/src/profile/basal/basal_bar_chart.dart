@@ -56,8 +56,10 @@ class BasalBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scale = rates.fold(minValue > 0 ? maxValue : 0.5,
-        (m, r) => r > m ? r : m);
+    final scale = rates.fold(
+      minValue > 0 ? maxValue : 0.5,
+      (m, r) => r > m ? r : m,
+    );
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;

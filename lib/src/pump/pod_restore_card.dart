@@ -43,7 +43,9 @@ class _PodRestoreCardState extends State<PodRestoreCard> {
 
   Future<void> _load() async {
     final controller = context.read<PodController>();
-    final offer = await PodBackupRestore(controller.store).availableBackendPod(context);
+    final offer = await PodBackupRestore(
+      controller.store,
+    ).availableBackendPod(context);
     if (mounted) {
       setState(() => _offer = offer);
     }
@@ -82,14 +84,17 @@ class _PodRestoreCardState extends State<PodRestoreCard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            LocaleText('pump.restore.discard_title',
-                textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            LocaleText(
+              'pump.restore.discard_title',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 6),
-            LocaleText('pump.restore.discard_body',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14)),
+            LocaleText(
+              'pump.restore.discard_body',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14),
+            ),
           ],
         ),
       ),
@@ -147,7 +152,9 @@ class _PodRestoreCardState extends State<PodRestoreCard> {
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+            ),
             onPressed: _adopting || _discarding ? null : _use,
             icon: const Icon(PhosphorIconsBold.cloudArrowDown, size: 18),
             label: LocaleText('pump.restore.use'),
@@ -193,7 +200,9 @@ class _PodRestoreCardState extends State<PodRestoreCard> {
     final left = offer.remaining;
     final hours = left.inHours;
     final minutes = left.inMinutes % 60;
-    return Locales.string(context, 'pump.restore.remaining')
-        .replaceFirst('#', '${hours}h ${minutes}min');
+    return Locales.string(
+      context,
+      'pump.restore.remaining',
+    ).replaceFirst('#', '${hours}h ${minutes}min');
   }
 }

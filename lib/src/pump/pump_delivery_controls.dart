@@ -112,20 +112,25 @@ class PodDeliveryPrompt {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            LocaleText(titleKey,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            LocaleText(
+              titleKey,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 6),
-            LocaleText(bodyKey,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, height: 1.35)),
+            LocaleText(
+              bodyKey,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14, height: 1.35),
+            ),
           ],
         ),
       ),
       cancelButton: true,
       confirmButtonText: confirmKey,
-      confirmButtonColor:
-          destructive ? Theme.of(context).colorScheme.error : null,
+      confirmButtonColor: destructive
+          ? Theme.of(context).colorScheme.error
+          : null,
       callback: onConfirm,
     ).show(context);
   }

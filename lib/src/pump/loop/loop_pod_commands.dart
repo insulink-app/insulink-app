@@ -82,12 +82,14 @@ class LoopPodCommands {
     );
     final previous = store.temporaryBasal;
     final startedAt = now();
-    await store.saveTemporaryBasal(PodTemporaryBasal(
-      unitsPerHour: rate.unitsPerHour,
-      start: startedAt,
-      end: startedAt.add(LoopLimits.fuse),
-      automated: true,
-    ));
+    await store.saveTemporaryBasal(
+      PodTemporaryBasal(
+        unitsPerHour: rate.unitsPerHour,
+        start: startedAt,
+        end: startedAt.add(LoopLimits.fuse),
+        automated: true,
+      ),
+    );
     try {
       await _run(
         (sequence) => PodProgramTempBasalCommand(

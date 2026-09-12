@@ -17,11 +17,11 @@ class PodBasalShortElement {
   final bool extraAlternatePulse;
 
   Uint8List get encoded => Uint8List.fromList([
-        (((slotCount - 1) & 0x0f) << 4) |
-            ((extraAlternatePulse ? 1 : 0) << 3) |
-            ((pulsesPerSlot >> 8) & 0x03),
-        pulsesPerSlot & 0xFF,
-      ]);
+    (((slotCount - 1) & 0x0f) << 4) |
+        ((extraAlternatePulse ? 1 : 0) << 3) |
+        ((pulsesPerSlot >> 8) & 0x03),
+    pulsesPerSlot & 0xFF,
+  ]);
 }
 
 /// One stretch of equal-rate slots in the form the basal command carries: the
@@ -59,7 +59,9 @@ class PodBasalLongElement {
     if (isZeroRate) {
       return PodBasalProgram.maxDelayBetweenTenthPulsesUsec;
     }
-    return PodBasalProgram.maxDelayBetweenTenthPulsesUsec * slotCount ~/ totalTenthPulses;
+    return PodBasalProgram.maxDelayBetweenTenthPulsesUsec *
+        slotCount ~/
+        totalTenthPulses;
   }
 
   Uint8List get encoded {
@@ -112,22 +114,27 @@ class PodBasalElements {
         slotsInElement = 1;
         continue;
       }
-      final wouldOverflow = (slotsInElement + 1) * previous > _maxTenthPulsesPerElement;
+      final wouldOverflow =
+          (slotsInElement + 1) * previous > _maxTenthPulsesPerElement;
       if (previous != perSlot[slot] || wouldOverflow) {
-        elements.add(PodBasalLongElement(
-          slotCount: slotsInElement,
-          totalTenthPulses: previous * slotsInElement,
-        ));
+        elements.add(
+          PodBasalLongElement(
+            slotCount: slotsInElement,
+            totalTenthPulses: previous * slotsInElement,
+          ),
+        );
         previous = perSlot[slot];
         slotsInElement = 1;
         continue;
       }
       slotsInElement++;
     }
-    elements.add(PodBasalLongElement(
-      slotCount: slotsInElement,
-      totalTenthPulses: previous * slotsInElement,
-    ));
+    elements.add(
+      PodBasalLongElement(
+        slotCount: slotsInElement,
+        totalTenthPulses: previous * slotsInElement,
+      ),
+    );
     return elements;
   }
 
@@ -142,14 +149,17 @@ class PodBasalElements {
     var index = 0;
     for (final element in longElements) {
       final startSecond = startSlot * PodBasalProgram.secondsPerSlot;
-      final endSecond = startSecond + element.slotCount * PodBasalProgram.secondsPerSlot;
+      final endSecond =
+          startSecond + element.slotCount * PodBasalProgram.secondsPerSlot;
       if (secondOfDay >= startSecond && secondOfDay < endSecond) {
         return _resolve(element, index, startSecond, endSecond, secondOfDay);
       }
       index++;
       startSlot += element.slotCount;
     }
-    throw PodBasalProgramException('No basal element covers second $secondOfDay');
+    throw PodBasalProgramException(
+      'No basal element covers second $secondOfDay',
+    );
   }
 
   PodCurrentLongElement _resolve(
@@ -180,7 +190,8 @@ class PodBasalElements {
     return PodCurrentLongElement(
       index: index,
       delayUntilNextTenthPulseUsec: delayUntilNext,
-      remainingTenthPulses: (remainingTenThousandths % 1000 != 0 ? 1 : 0) +
+      remainingTenthPulses:
+          (remainingTenThousandths % 1000 != 0 ? 1 : 0) +
           remainingTenThousandths ~/ 1000,
     );
   }

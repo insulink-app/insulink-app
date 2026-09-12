@@ -24,15 +24,19 @@ class AdvisoryRequest {
   /// The reading the suggestion was computed from, logged with the meal.
   final int glucoseMgdl;
 
-  /// When the button was tapped, NOT when the request is applied.
+  /// When the OFFER was composed, not when it was tapped or applied.
   final DateTime at;
 
-  /// How long a tap stays actionable.
+  /// How long an offer stays actionable.
   ///
   /// A dose is sized for the glucose that was on screen when the notification
-  /// was posted. A request the service only finds much later (the process was
-  /// killed, the phone was off) would deliver that dose against a body that has
-  /// moved on, so it is dropped instead. Fifteen minutes is three CGM readings:
+  /// was posted, so that is the moment this measures from. Both ends of the
+  /// delay matter: a request the service only finds much later (the process was
+  /// killed, the phone was off), and a button tapped long after it appeared.
+  /// The pre-warning withdraws itself at this age, but a HIGH ALARM stands
+  /// until glucose comes back down — hours, during which its button would
+  /// otherwise deliver a dose sized for a reading, and an insulin-on-board
+  /// figure, that are no longer true. Fifteen minutes is three CGM readings:
   /// long enough to survive a restart, short enough to still be this episode.
   static const Duration validFor = Duration(minutes: 15);
 
@@ -92,9 +96,10 @@ class AdvisoryActionStore {
     double amount,
     int glucoseMgdl, {
     String? filePath,
+    int? offeredAtMs,
   }) {
     final file = filePath != null ? File(filePath) : _requestFile;
-    final at = DateTime.now().millisecondsSinceEpoch;
+    final at = offeredAtMs ?? DateTime.now().millisecondsSinceEpoch;
     file.writeAsStringSync(
       '$kind:$amount:$glucoseMgdl:$at\n',
       mode: FileMode.append,
@@ -111,8 +116,6 @@ class AdvisoryActionStore {
     }
     final lines = await file.readAsLines();
     await file.delete();
-    return [
-      for (final line in lines) ?AdvisoryRequest.parse(line),
-    ];
+    return [for (final line in lines) ?AdvisoryRequest.parse(line)];
   }
 }

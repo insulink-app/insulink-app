@@ -136,8 +136,10 @@ enum PodNakError {
 
   final int value;
 
-  static PodNakError byValue(int value) => PodNakError.values
-      .firstWhere((entry) => entry.value == value, orElse: () => unknown);
+  static PodNakError byValue(int value) => PodNakError.values.firstWhere(
+    (entry) => entry.value == value,
+    orElse: () => unknown,
+  );
 }
 
 /// The reminder beeps a delivery program asks for.
@@ -153,6 +155,6 @@ class PodProgramReminder {
   final int everyMinutes;
 
   Uint8List get encoded => Uint8List.fromList([
-        ((atStart ? 1 : 0) << 7) | ((atEnd ? 1 : 0) << 6) | (everyMinutes & 0x3f),
-      ]);
+    ((atStart ? 1 : 0) << 7) | ((atEnd ? 1 : 0) << 6) | (everyMinutes & 0x3f),
+  ]);
 }

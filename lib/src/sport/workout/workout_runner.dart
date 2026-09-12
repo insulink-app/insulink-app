@@ -288,9 +288,7 @@ class WorkoutRunner extends ChangeNotifier {
   /// free workout whose exercises still carry three sets simply runs them out
   /// first.
   bool get awaitingNextExercise =>
-      _isFree &&
-      _phase == WorkoutPhase.resting &&
-      _sets.length >= _plannedSets;
+      _isFree && _phase == WorkoutPhase.resting && _sets.length >= _plannedSets;
 
   /// Add an exercise to THIS session — appended to the runner's own copy of the
   /// routine, so the stored routine keeps its items and the snapshot carries the

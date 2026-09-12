@@ -31,25 +31,25 @@ class BolusDeliveryResult {
   const BolusDeliveryResult._(this.status, this.recordedUnits, this.detail);
 
   const BolusDeliveryResult.loggedOnly(double units)
-      : this._(BolusDeliveryStatus.loggedOnly, units, null);
+    : this._(BolusDeliveryStatus.loggedOnly, units, null);
 
   const BolusDeliveryResult.delivered(double units)
-      : this._(BolusDeliveryStatus.delivered, units, null);
+    : this._(BolusDeliveryStatus.delivered, units, null);
 
   /// Nothing was delivered, so nothing is recorded as insulin.
   const BolusDeliveryResult.refused(String detail)
-      : this._(BolusDeliveryStatus.refused, 0, detail);
+    : this._(BolusDeliveryStatus.refused, 0, detail);
 
   /// The outcome is genuinely unknown. Zero units are recorded — understating
   /// insulin is recoverable by logging it afterwards, whereas overstating it
   /// would suppress a later dose the user actually needs.
   const BolusDeliveryResult.unknown(String detail)
-      : this._(BolusDeliveryStatus.unknown, 0, detail);
+    : this._(BolusDeliveryStatus.unknown, 0, detail);
 
   /// Handed to the pump; the sheet is free to close. The meal is written with its
   /// carbs and no insulin, and the dose is added only once the pod names it back.
   const BolusDeliveryResult.handedOver()
-      : this._(BolusDeliveryStatus.handedOver, 0, null);
+    : this._(BolusDeliveryStatus.handedOver, 0, null);
 
   final BolusDeliveryStatus status;
 
@@ -122,12 +122,14 @@ class BolusDelivery {
 
     // Recorded before anything is sent, so a process that dies between here and
     // the pod's answer leaves evidence that a dose may be running.
-    await controller.store.startPendingBolus(PodRunningBolus(
-      startedAt: DateTime.now(),
-      pulses: amount.pulses,
-      eighthSecondsBetweenPulses:
-          PodProgramBolusCommand.defaultEighthSecondsBetweenPulses,
-    ));
+    await controller.store.startPendingBolus(
+      PodRunningBolus(
+        startedAt: DateTime.now(),
+        pulses: amount.pulses,
+        eighthSecondsBetweenPulses:
+            PodProgramBolusCommand.defaultEighthSecondsBetweenPulses,
+      ),
+    );
     try {
       return await _send(amount, deliveredLastHour);
     } finally {
@@ -147,11 +149,13 @@ class BolusDelivery {
     String message,
     PodBolusAmount amount,
   ) async {
-    await controller.store.recordUnconfirmedBolus(PodDelivery(
-      at: DateTime.now(),
-      units: amount.units,
-      kind: PodDeliveryKind.bolus,
-    ));
+    await controller.store.recordUnconfirmedBolus(
+      PodDelivery(
+        at: DateTime.now(),
+        units: amount.units,
+        kind: PodDeliveryKind.bolus,
+      ),
+    );
     return BolusDeliveryResult.unknown(message);
   }
 
@@ -178,15 +182,16 @@ class BolusDelivery {
     PodStatusResponse status,
     double deliveredLastHour,
   ) {
-    final decision = PodDeliveryGuard(
-      maxBolusUnits: maxBolusUnits,
-      maxUnitsPerHour: maxUnitsPerHour,
-    ).checkBolus(
-      amount: amount,
-      status: status,
-      statusAge: Duration.zero,
-      deliveredLastHour: deliveredLastHour,
-    );
+    final decision =
+        PodDeliveryGuard(
+          maxBolusUnits: maxBolusUnits,
+          maxUnitsPerHour: maxUnitsPerHour,
+        ).checkBolus(
+          amount: amount,
+          status: status,
+          statusAge: Duration.zero,
+          deliveredLastHour: deliveredLastHour,
+        );
     if (decision.isAllowed) {
       return null;
     }
@@ -204,7 +209,9 @@ class BolusDelivery {
         refuseIf: (status) => _refusalFor(amount, status, deliveredLastHour),
       );
       if (response is PodNakResponse) {
-        return BolusDeliveryResult.refused('Pod refused it: ${response.error.name}');
+        return BolusDeliveryResult.refused(
+          'Pod refused it: ${response.error.name}',
+        );
       }
       if (response is! PodStatusResponse) {
         return _unknown('The pod gave an unclear answer', amount);
@@ -218,19 +225,23 @@ class BolusDelivery {
       // Logged only once the pod has named the bolus back, never before: an entry
       // for a dose that did not run would overstate the insulin on board.
       final startedAt = DateTime.now();
-      await controller.store.recordDelivery(PodDelivery(
-        at: startedAt,
-        units: amount.units,
-        kind: PodDeliveryKind.bolus,
-      ));
+      await controller.store.recordDelivery(
+        PodDelivery(
+          at: startedAt,
+          units: amount.units,
+          kind: PodDeliveryKind.bolus,
+        ),
+      );
       // The pod takes about two seconds per 0.05 U pulse, so this dose is still
       // running for a while. Recorded so the overview can show it and stop it.
-      await controller.store.startRunningBolus(PodRunningBolus(
-        startedAt: startedAt,
-        pulses: amount.pulses,
-        eighthSecondsBetweenPulses:
-            PodProgramBolusCommand.defaultEighthSecondsBetweenPulses,
-      ));
+      await controller.store.startRunningBolus(
+        PodRunningBolus(
+          startedAt: startedAt,
+          pulses: amount.pulses,
+          eighthSecondsBetweenPulses:
+              PodProgramBolusCommand.defaultEighthSecondsBetweenPulses,
+        ),
+      );
       controller.notifyRunningBolusChanged();
       return BolusDeliveryResult.delivered(amount.units);
     } on PodBolusRefused catch (refusal) {

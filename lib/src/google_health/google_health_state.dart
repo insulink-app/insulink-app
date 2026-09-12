@@ -232,7 +232,8 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
   bool get hasLiveHr {
     final at = _latestHrAtMs;
     return at != null &&
-        DateTime.now().millisecondsSinceEpoch - at < _liveHrMaxAge.inMilliseconds;
+        DateTime.now().millisecondsSinceEpoch - at <
+            _liveHrMaxAge.inMilliseconds;
   }
 
   /// A band delivers ~1 Hz and the service relays at that rate; a few seconds'

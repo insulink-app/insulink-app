@@ -33,11 +33,7 @@ class InsulinOnBoard {
   final Duration duration;
 
   /// The parts, kept apart so a screen can show what it subtracted and why.
-  InsulinOnBoardParts parts(
-    List<Meal> meals, {
-    PodStore? pod,
-    DateTime? now,
-  }) {
+  InsulinOnBoardParts parts(List<Meal> meals, {PodStore? pod, DateTime? now}) {
     final at = now ?? DateTime.now();
     return InsulinOnBoardParts(
       boluses: ActiveInsulin(duration).units(meals, now: at),

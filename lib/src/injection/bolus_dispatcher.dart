@@ -35,10 +35,9 @@ class BolusDispatcher extends ChangeNotifier {
   bool get isSending => _inFlight || controller.store.pendingBolus != null;
 
   /// Units of the dose currently on its way, or null when none is.
-  double? get sendingUnits =>
-      _inFlight || controller.store.pendingBolus != null
-          ? controller.store.pendingBolus?.programmedUnits
-          : null;
+  double? get sendingUnits => _inFlight || controller.store.pendingBolus != null
+      ? controller.store.pendingBolus?.programmedUnits
+      : null;
 
   /// The last outcome worth showing: a refusal or an unknown result. Sticky until
   /// dismissed, because it means the meal on file has no insulin against it.
@@ -118,11 +117,13 @@ class BolusDispatcher extends ChangeNotifier {
     if (units <= 0) {
       return;
     }
-    await controller.store.recordUnconfirmedBolus(PodDelivery(
-      at: DateTime.now(),
-      units: units,
-      kind: PodDeliveryKind.bolus,
-    ));
+    await controller.store.recordUnconfirmedBolus(
+      PodDelivery(
+        at: DateTime.now(),
+        units: units,
+        kind: PodDeliveryKind.bolus,
+      ),
+    );
   }
 
   /// Resolves a dose the app was still sending when it was killed.

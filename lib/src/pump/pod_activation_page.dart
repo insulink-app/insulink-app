@@ -149,7 +149,6 @@ class _PodActivationPageState extends State<PodActivationPage> {
       PodBasalAdapter(context.watch<ProfileBasalState>().active);
 }
 
-
 /// The fingerprint that releases the cannula, asked at the button and spent at
 /// the command.
 ///
@@ -163,7 +162,7 @@ class _PodActivationPageState extends State<PodActivationPage> {
 /// USE, so a confirmation given for one attempt cannot carry a later one.
 class CannulaConfirmation {
   CannulaConfirmation({required this.reason, BiometricAuth? auth})
-      : _auth = auth ?? BiometricAuth();
+    : _auth = auth ?? BiometricAuth();
 
   /// What the biometric sheet says it is for.
   final String reason;

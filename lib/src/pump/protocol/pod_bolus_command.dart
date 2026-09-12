@@ -139,39 +139,41 @@ class PodProgramBolusCommand extends PodCommand {
     if (_pulseSpacing > 0xFFFF || amount.pulses * 10 > 0xFFFF) {
       throw PodDoseException('Bolus too large to encode without overflow');
     }
-    final frame = appendCrc(joinParts([
-      buildHeader(_interlock.length + _bolusBody.length),
-      _interlock,
-      _bolusBody,
-    ]));
+    final frame = appendCrc(
+      joinParts([
+        buildHeader(_interlock.length + _bolusBody.length),
+        _interlock,
+        _bolusBody,
+      ]),
+    );
     _verifyEncodedDose(frame);
     return frame;
   }
 
   /// The 0x1a interlock the pod requires immediately before a delivery command.
   PodInsulinInterlock get _interlockCommand => PodInsulinInterlock(
-        nonce: nonce,
-        deliveryType: PodInsulinDeliveryType.bolus,
-        checksum: PodInsulinInterlock.bolusChecksum(
-          pulses: amount.pulses,
-          pulseSpacing: _pulseSpacing,
-        ),
-        byte9: 0x01,
-        byte10And11: _pulseSpacing,
-        byte12And13: amount.pulses,
-        elements: [bigEndian16(amount.pulses)],
-      );
+    nonce: nonce,
+    deliveryType: PodInsulinDeliveryType.bolus,
+    checksum: PodInsulinInterlock.bolusChecksum(
+      pulses: amount.pulses,
+      pulseSpacing: _pulseSpacing,
+    ),
+    byte9: 0x01,
+    byte10And11: _pulseSpacing,
+    byte12And13: amount.pulses,
+    elements: [bigEndian16(amount.pulses)],
+  );
 
   Uint8List get _interlock => _interlockCommand.encoded;
 
   Uint8List get _bolusBody => joinParts([
-        [type.value, 13],
-        reminder.encoded,
-        bigEndian16(amount.pulses * 10),
-        bigEndian32(eighthSecondsBetweenPulses ~/ 8 * 100000),
-        [0x00, 0x00],
-        [0x00, 0x00, 0x00, 0x00],
-      ]);
+    [type.value, 13],
+    reminder.encoded,
+    bigEndian16(amount.pulses * 10),
+    bigEndian32(eighthSecondsBetweenPulses ~/ 8 * 100000),
+    [0x00, 0x00],
+    [0x00, 0x00, 0x00, 0x00],
+  ]);
 
   /// Reads the dose back out of the finished frame and refuses to release it
   /// unless every copy agrees with [amount]. This is the last gate before an
@@ -192,7 +194,8 @@ class PodProgramBolusCommand extends PodCommand {
       );
     }
     final trailerStart = frame.length - 2;
-    if (view.getUint16(trailerStart) != PodCrc16(frame.sublist(0, trailerStart)).value) {
+    if (view.getUint16(trailerStart) !=
+        PodCrc16(frame.sublist(0, trailerStart)).value) {
       throw PodDoseException('Bolus frame failed its own CRC check');
     }
   }

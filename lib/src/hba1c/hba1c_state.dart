@@ -111,7 +111,9 @@ class Hba1cState extends ChangeNotifier {
       for (final entry in jsonDecode(raw) as List)
         Hba1cEntry.fromJson((entry as Map).cast()),
     ];
-    entries.sort((first, second) => first.atEpochMs.compareTo(second.atEpochMs));
+    entries.sort(
+      (first, second) => first.atEpochMs.compareTo(second.atEpochMs),
+    );
     return entries;
   }
 }

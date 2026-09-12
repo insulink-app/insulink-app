@@ -142,10 +142,10 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// insulin on board: on board reaches back a whole insulin duration and now
   /// also carries what the automation added, so using it here would refuse a
   /// legitimate meal bolus because of basal given two hours ago.
-  double get _deliveredLastHour =>
-      context.read<PodController>().store.bolusUnitsWithin(
-            const Duration(hours: 1),
-          );
+  double get _deliveredLastHour => context
+      .read<PodController>()
+      .store
+      .bolusUnitsWithin(const Duration(hours: 1));
 
   /// Suggested bolus in units, or null while glucose is empty/invalid.
   double? get _suggested {
@@ -232,11 +232,11 @@ class _InjectionSheetState extends State<InjectionSheet> {
       // Handed over, not delivered: the dispatcher carries it from here and
       // writes the insulin onto this exact meal once the pod names it back.
       context.read<BolusDispatcher>().submit(
-            delivery: _delivery,
-            units: bolus,
-            deliveredLastHour: _deliveredLastHour,
-            meal: meal,
-          );
+        delivery: _delivery,
+        units: bolus,
+        deliveredLastHour: _deliveredLastHour,
+        meal: meal,
+      );
     }
     if (mounted) {
       navigator.pop();
@@ -336,9 +336,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
     return _InjectionCard(
       icon: PhosphorIconsBold.drop,
       titleKey: 'injection.glucose',
-      children: [
-        _NumberField(controller: _glucoseController, suffix: 'mg/dL'),
-      ],
+      children: [_NumberField(controller: _glucoseController, suffix: 'mg/dL')],
     );
   }
 

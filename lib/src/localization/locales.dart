@@ -63,9 +63,19 @@ class Locales {
 
   Map<String, String> _localizedStings = HashMap();
 
+  /// Load this locale's JSON. Decoded HERE rather than through
+  /// `rootBundle.loadString`, which hands anything from 50 KiB up to `compute`
+  /// — a real isolate that a `testWidgets` fake clock never lets finish, so the
+  /// delegate's future stays pending and the whole app renders as a blank
+  /// screen. Every widget test in the suite broke the day a locale file crossed
+  /// that line; the decode is microseconds, so keep it inline.
   Future load() async {
-    String lng = locale.languageCode;
-    String jsonString = await rootBundle.loadString("assets/locales/$lng.json");
+    final data = await rootBundle.load(
+      'assets/locales/${locale.languageCode}.json',
+    );
+    final jsonString = utf8.decode(
+      data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+    );
     final Map<String, dynamic> jsonMap = json.decode(jsonString);
     _localizedStings = _flatten(jsonMap);
   }

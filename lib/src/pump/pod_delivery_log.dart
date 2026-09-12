@@ -14,23 +14,23 @@ class PodDelivery {
   });
 
   factory PodDelivery.fromJson(Map<String, dynamic> json) => PodDelivery(
-        at: DateTime.fromMillisecondsSinceEpoch((json['at'] as num).toInt()),
-        units: (json['units'] as num).toDouble(),
-        kind: PodDeliveryKind.values.firstWhere(
-          (entry) => entry.name == json['kind'],
-          orElse: () => PodDeliveryKind.bolus,
-        ),
-      );
+    at: DateTime.fromMillisecondsSinceEpoch((json['at'] as num).toInt()),
+    units: (json['units'] as num).toDouble(),
+    kind: PodDeliveryKind.values.firstWhere(
+      (entry) => entry.name == json['kind'],
+      orElse: () => PodDeliveryKind.bolus,
+    ),
+  );
 
   final DateTime at;
   final double units;
   final PodDeliveryKind kind;
 
   Map<String, dynamic> toJson() => {
-        'at': at.millisecondsSinceEpoch,
-        'units': units,
-        'kind': kind.name,
-      };
+    'at': at.millisecondsSinceEpoch,
+    'units': units,
+    'kind': kind.name,
+  };
 }
 
 /// What a recorded delivery was for. Named rather than a bare number, because
@@ -165,8 +165,10 @@ extension PodDeliveryLog on PodStore {
   double bolusUnitsWithin(Duration window, {DateTime? now}) {
     final since = (now ?? DateTime.now()).subtract(window);
     return deliveryLog
-        .where((entry) =>
-            entry.kind == PodDeliveryKind.bolus && entry.at.isAfter(since))
+        .where(
+          (entry) =>
+              entry.kind == PodDeliveryKind.bolus && entry.at.isAfter(since),
+        )
         .fold<double>(0, (sum, entry) => sum + entry.units);
   }
 

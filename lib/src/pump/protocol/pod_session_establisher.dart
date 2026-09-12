@@ -28,13 +28,14 @@ class PodSessionEstablisher {
     Uint8List? controllerNonceHalf,
     Uint8List? challengeRandom,
     int? identifier,
-  })  : _identifier = identifier ?? Random.secure().nextInt(256),
-        _controllerNonceHalf = controllerNonceHalf ?? _randomBytes(_nonceHalfSize),
-        _milenage = Milenage(
-          key: longTermKey,
-          sqn: encodeEapSequence(eapSequence),
-          rand: challengeRandom ?? _randomBytes(16),
-        );
+  }) : _identifier = identifier ?? Random.secure().nextInt(256),
+       _controllerNonceHalf =
+           controllerNonceHalf ?? _randomBytes(_nonceHalfSize),
+       _milenage = Milenage(
+         key: longTermKey,
+         sqn: encodeEapSequence(eapSequence),
+         rand: challengeRandom ?? _randomBytes(16),
+       );
 
   static const int _nonceHalfSize = 4;
 
@@ -56,7 +57,9 @@ class PodSessionEstablisher {
     if (reply == null) {
       throw PodSessionException('Pod did not answer the session challenge');
     }
-    final podNonceHalf = _readChallengeReply(PodEapMessage.parse(reply.payload));
+    final podNonceHalf = _readChallengeReply(
+      PodEapMessage.parse(reply.payload),
+    );
 
     _messageSequence++;
     await messageIo.sendMessage(_success());
@@ -86,10 +89,9 @@ class PodSessionEstablisher {
   }
 
   MessagePacket _success() {
-    return _wrap(PodEapMessage(
-      code: PodEapCode.success,
-      identifier: _identifier,
-    ));
+    return _wrap(
+      PodEapMessage(code: PodEapCode.success, identifier: _identifier),
+    );
   }
 
   MessagePacket _wrap(PodEapMessage message) {
@@ -114,10 +116,13 @@ class PodSessionEstablisher {
     ).throwIfNeeded(reply);
 
     if (reply.attributes.length != 2) {
-      final onlyAttribute =
-          reply.attributes.length == 1 ? reply.attributes.single : null;
+      final onlyAttribute = reply.attributes.length == 1
+          ? reply.attributes.single
+          : null;
       if (onlyAttribute?.type == PodEapAttributeType.clientErrorCode) {
-        throw PodSessionException('Pod refused the challenge with a client error');
+        throw PodSessionException(
+          'Pod refused the challenge with a client error',
+        );
       }
       throw PodSessionException(
         'Expected two session attributes, got ${reply.attributes.length}',
@@ -134,7 +139,9 @@ class PodSessionEstablisher {
         case PodEapAttributeType.customIv:
           podNonceHalf = attribute.payload.sublist(0, _nonceHalfSize);
         default:
-          throw PodSessionException('Unexpected session attribute ${attribute.type.name}');
+          throw PodSessionException(
+            'Unexpected session attribute ${attribute.type.name}',
+          );
       }
     }
     if (podNonceHalf == null) {

@@ -25,7 +25,10 @@ class ActiveInsulinSparkline extends StatelessWidget {
       points.last.at.difference(points.first.at).inSeconds / 60;
 
   double get _maxY {
-    final peak = points.fold(0.0, (max, point) => point.units > max ? point.units : max);
+    final peak = points.fold(
+      0.0,
+      (max, point) => point.units > max ? point.units : max,
+    );
     return (peak * 1.1).clamp(1.0, double.infinity);
   }
 

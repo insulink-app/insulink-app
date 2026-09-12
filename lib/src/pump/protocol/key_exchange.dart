@@ -38,9 +38,9 @@ class PodPairingMismatch extends PodPairingException {
 /// exactly and pinned by the known-answer test in `test/pump/pod_pairing_test.dart`.
 class PodKeyExchange {
   PodKeyExchange({required this.privateKey, required this.controllerNonce})
-      : assert(privateKey.length == 32),
-        assert(controllerNonce.length == nonceSize),
-        publicKey = x25519PublicFromPrivate(privateKey: privateKey);
+    : assert(privateKey.length == 32),
+      assert(controllerNonce.length == nonceSize),
+      publicKey = x25519PublicFromPrivate(privateKey: privateKey);
 
   /// Builds an exchange with a freshly generated key pair and nonce.
   factory PodKeyExchange.generate() {
@@ -57,8 +57,22 @@ class PodKeyExchange {
   static const int publicKeySize = 32;
   static const int keySize = 16;
   static const List<int> _ladderLabel = [0x54, 0x57, 0x49, 0x74]; // "TWIt"
-  static const List<int> _controllerConfirmLabel = [0x4b, 0x43, 0x5f, 0x32, 0x5f, 0x55]; // "KC_2_U"
-  static const List<int> _podConfirmLabel = [0x4b, 0x43, 0x5f, 0x32, 0x5f, 0x56]; // "KC_2_V"
+  static const List<int> _controllerConfirmLabel = [
+    0x4b,
+    0x43,
+    0x5f,
+    0x32,
+    0x5f,
+    0x55,
+  ]; // "KC_2_U"
+  static const List<int> _podConfirmLabel = [
+    0x4b,
+    0x43,
+    0x5f,
+    0x32,
+    0x5f,
+    0x56,
+  ]; // "KC_2_V"
 
   final Uint8List privateKey;
   final Uint8List controllerNonce;
@@ -99,7 +113,10 @@ class PodKeyExchange {
       peerPublicKey: podPublicKey,
     );
     final seedKey = Uint8List.fromList(
-      _tail(podPublicKey) + _tail(publicKey) + _tail(podNonce) + _tail(controllerNonce),
+      _tail(podPublicKey) +
+          _tail(publicKey) +
+          _tail(podNonce) +
+          _tail(controllerNonce),
     );
     final intermediate = PodAes(seedKey).cmac(shared);
 
@@ -109,9 +126,9 @@ class PodKeyExchange {
     controllerConfirmation = PodAes(confirmKey).cmac(
       Uint8List.fromList(_controllerConfirmLabel + controllerNonce + podNonce),
     );
-    podConfirmation = PodAes(confirmKey).cmac(
-      Uint8List.fromList(_podConfirmLabel + podNonce + controllerNonce),
-    );
+    podConfirmation = PodAes(
+      confirmKey,
+    ).cmac(Uint8List.fromList(_podConfirmLabel + podNonce + controllerNonce));
     _derived = true;
   }
 

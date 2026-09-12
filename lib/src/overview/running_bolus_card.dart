@@ -95,8 +95,10 @@ class RunningBolusCard extends StatelessWidget {
     return Row(
       children: [
         Text(
-          Locales.string(context, 'pump.bolus.remaining')
-              .replaceFirst('#', _countdown(bolus.remaining(now))),
+          Locales.string(
+            context,
+            'pump.bolus.remaining',
+          ).replaceFirst('#', _countdown(bolus.remaining(now))),
           style: TextStyle(
             fontSize: 12,
             fontFeatures: const [FontFeature.tabularFigures()],
@@ -133,10 +135,7 @@ class RunningBolusCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(4),
       child: Stack(
         children: [
-          Container(
-            height: 8,
-            color: scheme.onSurface.withValues(alpha: 0.12),
-          ),
+          Container(height: 8, color: scheme.onSurface.withValues(alpha: 0.12)),
           AnimatedFractionallySizedBox(
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeOut,
@@ -148,5 +147,4 @@ class RunningBolusCard extends StatelessWidget {
       ),
     );
   }
-
 }

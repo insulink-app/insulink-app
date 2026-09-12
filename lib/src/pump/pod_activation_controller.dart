@@ -154,7 +154,8 @@ class PodActivationController extends ChangeNotifier {
   }
 
   bool get isBusy =>
-      _stage == PodActivationStage.priming || _stage == PodActivationStage.starting;
+      _stage == PodActivationStage.priming ||
+      _stage == PodActivationStage.starting;
 
   /// Whether the pod is already on the body, so the attach stage is being resumed
   /// rather than reached for the first time.
@@ -306,7 +307,8 @@ class PodActivationController extends ChangeNotifier {
     // cannot be renegotiated, and the user is the only one who can decide
     // whether to carry on without it.
     debugPrint('pod activation: the account copy of the key FAILED');
-    _failure = 'The pod is paired, but its key could not be saved to your '
+    _failure =
+        'The pod is paired, but its key could not be saved to your '
         'account. Resetting the app would lose this pod for good.';
     _notify();
   }
@@ -331,11 +333,13 @@ class PodActivationController extends ChangeNotifier {
     if (pulses == null) {
       return;
     }
-    await store.recordDelivery(PodDelivery(
-      at: DateTime.now(),
-      units: pulses * PodBolusAmount.pulseUnits,
-      kind: kind,
-    ));
+    await store.recordDelivery(
+      PodDelivery(
+        at: DateTime.now(),
+        units: pulses * PodBolusAmount.pulseUnits,
+        kind: kind,
+      ),
+    );
   }
 
   /// Bookkeeping for a pod that is ALREADY in the body and delivering.
@@ -440,8 +444,7 @@ class PodActivationController extends ChangeNotifier {
       },
       confirmCannulaInsertion: confirmCannulaInsertion,
       reopenLink: _reopenLink,
-      onFacts: (facts) =>
-          store.saveActivationFacts(jsonEncode(facts.toJson())),
+      onFacts: (facts) => store.saveActivationFacts(jsonEncode(facts.toJson())),
       knownFacts: facts,
       startFromSequence: store.commandSequence,
     );
@@ -465,8 +468,10 @@ class PodActivationController extends ChangeNotifier {
   /// not support — would otherwise escape and leave the wizard stuck on its
   /// spinner, which is the one state the user cannot get out of.
   void _stoppedOrFailed(Object error) {
-    debugPrint('pod activation: ${_stopped ? 'stopped' : 'threw'} '
-        'at ${storedStep.name}: $error');
+    debugPrint(
+      'pod activation: ${_stopped ? 'stopped' : 'threw'} '
+      'at ${storedStep.name}: $error',
+    );
     if (_stopped) {
       restoreStage();
       return;
@@ -478,7 +483,8 @@ class PodActivationController extends ChangeNotifier {
   /// name, converted to the snake_case the locale files use, so a step added to
   /// [PodActivationStep] needs only its text and no wiring here.
   void _reportProgress(String step) {
-    _progressKey = 'pump.activate.progress.'
+    _progressKey =
+        'pump.activate.progress.'
         '${step.replaceAllMapped(RegExp('[A-Z]'), (match) => '_${match[0]!.toLowerCase()}')}';
     _notify();
   }

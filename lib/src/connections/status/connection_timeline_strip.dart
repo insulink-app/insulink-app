@@ -35,7 +35,8 @@ class ConnectionTimelineStrip extends StatelessWidget {
           onExit: (_) => onSelect(null),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTapDown: (details) => _pick(details.localPosition.dx, constraints),
+            onTapDown: (details) =>
+                _pick(details.localPosition.dx, constraints),
             onHorizontalDragUpdate: (details) =>
                 _pick(details.localPosition.dx, constraints),
             child: _slices(context),
@@ -52,9 +53,10 @@ class ConnectionTimelineStrip extends StatelessWidget {
     if (covered.isEmpty || constraints.maxWidth <= 0) {
       return;
     }
-    final index = (dx / constraints.maxWidth * covered.length)
-        .floor()
-        .clamp(0, covered.length - 1);
+    final index = (dx / constraints.maxWidth * covered.length).floor().clamp(
+      0,
+      covered.length - 1,
+    );
     if (index != selected) {
       onSelect(index);
     }

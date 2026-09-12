@@ -14,28 +14,47 @@ class PodReassembler {
       throw PodFragmentException('First fragment too short');
     }
     if (firstFragment[0] != 0) {
-      throw PodFragmentException('Expected fragment index 0, got ${firstFragment[0]}');
+      throw PodFragmentException(
+        'Expected fragment index 0, got ${firstFragment[0]}',
+      );
     }
     _fullFragments = firstFragment[1];
     if (_fullFragments >= PodFragmentSizes.maxFragments) {
-      throw PodFragmentException('Too many fragments announced: $_fullFragments');
+      throw PodFragmentException(
+        'Too many fragments announced: $_fullFragments',
+      );
     }
     if (_fullFragments == 0) {
       if (firstFragment.length < PodFragmentSizes.firstHeaderWithoutMiddle) {
         throw PodFragmentException('Single-fragment message truncated');
       }
       final announced = firstFragment[6];
-      final end = _min(announced + PodFragmentSizes.firstHeaderWithoutMiddle, firstFragment.length);
-      _crc = ByteData.view(firstFragment.buffer, firstFragment.offsetInBytes).getUint32(2);
-      _expectsExtra = announced + PodFragmentSizes.firstHeaderWithoutMiddle > end;
-      _parts.add(firstFragment.sublist(PodFragmentSizes.firstHeaderWithoutMiddle, end));
+      final end = _min(
+        announced + PodFragmentSizes.firstHeaderWithoutMiddle,
+        firstFragment.length,
+      );
+      _crc = ByteData.view(
+        firstFragment.buffer,
+        firstFragment.offsetInBytes,
+      ).getUint32(2);
+      _expectsExtra =
+          announced + PodFragmentSizes.firstHeaderWithoutMiddle > end;
+      _parts.add(
+        firstFragment.sublist(PodFragmentSizes.firstHeaderWithoutMiddle, end),
+      );
       return;
     }
     if (firstFragment.length < PodFragmentSizes.frame) {
-      throw PodFragmentException('Multi-fragment first packet must be full length');
+      throw PodFragmentException(
+        'Multi-fragment first packet must be full length',
+      );
     }
-    _parts.add(firstFragment.sublist(
-        PodFragmentSizes.firstHeaderWithMiddle, PodFragmentSizes.frame));
+    _parts.add(
+      firstFragment.sublist(
+        PodFragmentSizes.firstHeaderWithMiddle,
+        PodFragmentSizes.frame,
+      ),
+    );
   }
 
   final List<Uint8List> _parts = <Uint8List>[];
@@ -56,7 +75,9 @@ class PodReassembler {
     }
     final index = fragment[0];
     if (index != _expectedIndex + 1) {
-      throw PodFragmentException('Expected fragment ${_expectedIndex + 1}, got $index');
+      throw PodFragmentException(
+        'Expected fragment ${_expectedIndex + 1}, got $index',
+      );
     }
     _expectedIndex++;
     if (index < _fullFragments) {
@@ -65,8 +86,14 @@ class PodReassembler {
     }
     if (index == _fullFragments) {
       final announced = fragment[1];
-      final end = _min(announced + PodFragmentSizes.lastHeader, fragment.length);
-      _crc = ByteData.view(fragment.buffer, fragment.offsetInBytes).getUint32(2);
+      final end = _min(
+        announced + PodFragmentSizes.lastHeader,
+        fragment.length,
+      );
+      _crc = ByteData.view(
+        fragment.buffer,
+        fragment.offsetInBytes,
+      ).getUint32(2);
       _expectsExtra = announced + PodFragmentSizes.lastHeader > end;
       _parts.add(fragment.sublist(PodFragmentSizes.lastHeader, end));
       return;
@@ -93,7 +120,9 @@ class PodReassembler {
     }
     final actual = PodCrc32(joined).value;
     if (actual != _crc) {
-      throw PodFragmentException('CRC mismatch: computed $actual, announced $_crc');
+      throw PodFragmentException(
+        'CRC mismatch: computed $actual, announced $_crc',
+      );
     }
     return joined;
   }

@@ -148,7 +148,9 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
     }
     final box = _pairKey.currentContext?.findRenderObject() as RenderBox?;
     final focal = _pinchFocal();
-    final travel = _pinchLastFocal == null ? 0.0 : focal.dx - _pinchLastFocal!.dx;
+    final travel = _pinchLastFocal == null
+        ? 0.0
+        : focal.dx - _pinchLastFocal!.dx;
     _pinchLastDistance = distance;
     _pinchLastFocal = focal;
     _sync.onPinch?.call(

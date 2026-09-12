@@ -147,13 +147,13 @@ class PodActivationStageView extends StatelessWidget {
   }
 
   IconData get _stageIcon => switch (controller.stage) {
-        PodActivationStage.explaining => PhosphorIconsBold.info,
-        PodActivationStage.priming => PhosphorIconsBold.drop,
-        PodActivationStage.attachPod => PhosphorIconsBold.handTap,
-        PodActivationStage.starting => PhosphorIconsBold.playCircle,
-        PodActivationStage.running => PhosphorIconsBold.checkCircle,
-        PodActivationStage.failed => PhosphorIconsBold.warningCircle,
-      };
+    PodActivationStage.explaining => PhosphorIconsBold.info,
+    PodActivationStage.priming => PhosphorIconsBold.drop,
+    PodActivationStage.attachPod => PhosphorIconsBold.handTap,
+    PodActivationStage.starting => PhosphorIconsBold.playCircle,
+    PodActivationStage.running => PhosphorIconsBold.checkCircle,
+    PodActivationStage.failed => PhosphorIconsBold.warningCircle,
+  };
 
   String get _headlineKey {
     if (controller.stage == PodActivationStage.attachPod &&
@@ -172,11 +172,11 @@ class PodActivationStageView extends StatelessWidget {
   }
 
   String get _stageKey => switch (controller.stage) {
-        PodActivationStage.explaining => 'explain',
-        PodActivationStage.priming => 'priming',
-        PodActivationStage.attachPod => 'attach',
-        PodActivationStage.starting => 'starting',
-        PodActivationStage.running => 'running',
-        PodActivationStage.failed => 'failed',
-      };
+    PodActivationStage.explaining => 'explain',
+    PodActivationStage.priming => 'priming',
+    PodActivationStage.attachPod => 'attach',
+    PodActivationStage.starting => 'starting',
+    PodActivationStage.running => 'running',
+    PodActivationStage.failed => 'failed',
+  };
 }

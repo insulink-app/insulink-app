@@ -61,7 +61,8 @@ class DeviceHistorySync {
     return DeviceRecord(
       deviceKey: _deviceKey(isSensor, blob, row),
       typeKey: isSensor ? _sensorTypeKey(blob) : 'pump.type.dash',
-      start: _time(blob[isSensor ? 'sensor_start' : 'activated_at']) ??
+      start:
+          _time(blob[isSensor ? 'sensor_start' : 'activated_at']) ??
           registeredAt,
       expiresAt: expiresAt,
       registeredAt: registeredAt,

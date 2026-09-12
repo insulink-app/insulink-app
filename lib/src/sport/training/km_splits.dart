@@ -33,8 +33,7 @@ List<SpeedSample> trackSpeeds(List<TrackPoint> track) {
   for (var index = 1; index < track.length; index++) {
     final prev = track[index - 1];
     final curr = track[index];
-    final seconds =
-        (curr.tMs - prev.tMs) / Duration.millisecondsPerSecond;
+    final seconds = (curr.tMs - prev.tMs) / Duration.millisecondsPerSecond;
     if (seconds <= 0) {
       continue;
     }

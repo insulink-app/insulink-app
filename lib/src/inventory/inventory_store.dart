@@ -37,10 +37,12 @@ class InventoryStore {
   /// alongside it stops a second sync counting it again.
   Future<bool> consumePump(PumpBrand brand) async {
     final items = await load();
-    final index = items.indexWhere((item) =>
-        item.type == ItemType.pump &&
-        item.pumpBrand == brand &&
-        item.stock > 0);
+    final index = items.indexWhere(
+      (item) =>
+          item.type == ItemType.pump &&
+          item.pumpBrand == brand &&
+          item.stock > 0,
+    );
     if (index < 0) {
       return false;
     }
@@ -56,10 +58,12 @@ class InventoryStore {
   /// changed anything (a no-op if none is tracked or all are empty).
   Future<bool> consumeSensor(SensorBrand brand) async {
     final items = await load();
-    final index = items.indexWhere((item) =>
-        item.type == ItemType.sensor &&
-        item.sensorBrand == brand &&
-        item.stock > 0);
+    final index = items.indexWhere(
+      (item) =>
+          item.type == ItemType.sensor &&
+          item.sensorBrand == brand &&
+          item.stock > 0,
+    );
     if (index < 0) {
       return false;
     }

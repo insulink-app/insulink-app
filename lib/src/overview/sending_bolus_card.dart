@@ -50,12 +50,11 @@ class SendingBolusCard extends StatelessWidget {
           ),
           if (units != null)
             Text(
-              Locales.string(context, 'pump.bolus.units')
-                  .replaceFirst('#', units.toStringAsFixed(2)),
-              style: TextStyle(
-                fontSize: 13,
-                color: scheme.onSurfaceVariant,
-              ),
+              Locales.string(
+                context,
+                'pump.bolus.units',
+              ).replaceFirst('#', units.toStringAsFixed(2)),
+              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
             ),
         ],
       ),

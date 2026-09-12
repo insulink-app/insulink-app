@@ -116,8 +116,9 @@ class ProfileBasalState extends ChangeNotifier {
   static Future<ProfileBasalState> load() async {
     final all = await _storage.readAll();
     final since = int.tryParse(all[_kRunningSince] ?? '');
-    final runningSince =
-        since == null ? null : DateTime.fromMillisecondsSinceEpoch(since);
+    final runningSince = since == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(since);
     final raw = all[_key];
     if (raw != null && raw.isNotEmpty) {
       return _decode(raw, runningSince);

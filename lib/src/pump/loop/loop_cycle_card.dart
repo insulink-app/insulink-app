@@ -99,13 +99,18 @@ class PodLoopCycleCard extends StatelessWidget {
   String _inputs(BuildContext context) {
     return [
       if (cycle.mgdl != null)
-        Locales.string(context, 'pump.loop.at_glucose')
-            .replaceFirst('#', '${cycle.mgdl}')
-            .replaceFirst('#', _trend()),
-      Locales.string(context, 'pump.loop.on_board')
-          .replaceFirst('#', cycle.iobUnits.toStringAsFixed(2)),
-      Locales.string(context, 'pump.loop.schedule_was')
-          .replaceFirst('#', cycle.scheduledUnitsPerHour.toStringAsFixed(2)),
+        Locales.string(
+          context,
+          'pump.loop.at_glucose',
+        ).replaceFirst('#', '${cycle.mgdl}').replaceFirst('#', _trend()),
+      Locales.string(
+        context,
+        'pump.loop.on_board',
+      ).replaceFirst('#', cycle.iobUnits.toStringAsFixed(2)),
+      Locales.string(
+        context,
+        'pump.loop.schedule_was',
+      ).replaceFirst('#', cycle.scheduledUnitsPerHour.toStringAsFixed(2)),
     ].join(' · ');
   }
 
@@ -117,10 +122,7 @@ class PodLoopCycleCard extends StatelessWidget {
     final parts = <String>[
       if (!cycle.delivered) Locales.string(context, 'pump.loop.not_sent'),
       if (cycle.boundBy != null)
-        Locales.string(
-          context,
-          'pump.loop.bound.${cycle.boundBy!.localeKey}',
-        ),
+        Locales.string(context, 'pump.loop.bound.${cycle.boundBy!.localeKey}'),
     ];
     return parts.isEmpty ? null : parts.join(' · ');
   }

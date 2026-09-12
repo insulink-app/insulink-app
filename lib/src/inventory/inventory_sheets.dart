@@ -92,7 +92,8 @@ class _DeliverySheetState extends State<_DeliverySheet> {
   late DateTime _date =
       widget.existing?.date ?? DateTime.now().add(const Duration(days: 7));
   late final _quantity = TextEditingController(
-      text: widget.existing?.quantity.toString() ?? '');
+    text: widget.existing?.quantity.toString() ?? '',
+  );
 
   @override
   void dispose() {
@@ -147,10 +148,7 @@ class _DeliverySheetState extends State<_DeliverySheet> {
           ),
         ),
         const SizedBox(height: 16),
-        FilledButton(
-          onPressed: _save,
-          child: LocaleText('inventory.save'),
-        ),
+        FilledButton(onPressed: _save, child: LocaleText('inventory.save')),
       ],
     );
   }

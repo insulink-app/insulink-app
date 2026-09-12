@@ -34,7 +34,9 @@ class OverviewBoxes extends StatelessWidget {
                 PhosphorIconsBold.squaresFour,
                 'overview.boxes.all',
                 () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const AllValuesPage()),
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AllValuesPage(),
+                  ),
                 ),
               ),
               _headerButton(

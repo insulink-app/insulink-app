@@ -29,12 +29,15 @@ void main() {
     expect(drained.every((request) => !request.isStale), isTrue);
   });
 
-  test('a drain clears the file, so a tap cannot be carried out twice', () async {
-    const store = AdvisoryActionStore();
-    store.record('bolus', 2.5, 214);
-    expect(await store.drain(), hasLength(1));
-    expect(await store.drain(), isEmpty);
-  });
+  test(
+    'a drain clears the file, so a tap cannot be carried out twice',
+    () async {
+      const store = AdvisoryActionStore();
+      store.record('bolus', 2.5, 214);
+      expect(await store.drain(), hasLength(1));
+      expect(await store.drain(), isEmpty);
+    },
+  );
 
   test('drops a malformed line instead of guessing at it', () {
     expect(AdvisoryRequest.parse('bolus:2.5:214'), isNull);
@@ -46,6 +49,19 @@ void main() {
   test('drops a dose of nothing rather than sending a zero bolus', () {
     expect(AdvisoryRequest.parse('bolus:0.0:214:1'), isNull);
     expect(AdvisoryRequest.parse('bolus:-1.0:214:1'), isNull);
+  });
+
+  test('the offer time is what ages, not the moment of the tap', () async {
+    const store = AdvisoryActionStore();
+    final offered = DateTime.now().subtract(AdvisoryRequest.validFor * 2);
+    store.record(
+      'bolus',
+      2.5,
+      214,
+      offeredAtMs: offered.millisecondsSinceEpoch,
+    );
+    final drained = await store.drain();
+    expect(drained.single.isStale, isTrue);
   });
 
   test('treats a request older than its window as stale', () {

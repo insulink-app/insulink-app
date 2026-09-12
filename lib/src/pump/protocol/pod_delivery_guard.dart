@@ -17,9 +17,7 @@ enum PodDeliveryRefusal {
 
 /// The outcome of checking a bolus before it is built into a command.
 class PodDeliveryDecision {
-  const PodDeliveryDecision.allowed()
-      : refusal = null,
-        detail = null;
+  const PodDeliveryDecision.allowed() : refusal = null, detail = null;
 
   const PodDeliveryDecision.refused(this.refusal, this.detail);
 

@@ -17,7 +17,8 @@ class PodFragmentSizes {
   static const int frame = 20;
   static const int firstHeaderWithoutMiddle = 7;
   static const int firstHeaderWithMiddle = 2;
-  static const int firstCapacityWithoutMiddle = frame - firstHeaderWithoutMiddle;
+  static const int firstCapacityWithoutMiddle =
+      frame - firstHeaderWithoutMiddle;
   static const int firstCapacityWithMiddle = frame - firstHeaderWithMiddle;
   static const int singlePacketCapacity = 18;
   static const int middleCapacity = 19;
@@ -71,37 +72,51 @@ class PodFragmenter {
     final crc = PodCrc32(payload).value;
     final middleCount =
         (payload.length - PodFragmentSizes.firstCapacityWithMiddle) ~/
-            PodFragmentSizes.middleCapacity;
-    final rest = payload.length -
+        PodFragmentSizes.middleCapacity;
+    final rest =
+        payload.length -
         middleCount * PodFragmentSizes.middleCapacity -
         PodFragmentSizes.firstCapacityWithMiddle;
 
     final first = Uint8List(PodFragmentSizes.frame);
     first[0] = 0;
     first[1] = middleCount + 1;
-    first.setRange(2, PodFragmentSizes.frame,
-        payload.sublist(0, PodFragmentSizes.firstCapacityWithMiddle));
+    first.setRange(
+      2,
+      PodFragmentSizes.frame,
+      payload.sublist(0, PodFragmentSizes.firstCapacityWithMiddle),
+    );
     final out = <Uint8List>[first];
 
     for (var index = 1; index <= middleCount; index++) {
-      final start = PodFragmentSizes.firstCapacityWithMiddle +
+      final start =
+          PodFragmentSizes.firstCapacityWithMiddle +
           (index - 1) * PodFragmentSizes.middleCapacity;
       final middle = Uint8List(PodFragmentSizes.frame);
       middle[0] = index;
       middle.setRange(
-          1, PodFragmentSizes.frame, payload.sublist(start, start + PodFragmentSizes.middleCapacity));
+        1,
+        PodFragmentSizes.frame,
+        payload.sublist(start, start + PodFragmentSizes.middleCapacity),
+      );
       out.add(middle);
     }
 
-    final tailStart = PodFragmentSizes.firstCapacityWithMiddle +
+    final tailStart =
+        PodFragmentSizes.firstCapacityWithMiddle +
         middleCount * PodFragmentSizes.middleCapacity;
-    final inLast = rest < PodFragmentSizes.lastCapacity ? rest : PodFragmentSizes.lastCapacity;
+    final inLast = rest < PodFragmentSizes.lastCapacity
+        ? rest
+        : PodFragmentSizes.lastCapacity;
     final last = Uint8List(PodFragmentSizes.frame);
     last[0] = middleCount + 1;
     last[1] = rest & 0xFF;
     ByteData.view(last.buffer).setUint32(2, crc);
-    last.setRange(PodFragmentSizes.lastHeader, PodFragmentSizes.lastHeader + inLast,
-        payload.sublist(tailStart, tailStart + inLast));
+    last.setRange(
+      PodFragmentSizes.lastHeader,
+      PodFragmentSizes.lastHeader + inLast,
+      payload.sublist(tailStart, tailStart + inLast),
+    );
     out.add(last);
 
     if (rest > PodFragmentSizes.lastCapacity) {

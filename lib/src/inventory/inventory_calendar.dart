@@ -25,8 +25,10 @@ class InventoryCalendar extends StatefulWidget {
 }
 
 class _InventoryCalendarState extends State<InventoryCalendar> {
-  late DateTime _month =
-      DateTime(widget.selectedDay.year, widget.selectedDay.month);
+  late DateTime _month = DateTime(
+    widget.selectedDay.year,
+    widget.selectedDay.month,
+  );
 
   void _shiftMonth(int delta) {
     setState(() => _month = DateTime(_month.year, _month.month + delta));
@@ -78,10 +80,7 @@ class _InventoryCalendarState extends State<InventoryCalendar> {
             for (var blank = 0; blank < leadingBlanks; blank++)
               const SizedBox.shrink(),
             for (var dayNumber = 1; dayNumber <= daysInMonth; dayNumber++)
-              _dayCell(
-                DateTime(_month.year, _month.month, dayNumber),
-                scheme,
-              ),
+              _dayCell(DateTime(_month.year, _month.month, dayNumber), scheme),
           ],
         ),
       ],

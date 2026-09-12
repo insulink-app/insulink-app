@@ -127,6 +127,7 @@ class CgmTaskHandler extends TaskHandler {
   /// Google Health is connected; pushes fresh samples to the UI's GoogleHealthState.
   DateTime? _lastHrPollAt;
   int? _lastHrPushedAtMs;
+
   /// Health Connect poll cadence, stretched by the battery saver.
   Duration get _hrPollEvery => _batteryMode.slowsHeartRatePoll
       ? const Duration(minutes: 5)
@@ -451,7 +452,11 @@ class CgmTaskHandler extends TaskHandler {
     if (alarms == null) {
       return;
     }
-    await AdvisoryActionRunner(alarms).run();
+    if (await AdvisoryActionRunner(alarms).run()) {
+      // The app has to re-read: a countermeasure it never saw changed the meal
+      // log, and a delivery has a banner waiting for it (AdvisoryDeliveryStore).
+      FlutterForegroundTask.sendDataToMain({'t': 'update'});
+    }
   }
 
   /// Drain the buffered Confirm/Reject taps and push the confirmed trainings to
@@ -833,7 +838,8 @@ class CgmTaskHandler extends TaskHandler {
   Future<PodStore> _freshPodStore() async {
     final loadedAt = _podStoreLoadedAt;
     final cached = _podStore;
-    final stale = loadedAt == null ||
+    final stale =
+        loadedAt == null ||
         DateTime.now().difference(loadedAt) >= PodMonitor.pollInterval;
     if (cached != null && !stale) {
       return cached;

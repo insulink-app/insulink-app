@@ -16,9 +16,14 @@ import 'package:insulink/src/pump/protocol/pod_pulse_runs.dart';
 class PodTempBasalRate {
   PodTempBasalRate._({required this.unitsPerHour, required this.slots});
 
-  factory PodTempBasalRate({required double unitsPerHour, required int minutes}) {
+  factory PodTempBasalRate({
+    required double unitsPerHour,
+    required int minutes,
+  }) {
     if (unitsPerHour.isNaN || unitsPerHour.isInfinite || unitsPerHour < 0) {
-      throw PodBasalProgramException('Temp basal rate $unitsPerHour U/h is not usable');
+      throw PodBasalProgramException(
+        'Temp basal rate $unitsPerHour U/h is not usable',
+      );
     }
     if (unitsPerHour > maxUnitsPerHour) {
       throw PodBasalProgramException(
@@ -115,14 +120,22 @@ class PodProgramTempBasalCommand extends PodCommand {
     for (var slot = 0; slot < perSlot.length; slot++) {
       final wouldOverflow = (runLength + 1) * perSlot[slot] > 65534;
       if (runLength > 0 && wouldOverflow) {
-        elements.add(PodBasalLongElement(
-            slotCount: runLength, totalTenthPulses: perSlot[slot] * runLength));
+        elements.add(
+          PodBasalLongElement(
+            slotCount: runLength,
+            totalTenthPulses: perSlot[slot] * runLength,
+          ),
+        );
         runLength = 0;
       }
       runLength++;
     }
-    elements.add(PodBasalLongElement(
-        slotCount: runLength, totalTenthPulses: perSlot.first * runLength));
+    elements.add(
+      PodBasalLongElement(
+        slotCount: runLength,
+        totalTenthPulses: perSlot.first * runLength,
+      ),
+    );
     return elements;
   }
 
@@ -133,11 +146,9 @@ class PodProgramTempBasalCommand extends PodCommand {
   Uint8List get encoded {
     final interlock = _interlock.encoded;
     final body = _tempBasalBody;
-    return appendCrc(joinParts([
-      buildHeader(interlock.length + body.length),
-      interlock,
-      body,
-    ]));
+    return appendCrc(
+      joinParts([buildHeader(interlock.length + body.length), interlock, body]),
+    );
   }
 
   PodInsulinInterlock get _interlock {
@@ -163,7 +174,9 @@ class PodProgramTempBasalCommand extends PodCommand {
   Uint8List get _tempBasalBody {
     final elements = _longElements;
     final first = elements.first;
-    final remaining = first.isZeroRate ? first.slotCount : first.totalTenthPulses;
+    final remaining = first.isZeroRate
+        ? first.slotCount
+        : first.totalTenthPulses;
     final delay = first.isZeroRate
         ? PodBasalProgram.maxDelayBetweenTenthPulsesUsec
         : (first.slotCount * 1800.0 / remaining * 1000000).toInt();

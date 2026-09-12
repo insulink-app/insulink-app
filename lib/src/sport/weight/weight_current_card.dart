@@ -73,7 +73,8 @@ class WeightCurrentCard extends StatelessWidget {
                 _bmiPill(context, scheme),
               ],
               const Spacer(),
-              if (delta != null && delta != 0) MeasurementDeltaChip(delta: delta, unit: 'kg'),
+              if (delta != null && delta != 0)
+                MeasurementDeltaChip(delta: delta, unit: 'kg'),
             ],
           ),
           if (ranged.length >= 2) ...[

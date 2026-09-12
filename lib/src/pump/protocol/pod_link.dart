@@ -60,14 +60,14 @@ enum PodControlWord {
 
   /// The greeting written once per connection, announcing our controller id.
   static Uint8List helloFrom(int controllerId) => Uint8List.fromList([
-        hello.value,
-        0x01,
-        0x04,
-        (controllerId >> 24) & 0xFF,
-        (controllerId >> 16) & 0xFF,
-        (controllerId >> 8) & 0xFF,
-        controllerId & 0xFF,
-      ]);
+    hello.value,
+    0x01,
+    0x04,
+    (controllerId >> 24) & 0xFF,
+    (controllerId >> 16) & 0xFF,
+    (controllerId >> 8) & 0xFF,
+    controllerId & 0xFF,
+  ]);
 }
 
 /// Raised when the link itself fails — no reply, or a write that did not land.

@@ -21,12 +21,7 @@ enum PodLoopMode {
 
 /// Why the automation stopped on its own. Recorded so the user is told what
 /// happened rather than finding the mode quietly switched off.
-enum PodLoopStop {
-  podUnreachable,
-  podNotDelivering,
-  noPod,
-  limitsInvalid,
-}
+enum PodLoopStop { podUnreachable, podNotDelivering, noPod, limitsInvalid }
 
 /// One automated cycle, kept so an automated delivery can be reconstructed.
 ///
@@ -49,21 +44,21 @@ class PodLoopCycle {
   });
 
   factory PodLoopCycle.fromJson(Map<String, dynamic> json) => PodLoopCycle(
-        at: DateTime.fromMillisecondsSinceEpoch((json['at'] as num).toInt()),
-        unitsPerHour: (json['rate'] as num).toDouble(),
-        scheduledUnitsPerHour: (json['schedule'] as num).toDouble(),
-        reason: LoopReason.values.firstWhere(
-          (entry) => entry.name == json['reason'],
-          orElse: () => LoopReason.noGlucose,
-        ),
-        delivered: json['sent'] == true,
-        boundBy: LoopBound.values
-            .where((entry) => entry.name == json['bound'])
-            .firstOrNull,
-        mgdl: (json['mgdl'] as num?)?.toInt(),
-        trendPerMinute: (json['trend'] as num?)?.toDouble(),
-        iobUnits: (json['iob'] as num?)?.toDouble() ?? 0,
-      );
+    at: DateTime.fromMillisecondsSinceEpoch((json['at'] as num).toInt()),
+    unitsPerHour: (json['rate'] as num).toDouble(),
+    scheduledUnitsPerHour: (json['schedule'] as num).toDouble(),
+    reason: LoopReason.values.firstWhere(
+      (entry) => entry.name == json['reason'],
+      orElse: () => LoopReason.noGlucose,
+    ),
+    delivered: json['sent'] == true,
+    boundBy: LoopBound.values
+        .where((entry) => entry.name == json['bound'])
+        .firstOrNull,
+    mgdl: (json['mgdl'] as num?)?.toInt(),
+    trendPerMinute: (json['trend'] as num?)?.toDouble(),
+    iobUnits: (json['iob'] as num?)?.toDouble() ?? 0,
+  );
 
   final DateTime at;
   final double unitsPerHour;
@@ -81,16 +76,16 @@ class PodLoopCycle {
   final double iobUnits;
 
   Map<String, dynamic> toJson() => {
-        'at': at.millisecondsSinceEpoch,
-        'rate': unitsPerHour,
-        'schedule': scheduledUnitsPerHour,
-        'reason': reason.name,
-        'sent': delivered,
-        if (boundBy != null) 'bound': boundBy!.name,
-        if (mgdl != null) 'mgdl': mgdl,
-        if (trendPerMinute != null) 'trend': trendPerMinute,
-        'iob': iobUnits,
-      };
+    'at': at.millisecondsSinceEpoch,
+    'rate': unitsPerHour,
+    'schedule': scheduledUnitsPerHour,
+    'reason': reason.name,
+    'sent': delivered,
+    if (boundBy != null) 'bound': boundBy!.name,
+    if (mgdl != null) 'mgdl': mgdl,
+    if (trendPerMinute != null) 'trend': trendPerMinute,
+    'iob': iobUnits,
+  };
 
   /// Insulin per hour this cycle added ON TOP of the user's schedule.
   ///
@@ -115,9 +110,9 @@ extension PodLoopJournal on PodStore {
   static const int maxCycles = 288;
 
   PodLoopMode get loopMode => PodLoopMode.values.firstWhere(
-        (entry) => entry.name == _cache[PodStore._kLoopMode],
-        orElse: () => PodLoopMode.off,
-      );
+    (entry) => entry.name == _cache[PodStore._kLoopMode],
+    orElse: () => PodLoopMode.off,
+  );
 
   /// Switching it ON also starts the automation record, so the basal analysis
   /// knows from which moment an hour without an entry is an hour the automation
@@ -166,8 +161,9 @@ extension PodLoopJournal on PodStore {
 
   Future<void> recordLoopCycle(PodLoopCycle cycle) async {
     final entries = [cycle, ...loopCycles];
-    final kept =
-        entries.length > maxCycles ? entries.sublist(0, maxCycles) : entries;
+    final kept = entries.length > maxCycles
+        ? entries.sublist(0, maxCycles)
+        : entries;
     await _set(
       PodStore._kLoopCycles,
       jsonEncode([for (final entry in kept) entry.toJson()]),
@@ -216,15 +212,16 @@ extension PodLoopJournal on PodStore {
     if (window == null) {
       return 0;
     }
-    final delivered = cycle.excessUnitsPerHour *
+    final delivered =
+        cycle.excessUnitsPerHour *
         window.end.difference(window.start).inSeconds /
         Duration.secondsPerHour;
     if (delivered <= 0) {
       return 0;
     }
-    final middle =
-        window.start.add(window.end.difference(window.start) ~/ 2);
-    final fraction = 1 - at.difference(middle).inSeconds / insulinDuration.inSeconds;
+    final middle = window.start.add(window.end.difference(window.start) ~/ 2);
+    final fraction =
+        1 - at.difference(middle).inSeconds / insulinDuration.inSeconds;
     return delivered * fraction.clamp(0.0, 1.0);
   }
 
@@ -250,8 +247,8 @@ extension PodLoopJournal on PodStore {
     if (window == null) {
       return 0;
     }
-    final hours = window.end.difference(window.start).inSeconds /
-        Duration.secondsPerHour;
+    final hours =
+        window.end.difference(window.start).inSeconds / Duration.secondsPerHour;
     return cycle.excessUnitsPerHour * hours;
   }
 

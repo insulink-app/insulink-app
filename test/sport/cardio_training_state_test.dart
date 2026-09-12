@@ -12,16 +12,19 @@ void main() {
 
   setUp(installSecureStorageMock);
 
-  CardioTraining training(String id, {int startMs = 1000, bool detected = false}) =>
-      CardioTraining(
-        id: id,
-        type: CardioType.jog,
-        startMs: startMs,
-        endMs: startMs + 60000,
-        track: const [],
-        distanceM: 500,
-        detected: detected,
-      );
+  CardioTraining training(
+    String id, {
+    int startMs = 1000,
+    bool detected = false,
+  }) => CardioTraining(
+    id: id,
+    type: CardioType.jog,
+    startMs: startMs,
+    endMs: startMs + 60000,
+    track: const [],
+    distanceM: 500,
+    detected: detected,
+  );
 
   test('the average speed needs a recorded duration', () {
     final logged = training('a');
@@ -147,9 +150,16 @@ void main() {
       await state.pauseTraining();
       expect(state.activeTraining!.isPaused, isTrue);
       await state.pauseTraining();
-      expect(state.activeTraining!.isPaused, isTrue, reason: 'pausing twice is a no-op');
+      expect(
+        state.activeTraining!.isPaused,
+        isTrue,
+        reason: 'pausing twice is a no-op',
+      );
 
-      expect((await CardioTrainingState.load()).activeTraining!.isPaused, isTrue);
+      expect(
+        (await CardioTrainingState.load()).activeTraining!.isPaused,
+        isTrue,
+      );
 
       await state.resumeTraining();
       expect(state.activeTraining!.isPaused, isFalse);
@@ -205,6 +215,21 @@ void main() {
       expect(logged.distanceM, closeTo(1112, 5));
     });
   });
+
+  test(
+    'a training is found whether it is confirmed or still pending',
+    () async {
+      await store.saveTrainings([training('done')]);
+      await store.savePendingTrainings([training('detected', detected: true)]);
+      final state = await CardioTrainingState.load();
+
+      expect(state.trainingById('done')!.id, 'done');
+      expect(state.trainingById('detected')!.id, 'detected');
+      expect(state.trainingById('gone'), isNull);
+      expect(state.isPending('detected'), isTrue);
+      expect(state.isPending('done'), isFalse);
+    },
+  );
 
   test('the exposed lists are unmodifiable', () async {
     final state = await CardioTrainingState.load();

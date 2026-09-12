@@ -48,12 +48,21 @@ class _ProfileSleepTargetsEditorState extends State<ProfileSleepTargetsEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _metric('google_health.sleep_stats.time_to_solid', targets.timeToSolid,
-            (range) => targets.copyWith(timeToSolid: range)),
-        _metric('google_health.sleep_stats.deep', targets.deep,
-            (range) => targets.copyWith(deep: range)),
-        _metric('google_health.sleep_stats.interruption', targets.interruption,
-            (range) => targets.copyWith(interruption: range)),
+        _metric(
+          'google_health.sleep_stats.time_to_solid',
+          targets.timeToSolid,
+          (range) => targets.copyWith(timeToSolid: range),
+        ),
+        _metric(
+          'google_health.sleep_stats.deep',
+          targets.deep,
+          (range) => targets.copyWith(deep: range),
+        ),
+        _metric(
+          'google_health.sleep_stats.interruption',
+          targets.interruption,
+          (range) => targets.copyWith(interruption: range),
+        ),
       ],
     );
   }
@@ -67,15 +76,17 @@ class _ProfileSleepTargetsEditorState extends State<ProfileSleepTargetsEditor> {
     void setMin(int value) =>
         _apply(apply(SleepTargetRange(value.clamp(0, range.max), range.max)));
     void setMax(int value) => _apply(
-        apply(SleepTargetRange(range.min, value.clamp(range.min, _cap))));
+      apply(SleepTargetRange(range.min, value.clamp(range.min, _cap))),
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          LocaleText(labelKey,
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          LocaleText(
+            labelKey,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           GlucoseStepperRow(
             labelKey: 'google_health.sleep_stats.min',
@@ -83,7 +94,13 @@ class _ProfileSleepTargetsEditorState extends State<ProfileSleepTargetsEditor> {
             accent: accent,
             onMinus: () => setMin(range.min - _step),
             onPlus: () => setMin(range.min + _step),
-            valueChild: _field('${range.min} min', range.min, 0, range.max, setMin),
+            valueChild: _field(
+              '${range.min} min',
+              range.min,
+              0,
+              range.max,
+              setMin,
+            ),
           ),
           const SizedBox(height: 10),
           GlucoseStepperRow(
@@ -92,7 +109,13 @@ class _ProfileSleepTargetsEditorState extends State<ProfileSleepTargetsEditor> {
             accent: accent,
             onMinus: () => setMax(range.max - _step),
             onPlus: () => setMax(range.max + _step),
-            valueChild: _field('${range.max} min', range.max, range.min, _cap, setMax),
+            valueChild: _field(
+              '${range.max} min',
+              range.max,
+              range.min,
+              _cap,
+              setMax,
+            ),
           ),
         ],
       ),
@@ -101,7 +124,13 @@ class _ProfileSleepTargetsEditorState extends State<ProfileSleepTargetsEditor> {
 
   /// Tap-to-type value with a comfortable width so the "N min" label isn't
   /// clipped; the enclosing stepper keeps the +/- buttons for fine steps.
-  Widget _field(String text, int value, int min, int max, void Function(int) onSet) {
+  Widget _field(
+    String text,
+    int value,
+    int min,
+    int max,
+    void Function(int) onSet,
+  ) {
     return SportEditableNumber(
       valueText: text,
       initial: value.toDouble(),

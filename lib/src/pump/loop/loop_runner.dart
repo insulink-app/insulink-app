@@ -42,8 +42,9 @@ class PodLoopRunner {
     PodConnection? connection,
     this.retry = const PodRetry(),
     this.now = DateTime.now,
-  }) : _connection = connection ??
-            PodConnection(store: store, lease: PodMonitor.serviceLease);
+  }) : _connection =
+           connection ??
+           PodConnection(store: store, lease: PodMonitor.serviceLease);
 
   /// How often a cycle runs. Matches the interval a G7 delivers on, because a
   /// cycle without a new reading can only repeat the last decision.
@@ -167,8 +168,10 @@ class PodLoopRunner {
     final limits = await LoopLimits.load();
     if (!limits.isUsable) {
       onLog('loop limits unusable: ${limits.problem}');
-      await _record(const LoopDecision.cannotDecide(LoopReason.limitsInvalid),
-          delivered: false);
+      await _record(
+        const LoopDecision.cannotDecide(LoopReason.limitsInvalid),
+        delivered: false,
+      );
       await _disengage(PodLoopStop.limitsInvalid);
       return;
     }
@@ -251,10 +254,11 @@ class PodLoopRunner {
     PodStatusResponse status,
   ) async {
     final at = now();
-    final iob = await readMealIob(limits.insulinDuration) +
-        InsulinOnBoard(limits.insulinDuration)
-            .parts(const [], pod: store, now: at)
-            .beyondBoluses;
+    final iob =
+        await readMealIob(limits.insulinDuration) +
+        InsulinOnBoard(
+          limits.insulinDuration,
+        ).parts(const [], pod: store, now: at).beyondBoluses;
     final schedule = _scheduledRateAt(at);
     final wanted = LoopAlgorithm(limits).wantedUnitsPerHour(
       glucose: glucose,
@@ -267,8 +271,10 @@ class PodLoopRunner {
       iobUnits: iob,
       scheduledUnitsPerHour: schedule,
       status: status,
-      automatedUnitsLastHour:
-          store.automatedUnitsWithin(const Duration(hours: 1), now: at),
+      automatedUnitsLastHour: store.automatedUnitsWithin(
+        const Duration(hours: 1),
+        now: at,
+      ),
       reservoirUnits: status.reservoirUnits,
     );
   }
@@ -283,7 +289,9 @@ class PodLoopRunner {
     if (!decision.isActionable) {
       await _revert(commands, status);
       await _record(decision, delivered: false);
-      onLog('loop stood down (${decision.reason.name}); pod is on its schedule');
+      onLog(
+        'loop stood down (${decision.reason.name}); pod is on its schedule',
+      );
       return;
     }
     if (_userRateHolds(decision)) {
@@ -339,9 +347,11 @@ class PodLoopRunner {
       return;
     }
     await _record(decision, delivered: true);
-    onLog('loop set ${decision.unitsPerHour} U/h for '
-        '${LoopLimits.fuse.inMinutes} min: '
-        '${decision.reason.name}${_boundNote(decision)}');
+    onLog(
+      'loop set ${decision.unitsPerHour} U/h for '
+      '${LoopLimits.fuse.inMinutes} min: '
+      '${decision.reason.name}${_boundNote(decision)}',
+    );
   }
 
   /// Puts the pod back on its own schedule by ending any temporary rate.
@@ -366,17 +376,19 @@ class PodLoopRunner {
       store.scheduledUnitsPerHourAt(at) ?? 0;
 
   Future<void> _record(LoopDecision decision, {required bool delivered}) {
-    return store.recordLoopCycle(PodLoopCycle(
-      at: now(),
-      unitsPerHour: decision.unitsPerHour,
-      scheduledUnitsPerHour: decision.scheduledUnitsPerHour,
-      reason: decision.reason,
-      delivered: delivered,
-      boundBy: decision.boundBy,
-      mgdl: decision.mgdl,
-      trendPerMinute: decision.trendPerMinute,
-      iobUnits: decision.iobUnits,
-    ));
+    return store.recordLoopCycle(
+      PodLoopCycle(
+        at: now(),
+        unitsPerHour: decision.unitsPerHour,
+        scheduledUnitsPerHour: decision.scheduledUnitsPerHour,
+        reason: decision.reason,
+        delivered: delivered,
+        boundBy: decision.boundBy,
+        mgdl: decision.mgdl,
+        trendPerMinute: decision.trendPerMinute,
+        iobUnits: decision.iobUnits,
+      ),
+    );
   }
 
   /// Switches back to the basal schedule when the pod has been out of reach for

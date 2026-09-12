@@ -21,7 +21,9 @@ class GlucoseChartBounds {
     if (values.isEmpty) {
       return _restingMin;
     }
-    final low = values.reduce((first, second) => first < second ? first : second);
+    final low = values.reduce(
+      (first, second) => first < second ? first : second,
+    );
     final floor = (low / _step).floor() * _step;
     return floor > _restingMin ? _restingMin : floor;
   }
@@ -32,7 +34,9 @@ class GlucoseChartBounds {
     if (values.isEmpty) {
       return _restingMax;
     }
-    final peak = values.reduce((first, second) => first > second ? first : second);
+    final peak = values.reduce(
+      (first, second) => first > second ? first : second,
+    );
     final rounded = ((peak + _headroom) / _step).ceil() * _step;
     return rounded < _restingMax ? _restingMax : rounded;
   }

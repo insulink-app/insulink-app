@@ -15,7 +15,10 @@ class BiometricAuth {
   /// biometric is enrolled — used for the silent-mode gate so a user without a
   /// fingerprint is not locked out of muting; the bolus gate keeps it off
   /// (biometric-only).
-  Future<bool> confirm(String reason, {bool allowDeviceCredential = false}) async {
+  Future<bool> confirm(
+    String reason, {
+    bool allowDeviceCredential = false,
+  }) async {
     try {
       return await _auth.authenticate(
         localizedReason: reason,

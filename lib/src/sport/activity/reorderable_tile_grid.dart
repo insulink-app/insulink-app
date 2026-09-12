@@ -65,5 +65,4 @@ class ReorderableTileGrid<T extends Enum> extends StatelessWidget {
       await ProfileSettings().push(context);
     }
   }
-
 }

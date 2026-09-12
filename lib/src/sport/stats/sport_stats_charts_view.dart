@@ -70,7 +70,10 @@ class SportStatsChartsView extends StatelessWidget {
 
   Widget _frequencyChart(BuildContext context, List<WeeklyBucket> weekly) {
     final scheme = Theme.of(context).colorScheme;
-    final maxCount = weekly.fold(0, (max, bucket) => bucket.count > max ? bucket.count : max);
+    final maxCount = weekly.fold(
+      0,
+      (max, bucket) => bucket.count > max ? bucket.count : max,
+    );
     final topY = (maxCount + 1).toDouble();
     return BarChart(
       BarChartData(
@@ -87,8 +90,12 @@ class SportStatsChartsView extends StatelessWidget {
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -155,7 +162,11 @@ class SportStatsChartsView extends StatelessWidget {
   }
 
   /// Only the first and last week get a date tick, to avoid crowding.
-  Widget _weekLabel(BuildContext context, List<WeeklyBucket> weekly, int index) {
+  Widget _weekLabel(
+    BuildContext context,
+    List<WeeklyBucket> weekly,
+    int index,
+  ) {
     if (index != 0 && index != weekly.length - 1) {
       return const SizedBox.shrink();
     }
@@ -192,13 +203,18 @@ class SportStatsChartsView extends StatelessWidget {
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 36,
-              getTitlesWidget: (value, _) => _axisText(context, _compact(value)),
+              getTitlesWidget: (value, _) =>
+                  _axisText(context, _compact(value)),
             ),
           ),
           bottomTitles: AxisTitles(

@@ -199,10 +199,7 @@ class AppTheme {
       AccentColors(onSurface: lightPrimary),
       // The stat boxes keep the original brand indigo, decoupled from the
       // (later softened) primary — see StatBoxColors.
-      const StatBoxColors(
-        icon: Color(0xFF3F51B5),
-        tintBase: Color(0xFF3F51B5),
-      ),
+      const StatBoxColors(icon: Color(0xFF3F51B5), tintBase: Color(0xFF3F51B5)),
       const StatusColors(
         danger: _lightError,
         warning: _lightWarning,
@@ -213,10 +210,7 @@ class AppTheme {
       // white: a first pass at #9AA6D8 read fine on paper and made 1.94 against
       // the page it actually sits on. This one makes 2.39 there and still holds
       // 2.33 against the bolus standing on it.
-      const InsulinColors(
-        basal: Color(0xFF8894CE),
-        bolus: Color(0xFF45569F),
-      ),
+      const InsulinColors(basal: Color(0xFF8894CE), bolus: Color(0xFF45569F)),
     ],
   );
 
@@ -314,10 +308,7 @@ class AppTheme {
       AccentColors(onSurface: darkAccent),
       // The stat boxes keep the original brand indigo (icon #93A6FF on a #5A73F2
       // tint), decoupled from the softened primary — see StatBoxColors.
-      const StatBoxColors(
-        icon: Color(0xFF93A6FF),
-        tintBase: Color(0xFF5A73F2),
-      ),
+      const StatBoxColors(icon: Color(0xFF93A6FF), tintBase: Color(0xFF5A73F2)),
       const StatusColors(
         danger: _darkDanger,
         warning: _darkWarning,
@@ -325,10 +316,7 @@ class AppTheme {
       ),
       // The pair swaps weight on dark: the LIGHTER indigo is the loud one, and
       // basal steps down towards the surface instead of up off it.
-      const InsulinColors(
-        basal: Color(0xFF5C6BA6),
-        bolus: Color(0xFF9DACEA),
-      ),
+      const InsulinColors(basal: Color(0xFF5C6BA6), bolus: Color(0xFF9DACEA)),
     ],
   );
 }

@@ -73,13 +73,13 @@ class LoopDecision {
   /// the schedule is what the pod falls back to anyway and saying otherwise in
   /// the log would misrepresent what ran.
   const LoopDecision.cannotDecide(this.reason)
-      : unitsPerHour = 0,
-        scheduledUnitsPerHour = 0,
-        boundBy = null,
-        mgdl = null,
-        trendPerMinute = null,
-        iobUnits = 0,
-        eventualMgdl = null;
+    : unitsPerHour = 0,
+      scheduledUnitsPerHour = 0,
+      boundBy = null,
+      mgdl = null,
+      trendPerMinute = null,
+      iobUnits = 0,
+      eventualMgdl = null;
 
   /// The temporary rate to program, in U/h.
   final double unitsPerHour;
@@ -101,13 +101,12 @@ class LoopDecision {
 
   /// Whether this decision can be programmed on the pod at all.
   bool get isActionable => switch (reason) {
-        LoopReason.noGlucose ||
-        LoopReason.podUnavailable ||
-        LoopReason.limitsInvalid ||
-        LoopReason.clockUnreliable =>
-          false,
-        _ => true,
-      };
+    LoopReason.noGlucose ||
+    LoopReason.podUnavailable ||
+    LoopReason.limitsInvalid ||
+    LoopReason.clockUnreliable => false,
+    _ => true,
+  };
 
   /// Insulin above the schedule that this rate commits to over [fuse], which is
   /// the only part of it that counts as a dose.

@@ -39,11 +39,9 @@ class PodProgramBasalCommand extends PodCommand {
   Uint8List get encoded {
     final interlock = _interlock.encoded;
     final body = _basalBody;
-    return appendCrc(joinParts([
-      buildHeader(interlock.length + body.length),
-      interlock,
-      body,
-    ]));
+    return appendCrc(
+      joinParts([buildHeader(interlock.length + body.length), interlock, body]),
+    );
   }
 
   PodInsulinInterlock get _interlock {

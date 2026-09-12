@@ -61,7 +61,9 @@ class PodKeyedPayload {
       remaining = remaining.sublist(key.length);
       final length = (remaining[0] << 8) | remaining[1];
       if (remaining.length < 2 + length) {
-        throw PodKeyedPayloadException('Key "$key" announces $length bytes it does not carry');
+        throw PodKeyedPayloadException(
+          'Key "$key" announces $length bytes it does not carry',
+        );
       }
       out.add(remaining.sublist(2, 2 + length));
       remaining = remaining.sublist(2 + length);

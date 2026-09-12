@@ -88,8 +88,10 @@ class _InteractiveHypnogramState extends State<InteractiveHypnogram> {
   }
 
   Widget _tooltip(BuildContext context, double width, SleepSegment segment) {
-    final left = (_pointer.dx - _tooltipWidth / 2)
-        .clamp(0.0, (width - _tooltipWidth).clamp(0.0, width));
+    final left = (_pointer.dx - _tooltipWidth / 2).clamp(
+      0.0,
+      (width - _tooltipWidth).clamp(0.0, width),
+    );
     return Positioned(
       left: left,
       top: 0,

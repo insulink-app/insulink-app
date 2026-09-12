@@ -125,11 +125,9 @@ class SportStats {
       );
     }
     perExercise.forEach((exerciseId, roll) {
-      (rolling[exerciseId] ??= _Rolling(byId[exerciseId]!)).add(
-        session.startedAtMs,
-        roll.best,
-        roll.count,
-      );
+      (rolling[exerciseId] ??= _Rolling(
+        byId[exerciseId]!,
+      )).add(session.startedAtMs, roll.best, roll.count);
     });
   }
 }

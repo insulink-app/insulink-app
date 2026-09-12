@@ -138,7 +138,10 @@ class InsulinChartSeries {
   late final double maxUnits = _maxUnits();
 
   double _maxUnits() {
-    final tallest = bars.fold<double>(0, (top, bar) => bar.units > top ? bar.units : top);
+    final tallest = bars.fold<double>(
+      0,
+      (top, bar) => bar.units > top ? bar.units : top,
+    );
     return tallest > 0 ? tallest : 1;
   }
 
@@ -191,8 +194,10 @@ class InsulinChartSeries {
   /// Two dashes stopping at a border read as two charts; one line crossing both
   /// is what makes a meal, the glucose after it and the insulin for it a single
   /// picture.
-  List<Meal> get visibleMeals =>
-      [for (final meal in meals) if (_coversMoment(meal.time)) meal];
+  List<Meal> get visibleMeals => [
+    for (final meal in meals)
+      if (_coversMoment(meal.time)) meal,
+  ];
 
   /// How much of [start] to [end] falls inside the window, from 0 to 1.
   double _visibleShareOf(DateTime start, DateTime end) {

@@ -25,9 +25,7 @@ extension PodContactLog on PodStore {
     if (raw == null || raw.isEmpty) {
       return const [];
     }
-    return [
-      for (final part in raw.split(',')) ?int.tryParse(part),
-    ];
+    return [for (final part in raw.split(',')) ?int.tryParse(part)];
   }
 
   /// Append one contact, dropping the oldest once the cap is reached.

@@ -30,8 +30,7 @@ class PodActivateButton extends StatelessWidget {
     final unfinished = controller.hasPod;
     return FilledButton.icon(
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-      onPressed:
-          controller.isBusy ? null : () => openPodActivation(context),
+      onPressed: controller.isBusy ? null : () => openPodActivation(context),
       icon: Icon(
         unfinished ? PhosphorIconsBold.arrowRight : PhosphorIconsBold.plus,
         size: 20,
@@ -123,8 +122,7 @@ class PodTempBasalButton extends StatelessWidget {
       return SecondaryActionButton(
         labelKey: 'pump.temp.set',
         icon: PhosphorIconsBold.timer,
-        onPressed:
-            controller.isBusy ? null : () => openTempBasalSheet(context),
+        onPressed: controller.isBusy ? null : () => openTempBasalSheet(context),
       );
     }
     return OutlinedButton.icon(
@@ -138,8 +136,10 @@ class PodTempBasalButton extends StatelessWidget {
           : () => _confirmEnd(context, controller, temporary),
       icon: const Icon(PhosphorIconsBold.prohibit, size: 20),
       label: Text(
-        Locales.string(context, 'pump.temp.running')
-            .replaceFirst('#', temporary.unitsPerHour.toStringAsFixed(2)),
+        Locales.string(
+          context,
+          'pump.temp.running',
+        ).replaceFirst('#', temporary.unitsPerHour.toStringAsFixed(2)),
       ),
     );
   }
@@ -175,10 +175,10 @@ class PodTempBasalButton extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              Locales.string(context, 'pump.temp.end.body').replaceFirst(
-                '#',
-                temporary.unitsPerHour.toStringAsFixed(2),
-              ),
+              Locales.string(
+                context,
+                'pump.temp.end.body',
+              ).replaceFirst('#', temporary.unitsPerHour.toStringAsFixed(2)),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 14, height: 1.35),
             ),
@@ -234,8 +234,7 @@ class PodDeactivateButton extends StatelessWidget {
     return DangerActionButton(
       labelKey: 'pump.action.deactivate',
       icon: PhosphorIconsBold.trash,
-      onPressed:
-          controller.isBusy ? null : () => _confirm(context, controller),
+      onPressed: controller.isBusy ? null : () => _confirm(context, controller),
     );
   }
 
@@ -248,12 +247,17 @@ class PodDeactivateButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            LocaleText('pump.action.deactivate',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            LocaleText(
+              'pump.action.deactivate',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 6),
-            LocaleText('pump.stop.body',
-                textAlign: TextAlign.center, style: const TextStyle(fontSize: 14)),
+            LocaleText(
+              'pump.stop.body',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14),
+            ),
           ],
         ),
       ),
@@ -316,14 +320,17 @@ class PodForgetButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            LocaleText('pump.forget',
-                textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            LocaleText(
+              'pump.forget',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 6),
-            LocaleText('pump.forget.body',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14)),
+            LocaleText(
+              'pump.forget.body',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14),
+            ),
           ],
         ),
       ),
@@ -348,7 +355,6 @@ class PodForgetButton extends StatelessWidget {
   }
 }
 
-
 /// Offers to send the basal profile to a pod that is not known to be running it.
 ///
 /// Two different situations, and they must not be worded the same. Either the
@@ -363,7 +369,8 @@ class PodBasalOutOfDateNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<PodController>();
     final basal = PodBasalAdapter(context.watch<ProfileBasalState>().active);
-    if (!basal.isProgrammable || !controller.runsDifferentBasalThan(basal.program)) {
+    if (!basal.isProgrammable ||
+        !controller.runsDifferentBasalThan(basal.program)) {
       return const SizedBox.shrink();
     }
     return Padding(
@@ -371,9 +378,11 @@ class PodBasalOutOfDateNotice extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          PumpNotice.problem(controller.knowsPodSchedule
-              ? 'pump.basal.out_of_date'
-              : 'pump.basal.unknown'),
+          PumpNotice.problem(
+            controller.knowsPodSchedule
+                ? 'pump.basal.out_of_date'
+                : 'pump.basal.unknown',
+          ),
           const SizedBox(height: 10),
           SecondaryActionButton(
             labelKey: 'pump.basal.send',
@@ -388,7 +397,6 @@ class PodBasalOutOfDateNotice extends StatelessWidget {
   }
 }
 
-
 /// Asks the pod to beep, as an icon in the pump page header.
 ///
 /// A test, not an operation: it changes nothing about delivery, so it belongs
@@ -401,8 +409,9 @@ class PodTestBeepButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<PodController>();
     return IconButton(
-      onPressed:
-          controller.isBusy || !controller.hasPod ? null : controller.playTestBeep,
+      onPressed: controller.isBusy || !controller.hasPod
+          ? null
+          : controller.playTestBeep,
       tooltip: Locales.string(context, 'pump.action.test_beep'),
       icon: const Icon(PhosphorIconsBold.speakerHigh, size: 22),
     );

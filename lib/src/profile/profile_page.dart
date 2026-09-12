@@ -5,6 +5,7 @@ import 'package:insulink/src/profile/account/profile_account_box.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/profile/profile_topic_page.dart';
 import 'package:insulink/src/profile/notifications/profile_alarm_sound_toggle.dart';
+import 'package:insulink/src/profile/notifications/profile_alarm_tone_picker.dart';
 import 'package:insulink/src/profile/body/profile_body_selection.dart';
 import 'package:insulink/src/profile/basal/profile_basal_selection.dart';
 import 'package:insulink/src/profile/battery/profile_battery_selection.dart';
@@ -174,6 +175,12 @@ class _ProfilePageState extends State<ProfilePage> {
         SizedBox(height: 10),
         NotificationToggle(NotificationSetting.podTempBasalBeep),
       ],
+    ),
+    (
+      titleKey: "profile.alarmtone",
+      icon: PhosphorIconsBold.speakerHigh,
+      searchKey: "profile.search.alarmtone",
+      children: () => const [ProfileAlarmTonePicker()],
     ),
     (
       titleKey: "profile.loop",

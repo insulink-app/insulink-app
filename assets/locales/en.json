@@ -145,6 +145,7 @@
       "until": "until #",
       "end": "tap to end"
     },
+    "advisory_bolus": "# U delivered from the notification, at #.",
     "restore": {
       "title": "Use your previous sensor?",
       "body": "Your account has a sensor on file. Adopt it to keep reading without re-pairing.",
@@ -1088,6 +1089,24 @@
     "alarmsound": {
       "description": "Play alarm sound for high/low glucose"
     },
+    "alarmtone": {
+      "_": "Alarm tones",
+      "description": "Pick the tone for each alarm. Tap a style to hear it. Every style keeps the alarm recognizable: falling notes mean low, rising notes mean high, three motifs instead of two mean urgent. \"Off\" silences that one alarm; the others stay audible.",
+      "slot": {
+        "low_warning": "Low glucose",
+        "low_urgent": "Urgently low glucose",
+        "high_warning": "High glucose",
+        "high_urgent": "Urgently high glucose",
+        "advisory_low": "Low pre-warning",
+        "advisory_high": "High pre-warning"
+      },
+      "tone": {
+        "classic": "Long",
+        "short": "Short",
+        "ping": "Ping",
+        "off": "Off"
+      }
+    },
     "silent": {
       "_": "Silent mode",
       "description": "Mute alarms",
@@ -1172,6 +1191,7 @@
       "basal": "basal rate profile curve omnipod pod insulin hour",
       "body": "body metrics stride length height bmi weight steps distance",
       "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training pod pump insulin reservoir",
+      "alarmtone": "alarm tone sound melody ring ringtone short low high urgent pre-warning off mute silent",
       "silent": "silent mute quiet do not disturb dnd tone sound vibration",
       "developer": "developer debug logs advanced",
       "prediction": "prediction forecast future trend minutes",
@@ -1339,9 +1359,7 @@
     },
     "advisory": {
       "low_title": "Low glucose ahead",
-      "low_body": "Eat about # g fast carbs (## tablets).",
       "high_title": "High glucose ahead",
-      "high_body": "Consider about # units of insulin.",
       "forecast": "Now #, in ## min ~###",
       "carbs_action": "Log # g carbs",
       "bolus_action": "Deliver # U",
@@ -1349,6 +1367,7 @@
       "carbs_logged": "Logged # g carbs.",
       "bolus_done": "Delivered # U and logged it.",
       "bolus_failed": "No insulin was delivered. Please check in the app.",
+      "expired": "That suggestion was out of date. Nothing was applied.",
       "failed": "The action failed. Please check in the app."
     },
     "low": {

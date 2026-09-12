@@ -22,7 +22,11 @@ void paintDashedLine(
   while (drawn < total) {
     final length = (on ? dash[0] : dash[1]).clamp(0.0, total - drawn);
     if (on) {
-      canvas.drawLine(from + step * drawn, from + step * (drawn + length), paint);
+      canvas.drawLine(
+        from + step * drawn,
+        from + step * (drawn + length),
+        paint,
+      );
     }
     drawn += length;
     on = !on;

@@ -45,9 +45,7 @@ class _RoutineSessionTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
       ),
-      leading: const SportLeadingBadge(
-        icon: PhosphorIconsBold.calendarCheck,
-      ),
+      leading: const SportLeadingBadge(icon: PhosphorIconsBold.calendarCheck),
       title: Text(
         workoutSessionTitle(context, session),
         style: const TextStyle(fontWeight: FontWeight.w600),

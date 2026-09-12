@@ -20,8 +20,7 @@ class BatterySaverBanner extends StatelessWidget {
       titleKey: 'overview.battery.${mode.name}.title',
       hintKey: 'overview.battery.${mode.name}.hint',
       until: state.window.until,
-      onTap: () =>
-          context.read<ProfileBatteryState>().setMode(BatteryMode.off),
+      onTap: () => context.read<ProfileBatteryState>().setMode(BatteryMode.off),
     );
   }
 }

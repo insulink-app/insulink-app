@@ -24,11 +24,13 @@ class PodPulseRuns {
     var slot = 0;
 
     void flush() {
-      elements.add(PodBasalShortElement(
-        slotCount: slotsInElement,
-        pulsesPerSlot: previous,
-        extraAlternatePulse: alternates,
-      ));
+      elements.add(
+        PodBasalShortElement(
+          slotCount: slotsInElement,
+          pulsesPerSlot: previous,
+          extraAlternatePulse: alternates,
+        ),
+      );
     }
 
     while (slot < perSlot.length) {

@@ -63,7 +63,8 @@ class SleepMetrics {
     final deepScore = _clamp((stages.deep / asleep) / 0.20);
     final remScore = _clamp((stages.rem / asleep) / 0.22);
     final durationScore = _clamp(asleep / 480);
-    final score = 0.40 * efficiency +
+    final score =
+        0.40 * efficiency +
         0.25 * deepScore +
         0.20 * remScore +
         0.15 * durationScore;

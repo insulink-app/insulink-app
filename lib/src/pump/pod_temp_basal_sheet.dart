@@ -97,7 +97,9 @@ class _PodTempBasalSheetState extends State<PodTempBasalSheet> {
           _summary(context, scheme),
           const SizedBox(height: 16),
           FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
             onPressed: context.watch<PodController>().isBusy ? null : _apply,
             child: LocaleText('pump.temp.apply'),
           ),
@@ -156,8 +158,11 @@ class _PodTempBasalSheetState extends State<PodTempBasalSheet> {
             const Spacer(),
             Text(
               value,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
-                  color: scheme.onSurface),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
+              ),
             ),
           ],
         ),
@@ -180,8 +185,10 @@ class _PodTempBasalSheetState extends State<PodTempBasalSheet> {
       child: Text(
         stopped
             ? Locales.string(context, 'pump.temp.summary_stop')
-            : Locales.string(context, 'pump.temp.summary')
-                .replaceFirst('#', rate.toStringAsFixed(2)),
+            : Locales.string(
+                context,
+                'pump.temp.summary',
+              ).replaceFirst('#', rate.toStringAsFixed(2)),
         textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: 14,

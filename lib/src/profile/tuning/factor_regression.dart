@@ -63,7 +63,8 @@ class CorrectionFactorFit {
       return null;
     }
     final perUnit = -fit.slopes[2];
-    if (perUnit <= 0 || fit.standardErrorOfInsulin > perUnit * maxRelativeError) {
+    if (perUnit <= 0 ||
+        fit.standardErrorOfInsulin > perUnit * maxRelativeError) {
       return null;
     }
     return perUnit;
@@ -92,7 +93,8 @@ class CorrectionFactorFit {
     final slopes = _apply(inverse, projected);
     var residualSquares = 0.0;
     for (var row = 0; row < rows.length; row++) {
-      final predicted = slopes[0] * rows[row][0] +
+      final predicted =
+          slopes[0] * rows[row][0] +
           slopes[1] * rows[row][1] +
           slopes[2] * rows[row][2];
       residualSquares += pow(drifts[row] - predicted, 2);
@@ -133,11 +135,11 @@ class CorrectionFactorFit {
   }
 
   List<double> _apply(List<List<double>> matrix, List<double> vector) => [
-        for (var row = 0; row < 3; row++)
-          matrix[row][0] * vector[0] +
-              matrix[row][1] * vector[1] +
-              matrix[row][2] * vector[2],
-      ];
+    for (var row = 0; row < 3; row++)
+      matrix[row][0] * vector[0] +
+          matrix[row][1] * vector[1] +
+          matrix[row][2] * vector[2],
+  ];
 
   /// The inverse of a symmetric 3 by 3, or null when it is singular, which is
   /// what perfectly proportional columns produce.
@@ -148,7 +150,8 @@ class CorrectionFactorFit {
         cofactors[row][column] = _cofactor(matrix, row, column);
       }
     }
-    final determinant = matrix[0][0] * cofactors[0][0] +
+    final determinant =
+        matrix[0][0] * cofactors[0][0] +
         matrix[0][1] * cofactors[0][1] +
         matrix[0][2] * cofactors[0][2];
     if (determinant.abs() < 1e-9 || !determinant.isFinite) {
@@ -156,14 +159,18 @@ class CorrectionFactorFit {
     }
     return [
       for (var row = 0; row < 3; row++)
-        [for (var column = 0; column < 3; column++) cofactors[column][row] / determinant],
+        [
+          for (var column = 0; column < 3; column++)
+            cofactors[column][row] / determinant,
+        ],
     ];
   }
 
   double _cofactor(List<List<double>> matrix, int row, int column) {
     final rows = [0, 1, 2]..remove(row);
     final columns = [0, 1, 2]..remove(column);
-    final minor = matrix[rows[0]][columns[0]] * matrix[rows[1]][columns[1]] -
+    final minor =
+        matrix[rows[0]][columns[0]] * matrix[rows[1]][columns[1]] -
         matrix[rows[0]][columns[1]] * matrix[rows[1]][columns[0]];
     return (row + column).isEven ? minor : -minor;
   }

@@ -89,8 +89,14 @@ class LoopSafety {
       }
     }
     final snapped = snapToPodGrid(rate);
-    return _at(snapped, _reasonFor(snapped, schedule), glucose, iobUnits,
-        schedule, boundBy);
+    return _at(
+      snapped,
+      _reasonFor(snapped, schedule),
+      glucose,
+      iobUnits,
+      schedule,
+      boundBy,
+    );
   }
 
   /// The pod meters basal in 0.05 U/h steps.
@@ -152,15 +158,13 @@ class LoopSafety {
         bound: LoopBound.maxIob,
       ),
       (
-        unitsPerHour: schedule +
+        unitsPerHour:
+            schedule +
             _excessRateFor(limits.maxUnitsPerHour - automatedUnitsLastHour),
         bound: LoopBound.hourlyCeiling,
       ),
       if (reservoirUnits != null)
-        (
-          unitsPerHour: reservoirUnits / _fuseHours,
-          bound: LoopBound.reservoir,
-        ),
+        (unitsPerHour: reservoirUnits / _fuseHours, bound: LoopBound.reservoir),
     ];
   }
 
@@ -178,8 +182,9 @@ class LoopSafety {
   /// not cause.
   double _hypoHeadroom(LoopGlucose glucose, double iobUnits) {
     final projected = glucose.projected(LoopLimits.fuse.inMinutes);
-    final reference =
-        projected < glucose.mgdl ? projected : glucose.mgdl.toDouble();
+    final reference = projected < glucose.mgdl
+        ? projected
+        : glucose.mgdl.toDouble();
     final headroomMgdl = reference - limits.suspendBelowMgdl;
     if (headroomMgdl <= 0) {
       return 0;
@@ -227,8 +232,10 @@ class LoopSafety {
       mgdl: glucose.mgdl,
       trendPerMinute: glucose.trendPerMinute,
       iobUnits: iobUnits,
-      eventualMgdl:
-          _algorithm.eventualMgdl(glucose: glucose, iobUnits: iobUnits),
+      eventualMgdl: _algorithm.eventualMgdl(
+        glucose: glucose,
+        iobUnits: iobUnits,
+      ),
     );
   }
 }

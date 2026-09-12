@@ -140,7 +140,6 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
       ],
     ];
   }
-
 }
 
 /// The pinned box before a pod is paired: adopt the account's pod, or activate a

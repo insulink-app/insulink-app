@@ -1,9 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/cgm/service/alarms.dart';
 import 'package:insulink/src/cgm/cgm_store.dart';
+import 'package:insulink/src/cgm/service/advisory_action.dart';
+import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:insulink/src/nutrition/meal/meal_store.dart';
+import 'package:insulink/src/profile/notifications/alarm_tone.dart';
+import 'package:insulink/src/profile/notifications/profile_alarm_tone_state.dart';
 
 import '../../support/secure_storage_mock.dart';
 
@@ -25,15 +32,33 @@ void silenceAudioPlayers() {
 /// `show`/`cancel` so the alarm logic can be exercised without a device. Audio
 /// is fired through audioplayers, which has no test platform — every alarm path
 /// already wraps `play` in a best-effort try/catch, so it no-ops here.
-({List<int> shown, List<int> cancelled}) installNotificationMock() {
+/// What the mock recorded: the ids shown and cancelled, plus per id the
+/// `timeoutAfter` Android was given and how many action buttons it carried.
+typedef RecordedNotifications = ({
+  List<int> shown,
+  List<int> cancelled,
+  Map<int, int?> timeouts,
+  Map<int, int> actions,
+  Map<int, String?> bodies,
+});
+
+RecordedNotifications installNotificationMock() {
   final shown = <int>[];
   final cancelled = <int>[];
+  final timeouts = <int, int?>{};
+  final actions = <int, int>{};
+  final bodies = <int, String?>{};
   const channel = MethodChannel('dexterous.com/flutter/local_notifications');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(channel, (call) async {
         final args = (call.arguments as Map?) ?? const {};
         if (call.method == 'show') {
-          shown.add(args['id'] as int);
+          final id = args['id'] as int;
+          shown.add(id);
+          final android = (args['platformSpecifics'] as Map?);
+          timeouts[id] = android?['timeoutAfter'] as int?;
+          actions[id] = (android?['actions'] as List?)?.length ?? 0;
+          bodies[id] = args['body'] as String?;
         } else if (call.method == 'cancel') {
           cancelled.add(args['id'] as int);
         } else if (call.method == 'initialize') {
@@ -41,14 +66,20 @@ void silenceAudioPlayers() {
         }
         return null;
       });
-  return (shown: shown, cancelled: cancelled);
+  return (
+    shown: shown,
+    cancelled: cancelled,
+    timeouts: timeouts,
+    actions: actions,
+    bodies: bodies,
+  );
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late Map<String, String> storage;
-  late ({List<int> shown, List<int> cancelled}) notifications;
+  late RecordedNotifications notifications;
   late G7AlarmManager alarms;
 
   setUp(() async {
@@ -132,6 +163,45 @@ void main() {
   /// One low, one alarm per zone it reaches. Defaults are 55/70/180/250 with a
   /// 10 mg/dL re-arm margin, so a low is only over at 80 and an urgent low at 65
   /// — everything in between is still the same episode.
+  group('an alarm is withdrawn once it stops being true', () {
+    /// Just the glucose alarms: ids 0-4, everything from 100 up is another
+    /// notification (a firing alarm also withdraws the pre-warning it fulfils).
+    List<int> cancelledAlarms() =>
+        notifications.cancelled.where((id) => id < 100).toList();
+
+    test('recovering into range clears both alarm notifications', () async {
+      await alarms.check(60, -1.0); // low warning
+      await alarms.check(50, -1.0); // urgent low
+      await alarms.check(100, 1.0); // recovered
+      expect(cancelledAlarms(), [
+        G7AlarmLevel.lowWarning.index,
+        G7AlarmLevel.lowUrgent.index,
+        G7AlarmLevel.highWarning.index,
+        G7AlarmLevel.highUrgent.index,
+      ]);
+    });
+
+    test('easing off inside the zone keeps the alarm standing', () async {
+      await alarms.check(50, -1.0); // urgent low
+      await alarms.check(65, 1.0); // low warning, still out of range
+      expect(cancelledAlarms(), isEmpty);
+    });
+
+    test('a value wobbling back over the line does not clear it', () async {
+      await alarms.check(60, -1.0); // low warning
+      await alarms.check(72, 1.0); // inside the re-arm margin
+      expect(cancelledAlarms(), isEmpty);
+    });
+
+    test('staying in range clears nothing a second time', () async {
+      await alarms.check(60, -1.0);
+      await alarms.check(100, 1.0);
+      notifications.cancelled.clear();
+      await alarms.check(105, 0.0);
+      expect(cancelledAlarms(), isEmpty);
+    });
+  });
+
   group('one excursion alarms once per zone', () {
     test('a value wobbling around the line does not re-alarm', () async {
       await alarms.check(68, -1.0); // low warning
@@ -215,6 +285,107 @@ void main() {
       await alarms.check(100, 1.0); // back in range
       await alarms.check(60, -1.0); // low again → second event
       expect(await eventTypes(), ['glucose_low', 'glucose_low']);
+    });
+  });
+
+  group('a single alarm can have its tone switched off', () {
+    test('the notification still shows without its tone', () async {
+      storage['alarm_tone_low_warning'] = AlarmTone.off.name;
+      await alarms.check(60, -1.0);
+      expect(notifications.shown, [G7AlarmLevel.lowWarning.index]);
+    });
+
+    test('the other alarms keep theirs', () async {
+      storage['alarm_tone_low_warning'] = AlarmTone.off.name;
+      expect(
+        await ProfileAlarmToneState().assetFor(AlarmSlot.lowUrgent),
+        isNotNull,
+      );
+    });
+  });
+
+  group('a high alarm offers the correction it calls for', () {
+    /// A paired pod is the precondition for the button: the delivery path
+    /// refuses to write insulin nobody injected (see `AdvisoryActionRunner`).
+    void pairPod() {
+      storage['pod.unique_id'] = '12345';
+      storage['pod.ltk'] = base64Encode(List.filled(16, 7));
+    }
+
+    test('a paired pod and a dose above zero get the button', () async {
+      pairPod();
+      await alarms.check(300, 1.0);
+      expect(notifications.actions[G7AlarmLevel.highUrgent.index], 1);
+    });
+
+    test(
+      'a correction already covered by insulin on board offers none',
+      () async {
+        pairPod();
+        await const MealStore().saveMeals([
+          Meal(
+            time: DateTime.now(),
+            carbs: 0,
+            glucoseMgdl: 200,
+            bolus: 20,
+            entries: [],
+          ),
+        ]);
+        await alarms.check(300, 1.0);
+        expect(notifications.shown, [G7AlarmLevel.highUrgent.index]);
+        expect(notifications.actions[G7AlarmLevel.highUrgent.index], 0);
+      },
+    );
+
+    test('no pod paired means no button, however high the value', () async {
+      await alarms.check(200, 1.0);
+      expect(notifications.shown, [G7AlarmLevel.highWarning.index]);
+      expect(notifications.actions[G7AlarmLevel.highWarning.index], 0);
+    });
+
+    test('a low alarm never carries one', () async {
+      await alarms.check(50, -1.0);
+      expect(notifications.actions[G7AlarmLevel.lowUrgent.index], 0);
+    });
+
+    test('the test alarm from the settings page carries none', () async {
+      await alarms.fireTest(high: true);
+      expect(notifications.actions[G7AlarmLevel.highWarning.index], 0);
+    });
+  });
+
+  group('the pre-warning does not outlive what it warns about', () {
+    /// Notification ids: 104 is the pre-warning, 105 the report on a
+    /// countermeasure accepted from it.
+    const advisoryId = 104;
+    const outcomeId = 105;
+
+    test('the countermeasure is named by the button alone', () async {
+      await alarms.checkAdvisory(110, -3.0);
+      expect(notifications.actions[advisoryId], 1);
+      // The body says what glucose is doing, once: no second sentence
+      // repeating what the button already offers.
+      expect(notifications.bodies[advisoryId], isNot(contains('\n')));
+    });
+
+    test('it carries the timeout Android withdraws it by', () async {
+      await alarms.checkAdvisory(110, -3.0);
+      expect(notifications.shown, [advisoryId]);
+      expect(
+        notifications.timeouts[advisoryId],
+        AdvisoryRequest.validFor.inMilliseconds,
+      );
+    });
+
+    test('a forecast back in the clear withdraws it at once', () async {
+      await alarms.checkAdvisory(110, -3.0);
+      await alarms.checkAdvisory(120, 0.0);
+      expect(notifications.cancelled, contains(advisoryId));
+    });
+
+    test('the report on a delivered countermeasure keeps standing', () async {
+      await alarms.notifyAdvisoryOutcome('alarm.advisory.carbs_logged', [10]);
+      expect(notifications.timeouts[outcomeId], isNull);
     });
   });
 

@@ -79,7 +79,12 @@ class WorkoutSummaryCard extends StatelessWidget {
       child: _ringCenter(
         context,
         scheme,
-        value: '${percent > 0 ? '+' : percent < 0 ? '−' : '±'}${percent.abs()} %',
+        value:
+            '${percent > 0
+                ? '+'
+                : percent < 0
+                ? '−'
+                : '±'}${percent.abs()} %',
         valueColor: color,
         label: 'sport.summary.vs_previous',
       ),
@@ -134,12 +139,19 @@ class WorkoutSummaryCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _stat(context, scheme, 'sport.summary.exercises',
-            sportInt(current.exercises)),
-        _stat(context, scheme, 'sport.routines.sets',
-            sportInt(current.sets)),
-        _stat(context, scheme, 'sport.logbook.duration',
-            sportClock(current.durationSecs)),
+        _stat(
+          context,
+          scheme,
+          'sport.summary.exercises',
+          sportInt(current.exercises),
+        ),
+        _stat(context, scheme, 'sport.routines.sets', sportInt(current.sets)),
+        _stat(
+          context,
+          scheme,
+          'sport.logbook.duration',
+          sportClock(current.durationSecs),
+        ),
       ],
     );
   }

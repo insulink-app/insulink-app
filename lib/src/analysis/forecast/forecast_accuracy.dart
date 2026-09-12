@@ -23,7 +23,8 @@ class ForecastOutcome {
 
   int get error => predicted - actual;
 
-  bool get isCovered => lo != null && hi != null && actual >= lo! && actual <= hi!;
+  bool get isCovered =>
+      lo != null && hi != null && actual >= lo! && actual <= hi!;
 }
 
 /// How a window of forecasts turned out. All errors are mg/dL.
@@ -111,22 +112,25 @@ class ForecastAccuracy {
   List<ForecastOutcome> _match() {
     final outcomes = <ForecastOutcome>[];
     for (final point in backtest.points) {
-      final target = point.at
-          .add(Duration(minutes: backtest.horizonMin))
-          .millisecondsSinceEpoch ~/
+      final target =
+          point.at
+              .add(Duration(minutes: backtest.horizonMin))
+              .millisecondsSinceEpoch ~/
           60000;
       final actual = _readingNear(target);
       if (actual == null) {
         continue;
       }
-      outcomes.add(ForecastOutcome(
-        at: point.at,
-        predicted: point.predicted,
-        persistence: point.persistence,
-        actual: actual,
-        lo: point.lo,
-        hi: point.hi,
-      ));
+      outcomes.add(
+        ForecastOutcome(
+          at: point.at,
+          predicted: point.predicted,
+          persistence: point.persistence,
+          actual: actual,
+          lo: point.lo,
+          hi: point.hi,
+        ),
+      );
     }
     return outcomes;
   }

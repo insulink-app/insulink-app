@@ -37,7 +37,8 @@ class PodBasalDelivery {
     var cursor = from;
     while (cursor.isBefore(to)) {
       final segmentEnd = _nextBoundary(cursor, to);
-      final minutes = segmentEnd.difference(cursor).inMicroseconds /
+      final minutes =
+          segmentEnd.difference(cursor).inMicroseconds /
           Duration.microsecondsPerMinute;
       units += _rateAt(cursor) * minutes / 60.0;
       cursor = segmentEnd;
@@ -89,8 +90,10 @@ class PodBasalDelivery {
 
   /// The whole day's basal, for cross-checking a schedule against the pod's own
   /// reported daily total.
-  double get dailyUnits =>
-      hourlyRates.fold<double>(0, (sum, rate) => sum + (rate.isFinite ? rate : 0));
+  double get dailyUnits => hourlyRates.fold<double>(
+    0,
+    (sum, rate) => sum + (rate.isFinite ? rate : 0),
+  );
 }
 
 /// A temporary basal rate and the stretch it covers.
@@ -109,7 +112,9 @@ class PodTemporaryBasal {
   factory PodTemporaryBasal.fromJson(Map<String, dynamic> json) {
     return PodTemporaryBasal(
       unitsPerHour: (json['units_per_hour'] as num).toDouble(),
-      start: DateTime.fromMillisecondsSinceEpoch((json['start'] as num).toInt()),
+      start: DateTime.fromMillisecondsSinceEpoch(
+        (json['start'] as num).toInt(),
+      ),
       end: DateTime.fromMillisecondsSinceEpoch((json['end'] as num).toInt()),
       automated: json['automated'] == true,
     );
@@ -129,11 +134,11 @@ class PodTemporaryBasal {
   final bool automated;
 
   Map<String, dynamic> toJson() => {
-        'units_per_hour': unitsPerHour,
-        'start': start.millisecondsSinceEpoch,
-        'end': end.millisecondsSinceEpoch,
-        if (automated) 'automated': true,
-      };
+    'units_per_hour': unitsPerHour,
+    'start': start.millisecondsSinceEpoch,
+    'end': end.millisecondsSinceEpoch,
+    if (automated) 'automated': true,
+  };
 
   /// Whether [moment] falls inside the stretch. The end is exclusive, so the
   /// schedule resumes exactly when the pod does.
@@ -142,9 +147,9 @@ class PodTemporaryBasal {
 
   /// A copy that stops at [moment], for a temp basal the user cancelled early.
   PodTemporaryBasal endedAt(DateTime moment) => PodTemporaryBasal(
-        unitsPerHour: unitsPerHour,
-        start: start,
-        end: moment.isBefore(start) ? start : moment,
-        automated: automated,
-      );
+    unitsPerHour: unitsPerHour,
+    start: start,
+    end: moment.isBefore(start) ? start : moment,
+    automated: automated,
+  );
 }

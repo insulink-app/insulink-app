@@ -70,13 +70,7 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     }
     _update(
       meal.copyWith(
-        time: DateTime(
-          date.year,
-          date.month,
-          date.day,
-          time.hour,
-          time.minute,
-        ),
+        time: DateTime(date.year, date.month, date.day, time.hour, time.minute),
       ),
     );
   }
@@ -149,7 +143,11 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
         else
           Text(meal.carbs.toStringAsFixed(0), style: numberStyle),
         Flexible(
-          child: Text(suffix, style: suffixStyle, overflow: TextOverflow.ellipsis),
+          child: Text(
+            suffix,
+            style: suffixStyle,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );

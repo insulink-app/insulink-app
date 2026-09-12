@@ -64,9 +64,7 @@ class PodDeliveryLogPage extends StatelessWidget {
       body: Column(
         children: [
           const PodDeliverySummary(),
-          Expanded(
-            child: entries.isEmpty ? _empty() : _list(context, entries),
-          ),
+          Expanded(child: entries.isEmpty ? _empty() : _list(context, entries)),
         ],
       ),
     );
@@ -217,14 +215,15 @@ class _PodLogRow extends StatelessWidget {
   /// than today gains its date, since most of the list is today.
   String _clock(BuildContext context) {
     final now = DateTime.now();
-    final sameDay = entry.at.year == now.year &&
+    final sameDay =
+        entry.at.year == now.year &&
         entry.at.month == now.month &&
         entry.at.day == now.day;
     final start = '${_two(entry.at.hour)}:${_two(entry.at.minute)}';
     final time = entry.spansAnHour
         ? Locales.string(context, 'pump.log.hour_span')
-            .replaceFirst('#', start)
-            .replaceFirst('#', '${_two((entry.at.hour + 1) % 24)}:00')
+              .replaceFirst('#', start)
+              .replaceFirst('#', '${_two((entry.at.hour + 1) % 24)}:00')
         : start;
     if (sameDay) {
       return time;

@@ -172,12 +172,13 @@ class _OverviewChartState extends State<OverviewChart>
     widget.sync
       ?..addListener(_onSyncChanged)
       ..onPinch = applyPinch;
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )
-      ..addListener(_samplePulse)
-      ..repeat();
+    _pulse =
+        AnimationController(
+            vsync: this,
+            duration: const Duration(milliseconds: 2200),
+          )
+          ..addListener(_samplePulse)
+          ..repeat();
   }
 
   @override
@@ -296,7 +297,9 @@ class _OverviewChartState extends State<OverviewChart>
     // distance first makes every scale exactly 1.0, which is a pinch that
     // silently does nothing.
     final previousDistance = _pinchLastDistance!;
-    final travel = _pinchLastFocal == null ? 0.0 : focal.dx - _pinchLastFocal!.dx;
+    final travel = _pinchLastFocal == null
+        ? 0.0
+        : focal.dx - _pinchLastFocal!.dx;
     _pinchLastDistance = distance;
     _pinchLastFocal = focal;
     applyPinch(
@@ -322,8 +325,7 @@ class _OverviewChartState extends State<OverviewChart>
       return;
     }
     final oldRange = _rangeHours;
-    final newRange =
-        (oldRange / scale).clamp(_minRangeHours, _maxRangeHours);
+    final newRange = (oldRange / scale).clamp(_minRangeHours, _maxRangeHours);
     // Zoom: hold the time under the fingers in place — the window to the RIGHT
     // of the focal point is what a range change adds to / removes from the
     // scroll-back offset.
@@ -480,14 +482,15 @@ class _OverviewChartState extends State<OverviewChart>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            HourRangeSelector(selected: _rangeHours.round(), onChanged: _setRange),
+            HourRangeSelector(
+              selected: _rangeHours.round(),
+              onChanged: _setRange,
+            ),
             if (widget.navigable) Flexible(child: _navigator(context, byTime)),
           ],
         ),
         const SizedBox(height: 24),
-        Expanded(
-          child: _pinchable(_chart(byTime, glucose, colors)),
-        ),
+        Expanded(child: _pinchable(_chart(byTime, glucose, colors))),
       ],
     );
   }
@@ -756,7 +759,8 @@ class _OverviewChartState extends State<OverviewChart>
                   ? 0.5
                   : ((top - spot.y) / (top - bottom)).clamp(0.0, 1.0),
               dotColor: forecast ? _predictionGrey() : _zoneColorFor(spot.y),
-              value: '${forecast ? '~' : ''}'
+              value:
+                  '${forecast ? '~' : ''}'
                   '${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
               time: _clockAt(axis, spot.x),
               leftInset: _axisInset,
@@ -783,8 +787,8 @@ class _OverviewChartState extends State<OverviewChart>
 
   /// A forecast point is not a measured value, so it never wears a glucose zone.
   Color _predictionGrey() => HSLColor.fromColor(
-        Theme.of(context).colorScheme.onSurface,
-      ).withLightness(0.6).toColor();
+    Theme.of(context).colorScheme.onSurface,
+  ).withLightness(0.6).toColor();
 
   /// The wall-clock time at an x, the same mapping the axis labels use.
   String _clockAt(ChartXAxis axis, double x) {

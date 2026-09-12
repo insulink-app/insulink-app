@@ -12,7 +12,11 @@ import 'inventory_stock_stepper.dart';
 /// delivery, and a coloured warning line when it needs restocking. Tapping the
 /// card opens [onEdit].
 class InventoryItemCard extends StatelessWidget {
-  const InventoryItemCard({super.key, required this.item, required this.onEdit});
+  const InventoryItemCard({
+    super.key,
+    required this.item,
+    required this.onEdit,
+  });
 
   final InventoryItem item;
   final VoidCallback onEdit;
@@ -61,8 +65,11 @@ class InventoryItemCard extends StatelessWidget {
                 _stockBar(context, status, scheme),
                 const SizedBox(height: 4),
                 Text(
-                  Locales.string(context, 'inventory.stock_of',
-                      params: ['${item.stock}', '${item.baseStock}']),
+                  Locales.string(
+                    context,
+                    'inventory.stock_of',
+                    params: ['${item.stock}', '${item.baseStock}'],
+                  ),
                   style: TextStyle(
                     fontSize: 12,
                     color: scheme.onSurfaceVariant,
@@ -73,9 +80,11 @@ class InventoryItemCard extends StatelessWidget {
               Text(_runOutText(context, now, locale)),
               if ((item.surplusBeforeNextDelivery(now) ?? -1) >= 0)
                 Text(
-                  Locales.string(context, 'inventory.surplus', params: [
-                    '${item.surplusBeforeNextDelivery(now)!.round()}',
-                  ]),
+                  Locales.string(
+                    context,
+                    'inventory.surplus',
+                    params: ['${item.surplusBeforeNextDelivery(now)!.round()}'],
+                  ),
                   style: TextStyle(color: scheme.onSurfaceVariant),
                 ),
               if (status != StockStatus.ok) ...[
@@ -89,7 +98,11 @@ class InventoryItemCard extends StatelessWidget {
     );
   }
 
-  Widget _stockBar(BuildContext context, StockStatus status, ColorScheme scheme) {
+  Widget _stockBar(
+    BuildContext context,
+    StockStatus status,
+    ColorScheme scheme,
+  ) {
     final color = switch (status) {
       StockStatus.shortage => scheme.error,
       StockStatus.low => Colors.orange,
@@ -112,16 +125,25 @@ class InventoryItemCard extends StatelessWidget {
       return Locales.string(context, 'inventory.runs_out_never');
     }
     final days = runOut.difference(now).inDays;
-    return Locales.string(context, 'inventory.runs_out',
-        params: [DateFormat.yMMMd(locale).format(runOut), '$days']);
+    return Locales.string(
+      context,
+      'inventory.runs_out',
+      params: [DateFormat.yMMMd(locale).format(runOut), '$days'],
+    );
   }
 
-  Widget _warning(BuildContext context, StockStatus status, ColorScheme scheme) {
+  Widget _warning(
+    BuildContext context,
+    StockStatus status,
+    ColorScheme scheme,
+  ) {
     final shortage = status == StockStatus.shortage;
     final color = shortage ? scheme.error : Colors.orange;
     return Text(
-      Locales.string(context,
-          shortage ? 'inventory.shortage_warning' : 'inventory.low_warning'),
+      Locales.string(
+        context,
+        shortage ? 'inventory.shortage_warning' : 'inventory.low_warning',
+      ),
       style: TextStyle(color: color, fontWeight: FontWeight.w600),
     );
   }

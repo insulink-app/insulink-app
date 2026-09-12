@@ -10,10 +10,7 @@ import 'package:provider/provider.dart';
 /// The accepted range is 3–20 %: below/above that the number is a typo (68 for
 /// 6.8, or an mmol/mol figure pasted into the percent field), and a lab result
 /// entered wrong would sit in the history for months.
-Future<void> showHba1cEntrySheet(
-  BuildContext context, {
-  Hba1cEntry? existing,
-}) {
+Future<void> showHba1cEntrySheet(BuildContext context, {Hba1cEntry? existing}) {
   final state = context.read<Hba1cState>();
   return showModalBottomSheet(
     context: context,

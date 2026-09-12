@@ -72,7 +72,9 @@ abstract class PodCommand {
     view.setUint32(0, addressedTo ?? uniqueId);
     view.setUint16(
       4,
-      ((sequenceNumber & 0x0f) << 10) | (bodyLength & 0x3ff) | (multiCommand ? 1 << 15 : 0),
+      ((sequenceNumber & 0x0f) << 10) |
+          (bodyLength & 0x3ff) |
+          (multiCommand ? 1 << 15 : 0),
     );
     return header;
   }

@@ -47,7 +47,9 @@ class InventorySync {
   /// Adopt the account's inventory into the local store (sign-in + cold start),
   /// unless a local change is still queued ([_unsent] — the server never saw it).
   Future<void> pull(BuildContext? context) async {
-    final response = await Request.get(url: '/inventory/items/find/').send(context);
+    final response = await Request.get(
+      url: '/inventory/items/find/',
+    ).send(context);
     if (_unsent) {
       return;
     }

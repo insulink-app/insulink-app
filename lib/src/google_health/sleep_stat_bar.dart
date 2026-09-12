@@ -29,7 +29,8 @@ class SleepStatBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final onTarget = value >= targetMin && value <= targetMax;
-    final scaleMax = [value, targetMax, 1].reduce((a, b) => a > b ? a : b) * 1.3;
+    final scaleMax =
+        [value, targetMax, 1].reduce((a, b) => a > b ? a : b) * 1.3;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -38,13 +39,20 @@ class SleepStatBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 14,
-                      color: scheme.onSurface.withValues(alpha: 0.8))),
-              Text(valueText,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: scheme.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+              Text(
+                valueText,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -64,10 +72,12 @@ class SleepStatBar extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: (value / scaleMax).clamp(0.0, 1.0),
                           minHeight: _height,
-                          backgroundColor:
-                              scheme.onSurface.withValues(alpha: 0.08),
+                          backgroundColor: scheme.onSurface.withValues(
+                            alpha: 0.08,
+                          ),
                           valueColor: AlwaysStoppedAnimation(
-                              onTarget ? context.positive : context.warning),
+                            onTarget ? context.positive : context.warning,
+                          ),
                         ),
                       ),
                     ),
@@ -112,8 +122,10 @@ class _TargetBoxPainter extends CustomPainter {
     final left = width * startFraction;
     final right = width * endFraction;
     final rect = Rect.fromLTRB(left, 0, right, size.height);
-    final rrect =
-        RRect.fromRectAndRadius(rect.deflate(0.5), const Radius.circular(6));
+    final rrect = RRect.fromRectAndRadius(
+      rect.deflate(0.5),
+      const Radius.circular(6),
+    );
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
@@ -121,8 +133,7 @@ class _TargetBoxPainter extends CustomPainter {
     for (final metric in (Path()..addRRect(rrect)).computeMetrics()) {
       var distance = 0.0;
       while (distance < metric.length) {
-        canvas.drawPath(
-            metric.extractPath(distance, distance + 4), paint);
+        canvas.drawPath(metric.extractPath(distance, distance + 4), paint);
         distance += 8;
       }
     }

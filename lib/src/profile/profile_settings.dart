@@ -130,7 +130,8 @@ class ProfileSettings {
       OverviewLayoutState.key: await OverviewLayoutState.loadRaw(),
       NutritionLayoutState.key: await NutritionLayoutState.loadRaw(),
       // Whether the glucose chart overlays logged meals (the detail page toggle).
-      "chart_show_meals": "${(await _storage.read(key: 'chart_show_meals')) == 'true'}",
+      "chart_show_meals":
+          "${(await _storage.read(key: 'chart_show_meals')) == 'true'}",
       // Sleep target windows (one JSON blob); pull() writes it straight back to
       // the same key SleepTargets reads.
       SleepTargets.key: await SleepTargets.loadRaw(),

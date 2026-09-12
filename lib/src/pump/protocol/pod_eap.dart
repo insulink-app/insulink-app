@@ -22,9 +22,9 @@ enum PodEapCode {
   final int value;
 
   static PodEapCode byValue(int value) => PodEapCode.values.firstWhere(
-        (entry) => entry.value == value,
-        orElse: () => throw PodEapException('Unknown EAP code: $value'),
-      );
+    (entry) => entry.value == value,
+    orElse: () => throw PodEapException('Unknown EAP code: $value'),
+  );
 }
 
 /// The EAP-AKA attribute types the pod exchanges.
@@ -46,7 +46,8 @@ enum PodEapAttributeType {
   static PodEapAttributeType byValue(int value) =>
       PodEapAttributeType.values.firstWhere(
         (entry) => entry.value == value,
-        orElse: () => throw PodEapException('Unknown EAP-AKA attribute: $value'),
+        orElse: () =>
+            throw PodEapException('Unknown EAP-AKA attribute: $value'),
       );
 }
 
@@ -60,15 +61,16 @@ class PodEapAttribute {
 
   /// `AT_RES` puts its payload length in bits where the others keep a reserved
   /// zero, so the fourth header byte is not always zero.
-  int get _fourthByte => type == PodEapAttributeType.res ? payload.length * 8 : 0;
+  int get _fourthByte =>
+      type == PodEapAttributeType.res ? payload.length * 8 : 0;
 
   Uint8List get encoded => Uint8List.fromList([
-        type.value,
-        type.declaredSize ~/ 4,
-        0,
-        _fourthByte,
-        ...payload,
-      ]);
+    type.value,
+    type.declaredSize ~/ 4,
+    0,
+    _fourthByte,
+    ...payload,
+  ]);
 }
 
 /// An EAP message carrying the AKA challenge, its response, or a bare
@@ -152,7 +154,9 @@ class PodEapMessage {
       final type = PodEapAttributeType.byValue(body[offset]);
       final step = 4 * body[offset + 1];
       if (step <= 0 || body.length - offset < step) {
-        throw PodEapException('Attribute ${type.name} declares $step bytes it lacks');
+        throw PodEapException(
+          'Attribute ${type.name} declares $step bytes it lacks',
+        );
       }
       out.add(PodEapAttribute(type, _payloadOf(type, body, offset)));
       offset += step;

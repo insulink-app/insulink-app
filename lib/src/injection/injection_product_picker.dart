@@ -133,10 +133,10 @@ class _ProductPickerState extends State<_ProductPicker> {
                   ),
                 ),
                 FoodAddActions(
-                  onScanRequested: () => Navigator.of(context)
-                      .pop(const _PickerOutcome.scan()),
-                  onCreated: (product) => Navigator.of(context)
-                      .pop(_PickerOutcome.picked(product)),
+                  onScanRequested: () =>
+                      Navigator.of(context).pop(const _PickerOutcome.scan()),
+                  onCreated: (product) =>
+                      Navigator.of(context).pop(_PickerOutcome.picked(product)),
                 ),
               ],
             ),

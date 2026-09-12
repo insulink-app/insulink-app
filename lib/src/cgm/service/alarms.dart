@@ -13,12 +13,15 @@ import '../../pump/pod_store.dart';
 import '../../pump/protocol/pod_bolus_command.dart';
 import '../../profile/bolus/profile_bolus_state.dart';
 import '../../profile/notifications/notification_setting.dart';
+import '../../profile/notifications/alarm_tone.dart';
+import '../../profile/notifications/profile_alarm_tone_state.dart';
 import '../../profile/notifications/profile_alarm_sound_state.dart';
 import '../../profile/notifications/profile_connection_state.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../profile/prediction/profile_prediction_state.dart';
 import '../../profile/silent/profile_silent_state.dart';
 import '../../sport/sport_store.dart';
+import '../../sport/training/detected_training_tap.dart';
 import '../../sport/training/cardio_models.dart';
 import '../cgm_store.dart';
 import '../glucose_prediction.dart';
@@ -68,17 +71,27 @@ void serviceNotificationAction(NotificationResponse response) {
     _advisoryNotificationAction(actionId!, response.payload);
     return;
   }
+  // A tap on the body rather than a button: show the detected training instead
+  // of deciding on it. Android launches the app; the UI picks this up.
+  if (actionId == null && response.id == G7AlarmManager.trainingDetectedId) {
+    DetectedTrainingTap.record(response.payload);
+    return;
+  }
   trainingNotificationAction(response);
 }
 
-/// Buffers an accepted pre-warning countermeasure for the service isolate.
+/// Buffers an accepted countermeasure for the service isolate, from either the
+/// pre-warning or the high alarm.
 ///
 /// Runs in the same bare isolate [trainingNotificationAction] does, so it cannot
 /// log a meal or reach the pod itself; it only writes the request down. The
-/// payload is "amount\nglucoseMgdl\nwritableFilePath" (see [_showAdvisory]).
+/// payload is "amount\nglucoseMgdl\nwritableFilePath\nofferedAtMs" (see
+/// `G7AlarmManager._actionPayload`). The offer time is recorded rather than the
+/// tap time: the dose was sized when the notification was composed, and that is
+/// what [AdvisoryRequest.validFor] has to measure.
 void _advisoryNotificationAction(String actionId, String? payload) {
   final parts = (payload ?? '').split('\n');
-  if (parts.length != 3) {
+  if (parts.length < 3) {
     return;
   }
   final amount = double.tryParse(parts[0]);
@@ -91,6 +104,7 @@ void _advisoryNotificationAction(String actionId, String? payload) {
     amount,
     glucoseMgdl,
     filePath: parts[2],
+    offeredAtMs: parts.length > 3 ? int.tryParse(parts[3]) : null,
   );
 }
 
@@ -184,8 +198,10 @@ class G7AlarmManager {
   /// Notification id for the "connection lost" warning.
   static const _connectionLostId = 101;
 
-  /// Notification id for the "training detected" confirm prompt.
-  static const _trainingDetectedId = 102;
+  /// Notification id for the "training detected" confirm prompt. Public because
+  /// a tap on it opens the training, and the UI has to recognise the tap that
+  /// launched the app ([DetectedTrainingTap.start]).
+  static const trainingDetectedId = 102;
 
   /// Notification id for the "sensor halfway through its life" reminder.
   static const _halftimeId = 103;
@@ -206,10 +222,6 @@ class G7AlarmManager {
   /// Kept deliberately short so the pre-warning fires only when the low/high is
   /// genuinely imminent, not on every distant projection.
   static const _advisoryHorizonMin = 15;
-
-  /// Grams of fast carbs per glucose tablet ("Plättchen"), for the hypo
-  /// countermeasure's tablet-count conversion.
-  static const _gramsPerTablet = 6;
 
   /// How far above the low line / below the high line the rescue countermeasure
   /// aims to bring glucose back to. A modest safe buffer — NOT the middle of the
@@ -329,6 +341,9 @@ class G7AlarmManager {
     final level = _sustainedLevel(mgdl, thresholds);
     final previous = _last;
     _last = level;
+    if (previous != G7AlarmLevel.none && level == G7AlarmLevel.none) {
+      await _clearGlucoseAlarms();
+    }
     if (!_worsened(previous, level)) {
       return;
     }
@@ -343,11 +358,47 @@ class G7AlarmManager {
     if (silent.mutesNotifications) {
       return;
     }
-    await _show(level, _formatValue(mgdl, thresholds.unit, trendPerMin));
+    await _clearAdvisory();
+    await _show(
+      level,
+      _formatValue(mgdl, thresholds.unit, trendPerMin),
+      correctionUnits: _isHigh(level) ? await _correctionUnits(mgdl) : 0,
+      mgdl: mgdl,
+    );
     if (!silent.mutesSound) {
       await _playSound(level);
     }
   }
+
+  /// Take the glucose alarms out of the shade once glucose is back in range.
+  /// An alarm states what is true NOW, so one left standing for a low that is
+  /// over is simply wrong, and it is what makes people turn alarms off. Cancels
+  /// all four ids: an excursion that escalated left both its warning and its
+  /// urgent notification up. Cancelling also stops the tone, which follows its
+  /// notification out of the shade ([_silenceWhenDismissed]).
+  ///
+  /// Only a full recovery clears them, not easing off from urgent low into low
+  /// — that is still an alarm zone, and [_sustainedLevel] only calls the zone
+  /// left once glucose has cleared the line by [_alarmRearmMarginMgdl], so a
+  /// value wobbling on the threshold cannot flicker the notification away.
+  Future<void> _clearGlucoseAlarms() async {
+    for (final level in G7AlarmLevel.values) {
+      if (level != G7AlarmLevel.none) {
+        await _plugin.cancel(id: level.index);
+      }
+    }
+  }
+
+  /// Withdraw the pre-warning: what it predicted has either arrived (the real
+  /// alarm now says it, with the current value) or passed. Its action button
+  /// would otherwise still deliver a correction sized for a forecast that no
+  /// longer holds.
+  ///
+  /// The third way it goes is by itself, after [AdvisoryRequest.validFor] — see
+  /// `clearAfter` in [_advisoryChannel]. That one covers the case no check can:
+  /// no further readings arrive (sensor gone, service killed), so nothing ever
+  /// runs to decide the forecast has lapsed.
+  Future<void> _clearAdvisory() => _plugin.cancel(id: _advisoryId);
 
   /// The zone this reading counts as being in. A zone is only LEFT once glucose
   /// has cleared its line by [_alarmRearmMarginMgdl]; until then the reading is
@@ -366,7 +417,11 @@ class G7AlarmManager {
 
   /// Whether [mgdl] has recovered past [level]'s own line by the re-arm margin
   /// — the point at which that zone counts as left.
-  bool _clearedLine(int mgdl, G7AlarmLevel level, GlucoseThresholds thresholds) {
+  bool _clearedLine(
+    int mgdl,
+    G7AlarmLevel level,
+    GlucoseThresholds thresholds,
+  ) {
     return switch (level) {
       G7AlarmLevel.lowUrgent =>
         mgdl >= thresholds.urgentLow + _alarmRearmMarginMgdl,
@@ -430,6 +485,7 @@ class G7AlarmManager {
       (low: glucose.low, high: glucose.high),
     );
     if (level == AdvisoryLevel.none) {
+      await _clearAdvisory();
       return;
     }
     if (level == AdvisoryLevel.low && !_lowAdvisoryArmed) {
@@ -589,12 +645,7 @@ class G7AlarmManager {
         glucoseMgdl: forecast.low.round(),
         targetMgdl: glucose.low + _rescueTargetMarginMgdl,
       );
-      final tablets = (grams / _gramsPerTablet).ceil();
-      final suggestion = await _strings.formatAll('alarm.advisory.low_body', [
-        grams.ceil(),
-        tablets,
-      ]);
-      return (body: '$line\n$suggestion', amount: grams.ceilToDouble());
+      return (body: line, amount: grams.ceilToDouble());
     }
     final units = PodBolusAmount.snapToPulse(
       bolus.suggestedBolus(
@@ -604,11 +655,7 @@ class G7AlarmManager {
         iobUnits: await _activeInsulin(bolus),
       ),
     );
-    final suggestion = await _strings.format(
-      'alarm.advisory.high_body',
-      units.toStringAsFixed(1),
-    );
-    return (body: '$line\n$suggestion', amount: units);
+    return (body: line, amount: units);
   }
 
   /// Everything still working, for a notification that SUGGESTS a correction.
@@ -665,10 +712,12 @@ class G7AlarmManager {
       title: await _strings.get(titleKey),
       body: advisory.body,
       notificationDetails: NotificationDetails(
-        android: await _advisoryChannel(await _advisoryAction(level, advisory)),
+        android: await _advisoryChannel(
+          await _advisoryAction(level, advisory),
+          clearAfter: AdvisoryRequest.validFor,
+        ),
       ),
-      payload: '${advisory.amount}\n$mgdl\n'
-          '${const AdvisoryActionStore().requestFilePath}',
+      payload: _actionPayload(advisory.amount, mgdl),
     );
   }
 
@@ -687,23 +736,39 @@ class G7AlarmManager {
   /// button that logs insulin nobody gave suppresses the next correction through
   /// insulin on board. So that case gets no button at all and the notification
   /// stays what it was: a suggestion to act on in the app.
+  /// The countermeasure button, and the ONLY place the suggestion is named: the
+  /// body says what glucose is doing, the button says what to do about it.
+  /// Spelling the dose out in both read as the same sentence twice.
+  ///
+  /// Nothing to suggest means no button at all — a "0 g" or "0.00 E" action is
+  /// not an offer.
   Future<AndroidNotificationAction?> _advisoryAction(
     AdvisoryLevel level,
     AdvisorySuggestion advisory,
   ) async {
-    if (level == AdvisoryLevel.low) {
-      return AndroidNotificationAction(
-        advisoryCarbsAction,
-        await _strings.format(
-          'alarm.advisory.carbs_action',
-          advisory.amount.round(),
-        ),
-        cancelNotification: true,
-      );
+    if (level != AdvisoryLevel.low) {
+      return _correctionAction(advisory.amount);
     }
-    // Nothing to offer when the correction snapped to zero (under one 0.05 U
-    // pulse) or when no pod is paired.
-    if (advisory.amount <= 0 || !(await PodStore.open()).hasPod) {
+    if (advisory.amount <= 0) {
+      return null;
+    }
+    return AndroidNotificationAction(
+      advisoryCarbsAction,
+      await _strings.format(
+        'alarm.advisory.carbs_action',
+        advisory.amount.round(),
+      ),
+      cancelNotification: true,
+    );
+  }
+
+  /// The "deliver it" button, or null when there is nothing to offer: no pod
+  /// paired, or a correction that snapped to zero (already covered by insulin
+  /// on board, or under one 0.05 U pulse). Shared by the high alarm and the
+  /// high pre-warning, so both ride the one delivery path that
+  /// [AdvisoryActionRunner] already bounds by the bolus ceilings.
+  Future<AndroidNotificationAction?> _correctionAction(double units) async {
+    if (units <= 0 || !(await PodStore.open()).hasPod) {
       return null;
     }
     return AndroidNotificationAction(
@@ -712,11 +777,24 @@ class G7AlarmManager {
         'alarm.advisory.bolus_action',
         // Two decimals: this button DELIVERS the number it shows, and the pod's
         // 0.05 U grid has values one decimal cannot name (1.05 would read 1.0).
-        advisory.amount.toStringAsFixed(2),
+        units.toStringAsFixed(2),
       ),
       cancelNotification: true,
     );
   }
+
+  /// What an accepted button hands to [_advisoryNotificationAction]: the dose,
+  /// the reading it was sized for, the writable path that isolate cannot
+  /// resolve itself, and WHEN the offer was composed.
+  ///
+  /// That last field is what makes the button safe on an alarm notification.
+  /// The pre-warning withdraws itself after [AdvisoryRequest.validFor], but a
+  /// high alarm stands until glucose comes back down, which can be hours: its
+  /// button would otherwise still deliver a dose sized for a reading, and an
+  /// insulin-on-board figure, from the middle of the night.
+  String _actionPayload(double amount, int mgdl) =>
+      '$amount\n$mgdl\n${const AdvisoryActionStore().requestFilePath}\n'
+      '${DateTime.now().millisecondsSinceEpoch}';
 
   /// Report what became of a countermeasure the user accepted from the
   /// pre-warning. Same silent channel, no action of its own.
@@ -926,13 +1004,40 @@ class G7AlarmManager {
   }
 
   /// Post the glucose alarm notification for [level] with [body].
-  Future<void> _show(G7AlarmLevel level, String body) async {
+  /// Show a glucose alarm, with the correction button when [correctionUnits]
+  /// names a dose worth offering. The default of zero is what keeps the button
+  /// off the settings-page test alarm, whose sample value is not a reading.
+  Future<void> _show(
+    G7AlarmLevel level,
+    String body, {
+    double correctionUnits = 0,
+    int mgdl = 0,
+  }) async {
+    final action = await _correctionAction(correctionUnits);
     await _plugin.show(
       id: level.index,
       title: await _strings.get(_titleKey(level)),
       body: body,
       notificationDetails: NotificationDetails(
-        android: await _alarmChannel(level),
+        android: await _alarmChannel(level, action: action),
+      ),
+      payload: action == null ? null : _actionPayload(correctionUnits, mgdl),
+    );
+  }
+
+  /// The correction this reading calls for: the same calculation the
+  /// pre-warning offers, on the value that actually alarmed. Net of insulin on
+  /// board and snapped to the pod's 0.05 U grid, so the number the button shows
+  /// is the number that goes out.
+  Future<double> _correctionUnits(int mgdl) async {
+    final bolus = await ProfileBolusState.load();
+    final glucose = await ProfileGlucoseState.load();
+    return PodBolusAmount.snapToPulse(
+      bolus.suggestedBolus(
+        carbs: 0,
+        glucoseMgdl: mgdl,
+        targetMgdl: glucose.targetMid,
+        iobUnits: await _activeInsulin(bolus),
       ),
     );
   }
@@ -957,7 +1062,10 @@ class G7AlarmManager {
   /// levels add a full-screen intent + the alarm category. Channel ids,
   /// importance and flags are fixed; only the user-facing name/description are
   /// localized (Android freezes those at channel-creation time).
-  Future<AndroidNotificationDetails> _alarmChannel(G7AlarmLevel level) async {
+  Future<AndroidNotificationDetails> _alarmChannel(
+    G7AlarmLevel level, {
+    AndroidNotificationAction? action,
+  }) async {
     final urgent =
         level == G7AlarmLevel.lowUrgent || level == G7AlarmLevel.highUrgent;
     final slug = switch (level) {
@@ -979,6 +1087,7 @@ class G7AlarmManager {
       channelBypassDnd: true,
       vibrationPattern: Int64List.fromList(_vibrationPattern),
       enableVibration: true,
+      actions: action == null ? null : [action],
     );
   }
 
@@ -1006,9 +1115,14 @@ class G7AlarmManager {
   /// Silent, DnD-bypassing channel for the predictive advisory pre-warning. A
   /// predicted low is safety-relevant, so it bypasses DnD like the glucose
   /// alarms, but it is a heads-up (not a full-screen in-progress emergency).
+  /// [clearAfter] hands the withdrawal to Android itself (`setTimeoutAfter`):
+  /// no timer of ours to keep alive, and it still fires when the service has
+  /// been killed in between. The pre-warning uses it, the outcome report does
+  /// not — a report on insulin that was delivered has to stay readable.
   Future<AndroidNotificationDetails> _advisoryChannel(
-    AndroidNotificationAction? action,
-  ) async {
+    AndroidNotificationAction? action, {
+    Duration? clearAfter,
+  }) async {
     return AndroidNotificationDetails(
       'insulink_alarm_advisory',
       await _strings.get('alarm.channel.advisory.name'),
@@ -1019,6 +1133,7 @@ class G7AlarmManager {
       channelBypassDnd: true,
       vibrationPattern: Int64List.fromList(_advisoryVibrationPattern),
       enableVibration: true,
+      timeoutAfter: clearAfter?.inMilliseconds,
       actions: action == null ? null : [action],
     );
   }
@@ -1038,7 +1153,7 @@ class G7AlarmManager {
         )
         .replaceFirst('#', '${training.duration.inMinutes}');
     await _plugin.show(
-      id: _trainingDetectedId,
+      id: trainingDetectedId,
       title: await _strings.get('sport.detect_notification.title'),
       body: body,
       notificationDetails: NotificationDetails(
@@ -1077,28 +1192,49 @@ class G7AlarmManager {
     );
   }
 
-  /// Play the distinct low/high tone through the ALARM stream, tied to the
-  /// alarm's own notification id so swiping that notification away stops it.
-  Future<void> _playSound(G7AlarmLevel level) => _playAsset(
-    _isHigh(level) ? 'sounds/alarm_high.wav' : 'sounds/alarm_low.wav',
+  /// Play the tone the user picked for this alarm through the ALARM stream,
+  /// tied to the alarm's own notification id so swiping that notification away
+  /// stops it. Every style keeps the alarm type audible (see [AlarmTone]).
+  Future<void> _playSound(G7AlarmLevel level) async => _playAsset(
+    await ProfileAlarmToneState().assetFor(slotFor(level)),
     level.index,
   );
 
   /// Play the pre-warning tone for an imminent low/high, one distinct sound per
   /// direction so the two are audibly distinguishable.
-  Future<void> _playAdvisorySound(AdvisoryLevel level) => _playAsset(
-    level == AdvisoryLevel.low
-        ? 'sounds/alarm_low_soon.wav'
-        : 'sounds/alarm_high_soon.wav',
+  Future<void> _playAdvisorySound(AdvisoryLevel level) async => _playAsset(
+    await ProfileAlarmToneState().assetFor(
+      level == AdvisoryLevel.low
+          ? AlarmSlot.advisoryLow
+          : AlarmSlot.advisoryHigh,
+    ),
     _advisoryId,
   );
 
+  /// The tone slot an alarm level draws its sound from. Each of the four
+  /// glucose alarms is its own slot, so low warning and low urgent can be told
+  /// apart by ear.
+  static AlarmSlot slotFor(G7AlarmLevel level) {
+    switch (level) {
+      case G7AlarmLevel.lowUrgent:
+        return AlarmSlot.lowUrgent;
+      case G7AlarmLevel.highWarning:
+        return AlarmSlot.highWarning;
+      case G7AlarmLevel.highUrgent:
+        return AlarmSlot.highUrgent;
+      case G7AlarmLevel.lowWarning:
+      case G7AlarmLevel.none:
+        return AlarmSlot.lowWarning;
+    }
+  }
+
   /// Play [asset] through the ALARM stream so it sounds regardless of ringer/
-  /// notification volume, DnD, or screen state. Best-effort: the notification
-  /// still shows if audio fails or the user disabled the tone. Playback is not
+  /// notification volume, DnD, or screen state. A null asset is this alarm's
+  /// tone switched off ([AlarmTone.off]). Best-effort: the notification still
+  /// shows if audio fails or the user disabled the tone. Playback is not
   /// awaited — [_silenceWhenDismissed] outlives this call and owns the player.
-  Future<void> _playAsset(String asset, int notificationId) async {
-    if (!await ProfileAlarmSoundState().load()) {
+  Future<void> _playAsset(String? asset, int notificationId) async {
+    if (asset == null || !await ProfileAlarmSoundState().load()) {
       return;
     }
     try {
@@ -1108,7 +1244,7 @@ class G7AlarmManager {
       // kept the attributes it was first configured with, so the alarm→media
       // switch never took and it still duplicated to the speaker.
       final player = AudioPlayer();
-      await player.play(AssetSource(asset), ctx: _alarmContext(headphones));
+      await player.play(AssetSource(asset), ctx: alarmContext(headphones));
       unawaited(_silenceWhenDismissed(player, notificationId));
     } catch (_) {
       // ponytail: audio is best-effort; the visual notification already fired.
@@ -1145,10 +1281,9 @@ class G7AlarmManager {
   // slider — the trade-off the user picked (headphones-preferred). Tighten with
   // setPreferredDevice/setCommunicationDevice (API 31+) if strict routing is
   // ever needed.
-  AudioContext _alarmContext(bool headphones) => AudioContext(
+  static AudioContext alarmContext(bool headphones) => AudioContext(
     android: AudioContextAndroid(
-      usageType:
-          headphones ? AndroidUsageType.media : AndroidUsageType.alarm,
+      usageType: headphones ? AndroidUsageType.media : AndroidUsageType.alarm,
       contentType: headphones
           ? AndroidContentType.music
           : AndroidContentType.sonification,

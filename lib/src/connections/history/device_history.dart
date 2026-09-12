@@ -84,14 +84,16 @@ class DeviceHistory {
   DateTime? _endedAt(DeviceRecord record, List<DeviceRecord> devices) {
     final successors = _successorStarts(record, devices);
     final at = now ?? DateTime.now();
-    final stillRunning = record.discardedAt == null &&
+    final stillRunning =
+        record.discardedAt == null &&
         successors.isEmpty &&
         record.expiresAt.isAfter(at);
     if (stillRunning) {
       return null;
     }
     return [record.expiresAt, ?record.discardedAt, ...successors].reduce(
-      (earliest, candidate) => candidate.isBefore(earliest) ? candidate : earliest,
+      (earliest, candidate) =>
+          candidate.isBefore(earliest) ? candidate : earliest,
     );
   }
 }

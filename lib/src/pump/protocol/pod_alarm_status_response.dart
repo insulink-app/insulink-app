@@ -67,8 +67,8 @@ class PodAlarmStatusResponse extends PodResponse {
   /// Units left, or null while the pod reports more than it can measure.
   double? get reservoirUnits =>
       reservoirPulsesRemaining == PodStatusResponse.reservoirUnknown
-          ? null
-          : reservoirPulsesRemaining * PodBolusAmount.pulseUnits;
+      ? null
+      : reservoirPulsesRemaining * PodBolusAmount.pulseUnits;
 
   /// Insulin that was still queued for a bolus when the pod stopped — the dose
   /// the body did NOT receive.
@@ -76,6 +76,7 @@ class PodAlarmStatusResponse extends PodResponse {
       bolusPulsesRemaining * PodBolusAmount.pulseUnits;
 
   @override
-  String toString() => 'PodAlarmStatusResponse($alarm, $lifecycle, '
+  String toString() =>
+      'PodAlarmStatusResponse($alarm, $lifecycle, '
       'undelivered=$undeliveredBolusUnits U, occlusion=$occlusionAlarm)';
 }

@@ -66,16 +66,21 @@ class _NutritionBodyContentState extends State<NutritionBodyContent> {
     final nutrition = context.read<NutritionState>();
     final meals = context.read<MealState>();
     final food = context.read<FoodState>();
-    await const SyncReload().ifChanged(NutritionSync.syncedKeys, () => NutritionSync().pull(context), (changed) async {
-      if (!mounted) {
-        return;
-      }
-      await Future.wait([
-        if (NutritionStore.syncedKeys.any(changed.contains)) nutrition.reload(),
-        if (MealStore.syncedKeys.any(changed.contains)) meals.reload(),
-        if (FoodStore.syncedKeys.any(changed.contains)) food.reload(),
-      ]);
-    });
+    await const SyncReload().ifChanged(
+      NutritionSync.syncedKeys,
+      () => NutritionSync().pull(context),
+      (changed) async {
+        if (!mounted) {
+          return;
+        }
+        await Future.wait([
+          if (NutritionStore.syncedKeys.any(changed.contains))
+            nutrition.reload(),
+          if (MealStore.syncedKeys.any(changed.contains)) meals.reload(),
+          if (FoodStore.syncedKeys.any(changed.contains)) food.reload(),
+        ]);
+      },
+    );
   }
 
   @override

@@ -40,7 +40,9 @@ class SleepStatsCard extends StatelessWidget {
           LocaleText(
             'google_health.sleep_stats.index',
             style: TextStyle(
-                fontSize: 13, color: scheme.onSurface.withValues(alpha: 0.6)),
+              fontSize: 13,
+              color: scheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -52,7 +54,9 @@ class SleepStatsCard extends StatelessWidget {
           const SizedBox(height: 16),
           SleepStatBar(
             label: Locales.string(
-                context, 'google_health.sleep_stats.time_to_solid'),
+              context,
+              'google_health.sleep_stats.time_to_solid',
+            ),
             valueText: _minutes(metrics.timeToSolidMinutes),
             value: metrics.timeToSolidMinutes ?? 0,
             targetMin: targets.timeToSolid.min,
@@ -67,7 +71,9 @@ class SleepStatsCard extends StatelessWidget {
           ),
           SleepStatBar(
             label: Locales.string(
-                context, 'google_health.sleep_stats.interruption'),
+              context,
+              'google_health.sleep_stats.interruption',
+            ),
             valueText: formatSleepMinutes(metrics.interruptionMinutes),
             value: metrics.interruptionMinutes,
             targetMin: targets.interruption.min,
@@ -78,5 +84,6 @@ class SleepStatsCard extends StatelessWidget {
     );
   }
 
-  String _minutes(int? value) => value == null ? '–' : formatSleepMinutes(value);
+  String _minutes(int? value) =>
+      value == null ? '–' : formatSleepMinutes(value);
 }

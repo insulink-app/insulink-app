@@ -41,13 +41,17 @@ class StopBolusButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            LocaleText('pump.bolus.stop_title',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            LocaleText(
+              'pump.bolus.stop_title',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 6),
-            LocaleText('pump.bolus.stop_body',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, height: 1.35)),
+            LocaleText(
+              'pump.bolus.stop_body',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14, height: 1.35),
+            ),
           ],
         ),
       ),
@@ -57,5 +61,4 @@ class StopBolusButton extends StatelessWidget {
       callback: controller.cancelBolus,
     ).show(context);
   }
-
 }

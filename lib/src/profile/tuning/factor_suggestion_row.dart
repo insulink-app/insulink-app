@@ -83,8 +83,10 @@ class FactorSuggestionRow extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          Locales.string(context, _samplesKey)
-              .replaceFirst('#', '${suggestion.samples}'),
+          Locales.string(
+            context,
+            _samplesKey,
+          ).replaceFirst('#', '${suggestion.samples}'),
           style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
       ],

@@ -37,9 +37,7 @@ class PodLoopOverviewLine extends StatelessWidget {
       background: context.warning.withValues(alpha: 0.15),
       title: Locales.string(
         context,
-        stop == null
-            ? 'pump.loop.overview.off'
-            : 'pump.loop.overview.stopped',
+        stop == null ? 'pump.loop.overview.off' : 'pump.loop.overview.stopped',
       ),
     );
   }

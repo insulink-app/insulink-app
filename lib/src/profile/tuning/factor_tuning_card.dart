@@ -30,7 +30,6 @@ class FactorTuningCard extends StatefulWidget {
 }
 
 class _FactorTuningCardState extends State<FactorTuningCard> {
-
   /// The proposals from the last run, keyed by the setting they are about. Empty
   /// until the button is pressed, and an entry disappears as it is adopted.
   final Map<String, FactorSuggestion> _found = {};
@@ -143,8 +142,13 @@ class _FactorTuningCardState extends State<FactorTuningCard> {
         });
       _unmeasured
         ..clear()
-        ..addAll(['correction', 'carb', 'duration']
-            .where((setting) => !settled.containsKey(setting)));
+        ..addAll(
+          [
+            'correction',
+            'carb',
+            'duration',
+          ].where((setting) => !settled.containsKey(setting)),
+        );
       _nothingKey = _found.isNotEmpty || _unmeasured.isNotEmpty
           ? null
           : 'profile.tuning.factors.no_change';
@@ -159,9 +163,11 @@ class _FactorTuningCardState extends State<FactorTuningCard> {
     final now = DateTime.now();
     final archive = context.read<CgmController>().archiveSince(window);
     final pod = context.read<PodController>().store;
-    debugPrint('factor tuning: ${archive.length} archived readings, '
-        '${context.read<MealState>().meals.length} meals, '
-        'insulin duration ${insulinDurationH}h');
+    debugPrint(
+      'factor tuning: ${archive.length} archived readings, '
+      '${context.read<MealState>().meals.length} meals, '
+      'insulin duration ${insulinDurationH}h',
+    );
     return TuningDoseFinder(
       model: TuningModel(insulinDuration: Duration(hours: insulinDurationH)),
     ).find(

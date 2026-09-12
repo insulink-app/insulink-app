@@ -26,8 +26,10 @@ class PodStatusAttributes {
         (
           titleKey: 'pump.status._',
           items: [
-            MapEntry(localize('pump.status.last_read'),
-                localize('pump.status.never_read')),
+            MapEntry(
+              localize('pump.status.last_read'),
+              localize('pump.status.never_read'),
+            ),
           ],
         ),
       ];
@@ -36,11 +38,20 @@ class PodStatusAttributes {
       (
         titleKey: 'pump.status._',
         items: [
-          MapEntry(localize('pump.status.lifecycle'), _lifecycle(current.lifecycle)),
-          MapEntry(localize('pump.status.delivery'), _delivery(current.delivery)),
+          MapEntry(
+            localize('pump.status.lifecycle'),
+            _lifecycle(current.lifecycle),
+          ),
+          MapEntry(
+            localize('pump.status.delivery'),
+            _delivery(current.delivery),
+          ),
           MapEntry(localize('pump.status.reservoir'), _reservoir(current)),
           MapEntry(localize('pump.status.age'), _duration(current.age)),
-          MapEntry(localize('pump.status.alerts'), _alerts(current.activeAlerts)),
+          MapEntry(
+            localize('pump.status.alerts'),
+            _alerts(current.activeAlerts),
+          ),
           MapEntry(localize('pump.status.last_read'), _readAt()),
         ],
       ),
@@ -84,7 +95,8 @@ class PodStatusAttributes {
       PodLifecycleStatus.priming => 'pump.lifecycle.priming',
       PodLifecycleStatus.basalProgramSet => 'pump.lifecycle.basal_set',
       PodLifecycleStatus.runningAboveMinimumVolume => 'pump.lifecycle.running',
-      PodLifecycleStatus.runningBelowMinimumVolume => 'pump.lifecycle.running_low',
+      PodLifecycleStatus.runningBelowMinimumVolume =>
+        'pump.lifecycle.running_low',
       PodLifecycleStatus.alarm => 'pump.lifecycle.alarm',
       PodLifecycleStatus.deactivated => 'pump.lifecycle.deactivated',
       _ => 'pump.lifecycle.unknown',

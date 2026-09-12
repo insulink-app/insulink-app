@@ -109,7 +109,9 @@ class TuningDoseFinder {
   }) {
     final doses = <TuningDose>[];
     for (final meal in meals) {
-      if (meal.bolus <= 0 || meal.time.isBefore(from) || meal.time.isAfter(to)) {
+      if (meal.bolus <= 0 ||
+          meal.time.isBefore(from) ||
+          meal.time.isAfter(to)) {
         continue;
       }
       final dose = _doseFor(meal, meals, glucoseAt, automationExcessAt);
@@ -132,8 +134,10 @@ class TuningDoseFinder {
     }
     final isCorrection = meal.carbs <= 0;
     final lowest = _lowestAfterPeak(meal, meals, glucoseAt);
-    if (isCorrection && (lowest == null || start < minCorrectionStartMgdl ||
-        meal.bolus < minCorrectionBolus)) {
+    if (isCorrection &&
+        (lowest == null ||
+            start < minCorrectionStartMgdl ||
+            meal.bolus < minCorrectionBolus)) {
       return null;
     }
     final end = isCorrection ? lowest : _mealEnd(meal, glucoseAt);
@@ -143,8 +147,11 @@ class TuningDoseFinder {
     final until = meal.time.add(Duration(minutes: end.minutes));
     return TuningDose(
       at: meal.time,
-      carbsAbsorbed:
-          model.carbsAbsorbed(meals: meals, from: meal.time, to: until),
+      carbsAbsorbed: model.carbsAbsorbed(
+        meals: meals,
+        from: meal.time,
+        to: until,
+      ),
       insulinActing: model.insulinActing(
         meals: meals,
         from: meal.time,
@@ -257,9 +264,11 @@ class TuningDoseFinder {
     int? Function(DateTime moment) glucoseAt,
   ) {
     final samples = <({int minutes, int mgdl})>[];
-    for (var minutes = 0;
-        minutes <= window.inMinutes;
-        minutes += _sampleMinutes) {
+    for (
+      var minutes = 0;
+      minutes <= window.inMinutes;
+      minutes += _sampleMinutes
+    ) {
       final mgdl = glucoseAt(from.add(Duration(minutes: minutes)));
       if (mgdl != null) {
         samples.add((minutes: minutes, mgdl: mgdl));

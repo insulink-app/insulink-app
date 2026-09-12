@@ -71,7 +71,7 @@ class PodLinkLease {
   /// whether the clock is the real one or a fixed one handed in by a test.
   Future<void> take({DateTime? now}) async {
     final maxWaits = patience.inMilliseconds ~/ _pollEvery.inMilliseconds;
-    for (var waited = 0;; waited++) {
+    for (var waited = 0; ; waited++) {
       final held = await _heldByOther(now ?? DateTime.now());
       if (held == null) {
         break;
@@ -125,7 +125,9 @@ class PodLinkLease {
       final held = jsonDecode(raw) as Map<String, dynamic>;
       return (
         owner: held['owner'] as String,
-        until: DateTime.fromMillisecondsSinceEpoch((held['until'] as num).toInt()),
+        until: DateTime.fromMillisecondsSinceEpoch(
+          (held['until'] as num).toInt(),
+        ),
       );
     } on FormatException {
       return null;

@@ -33,8 +33,10 @@ PodConnection podConnectionFor(PodStore store) => demoPodEnabled
 
 /// The link lease the UI isolate holds. It waits for the background service to
 /// finish rather than failing: a tap has to happen, and a poll is seconds long.
-const PodLinkLease uiLease =
-    PodLinkLease('the app', patience: Duration(seconds: 12));
+const PodLinkLease uiLease = PodLinkLease(
+  'the app',
+  patience: Duration(seconds: 12),
+);
 
 /// How long the fake search takes. Long enough to watch the spinner and try the
 /// cancel button, short enough not to be tedious.
@@ -102,16 +104,16 @@ class DemoPodConnection extends PodConnection {
 /// Answers every command with something the wizard accepts.
 class _DemoSession extends PodSession {
   _DemoSession()
-      : super(
-          messageIo: PodMessageIo(_DeadLink()),
-          addresses: const PodAddressPair(podUniqueId: 4241),
-          keys: PodSessionKeys(
-            confidentialityKey: Uint8List(16),
-            nonce: SessionNonce(prefix: Uint8List(8), sequence: 0),
-            messageSequence: 0,
-            eapSequence: 1,
-          ),
-        );
+    : super(
+        messageIo: PodMessageIo(_DeadLink()),
+        addresses: const PodAddressPair(podUniqueId: 4241),
+        keys: PodSessionKeys(
+          confidentialityKey: Uint8List(16),
+          nonce: SessionNonce(prefix: Uint8List(8), sequence: 0),
+          messageSequence: 0,
+          eapSequence: 1,
+        ),
+      );
 
   /// Whether the fake pod has been told to stop. Static, because a session is
   /// built fresh per operation and the pod would not forget in between.
@@ -135,11 +137,13 @@ class _DemoSession extends PodSession {
       case PodCommandType.setUniqueId:
         return PodSetUniqueIdResponse(_identityBody);
       case PodCommandType.programBolus:
-        return PodStatusResponse(_statusBody(
-          lifecycle: PodLifecycleStatus.priming,
-          delivery: PodDeliveryStatus.bolusAndBasalActive,
-          bolusPulses: 52,
-        ));
+        return PodStatusResponse(
+          _statusBody(
+            lifecycle: PodLifecycleStatus.priming,
+            delivery: PodDeliveryStatus.bolusAndBasalActive,
+            bolusPulses: 52,
+          ),
+        );
       case PodCommandType.stopDelivery:
         // Only a suspend-everything stops the pod. Ending a temporary rate is
         // also a stop-delivery command, but it hands the schedule back.
@@ -147,10 +151,12 @@ class _DemoSession extends PodSession {
         return PodStatusResponse(_statusBody());
       case PodCommandType.deactivate:
         _suspended = true;
-        return PodStatusResponse(_statusBody(
-          lifecycle: PodLifecycleStatus.deactivated,
-          delivery: PodDeliveryStatus.suspended,
-        ));
+        return PodStatusResponse(
+          _statusBody(
+            lifecycle: PodLifecycleStatus.deactivated,
+            delivery: PodDeliveryStatus.suspended,
+          ),
+        );
       case PodCommandType.programBasal:
       case PodCommandType.programTempBasal:
         _suspended = false;
@@ -201,12 +207,16 @@ class _DemoSession extends PodSession {
     PodDeliveryStatus? delivery,
     int bolusPulses = 0,
   }) {
-    final state = lifecycle ??
+    final state =
+        lifecycle ??
         (_suspended
             ? PodLifecycleStatus.deactivated
             : PodLifecycleStatus.runningAboveMinimumVolume);
-    final running = delivery ??
-        (_suspended ? PodDeliveryStatus.suspended : PodDeliveryStatus.basalActive);
+    final running =
+        delivery ??
+        (_suspended
+            ? PodDeliveryStatus.suspended
+            : PodDeliveryStatus.basalActive);
     final body = Uint8List(10);
     body[0] = 0x1d;
     body[1] = (running.value << 4) | state.value;
@@ -223,8 +233,10 @@ class _DeadLink implements PodLink {
   Future<void> write(PodCharacteristic characteristic, Uint8List frame) async {}
 
   @override
-  Future<Uint8List?> read(PodCharacteristic characteristic, Duration timeout) async =>
-      null;
+  Future<Uint8List?> read(
+    PodCharacteristic characteristic,
+    Duration timeout,
+  ) async => null;
 
   @override
   Uint8List? peek(PodCharacteristic characteristic) => null;

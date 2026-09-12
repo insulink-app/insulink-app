@@ -49,7 +49,9 @@ Map<String, int> _effortByExercise(WorkoutSession session) {
   final byExercise = <String, int>{};
   for (final set in session.sets) {
     byExercise[set.exerciseId] =
-        (byExercise[set.exerciseId] ?? 0) + (set.reps ?? 0) + (set.seconds ?? 0);
+        (byExercise[set.exerciseId] ?? 0) +
+        (set.reps ?? 0) +
+        (set.seconds ?? 0);
   }
   return byExercise;
 }

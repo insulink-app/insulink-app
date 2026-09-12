@@ -7,7 +7,7 @@
 /// has.
 extension EnumLocaleKey on Enum {
   String get localeKey => name.replaceAllMapped(
-        RegExp('[A-Z]'),
-        (match) => '_${match[0]!.toLowerCase()}',
-      );
+    RegExp('[A-Z]'),
+    (match) => '_${match[0]!.toLowerCase()}',
+  );
 }

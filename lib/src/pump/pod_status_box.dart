@@ -144,12 +144,12 @@ class PodStatusBox extends StatelessWidget {
   }
 
   String _deliveryKey(PodDeliveryStatus delivery) => switch (delivery) {
-        PodDeliveryStatus.suspended => 'pump.delivery.suspended',
-        PodDeliveryStatus.basalActive => 'pump.delivery.basal',
-        PodDeliveryStatus.tempBasalActive => 'pump.delivery.temp_basal',
-        PodDeliveryStatus.priming => 'pump.delivery.priming',
-        PodDeliveryStatus.bolusAndBasalActive => 'pump.delivery.bolus_basal',
-        PodDeliveryStatus.bolusAndTempBasalActive => 'pump.delivery.bolus_temp',
-        PodDeliveryStatus.unknown => 'pump.delivery.unknown',
-      };
+    PodDeliveryStatus.suspended => 'pump.delivery.suspended',
+    PodDeliveryStatus.basalActive => 'pump.delivery.basal',
+    PodDeliveryStatus.tempBasalActive => 'pump.delivery.temp_basal',
+    PodDeliveryStatus.priming => 'pump.delivery.priming',
+    PodDeliveryStatus.bolusAndBasalActive => 'pump.delivery.bolus_basal',
+    PodDeliveryStatus.bolusAndTempBasalActive => 'pump.delivery.bolus_temp',
+    PodDeliveryStatus.unknown => 'pump.delivery.unknown',
+  };
 }

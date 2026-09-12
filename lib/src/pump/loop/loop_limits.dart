@@ -53,7 +53,6 @@ class LoopLimits {
   /// at, and it has to leave room for the insulin already given to keep acting.
   static const int defaultSuspendBelowMgdl = 85;
 
-
   static const double defaultMaxUnitsPerHour = 3.0;
   static const double defaultMaxIobUnits = 5.0;
 

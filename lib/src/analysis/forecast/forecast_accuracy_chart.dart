@@ -36,8 +36,11 @@ class ForecastAccuracyChart extends StatelessWidget {
         lineTouchData: const LineTouchData(enabled: false),
         lineBarsData: [
           _line(_spots((outcome) => outcome.actual), scheme.onSurface),
-          _line(_spots((outcome) => outcome.predicted), scheme.primary,
-              dashed: true),
+          _line(
+            _spots((outcome) => outcome.predicted),
+            scheme.primary,
+            dashed: true,
+          ),
         ],
       ),
       duration: Duration.zero,
@@ -48,20 +51,22 @@ class ForecastAccuracyChart extends StatelessWidget {
   /// regular grid, and indexing keeps a sensor gap from stretching the axis over
   /// a stretch nothing was scored on.
   List<FlSpot> _spots(int Function(ForecastOutcome outcome) value) => [
-        for (var index = 0; index < outcomes.length; index++)
-          FlSpot(index.toDouble(), glucose.toDisplay(value(outcomes[index]))),
-      ];
+    for (var index = 0; index < outcomes.length; index++)
+      FlSpot(index.toDouble(), glucose.toDisplay(value(outcomes[index]))),
+  ];
 
-  LineChartBarData _line(List<FlSpot> spots, Color color,
-          {bool dashed = false}) =>
-      LineChartBarData(
-        spots: spots,
-        isCurved: true,
-        barWidth: 2,
-        color: color,
-        dashArray: dashed ? const [5, 4] : null,
-        dotData: const FlDotData(show: false),
-      );
+  LineChartBarData _line(
+    List<FlSpot> spots,
+    Color color, {
+    bool dashed = false,
+  }) => LineChartBarData(
+    spots: spots,
+    isCurved: true,
+    barWidth: 2,
+    color: color,
+    dashArray: dashed ? const [5, 4] : null,
+    dotData: const FlDotData(show: false),
+  );
 
   FlTitlesData _titles(BuildContext context) {
     return FlTitlesData(

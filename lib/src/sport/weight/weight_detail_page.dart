@@ -90,10 +90,8 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
                     previousKg: index > 0 ? ranged[index - 1].kg : null,
                     onDelete: () =>
                         context.read<SportState>().removeWeight(ranged[index]),
-                    onEdit: () => showWeightEntrySheet(
-                      context,
-                      existing: ranged[index],
-                    ),
+                    onEdit: () =>
+                        showWeightEntrySheet(context, existing: ranged[index]),
                   ),
               ],
             ),

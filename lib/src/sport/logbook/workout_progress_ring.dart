@@ -21,9 +21,9 @@ class WorkoutProgressRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final track = Theme.of(context).colorScheme.onSurface.withValues(
-      alpha: 0.08,
-    );
+    final track = Theme.of(
+      context,
+    ).colorScheme.onSurface.withValues(alpha: 0.08);
     return SizedBox(
       width: size,
       height: size,

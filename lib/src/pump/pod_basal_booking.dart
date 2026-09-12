@@ -61,13 +61,16 @@ class PodBasalBooking {
     if (!until.isAfter(countedTo)) {
       return null;
     }
-    if (!status.delivery.isBasalRunning && !status.delivery.isTempBasalRunning) {
+    if (!status.delivery.isBasalRunning &&
+        !status.delivery.isTempBasalRunning) {
       await store.addBasalDelivery(at: until, units: 0, countedTo: until);
       return 0;
     }
     final temporary = store.temporaryBasal;
-    final units = PodBasalDelivery(rates, temporary: temporary)
-        .unitsBetween(countedTo, until);
+    final units = PodBasalDelivery(
+      rates,
+      temporary: temporary,
+    ).unitsBetween(countedTo, until);
     await store.addBasalDelivery(at: until, units: units, countedTo: until);
     await store.recordAutomationExcess(
       until,

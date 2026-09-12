@@ -101,8 +101,10 @@ class PodScanner {
       }
     });
     try {
-      _log('started, filter=${filtered ? podAdvertisedServiceId : 'none'}, '
-          'want=0x${wantedPodId.toRadixString(16)}');
+      _log(
+        'started, filter=${filtered ? podAdvertisedServiceId : 'none'}, '
+        'want=0x${wantedPodId.toRadixString(16)}',
+      );
       await FlutterBluePlus.startScan(
         withServices: filtered ? [Guid(podScanServiceUuid)] : const [],
         timeout: timeout,
@@ -114,8 +116,10 @@ class PodScanner {
     } finally {
       await subscription.cancel();
       await FlutterBluePlus.stopScan();
-      _log('finished, ${seen.length} device(s) seen, '
-          '${found.length} matching pod(s)');
+      _log(
+        'finished, ${seen.length} device(s) seen, '
+        '${found.length} matching pod(s)',
+      );
     }
     return found.values.toList();
   }
@@ -211,12 +215,16 @@ class PodScanner {
       return;
     }
     if (pod.podId != wantedPodId) {
-      _log('ignored $address, pod 0x${pod.podId.toRadixString(16)} '
-          'is not the one wanted');
+      _log(
+        'ignored $address, pod 0x${pod.podId.toRadixString(16)} '
+        'is not the one wanted',
+      );
       return;
     }
-    _log('found $address, pod 0x${pod.podId.toRadixString(16)}, '
-        'lot ${pod.lotNumber}, seq ${pod.podSequenceNumber}');
+    _log(
+      'found $address, pod 0x${pod.podId.toRadixString(16)}, '
+      'lot ${pod.lotNumber}, seq ${pod.podSequenceNumber}',
+    );
     found[address] = pod;
   }
 

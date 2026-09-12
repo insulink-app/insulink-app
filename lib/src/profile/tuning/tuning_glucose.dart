@@ -14,7 +14,10 @@ import 'dart:collection';
 /// readings is always covered and a genuine hole still reads as missing, which
 /// is what both finders rely on to drop an hour they cannot measure.
 class TuningGlucose {
-  const TuningGlucose(this.archive, {this.tolerance = const Duration(minutes: 6)});
+  const TuningGlucose(
+    this.archive, {
+    this.tolerance = const Duration(minutes: 6),
+  });
 
   /// The archive slice, keyed by epoch-minute (`CgmStore.archiveRange`).
   final SplayTreeMap<int, int> archive;
@@ -23,7 +26,8 @@ class TuningGlucose {
 
   /// The reading at [moment], or null when nothing is close enough to it.
   int? at(DateTime moment) {
-    final minute = moment.millisecondsSinceEpoch ~/ Duration.millisecondsPerMinute;
+    final minute =
+        moment.millisecondsSinceEpoch ~/ Duration.millisecondsPerMinute;
     final exact = archive[minute];
     if (exact != null) {
       return exact;

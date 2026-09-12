@@ -59,8 +59,7 @@ class PodLoopCycleLine extends StatelessWidget {
     return '$line ${Locales.string(context, 'pump.loop.bound.${bound.localeKey}')}';
   }
 
-  String _clock(DateTime at) =>
-      '${_two(at.hour)}:${_two(at.minute)}';
+  String _clock(DateTime at) => '${_two(at.hour)}:${_two(at.minute)}';
 
   String _two(int value) => value.toString().padLeft(2, '0');
 }

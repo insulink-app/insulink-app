@@ -447,10 +447,8 @@ class Libre3Transport {
   /// recent reconnect gap the lagging historic buffer can't. Replies land in
   /// [clinicalStream]. Ported from Juggluco's `fillClinical` →
   /// `Natives.libre3ClinicalControl(1, from)` (`kind={1,1}`).
-  Future<void> requestClinical(int fromLifeCount) => _sendControlCommand(
-    _controlCommand(1, fromLifeCount),
-    'clinical',
-  );
+  Future<void> requestClinical(int fromLifeCount) =>
+      _sendControlCommand(_controlCommand(1, fromLifeCount), 'clinical');
 
   /// Encrypt a patch-control command and write it **raw** (`setValue(encr)`,
   /// with response — Juggluco's `sendcommandonly`), NOT the 2-byte-offset 20-byte
@@ -464,7 +462,9 @@ class Libre3Transport {
     }
     try {
       final encrypted = await crypto.encrypt(Libre3Uuids.encryptControl, plain);
-      _log('Libre 3 $label: patch-control ${_hex(plain)} → enc ${encrypted.length} B');
+      _log(
+        'Libre 3 $label: patch-control ${_hex(plain)} → enc ${encrypted.length} B',
+      );
       await control.write(encrypted, withoutResponse: false);
       _log('Libre 3 $label: patch-control write ok');
     } catch (error) {

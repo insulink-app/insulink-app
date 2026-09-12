@@ -52,13 +52,15 @@ class PodActivationCommands {
     int pulses,
     int uniqueId,
   ) async {
-    await expectStatus(PodProgramBolusCommand(
-      uniqueId: uniqueId,
-      sequenceNumber: nextSequence,
-      nonce: nonce,
-      amount: PodBolusAmount.fromPulses(pulses),
-      eighthSecondsBetweenPulses: facts.primePumpRateEighthSeconds,
-    ));
+    await expectStatus(
+      PodProgramBolusCommand(
+        uniqueId: uniqueId,
+        sequenceNumber: nextSequence,
+        nonce: nonce,
+        amount: PodBolusAmount.fromPulses(pulses),
+        eighthSecondsBetweenPulses: facts.primePumpRateEighthSeconds,
+      ),
+    );
   }
 
   /// Polls until the pod has finished whatever it was delivering.

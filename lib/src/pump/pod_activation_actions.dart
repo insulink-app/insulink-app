@@ -31,21 +31,22 @@ class PodActivationActions extends StatelessWidget {
     }
     return switch (controller.stage) {
       PodActivationStage.explaining => _primary(
-          labelKey: 'pump.activate.start',
-          icon: PhosphorIconsBold.magnifyingGlass,
-          onPressed: basal.isProgrammable ? controller.primePod : null,
-        ),
+        labelKey: 'pump.activate.start',
+        icon: PhosphorIconsBold.magnifyingGlass,
+        onPressed: basal.isProgrammable ? controller.primePod : null,
+      ),
       PodActivationStage.attachPod => _primary(
-          labelKey: 'pump.activate.attached',
-          icon: PhosphorIconsBold.fingerprint,
-          onPressed:
-              basal.isProgrammable ? () => _confirmThenStart(context) : null,
-        ),
+        labelKey: 'pump.activate.attached',
+        icon: PhosphorIconsBold.fingerprint,
+        onPressed: basal.isProgrammable
+            ? () => _confirmThenStart(context)
+            : null,
+      ),
       PodActivationStage.running => _primary(
-          labelKey: 'pump.activate.done',
-          icon: PhosphorIconsBold.check,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        labelKey: 'pump.activate.done',
+        icon: PhosphorIconsBold.check,
+        onPressed: () => Navigator.of(context).pop(),
+      ),
       PodActivationStage.failed => _afterFailure(context),
       _ => _busy(context),
     };

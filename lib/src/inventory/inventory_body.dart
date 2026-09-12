@@ -11,9 +11,9 @@ import 'inventory_state.dart';
 
 /// Opens the inventory page on top of the current tab (from the header button).
 void openInventoryPage(BuildContext context) {
-  Navigator.of(context).push(
-    MaterialPageRoute<void>(builder: (_) => const InventoryPage()),
-  );
+  Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const InventoryPage()));
 }
 
 /// Inventory page: the tracked items with their forecast. The calendar of
@@ -35,9 +35,11 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 
   void _openEditor(BuildContext context, {InventoryItem? item}) {
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => InventoryItemEditor(existing: item),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => InventoryItemEditor(existing: item),
+      ),
+    );
   }
 
   @override

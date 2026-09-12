@@ -61,7 +61,11 @@ class PodBleLink implements PodLink {
     Duration timeout = const Duration(seconds: 20),
     Uint8List? hello,
   }) async {
-    await device.connect(timeout: timeout, mtu: null, license: License.nonprofit);
+    await device.connect(
+      timeout: timeout,
+      mtu: null,
+      license: License.nonprofit,
+    );
     _log('connected to ${device.remoteId}');
     // A pod that hangs up mid-exchange looks exactly like a pod that went quiet:
     // the next write still "succeeds" against a dead link and the read times
@@ -77,13 +81,15 @@ class PodBleLink implements PodLink {
     final services = await device.discoverServices();
     final service = services.firstWhere(
       (candidate) => candidate.uuid.str128.toLowerCase() == podServiceUuid,
-      orElse: () => throw PodLinkException('Pod service not found on ${device.remoteId}'),
+      orElse: () =>
+          throw PodLinkException('Pod service not found on ${device.remoteId}'),
     );
     for (final wanted in PodCharacteristic.values) {
       final characteristic = service.characteristics.firstWhere(
         (candidate) => candidate.uuid.str128.toLowerCase() == wanted.uuid,
-        orElse: () =>
-            throw PodLinkException('Pod characteristic ${wanted.name} not found'),
+        orElse: () => throw PodLinkException(
+          'Pod characteristic ${wanted.name} not found',
+        ),
       );
       _characteristics[wanted] = characteristic;
     }
@@ -92,18 +98,22 @@ class PodBleLink implements PodLink {
     }
     for (final wanted in PodCharacteristic.values) {
       final characteristic = _characteristics[wanted]!;
-      _subscriptions.add(characteristic.onValueReceived.listen(
-        (bytes) => _enqueue(wanted, Uint8List.fromList(bytes)),
-      ));
+      _subscriptions.add(
+        characteristic.onValueReceived.listen(
+          (bytes) => _enqueue(wanted, Uint8List.fromList(bytes)),
+        ),
+      );
       // INDICATIONS, not notifications. The pod's characteristics advertise
       // both, so the platform would otherwise pick notifications and the pod
       // would answer on a channel nobody is listening to: every write succeeds
       // and nothing ever comes back. The reference driver enables indications
       // explicitly, and the CGM's auth characteristic needed the same.
       await characteristic.setNotifyValue(true, forceIndications: true);
-      _log('${wanted.name}: subscribed '
-          '(notify=${characteristic.properties.notify}, '
-          'indicate=${characteristic.properties.indicate})');
+      _log(
+        '${wanted.name}: subscribed '
+        '(notify=${characteristic.properties.notify}, '
+        'indicate=${characteristic.properties.indicate})',
+      );
     }
   }
 
@@ -144,7 +154,10 @@ class PodBleLink implements PodLink {
   }
 
   @override
-  Future<Uint8List?> read(PodCharacteristic characteristic, Duration timeout) async {
+  Future<Uint8List?> read(
+    PodCharacteristic characteristic,
+    Duration timeout,
+  ) async {
     final queue = _queues[characteristic]!;
     if (queue.isNotEmpty) {
       return queue.removeFirst();

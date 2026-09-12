@@ -48,7 +48,7 @@ class PodRetry {
   /// caller reports exactly what it would have reported without any of this.
   Future<T> run<T>(String what, Future<T> Function() body) async {
     var delay = firstDelay;
-    for (var attempt = 1;; attempt++) {
+    for (var attempt = 1; ; attempt++) {
       try {
         return await body();
       } catch (error) {
@@ -66,10 +66,10 @@ class PodRetry {
 
   /// The same policy with somewhere to report its attempts.
   PodRetry copyWith({void Function(String line)? onLog}) => PodRetry(
-        attempts: attempts,
-        firstDelay: firstDelay,
-        onLog: onLog ?? this.onLog,
-      );
+    attempts: attempts,
+    firstDelay: firstDelay,
+    onLog: onLog ?? this.onLog,
+  );
 
   /// Whether [error] left the pod in a state where doing the same thing again is
   /// both safe and worth trying.

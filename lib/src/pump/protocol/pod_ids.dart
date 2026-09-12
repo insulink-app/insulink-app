@@ -27,11 +27,11 @@ class PodId {
     return PodId(derived);
   }
 
-  int get value => ByteData.view(address.buffer, address.offsetInBytes).getUint32(0);
+  int get value =>
+      ByteData.view(address.buffer, address.offsetInBytes).getUint32(0);
 
   @override
-  bool operator ==(Object other) =>
-      other is PodId && other.value == value;
+  bool operator ==(Object other) => other is PodId && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
