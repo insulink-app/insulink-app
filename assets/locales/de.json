@@ -581,7 +581,6 @@
       "stopped": {
         "pod_unreachable": "Die Automatik wurde beendet, weil der Pod länger nicht erreichbar war. Der Pod läuft wieder auf deinem Basalprogramm.",
         "pod_not_delivering": "Die Automatik wurde beendet, weil der Pod nicht mehr abgibt.",
-        "no_pod": "Die Automatik wurde beendet, weil kein aktiver Pod vorhanden ist.",
         "limits_invalid": "Die Automatik wurde beendet, weil die Grenzwerte nicht zusammenpassen."
       },
       "blocked": {

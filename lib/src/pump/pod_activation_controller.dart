@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/pump/demo_pod.dart';
 import 'package:insulink/src/pump/pod_ble_permissions.dart';
@@ -222,6 +224,7 @@ class PodActivationController extends ChangeNotifier {
       }
       await _logActivationDelivery(PodDeliveryKind.prime);
       _enter(PodActivationStage.attachPod);
+      unawaited(_buzzReadyToAttach());
       // The user now leaves the phone to attach the pod, which is the longest
       // gap in the whole activation. Mirror before it, not after.
       await _mirrorPairing();
@@ -231,6 +234,18 @@ class PodActivationController extends ChangeNotifier {
       _session = null;
       await _connection.close();
     }
+  }
+
+  /// Buzzes twice once the pod is primed and can go on the body.
+  ///
+  /// Priming runs about a minute with nothing to tap, so the user has usually
+  /// looked away by the time it finishes. Not awaited by the caller: a phone
+  /// that cannot buzz must not fail the activation. Follows the system's touch
+  /// feedback setting, so it stays still where that is switched off.
+  Future<void> _buzzReadyToAttach() async {
+    await HapticFeedback.vibrate();
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    await HapticFeedback.vibrate();
   }
 
   /// Phase two: program the schedule and seat the cannula, once the user has

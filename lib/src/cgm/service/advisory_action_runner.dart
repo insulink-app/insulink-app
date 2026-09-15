@@ -130,8 +130,8 @@ class AdvisoryActionRunner {
 
   /// Append to the meal log the same way the injection sheet does, then push it
   /// so the entry survives the next pull (which replaces the local log with the
-  /// account's). The UI re-reads the log on its next resume, so what the service
-  /// wrote here is what the app shows.
+  /// account's). The service then pings the UI (`t: 'meals'`), which re-reads the
+  /// log, so what the service wrote here is what the app shows.
   Future<void> _logMeal(
     AdvisoryRequest request, {
     required double carbs,

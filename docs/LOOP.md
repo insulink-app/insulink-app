@@ -180,7 +180,7 @@ branch and every uncertainty resolves towards it.
 | reservoir | a full fuse at this rate has to fit in what is left | `LoopSafety._ceilings` |
 | pod state | not alarming, running, not mid-bolus | `LoopSafety._podCanDeliver` |
 | grid | snapped DOWN to 0.05 U/h, so snapping cannot lift a clamped rate | `LoopSafety.snapToPodGrid` |
-| stand-down | pod out of reach past the fuse, pod finished, no pod, bad limits | `loop_runner.dart` |
+| stand-down | pod out of reach past the fuse, pod finished, bad limits | `loop_runner.dart` |
 | audit | every cycle recorded with its inputs, delivered or not | `loop_journal.dart` |
 
 ### The hypo headroom, which is the central one
@@ -265,7 +265,7 @@ check the pod, so the under-suggestion is explainable while the hypo is not.
 |-------|--------------|
 | pod unreachable past the fuse | mode to `off`, `PodLoopStop.podUnreachable` |
 | pod alarming or no longer running | mode to `off`, `podNotDelivering` |
-| no activated pod | mode to `off`, `noPod` |
+| no activated pod | **mode stays on.** Nothing is programmed until the next pod is activated, then the loop carries on with it. `forgetPod` keeps the switch for exactly this |
 | limits contradict each other | mode to `off`, `limitsInvalid` |
 | sensor data unusable | **mode stays on.** The pod is reverted to its schedule and the loop waits for the next reading |
 | clock moved backwards | **mode stays on.** Same treatment, see below |

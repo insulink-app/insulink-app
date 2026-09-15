@@ -51,12 +51,14 @@ void main() {
       expect(store.loopStop, PodLoopStop.podUnreachable);
     });
 
-    test('forgetting the pod forgets the automation with it', () async {
+    /// The switch is the user's, so a pod change keeps it and the automation
+    /// carries on with the next pod. The cycles describe the old pod and go.
+    test('forgetting the pod keeps the switch but drops its cycles', () async {
       await store.saveLoopMode(PodLoopMode.engaged);
       await cycleAt(now, rate: 2.0);
       await store.forgetPod();
 
-      expect(store.loopMode, PodLoopMode.off);
+      expect(store.loopMode, PodLoopMode.engaged);
       expect(store.loopCycles, isEmpty);
     });
   });

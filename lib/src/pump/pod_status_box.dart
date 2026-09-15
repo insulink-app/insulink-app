@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/device_lifespan_bar.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/overview/overview_pod_life.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
 import 'package:insulink/src/pump/pump_actions.dart';
@@ -49,6 +50,8 @@ class PodStatusBox extends StatelessWidget {
               pageTitleKey: 'pump.life.title',
             ),
           ],
+          const SizedBox(height: 12),
+          PodReservoirBar(controller: controller),
           const SizedBox(height: 16),
           // Ordered by urgency, not by frequency: the control that stops
           // delivery is first because it is the one that has to be found without
@@ -128,19 +131,13 @@ class PodStatusBox extends StatelessWidget {
     );
   }
 
-  /// What the pod is doing, plus the reservoir when it reported a number, in the
-  /// same "state · value" shape the sensor line uses for its glucose.
+  /// What the pod is doing. The reservoir has its own bar under the life bar.
   String _subtitle(BuildContext context) {
     final status = controller.status;
     if (status == null) {
       return Locales.string(context, 'pump.status.never_read');
     }
-    final state = Locales.string(context, _deliveryKey(status.delivery));
-    final units = status.reservoirUnits;
-    if (units == null) {
-      return state;
-    }
-    return '$state · ${units.toStringAsFixed(2)} U';
+    return Locales.string(context, _deliveryKey(status.delivery));
   }
 
   String _deliveryKey(PodDeliveryStatus delivery) => switch (delivery) {

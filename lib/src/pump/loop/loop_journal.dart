@@ -21,7 +21,10 @@ enum PodLoopMode {
 
 /// Why the automation stopped on its own. Recorded so the user is told what
 /// happened rather than finding the mode quietly switched off.
-enum PodLoopStop { podUnreachable, podNotDelivering, noPod, limitsInvalid }
+///
+/// A missing pod is deliberately not a cause: the automation waits for the next
+/// pod instead (see [PodStore.forgetPod]).
+enum PodLoopStop { podUnreachable, podNotDelivering, limitsInvalid }
 
 /// One automated cycle, kept so an automated delivery can be reconstructed.
 ///

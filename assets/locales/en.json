@@ -581,7 +581,6 @@
       "stopped": {
         "pod_unreachable": "The automation stopped because the pod was out of reach for a while. The pod is back on your basal schedule.",
         "pod_not_delivering": "The automation stopped because the pod is no longer delivering.",
-        "no_pod": "The automation stopped because there is no active pod.",
         "limits_invalid": "The automation stopped because the limits do not fit together."
       },
       "blocked": {

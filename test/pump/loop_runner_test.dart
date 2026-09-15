@@ -607,15 +607,17 @@ void main() {
       expect(store.loopCycles.single.reason, LoopReason.podUnavailable);
     });
 
-    test('a pod that is gone stops the automation', () async {
+    /// Between two pods there is nothing to program, and a user who had the
+    /// automation on wants it back on the next pod without switching it again.
+    test('a pod that is gone leaves the automation waiting for the next', () async {
       await store.saveLoopMode(PodLoopMode.engaged);
       await store.forgetPod();
-      await store.saveLoopMode(PodLoopMode.engaged);
 
       await runnerWith().tick();
 
-      expect(store.loopMode, PodLoopMode.off);
-      expect(store.loopStop, PodLoopStop.noPod);
+      expect(store.loopMode, PodLoopMode.engaged);
+      expect(store.loopStop, isNull);
+      expect(session.commandsOfType<PodProgramTempBasalCommand>(), isEmpty);
     });
   });
 

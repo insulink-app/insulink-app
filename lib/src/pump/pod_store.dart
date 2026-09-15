@@ -227,6 +227,11 @@ class PodStore {
   /// discarded. Its own cap ages it out; a pod change is not what should.
   /// The RUNNING TOTAL beside it does go, because that one answers "how much has
   /// this pod given", which is a question about the pod.
+  ///
+  /// **The automation switch is NOT cleared either.** It is the user's choice,
+  /// not the pod's: the runner waits through the gap and carries on with the
+  /// next pod, so a pod change does not quietly hand the user back to plain
+  /// basal. Its cycles and stop cause do go, because they describe this pod.
   Future<void> forgetPod() async {
     for (final key in const [
       _kUniqueId,
@@ -254,7 +259,6 @@ class PodStore {
       _kDeliveryLog,
       _kRunningBolus,
       _kPendingBolus,
-      _kLoopMode,
       _kLoopStop,
       _kLoopCycles,
       _kUnconfirmedBoluses,

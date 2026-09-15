@@ -160,9 +160,13 @@ class PodLoopRunner {
   bool _isTooOldToImagineWith(DateTime readAt) =>
       now().difference(readAt) > const Duration(minutes: 30);
 
+  /// One cycle with the automation on.
+  ///
+  /// Without an activated pod it waits instead of switching off. Between two
+  /// pods there is nothing to program, and a user who had the automation on
+  /// wants it back on the next pod without having to switch it on again.
   Future<void> _cycle() async {
     if (!store.hasPod || !store.isActivated) {
-      await _disengage(PodLoopStop.noPod);
       return;
     }
     final limits = await LoopLimits.load();

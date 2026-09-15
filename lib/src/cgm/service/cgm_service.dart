@@ -454,8 +454,10 @@ class CgmTaskHandler extends TaskHandler {
     }
     if (await AdvisoryActionRunner(alarms).run()) {
       // The app has to re-read: a countermeasure it never saw changed the meal
-      // log, and a delivery has a banner waiting for it (AdvisoryDeliveryStore).
+      // log and the pod's delivery record ('meals'), and a delivery has a banner
+      // waiting for it (AdvisoryDeliveryStore, read on 'update').
       FlutterForegroundTask.sendDataToMain({'t': 'update'});
+      FlutterForegroundTask.sendDataToMain({'t': 'meals'});
     }
   }
 

@@ -39,14 +39,15 @@ class OverviewPodLife extends StatelessWidget {
           pageTitleKey: 'pump.life.title',
         ),
         const SizedBox(height: 8),
-        OverviewPodReservoir(controller: controller),
+        PodReservoirBar(controller: controller),
         const PodLoopOverviewLine(),
       ],
     );
   }
 }
 
-/// The reservoir under the pod's life bar, as a bar of its own.
+/// The reservoir under the pod's life bar, as a bar of its own, on the overview
+/// and in the pump page's status box.
 ///
 /// Shaped like the life bar above it — same header row, same 9 px track, same
 /// rounded ends — because they answer the same question about the same pod: how
@@ -57,8 +58,8 @@ class OverviewPodLife extends StatelessWidget {
 /// reports a sentinel instead. That case reads as a full bar and is worded rather
 /// than shown as a number: a precise figure the pod did not give would invite
 /// decisions it cannot support. The same applies while no status has been read.
-class OverviewPodReservoir extends StatelessWidget {
-  const OverviewPodReservoir({super.key, required this.controller});
+class PodReservoirBar extends StatelessWidget {
+  const PodReservoirBar({super.key, required this.controller});
 
   final PodController controller;
 

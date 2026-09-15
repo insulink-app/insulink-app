@@ -421,14 +421,37 @@ class _AppLifecycleState extends State<_AppLifecycle>
     WidgetsBinding.instance.addObserver(this);
     DetectedTrainingTap.requested.addListener(_openDetectedTraining);
     unawaited(DetectedTrainingTap.start());
+    FlutterForegroundTask.addTaskDataCallback(_onServiceData);
     WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
   }
 
   @override
   void dispose() {
     DetectedTrainingTap.requested.removeListener(_openDetectedTraining);
+    FlutterForegroundTask.removeTaskDataCallback(_onServiceData);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Re-reads the meal log and the pod store once the service has booked what a
+  /// notification button asked for.
+  ///
+  /// The resume reload alone missed it. The tap is carried out on the service's
+  /// next watchdog tick, usually AFTER the user unlocked and the resume reload had
+  /// already run, and with the app open there is no resume at all. The insulin
+  /// page and chart then lacked the dose, and the next meal saved in the app
+  /// wrote the stale list over it.
+  void _onServiceData(Object data) {
+    if (data is Map && data['t'] == 'meals') {
+      unawaited(_reloadBookedDose());
+    }
+  }
+
+  Future<void> _reloadBookedDose() async {
+    final pod = context.read<PodController>();
+    await context.read<MealState>().reload();
+    await pod.store.reload();
+    pod.notifyRunningBolusChanged();
   }
 
   @override
