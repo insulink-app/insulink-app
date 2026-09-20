@@ -17,6 +17,9 @@ import 'package:insulink/src/pump/protocol/pod_command.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 import 'package:insulink/src/pump/protocol/pod_session.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:insulink/src/cgm/service/alarms.dart';
+import 'package:insulink/src/pump/service/pod_alarms.dart';
 
 /// Where the user is in the activation, as the wizard presents it.
 ///
@@ -224,7 +227,7 @@ class PodActivationController extends ChangeNotifier {
       }
       await _logActivationDelivery(PodDeliveryKind.prime);
       _enter(PodActivationStage.attachPod);
-      unawaited(_buzzReadyToAttach());
+      unawaited(_notifyQuietly(_buzzReadyToAttach));
       // The user now leaves the phone to attach the pod, which is the longest
       // gap in the whole activation. Mirror before it, not after.
       await _mirrorPairing();
@@ -236,16 +239,28 @@ class PodActivationController extends ChangeNotifier {
     }
   }
 
-  /// Buzzes twice once the pod is primed and can go on the body.
+  /// Calls the user back once the pod is primed and can go on the body.
   ///
-  /// Priming runs about a minute with nothing to tap, so the user has usually
-  /// looked away by the time it finishes. Not awaited by the caller: a phone
-  /// that cannot buzz must not fail the activation. Follows the system's touch
-  /// feedback setting, so it stays still where that is switched off.
+  /// The haptic is the immediate answer for a phone still in hand; the
+  /// notification ([PodAlarmManager.readyToAttach]) is what actually reaches one
+  /// that has been put down, and it is the reason this stopped being two taps
+  /// nobody felt. The plugin is initialised here because this is the UI isolate,
+  /// which does not otherwise own one.
   Future<void> _buzzReadyToAttach() async {
     await HapticFeedback.vibrate();
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    await HapticFeedback.vibrate();
+    final plugin = FlutterLocalNotificationsPlugin();
+    await G7AlarmManager(plugin).init();
+    await PodAlarmManager(plugin).readyToAttach();
+  }
+
+  /// Runs a notification call that must never fail the activation: a phone that
+  /// will not buzz is not a reason to stop priming a pod.
+  Future<void> _notifyQuietly(Future<void> Function() body) async {
+    try {
+      await body();
+    } catch (error) {
+      debugPrint('pod activation: notification failed: $error');
+    }
   }
 
   /// Phase two: program the schedule and seat the cannula, once the user has
@@ -511,6 +526,17 @@ class PodActivationController extends ChangeNotifier {
     if (stage != PodActivationStage.failed) {
       _failure = null;
       _failureKey = null;
+    }
+    // Whatever the user did next, they are no longer waiting to be told the pod
+    // is ready, so the notice goes down with the stage that raised it.
+    if (stage != PodActivationStage.attachPod) {
+      unawaited(
+        _notifyQuietly(
+          () => PodAlarmManager(
+            FlutterLocalNotificationsPlugin(),
+          ).clearReadyToAttach(),
+        ),
+      );
     }
     _notify();
   }

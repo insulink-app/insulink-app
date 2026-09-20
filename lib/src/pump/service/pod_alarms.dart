@@ -50,6 +50,64 @@ class PodAlarmManager {
   static const _stoppedId = 115;
   static const _loopStoppedId = 116;
 
+  /// Notification id for "the pod is primed and can go on the body".
+  static const _readyToAttachId = 117;
+
+  /// Every id a pod warning can occupy, so the overview knows which of the
+  /// notifications standing in the shade are this manager's.
+  static const List<int> warningIds = [
+    _expiryId,
+    _expiredId,
+    _reservoirId,
+    _alarmId,
+    _unreachableId,
+    _stoppedId,
+    _loopStoppedId,
+  ];
+
+  /// The pod warnings currently in the notification shade.
+  ///
+  /// **The shade is the record, not a copy of one.** A warning the user has
+  /// tapped or swiped away is gone from it, so an overview that mirrors the
+  /// shade acknowledges with it and cannot drift out of step with it. Read from
+  /// the UI isolate, where the overview lives.
+  Future<List<ActiveNotification>> standingWarnings() async {
+    final active = await _plugin.getActiveNotifications();
+    return active
+        .where((notification) => warningIds.contains(notification.id))
+        .toList();
+  }
+
+  /// Takes one warning down, for the overview card that mirrors it: dismissing
+  /// it there is the same act as dismissing it in the shade.
+  Future<void> dismissWarning(int id) => _plugin.cancel(id: id);
+
+  /// Says the pod is primed and can go on the body.
+  ///
+  /// Priming is the activation's one long wait, about a minute with nothing on
+  /// screen to tap, so the user has usually put the phone down by the time it
+  /// ends. The view haptic that used to mark it was far too slight to feel
+  /// through a pocket, and it is silent altogether wherever the system's touch
+  /// feedback is switched off. The warning channel's buzz is the one the rest of
+  /// the app already relies on to be noticed.
+  ///
+  /// Raised whatever silent mode says: the user is standing over an open pod
+  /// waiting for exactly this step. It reuses the wizard's own words, so the
+  /// notification and the page cannot come to say different things.
+  Future<void> readyToAttach() async {
+    await _plugin.show(
+      id: _readyToAttachId,
+      title: await _strings.get('pump.activate.attach_title'),
+      body: await _strings.get('pump.activate.attach_body'),
+      notificationDetails: NotificationDetails(
+        android: await _channels.warning(),
+      ),
+    );
+  }
+
+  /// Takes the ready-to-attach notice down once the activation has moved on.
+  Future<void> clearReadyToAttach() => _plugin.cancel(id: _readyToAttachId);
+
   /// One-shot flag names, stored per pod.
   static const _expirySlug = 'expiry';
   static const _expiredSlug = 'expired';

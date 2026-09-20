@@ -65,17 +65,25 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
   /// its place. This page's top holds a CONTROL, and a control that fades while
   /// you scroll towards the list underneath it is both distracting and, past half
   /// transparency, no longer tappable. Scrolling here just moves the page.
+  ///
+  /// Pulling it down re-reads the pod. Everything on the page is a cached status
+  /// that ages on its own, and a pull is the gesture a phone user already makes
+  /// at one.
   Widget _pod(BuildContext context, PodController controller) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          PodStatusBox(controller: controller),
-          const SizedBox(height: 12),
-          const PodLoopModeCard(),
-          const SizedBox(height: 18),
-          _details(context, controller),
-        ],
+    return RefreshIndicator(
+      onRefresh: controller.refresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PodStatusBox(controller: controller),
+            const SizedBox(height: 12),
+            const PodLoopModeCard(),
+            const SizedBox(height: 18),
+            _details(context, controller),
+          ],
+        ),
       ),
     );
   }

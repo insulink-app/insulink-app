@@ -337,7 +337,44 @@ class PodController extends ChangeNotifier {
 
   /// Tells listeners a bolus started. Called by [BolusDelivery], which writes the
   /// record through the store rather than through this class.
-  void notifyRunningBolusChanged() => notifyListeners();
+  void notifyRunningBolusChanged() {
+    _readPodWhenBolusEnds();
+    notifyListeners();
+  }
+
+  /// How long after a bolus should have finished the pod is read again. Enough
+  /// for the last pulse to be out and the link to have settled, and short enough
+  /// that the user is still looking at the screen they dosed from.
+  static const Duration _afterBolusSettle = Duration(seconds: 5);
+
+  /// Re-reads the pod once the bolus it is working through has run its course.
+  ///
+  /// The status that came back with the bolus command was read BEFORE any
+  /// insulin moved, so the reservoir on screen still holds the pre-bolus figure
+  /// — and nothing else would correct it until the background poll comes round a
+  /// quarter of an hour later.
+  ///
+  /// Skipped while another operation holds the link ([refresh] returns at once
+  /// when busy); that operation reads the pod itself.
+  void _readPodWhenBolusEnds() {
+    _bolusEndRead?.cancel();
+    final bolus = runningBolus;
+    if (bolus == null) {
+      return;
+    }
+    _bolusEndRead = Timer(
+      bolus.remaining(DateTime.now()) + _afterBolusSettle,
+      refresh,
+    );
+  }
+
+  Timer? _bolusEndRead;
+
+  @override
+  void dispose() {
+    _bolusEndRead?.cancel();
+    super.dispose();
+  }
 
   /// Stops the bolus in progress and corrects the log to what the pod gave.
   ///

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/overview/overview_notice.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -10,7 +11,7 @@ import 'package:provider/provider.dart';
 /// The notification that reported it can be swiped away, silenced, or never
 /// seen at all, and the app may not even have been running. Insulin that was
 /// given has to be visible where the user actually looks, so it is repeated
-/// here and stays until tapped away.
+/// here and stays until tapped or swiped away.
 ///
 /// Same quiet panel as [StoppedBolusNotice], not an amber mode banner: this is
 /// a fact to be told once, not a state to be ended.
@@ -24,41 +25,11 @@ class AdvisoryBolusNotice extends StatelessWidget {
     if (delivery == null) {
       return const SizedBox.shrink();
     }
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: controller.dismissAdvisoryDelivery,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  PhosphorIconsBold.syringe,
-                  size: 18,
-                  color: scheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    _message(context, delivery.units, delivery.at),
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.35,
-                      color: scheme.onSurface,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return OverviewNotice(
+      dismissKey: 'advisory-bolus',
+      icon: PhosphorIconsBold.syringe,
+      message: _message(context, delivery.units, delivery.at),
+      onDismiss: controller.dismissAdvisoryDelivery,
     );
   }
 
