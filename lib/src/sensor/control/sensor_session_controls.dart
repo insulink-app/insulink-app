@@ -3,7 +3,7 @@ import 'package:insulink/src/base/action_buttons.dart';
 
 import '../../alert/alert.dart';
 import '../../cgm/cgm_controller.dart';
-import '../../injection/biometric_auth.dart';
+import '../../profile/security/profile_security_state.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -66,7 +66,8 @@ class SensorSessionControls extends StatelessWidget {
   /// confirmation it requires the device fingerprint (PIN fallback when none is
   /// enrolled). A failed/declined check leaves the pairing untouched.
   Future<void> _authThenForget(BuildContext context) async {
-    final ok = await BiometricAuth().confirm(
+    final ok = await ProfileSecurityState().confirm(
+      GuardedAction.sensor,
       Locales.string(context, 'sensor.control.forget_auth_reason'),
       allowDeviceCredential: true,
     );

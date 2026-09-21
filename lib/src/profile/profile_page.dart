@@ -28,6 +28,7 @@ import 'package:insulink/src/profile/notifications/profile_notification_toggle.d
 import 'package:insulink/src/profile/prediction/profile_prediction_band_toggle.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_horizon.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_toggle.dart';
+import 'package:insulink/src/profile/security/profile_security_selection.dart';
 import 'package:insulink/src/profile/silent/profile_silent_selection.dart';
 import 'package:insulink/src/google_health/heart_rate_zones_editor.dart';
 import 'package:insulink/src/google_health/profile_sleep_targets_editor.dart';
@@ -218,6 +219,12 @@ class _ProfilePageState extends State<ProfilePage> {
       icon: PhosphorIconsBold.batteryLow,
       searchKey: "profile.search.battery",
       children: () => const [ProfileBatterySelection()],
+    ),
+    (
+      titleKey: "profile.security",
+      icon: PhosphorIconsBold.fingerprint,
+      searchKey: "profile.search.security",
+      children: () => const [ProfileSecuritySelection()],
     ),
     (
       titleKey: "profile.developer",

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
-import 'package:insulink/src/injection/biometric_auth.dart';
+import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_duration_row.dart';
@@ -69,7 +69,8 @@ class ProfileSilentSelection extends StatelessWidget {
     BuildContext context,
     ProfileSilentState state,
   ) async {
-    final confirmed = await BiometricAuth().confirm(
+    final confirmed = await ProfileSecurityState().confirm(
+      GuardedAction.silent,
       Locales.string(context, 'profile.silent.auth_reason'),
       allowDeviceCredential: true,
     );

@@ -1134,6 +1134,25 @@
       },
       "auth_reason": "Bestätige, um den Akkusparmodus zu aktivieren"
     },
+    "security": {
+      "_": "Fingerabdruck",
+      "description": "Lege fest, welche Aktionen den Fingerabdruck deines Geräts verlangen. Wo kein Fingerabdruck hinterlegt ist, springt die Geräte-PIN ein, außer beim Bolus und bei der Kanüle.",
+      "action": {
+        "app_entry": "App öffnen",
+        "bolus": "Bolus bestätigen",
+        "cannula": "Kanüle setzen",
+        "loop": "Automatik einschalten",
+        "pump": "Pod deaktivieren oder verwerfen",
+        "sensor": "Sensor vergessen",
+        "silent": "Alles stummschalten",
+        "battery": "Akkusparmodus einschalten"
+      },
+      "lock": {
+        "title": "Insulink ist gesperrt",
+        "unlock": "Entsperren",
+        "reason": "Bestätige, um Insulink zu öffnen"
+      }
+    },
     "duration": {
       "_": "Dauer",
       "h2": "2 Std.",
@@ -1199,7 +1218,8 @@
       "hr_zones": "puls pulszonen herzfrequenz zonen bpm erhöht hoch grün orange rot",
       "sleep": "schlaf schlafqualität tiefschlaf einschlafen unterbrechung schlafindex zielbereich",
       "battery": "akku batterie energie sparen strom stromsparen gps ortung standort erkennung laufzeit",
-      "loop": "automatische abgabe automatik loop closed loop insulin"
+      "loop": "automatische abgabe automatik loop closed loop insulin",
+      "security": "fingerabdruck biometrie biometrisch sperre sperren pin sicherheit entsperren gesichert app start"
     },
     "prediction": {
       "_": "Vorhersage",

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
-import 'package:insulink/src/injection/biometric_auth.dart';
+import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/localization/enum_locale_key.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -146,7 +146,8 @@ class _PodLoopModeCardState extends State<PodLoopModeCard> {
     BuildContext context,
     PodController controller,
   ) async {
-    final confirmed = await BiometricAuth().confirm(
+    final confirmed = await ProfileSecurityState().confirm(
+      GuardedAction.loop,
       Locales.string(context, 'pump.loop.auth_reason'),
       allowDeviceCredential: true,
     );

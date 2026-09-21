@@ -680,6 +680,9 @@ the widget cannot drift away from the app on what is in range.
 - `docs/DEVICE_HISTORY.md` — the sensor/pod history read off the account: why
   `registered_at` is not a start, how "when did it come off" is worked out, and
   the panel copy of the same rules.
+- `docs/BIOMETRICS.md` — the fingerprint gates: which actions ask, the per-device
+  setting behind them, the app lock, and why a prompt the system cancels is not a
+  refusal.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
 - `docs/MAP.md` — the route map's tiles: why Esri Gray Canvas and not a keyed

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/injection/biometric_auth.dart';
+import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -37,8 +37,14 @@ class InjectionConfirmPage extends StatefulWidget {
 }
 
 class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
-  final BiometricAuth _auth = BiometricAuth();
+  final ProfileSecurityState _security = ProfileSecurityState();
   bool _authenticating = false;
+
+  /// Whether the bolus gate is switched on, read once when the page opens. The
+  /// page reads it itself rather than asking and finding out, because the hint
+  /// and the button carry a fingerprint on them and must not promise a prompt
+  /// that the setting has turned off.
+  bool _gated = true;
 
   /// Set when the biometric check was declined or failed. Deliberately sticky:
   /// this page gates a bolus, so "it didn't work" has to stay on screen next to
@@ -51,8 +57,22 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
   BolusDeliveryResult? _pumpOutcome;
 
   /// Whether this bolus needs biometric confirmation. A zero bolus (carbs-only
-  /// logging) is confirmed with a plain tap.
-  bool get _needsAuth => widget.bolus > 0;
+  /// logging) is confirmed with a plain tap, and so is any bolus once the user
+  /// has turned the gate off in the settings.
+  bool get _needsAuth => widget.bolus > 0 && _gated;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGate();
+  }
+
+  Future<void> _loadGate() async {
+    final gated = await _security.isGuarded(GuardedAction.bolus);
+    if (mounted) {
+      setState(() => _gated = gated);
+    }
+  }
 
   /// Whether the pod will be asked to deliver rather than the user injecting.
   bool get _usesPump => widget.delivery?.usesPump ?? false;
@@ -75,7 +95,8 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       _failed = false;
       _pumpOutcome = null;
     });
-    final ok = await _auth.confirm(
+    final ok = await _security.confirm(
+      GuardedAction.bolus,
       Locales.string(context, 'injection.confirm.reason'),
     );
     if (!mounted) {

@@ -1134,6 +1134,25 @@
       },
       "auth_reason": "Confirm to turn the battery saver on"
     },
+    "security": {
+      "_": "Fingerprint",
+      "description": "Choose which actions ask for your device fingerprint. Where no fingerprint is enrolled the device PIN stands in, except for the bolus and the cannula.",
+      "action": {
+        "app_entry": "Open the app",
+        "bolus": "Confirm a bolus",
+        "cannula": "Insert the cannula",
+        "loop": "Turn automation on",
+        "pump": "Deactivate or drop a pod",
+        "sensor": "Forget a sensor",
+        "silent": "Mute everything",
+        "battery": "Turn the battery saver on"
+      },
+      "lock": {
+        "title": "Insulink is locked",
+        "unlock": "Unlock",
+        "reason": "Confirm to open Insulink"
+      }
+    },
     "duration": {
       "_": "Duration",
       "h2": "2 hrs",
@@ -1199,7 +1218,8 @@
       "hr_zones": "pulse heart rate zones bpm elevated high green orange red",
       "sleep": "sleep quality deep sleep onset interruptions sleep index target range",
       "battery": "battery power energy saver save drain gps location tracking detection runtime",
-      "loop": "automated delivery automation loop closed loop insulin"
+      "loop": "automated delivery automation loop closed loop insulin",
+      "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start"
     },
     "prediction": {
       "_": "Prediction",

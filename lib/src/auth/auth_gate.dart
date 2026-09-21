@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/auth_page.dart';
+import 'package:insulink/src/auth/biometric_lock.dart';
 import 'package:insulink/src/auth/legal_page.dart';
 import 'package:insulink/src/auth/permissions/permission_onboarding.dart';
 import 'package:insulink/src/base/page.dart';
@@ -85,6 +86,6 @@ class _AuthGateState extends State<AuthGate> {
     if (!_authenticated) {
       return AuthPage(onAuthenticated: _onAuthenticated);
     }
-    return const AppPage();
+    return const BiometricLock(child: AppPage());
   }
 }

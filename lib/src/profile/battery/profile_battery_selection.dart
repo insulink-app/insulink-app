@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/injection/biometric_auth.dart';
+import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/battery/profile_battery_state.dart';
@@ -68,7 +68,12 @@ class ProfileBatterySelection extends StatelessWidget {
       return;
     }
     final reason = Locales.string(context, 'profile.battery.auth_reason');
-    if (await BiometricAuth().confirm(reason, allowDeviceCredential: true)) {
+    final security = ProfileSecurityState();
+    if (await security.confirm(
+      GuardedAction.battery,
+      reason,
+      allowDeviceCredential: true,
+    )) {
       await state.setMode(mode);
     }
   }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/injection/biometric_auth.dart';
+import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
@@ -161,20 +161,20 @@ class _PodActivationPageState extends State<PodActivationPage> {
 /// one, so no path can reach the insertion unasked — and the answer is SINGLE
 /// USE, so a confirmation given for one attempt cannot carry a later one.
 class CannulaConfirmation {
-  CannulaConfirmation({required this.reason, BiometricAuth? auth})
-    : _auth = auth ?? BiometricAuth();
+  CannulaConfirmation({required this.reason, ProfileSecurityState? security})
+    : _security = security ?? ProfileSecurityState();
 
   /// What the biometric sheet says it is for.
   final String reason;
 
-  final BiometricAuth _auth;
+  final ProfileSecurityState _security;
 
   bool _armed = false;
 
   /// Prompts now. Biometric only, no PIN fallback: driving a needle into the body
   /// is not something a pocket-tap should be able to do.
   Future<bool> ask() async {
-    _armed = await _auth.confirm(reason);
+    _armed = await _security.confirm(GuardedAction.cannula, reason);
     return _armed;
   }
 

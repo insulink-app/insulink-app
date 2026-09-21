@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/base/action_buttons.dart';
-import 'package:insulink/src/injection/biometric_auth.dart';
+import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_activation_page.dart';
@@ -274,7 +274,8 @@ class PodDeactivateButton extends StatelessWidget {
     BuildContext context,
     PodController controller,
   ) async {
-    final confirmed = await BiometricAuth().confirm(
+    final confirmed = await ProfileSecurityState().confirm(
+      GuardedAction.pump,
       Locales.string(context, 'pump.action.deactivate_auth_reason'),
       allowDeviceCredential: true,
     );
@@ -345,7 +346,8 @@ class PodForgetButton extends StatelessWidget {
     BuildContext context,
     PodController controller,
   ) async {
-    final confirmed = await BiometricAuth().confirm(
+    final confirmed = await ProfileSecurityState().confirm(
+      GuardedAction.pump,
       Locales.string(context, 'pump.action.forget_auth_reason'),
       allowDeviceCredential: true,
     );
