@@ -87,7 +87,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       return;
     }
     if (!_needsAuth) {
-      Navigator.of(context).pop(BolusDeliveryResult.loggedOnly(widget.bolus));
+      await _runDelivery();
       return;
     }
     setState(() {
@@ -112,7 +112,10 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
     await _runDelivery();
   }
 
-  /// Hands the confirmed dose over and closes.
+  /// Hands the confirmed dose over and closes. EVERY confirmed dose comes
+  /// through here, gated or not: the gate decides whether the user is asked,
+  /// never whether the pod is. A dose that skipped the question because the
+  /// user switched the fingerprint off is still a dose.
   ///
   /// It does NOT wait for the pod. The pod takes seconds to answer and minutes to
   /// deliver, and the user has already confirmed — what they want next is their
@@ -120,7 +123,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
   /// the overview reports what became of it, including a refusal.
   Future<void> _runDelivery() async {
     final delivery = widget.delivery;
-    if (delivery == null || !delivery.usesPump) {
+    if (widget.bolus <= 0 || delivery == null || !delivery.usesPump) {
       Navigator.of(context).pop(BolusDeliveryResult.loggedOnly(widget.bolus));
       return;
     }

@@ -17,6 +17,9 @@ analyzer:
     - "rust_builder/**"
     # Generated flutter_rust_bridge glue — regenerated via codegen, never edited.
     - "lib/src/rust/**"
+    - build/**
+    - android/**
+    - ios/**
 
 linter:
   # The lint rules applied to this project can be customized in the
