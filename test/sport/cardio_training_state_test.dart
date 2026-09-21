@@ -12,6 +12,11 @@ void main() {
 
   setUp(installSecureStorageMock);
 
+  /// A detection lapses after [SportStore.pendingLifetime], so the fixtures sit
+  /// an hour ago and the small offsets below only order them against each other.
+  final recently =
+      DateTime.now().subtract(const Duration(hours: 1)).millisecondsSinceEpoch;
+
   CardioTraining training(
     String id, {
     int startMs = 1000,
@@ -19,8 +24,8 @@ void main() {
   }) => CardioTraining(
     id: id,
     type: CardioType.jog,
-    startMs: startMs,
-    endMs: startMs + 60000,
+    startMs: recently + startMs,
+    endMs: recently + startMs + 60000,
     track: const [],
     distanceM: 500,
     detected: detected,

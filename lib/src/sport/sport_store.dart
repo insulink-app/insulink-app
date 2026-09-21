@@ -23,6 +23,11 @@ class SportStore {
   static const _kPendingTrainings = 'sport.pending_trainings';
   static const _kLocationLog = 'sport.location_log';
   static const _kActivityLog = 'sport.activity_log';
+  /// How long an auto-detected training waits for a decision before it lapses.
+  /// The detection notification carries the same span as its own Android
+  /// timeout, so the prompt and the entry behind it go away together.
+  static const pendingLifetime = Duration(hours: 24);
+
   static const _sessionCap = 500;
   static const _trainingCap = 500;
   // ~24 h of route at the 10 s sampling cadence.
@@ -143,9 +148,21 @@ class SportStore {
   /// Auto-detected trainings awaiting the user's confirm/reject. Kept apart from
   /// [loadTrainings] so the confirmed list (and its backend sync) stays clean and
   /// a misdetection never reaches it.
-  Future<List<CardioTraining>> loadPendingTrainings() async => (await _loadList(
-    _kPendingTrainings,
-  )).map(CardioTraining.fromJson).toList();
+  ///
+  /// A detection older than [pendingLifetime] is left out: nobody can honestly
+  /// say whether they went running the day before yesterday, and an undecided
+  /// prompt would otherwise sit in the list for good. The expired entries are
+  /// written out of storage by the next save, which every decision and every new
+  /// detection performs on this filtered list.
+  Future<List<CardioTraining>> loadPendingTrainings() async {
+    final cutoff = DateTime.now()
+        .subtract(pendingLifetime)
+        .millisecondsSinceEpoch;
+    return (await _loadList(_kPendingTrainings))
+        .map(CardioTraining.fromJson)
+        .where((training) => training.endMs >= cutoff)
+        .toList();
+  }
 
   Future<void> savePendingTrainings(List<CardioTraining> trainings) =>
       _saveList(_kPendingTrainings, trainings.map((t) => t.toJson()).toList());

@@ -1139,7 +1139,10 @@ class G7AlarmManager {
   }
 
   /// Prompt the user to confirm an auto-detected training: Confirm/Reject
-  /// actions, a distinct vibration and no alarm tone. The payload carries the
+  /// actions, a distinct vibration and no alarm tone. It withdraws itself after
+  /// [SportStore.pendingLifetime] (Android's own `setTimeoutAfter`, so it still
+  /// happens with no service alive), by which time the training behind it has
+  /// lapsed and the buttons would decide nothing. The payload carries the
   /// pending training id so [trainingNotificationAction] can resolve it.
   Future<void> notifyTrainingDetected(CardioTraining training) async {
     if (!await NotificationSetting.training.load()) {
@@ -1177,6 +1180,7 @@ class G7AlarmManager {
       playSound: false,
       vibrationPattern: Int64List.fromList(_trainingVibrationPattern),
       enableVibration: true,
+      timeoutAfter: SportStore.pendingLifetime.inMilliseconds,
       actions: [
         AndroidNotificationAction(
           _trainingConfirmAction,

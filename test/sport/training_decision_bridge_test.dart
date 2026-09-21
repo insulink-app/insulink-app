@@ -17,11 +17,16 @@ void main() {
     '${Directory.systemTemp.path}/insulink_training_decisions',
   );
 
+  /// A detection lapses after [SportStore.pendingLifetime], so the fixtures sit
+  /// an hour ago and the small offsets below only order them against each other.
+  final recently =
+      DateTime.now().subtract(const Duration(hours: 1)).millisecondsSinceEpoch;
+
   CardioTraining training(String id) => CardioTraining(
     id: id,
     type: CardioType.bike,
-    startMs: 1000,
-    endMs: 2000,
+    startMs: recently,
+    endMs: recently + 1000,
     track: const [],
     distanceM: 500,
     detected: true,
