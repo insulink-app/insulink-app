@@ -71,10 +71,7 @@ void main() {
     });
 
     test('respects custom factors', () {
-      final dose = bolusState(
-        correction: 50,
-        carb: 10,
-      ).suggestedBolus(
+      final dose = bolusState(correction: 50, carb: 10).suggestedBolus(
         carbs: 20,
         glucoseMgdl: 160,
         targetMgdl: 100,
@@ -127,6 +124,43 @@ void main() {
         iobUnits: 5,
       );
       expect(dose, closeTo(1.0, 1e-9));
+    });
+  });
+
+  group('suggestedBolus in a low counts carbs on board', () {
+    test('uncovered carbs already eaten cancel the low for the next meal', () {
+      // Earlier 30 g covered by 1.0 U, both still fully pending: 2.0 - 1.0 =
+      // 1.0 U of carbs uncovered lifts the -1.0 correction to 0. Meal 2.0 stands.
+      final dose = bolusState().suggestedBolus(
+        carbs: 30,
+        glucoseMgdl: 75,
+        targetMgdl: 110,
+        iobUnits: 1.0,
+        cobGrams: 30,
+      );
+      expect(dose, closeTo(2.0, 1e-9));
+    });
+
+    test('carbs that were fully bolused lift nothing', () {
+      final dose = bolusState().suggestedBolus(
+        carbs: 30,
+        glucoseMgdl: 75,
+        targetMgdl: 110,
+        iobUnits: 2.0,
+        cobGrams: 30,
+      );
+      expect(dose, closeTo(1.0, 1e-9));
+    });
+
+    test('pending carbs never add a correction on top', () {
+      final dose = bolusState().suggestedBolus(
+        carbs: 0,
+        glucoseMgdl: 75,
+        targetMgdl: 110,
+        iobUnits: 0,
+        cobGrams: 90,
+      );
+      expect(dose, 0);
     });
   });
 

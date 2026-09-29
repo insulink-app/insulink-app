@@ -120,15 +120,21 @@ class ProfileBolusState extends ChangeNotifier {
   /// forgets it would silently get the old stacking-prone dose, and there are
   /// only two call sites (the injection sheet and the predictive high advisory) —
   /// both of which must agree on the number they show.
+  ///
+  /// [cobGrams] (see `CarbsOnBoard`) may default to 0: leaving it out only keeps
+  /// the full negative correction, which is the cautious direction.
   double suggestedBolus({
     required double carbs,
     required int glucoseMgdl,
     required int targetMgdl,
     required double iobUnits,
+    double cobGrams = 0,
   }) {
     final meal = carbs / _carbFactor;
     final correction = (glucoseMgdl - targetMgdl) / _correctionFactor;
-    final suggestion = meal + _correctionAfterIob(correction, iobUnits);
+    final suggestion = correction > 0
+        ? meal + _correctionAfterIob(correction, iobUnits)
+        : meal + _lowCorrectionAfterCob(correction, cobGrams, iobUnits);
     return suggestion > 0 ? suggestion : 0;
   }
 
@@ -140,15 +146,31 @@ class ProfileBolusState extends ChangeNotifier {
   /// the dose: those carbs are new and still need covering, so letting residual
   /// insulin swallow a meal bolus would only trade a hypo for a spike.
   ///
-  /// A correction that is already NEGATIVE (glucose under target) is passed
-  /// through untouched, and so does still reduce the meal dose — that is a real
-  /// "you are low-ish already, take less" signal rather than stacking.
+  /// Only for a POSITIVE correction; under target see [_lowCorrectionAfterCob].
   double _correctionAfterIob(double correction, double iobUnits) {
-    if (correction <= 0) {
-      return correction;
-    }
     final remaining = correction - iobUnits;
     return remaining > 0 ? remaining : 0;
+  }
+
+  /// A NEGATIVE [correction] (glucose under target) with the carbs already on
+  /// their way up taken off it.
+  ///
+  /// Under target the correction reduces the meal dose — a real "you are low,
+  /// take less". But it used to be charged in FULL on every meal logged while
+  /// low: the carbs eaten to treat the low were still being absorbed, yet the
+  /// next meal lost the whole deficit again, so repeated meals in one low got
+  /// almost no insulin. Only carbs NOT already covered by active insulin count
+  /// ([cobGrams] as units minus [iobUnits], never below 0), so a meal that was
+  /// fully bolused before the low lifts nothing. It never turns positive: pending
+  /// carbs can cancel the low, never add a correction on top.
+  double _lowCorrectionAfterCob(
+    double correction,
+    double cobGrams,
+    double iobUnits,
+  ) {
+    final uncoveredCarbs = cobGrams / _carbFactor - iobUnits;
+    final lifted = correction + (uncoveredCarbs > 0 ? uncoveredCarbs : 0);
+    return lifted < 0 ? lifted : 0;
   }
 
   /// Grams of fast carbs to raise [glucoseMgdl] up to [targetMgdl]. Derived from

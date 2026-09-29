@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
+import 'package:insulink/src/injection/carbs_on_board.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
@@ -160,6 +161,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
       glucoseMgdl: glucose,
       targetMgdl: glucoseState.targetMid,
       iobUnits: _activeInsulin,
+      cobGrams: const CarbsOnBoard().grams(context.read<MealState>().meals),
     );
   }
 

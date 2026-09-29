@@ -723,6 +723,27 @@ class PodController extends ChangeNotifier {
   /// keep using the value it read at app start and hand the pod a sequence number
   /// it has already run — which the pod refuses as a duplicate. Reading fresh here
   /// is the same discipline `CgmController` follows for its own store.
+  /// Takes over a status the background poll read after this isolate's own.
+  ///
+  /// [status] was otherwise only ever what this isolate read itself, so an alert
+  /// the service's quarter-hourly poll found (the pod beeping) never reached the
+  /// overview until the pump page happened to read the pod again. Local only, no
+  /// radio: cheap enough for the overview to call on every refresh.
+  Future<void> adoptBackgroundStatus() async {
+    if (_busy) {
+      return;
+    }
+    await store.reload();
+    final readAt = store.lastStatusAt;
+    final held = _statusReadAt;
+    if (readAt == null || (held != null && !readAt.isAfter(held))) {
+      return;
+    }
+    _status = store.lastStatus;
+    _statusReadAt = readAt;
+    notifyListeners();
+  }
+
   Future<void> _resyncFromStorage() async {
     await store.reload();
     _sequence = store.commandSequence;
