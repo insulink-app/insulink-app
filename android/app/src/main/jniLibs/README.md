@@ -4,7 +4,8 @@ The Libre 3 BLE security handshake is gated by a static P-256 key Abbott protect
 with WhiteCryption Secure Key Box. There is **no clean-room path** — confirmed
 from Juggluco's own `loadlibs.cpp`, which `dlopen`s Abbott's binaries and
 delegates to their `process1`/`process2` symbols. So this app, like Juggluco,
-must call those binaries. They are **not** and cannot be committed here.
+must call those binaries. They are **never committed** (`.gitignore` blocks
+`jniLibs/**/*.so`); every build supplies them locally.
 
 ## Where the binary comes from
 
@@ -44,11 +45,21 @@ unaffected.
 
 ## Already ported (no extra binary)
 
-- **App certificate + wrapped private keys** — embedded in `Libre3Keys.kt` (the
-  162-byte `LIBRE3_APP_CERTIFICATES_B` + 165-byte `LIBRE3_APP_PRIVATE_KEYS` from
-  Juggluco's GPL `KEYSCrypto.java`). `initKeys` runs the real two-step load
-  (`process1(1)` then `process1(2, privateKey, kAuth)`); `appCertificate` returns
-  the embedded cert.
+- **App certificate + wrapped private keys**: Abbott's key material, so it is
+  NOT committed either. `Libre3Keys.kt` reads it from `BuildConfig`, which Gradle
+  fills from the gitignored `android/libre3.properties`. Copy the hex bytes of
+  `LIBRE3_APP_CERTIFICATES_B` (162 B each) and `LIBRE3_APP_PRIVATE_KEYS` (165 B
+  each) from Juggluco's `KEYSCrypto.java`, one comma-separated list per security
+  version order:
+
+  ```properties
+  certificates=<hex v0>,<hex v1>
+  private_keys=<hex v0>,<hex v1>
+  ```
+
+  Missing file → empty lists → the app still builds, Libre 3 just can't pair.
+  `initKeys` runs the real two-step load (`process1(1)` then
+  `process1(2, privateKey, kAuth)`); `appCertificate` returns the cert.
 - **AES-128-CCM data path** — `Libre3Ccm` (pointycastle), RFC-3610 tested.
 
 ## SKB anti-tamper caveat (on-device frontier)
@@ -67,6 +78,6 @@ So the blob is packaged and every clean-room piece is done; a first real reading
 still hinges on this SKB question plus the `ponytail:`-marked protocol details
 (NFC frame flags, CCM nonce/MAC, fragment framing) — a sensor is required.
 
-⚠️ Shipping Abbott's proprietary binaries has redistribution implications — the
-same ones Juggluco carries. This was an explicit project decision (see
-`docs/LIBRE3.md`).
+⚠️ Abbott's binaries and keys must not be redistributed: not in git, and not in a
+published APK either (an APK built with them contains them). Build with them for
+your own device only.

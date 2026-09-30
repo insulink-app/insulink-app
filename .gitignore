@@ -56,3 +56,8 @@ android/.kotlin/
 
 # Claude
 .claude/
+
+# Abbott's FreeStyle Libre 3 blobs + key material: proprietary, never committed.
+# Supplied locally per android/app/src/main/jniLibs/README.md.
+/android/app/src/main/jniLibs/**/*.so
+/android/libre3.properties

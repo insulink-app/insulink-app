@@ -343,9 +343,9 @@ on-device capture to confirm. The **app certificate** loads from
 `assets/libre3/app_certificate.bin` — the proprietary `LIBRE3_APP_CERTIFICATES_B`
 bytes the user drops in (see that folder's README).
 
-> ⚠️ Legal: shipping Abbott's proprietary binaries has redistribution
-> implications (the same ones Juggluco carries). This was an explicit, accepted
-> project decision.
+> ⚠️ Legal: Abbott's proprietary binaries and key material are never committed
+> or redistributed (no public APK containing them). Each build supplies them
+> locally, see `android/app/src/main/jniLibs/README.md`.
 
 ## Historic / backfill (gap-fill)
 
@@ -465,7 +465,7 @@ Notes:
 | Pairing UI (sensor-type selector + NFC activation form) + de/en locale | ✅ done — pick "FreeStyle Libre 3", scan to activate |
 | Native dlopen bridge (`libre3bridge.cpp` + CMake + Kotlin) | ✅ shipped, compiles into the APK; bridges Abbott `process1`/`process2` |
 | AES-128-CCM data path (`Libre3Ccm`, pointycastle) | ✅ done, RFC-3610 tested; Libre nonce/MAC wiring marked for on-device check |
-| App cert + wrapped private keys (`Libre3Keys.kt`, from Juggluco GPL) | ✅ embedded; `initKeys`/`appCertificate` ported faithfully |
+| App cert + wrapped private keys (`Libre3Keys.kt`, from Juggluco GPL) | ✅ baked in at build time from the gitignored `android/libre3.properties`; `initKeys`/`appCertificate` ported faithfully |
 | Abbott `liblibre3extension.so` (from **Juggluco's** APK) | ⛔ user-extracted — `jniLibs/README.md`. The ONE remaining artifact. |
 
 The whole clean-room pipeline (NFC → BLE handshake orchestration → decode →

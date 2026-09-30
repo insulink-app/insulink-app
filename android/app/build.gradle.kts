@@ -1,11 +1,23 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Abbott's Libre 3 key material, kept out of git (see jniLibs/README.md). Missing
+// file → empty BuildConfig strings → the app builds, Libre 3 just can't pair.
+val libre3Keys = Properties().apply {
+    rootProject.file("libre3.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+
 android {
     namespace = "de.insulink"
+
+    buildFeatures {
+        buildConfig = true
+    }
     // Pinned ahead of `flutter.compileSdkVersion` (36): permission_handler_android
     // declares an AAR metadata minimum of 37, and the build fails the check
     // without it. Independent of targetSdk, which still follows Flutter.
@@ -29,6 +41,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        buildConfigField("String", "LIBRE3_CERTIFICATES", "\"${libre3Keys.getProperty("certificates", "")}\"")
+        buildConfigField("String", "LIBRE3_PRIVATE_KEYS", "\"${libre3Keys.getProperty("private_keys", "")}\"")
     }
 
     buildTypes {
