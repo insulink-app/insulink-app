@@ -170,7 +170,8 @@
     "boxes": {
       "all": "Alle Werte",
       "all_hint": "Alle Werte, auch die, deren Box du auf der Übersicht ausgeblendet hast. Tippe einen an, um den Verlauf zu sehen oder einen neuen einzutragen."
-    }
+    },
+    "pod_alerts": "Der Pod meldet eine Warnung"
   },
   "analysis": {
     "label": "Analyse",

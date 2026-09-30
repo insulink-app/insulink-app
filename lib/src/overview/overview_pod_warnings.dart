@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/overview/overview_notice.dart';
+import 'package:insulink/src/overview/overview_pod_alerts.dart';
+import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/service/pod_alarms.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:provider/provider.dart';
 
 /// The pod warnings the background service has raised, repeated on the overview.
 ///
@@ -69,7 +72,10 @@ class _OverviewPodWarningsState extends State<OverviewPodWarnings>
     }
   }
 
+  /// Re-reads the shade, and the pod status the background poll left behind so
+  /// [OverviewPodAlerts] sees an alert found while the app was closed.
   Future<void> _read() async {
+    unawaited(context.read<PodController>().adoptBackgroundStatus());
     final standing = await _alarms.standingWarnings();
     if (mounted) {
       setState(() => _standing = standing);
@@ -90,9 +96,7 @@ class _OverviewPodWarningsState extends State<OverviewPodWarnings>
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final warning in _standing) _card(warning),
-      ],
+      children: [for (final warning in _standing) _card(warning)],
     );
   }
 

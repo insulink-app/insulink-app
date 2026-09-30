@@ -20,6 +20,7 @@ class OverviewNotice extends StatelessWidget {
     required this.onDismiss,
     this.title,
     this.onTap,
+    this.action,
   });
 
   /// What tells this notice apart from its neighbours, for [Dismissible].
@@ -37,6 +38,10 @@ class OverviewNotice extends StatelessWidget {
   /// What a tap does when there is somewhere worth going. Defaults to
   /// dismissing, which is all a notice with nowhere to go can offer.
   final VoidCallback? onTap;
+
+  /// A control under the message, for a notice that asks for more than being
+  /// read (the pod's alerts, acknowledged right here).
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -91,12 +96,9 @@ class OverviewNotice extends StatelessWidget {
         ],
         Text(
           message,
-          style: TextStyle(
-            fontSize: 13,
-            height: 1.35,
-            color: scheme.onSurface,
-          ),
+          style: TextStyle(fontSize: 13, height: 1.35, color: scheme.onSurface),
         ),
+        ?action,
       ],
     );
   }

@@ -170,7 +170,8 @@
     "boxes": {
       "all": "All values",
       "all_hint": "Every value, including the ones whose box you hid on the overview. Tap one to see its history or note a new result."
-    }
+    },
+    "pod_alerts": "The pod reports an alert"
   },
   "analysis": {
     "label": "Analysis",
