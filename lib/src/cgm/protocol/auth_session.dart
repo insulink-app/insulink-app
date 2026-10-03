@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import '../../rust/api/jpake.dart';
 import 'ble_transport.dart';
-import 'display_certs.dart';
+import '../../vendor_keys/vendor_keys.dart';
 import 'opcodes.dart';
 
 /// Thrown when the handshake fails in a way that is typically transient — a lost
@@ -80,6 +80,7 @@ class G7AuthSession {
 
   /// Execute the handshake. Returns the 16-byte session key on success.
   Future<Uint8List> run() async {
+    _vendorKeys();
     // Start from a clean J-PAKE buffer so stray bytes from a previous (failed)
     // attempt can't misalign the 160-byte round payloads.
     transport.clearJpakeBuffer();
@@ -178,11 +179,24 @@ class G7AuthSession {
   static const _opCert = 0x0B;
   static const _opPop = 0x0C;
 
+  /// The display certificates and key a fresh pair presents. A reconnect needs
+  /// neither, so a build without them fails only a fresh pair, and before its
+  /// first round, with an error that says why instead of a sensor that drops
+  /// the link halfway through.
+  VendorKeys _vendorKeys() {
+    final keys = VendorKeys.current;
+    if (!keys.hasDexcom) {
+      throw StateError('Dexcom vendor keys missing, see docs/VENDOR_KEYS.md');
+    }
+    return keys;
+  }
+
   /// 0x0B: for each display cert, write `{0x0B, idx, len32}`, read the sensor's
   /// 7-byte size header + its cert on 3538, then send our cert on 3538.
   Future<void> _certExchange() async {
-    for (var idx = 0; idx < kDisplayCerts.length; idx++) {
-      final our = kDisplayCerts[idx];
+    final certificates = _vendorKeys().dexcomDisplayCertificates;
+    for (var idx = 0; idx < certificates.length; idx++) {
+      final our = certificates[idx];
       final sizeHdr = transport.authStream
           .map((event) => Uint8List.fromList(event))
           .firstWhere((frame) => frame.isNotEmpty && frame.first == _opCert)
@@ -219,7 +233,10 @@ class G7AuthSession {
         .timeout(stepTimeout);
     await transport.writeAuth([_opPop, ..._randomBytes(16)]);
     final challenge = await theirChallenge; // 0x0C ‖ 16 bytes
-    final sig = _jpake.popSign(challenge: challenge); // 64-byte r‖s
+    final sig = _jpake.popSign(
+      challenge: challenge,
+      displayKey: _vendorKeys().dexcomDisplayKey,
+    );
     log('PoP: signing sensor challenge, returning 64B signature');
     await transport.writeJpake(sig);
     await transport.writeAuth([0x0D, 0x00, 0x02]);

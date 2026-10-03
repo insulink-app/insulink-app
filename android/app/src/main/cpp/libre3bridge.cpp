@@ -8,7 +8,7 @@
 // its `JNI_OnLoad` with a FAKE JavaVM whose `RegisterNatives` we intercept, and
 // capture the two function pointers from the methods table.
 //
-// The Abbott `.so` is NOT in this repo (see jniLibs/README.md). Until it is
+// The Abbott `.so` is NOT in this repo (see docs/LIBRE3_BLOB.md). Until it is
 // present the `dlopen` fails, `ensureLoaded()` returns false, and every exported
 // function returns a benign default so the Kotlin plugin reports `no_blob`.
 

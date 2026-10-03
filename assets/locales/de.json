@@ -1460,5 +1460,8 @@
     "average_glucose": "Ø Glukose",
     "empty": "Noch kein HbA1c-Wert notiert.",
     "delete_confirm": "Diesen HbA1c-Wert löschen?"
+  },
+  "vendor_keys": {
+    "missing": "Herstellerschlüssel fehlen. Dieser Build kann sich nicht koppeln mit: #. Lege assets/vendor_keys/vendor_keys.json an und baue die App neu."
   }
 }

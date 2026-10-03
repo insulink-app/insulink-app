@@ -149,6 +149,7 @@ fn wire__crate__api__jpake__G7Jpake_pop_sign_impl(
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<G7Jpake>,
             >>::sse_decode(&mut deserializer);
             let api_challenge = <Vec<u8>>::sse_decode(&mut deserializer);
+            let api_display_key = <Vec<u8>>::sse_decode(&mut deserializer);
             deserializer.end();
             transform_result_sse::<_, String>((move || {
                 let mut api_that_guard = None;
@@ -165,8 +166,11 @@ fn wire__crate__api__jpake__G7Jpake_pop_sign_impl(
                     }
                 }
                 let api_that_guard = api_that_guard.unwrap();
-                let output_ok =
-                    crate::api::jpake::G7Jpake::pop_sign(&*api_that_guard, api_challenge)?;
+                let output_ok = crate::api::jpake::G7Jpake::pop_sign(
+                    &*api_that_guard,
+                    api_challenge,
+                    api_display_key,
+                )?;
                 Ok(output_ok)
             })())
         },

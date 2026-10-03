@@ -40,6 +40,7 @@ import '../../nutrition/meal/meal_store.dart';
 import '../../injection/active_insulin.dart';
 import '../../libre3/libre3_connection.dart';
 import '../../libre3/libre3_crypto.dart';
+import '../../vendor_keys/vendor_keys.dart';
 
 /// Entry point for the foreground-service isolate. Must be a top-level function
 /// annotated `vm:entry-point` so it survives tree-shaking and can be invoked by
@@ -242,6 +243,7 @@ class CgmTaskHandler extends TaskHandler {
       if (!_coreReady) {
         // Fresh isolate: the Rust J-PAKE core must be initialised here too.
         await RustLib.init();
+        await VendorKeys.ensureLoaded();
         _coreReady = true;
       }
       if (_store == null) {

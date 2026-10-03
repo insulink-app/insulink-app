@@ -4,6 +4,7 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `derive_shared_key`, `encrypt8_aes`, `fill`, `from_bytes`, `hash_challenge`, `point_from_xy`, `point_uncompressed`, `point_x`, `point_xy`, `push_be_len`, `random_scalar`, `scalar_from_be`, `scalar_from_hex`, `to_bytes`, `verify`
@@ -34,9 +35,16 @@ abstract class G7Jpake implements RustOpaqueInterface {
       RustLib.instance.api.crateApiJpakeG7JpakeNew(pairingCode: pairingCode);
 
   /// Proof-of-possession (`0x0C`): sign SHA-256 of the sensor's 16-byte
-  /// challenge (`challenge[2..18]`) with the embedded display key, returning a
+  /// challenge (`challenge[2..18]`) with the Dexcom display key, returning a
   /// 64-byte raw `r‖s` ECDSA-P256 signature. (Juggluco `getchallenge`.)
-  Uint8List popSign({required List<int> challenge});
+  ///
+  /// `display_key` is the 32-byte private key of the leaf display certificate
+  /// (`getKeyC` in ecJPake.cpp, zero-padded). It is Dexcom's, so it is not in
+  /// this source: Dart passes it in from the vendor keys (docs/VENDOR_KEYS.md).
+  Uint8List popSign({
+    required List<int> challenge,
+    required List<int> displayKey,
+  });
 
   /// Round-1 payload (our key[0]) for `ExchangePakePayload` phase 0.
   Uint8List round1Payload();

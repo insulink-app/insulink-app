@@ -61,9 +61,9 @@ abstract class Libre3Crypto {
 
 /// [Libre3Crypto] backed by the native blob via a `MethodChannel`. The Android
 /// side (`Libre3SecurityPlugin`, Kotlin) mirrors Juggluco's `loadlibs.cpp`:
-/// it `dlopen`s the Abbott `.so` from `jniLibs/arm64-v8a/` and forwards each
-/// call to `process1`/`process2`. The `.so` binaries are NOT in this repo and
-/// must be supplied by the developer (see `android/app/src/main/jniLibs/README`).
+/// it `dlopen`s the Abbott `.so` and forwards each call to `process1`/
+/// `process2`. The `.so` and the keys are NOT in this repo and must be supplied
+/// by the developer (see `docs/VENDOR_KEYS.md`).
 class Libre3NativeCrypto implements Libre3Crypto {
   static const _channel = MethodChannel('insulink/libre3_security');
 
@@ -76,6 +76,17 @@ class Libre3NativeCrypto implements Libre3Crypto {
   /// command is unique. Juggluco's `outCryptoSequence`: starts at 1, incremented
   /// after every [encrypt].
   int _outSequence = 1;
+
+  /// Whether this build carries the Libre 3 keys and Abbott's blob, for the
+  /// start-up warning. Answered from build-time flags, so it never loads the
+  /// blob; a platform without the channel counts as incomplete.
+  Future<bool> vendorKeysComplete() async {
+    try {
+      return await _channel.invokeMethod<bool>('vendorKeysComplete') ?? false;
+    } on Exception {
+      return false;
+    }
+  }
 
   @override
   Future<bool> initKeys(Uint8List? authKey, int securityVersion) async {

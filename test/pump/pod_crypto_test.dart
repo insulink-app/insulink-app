@@ -4,6 +4,8 @@ import 'package:insulink/src/pump/protocol/message_packet.dart';
 import 'package:insulink/src/pump/protocol/milenage.dart';
 import 'package:insulink/src/pump/protocol/session_cipher.dart';
 
+import 'vendor_keys_fixture.dart';
+
 Uint8List hex(String text) {
   final clean = text.replaceAll(',', '').replaceAll(' ', '');
   return Uint8List.fromList([
@@ -16,7 +18,7 @@ String toHex(Uint8List bytes) =>
     bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
 
 void main() {
-  group('Milenage', () {
+  group('Milenage', skip: installOmnipodVendorKeys(), () {
     test('derives RES, CK and AUTN for a captured session', () {
       final milenage = Milenage(
         key: hex('c0772899720972a314f557de66d571dd'),

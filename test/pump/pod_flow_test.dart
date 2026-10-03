@@ -22,6 +22,8 @@ import 'package:insulink/src/rust/frb_generated.dart';
 
 import 'fake_pod.dart';
 
+import 'vendor_keys_fixture.dart';
+
 Uint8List hex(String text) => Uint8List.fromList([
       for (var index = 0; index < text.length; index += 2)
         int.parse(text.substring(index, index + 2), radix: 16),
@@ -363,7 +365,7 @@ void main() {
     });
   });
 
-  group('session establishment', () {
+  group('session establishment', skip: installOmnipodVendorKeys(), () {
     final longTermKey = hex('c0772899720972a314f557de66d571dd');
     const addresses = PodAddressPair(podUniqueId: 136326825);
     final podNonceHalf = hex('a1b2c3d4');

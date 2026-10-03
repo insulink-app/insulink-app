@@ -42,6 +42,8 @@ import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training/detected_training_tap.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/theme/app_theme.dart';
+import 'package:insulink/src/vendor_keys/vendor_keys.dart';
+import 'package:insulink/src/vendor_keys/vendor_keys_warning.dart';
 import 'package:provider/provider.dart';
 
 /// The persisted settings the app needs before its first frame can render.
@@ -73,6 +75,7 @@ typedef AppPreferences = ({
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Locales.init(["de", "en"]);
+  await VendorKeys.ensureLoaded();
   // Required so the UI isolate can exchange data with the foreground-service
   // isolate that owns the BLE connection.
   FlutterForegroundTask.initCommunicationPort();
@@ -215,7 +218,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       themeMode: themeState.themeMode,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      home: const AuthGate(),
+      home: const VendorKeysWarning(child: AuthGate()),
       debugShowCheckedModeBanner: false,
       localizationsDelegates: Locales.delegates,
       supportedLocales: Locales.supportedLocales,

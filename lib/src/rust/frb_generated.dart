@@ -6,11 +6,14 @@
 import 'api/jpake.dart';
 import 'api/simple.dart';
 import 'api/x25519.dart';
+
 import 'dart:async';
 import 'dart:convert';
+
 import 'frb_generated.dart';
 import 'frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
+
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 /// Main entrypoint of the Rust API
@@ -90,6 +93,7 @@ abstract class RustLibApi extends BaseApi {
   Uint8List crateApiJpakeG7JpakePopSign({
     required G7Jpake that,
     required List<int> challenge,
+    required List<int> displayKey,
   });
 
   Uint8List crateApiJpakeG7JpakeRound1Payload({required G7Jpake that});
@@ -210,6 +214,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Uint8List crateApiJpakeG7JpakePopSign({
     required G7Jpake that,
     required List<int> challenge,
+    required List<int> displayKey,
   }) {
     return handler.executeSync(
       SyncTask(
@@ -220,6 +225,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_list_prim_u_8_loose(challenge, serializer);
+          sse_encode_list_prim_u_8_loose(displayKey, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 3)!;
         },
         codec: SseCodec(
@@ -227,7 +233,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_String,
         ),
         constMeta: kCrateApiJpakeG7JpakePopSignConstMeta,
-        argValues: [that, challenge],
+        argValues: [that, challenge, displayKey],
         apiImpl: this,
       ),
     );
@@ -236,7 +242,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiJpakeG7JpakePopSignConstMeta =>
       const TaskConstMeta(
         debugName: "G7Jpake_pop_sign",
-        argNames: ["that", "challenge"],
+        argNames: ["that", "challenge", "displayKey"],
       );
 
   @override
@@ -899,10 +905,20 @@ class G7JpakeImpl extends RustOpaque implements G7Jpake {
       RustLib.instance.api.crateApiJpakeG7JpakeAes8(that: this, data8: data8);
 
   /// Proof-of-possession (`0x0C`): sign SHA-256 of the sensor's 16-byte
-  /// challenge (`challenge[2..18]`) with the embedded display key, returning a
+  /// challenge (`challenge[2..18]`) with the Dexcom display key, returning a
   /// 64-byte raw `r‖s` ECDSA-P256 signature. (Juggluco `getchallenge`.)
-  Uint8List popSign({required List<int> challenge}) => RustLib.instance.api
-      .crateApiJpakeG7JpakePopSign(that: this, challenge: challenge);
+  ///
+  /// `display_key` is the 32-byte private key of the leaf display certificate
+  /// (`getKeyC` in ecJPake.cpp, zero-padded). It is Dexcom's, so it is not in
+  /// this source: Dart passes it in from the vendor keys (docs/VENDOR_KEYS.md).
+  Uint8List popSign({
+    required List<int> challenge,
+    required List<int> displayKey,
+  }) => RustLib.instance.api.crateApiJpakeG7JpakePopSign(
+    that: this,
+    challenge: challenge,
+    displayKey: displayKey,
+  );
 
   /// Round-1 payload (our key[0]) for `ExchangePakePayload` phase 0.
   Uint8List round1Payload() =>

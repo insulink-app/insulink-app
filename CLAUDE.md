@@ -135,7 +135,7 @@ Two layers, bridged by flutter_rust_bridge (FRB):
 
 The `lib/src/cgm/` module is grouped into subfolders by concern:
 `protocol/` (the wire/codec/handshake/pipeline core — `uuids`, `opcodes`,
-`display_certs`, `ble_transport`, `auth_session`, `device_info`, `glucose`,
+`ble_transport`, `auth_session`, `device_info`, `glucose`,
 `connection`), `service/` (the background foreground-service host + alarms —
 `cgm_service`, `alarms`), and at the root the persistence (`cgm_store.dart`), the
 UI controller (`cgm_controller.dart`) and the sensor-agnostic contract
@@ -151,8 +151,9 @@ J-PAKE/cert bulk `…3538` (see `uuids.dart`). Two paths:
 
 - **Fresh pair**: EC-JPAKE rounds 0/1/2 (`0x0A`, index byte on `3535`, 160-byte
   payloads on `3538`) → AES key-confirmation (`0x02→0x03→0x04→0x05`) →
-  display-certificate exchange (`0x0B`, certs in `display_certs.dart`) →
-  ECDSA proof-of-possession (`0x0C`, signed by the embedded key in `jpake.rs`)
+  display-certificate exchange (`0x0B`, certs from the vendor keys) →
+  ECDSA proof-of-possession (`0x0C`, `pop_sign` in `jpake.rs` with the display
+  key Dart passes in from the vendor keys, `docs/VENDOR_KEYS.md`)
   → OS bond → glucose. `statusReply 05 01 02` = fresh pair.
 - **Reconnect** (`runReconnect`): with a stored session key, skip everything
   except the AES key-confirmation. `statusReply 05 01 01` = reconnect.
@@ -653,6 +654,12 @@ the widget cannot drift away from the app on what is in range.
 `docs/` holds the per-topic knowledge files (one focused subject each):
 - `docs/PROTOCOL.md` — full byte-level **Dexcom G7** protocol spec + source
   citations (Juggluco, DiaBLE, G7SensorKit, xDrip).
+- `docs/VENDOR_KEYS.md` — the **manufacturers' key material** (Dexcom G7 display
+  certificates + key, Omnipod DASH Milenage operator constant, Libre 3 keys +
+  Abbott blob): never committed, all in the gitignored `assets/vendor_keys/`,
+  and the start-up warning when a build lacks any of it.
+- `docs/LIBRE3_BLOB.md` — where Abbott's Libre 3 `.so` comes from and how the
+  `dlopen` shim bridges it.
 - `docs/LIBRE3.md` — **FreeStyle Libre 3** protocol (NFC activation, BLE GATT,
   security handshake), the vendor-blob bridge design + legal caveat, and the
   implementation status (what's done vs. hardware-gated).

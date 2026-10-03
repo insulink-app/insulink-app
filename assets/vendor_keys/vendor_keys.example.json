@@ -1,0 +1,22 @@
+{
+  "dexcom": {
+    "display_certificates": [
+      "<hex cert 0>",
+      "<hex cert 1>"
+    ],
+    "display_private_key": "<hex, 32 bytes>"
+  },
+  "omnipod": {
+    "milenage_operator": "<hex, 16 bytes>"
+  },
+  "libre3": {
+    "app_certificates": [
+      "<hex cert, security version 0>",
+      "<hex cert, security version 1>"
+    ],
+    "app_private_keys": [
+      "<hex key, security version 0>",
+      "<hex key, security version 1>"
+    ]
+  }
+}

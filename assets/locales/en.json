@@ -1460,5 +1460,8 @@
     "average_glucose": "Avg. glucose",
     "empty": "No HbA1c result noted yet.",
     "delete_confirm": "Delete this HbA1c result?"
+  },
+  "vendor_keys": {
+    "missing": "Vendor keys missing. This build cannot pair with: #. Add assets/vendor_keys/vendor_keys.json and build the app again."
   }
 }

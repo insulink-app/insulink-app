@@ -308,25 +308,24 @@ impl G7Jpake {
     }
 }
 
-/// Embedded Dexcom display-certificate signing key (`getKeyC` in ecJPake.cpp).
-/// 31-byte BN_bin2bn value, zero-padded to 32. Its public key is the leaf cert
-/// (`certs[1]`) the reader presents during the 0x0B exchange.
-const DISPLAY_PRIV_KEY: [u8; 32] = [
-    ***REMOVED***
-    ***REMOVED***
-];
-
 impl G7Jpake {
     /// Proof-of-possession (`0x0C`): sign SHA-256 of the sensor's 16-byte
-    /// challenge (`challenge[2..18]`) with the embedded display key, returning a
+    /// challenge (`challenge[2..18]`) with the Dexcom display key, returning a
     /// 64-byte raw `r‖s` ECDSA-P256 signature. (Juggluco `getchallenge`.)
+    ///
+    /// `display_key` is the 32-byte private key of the leaf display certificate
+    /// (`getKeyC` in ecJPake.cpp, zero-padded). It is Dexcom's, so it is not in
+    /// this source: Dart passes it in from the vendor keys (docs/VENDOR_KEYS.md).
     #[flutter_rust_bridge::frb(sync)]
-    pub fn pop_sign(&self, challenge: Vec<u8>) -> Result<Vec<u8>, String> {
+    pub fn pop_sign(&self, challenge: Vec<u8>, display_key: Vec<u8>) -> Result<Vec<u8>, String> {
         if challenge.len() < 18 {
             return Err("PoP challenge must be >= 18 bytes".into());
         }
+        let display_key: [u8; 32] = display_key
+            .try_into()
+            .map_err(|_| "display key must be 32 bytes".to_string())?;
         let digest = Sha256::digest(&challenge[2..18]);
-        let sk = p256::ecdsa::SigningKey::from_bytes(&DISPLAY_PRIV_KEY.into())
+        let sk = p256::ecdsa::SigningKey::from_bytes(&display_key.into())
             .map_err(|e| format!("bad display key: {e}"))?;
         use p256::ecdsa::signature::hazmat::PrehashSigner;
         let sig: p256::ecdsa::Signature =
@@ -451,24 +450,31 @@ mod tests {
         assert_eq!(hexs(&key), SHARED_KEY, "shared key must match Juggluco");
     }
 
-    // The embedded display private key must match the leaf certificate's public
-    // key (certs[1], 0451 18c3…). A PoP signature it produces must verify under
-    // that public key — proving the key pairing is correct.
+    // A PoP signature must verify under the public key of the key that signed
+    // it. Uses a test key (PRIV_A): the real display key is Dexcom's and lives
+    // only in the gitignored vendor keys.
     #[test]
-    fn pop_signature_verifies_under_leaf_cert() {
-        const LEAF_PUB: &str = "***REMOVED***";
+    fn pop_signature_verifies_under_signing_key() {
+        let display_key = unhex(PRIV_A);
         let jpake = G7Jpake::new("1155".into()).unwrap();
         // 0x0C ‖ 16-byte challenge.
         let mut challenge = vec![0x0c, 0x00];
         challenge.extend_from_slice(&unhex("0cee691b765a497d225823d14f278dd3"));
-        let sig_bytes = jpake.pop_sign(challenge.clone()).unwrap();
+        let sig_bytes = jpake.pop_sign(challenge.clone(), display_key.clone()).unwrap();
         assert_eq!(sig_bytes.len(), 64, "r||s must be 64 bytes");
 
         use p256::ecdsa::signature::hazmat::PrehashVerifier;
-        let vk = p256::ecdsa::VerifyingKey::from_sec1_bytes(&unhex(LEAF_PUB)).unwrap();
+        let sk = p256::ecdsa::SigningKey::from_slice(&display_key).unwrap();
+        let vk = p256::ecdsa::VerifyingKey::from(&sk);
         let sig = p256::ecdsa::Signature::from_slice(&sig_bytes).unwrap();
         let digest = sha2::Sha256::digest(&challenge[2..18]);
-        assert!(vk.verify_prehash(&digest, &sig).is_ok(), "PoP sig must verify under leaf cert key");
+        assert!(vk.verify_prehash(&digest, &sig).is_ok(), "PoP sig must verify under the signing key");
+    }
+
+    #[test]
+    fn pop_sign_rejects_a_short_display_key() {
+        let jpake = G7Jpake::new("1155".into()).unwrap();
+        assert!(jpake.pop_sign(vec![0x0c; 18], vec![]).is_err());
     }
 
     #[test]

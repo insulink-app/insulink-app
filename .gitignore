@@ -57,7 +57,14 @@ android/.kotlin/
 # Claude
 .claude/
 
-# Abbott's FreeStyle Libre 3 blobs + key material: proprietary, never committed.
-# Supplied locally per android/app/src/main/jniLibs/README.md.
+# Guards for the old locations of the Libre 3 blobs + keys (now in vendor_keys/).
 /android/app/src/main/jniLibs/**/*.so
 /android/libre3.properties
+
+# Dexcom G7, Omnipod DASH and FreeStyle Libre 3 keys + the Libre 3 blob: the
+# manufacturers', never committed. Supplied locally per docs/VENDOR_KEYS.md.
+/assets/vendor_keys/*
+!/assets/vendor_keys/vendor_keys.example.json
+
+# Android build output
+/android/build/

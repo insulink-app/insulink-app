@@ -12,8 +12,7 @@ import io.flutter.plugin.common.MethodChannel
  * JNI. The Dart side ([Libre3NativeCrypto]) calls this channel; the ordered
  * handshake lives in Dart ([Libre3Transport]).
  *
- * The Abbott `.so` and the `liblibre3bridge.so` shim are NOT in this repo (see
- * `android/app/src/main/jniLibs/README.md`). Absent them, [nativeLoaded] is
+ * The Abbott `.so` is NOT in this repo (see `docs/VENDOR_KEYS.md`). Absent them, [nativeLoaded] is
  * false and every call returns a `no_blob` error — so G7-only builds keep
  * working and the Libre 3 flow degrades cleanly.
  */
@@ -43,6 +42,10 @@ class Libre3SecurityPlugin {
     fun register(engine: FlutterEngine) {
         MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
+                if (call.method == "vendorKeysComplete") {
+                    result.success(Libre3Keys.complete)
+                    return@setMethodCallHandler
+                }
                 if (!nativeLoaded) {
                     result.error(
                         "no_blob",

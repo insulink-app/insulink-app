@@ -12,6 +12,7 @@ import 'package:insulink/src/pump/protocol/pod_pairing.dart';
 import 'package:insulink/src/pump/protocol/pod_session.dart';
 import 'package:insulink/src/pump/protocol/pod_session_establisher.dart';
 import 'package:insulink/src/pump/protocol/pod_session_keys.dart';
+import 'package:insulink/src/vendor_keys/vendor_keys.dart';
 
 /// Opens a working session with a pod: find it, connect, and establish keys.
 ///
@@ -58,6 +59,18 @@ class PodConnection {
   /// which of them just hung up.
   static const Duration _settleAfterClose = Duration(seconds: 3);
 
+  /// Every session handshake needs the Omnipod operator constant from the vendor
+  /// keys. Checked before the radio is touched, so a build without them fails up
+  /// front instead of pairing a pod it could then never command.
+  Future<void> _requireVendorKeys() async {
+    await VendorKeys.ensureLoaded();
+    if (!VendorKeys.current.hasOmnipod) {
+      throw PodLinkException(
+        'Omnipod vendor keys missing, see docs/VENDOR_KEYS.md',
+      );
+    }
+  }
+
   /// The link currently held, if any, so a caller can close it.
   PodBleLink? get link => _link;
 
@@ -77,6 +90,7 @@ class PodConnection {
   /// the clock — the documented multi-hour "0 devices found" stall. Mirrors the
   /// Fitbit monitor's known-band-only rule for the same reason.
   Future<PodSession> openSession({bool allowScan = true}) async {
+    await _requireVendorKeys();
     _stopped = false;
     await lease.take();
     await _letThePodSettle();
@@ -126,6 +140,7 @@ class PodConnection {
   Future<PodActivationSession> beginActivation({
     required Future<bool> Function(DiscoveredPod pod) confirmIrreversible,
   }) async {
+    await _requireVendorKeys();
     _stopped = false;
     await lease.take();
     // The X25519 exchange below runs in Rust, and this isolate has never needed

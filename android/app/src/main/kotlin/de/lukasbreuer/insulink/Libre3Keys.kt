@@ -5,12 +5,19 @@ package de.insulink
  * WhiteCryption-SKB-wrapped private key, indexed by the sensor's security
  * version (LIBRE3_APP_CERTIFICATES_B / LIBRE3_APP_PRIVATE_KEYS from Juggluco's
  * KEYSCrypto.java). It is Abbott's, so it is never committed: Gradle bakes it in
- * from the gitignored `android/libre3.properties` (see jniLibs/README.md).
- * Without that file both lists are empty and the Libre 3 handshake is unavailable.
+ * from the `libre3` section of the gitignored vendor keys (docs/VENDOR_KEYS.md).
+ * Without it both lists are empty and the Libre 3 handshake is unavailable.
  */
 object Libre3Keys {
     val appCertificates = decodeList(BuildConfig.LIBRE3_CERTIFICATES)
     val appPrivateKeys = decodeList(BuildConfig.LIBRE3_PRIVATE_KEYS)
+
+    /**
+     * Whether this build carries everything Libre 3 needs: both key lists and
+     * Abbott's blob. Decided at build time, so asking never `dlopen`s the blob.
+     */
+    val complete get() =
+        BuildConfig.LIBRE3_BLOB && appCertificates.isNotEmpty() && appPrivateKeys.isNotEmpty()
 
     private fun decodeList(joined: String) =
         joined.split(',').filter { entry -> entry.isNotBlank() }.map(::decodeHex)

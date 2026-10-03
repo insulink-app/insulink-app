@@ -1,11 +1,12 @@
-# FreeStyle Libre 3 native crypto (`jniLibs/`)
+# FreeStyle Libre 3 native crypto (the Abbott blob)
 
 The Libre 3 BLE security handshake is gated by a static P-256 key Abbott protects
 with WhiteCryption Secure Key Box. There is **no clean-room path** — confirmed
 from Juggluco's own `loadlibs.cpp`, which `dlopen`s Abbott's binaries and
 delegates to their `process1`/`process2` symbols. So this app, like Juggluco,
-must call those binaries. They are **never committed** (`.gitignore` blocks
-`jniLibs/**/*.so`); every build supplies them locally.
+must call those binaries. They are **never committed**: every build supplies
+them locally in `assets/vendor_keys/jniLibs/`, next to the keys
+(`docs/VENDOR_KEYS.md`), and Gradle packages them from there.
 
 ## Where the binary comes from
 
@@ -21,9 +22,9 @@ ported from Juggluco's `loadlibs.cpp` to match it exactly (class
 ```sh
 # 1. Download the arm64 Juggluco APK from https://www.juggluco.nl/Juggluco/download.html
 unzip -o Juggluco*.apk 'lib/arm64-v8a/liblibre3extension.so' -d jug
-# 2. Copy it here:
-cp jug/lib/arm64-v8a/liblibre3extension.so \
-   android/app/src/main/jniLibs/arm64-v8a/
+# 2. Copy it next to the vendor keys:
+mkdir -p assets/vendor_keys/jniLibs/arm64-v8a
+cp jug/lib/arm64-v8a/liblibre3extension.so assets/vendor_keys/jniLibs/arm64-v8a/
 ```
 
 Only `liblibre3extension.so` is needed (the ECDH / challenge crypto =
@@ -47,17 +48,8 @@ unaffected.
 
 - **App certificate + wrapped private keys**: Abbott's key material, so it is
   NOT committed either. `Libre3Keys.kt` reads it from `BuildConfig`, which Gradle
-  fills from the gitignored `android/libre3.properties`. Copy the hex bytes of
-  `LIBRE3_APP_CERTIFICATES_B` (162 B each) and `LIBRE3_APP_PRIVATE_KEYS` (165 B
-  each) from Juggluco's `KEYSCrypto.java`, one comma-separated list per security
-  version order:
-
-  ```properties
-  certificates=<hex v0>,<hex v1>
-  private_keys=<hex v0>,<hex v1>
-  ```
-
-  Missing file → empty lists → the app still builds, Libre 3 just can't pair.
+  fills from the `libre3` section of the vendor keys (`docs/VENDOR_KEYS.md`).
+  Missing → empty lists → the app still builds, Libre 3 just can't pair.
   `initKeys` runs the real two-step load (`process1(1)` then
   `process1(2, privateKey, kAuth)`); `appCertificate` returns the cert.
 - **AES-128-CCM data path** — `Libre3Ccm` (pointycastle), RFC-3610 tested.

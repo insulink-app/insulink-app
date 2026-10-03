@@ -22,9 +22,7 @@ GPL-3.0 text: `LICENSE.GPL-3.0`.
 | Component | Derived from | Licence |
 |-----------|--------------|---------|
 | `rust/src/api/jpake.rs` — EC-JPAKE for the Dexcom G7 handshake | [Juggluco](https://github.com/j-kaltes/Juggluco) (`ecJPake.cpp`) | GPL-3.0 |
-| `lib/src/cgm/protocol/display_certs.dart` — G7 display certificates | Juggluco | GPL-3.0 |
 | `lib/src/libre3/` — FreeStyle Libre 3 activation and decode | Juggluco | GPL-3.0 |
-| `android/app/src/main/jniLibs/` — Libre 3 key material | Juggluco (`KEYSCrypto.java`) | GPL-3.0 |
 
 Parts under AGPL-3.0
 --------------------

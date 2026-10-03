@@ -1,12 +1,15 @@
 import 'dart:typed_data';
+
 import 'package:insulink/src/pump/protocol/pod_aes.dart';
+import 'package:insulink/src/vendor_keys/vendor_keys.dart';
 
 /// The 3GPP Milenage function set, which the pod reuses as the authentication
 /// core of its EAP-AKA session handshake.
 ///
 /// The long-term key from pairing plays the role of the SIM key K, and the
 /// derived [ck] becomes the AES-CCM key protecting every later command. The
-/// operator constants below are the pod's, not a real carrier's.
+/// operator constant is the pod's, not a real carrier's, and comes from the
+/// vendor keys ([VendorKeys.omnipodOperator]); without it this throws.
 ///
 /// [auts] and [amf] are only set on the re-synchronisation path, where the pod
 /// rejects our sequence number and returns its own: constructing a second
@@ -31,10 +34,6 @@ class Milenage {
   static const int autsSize = 14;
   static const List<int> defaultAmf = [0xb9, 0xb9];
   static const List<int> resyncAmf = [0x00, 0x00];
-  static const List<int> _operatorConstant = [
-    ***REMOVED*** //
-    ***REMOVED***
-  ];
 
   final PodAes _aes;
   final Uint8List sqn;
@@ -50,10 +49,8 @@ class Milenage {
   late final Uint8List receivedMacS;
 
   void _derive() {
-    final opc = xorBytes(
-      _aes.encryptBlock(Uint8List.fromList(_operatorConstant)),
-      Uint8List.fromList(_operatorConstant),
-    );
+    final operatorConstant = _operatorConstant();
+    final opc = xorBytes(_aes.encryptBlock(operatorConstant), operatorConstant);
     final randEncrypted = _aes.encryptBlock(xorBytes(rand, opc));
     final randMasked = xorBytes(randEncrypted, opc);
 
@@ -80,6 +77,14 @@ class Milenage {
     ).sublist(0, 6);
     synchronizationSqn = xorBytes(akStar, auts.sublist(0, 6));
     receivedMacS = auts.sublist(6, 14);
+  }
+
+  Uint8List _operatorConstant() {
+    final operatorConstant = VendorKeys.current.omnipodOperator;
+    if (operatorConstant.length != 16) {
+      throw StateError('Omnipod vendor keys missing, see docs/VENDOR_KEYS.md');
+    }
+    return operatorConstant;
   }
 
   /// Rotates [source] right by [shift] byte positions into a fresh block, then

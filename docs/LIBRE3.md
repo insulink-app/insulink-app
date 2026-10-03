@@ -298,9 +298,9 @@ blobs, usable only through those functions. There is no clean-room path.
   `lib/arm64-v8a/liblibre3extension.so` (Juggluco already repackaged Abbott's
   crypto; our shim matches it 1:1). **NOT LibreLink** — that app is obfuscated and
   ships differently-named, incompatible libs. Steps:
-  `android/app/src/main/jniLibs/README.md`. **arm64-only.** Not committed here.
-- **App cert + wrapped private keys are embedded** in `Libre3Keys.kt`, ported
-  from Juggluco's GPL `KEYSCrypto.java` (162-B cert, 165-B SKB-wrapped key, per
+  `docs/LIBRE3_BLOB.md`. **arm64-only.** Not committed here.
+- **App cert + wrapped private keys** reach `Libre3Keys.kt` from the gitignored
+  vendor keys (`docs/VENDOR_KEYS.md`), taken from Juggluco's GPL `KEYSCrypto.java` (162-B cert, 165-B SKB-wrapped key, per
   security version). `initKeys` = `process1(1)` then `process1(2, key, kAuth)`.
 - `android/…/cpp/libre3bridge.cpp` — **shipped** dlopen shim, ported from
   Juggluco's `loadlibs.cpp`: `dlopen`s `liblibre3extension.so`, intercepts its
@@ -345,7 +345,7 @@ bytes the user drops in (see that folder's README).
 
 > ⚠️ Legal: Abbott's proprietary binaries and key material are never committed
 > or redistributed (no public APK containing them). Each build supplies them
-> locally, see `android/app/src/main/jniLibs/README.md`.
+> locally, see `docs/VENDOR_KEYS.md`.
 
 ## Historic / backfill (gap-fill)
 
@@ -465,13 +465,13 @@ Notes:
 | Pairing UI (sensor-type selector + NFC activation form) + de/en locale | ✅ done — pick "FreeStyle Libre 3", scan to activate |
 | Native dlopen bridge (`libre3bridge.cpp` + CMake + Kotlin) | ✅ shipped, compiles into the APK; bridges Abbott `process1`/`process2` |
 | AES-128-CCM data path (`Libre3Ccm`, pointycastle) | ✅ done, RFC-3610 tested; Libre nonce/MAC wiring marked for on-device check |
-| App cert + wrapped private keys (`Libre3Keys.kt`, from Juggluco GPL) | ✅ baked in at build time from the gitignored `android/libre3.properties`; `initKeys`/`appCertificate` ported faithfully |
-| Abbott `liblibre3extension.so` (from **Juggluco's** APK) | ⛔ user-extracted — `jniLibs/README.md`. The ONE remaining artifact. |
+| App cert + wrapped private keys (`Libre3Keys.kt`, from Juggluco GPL) | ✅ baked in at build time from the gitignored vendor keys (`docs/VENDOR_KEYS.md`); `initKeys`/`appCertificate` ported faithfully |
+| Abbott `liblibre3extension.so` (from **Juggluco's** APK) | ⛔ user-extracted — `docs/LIBRE3_BLOB.md`. The ONE remaining artifact. |
 
 The whole clean-room pipeline (NFC → BLE handshake orchestration → decode →
 persist) is implemented, unit-tested, and has run end-to-end against a physical
 sensor. The one thing a fresh checkout still needs is the user-supplied Abbott
-binary (`jniLibs/README.md`) — without it the bridge returns `no_blob` and only
+binary (`docs/LIBRE3_BLOB.md`) — without it the bridge returns `no_blob` and only
 the G7 works.
 
 ### Handshake robustness (`Libre3SecurityTransfer`)

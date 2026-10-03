@@ -1,4 +1,4 @@
-import java.util.Properties
+import groovy.json.JsonSlurper
 
 plugins {
     id("com.android.application")
@@ -6,11 +6,17 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Abbott's Libre 3 key material, kept out of git (see jniLibs/README.md). Missing
-// file → empty BuildConfig strings → the app builds, Libre 3 just can't pair.
-val libre3Keys = Properties().apply {
-    rootProject.file("libre3.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
-}
+// The gitignored vendor keys (docs/VENDOR_KEYS.md): the Libre 3 section is baked
+// into BuildConfig, the Libre 3 blob is packaged from jniLibs/ next to it. Missing
+// → empty strings and no blob → the app builds, Libre 3 just can't pair.
+val vendorKeysDir = rootProject.file("../assets/vendor_keys")
+@Suppress("UNCHECKED_CAST")
+val libre3Keys = vendorKeysDir.resolve("vendor_keys.json").takeIf { it.exists() }
+    ?.let { (JsonSlurper().parse(it) as Map<String, Any?>)["libre3"] as? Map<String, Any?> }
+    .orEmpty()
+
+/** One Libre 3 key list from the vendor keys, comma-joined for BuildConfig. */
+fun libre3KeyList(name: String) = (libre3Keys[name] as? List<*>).orEmpty().joinToString(",")
 
 android {
     namespace = "de.insulink"
@@ -41,8 +47,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        buildConfigField("String", "LIBRE3_CERTIFICATES", "\"${libre3Keys.getProperty("certificates", "")}\"")
-        buildConfigField("String", "LIBRE3_PRIVATE_KEYS", "\"${libre3Keys.getProperty("private_keys", "")}\"")
+        buildConfigField("String", "LIBRE3_CERTIFICATES", "\"${libre3KeyList("app_certificates")}\"")
+        buildConfigField("String", "LIBRE3_PRIVATE_KEYS", "\"${libre3KeyList("app_private_keys")}\"")
+        buildConfigField("boolean", "LIBRE3_BLOB", "${vendorKeysDir.resolve("jniLibs/arm64-v8a/liblibre3extension.so").exists()}")
     }
 
     buildTypes {
@@ -59,9 +66,11 @@ android {
         }
     }
 
+    sourceSets["main"].jniLibs.srcDir(vendorKeysDir.resolve("jniLibs"))
+
     // liblibre3bridge.so — the dlopen shim to Abbott's Libre 3 crypto blob. The
     // Abbott .so is resolved at runtime, so this compiles without it (see
-    // src/main/cpp/libre3bridge.cpp and jniLibs/README.md).
+    // src/main/cpp/libre3bridge.cpp and docs/LIBRE3_BLOB.md).
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
