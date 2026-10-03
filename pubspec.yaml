@@ -65,7 +65,7 @@ dependencies:
   latlong2: ^0.10.1
   wakelock_plus: ^1.8.0
   pointycastle: ^4.0.0
-  local_auth: ^2.3.0
+  local_auth: ^3.0.2
   phosphoricons_flutter: ^1.0.0
 dependency_overrides:
   device_info_plus: ^13.2.0
