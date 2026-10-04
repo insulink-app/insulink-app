@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
+import 'package:insulink/src/demo/demo_mode.dart';
 import 'package:insulink/src/libre3/libre3_crypto.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/theme/status_colors.dart';
@@ -28,7 +29,12 @@ class _VendorKeysWarningState extends State<VendorKeysWarning> {
 
   /// [VendorKeys.ensureLoaded] already ran in `main`, so the Dart-side keys are
   /// only read. Libre 3's live on the Android side, which is asked separately.
+  /// The browser demo never pairs anything and carries no keys on purpose, so it
+  /// stays silent.
   Future<void> _warnIfMissing() async {
+    if (DemoMode.enabled) {
+      return;
+    }
     final missing = [
       ...VendorKeys.current.missingDevices,
       if (!await Libre3NativeCrypto().vendorKeysComplete()) 'FreeStyle Libre 3',

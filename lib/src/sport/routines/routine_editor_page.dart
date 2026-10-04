@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/long_press_reorder.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -182,10 +183,11 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       proxyDecorator: _transparentDrag,
       onReorderItem: (oldIndex, newIndex) =>
           _training.reorderRoutineItems(routine.id, oldIndex, newIndex),
+      buildDefaultDragHandles: false,
       children: [
         for (var index = 0; index < routine.items.length; index++)
           _itemRow(routine, index),
-      ],
+      ].pickedUpByLongPress(),
     );
   }
 

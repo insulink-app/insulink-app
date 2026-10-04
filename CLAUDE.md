@@ -704,6 +704,9 @@ the widget cannot drift away from the app on what is in range.
 - `docs/ACTIVE_WORKOUT.md` — the running workout shared with the panel: who
   drives, who follows, and the server stamp that stops a finished workout being
   written back to life.
+- `docs/WEB_DEMO.md` — the **browser demo** on the website: the `main_demo.dart`
+  entry point, the in-zone fake backend, the dummy data and the three `DemoMode`
+  switches outside `lib/src/demo/`.
 - `docs/BATTERY.md` — the two-level battery saver: what each level pauses, why the
   gate sits in `BackgroundLocationSampler.tick()`, and why a manual cardio
   recording must force the detection service up.

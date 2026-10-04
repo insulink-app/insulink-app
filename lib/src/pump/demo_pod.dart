@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:insulink/src/demo/demo_mode.dart';
 import 'package:insulink/src/pump/pod_connection.dart';
 import 'package:insulink/src/pump/pod_link_lease.dart';
 import 'package:insulink/src/pump/pod_scanner.dart';
@@ -24,7 +25,8 @@ import 'package:insulink/src/pump/protocol/session_cipher.dart';
 ///
 /// **To remove:** set [demoPodEnabled] to false, then delete this file and the
 /// two `podConnectionFor` call sites (`PodController`, `PodActivationController`).
-const bool demoPodEnabled = false;
+/// The browser demo turns it on, since it has no radio to talk to.
+const bool demoPodEnabled = DemoMode.enabled;
 
 /// The one place that decides whether the app talks to a radio or to this file.
 PodConnection podConnectionFor(PodStore store) => demoPodEnabled

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Replaced by the `--base-href` argument of `flutter build web`. -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The browser demo must never reach the Insulink API (main_demo.dart answers
+       it in-process). This allow-list makes the browser itself refuse anything
+       else: the page, the CanvasKit engine and Roboto from gstatic, the map tiles
+       (Esri, docs/MAP.md) and the food database the barcode lookup uses. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com; connect-src 'self' https://www.gstatic.com https://fonts.gstatic.com https://services.arcgisonline.com https://world.openfoodfacts.org; img-src 'self' data: blob: https://services.arcgisonline.com; font-src 'self' data: https://fonts.gstatic.com; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:">
+
+  <meta name="description" content="Insulink browser demo with sample data.">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Insulink">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Insulink</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Same colours and logo as the native splash (flutter_native_splash in pubspec.yaml). */
+    html, body { margin: 0; height: 100%; background: #FAFAFA; overscroll-behavior: none; }
+    #splash {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #FAFAFA; transition: opacity 0.35s ease;
+    }
+    #splash img { width: 220px; height: 220px; }
+    #splash .dark { display: none; }
+    #splash .bar { width: 72px; height: 3px; border-radius: 3px; overflow: hidden; background: rgba(69, 86, 159, 0.15); margin-top: -40px; }
+    #splash .bar::after {
+      content: ""; display: block; width: 40%; height: 100%; border-radius: 3px;
+      background: #45569F; animation: splash-slide 1.1s ease-in-out infinite;
+    }
+    #splash.done { opacity: 0; pointer-events: none; }
+    @keyframes splash-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+    :root.dark, :root.dark body, :root.dark #splash { background: #15181D; }
+    /* Embedded on the website (?frame=1): the page rounds its own corners, so the
+       phone mockup around it never has to clip a (transformed) iframe, which
+       browsers do not do reliably. The corners stay transparent. */
+    /* Both transparent: with a transparent root the browser hands body's
+       background to the whole canvas, where body's clip-path no longer applies.
+       Flutter and the splash paint their own background anyway. */
+    :root.framed, :root.framed body { background: transparent; }
+    :root.framed body { clip-path: inset(0 round 40px); }
+    :root.dark #splash .light { display: none; }
+    :root.dark #splash .dark { display: block; }
+    :root.dark #splash .bar { background: rgba(147, 166, 255, 0.18); }
+    :root.dark #splash .bar::after { background: #93A6FF; }
+  </style>
+  <script>
+    /* Dark splash when the embedding website asks for it (?theme=dark, the same
+       parameter main_demo.dart adopts), else when the system is dark. Rounded
+       corners when it is embedded (?frame=1). */
+    (function () {
+      var theme = new URLSearchParams(location.search).get("theme");
+      var systemDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (theme === "dark" || (theme !== "light" && systemDark)) {
+        document.documentElement.classList.add("dark");
+      }
+      if (new URLSearchParams(location.search).get("frame") === "1") {
+        document.documentElement.classList.add("framed");
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div id="splash" aria-label="Insulink">
+    <img class="light" src="splash/splash-black.png" alt="">
+    <img class="dark" src="splash/splash-white.png" alt="">
+    <div class="bar"></div>
+  </div>
+
+  <script>
+    /* Fades the splash out once Flutter has painted (the demo data is generated
+       before runApp, so this also covers that). */
+    window.addEventListener("flutter-first-frame", function () {
+      var splash = document.getElementById("splash");
+      splash.classList.add("done");
+      setTimeout(function () { splash.remove(); }, 400);
+    });
+
+    /* Mouse wheel inside the demo. Every wheel event has its default cancelled, so
+       reaching the end of a list never scrolls the page that embeds the demo.
+       Flutter jumps a whole notch per event, so coarse notches are swallowed and
+       replayed as a short eased series of small events, which Flutter scrolls
+       smoothly. Fine trackpad deltas pass straight through. */
+    (function () {
+      var NOTCH = 30;
+      var EASE = 0.2;
+      var LINE = 33;
+      var replayed = new WeakSet();
+      var restX = 0;
+      var restY = 0;
+      var last = null;
+      var running = false;
+
+      function pixels(event, delta) {
+        if (event.deltaMode === 1) { return delta * LINE; }
+        if (event.deltaMode === 2) { return delta * window.innerHeight; }
+        return delta;
+      }
+
+      function replay(deltaX, deltaY) {
+        var event = new WheelEvent("wheel", {
+          deltaX: deltaX, deltaY: deltaY, deltaMode: 0,
+          clientX: last.clientX, clientY: last.clientY,
+          screenX: last.screenX, screenY: last.screenY,
+          ctrlKey: last.ctrlKey, shiftKey: last.shiftKey,
+          bubbles: true, cancelable: true, composed: true
+        });
+        replayed.add(event);
+        last.target.dispatchEvent(event);
+      }
+
+      function step() {
+        var stepX = Math.abs(restX) < 1 ? restX : restX * EASE;
+        var stepY = Math.abs(restY) < 1 ? restY : restY * EASE;
+        restX -= stepX;
+        restY -= stepY;
+        replay(stepX, stepY);
+        if (restX !== 0 || restY !== 0) {
+          requestAnimationFrame(step);
+        } else {
+          running = false;
+        }
+      }
+
+      window.addEventListener("wheel", function (event) {
+        event.preventDefault();
+        if (replayed.has(event) || event.ctrlKey) { return; }
+        var deltaX = pixels(event, event.deltaX);
+        var deltaY = pixels(event, event.deltaY);
+        if (Math.abs(deltaX) < NOTCH && Math.abs(deltaY) < NOTCH) { return; }
+        event.stopImmediatePropagation();
+        last = event;
+        restX += deltaX;
+        restY += deltaY;
+        if (!running) {
+          running = true;
+          requestAnimationFrame(step);
+        }
+      }, { capture: true, passive: false });
+    })();
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

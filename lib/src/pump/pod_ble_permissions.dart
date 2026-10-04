@@ -1,3 +1,4 @@
+import 'package:insulink/src/demo/demo_mode.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// The Bluetooth permissions a pod scan and connect need.
@@ -10,11 +11,15 @@ import 'package:permission_handler/permission_handler.dart';
 ///
 /// Mirrors `CgmController._ensureBlePermissions`, including its fallback: Android
 /// 12+ wants scan and connect, older versions grant those implicitly and want
-/// location instead.
+/// location instead. The browser demo talks to the in-memory demo pod and has no
+/// radio to ask for.
 class PodBlePermissions {
   const PodBlePermissions();
 
   Future<bool> ensure() async {
+    if (DemoMode.enabled) {
+      return true;
+    }
     final statuses = await [
       Permission.bluetoothScan,
       Permission.bluetoothConnect,

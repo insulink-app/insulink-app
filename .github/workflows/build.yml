@@ -178,3 +178,56 @@ jobs:
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 5
+
+  # ---------------------------------------------------------------------------
+  # Browser demo for the website (docs/WEB_DEMO.md): every main push rebuilds it
+  # from lib/main_demo.dart and publishes it to this repo's GitHub Pages, which
+  # the website's hero loads in an iframe. The website repo holds no app code,
+  # so this deploy IS the website update. Gated on `verify`, so a red build never
+  # reaches the page. Needs Settings > Pages > Source: "GitHub Actions" once.
+  # ---------------------------------------------------------------------------
+  web-demo:
+    name: Web demo (website)
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: web-demo
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Served from https://insulink-app.github.io/insulink-app/, hence the base
+      # href. canvaskit/ is dropped: the engine loads CanvasKit from gstatic by
+      # default, so the 37 MB local copy would never be fetched.
+      - name: Build web demo
+        run: |
+          flutter build web --release -t lib/main_demo.dart \
+            --dart-define=DEMO=true --base-href /insulink-app/
+          rm -rf build/web/canvaskit build/web/.last_build_id
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/long_press_reorder.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/exercises/exercises_page.dart';
@@ -67,9 +68,10 @@ class RoutinesSection extends StatelessWidget {
               Material(color: Colors.transparent, child: child),
           onReorderItem: (oldIndex, newIndex) =>
               context.read<TrainingState>().reorderRoutines(oldIndex, newIndex),
+          buildDefaultDragHandles: false,
           children: [
             for (final routine in routines) _routineCard(context, routine),
-          ],
+          ].pickedUpByLongPress(),
         ),
         SportAddTile(
           labelKey: 'sport.routines.new',

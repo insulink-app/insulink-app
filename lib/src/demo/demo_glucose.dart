@@ -1,0 +1,105 @@
+import 'dart:math';
+
+/// A month of believable CGM readings every five minutes, up to [now]: a gentle
+/// day rhythm, a rise after each meal and the occasional dip after it, plus a
+/// random drift. Seeded, so every visitor sees the same month.
+class DemoGlucose {
+  DemoGlucose({required this.now, required this.random});
+
+  final DateTime now;
+  final Random random;
+
+  static const int days = 30;
+  static const Duration step = Duration(minutes: 5);
+  static const List<double> mealHours = [7.5, 12.75, 19.25];
+  static const double risePeakHours = 1.1;
+  static const double dipPeakHours = 2.2;
+  static const double mealWindowHours = 14;
+
+  late final DateTime end = DateTime.fromMillisecondsSinceEpoch(
+    now.millisecondsSinceEpoch ~/ step.inMilliseconds * step.inMilliseconds,
+  );
+
+  late final DateTime start = end.subtract(const Duration(days: days));
+
+  late final List<double> _rises = [
+    for (var index = 0; index < (days + 2) * mealHours.length; index++)
+      55 + random.nextDouble() * 75,
+  ];
+
+  late final List<double> _dips = [
+    for (var index = 0; index < (days + 2) * mealHours.length; index++)
+      random.nextDouble() < 0.25 ? 30 + random.nextDouble() * 28 : 8,
+  ];
+
+  /// The readings, oldest first, as API history entries.
+  late final Map<DateTime, int> readings = _generate();
+
+  Map<DateTime, int> _generate() {
+    final readings = <DateTime, int>{};
+    var drift = 0.0;
+    for (var time = start; !time.isAfter(end); time = time.add(step)) {
+      drift = (drift + random.nextDouble() * 6 - 3) * 0.96;
+      final value = _baseline(time) + _meals(time) + drift;
+      readings[time] = value.round().clamp(48, 290);
+    }
+    return readings;
+  }
+
+  /// A slow day rhythm peaking in the early morning (dawn phenomenon).
+  double _baseline(DateTime time) {
+    final hour = time.hour + time.minute / 60;
+    return 116 + 14 * sin((hour - 1) / 24 * 2 * pi);
+  }
+
+  double _meals(DateTime time) {
+    var total = 0.0;
+    for (var meal = 0; meal < mealHours.length; meal++) {
+      final hours = _hoursSince(time, mealHours[meal]);
+      final index = _mealDay(time, hours) * mealHours.length + meal;
+      total += _mealCurve(hours, index);
+    }
+    return total;
+  }
+
+  /// Which calendar day (counted from [start]'s) the meal [hoursSince] before
+  /// [time] was eaten on, so one meal keeps its size for its whole curve.
+  int _mealDay(DateTime time, double hoursSince) {
+    final eaten = time.subtract(Duration(minutes: (hoursSince * 60).round()));
+    final eatenDay = DateTime.utc(eaten.year, eaten.month, eaten.day);
+    final firstDay = DateTime.utc(start.year, start.month, start.day);
+    return eatenDay.difference(firstDay).inDays;
+  }
+
+  double _hoursSince(DateTime time, double mealHour) {
+    final hours = time.hour + time.minute / 60 - mealHour;
+    return hours < 0 ? hours + 24 : hours;
+  }
+
+  /// A rise that starts gently and peaks about [risePeakHours] after eating,
+  /// then a smaller dip below the baseline once the bolus outlasts the carbs.
+  /// Both have faded to almost nothing by [mealWindowHours]; cutting a curve off
+  /// while its dip is still deep made the line jump up hours after dinner.
+  double _mealCurve(double hours, int index) {
+    if (hours > mealWindowHours) {
+      return 0;
+    }
+    final share = hours / risePeakHours;
+    final rise = _rises[index] * share * share * exp(2 * (1 - share));
+    final dip =
+        _dips[index] * (hours / dipPeakHours) * exp(1 - hours / dipPeakHours);
+    return rise - dip;
+  }
+
+  /// mg/dL per minute over the last five minutes, for the headline arrow.
+  double get trendPerMinute =>
+      (readings[end]! - readings[end.subtract(step)]!) / step.inMinutes;
+
+  /// The mg/dL closest to [time], for meals logged against the curve.
+  int valueAt(DateTime time) {
+    final aligned = DateTime.fromMillisecondsSinceEpoch(
+      time.millisecondsSinceEpoch ~/ step.inMilliseconds * step.inMilliseconds,
+    );
+    return readings[aligned] ?? 110;
+  }
+}

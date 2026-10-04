@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/long_press_reorder.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -53,10 +54,11 @@ class ExercisesPage extends StatelessWidget {
           Material(color: Colors.transparent, child: child),
       onReorderItem: (oldIndex, newIndex) =>
           context.read<TrainingState>().reorderExercises(oldIndex, newIndex),
+      buildDefaultDragHandles: false,
       children: [
         for (var index = 0; index < exercises.length; index++)
           _manageRow(context, exercises[index], index),
-      ],
+      ].pickedUpByLongPress(),
     );
   }
 

@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -47,29 +48,38 @@ class Alert extends StatefulWidget {
   State<Alert> createState() => AlertState();
 
   /// Fades the dialog in over a blurred backdrop with a gentle scale-up.
+  ///
+  /// The browser build (the website demo) gets no blur, only a darker barrier:
+  /// CanvasKit re-blurs the whole screen through WebGL on every frame the
+  /// dialog is up, which made each popup stutter there. Native keeps it.
   void show(BuildContext context) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.black.withValues(alpha: 0.35),
+      barrierColor: Colors.black.withValues(alpha: kIsWeb ? 0.5 : 0.35),
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (_, _, _) => this,
       transitionBuilder: (context, animation, _, child) {
         final scale = Tween(begin: 0.92, end: 1.0).animate(
           CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
         );
-        return BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: 7 * animation.value,
-            sigmaY: 7 * animation.value,
-          ),
-          child: FadeTransition(
-            opacity: animation,
-            child: ScaleTransition(scale: scale, child: child),
-          ),
+        final dialog = FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(scale: scale, child: child),
         );
+        return kIsWeb ? dialog : _blurred(animation, dialog);
       },
+    );
+  }
+
+  Widget _blurred(Animation<double> animation, Widget dialog) {
+    return BackdropFilter(
+      filter: ImageFilter.blur(
+        sigmaX: 7 * animation.value,
+        sigmaY: 7 * animation.value,
+      ),
+      child: dialog,
     );
   }
 }

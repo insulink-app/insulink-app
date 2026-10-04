@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/long_press_reorder.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/activity/tile_layout_state.dart';
@@ -129,7 +130,10 @@ class _TileLayoutEditorState<T extends Enum>
     return ReorderableListView(
       padding: const EdgeInsets.all(12),
       onReorderItem: widget.state.reorder,
-      children: [for (final tile in tiles) _row(context, tile, true)],
+      buildDefaultDragHandles: false,
+      children: [
+        for (final tile in tiles) _row(context, tile, true),
+      ].pickedUpByLongPress(),
     );
   }
 

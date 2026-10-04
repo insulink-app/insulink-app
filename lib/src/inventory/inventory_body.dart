@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/long_press_reorder.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -72,6 +73,7 @@ class _InventoryPageState extends State<InventoryPage> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
               onReorderItem: (oldIndex, newIndex) =>
                   context.read<InventoryState>().reorder(oldIndex, newIndex),
+              buildDefaultDragHandles: false,
               children: [
                 for (final item in items)
                   Padding(
@@ -82,7 +84,7 @@ class _InventoryPageState extends State<InventoryPage> {
                       onEdit: () => _openEditor(context, item: item),
                     ),
                   ),
-              ],
+              ].pickedUpByLongPress(),
             ),
     );
   }
