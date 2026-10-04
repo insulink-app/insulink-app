@@ -251,10 +251,10 @@ void main() {
         ),
       );
 
-      expect(state.lastSetFor('bench', 0)!.reps, 10);
-      expect(state.lastSetFor('bench', 1)!.reps, 7);
-      expect(state.lastSetFor('bench', 5), isNull);
-      expect(state.lastSetFor('squat', 0), isNull);
+      expect(state.lastSetFor('r1', 'bench', 0)!.reps, 10);
+      expect(state.lastSetFor('r1', 'bench', 1)!.reps, 7);
+      expect(state.lastSetFor('r1', 'bench', 5), isNull);
+      expect(state.lastSetFor('r1', 'squat', 0), isNull);
     });
   });
 

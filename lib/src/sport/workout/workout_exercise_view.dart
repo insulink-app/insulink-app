@@ -4,8 +4,8 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:insulink/src/sport/sport_format.dart';
-import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
+import 'package:insulink/src/sport/workout/workout_last_time.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -63,7 +63,7 @@ class WorkoutExerciseView extends StatelessWidget {
                     _targetTime(context, scheme)
                   else
                     _repWeightControls(context, scheme),
-                  _lastTime(context, scheme),
+                  WorkoutLastTime(runner: runner),
                   const Spacer(),
                   FilledButton(
                     onPressed: runner.completeSet,
@@ -169,37 +169,5 @@ class WorkoutExerciseView extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  /// "Last time: …" from the same set of a previous session, if any.
-  Widget _lastTime(BuildContext context, ColorScheme scheme) {
-    final last = runner.lastComparable;
-    if (last == null) {
-      return const SizedBox(height: 8);
-    }
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Text(
-        Locales.string(
-          context,
-          'sport.workout.last_time',
-          params: [_lastValue(last)],
-        ),
-        textAlign: TextAlign.center,
-        style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
-      ),
-    );
-  }
-
-  String _lastValue(SetLog set) {
-    if (runner.isTimed) {
-      return formatDuration(Duration(seconds: set.seconds ?? 0));
-    }
-    final reps = '${set.reps ?? 0}';
-    final weight = set.weightKg;
-    if (weight != null && weight > 0) {
-      return '$reps × ${sportDecimal(weight, 1)} kg';
-    }
-    return reps;
   }
 }

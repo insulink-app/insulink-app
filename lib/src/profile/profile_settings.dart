@@ -19,16 +19,21 @@ import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/request/response_json.dart';
 import 'package:insulink/src/google_health/sleep_targets_state.dart';
+import 'package:insulink/src/google_health/heart_rate_zones.dart';
+import 'package:insulink/src/profile/notifications/profile_alarm_tone_state.dart';
+import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/inventory/inventory_store.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_store.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_layout_state.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 
-/// Syncs the user-tunable settings (glucose, bolus, every notification toggle,
-/// silent mode, prediction, developer, body metrics and the box layouts) with
-/// the account's `settings` JSON blob on the backend. Only language and theme
-/// are deliberately excluded — they're device-local view preferences.
+/// Syncs the user-tunable settings (glucose, bolus, every notification toggle
+/// and alarm tone, silent mode, prediction, developer, body metrics, the box
+/// layouts, the fingerprint gates, language and theme) with the account's
+/// `settings` JSON blob on the backend. Left out on purpose: the automation MODE
+/// (a pod belongs to the phone that activated it) and remembered view state
+/// such as the last chart range.
 ///
 /// The blob is keyed by the same secure-storage keys the rest of the app reads,
 /// so [pull] can write the server's values straight back into storage. The
@@ -135,6 +140,33 @@ class ProfileSettings {
       // Sleep target windows (one JSON blob); pull() writes it straight back to
       // the same key SleepTargets reads.
       SleepTargets.key: await SleepTargets.loadRaw(),
+      ...await _personalSettings(),
+    };
+  }
+
+  /// The settings that used to stay on the phone: the fingerprint gates, each
+  /// alarm's tone, the lock-screen and pre-warning notifications, the heart-rate
+  /// zones, and language and theme. A new phone signing in starts with all of
+  /// them. Language and theme are left out until the user picks one, so a pull
+  /// never pins a device that still follows the system.
+  static Future<Map<String, String>> _personalSettings() async {
+    final security = ProfileSecurityState();
+    final tones = await ProfileAlarmToneState().loadAll();
+    final zones = await HeartRateZones.load();
+    return {
+      for (final action in GuardedAction.values)
+        action.storageKey: "${await security.isGuarded(action)}",
+      for (final entry in tones.entries)
+        entry.key.toneStorageKey: entry.value.name,
+      for (final setting in const [
+        NotificationSetting.advisory,
+        NotificationSetting.lockscreenGlucose,
+      ])
+        setting.storageKey: "${await setting.load()}",
+      HeartRateZones.elevatedKey: "${zones.elevated}",
+      HeartRateZones.highKey: "${zones.high}",
+      for (final key in const ["language", "theme"])
+        key: ?await _storage.read(key: key),
     };
   }
 

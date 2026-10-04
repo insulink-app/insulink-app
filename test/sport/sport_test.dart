@@ -492,9 +492,28 @@ void main() {
         sets: [SetLog(exerciseId: 'e1', reps: 12, atEpochMs: 3)],
       );
       final training = state([older, newer]);
-      expect(training.lastSetFor('e1', 0)?.reps, 12);
-      expect(training.lastSetFor('e1', 1)?.reps, 9);
-      expect(training.lastSetFor('e1', 2), isNull);
+      expect(training.lastSetFor('r1', 'e1', 0)?.reps, 12);
+      expect(training.lastSetFor('r1', 'e1', 1)?.reps, 9);
+      expect(training.lastSetFor('r1', 'e1', 2), isNull);
+    });
+
+    test('compares against the same routine only, never another one', () {
+      const sameRoutine = WorkoutSession(
+        id: 's1',
+        routineId: 'r1',
+        startedAtMs: 1,
+        sets: [SetLog(exerciseId: 'e1', reps: 8, atEpochMs: 1)],
+      );
+      const otherRoutine = WorkoutSession(
+        id: 's2',
+        routineId: 'r2',
+        startedAtMs: 2,
+        sets: [SetLog(exerciseId: 'e1', reps: 20, atEpochMs: 2)],
+      );
+      final training = state([sameRoutine, otherRoutine]);
+      expect(training.lastSetFor('r1', 'e1', 0)?.reps, 8);
+      expect(training.lastSetFor('r2', 'e1', 0)?.reps, 20);
+      expect(training.lastSetFor('r3', 'e1', 0), isNull);
     });
   });
 
@@ -590,8 +609,16 @@ void main() {
     // DRIVER is on, resolved from the snapshot's embedded routine — not by
     // indexing the follower's own (possibly differently ordered) copy.
     test('follower resumes the driver routine from the embedded snapshot', () {
-      const squat = SportExercise(id: 'e1', name: 'Squat', kind: ExerciseKind.reps);
-      const bench = SportExercise(id: 'e2', name: 'Bench', kind: ExerciseKind.reps);
+      const squat = SportExercise(
+        id: 'e1',
+        name: 'Squat',
+        kind: ExerciseKind.reps,
+      );
+      const bench = SportExercise(
+        id: 'e2',
+        name: 'Bench',
+        kind: ExerciseKind.reps,
+      );
       final driverRoutine = SportRoutine(
         id: 'r1',
         name: 'Push',
@@ -613,11 +640,10 @@ void main() {
         ],
       );
       WorkoutSnapshot? snapshot;
-      final driver = WorkoutRunner(
-        driverRoutine,
-        [squat, bench],
-        onPersist: (snap) => snapshot = snap,
-      );
+      final driver = WorkoutRunner(driverRoutine, [
+        squat,
+        bench,
+      ], onPersist: (snap) => snapshot = snap);
       driver.completeSet(); // squat set 1
       driver.completeSet(); // squat set 2 -> advance to bench
       expect(driver.currentExercise?.id, 'e2');
@@ -630,11 +656,10 @@ void main() {
         name: snapshot!.routineName,
         items: snapshot!.items,
       );
-      final follower = WorkoutRunner(
-        embedded,
-        [squat, bench],
-        resume: WorkoutSnapshot.fromJson(snapshot!.toJson()),
-      );
+      final follower = WorkoutRunner(embedded, [
+        squat,
+        bench,
+      ], resume: WorkoutSnapshot.fromJson(snapshot!.toJson()));
       expect(follower.currentExercise?.id, 'e2');
       expect(follower.totalSets, 3); // bench's targetSets, not squat's 2
       driver.dispose();

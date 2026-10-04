@@ -13,6 +13,7 @@ class DeviceRecord {
     required this.expiresAt,
     required this.registeredAt,
     this.discardedAt,
+    this.sensorCode,
   });
 
   /// What identifies the PHYSICAL device across registrations: a sensor's
@@ -34,4 +35,8 @@ class DeviceRecord {
 
   /// When the user said this device is gone, or null while it is still theirs.
   final DateTime? discardedAt;
+
+  /// The four-digit code printed on a Dexcom G7 applicator, the one typed in to
+  /// pair it. Null for a Libre 3, a pod, or a record that never carried one.
+  final String? sensorCode;
 }

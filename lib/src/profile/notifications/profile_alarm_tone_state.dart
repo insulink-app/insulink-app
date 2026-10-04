@@ -11,7 +11,7 @@ class ProfileAlarmToneState {
   /// Defaults to [AlarmTone.classic] — an unset or unknown value keeps the tone
   /// the app has always played.
   Future<AlarmTone> load(AlarmSlot slot) async {
-    final stored = await _storage.read(key: 'alarm_tone_${slot.key}');
+    final stored = await _storage.read(key: slot.toneStorageKey);
     return AlarmTone.values.firstWhere(
       (tone) => tone.name == stored,
       orElse: () => AlarmTone.classic,
@@ -19,7 +19,7 @@ class ProfileAlarmToneState {
   }
 
   Future<void> save(AlarmSlot slot, AlarmTone tone) =>
-      _storage.write(key: 'alarm_tone_${slot.key}', value: tone.name);
+      _storage.write(key: slot.toneStorageKey, value: tone.name);
 
   /// The asset [slot] currently plays, or null when its tone is switched off.
   Future<String?> assetFor(AlarmSlot slot) async =>

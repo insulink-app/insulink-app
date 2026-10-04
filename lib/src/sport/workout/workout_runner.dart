@@ -26,8 +26,9 @@ class WorkoutRunner extends ChangeNotifier {
   /// Persist the current snapshot, or clear it (null) when the workout ends.
   final void Function(WorkoutSnapshot? snapshot)? onPersist;
 
-  /// The same set of a previous session, for the "last time" comparison.
-  final SetLog? Function(String exerciseId, int setIndex)? findLastSet;
+  /// The same set of the routine's previous run, for the "last time" comparison.
+  final SetLog? Function(String routineId, String exerciseId, int setIndex)?
+  findLastSet;
 
   WorkoutPhase _phase;
   int _exerciseIndex;
@@ -194,10 +195,17 @@ class WorkoutRunner extends ChangeNotifier {
   /// The set just logged (editable during the following rest).
   SetLog? get lastLoggedSet => _sets.isEmpty ? null : _sets.last;
 
-  /// The matching set from a previous session (competitive comparison).
-  SetLog? get lastComparable => hasExercises
-      ? findLastSet?.call(currentItem.exerciseId, _setIndex)
+  /// The matching set from this routine's previous run (competitive
+  /// comparison). While resting it is the set coming up, so the target is known
+  /// before it starts. None while a free workout waits for its next pick: the
+  /// pointers still sit on the exercise just finished.
+  SetLog? get lastComparable => hasExercises && !awaitingNextExercise
+      ? findLastSet?.call(_routine.id, currentItem.exerciseId, _setIndex)
       : null;
+
+  /// Whether another exercise follows the current one, so it can be skipped.
+  bool get canSkipExercise =>
+      !awaitingNextExercise && _exerciseIndex + 1 < _routine.items.length;
 
   SportExercise? _exerciseById(String id) {
     for (final exercise in _exercises) {
@@ -304,7 +312,7 @@ class WorkoutRunner extends ChangeNotifier {
   void addExercise(String exerciseId) {
     final startNow = _routine.items.isEmpty || awaitingNextExercise;
     final item = RoutineItem(
-      id: 'adhoc-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}',
+      id: _sessionItemId(),
       exerciseId: exerciseId,
       targetSets: _isFree ? 1 : 3,
       restSeconds: _isFree ? 120 : 60,
@@ -319,6 +327,41 @@ class WorkoutRunner extends ChangeNotifier {
     notifyListeners();
     _persist();
   }
+
+  /// Swap the current exercise (while resting: the one coming up) for
+  /// [exerciseId] in THIS session only. The slot keeps its sets, target, weight
+  /// and rest and starts over at its first set; the stored routine is untouched.
+  /// A fresh item id marks it as this session's own, like [addExercise].
+  void swapExercise(String exerciseId) {
+    if (!hasExercises || awaitingNextExercise) {
+      return;
+    }
+    final items = [..._routine.items];
+    items[_exerciseIndex] = currentItem.copyWith(
+      id: _sessionItemId(),
+      exerciseId: exerciseId,
+    );
+    _routine = _routine.copyWith(items: items);
+    _setIndex = 0;
+    if (_phase == WorkoutPhase.exercising) {
+      _enterExercising();
+      return;
+    }
+    notifyListeners();
+    _persist();
+  }
+
+  /// Skip what is left of the current exercise (while resting: the one coming
+  /// up) and start the next. The skipped sets are simply not logged.
+  void skipExercise() {
+    if (canSkipExercise) {
+      jumpTo(_exerciseIndex + 1);
+    }
+  }
+
+  /// An id for an item this session added or swapped in, unique per session.
+  String _sessionItemId() =>
+      'adhoc-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
 
   /// Log the current set and advance to the next set/exercise (with rest), or
   /// finish the session. A free workout is never finished by running out of
@@ -348,14 +391,25 @@ class WorkoutRunner extends ChangeNotifier {
     }
   }
 
-  /// Jump to any exercise (skip forward or back); starts its first set.
+  /// Jump to any exercise (skip forward or back); starts its first set. Going
+  /// back to one this session already logged prefills what was done there
+  /// last, so a repeat starts from the real numbers instead of the plan's.
   void jumpTo(int exerciseIndex) {
     if (exerciseIndex < 0 || exerciseIndex >= routine.items.length) {
       return;
     }
     _exerciseIndex = exerciseIndex;
     _setIndex = 0;
-    _enterExercising();
+    _enterExercising(prefill: _lastLoggedOf(currentItem.exerciseId));
+  }
+
+  SetLog? _lastLoggedOf(String exerciseId) {
+    for (final set in _sets.reversed) {
+      if (set.exerciseId == exerciseId) {
+        return set;
+      }
+    }
+    return null;
   }
 
   /// Finish the workout early (does NOT log the current set).
@@ -409,13 +463,15 @@ class WorkoutRunner extends ChangeNotifier {
     _persist();
   }
 
-  void _enterExercising() {
+  /// Starts the set the pointers hold, its reps and weight taken from [prefill]
+  /// when given, else from the plan.
+  void _enterExercising({SetLog? prefill}) {
     _recordRestForLastSet();
     _phase = WorkoutPhase.exercising;
     _restEndsAt = null;
     _setStartedAt = DateTime.now();
-    _currentReps = currentItem.target;
-    _currentWeight = currentItem.targetWeight;
+    _currentReps = prefill?.reps ?? currentItem.target;
+    _currentWeight = prefill?.weightKg ?? currentItem.targetWeight;
     notifyListeners();
     _persist();
   }

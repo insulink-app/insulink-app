@@ -24,6 +24,9 @@ class _FakeSecurity extends ProfileSecurityState {
   Future<bool> isGuarded(GuardedAction action) async => gated;
 
   @override
+  Future<bool> locksApp() async => gated;
+
+  @override
   Future<bool> confirm(
     GuardedAction action,
     String reason, {

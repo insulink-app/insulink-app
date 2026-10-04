@@ -3,10 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:insulink/src/connections/connections_body.dart';
-import 'package:insulink/src/overview/overview_notice.dart';
-import 'package:insulink/src/overview/overview_pod_alerts.dart';
+import 'package:insulink/src/localization/enum_locale_key.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/overview/pod_warning_card.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pump_actions.dart';
 import 'package:insulink/src/pump/service/pod_alarms.dart';
+import 'package:insulink/src/pump/service/pod_warning_kind.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -73,7 +76,7 @@ class _OverviewPodWarningsState extends State<OverviewPodWarnings>
   }
 
   /// Re-reads the shade, and the pod status the background poll left behind so
-  /// [OverviewPodAlerts] sees an alert found while the app was closed.
+  /// the card shows an alert found while the app was closed.
   Future<void> _read() async {
     unawaited(context.read<PodController>().adoptBackgroundStatus());
     final standing = await _alarms.standingWarnings();
@@ -92,23 +95,77 @@ class _OverviewPodWarningsState extends State<OverviewPodWarnings>
     await _alarms.dismissWarning(id);
   }
 
+  /// The status time the pod's own alerts were swiped away at. They stay
+  /// hidden until a newer status arrives, so an alert the pod still reports
+  /// after the acknowledgement comes back.
+  DateTime? _alertsDismissedAt;
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [for (final warning in _standing) _card(warning)],
+    final controller = context.watch<PodController>();
+    return PodWarningCard(
+      lines: [
+        ?_alertsLine(controller),
+        for (final warning in _standing) _line(warning),
+      ],
+      onOpen: () => openPumpPage(context),
     );
   }
 
-  Widget _card(ActiveNotification warning) {
-    final id = warning.id!;
-    return OverviewNotice(
-      dismissKey: 'pod-warning-$id',
-      icon: PhosphorIconsBold.warning,
-      title: warning.title,
-      message: warning.body ?? '',
-      onDismiss: () => _dismiss(id),
-      onTap: () => openPumpPage(context),
+  /// The alerts the pod itself is beeping about, with the button that silences
+  /// them. Not the shade: the pod's alert bits from the last status anyone read,
+  /// the background poll's included.
+  PodWarningLine? _alertsLine(PodController controller) {
+    final alerts = controller.status?.activeAlerts ?? const {};
+    final hidden =
+        _alertsDismissedAt != null &&
+        _alertsDismissedAt == controller.statusReadAt;
+    if (!controller.hasPod || alerts.isEmpty || hidden) {
+      return null;
+    }
+    return PodWarningLine(
+      dismissKey: 'pod-alerts-${controller.statusReadAt}',
+      icon: PhosphorIconsBold.bellRinging,
+      title: Locales.string(context, 'overview.pod_alerts'),
+      message: alerts
+          .map(
+            (alert) => Locales.string(context, 'pump.alert.${alert.localeKey}'),
+          )
+          .join(', '),
+      critical: false,
+      onDismiss: () => _acknowledgeAlerts(controller),
+      action: const PodSilenceAlertsButton(),
     );
   }
+
+  void _acknowledgeAlerts(PodController controller) {
+    setState(() => _alertsDismissedAt = controller.statusReadAt);
+    controller.silenceAlerts();
+  }
+
+  PodWarningLine _line(ActiveNotification warning) {
+    final id = warning.id!;
+    final kind = PodWarningKind.values.firstWhere((kind) => kind.id == id);
+    return PodWarningLine(
+      dismissKey: 'pod-warning-$id',
+      icon: kind.icon,
+      title: warning.title ?? '',
+      message: warning.body ?? '',
+      critical: kind.critical,
+      onDismiss: () => _dismiss(id),
+    );
+  }
+}
+
+/// The glyph each warning is told apart by at a glance.
+extension on PodWarningKind {
+  IconData get icon => switch (this) {
+    PodWarningKind.expiry => PhosphorIconsBold.hourglassMedium,
+    PodWarningKind.expired => PhosphorIconsBold.hourglassHigh,
+    PodWarningKind.reservoir => PhosphorIconsBold.drop,
+    PodWarningKind.alarm => PhosphorIconsBold.siren,
+    PodWarningKind.unreachable => PhosphorIconsBold.bluetoothSlash,
+    PodWarningKind.stopped => PhosphorIconsBold.stopCircle,
+    PodWarningKind.loopStopped => PhosphorIconsBold.pauseCircle,
+  };
 }

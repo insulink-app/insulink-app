@@ -21,7 +21,8 @@ extension PodContactLog on PodStore {
   /// milliseconds because that is the resolution the page buckets to anyway, and
   /// it keeps the stored line short.
   List<int> get contactMinutes {
-    final raw = _cache[PodStore._kContactLog];
+    final raw =
+        _cache[PodStore._kContactLog] ?? _cache[PodStore._kLegacyContactLog];
     if (raw == null || raw.isEmpty) {
       return const [];
     }
@@ -44,5 +45,18 @@ extension PodContactLog on PodStore {
       kept.removeRange(0, kept.length - _contactCap);
     }
     await _set(PodStore._kContactLog, kept.join(','));
+    if (_cache.containsKey(PodStore._kLegacyContactLog)) {
+      await _remove(PodStore._kLegacyContactLog);
+    }
+  }
+
+  /// The newest contact on record, which outlives the pod it was made with:
+  /// after a pod change the page still says when the pump was last heard from
+  /// instead of claiming it never was.
+  DateTime? get lastContact {
+    final minutes = contactMinutes;
+    return minutes.isEmpty
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(minutes.last * 60000);
   }
 }

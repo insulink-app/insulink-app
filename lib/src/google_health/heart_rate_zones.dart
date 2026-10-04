@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/profile/profile_settings.dart';
 
 /// User-configurable heart-rate zones for the pulse chart: green below
 /// [elevated] bpm, orange up to [high] bpm, red above. Self-persists to secure
@@ -12,8 +13,10 @@ class HeartRateZones {
   const HeartRateZones({this.elevated = 100, this.high = 140});
 
   static const _storage = FlutterSecureStorage();
-  static const _kElevated = 'hr_zone_elevated';
-  static const _kHigh = 'hr_zone_high';
+
+  /// Storage keys, also the keys the zones ride under in the account settings.
+  static const elevatedKey = 'hr_zone_elevated';
+  static const highKey = 'hr_zone_high';
 
   /// Bounds so the two thresholds stay ordered and physiologically sane.
   static const minBpm = 50;
@@ -48,14 +51,17 @@ class HeartRateZones {
     return HeartRateZones(elevated: nextElevated, high: nextHigh);
   }
 
+  /// Stores the zones and pushes them to the account, so they follow the user
+  /// to another phone like every other setting.
   Future<void> save() async {
-    await _storage.write(key: _kElevated, value: '$elevated');
-    await _storage.write(key: _kHigh, value: '$high');
+    await _storage.write(key: elevatedKey, value: '$elevated');
+    await _storage.write(key: highKey, value: '$high');
+    await ProfileSettings().push(null);
   }
 
   static Future<HeartRateZones> load() async {
-    final elevated = int.tryParse(await _storage.read(key: _kElevated) ?? '');
-    final high = int.tryParse(await _storage.read(key: _kHigh) ?? '');
+    final elevated = int.tryParse(await _storage.read(key: elevatedKey) ?? '');
+    final high = int.tryParse(await _storage.read(key: highKey) ?? '');
     return const HeartRateZones().copyWith(elevated: elevated, high: high);
   }
 }

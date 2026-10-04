@@ -171,7 +171,12 @@
       "all": "All values",
       "all_hint": "Every value, including the ones whose box you hid on the overview. Tap one to see its history or note a new result."
     },
-    "pod_alerts": "The pod reports an alert"
+    "pod_alerts": "The pod reports an alert",
+    "pod_card": {
+      "title": "Pod",
+      "open": "Pump",
+      "dismiss": "Dismiss"
+    }
   },
   "analysis": {
     "label": "Analysis",
@@ -672,7 +677,8 @@
       "ended": "Finished",
       "now": "now",
       "range": "# to ##",
-      "worn": "Worn # of ## d"
+      "worn": "Worn # of ## d",
+      "sensor_code": "Sensor code #"
     },
     "status": {
       "title": "Reception",
@@ -890,7 +896,9 @@
       "no_exercise": "No exercise picked yet. Add your first; it counts for this workout only.",
       "eta": "ends ~#",
       "next_exercise": "Next exercise",
-      "pick_next": "What comes next?"
+      "pick_next": "What comes next?",
+      "skip_exercise": "Skip exercise",
+      "swap_exercise": "Swap exercise"
     },
     "summary": {
       "_": "Summary",

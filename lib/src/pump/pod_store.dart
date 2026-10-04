@@ -49,7 +49,6 @@ class PodStore {
   static const _kBackendPumpId = 'pod.backend_pump_id';
   static const _kBackendData = 'pod.backend_synced_data';
   static const _kLastSeenAt = 'pod.last_seen_at';
-  static const _kContactLog = 'pod.contact_log';
   static const _kSuspendedByUs = 'pod.suspended_by_us';
   static const _kBasalRates = 'pod.basal_rates';
   static const _kBasalDelivered = 'pod.basal_delivered';
@@ -70,6 +69,15 @@ class PodStore {
   static const _kLoopCycles = 'pod.loop_cycles';
   static const _kUnconfirmedBoluses = 'pod.unconfirmed_boluses';
   static const _kLastStatus = 'pod.last_status';
+
+  // NOT cleared by [forgetPod]: it is the history of the LINK the reception page
+  // draws, and a new pod must not wipe the day the old one was reachable. Kept
+  // under `pod.` so a logout leaves it alone like the rest of the pod.
+  static const _kContactLog = 'pod.link.contact_log';
+
+  /// Where the contact log lived while [forgetPod] still cleared it. Read until
+  /// the next contact moves it over.
+  static const _kLegacyContactLog = 'pod.contact_log';
 
   // Deliberately NOT under the `pod.` prefix and NOT cleared by [forgetPod]:
   // this is the user's insulin history, and a pod lives eighty hours.
@@ -247,7 +255,6 @@ class PodStore {
       _kBackendPumpId,
       _kBackendData,
       _kLastSeenAt,
-      _kContactLog,
       _kSuspendedByUs,
       _kBasalRates,
       _kBasalDelivered,

@@ -171,7 +171,12 @@
       "all": "Alle Werte",
       "all_hint": "Alle Werte, auch die, deren Box du auf der Übersicht ausgeblendet hast. Tippe einen an, um den Verlauf zu sehen oder einen neuen einzutragen."
     },
-    "pod_alerts": "Der Pod meldet eine Warnung"
+    "pod_alerts": "Der Pod meldet eine Warnung",
+    "pod_card": {
+      "title": "Pod",
+      "open": "Pumpe",
+      "dismiss": "Ausblenden"
+    }
   },
   "analysis": {
     "label": "Analyse",
@@ -672,7 +677,8 @@
       "ended": "Beendet",
       "now": "jetzt",
       "range": "# bis ##",
-      "worn": "Getragen # von ## d"
+      "worn": "Getragen # von ## d",
+      "sensor_code": "Sensorcode #"
     },
     "status": {
       "title": "Empfang",
@@ -890,7 +896,9 @@
       "no_exercise": "Noch keine Übung gewählt. Füge deine erste hinzu, sie gilt nur für dieses Training.",
       "eta": "Ende ~#",
       "next_exercise": "Nächste Übung",
-      "pick_next": "Was kommt als nächstes?"
+      "pick_next": "Was kommt als nächstes?",
+      "skip_exercise": "Übung überspringen",
+      "swap_exercise": "Übung tauschen"
     },
     "summary": {
       "_": "Zusammenfassung",

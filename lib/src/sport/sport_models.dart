@@ -108,13 +108,15 @@ class RoutineItem {
   });
 
   RoutineItem copyWith({
+    String? id,
+    String? exerciseId,
     int? targetSets,
     int? target,
     double? targetWeight,
     int? restSeconds,
   }) => RoutineItem(
-    id: id,
-    exerciseId: exerciseId,
+    id: id ?? this.id,
+    exerciseId: exerciseId ?? this.exerciseId,
     targetSets: targetSets ?? this.targetSets,
     target: target ?? this.target,
     targetWeight: targetWeight ?? this.targetWeight,

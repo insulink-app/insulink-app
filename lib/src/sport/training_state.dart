@@ -517,11 +517,16 @@ class TrainingState extends ChangeNotifier {
     return previous;
   }
 
-  /// The most recent logged set for [exerciseId] at [setIndex] (0-based) across
-  /// past sessions — powers the "last time" comparison in the runner. Sessions
-  /// are appended in order, so iterating in reverse yields newest first.
-  SetLog? lastSetFor(String exerciseId, int setIndex) {
+  /// The [setIndex]-th (0-based) set of [exerciseId] from the most recent run of
+  /// routine [routineId] that has it: the "last time" comparison in the runner.
+  /// Scoped to the routine on purpose, because the same exercise in another
+  /// routine sits elsewhere in the plan and is no fair yardstick. Sessions are
+  /// appended in order, so iterating in reverse yields newest first.
+  SetLog? lastSetFor(String routineId, String exerciseId, int setIndex) {
     for (final session in _sessions.reversed) {
+      if (session.routineId != routineId) {
+        continue;
+      }
       final matching = [
         for (final set in session.sets)
           if (set.exerciseId == exerciseId) set,

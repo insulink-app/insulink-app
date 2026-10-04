@@ -11,6 +11,8 @@ class DeviceHistoryEntry {
 
   String get typeKey => record.typeKey;
 
+  String? get sensorCode => record.sensorCode;
+
   DateTime get start => record.start;
 
   bool get isActive => endedAt == null;

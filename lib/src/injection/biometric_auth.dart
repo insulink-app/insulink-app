@@ -62,6 +62,17 @@ class BiometricAuth {
     return prompt(reason, allowDeviceCredential: allowDeviceCredential);
   }
 
+  /// Whether this device can authenticate at all: a biometric enrolled or a
+  /// screen lock set. False on a plugin error, because a prompt that cannot be
+  /// shown is one nobody can pass.
+  Future<bool> canAuthenticate() async {
+    try {
+      return await _auth.isDeviceSupported();
+    } on PlatformException {
+      return false;
+    }
+  }
+
   /// One run of the platform sheet, false on any refusal or plugin error.
   @protected
   @visibleForTesting

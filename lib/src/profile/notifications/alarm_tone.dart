@@ -17,6 +17,10 @@ enum AlarmSlot {
   final String classicAsset;
 
   String get labelKey => 'profile.alarmtone.slot.$key';
+
+  /// Where this alarm's tone choice is stored, and the key it rides under in
+  /// the account settings.
+  String get toneStorageKey => 'alarm_tone_$key';
 }
 
 /// The tone styles an alarm can be set to.

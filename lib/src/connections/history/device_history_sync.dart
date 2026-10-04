@@ -67,7 +67,14 @@ class DeviceHistorySync {
       expiresAt: expiresAt,
       registeredAt: registeredAt,
       discardedAt: _time(row['discarded_at']),
+      sensorCode: isSensor ? _sensorCode(blob['pairing_code']) : null,
     );
+  }
+
+  /// The G7's pairing code as the sensor registration carries it, or null when
+  /// there is none to show.
+  String? _sensorCode(Object? code) {
+    return code is String && code.isNotEmpty ? code : null;
   }
 
   /// What identifies the physical device across registrations.

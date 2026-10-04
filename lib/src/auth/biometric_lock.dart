@@ -50,7 +50,7 @@ class _BiometricLockState extends State<BiometricLock> {
   }
 
   Future<void> _arm() async {
-    if (await _security.isGuarded(GuardedAction.appEntry)) {
+    if (await _security.locksApp()) {
       _show(true);
     }
   }
@@ -69,7 +69,7 @@ class _BiometricLockState extends State<BiometricLock> {
     if (_asking) {
       return;
     }
-    if (!await _security.isGuarded(GuardedAction.appEntry)) {
+    if (!await _security.locksApp()) {
       _show(false);
       return;
     }

@@ -13,7 +13,12 @@ class _RecordingAuth extends BiometricAuth {
 
   final bool _answer;
 
+  bool canAsk = true;
+
   int prompts = 0;
+
+  @override
+  Future<bool> canAuthenticate() async => canAsk;
 
   @override
   Future<bool> prompt(
@@ -81,5 +86,26 @@ void main() {
       GuardedAction.appEntry.labelKey,
       'profile.security.action.app_entry',
     );
+  });
+
+  test(
+    'the app entry gate keeps the key it had before it was synced',
+    () async {
+      backing['guard_appEntry'] = 'true';
+      final security = ProfileSecurityState(auth: _RecordingAuth(true));
+      expect(await security.isGuarded(GuardedAction.appEntry), isTrue);
+      await security.setGuarded(GuardedAction.appEntry, false);
+      expect(backing['guard_app_entry'], 'false');
+      expect(await security.isGuarded(GuardedAction.appEntry), isFalse);
+    },
+  );
+
+  test('a synced app lock never locks a phone that cannot ask', () async {
+    final auth = _RecordingAuth(true);
+    final security = ProfileSecurityState(auth: auth);
+    await security.setGuarded(GuardedAction.appEntry, true);
+    expect(await security.locksApp(), isTrue);
+    auth.canAsk = false;
+    expect(await security.locksApp(), isFalse);
   });
 }

@@ -9,6 +9,7 @@ import 'package:insulink/src/pump/protocol/pod_definitions.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 import 'package:insulink/src/localization/enum_locale_key.dart';
 import 'package:insulink/src/pump/service/pod_alarm_channels.dart';
+import 'package:insulink/src/pump/service/pod_warning_kind.dart';
 
 /// Pod warnings raised from the service isolate, so they reach the user with the
 /// app backgrounded or closed.
@@ -41,28 +42,22 @@ class PodAlarmManager {
   /// Whether the pod was last seen delivering, so a stop is reported on the edge.
   bool _wasDelivering = true;
 
-  /// Notification ids, kept clear of the CGM manager's 0–104.
-  static const _expiryId = 110;
-  static const _expiredId = 111;
-  static const _reservoirId = 112;
-  static const _alarmId = 113;
-  static const _unreachableId = 114;
-  static const _stoppedId = 115;
-  static const _loopStoppedId = 116;
+  /// Notification ids, see [PodWarningKind].
+  static final _expiryId = PodWarningKind.expiry.id;
+  static final _expiredId = PodWarningKind.expired.id;
+  static final _reservoirId = PodWarningKind.reservoir.id;
+  static final _alarmId = PodWarningKind.alarm.id;
+  static final _unreachableId = PodWarningKind.unreachable.id;
+  static final _stoppedId = PodWarningKind.stopped.id;
+  static final _loopStoppedId = PodWarningKind.loopStopped.id;
 
   /// Notification id for "the pod is primed and can go on the body".
   static const _readyToAttachId = 117;
 
   /// Every id a pod warning can occupy, so the overview knows which of the
   /// notifications standing in the shade are this manager's.
-  static const List<int> warningIds = [
-    _expiryId,
-    _expiredId,
-    _reservoirId,
-    _alarmId,
-    _unreachableId,
-    _stoppedId,
-    _loopStoppedId,
+  static final List<int> warningIds = [
+    for (final kind in PodWarningKind.values) kind.id,
   ];
 
   /// The pod warnings currently in the notification shade.

@@ -36,7 +36,7 @@ class ConnectionStatusReader {
     return DeviceConnection(
       labelKey: 'sensor.label',
       icon: PhosphorIconsFill.drop,
-      lastContact: controller.lastUpdate,
+      lastContact: controller.lastUpdate ?? _newest(minutes),
       covered: timeline.cover(minutes),
     );
   }
@@ -51,9 +51,17 @@ class ConnectionStatusReader {
     return DeviceConnection(
       labelKey: 'pump.label',
       icon: PhosphorIconsFill.syringe,
-      lastContact: store.lastSeenAt,
+      lastContact: store.lastSeenAt ?? store.lastContact,
       covered: timeline.cover(store.contactMinutes),
     );
+  }
+
+  /// The newest archived minute: when the sensor was last heard from even after
+  /// it was swapped and the live reading went with it.
+  DateTime? _newest(Iterable<int> minutes) {
+    return minutes.isEmpty
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(minutes.last * 60000);
   }
 
   /// The Fitbit band, from the intraday pulse archive. A stored minute is a

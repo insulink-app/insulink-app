@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/exercises/exercises_page.dart';
 import 'package:insulink/src/sport/logbook/workout_summary_page.dart';
@@ -10,6 +9,7 @@ import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_empty_view.dart';
 import 'package:insulink/src/sport/workout/workout_exercise_view.dart';
+import 'package:insulink/src/sport/workout/workout_jump_sheet.dart';
 import 'package:insulink/src/sport/workout/workout_rest_view.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
 import 'package:insulink/src/sport/workout/workout_snapshot.dart';
@@ -302,39 +302,25 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     return ' · ${Locales.string(context, 'sport.workout.eta', params: [clock])}';
   }
 
-  /// Bottom sheet to jump to any exercise of the running workout, or to add one
-  /// to it on the spot.
+  /// The sheet behind the "exercise X/Y · set N/M" header: skip, swap, jump to
+  /// any exercise, or add one to the running workout.
   void _showJump() {
-    final training = context.read<TrainingState>();
-    final items = _runner.routine.items;
     showModalBottomSheet<void>(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            for (var index = 0; index < items.length; index++)
-              ListTile(
-                leading: index == _runner.exerciseIndex
-                    ? const Icon(PhosphorIconsFill.play)
-                    : const SizedBox(width: 24),
-                title: Text(
-                  training.exerciseById(items[index].exerciseId)?.name ?? '—',
-                ),
-                onTap: () {
-                  _runner.jumpTo(index);
-                  Navigator.of(sheetContext).pop();
-                },
-              ),
-            ListTile(
-              leading: const Icon(PhosphorIconsBold.plus),
-              title: LocaleText('sport.workout.add_exercise'),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _addExercise();
-              },
-            ),
-          ],
+      builder: (_) => WorkoutJumpSheet(
+        runner: _runner,
+        onSwap: _swapExercise,
+        onAdd: _addExercise,
+      ),
+    );
+  }
+
+  /// Pick the exercise that replaces the current one for this session.
+  void _swapExercise() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ExercisesPage(
+          onPick: (exercise) => _runner.swapExercise(exercise.id),
         ),
       ),
     );

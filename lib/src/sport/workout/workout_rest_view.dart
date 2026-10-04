@@ -5,6 +5,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
+import 'package:insulink/src/sport/workout/workout_last_time.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -56,7 +57,8 @@ class WorkoutRestView extends StatelessWidget {
                   _countdown(scheme),
                   const SizedBox(height: 12),
                   _nextLine(context, scheme),
-                  const SizedBox(height: 24),
+                  WorkoutLastTime(runner: runner),
+                  const SizedBox(height: 16),
                   _previousSetEditor(context, scheme),
                   const Spacer(),
                   _buttons(context),

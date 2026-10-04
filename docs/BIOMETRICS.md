@@ -1,9 +1,18 @@
 # The fingerprint gates
 
 Eight actions can ask for the device biometric. Which of them do is the owner's
-setting (`profile.security`, `ProfileSecurityState`), stored per device in
-secure storage under `guard_<action>` and read fresh at the gate, so a switch
-takes effect on the next action with no restart.
+setting (`profile.security`, `ProfileSecurityState`), stored in secure storage
+under `guard_<action>` (snake_case, e.g. `guard_app_entry`; the old camelCase
+`guard_appEntry` is still read as a fallback) and read fresh at the gate, so a
+switch takes effect on the next action with no restart.
+
+The switches ride in the account settings (`ProfileSettings`), so a new phone
+signing in starts with the same gates. That makes one case possible that a
+per-device setting never had: the app lock arriving on a phone with neither a
+fingerprint nor a screen lock, which could never be unlocked. `locksApp()`
+therefore only locks when the device can authenticate at all
+(`BiometricAuth.canAuthenticate`); a plugin error counts as "cannot", because a
+prompt that cannot be shown is one nobody can pass.
 
 | `GuardedAction` | Where | Default | PIN fallback |
 |---|---|---|---|

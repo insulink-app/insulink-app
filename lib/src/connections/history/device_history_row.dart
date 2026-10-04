@@ -50,6 +50,17 @@ class DeviceHistoryRow extends StatelessWidget {
             _line(scheme, _range(context)),
             const SizedBox(height: 2),
             _line(scheme, _worn(context)),
+            if (entry.sensorCode case final code?) ...[
+              const SizedBox(height: 2),
+              _line(
+                scheme,
+                Locales.string(
+                  context,
+                  'connections.history.sensor_code',
+                  params: [code],
+                ),
+              ),
+            ],
           ],
         ),
       ),

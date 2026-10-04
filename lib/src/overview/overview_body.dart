@@ -11,7 +11,6 @@ import 'package:insulink/src/connections/status/connection_status_page.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/overview/battery_saver_banner.dart';
 import 'package:insulink/src/overview/advisory_bolus_notice.dart';
-import 'package:insulink/src/overview/overview_pod_alerts.dart';
 import 'package:insulink/src/overview/overview_pod_warnings.dart';
 import 'package:insulink/src/overview/overview_running_bolus.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_bounds.dart';
@@ -92,7 +91,6 @@ class OverviewBodyContent extends StatelessWidget {
         children: [
           const OverviewRunningBolus(),
           const AdvisoryBolusNotice(),
-          const OverviewPodAlerts(),
           const OverviewPodWarnings(),
           if (silent != SilentMode.off) ...[
             SilentBanner(silent),

@@ -41,17 +41,22 @@ enum GuardedAction {
   /// Whether the gate is on for a user who has never touched the setting.
   final bool defaultOn;
 
-  String get storageKey => 'guard_$name';
+  /// Where the switch is stored, and the key it rides under in the account
+  /// settings: snake_case, like every other key in that blob.
+  String get storageKey => 'guard_$localeKey';
+
+  /// The camelCase key [appEntry] was stored under before the gates synced.
+  /// Read as a fallback, so an update does not quietly switch a lock off.
+  String get legacyStorageKey => 'guard_$name';
 
   String get labelKey => 'profile.security.action.$localeKey';
 }
 
 /// Which actions ask for the fingerprint, and the asking itself.
 ///
-/// Device-local on purpose: it describes what this phone's biometric protects,
-/// which means nothing on another one, so it is not part of the account settings
-/// the profile page pushes. Read fresh at every gate, so a switch takes effect
-/// on the next action with no restart.
+/// Synced with the account settings like every other switch, so a new phone
+/// starts with the same gates. Read fresh at every gate, so a switch takes
+/// effect on the next action with no restart.
 class ProfileSecurityState {
   ProfileSecurityState({BiometricAuth? auth}) : _auth = auth ?? BiometricAuth();
 
@@ -60,7 +65,9 @@ class ProfileSecurityState {
   final BiometricAuth _auth;
 
   Future<bool> isGuarded(GuardedAction action) async {
-    final stored = await _storage.read(key: action.storageKey);
+    final stored =
+        await _storage.read(key: action.storageKey) ??
+        await _storage.read(key: action.legacyStorageKey);
     if (stored == null) {
       return action.defaultOn;
     }
@@ -70,6 +77,13 @@ class ProfileSecurityState {
   Future<void> setGuarded(GuardedAction action, bool guarded) {
     return _storage.write(key: action.storageKey, value: '$guarded');
   }
+
+  /// Whether the app holds itself behind the lock: the switch is on AND this
+  /// phone can ask at all. The switch now arrives from the account, and a phone
+  /// with neither a biometric nor a screen lock would otherwise keep its owner
+  /// out of the app for good.
+  Future<bool> locksApp() async =>
+      await isGuarded(GuardedAction.appEntry) && await _auth.canAuthenticate();
 
   /// Whether [action] may go ahead: either its gate is off, or the user has just
   /// passed it. [reason] is what the platform sheet says it is asking for.

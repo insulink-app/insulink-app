@@ -80,6 +80,32 @@ void main() {
     expect(backing.keys.where((key) => key.startsWith('pod.')), isEmpty);
   });
 
+  test(
+    'a pod change keeps the contact history the reception page draws',
+    () async {
+      final seenAt = DateTime(2026, 3, 1, 12, 30);
+      await store.markSeen(seenAt);
+
+      await store.forgetPod();
+
+      expect(store.contactMinutes, [seenAt.millisecondsSinceEpoch ~/ 60000]);
+      expect(store.lastContact, seenAt);
+      expect(store.lastSeenAt, isNull);
+    },
+  );
+
+  test('a contact log stored under the old key is read and moved', () async {
+    final minute = DateTime(2026, 3, 1, 9).millisecondsSinceEpoch ~/ 60000;
+    backing['pod.contact_log'] = '$minute';
+    await store.reload();
+    expect(store.contactMinutes, [minute]);
+
+    await store.markSeen(DateTime(2026, 3, 1, 10));
+
+    expect(store.contactMinutes.first, minute);
+    expect(backing.containsKey('pod.contact_log'), isFalse);
+  });
+
   group('a newly paired pod starts its counters from scratch', () {
     /// A fresh pod has never seen a session or a command. Carrying a previous
     /// pod's numbers over makes it reject the first handshake.
