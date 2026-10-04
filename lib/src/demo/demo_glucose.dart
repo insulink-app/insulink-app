@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:insulink/src/demo/demo_glucose_range.dart';
+
 /// A month of believable CGM readings every five minutes, up to [now]: a gentle
 /// day rhythm, a rise after each meal and the occasional dip after it, plus a
 /// random drift. Seeded, so every visitor sees the same month.
@@ -33,6 +35,9 @@ class DemoGlucose {
   ];
 
   /// The readings, oldest first, as API history entries.
+  /// Keeps the newest hours, and so the headline, in the target range.
+  final DemoGlucoseRange range = const DemoGlucoseRange();
+
   late final Map<DateTime, int> readings = _generate();
 
   Map<DateTime, int> _generate() {
@@ -40,7 +45,7 @@ class DemoGlucose {
     var drift = 0.0;
     for (var time = start; !time.isAfter(end); time = time.add(step)) {
       drift = (drift + random.nextDouble() * 6 - 3) * 0.96;
-      final value = shapeAt(time) + drift;
+      final value = range.easedTowards(shapeAt(time) + drift, time, end);
       readings[time] = value.round().clamp(48, 290);
     }
     return readings;

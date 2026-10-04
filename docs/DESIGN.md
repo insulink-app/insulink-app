@@ -165,16 +165,19 @@ Two things were tried and **rejected** — don't reintroduce them:
 
 ## Surface ladders
 
-Dark steps **up** from the page, light steps **down** — because in light the page
-is the brightest thing on screen. (This matches how Material 3's own light scheme
-is built, and it is why "raised" is *darker* than the box it sits in.)
+Dark steps **up** from the page. Light puts white boxes and a white navigation
+bar on a faintly grey page, so a card reads as a sheet lying on the page, and from
+the box it steps **down**: anything inside a box (badges, inputs) is a shade deeper
+than the white it sits on, which is why "raised" is *darker* than its box. An
+earlier light ladder made the page the brightest thing (`#FAFAFA`) with grey
+`#E8E8E8` boxes, which read as holes in the page rather than as cards.
 
 | Rung | Dark | Light |
 |---|---|---|
-| Page / app bar | `#15181D` | `#FAFAFA` |
-| Box (`surface`) | `#1F232A` | `#E8E8E8` |
-| `surfaceContainerHigh` | `#242933` | `#E1E4E9` |
-| `surfaceContainerHighest` (badges, inputs) | `#2A2F38` | `#D8DCE3` |
+| Page / app bar | `#15181D` | `#F2F3F5` |
+| Box (`surface`), bottom nav | `#1F232A` | `#FFFFFF` |
+| `surfaceContainerHigh` | `#242933` | `#EDEFF2` |
+| `surfaceContainerHighest` (badges, inputs) | `#2A2F38` | `#E4E7EC` |
 | Border / divider | `#2B3038` | `#B4B9C2` (`outline`) |
 
 The dark neutrals take their **hue** from the insulink website
@@ -272,12 +275,13 @@ between themes: on dark the LIGHTER indigo is the loud one.
 
 | | basal | bolus | basal vs surface | bolus vs surface | basal vs bolus |
 |---|---|---|---|---|---|
-| light | `#8894CE` | `#45569F` | 2.39 | 5.56 | 2.33 |
+| light | `#8894CE` | `#45569F` | 2.93 | 6.81 | 2.33 |
 | dark | `#5C6BA6` | `#9DACEA` | 3.08 | 7.15 | 2.32 |
 
-Measured against each theme's **surface**, not against white or black. A first
-pass used `#9AA6D8` for light basal, which reads fine against white and makes
-only 1.94 against the `#E8E8E8` page it actually sits on.
+Measured against each theme's **surface**, which in light is white since the
+boxes became white. On the earlier `#E8E8E8` boxes a first pass at `#9AA6D8` for
+light basal made only 1.94, which is why the surface, not paper white, is what
+gets measured.
 
 `test/theme/insulin_colors_test.dart` pins all three relationships, including
 that neither value is one of the glucose tones.

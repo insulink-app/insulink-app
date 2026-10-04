@@ -439,8 +439,9 @@ The load-bearing parts (regressing any of these is a visible bug):
   the control); a filled rounded-rect with a label is the button. Tinted square
   faces on `IconButton`s, and badges inside `SportSummaryTile`, were both tried
   and rejected — don't reintroduce them.
-- **The light ladder steps DOWN** (the page is the brightest thing), the dark one
-  steps up — so "raised" is *darker* than its box in light. Dark neutrals take
+- **Light: white boxes and bottom nav on a faintly grey page**, and from the box
+  the ladder steps DOWN, the dark one steps up — so "raised" is *darker* than its
+  box in light. Dark neutrals take
   their hue from the website's palette but lifted a rung and much less saturated.
   Every slot (`scaffold`/`appBar`/`bottomNav`/input fill/`divider`) pulls the SAME
   named rung in both themes — keep it that way, and never inline a hex or a

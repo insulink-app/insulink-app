@@ -13,7 +13,8 @@ import 'package:insulink/src/demo/demo_sensor.dart';
 /// The browser has no service isolate, so this runs in the page itself. Each
 /// value continues the newest archived one along the slope of the demo curve
 /// ([DemoGlucose.shapeAt]) with a little noise, so the line goes on without a
-/// jump. A tab that was asleep catches up on every reading it missed.
+/// jump, and stays in the target range ([DemoGlucoseRange]) so the headline is
+/// always green. A tab that was asleep catches up on every reading it missed.
 class DemoLiveSensor {
   DemoLiveSensor({required this.onData});
 
@@ -79,7 +80,7 @@ class DemoLiveSensor {
     final slope =
         _shape.shapeAt(at) - _shape.shapeAt(at.subtract(DemoGlucose.step));
     final noise = (_random.nextDouble() - 0.5) * 2 * noiseMgdl;
-    final mgdl = (previous + slope + noise).round().clamp(48, 290);
+    final mgdl = _shape.range.keep(previous + slope + noise).round();
     final trendTenths = ((mgdl - previous) / DemoGlucose.step.inMinutes * 10)
         .round();
     final start = store.loadSensorStart(DemoSensor.key) ?? at;

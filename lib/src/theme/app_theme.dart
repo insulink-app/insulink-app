@@ -118,26 +118,29 @@ class AppTheme {
   /// than grey. Dark enough to carry white button labels.
   static final Color lightPrimary = const Color(0xFF45569F);
 
-  /// The light theme's surface ladder. It mirrors the dark one rung for rung,
-  /// but steps DOWNWARD: here the page is the brightest thing on screen, so each
-  /// level that sits ON it goes a shade deeper. That is why "raised" is darker
-  /// than the box it sits in — the inverse of the dark theme, and the same way
-  /// Material 3's own light scheme is built.
+  /// The light theme's surface ladder: a faintly grey page with white boxes and
+  /// a white navigation bar on it, so a card reads as a sheet lying on the page.
+  /// From the box the ladder steps DOWN: anything that sits IN a box (badges,
+  /// inputs) goes a shade deeper than the white it sits on, which is why
+  /// "raised" is darker than its box, the inverse of the dark theme.
+  ///
+  /// An earlier ladder made the page the brightest thing (#FAFAFA) and the boxes
+  /// grey; the boxes then read as holes in the page rather than as cards.
   ///
   /// [_lightSurfaceRaised] is what badges are made of. It MUST differ from
   /// [_lightSurface]: leaving it unset resolves it to `surface`, i.e. exactly the
   /// colour of the box the badge sits in, and every badge in the app vanishes.
-  static const Color _lightBg = Color(0xFFFAFAFA);
-  static const Color _lightSurface = Color(0xFFE8E8E8);
-  static const Color _lightSurfaceHigh = Color(0xFFE1E4E9);
-  static const Color _lightSurfaceRaised = Color(0xFFD8DCE3);
+  static const Color _lightBg = Color(0xFFF2F3F5);
+  static const Color _lightSurface = Color(0xFFFFFFFF);
+  static const Color _lightSurfaceHigh = Color(0xFFEDEFF2);
+  static const Color _lightSurfaceRaised = Color(0xFFE4E7EC);
 
   /// Divider + box border ([OverviewSection]), the light twin of [_darkBorder]
   /// and kept close to [_lightSurface] for the same reason: a border far from its
   /// fill rings every card. Opaque, not a translucent black — a `Colors.black12`
   /// picks up whatever is behind it, so the same divider came out a different
   /// colour on the page than inside a box.
-  static const Color _lightBorder = Color(0xFFD7DBE2);
+  static const Color _lightBorder = Color(0xFFE3E6EB);
 
   /// Rim for outlined controls. Set for the same reason as [_darkOutline]: left
   /// out, [ColorScheme] resolves `outline` to `onBackground` — pure black here,
@@ -206,10 +209,9 @@ class AppTheme {
         positive: _lightPositive,
       ),
       // Bolus is the deep brand indigo, basal the same hue with most of its
-      // weight drained out. Measured against the light surface (#E8E8E8), not
-      // white: a first pass at #9AA6D8 read fine on paper and made 1.94 against
-      // the page it actually sits on. This one makes 2.39 there and still holds
-      // 2.33 against the bolus standing on it.
+      // weight drained out. Measured against the light surface, which is white
+      // since the boxes became white (it was #E8E8E8, where a first pass at
+      // #9AA6D8 made only 1.94); this one holds 2.33 against the bolus on it.
       const InsulinColors(basal: Color(0xFF8894CE), bolus: Color(0xFF45569F)),
     ],
   );
