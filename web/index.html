@@ -42,14 +42,14 @@
     #splash.done { opacity: 0; pointer-events: none; }
     @keyframes splash-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
     :root.dark, :root.dark body, :root.dark #splash { background: #15181D; }
-    /* Embedded on the website (?frame=1): the page rounds its own corners, so the
-       phone mockup around it never has to clip a (transformed) iframe, which
-       browsers do not do reliably. The corners stay transparent. */
-    /* Both transparent: with a transparent root the browser hands body's
-       background to the whole canvas, where body's clip-path no longer applies.
-       Flutter and the splash paint their own background anyway. */
-    :root.framed, :root.framed body { background: transparent; }
-    :root.framed body { clip-path: inset(0 round 40px); }
+    /* Embedded on the website (?frame=<radius>): the page rounds its own corners,
+       because browsers do not reliably clip a composited iframe to a rounded box
+       and the website therefore does not clip it at all. Root and body are both
+       transparent: with a transparent root the browser hands body's background
+       to the whole canvas, where body's clip-path no longer applies. Flutter and
+       the splash paint their own background anyway. */
+    :root.framed, :root.framed body { background: transparent; color-scheme: normal; }
+    :root.framed body { clip-path: inset(0 round var(--frame-radius)); }
     :root.dark #splash .light { display: none; }
     :root.dark #splash .dark { display: block; }
     :root.dark #splash .bar { background: rgba(147, 166, 255, 0.18); }
@@ -58,15 +58,17 @@
   <script>
     /* Dark splash when the embedding website asks for it (?theme=dark, the same
        parameter main_demo.dart adopts), else when the system is dark. Rounded
-       corners when it is embedded (?frame=1). */
+       corners when the website embeds it (?frame=<radius>). */
     (function () {
       var theme = new URLSearchParams(location.search).get("theme");
       var systemDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
       if (theme === "dark" || (theme !== "light" && systemDark)) {
         document.documentElement.classList.add("dark");
       }
-      if (new URLSearchParams(location.search).get("frame") === "1") {
+      var radius = parseInt(new URLSearchParams(location.search).get("frame"), 10);
+      if (radius >= 0) {
         document.documentElement.classList.add("framed");
+        document.documentElement.style.setProperty("--frame-radius", radius + "px");
       }
     })();
   </script>

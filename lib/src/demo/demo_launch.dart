@@ -4,14 +4,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/demo/demo_account.dart';
 import 'package:insulink/src/demo/demo_layouts.dart';
+import 'package:insulink/src/demo/demo_pump.dart';
 import 'package:insulink/src/demo/demo_sensor.dart';
 import 'package:insulink/src/profile/security/profile_security_state.dart';
 
 /// Puts the browser demo into the state of a signed-in user who has used the
 /// app for a month: a clean storage, setup done, the embedding page's language
 /// and theme, Google Health connected, the website's box layouts, every
-/// collection pulled from the demo backend through the app's own sync code, and
-/// a paired sensor.
+/// collection pulled from the demo backend through the app's own sync code, a
+/// paired sensor and a running pod.
 class DemoLaunch {
   DemoLaunch(this.account, {required this.language, required this.theme});
 
@@ -35,16 +36,18 @@ class DemoLaunch {
     await DemoLayouts().arrange();
     await AccountSync().pullAll(null, withHistory: true);
     await DemoSensor(account.glucose).pair();
+    await DemoPump(account.now).attach();
   }
 
-  /// Legal notice and permission onboarding done, signed in as "Demo", and no
-  /// fingerprint gates, since a browser has no biometrics to ask. The token is
+  /// Legal notice and permission onboarding done, signed in as "Demo", meals
+  /// shown on the glucose chart, and no fingerprint gates, since a browser has no biometrics to ask. The token is
   /// never sent anywhere: the demo backend answers every request.
   Future<void> _skipSetup() async {
     await _storage.write(key: 'legal_accepted', value: 'true');
     await _storage.write(key: 'onboarding_done', value: 'true');
     await _storage.write(key: 'authentication_token', value: 'demo');
     await _storage.write(key: 'name', value: 'Demo');
+    await _storage.write(key: 'chart_show_meals', value: 'true');
     for (final action in GuardedAction.values) {
       await ProfileSecurityState().setGuarded(action, false);
     }

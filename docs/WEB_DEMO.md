@@ -61,6 +61,7 @@ visitor sees the same month:
 | `demo_glucose.dart` | 30 days every 5 min: day rhythm, a rise after each meal, sometimes a dip after it. A meal is indexed by its calendar day so one meal keeps its size over its whole curve (indexing by "days since start" made the curve jump at the current time of day). |
 | `demo_events.dart` | Alarm events from crossings into a worse zone. |
 | `demo_sensor.dart` | A Dexcom G7 two days into its session, so the headline is current and the sensor card shows its remaining life. |
+| `demo_pump.dart` | An Omnipod DASH 46 h into its life: pairing, a stored last status (38.5 U left), the active basal profile set to its rates (so the pump page does not offer to send it) and every past hour booked in the basal ledger, which gives the glucose chart its basal bars. |
 | `demo_nutrition.dart` | Meals at the curve's meal times with a matching bolus, drinks, inventory. |
 | `demo_sport.dart`, `demo_activity.dart` | Exercises, routines, workouts; daily steps, distance, calories, weight. |
 | `demo_cardio.dart` | Walks, a jog and a ride with a GPS loop around the Rheinaue in Bonn. |
@@ -71,6 +72,7 @@ pulled days and the app never tries Health Connect.
 
 `demo_layouts.dart` sets the overview, Sport "Today" and nutrition boxes to the
 selection on the website's screenshots instead of the first-launch defaults.
+`DemoLaunch` also turns on the meal markers in the glucose chart.
 
 ## Language and theme
 
@@ -93,6 +95,17 @@ Kept to three switches on `DemoMode.enabled` (`--dart-define=DEMO=true`):
 - **Splash**: the native splash's colours and logo (`web/splash/`, downscaled from
   `assets/images/splash-*.png`), light and dark, with a loading bar. It fades out on
   `flutter-first-frame`, so it also covers the dummy data being generated.
+- **Rounds itself when embedded**: with `?frame=<radius>` (the website passes
+  its `--screen-radius`) the page clips its own body to that radius, with root
+  and body transparent (with a transparent root the browser paints body's
+  background across the whole canvas, outside the clip). This is the second
+  line only. The website never clips the iframe, since browsers do not reliably
+  clip a composited iframe to a rounded box (the app spilled over the mockup
+  every time that was relied on). Instead it draws the inner bezel ring as an
+  overlay ON TOP of the iframe, which covers the square corners whatever the app
+  does; `style.css` holds the geometry rule that keeps the corner tips under the
+  ring. Both sides use `color-scheme: normal`, since a mismatch makes the
+  browser paint an opaque backdrop behind the iframe.
 - **Wheel stays in the demo**: every wheel event has its default cancelled and the
   root has `overscroll-behavior: none`, so reaching the end of a list never scrolls
   the website around the iframe.
