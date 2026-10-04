@@ -62,6 +62,9 @@ visitor sees the same month:
 | `demo_events.dart` | Alarm events from crossings into a worse zone. |
 | `demo_sensor.dart` | A Dexcom G7 two days into its session, so the headline is current and the sensor card shows its remaining life. |
 | `demo_pump.dart` | An Omnipod DASH 46 h into its life: pairing, a stored last status (38.5 U left), the active basal profile set to its rates (so the pump page does not offer to send it) and every past hour booked in the basal ledger, which gives the glucose chart its basal bars. |
+| `demo_loop.dart` | Automated delivery switched on, with two hours of cycles decided by the real `LoopAlgorithm` and `LoopSafety` from the demo glucose (meal boluses and the automation's own insulin as IOB) and the temporary rate of the newest one running. Each cycle is a pod contact; `demo_pump.dart` adds the background poll's 15-minute contacts for the rest of the day, so the connection page has a pod line. |
+| `demo_devices.dart` | The sensor and pod history (`/sensor/history/`, `/pump/history/`): a month of devices back from the running ones, one sensor discarded early, one Libre 3, one pod replaced after a day. |
+| `demo_live_sensor.dart` | Keeps the sensor delivering: every five minutes a reading that continues the newest archived one along `DemoGlucose.shapeAt`, written to the store and sent to `CgmController` as the service's `reading` and `update` messages. A tab that slept catches up on what it missed. |
 | `demo_nutrition.dart` | Meals at the curve's meal times with a matching bolus, drinks, inventory. |
 | `demo_sport.dart`, `demo_activity.dart` | Exercises, routines, workouts; daily steps, distance, calories, weight. |
 | `demo_cardio.dart` | Walks, a jog and a ride with a GPS loop around the Rheinaue in Bonn. |
@@ -89,6 +92,8 @@ Kept to three switches on `DemoMode.enabled` (`--dart-define=DEMO=true`):
 - `demo_pod.dart`: `demoPodEnabled` follows it, so the pump page talks to the
   in-memory demo pod.
 - `PodBlePermissions.ensure`: true, there is no radio to ask for.
+- `CgmController.init`: starts `DemoLiveSensor`, which feeds the controller's
+  service-message handler because the browser has no service isolate.
 
 ## `web/index.html`
 

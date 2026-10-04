@@ -18,6 +18,8 @@ import 'package:insulink/src/cgm/event_sync.dart';
 import 'package:insulink/src/cgm/glucose_prediction.dart';
 import 'package:insulink/src/cgm/sensor_sync.dart';
 import 'package:insulink/src/cgm/cgm_store.dart';
+import 'package:insulink/src/demo/demo_live_sensor.dart';
+import 'package:insulink/src/demo/demo_mode.dart';
 import 'package:insulink/src/localization/service_strings.dart';
 import 'package:insulink/src/profile/battery/profile_battery_state.dart';
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
@@ -361,6 +363,9 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
+  /// The browser demo's stand-in for the service isolate, null everywhere else.
+  DemoLiveSensor? _demoSensor;
+
   CgmReading? _latest;
   CgmReading? get latest => _latest;
 
@@ -525,8 +530,12 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> init() async {
     WidgetsBinding.instance.addObserver(this);
-    // Receive live updates pushed from the foreground-service isolate.
+    // Receive live updates pushed from the foreground-service isolate. The
+    // browser demo has no service; its fake sensor sends the same messages.
     FlutterForegroundTask.addTaskDataCallback(_onTaskData);
+    if (DemoMode.enabled) {
+      _demoSensor = DemoLiveSensor(onData: _onTaskData)..start();
+    }
     final store = await CgmStore.open();
     if (_disposed) {
       return;
@@ -1238,6 +1247,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   void dispose() {
     _disposed = true;
     FlutterForegroundTask.removeTaskDataCallback(_onTaskData);
+    _demoSensor?.stop();
     WidgetsBinding.instance.removeObserver(this);
     code.dispose();
     super.dispose();

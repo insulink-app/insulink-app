@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:insulink/src/demo/demo_activity.dart';
 import 'package:insulink/src/demo/demo_calendar.dart';
 import 'package:insulink/src/demo/demo_cardio.dart';
+import 'package:insulink/src/demo/demo_devices.dart';
 import 'package:insulink/src/demo/demo_events.dart';
 import 'package:insulink/src/demo/demo_glucose.dart';
 import 'package:insulink/src/demo/demo_health.dart';
@@ -55,6 +56,8 @@ class DemoAccount {
     '/health/days/find/': _list('days', _health.healthDays),
     '/health/pulse/find/': _list('samples', _health.pulse),
     '/health/hba1c/find/': _list('readings', _health.hba1c),
+    '/sensor/history/': _list('sensors', DemoDevices(now).sensors),
+    '/pump/history/': _list('pumps', DemoDevices(now).pumps),
     '/pump/register/': {'success': true, 'pump_id': 1},
     '/sensor/register/': {'success': true, 'sensor_id': 1},
   };

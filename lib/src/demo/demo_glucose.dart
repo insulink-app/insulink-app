@@ -40,16 +40,20 @@ class DemoGlucose {
     var drift = 0.0;
     for (var time = start; !time.isAfter(end); time = time.add(step)) {
       drift = (drift + random.nextDouble() * 6 - 3) * 0.96;
-      final value = _baseline(time) + _meals(time) + drift;
+      final value = shapeAt(time) + drift;
       readings[time] = value.round().clamp(48, 290);
     }
     return readings;
   }
 
+  /// The curve without its random drift: the day rhythm plus the meals. The
+  /// live feed (`demo_live_sensor.dart`) follows its slope past [end].
+  double shapeAt(DateTime time) => _baseline(time) + _meals(time);
+
   /// A slow day rhythm peaking in the early morning (dawn phenomenon).
   double _baseline(DateTime time) {
     final hour = time.hour + time.minute / 60;
-    return 116 + 14 * sin((hour - 1) / 24 * 2 * pi);
+    return 126 + 14 * sin((hour - 1) / 24 * 2 * pi);
   }
 
   double _meals(DateTime time) {
@@ -62,12 +66,14 @@ class DemoGlucose {
     return total;
   }
 
-  /// Which calendar day (counted from [start]'s) the meal [hoursSince] before
-  /// [time] was eaten on, so one meal keeps its size for its whole curve.
+  /// Which calendar day the meal [hoursSince] before [time] was eaten on, so one
+  /// meal keeps its size for its whole curve. Counted from the day BEFORE
+  /// [start]'s: the first readings can still carry the previous evening's meal
+  /// (a start before about nine in the morning is within its window).
   int _mealDay(DateTime time, double hoursSince) {
     final eaten = time.subtract(Duration(minutes: (hoursSince * 60).round()));
     final eatenDay = DateTime.utc(eaten.year, eaten.month, eaten.day);
-    final firstDay = DateTime.utc(start.year, start.month, start.day);
+    final firstDay = DateTime.utc(start.year, start.month, start.day - 1);
     return eatenDay.difference(firstDay).inDays;
   }
 
@@ -79,15 +85,19 @@ class DemoGlucose {
   /// A rise that starts gently and peaks about [risePeakHours] after eating,
   /// then a smaller dip below the baseline once the bolus outlasts the carbs.
   /// Both have faded to almost nothing by [mealWindowHours]; cutting a curve off
-  /// while its dip is still deep made the line jump up hours after dinner.
+  /// while its dip is still deep made the line jump up hours after dinner. Meals
+  /// past the generated month (the live feed) reuse the sizes from its start.
   double _mealCurve(double hours, int index) {
     if (hours > mealWindowHours) {
       return 0;
     }
     final share = hours / risePeakHours;
-    final rise = _rises[index] * share * share * exp(2 * (1 - share));
+    final rise =
+        _rises[index % _rises.length] * share * share * exp(2 * (1 - share));
     final dip =
-        _dips[index] * (hours / dipPeakHours) * exp(1 - hours / dipPeakHours);
+        _dips[index % _dips.length] *
+        (hours / dipPeakHours) *
+        exp(1 - hours / dipPeakHours);
     return rise - dip;
   }
 

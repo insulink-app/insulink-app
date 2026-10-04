@@ -36,7 +36,7 @@ class DemoLaunch {
     await DemoLayouts().arrange();
     await AccountSync().pullAll(null, withHistory: true);
     await DemoSensor(account.glucose).pair();
-    await DemoPump(account.now).attach();
+    await DemoPump(account.now, account.glucose.readings).attach();
   }
 
   /// Legal notice and permission onboarding done, signed in as "Demo", meals
