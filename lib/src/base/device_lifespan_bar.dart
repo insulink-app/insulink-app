@@ -134,14 +134,45 @@ class DeviceLifespanBar extends StatelessWidget {
   }
 
   /// The overview's segments: 6 px, accent for what is left, line for the rest.
+  /// The final day keeps the day segments and fills the last one by the share
+  /// of that day still left, instead of switching to 24 hour segments.
   Widget _overviewSegments(BuildContext context, DeviceLifespan life) {
     final colors = context.insulinkColors;
+    if (life.hoursMode) {
+      return _lastDaySegments(colors, life);
+    }
     return SegmentBar.count(
-      total: life.totalSegments,
+      total: life.totalDays,
       filled: life.filledSegments,
       fill: colors.accent,
       empty: colors.line,
-      gap: life.hoursMode ? 2 : 4,
+    );
+  }
+
+  Widget _lastDaySegments(InsulinkColors colors, DeviceLifespan life) {
+    return SizedBox(
+      height: 6,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var day = 0; day < life.totalDays; day++) ...[
+            if (day > 0) const SizedBox(width: 4),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: ColoredBox(
+                  color: colors.line,
+                  child: FractionallySizedBox(
+                    alignment: AlignmentDirectional.centerStart,
+                    widthFactor: day == 0 ? life.lastDayFraction : 0,
+                    child: ColoredBox(color: colors.accent),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

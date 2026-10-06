@@ -55,6 +55,11 @@ void main() {
       expect(life.hoursMode, isTrue);
       expect(life.filledSegments, 24);
     });
+
+    test('last-day fraction is the share of the final day left', () {
+      expect(after(const Duration(days: 9, hours: 18)).lastDayFraction, 0.75);
+      expect(after(const Duration(days: 11)).lastDayFraction, 0);
+    });
   });
 
   group('grace period (rated lifetime up, sensor still reading)', () {

@@ -55,4 +55,8 @@ class DeviceLifespan {
   int get filledSegments => hoursMode
       ? (remainingSecs / 3600).ceil().clamp(0, 24)
       : (remainingSecs / 86400).ceil().clamp(0, totalDays);
+
+  /// Share of the final day still left (0..1), for the overview's single
+  /// proportional last-day bar in place of 24 hour segments.
+  double get lastDayFraction => (remainingSecs / 86400).clamp(0.0, 1.0);
 }
