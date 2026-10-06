@@ -45,6 +45,7 @@ class SegmentBar extends StatelessWidget {
     return SizedBox(
       height: height,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var index = 0; index < visible.length; index++) ...[
             if (index > 0) SizedBox(width: gap),

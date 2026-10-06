@@ -611,9 +611,9 @@
         "confirm": "Turn on"
       },
       "overview": {
-        "off": "Automated delivery is off",
-        "stopped": "Automated delivery has stopped",
-        "engaged": "Automated delivery is active",
+        "off": "Automated delivery off",
+        "stopped": "Automated delivery stopped",
+        "engaged": "Automated delivery on",
         "rate": "# U/h"
       },
       "auth_reason": "Turn on automated insulin delivery",

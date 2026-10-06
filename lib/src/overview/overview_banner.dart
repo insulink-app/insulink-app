@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_mode_window.dart';
+import 'package:insulink/src/theme/insulink_colors.dart';
 
 /// Prominent, tappable strip above the overview's content that says a global
 /// mode is holding something back, and clears that mode when tapped.
@@ -19,10 +20,6 @@ class OverviewBanner extends StatelessWidget {
     required this.onTap,
   });
 
-  /// Amber: not an error, but not the resting state either. Deliberately one
-  /// fixed tone for every banner so they read as one kind of thing.
-  static const accent = Color(0xFFE8A13A);
-
   final IconData icon;
   final String titleKey;
 
@@ -35,10 +32,13 @@ class OverviewBanner extends StatelessWidget {
 
   final VoidCallback onTap;
 
+  /// Amber (the `high` token): not an error, but not the resting state either.
+  /// One tone for every banner so they read as one kind of thing.
   @override
   Widget build(BuildContext context) {
+    final amber = context.insulinkColors.high;
     return Material(
-      color: accent.withValues(alpha: 0.15),
+      color: amber.withValues(alpha: 0.14),
       borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -47,7 +47,7 @@ class OverviewBanner extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
             children: [
-              Icon(icon, color: accent, size: 22),
+              Icon(icon, color: amber, size: 22),
               const SizedBox(width: 12),
               Expanded(child: _text(context)),
             ],

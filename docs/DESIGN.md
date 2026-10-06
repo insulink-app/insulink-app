@@ -73,6 +73,42 @@ The font is **Atkinson Hyperlegible Next**, bundled in `assets/fonts/` (400, 600
 and inline styles inherit it through the default text style, so ticking numbers
 do not jitter.
 
+## Redesign building blocks
+
+The overview (reference: `docs/redesign/`) is built from these; reuse them
+before drawing a new bar or button.
+
+| Widget | File | What it is |
+|---|---|---|
+| `SegmentBar` | `base/segment_bar.dart` | Rounded segments with gaps: range scale, time in range, device days (`.count`) |
+| `HeaderIconButton` | `base/header_icon_button.dart` | 44 px round header button, optional status dot ringed in `ground` |
+| `FloatingDock` | `base/floating_dock.dart` | Tab capsule plus the round bolus button |
+| `GlucoseHero` | `overview/glucose_hero.dart` | Value, rotated trend arrow, unit and trend words |
+| `RangeScale` | `overview/range_scale.dart` | 40 to 250 mg/dL scale split at the user's targets, knob on the value |
+| `OverviewDevices` | `overview/overview_devices.dart` | Sensor, pod and reservoir, automation row, in one panel |
+| `InsulinkTextStyles` | `theme/insulink_text_styles.dart` | The spec's type roles (value 124/800, stat 30/800, …) |
+
+Three things that are not obvious:
+
+- **The redesign's type roles are NOT on the `TextTheme`.** Material draws its
+  own widgets from those roles (`headlineSmall` is every dialog title,
+  `bodyLarge` every text field), so mapping 30/800 onto them would blow up
+  dialogs and inputs. They live in `InsulinkTextStyles` instead.
+- **The dock sits in the scaffold's navigation slot, not over the body.** The
+  page ends where the dock starts, so no tab's last rows can hide behind it
+  (every tab pads its own scroll view, and `extendBody` would have needed all
+  nine of them changed). The fade the content runs out into is only painted
+  32 px above the slot, behind an `IgnorePointer`.
+- **A `DecoratedBox` without a child has no height.** In a `Row` it gets its
+  width from `Expanded` but collapses to 0 px tall unless the row stretches its
+  children; `SegmentBar` sets `CrossAxisAlignment.stretch` for exactly this
+  (`test/base/segment_bar_test.dart`).
+
+Numbers on the overview are German notation (`GlucoseDisplayFormat`,
+`sportDecimal`), like the Sport tiles. `ProfileGlucoseState.format` keeps its
+plain format because the home-screen widget, fed from the service isolate,
+reads it too.
+
 ## Three foreground tones
 
 | Tone | Token | Means |

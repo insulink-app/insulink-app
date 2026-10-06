@@ -611,9 +611,9 @@
         "confirm": "Aktivieren"
       },
       "overview": {
-        "off": "Automatische Abgabe ist aus",
-        "stopped": "Automatische Abgabe wurde beendet",
-        "engaged": "Automatische Abgabe ist aktiv",
+        "off": "Automatische Abgabe aus",
+        "stopped": "Automatische Abgabe beendet",
+        "engaged": "Automatische Abgabe aktiv",
         "rate": "# E/h"
       },
       "auth_reason": "Automatische Insulinabgabe aktivieren",
