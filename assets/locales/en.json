@@ -30,6 +30,7 @@
     "ok": "OK",
     "continue": "Continue",
     "cancel": "Cancel",
+    "close": "Close",
     "done": "Done",
     "delete": "Delete"
   },
@@ -817,7 +818,12 @@
       "protein": "Protein",
       "kcal": "kcal",
       "show_more": "Show more",
-      "all": "All products"
+      "all": "All products",
+      "action": {
+        "create": "Create product",
+        "search": "Search the product database",
+        "scan": "Scan barcode"
+      }
     },
     "meals": {
       "_": "Meals",
@@ -1354,6 +1360,9 @@
     },
     "products": {
       "add": "Add product",
+      "add_short": "Add",
+      "saved": "Saved products",
+      "carbs_column": "Carbs per 100 g",
       "empty": "No products selected yet",
       "total": "Total carbs",
       "carbs": "carbs",
@@ -1368,6 +1377,9 @@
     },
     "confirm": {
       "title": "Confirm bolus",
+      "to_pump": "to #",
+      "active": "Active insulin",
+      "active_subtracted": "# U subtracted",
       "button": "Confirm",
       "reason": "Confirm your bolus",
       "success": "Bolus confirmed",

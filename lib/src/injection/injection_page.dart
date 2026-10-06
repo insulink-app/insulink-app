@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/injection/carbs_on_board.dart';
@@ -17,8 +16,11 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:provider/provider.dart';
-import 'package:insulink/src/theme/brand_tints.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/header_icon_button.dart';
+import 'package:insulink/src/injection/injection_sheet_parts.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Opens the bolus-calculator as a modal bottom sheet. The glucose field is
 /// prefilled with the latest reading from [CgmController] when available.
@@ -27,10 +29,6 @@ Future<void> showInjectionSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => const InjectionSheet(),
   );
 }
@@ -181,7 +179,9 @@ class _InjectionSheetState extends State<InjectionSheet> {
   void _recompute() {
     if (!_bolusEdited) {
       _settingBolus = true;
-      _bolusController.text = _suggested?.toStringAsFixed(1) ?? '';
+      _bolusController.text = _suggested == null
+          ? ''
+          : sportDecimal(_suggested!, 1);
       _settingBolus = false;
     }
     setState(() {});
@@ -223,6 +223,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
           bolus: bolus,
           delivery: _delivery,
           deliveredLastHour: _deliveredLastHour,
+          activeInsulin: _activeInsulin,
         ),
       ),
     );
@@ -275,8 +276,8 @@ class _InjectionSheetState extends State<InjectionSheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return SingleChildScrollView(
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
+        left: 16,
+        right: 16,
         top: 12,
         bottom: 24 + bottomInset,
       ),
@@ -285,26 +286,42 @@ class _InjectionSheetState extends State<InjectionSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const GrabHandle(),
-          const SizedBox(height: 20),
-          LocaleText(
-            'injection.title',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
+          _header(context),
+          const SizedBox(height: 14),
           _mealCard(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _glucoseCard(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _bolusCard(context),
           const SizedBox(height: 24),
           FilledButton(
             onPressed: (_bolus == null || _glucose == null || _exceedsMax)
                 ? null
                 : _next,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-            ),
             child: LocaleText('injection.next'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The title large on the left, a round close button on the right.
+  Widget _header(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: LocaleText(
+              'injection.title',
+              style: InkText.deviceTitle.copyWith(letterSpacing: 0),
+            ),
+          ),
+          HeaderIconButton(
+            icon: PhosphorIconsBold.x,
+            labelKey: 'alert.close',
+            onTap: () => Navigator.of(context).pop(),
           ),
         ],
       ),
@@ -314,16 +331,11 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// The meal group: carbs typed by hand plus any products picked from the food
   /// database, whose carbs add to the manual amount.
   Widget _mealCard() {
-    return _InjectionCard(
+    return InjectionCard(
       icon: PhosphorIconsBold.forkKnife,
       titleKey: 'injection.carbs',
       children: [
-        _NumberField(controller: _carbsController, suffix: 'g'),
-        const SizedBox(height: 16),
-        LocaleText(
-          'injection.products_tab',
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
+        InjectionNumberField(controller: _carbsController, suffix: 'g'),
         const SizedBox(height: 10),
         InjectionProductsTab(
           onItemsChanged: _onProductItems,
@@ -335,25 +347,27 @@ class _InjectionSheetState extends State<InjectionSheet> {
 
   /// The current glucose group, prefilled from the latest reading.
   Widget _glucoseCard() {
-    return _InjectionCard(
+    return InjectionCard(
       icon: PhosphorIconsBold.drop,
       titleKey: 'injection.glucose',
-      children: [_NumberField(controller: _glucoseController, suffix: 'mg/dL')],
+      children: [
+        InjectionNumberField(controller: _glucoseController, suffix: 'mg/dL'),
+      ],
     );
   }
 
-  /// The suggested (still editable) bolus, preceded by the active-insulin note
+  /// The suggested (still editable) bolus, followed by the active-insulin note
   /// that explains why the number was reduced.
   Widget _bolusCard(BuildContext context) {
-    return _InjectionCard(
+    return InjectionCard(
       icon: PhosphorIconsBold.syringe,
       titleKey: 'injection.bolus',
+      emphasised: true,
       children: [
-        _activeInsulinNote(),
-        _NumberField(
+        InjectionNumberField(
           controller: _bolusController,
           suffix: Locales.string(context, 'injection.bolus.unit'),
-          highlight: true,
+          large: true,
           errorText: _exceedsMax
               ? Locales.string(
                   context,
@@ -362,6 +376,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
                 )
               : null,
         ),
+        _activeInsulinNote(),
       ],
     );
   }
@@ -382,111 +397,24 @@ class _InjectionSheetState extends State<InjectionSheet> {
     if (units <= 0) {
       return const SizedBox.shrink();
     }
+    final muted = context.ink.muted;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        Locales.string(
-          context,
-          'injection.active_insulin',
-          params: [units.toStringAsFixed(1)],
-        ),
-        style: TextStyle(
-          fontSize: 13,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-        ),
-      ),
-    );
-  }
-}
-
-class _InjectionCard extends StatelessWidget {
-  const _InjectionCard({
-    required this.icon,
-    required this.titleKey,
-    required this.children,
-  });
-
-  final IconData icon;
-  final String titleKey;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.dividerColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      padding: const EdgeInsets.only(top: 12, left: 4),
+      child: Row(
+        spacing: 8,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 8),
-              LocaleText(
-                titleKey,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
+          Icon(PhosphorIconsRegular.info, size: 16, color: muted),
+          Expanded(
+            child: Text(
+              Locales.string(
+                context,
+                'injection.active_insulin',
+                params: [sportDecimal(units, 1)],
               ),
-            ],
+              style: InkText.label.copyWith(color: muted),
+            ),
           ),
-          const SizedBox(height: 14),
-          ...children,
         ],
-      ),
-    );
-  }
-}
-
-class _NumberField extends StatelessWidget {
-  const _NumberField({
-    required this.controller,
-    required this.suffix,
-    this.highlight = false,
-    this.errorText,
-  });
-
-  final TextEditingController controller;
-  final String suffix;
-  final bool highlight;
-  final String? errorText;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return TextField(
-      controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-      style: highlight
-          ? TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              color: scheme.onSurface,
-            )
-          : null,
-      decoration: InputDecoration(
-        // `suffixText` hides while the field is empty and unfocused; a
-        // `suffixIcon` is always shown, so the unit stays visible at all times.
-        suffixIcon: Padding(
-          padding: const EdgeInsets.only(right: 16, left: 4),
-          child: Text(
-            suffix,
-            style: TextStyle(fontSize: 16, color: scheme.onSurfaceVariant),
-          ),
-        ),
-        suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-        errorText: errorText,
-        // The bolus field overrides the fill with the brand tint; the others
-        // inherit the theme's raised-surface fill (passing false would strip it).
-        filled: highlight ? true : null,
-        fillColor: highlight ? scheme.tintPanel : null,
       ),
     );
   }

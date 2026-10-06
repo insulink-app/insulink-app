@@ -7,6 +7,7 @@ import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/food/off_client.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/localization/locales.dart';
 
 /// Scans a barcode and opens the editor on the matching product.
 ///
@@ -101,16 +102,19 @@ class FoodAddActions extends StatelessWidget {
       children: [
         IconButton(
           visualDensity: VisualDensity.compact,
+          tooltip: Locales.string(context, 'nutrition.food.action.create'),
           icon: const Icon(PhosphorIconsBold.plus, size: 24),
           onPressed: () => _report(showFoodEditor(context)),
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
+          tooltip: Locales.string(context, 'nutrition.food.action.search'),
           icon: const Icon(PhosphorIconsBold.magnifyingGlass, size: 24),
           onPressed: () => _report(openFoodSearch(context)),
         ),
         IconButton(
           visualDensity: VisualDensity.compact,
+          tooltip: Locales.string(context, 'nutrition.food.action.scan'),
           icon: const Icon(PhosphorIconsBold.qrCode, size: 22),
           onPressed: onScanRequested ?? () => scanAndEditProduct(context),
         ),

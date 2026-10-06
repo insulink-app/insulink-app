@@ -3,10 +3,12 @@ import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:insulink/src/theme/brand_tints.dart';
 import 'package:insulink/src/base/button_loader.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/key_value_row.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Confirmation step before a bolus is delivered: a summary of carbs, glucose
 /// and the (possibly edited) bolus, confirmed with the device biometric. Pops
@@ -19,6 +21,7 @@ class InjectionConfirmPage extends StatefulWidget {
     required this.bolus,
     this.delivery,
     this.deliveredLastHour = 0,
+    this.activeInsulin = 0,
   });
 
   final double carbs;
@@ -32,6 +35,10 @@ class InjectionConfirmPage extends StatefulWidget {
   /// Insulin already given within the past hour, checked against the rolling
   /// limit before a pod is asked to deliver.
   final double deliveredLastHour;
+
+  /// The insulin already working that the bolus was reduced by, shown in the
+  /// summary; 0 hides the row, as on the calculator.
+  final double activeInsulin;
 
   @override
   State<InjectionConfirmPage> createState() => _InjectionConfirmPageState();
@@ -140,13 +147,12 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 16),
               _bolusHero(context),
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
               _details(context),
               const Spacer(),
               if (_pumpOutcome != null)
@@ -162,7 +168,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
                     ? const ButtonLoader()
                     : Icon(_buttonIcon),
                 style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(54),
+                  minimumSize: const Size.fromHeight(58),
                 ),
                 label: LocaleText(_buttonLabelKey),
               ),
@@ -173,109 +179,121 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
     );
   }
 
-  /// The headline: the bolus as a large number in a primary-tinted card.
+  /// The headline: "Bolus" with its glyph, the dose large, and where it goes.
   Widget _bolusHero(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 28),
-      decoration: BoxDecoration(
-        color: scheme.tintPanel,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: scheme.tintLine),
-      ),
+    final colors = context.ink;
+    return InkPanel(
+      radius: 26,
+      padding: const EdgeInsets.fromLTRB(20, 26, 20, 22),
+      color: colors.panelRaised,
       child: Column(
         children: [
-          Icon(PhosphorIconsBold.syringe, color: context.accent, size: 30),
-          const SizedBox(height: 10),
-          LocaleText(
-            'injection.bolus',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 8,
+            children: [
+              Icon(
+                PhosphorIconsBold.syringe,
+                size: 20,
+                color: colors.accentText,
+              ),
+              LocaleText(
+                'injection.bolus',
+                style: InkText.row.copyWith(color: colors.accentText),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 14),
           Text.rich(
             TextSpan(
-              text: widget.bolus.toStringAsFixed(1),
-              style: TextStyle(
-                fontSize: 46,
-                fontWeight: FontWeight.bold,
-                color: context.accent,
+              text: sportDecimal(widget.bolus, 1),
+              style: InkText.glucoseHero.copyWith(
+                fontSize: 76,
+                letterSpacing: -2.5,
                 height: 1,
+                color: colors.text,
               ),
               children: [
                 TextSpan(
                   text: ' ${Locales.string(context, 'injection.bolus.unit')}',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: context.accent.withValues(alpha: 0.7),
+                  style: InkText.section.copyWith(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: colors.muted,
                   ),
                 ),
               ],
             ),
           ),
+          if (_usesPump) ...[
+            const SizedBox(height: 16),
+            _pumpTag(context, colors),
+          ],
         ],
       ),
     );
   }
 
-  Widget _details(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+  /// "● to Omnipod DASH": where the dose is going, when a pod delivers it.
+  Widget _pumpTag(BuildContext context, InsulinkColors colors) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
+        color: colors.ground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.07)),
       ),
-      child: Column(
-        children: [
-          _row(
-            context,
-            PhosphorIconsBold.forkKnife,
-            'injection.carbs',
-            '${widget.carbs.toStringAsFixed(0)} g',
-          ),
-          Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
-          _row(
-            context,
-            PhosphorIconsBold.syringe,
-            'injection.glucose',
-            '${widget.glucoseMgdl} mg/dL',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _row(
-    BuildContext context,
-    IconData icon,
-    String labelKey,
-    String value,
-  ) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 8,
         children: [
-          Icon(icon, size: 20, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Expanded(
-            child: LocaleText(
-              labelKey,
-              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.65)),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: colors.range,
+              shape: BoxShape.circle,
             ),
           ),
           Text(
-            value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Locales.string(
+              context,
+              'injection.confirm.to_pump',
+              params: [Locales.string(context, 'pump.type.dash')],
+            ),
+            style: InkText.label.copyWith(color: colors.muted),
           ),
         ],
       ),
+    );
+  }
+
+  /// What the dose was computed from, as key/value rows with their glyphs.
+  Widget _details(BuildContext context) {
+    final accent = context.ink.accent;
+    Widget glyph(IconData icon) => Icon(icon, size: 20, color: accent);
+    return InkPanel.list(
+      rows: [
+        KeyValueRow(
+          leading: glyph(PhosphorIconsBold.forkKnife),
+          label: Locales.string(context, 'injection.carbs'),
+          value: '${sportDecimal(widget.carbs, 0)} g',
+        ),
+        KeyValueRow(
+          leading: glyph(PhosphorIconsBold.drop),
+          label: Locales.string(context, 'injection.glucose'),
+          value: '${widget.glucoseMgdl} mg/dL',
+        ),
+        if (widget.activeInsulin > 0)
+          KeyValueRow(
+            leading: glyph(PhosphorIconsBold.clock),
+            label: Locales.string(context, 'injection.confirm.active'),
+            value: Locales.string(
+              context,
+              'injection.confirm.active_subtracted',
+              params: [sportDecimal(widget.activeInsulin, 1)],
+            ),
+          ),
+      ],
     );
   }
 

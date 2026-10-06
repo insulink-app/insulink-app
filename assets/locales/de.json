@@ -30,6 +30,7 @@
     "ok": "OK",
     "continue": "Weiter",
     "cancel": "Abbrechen",
+    "close": "Schließen",
     "done": "Fertig",
     "delete": "Löschen"
   },
@@ -817,7 +818,12 @@
       "protein": "Eiweiß",
       "kcal": "kcal",
       "show_more": "Mehr anzeigen",
-      "all": "Alle Produkte"
+      "all": "Alle Produkte",
+      "action": {
+        "create": "Produkt anlegen",
+        "search": "In der Produktdatenbank suchen",
+        "scan": "Barcode scannen"
+      }
     },
     "meals": {
       "_": "Mahlzeiten",
@@ -1354,6 +1360,9 @@
     },
     "products": {
       "add": "Produkt hinzufügen",
+      "add_short": "Hinzufügen",
+      "saved": "Gespeicherte Produkte",
+      "carbs_column": "KH pro 100 g",
       "empty": "Noch keine Produkte gewählt",
       "total": "KH gesamt",
       "carbs": "KH",
@@ -1368,6 +1377,9 @@
     },
     "confirm": {
       "title": "Bolus bestätigen",
+      "to_pump": "an #",
+      "active": "Aktives Insulin",
+      "active_subtracted": "# E abgezogen",
       "button": "Bestätigen",
       "reason": "Bolus mit Fingerabdruck bestätigen",
       "success": "Bolus bestätigt",
