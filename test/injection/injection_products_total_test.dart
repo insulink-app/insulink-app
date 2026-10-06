@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/injection/injection_products_tab.dart';
 import 'package:insulink/src/localization/locale_notifier.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/app_theme.dart';
 
 import '../support/locale_pump.dart';
 import '../support/secure_storage_mock.dart';
@@ -25,6 +26,7 @@ void main() {
     await tester.pumpWidget(
       LocaleBuilder(
         builder: (locale) => MaterialApp(
+          theme: AppTheme.dark,
           locale: locale,
           localizationsDelegates: Locales.delegates,
           supportedLocales: Locales.supportedLocales,
