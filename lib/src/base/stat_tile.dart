@@ -75,14 +75,22 @@ class StatTile extends StatelessWidget {
     );
   }
 
-  /// The goal progress: a soft accent area from the left edge, without an edge
-  /// line where it ends, which would otherwise run through the text.
+  /// The goal progress: a soft accent area from the left edge, closed by a
+  /// 2 px accent line where it ends. The line stays on purpose (a deliberate
+  /// departure from the redesign spec), it marks how far today has got.
   Widget _fill(InsulinkColors colors) {
     return Positioned.fill(
       child: FractionallySizedBox(
         alignment: AlignmentDirectional.centerStart,
         widthFactor: progress!.clamp(0.0, 1.0),
-        child: ColoredBox(color: colors.accentSoft),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.accentSoft,
+            border: BorderDirectional(
+              end: BorderSide(color: colors.accent, width: 2),
+            ),
+          ),
+        ),
       ),
     );
   }

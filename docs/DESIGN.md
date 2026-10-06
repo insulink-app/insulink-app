@@ -93,7 +93,7 @@ before drawing a new bar or button.
 | `InkPanel` | `base/ink_panel.dart` | Panel with radius 20 and a faint rim; `.list` stacks rows with 1 px lines between them |
 | `ListRow` / `ListRowMeta` | `base/list_row.dart` | 68 px row: icon disc (accent, neutral or danger), title and subtitle, date over time |
 | `KeyValueRow` | `base/key_value_row.dart` | Key muted left, value bold right |
-| `StatTile` | `base/stat_tile.dart` | The Today tiles: glyph, label, big value, goal progress as a soft area without an edge |
+| `StatTile` | `base/stat_tile.dart` | The Today tiles: glyph, label, big value, goal progress as a soft area closed by a 2 px accent line (kept on purpose, the spec drops it) |
 | `SegmentedToggle` | `base/segmented_toggle.dart` | Pill track, active option in the accent; `.page` on the page, default inside a panel |
 | `DeviceHead` | `base/device_head.dart` | Device page top: 56 px disc, name 24/800, status line with a dot |
 | `NoticeBanner` | `base/notice_banner.dart` | Soft danger or warning strip, optional pill that ends what it reports |
