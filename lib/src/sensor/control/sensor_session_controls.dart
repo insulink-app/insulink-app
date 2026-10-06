@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/base/action_buttons.dart';
 
 import '../../alert/alert.dart';
 import '../../cgm/cgm_controller.dart';
@@ -8,6 +7,8 @@ import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/list_row.dart';
 
 /// The two session buttons under the status header: end the current reading
 /// session, or fully forget the sensor. Both are guarded by a confirmation
@@ -19,27 +20,38 @@ class SensorSessionControls extends StatelessWidget {
 
   bool get _connected => controller.connected;
 
+  /// Two rows in one panel at the foot of the page: ending the session is a
+  /// neutral row, stopping the sensor a red one. A row that cannot act now is
+  /// dimmed and inert.
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SecondaryActionButton(
-          labelKey: 'sensor.control.end_session',
-          icon: PhosphorIconsBold.stopCircle,
-          onPressed: _connected ? () => _endSession(context) : null,
+    final canStop = _connected || controller.hasSensor;
+    return InkPanel.list(
+      rows: [
+        _row(
+          ListRow(
+            icon: PhosphorIconsBold.stopCircle,
+            title: Locales.string(context, 'sensor.control.end_session'),
+            tone: ListRowTone.neutral,
+            onTap: _connected ? () => _endSession(context) : null,
+          ),
+          enabled: _connected,
         ),
-        const SizedBox(height: 10),
-        DangerActionButton(
-          labelKey: 'sensor.control.stop_sensor',
-          icon: PhosphorIconsBold.linkBreak,
-          onPressed: (_connected || controller.hasSensor)
-              ? () => _stopSensor(context)
-              : null,
+        _row(
+          ListRow(
+            icon: PhosphorIconsBold.linkBreak,
+            title: Locales.string(context, 'sensor.control.stop_sensor'),
+            tone: ListRowTone.danger,
+            onTap: canStop ? () => _stopSensor(context) : null,
+          ),
+          enabled: canStop,
         ),
       ],
     );
   }
+
+  Widget _row(Widget row, {required bool enabled}) =>
+      Opacity(opacity: enabled ? 1 : 0.45, child: row);
 
   void _endSession(BuildContext context) {
     _confirm(

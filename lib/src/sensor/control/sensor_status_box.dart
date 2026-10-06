@@ -3,15 +3,16 @@ import 'package:provider/provider.dart';
 
 import '../../cgm/cgm_connection.dart';
 import '../../cgm/cgm_controller.dart';
-import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/base/device_lifespan_bar.dart';
-import 'sensor_session_controls.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/device_head.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
-/// Box shown once paired: connection status header plus the session controls.
-/// While [searching] (connected but no reading yet) the header shows a spinner.
+/// The top of the sensor page once paired, open on the page without a card:
+/// the sensor as a device head with its connection state, then its remaining
+/// life. While [searching] (connected but no reading yet) the head spins.
 class SensorStatusBox extends StatelessWidget {
   const SensorStatusBox({
     super.key,
@@ -40,88 +41,27 @@ class SensorStatusBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _header(context, scheme),
-          if (controller.sensorStart != null) ...[
-            const SizedBox(height: 18),
-            DeviceLifespanBar(
+    final colors = context.ink;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DeviceHead(
+          icon: PhosphorIconsBold.broadcast,
+          title: Locales.string(context, _typeKey),
+          status: _status(context),
+          statusColor: _connected ? colors.range : colors.high,
+          busy: searching,
+        ),
+        if (controller.sensorStart != null) ...[
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: DeviceLifespanBar(
               start: controller.sensorStart!,
               sessionLengthSec: _sessionLengthSec,
             ),
-          ],
-          const SizedBox(height: 16),
-          SensorSessionControls(controller: controller),
+          ),
         ],
-      ),
-    );
-  }
-
-  /// Neutral status accent: strong onSurface when live, dimmed when offline.
-  Color _accent(ColorScheme scheme) {
-    final alpha = (_connected || searching) ? 0.8 : 0.35;
-    return scheme.onSurface.withValues(alpha: alpha);
-  }
-
-  Widget _header(BuildContext context, ColorScheme scheme) {
-    return Row(
-      children: [
-        _statusIcon(scheme),
-        const SizedBox(width: 14),
-        Expanded(child: _titles(context)),
-      ],
-    );
-  }
-
-  Widget _statusIcon(ColorScheme scheme) {
-    final accent = _accent(scheme);
-    return Container(
-      width: 58,
-      height: 58,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: accent.withValues(alpha: 0.15),
-      ),
-      child: searching ? _spinner(accent) : _stateIcon(accent),
-    );
-  }
-
-  Widget _spinner(Color accent) {
-    return Padding(
-      padding: const EdgeInsets.all(15),
-      child: CircularProgressIndicator(strokeWidth: 3, color: accent),
-    );
-  }
-
-  Widget _stateIcon(Color accent) {
-    return Icon(
-      _connected ? PhosphorIconsBold.broadcast : PhosphorIconsBold.drop,
-      size: 32,
-      color: accent,
-    );
-  }
-
-  /// The sensor type is the headline (prominent), with connection state + the
-  /// live value on the dimmed line below.
-  Widget _titles(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LocaleText(
-          _typeKey,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 2),
-        _subtitle(context),
       ],
     );
   }
@@ -139,17 +79,13 @@ class SensorStatusBox extends StatelessWidget {
         : 'sensor.status.disconnected';
   }
 
-  Widget _subtitle(BuildContext context) {
-    final dimmed = TextStyle(
-      fontSize: 13,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    );
+  /// Connection state, with the live value once there is one.
+  String _status(BuildContext context) {
     final status = Locales.string(context, _statusKey);
     if (_connected && controller.currentMgdl != null) {
       final glucose = context.watch<ProfileGlucoseState>();
-      final value = glucose.formatWithUnit(controller.currentMgdl!);
-      return Text('$status · $value', style: dimmed);
+      return '$status, ${glucose.formatWithUnit(controller.currentMgdl!)}';
     }
-    return Text(status, style: dimmed);
+    return status;
   }
 }

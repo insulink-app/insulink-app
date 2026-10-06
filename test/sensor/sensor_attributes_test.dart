@@ -109,7 +109,7 @@ void main() {
 
     expect(running['sensor.field.expires'], contains('in 1d'));
     expect(expired['sensor.field.expires'], contains('sensor.value.expired'));
-    expect(running['sensor.field.age'], '1d 0h');
+    expect(running['sensor.field.age'], '1 sensor.unit.day 0 h');
   });
 
   test('calibration rows appear only once bounds were read', () {
@@ -180,8 +180,8 @@ void main() {
       'sensor.info.status',
     );
 
-    expect(rows['sensor.field.last_reading'], '09.07 16:04:05');
-    expect(rows['sensor.field.age'], '1m');
+    expect(rows['sensor.field.last_reading'], '09.07., 16:04:05');
+    expect(rows['sensor.field.age'], '1 min');
   });
 
   test('the session section reports session, warmup and max lifetime', () {
@@ -202,8 +202,8 @@ void main() {
       'sensor.info.session',
     );
 
-    expect(rows['sensor.field.session'], '10d 12h');
-    expect(rows['sensor.field.warmup'], '30m');
+    expect(rows['sensor.field.session'], '10 d 12 h');
+    expect(rows['sensor.field.warmup'], '30 min');
     expect(rows['sensor.field.max_days'], '10');
   });
 }

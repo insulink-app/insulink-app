@@ -262,11 +262,15 @@
   },
   "sensor": {
     "label": "Sensor",
+    "manage": "Sensor verwalten",
+    "unit": {
+      "day": "T"
+    },
     "info": {
-      "status": "STATUS",
-      "device": "GERÄT",
-      "session": "SITZUNG",
-      "battery": "BATTERIE",
+      "status": "Status",
+      "device": "Gerät",
+      "session": "Sitzung",
+      "battery": "Batterie",
       "empty": "Noch keine Sensordaten",
       "title": "Sensordaten",
       "live": "Aktuelle Messung"

@@ -262,11 +262,15 @@
   },
   "sensor": {
     "label": "Sensor",
+    "manage": "Manage sensor",
+    "unit": {
+      "day": "d"
+    },
     "info": {
-      "status": "STATUS",
-      "device": "DEVICE",
-      "session": "SESSION",
-      "battery": "BATTERY",
+      "status": "Status",
+      "device": "Device",
+      "session": "Session",
+      "battery": "Battery",
       "empty": "no sensor info yet",
       "title": "Sensor data",
       "live": "Live reading"

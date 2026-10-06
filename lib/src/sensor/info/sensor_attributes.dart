@@ -58,7 +58,11 @@ class SensorAttributes {
     }
     _add(rows, 'sensor.field.started', formatSensorDateTime(sensorStart));
     _add(rows, 'sensor.field.expires', _expiry());
-    _add(rows, 'sensor.field.age', formatSensorDuration(_effectiveAge));
+    _add(
+      rows,
+      'sensor.field.age',
+      formatSensorDuration(_effectiveAge, dayUnit: localize('sensor.unit.day')),
+    );
     _addCalibration(rows);
     return rows;
   }
@@ -153,10 +157,18 @@ class SensorAttributes {
       value != null ? '0x${value.toRadixString(16)}' : null;
 
   /// Like [formatSensorDateTime] but with seconds, for the precise last-reception
-  /// time.
+  /// time; today reads "Heute, 16:54:46".
   String _dateTimeWithSeconds(DateTime? time) {
     if (time == null) {
       return '—';
+    }
+    final now = DateTime.now();
+    final today =
+        time.year == now.year && time.month == now.month && time.day == now.day;
+    final clock =
+        '${twoDigits(time.hour)}:${twoDigits(time.minute)}:${twoDigits(time.second)}';
+    if (today) {
+      return '${localize('date.today')}, $clock';
     }
     return '${formatSensorDateTime(time)}:${twoDigits(time.second)}';
   }
