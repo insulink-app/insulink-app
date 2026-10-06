@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// Animates a tab change: the new page fades in while sliding a little in
-/// from the side of the tab it came from, the old one fades out the other way.
+/// Animates a tab change along the horizontal axis, the way Material's shared
+/// axis transition does: the old page drifts toward the side it is leaving to
+/// and is gone in the first third, then the new one drifts in from the side of
+/// the new tab. The two are never visible at once, so the layouts of two pages
+/// never show through each other mid-change.
 ///
 /// Keyed by [index], so only a real tab change animates; rebuilds of the same
 /// tab pass straight through.
@@ -19,8 +22,12 @@ class _TabTransitionState extends State<TabTransition> {
   /// Which way the last change went: 1 toward a tab further right, -1 left.
   double _direction = 1;
 
-  /// How far a page slides, as a share of its width.
-  static const double _shift = 0.06;
+  /// How far a page drifts, in logical pixels.
+  static const double _drift = 30;
+
+  /// The share of the change in which the old page fades out; the new page
+  /// fades in over the rest.
+  static const double _handover = 0.35;
 
   @override
   void didUpdateWidget(TabTransition old) {
@@ -33,28 +40,54 @@ class _TabTransitionState extends State<TabTransition> {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 280),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
+      duration: const Duration(milliseconds: 300),
       transitionBuilder: _transition,
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.topCenter,
+        children: [...previous, ?current],
+      ),
       child: KeyedSubtree(key: ValueKey(widget.index), child: widget.child),
     );
   }
 
-  /// The outgoing page's animation runs backwards, so its offset starts on the
-  /// opposite side and it leaves toward where the new page came from.
+  /// Whether a page is leaving is read from its animation every frame, not
+  /// decided when the transition is built: [AnimatedSwitcher] keeps the
+  /// transition a page got while it was arriving and only runs it backwards
+  /// once the page leaves, so a choice baked in at build time sends the old
+  /// page out the way it came, fading over most of the change.
   Widget _transition(Widget child, Animation<double> animation) {
-    final incoming = child.key == ValueKey(widget.index);
-    final side = (incoming ? _shift : -_shift) * _direction;
-    return FadeTransition(
-      opacity: animation,
-      child: SlideTransition(
-        position: Tween(
-          begin: Offset(side, 0),
-          end: Offset.zero,
-        ).animate(animation),
-        child: child,
-      ),
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, page) {
+        final leaving =
+            animation.status == AnimationStatus.reverse ||
+            animation.status == AnimationStatus.dismissed;
+        final shown = (leaving ? _fadeOut : _fadeIn).transform(animation.value);
+        final side = (leaving ? -_drift : _drift) * _direction;
+        return Opacity(
+          opacity: shown,
+          child: Transform.translate(
+            offset: Offset(side * (1 - shown), 0),
+            child: page,
+          ),
+        );
+      },
     );
   }
+
+  /// A leaving page runs from 1 back to 0, so it is gone once its value drops
+  /// below `1 - _handover`, i.e. in the first [_handover] of the change.
+  static const Curve _fadeOut = Interval(
+    1 - _handover,
+    1,
+    curve: Curves.easeInCubic,
+  );
+
+  /// The arriving page waits out the handover, then eases in.
+  static const Curve _fadeIn = Interval(
+    _handover,
+    1,
+    curve: Curves.easeOutCubic,
+  );
 }
