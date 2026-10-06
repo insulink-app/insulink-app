@@ -223,8 +223,8 @@ class GlucoseChartSeries {
     return colors.inRange;
   }
 
-  /// A solid, single-colour line piece for one zone run, with a faded fill
-  /// below it except in [minimal] mode.
+  /// A solid, single-colour line piece for one zone run. No fill below it: the
+  /// target band behind the chart says where the line should be.
   LineChartBarData _zoneBar(List<FlSpot> spots, Color color) {
     return LineChartBarData(
       spots: spots,
@@ -233,10 +233,6 @@ class GlucoseChartSeries {
       barWidth: minimal ? 2.5 : 3,
       color: color,
       dotData: FlDotData(show: showDots),
-      belowBarData: BarAreaData(
-        show: !minimal,
-        color: color.withValues(alpha: 0.15),
-      ),
     );
   }
 }

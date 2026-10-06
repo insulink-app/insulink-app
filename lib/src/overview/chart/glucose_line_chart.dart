@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/overview/chart/chart_x_axis.dart';
-import 'package:insulink/src/overview/chart/meal_label_rows.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
+import 'package:insulink/src/overview/chart/glucose_y_labels.dart';
+import 'package:insulink/src/overview/chart/insulin_bar_chart.dart';
 
 /// The fl_chart line graph itself: axes, target-range band and the touch
 /// tooltip/indicator. Receives ready-made bars (zone runs + the transparent
@@ -85,65 +86,93 @@ class GlucoseLineChart extends StatelessWidget {
 
   double get _maxY => glucose.toDisplay(maxYmgdl);
 
-  /// Whole-unit gridlines/ticks that read cleanly in either unit.
-  double get _yInterval => glucose.unit == GlucoseUnit.mmol ? 3.0 : 50.0;
+  /// The y values the detail chart labels: both target bounds and a reference
+  /// line at 250 mg/dL above them.
+  List<double> get _yLabels => [
+    glucose.toDisplay(glucose.targetLow),
+    glucose.toDisplay(glucose.targetHigh),
+    glucose.toDisplay(250),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final chart = _chart(context);
+    if (minimal) {
+      return RepaintBoundary(child: chart);
+    }
     return RepaintBoundary(
-      child: LineChart(
-        LineChartData(
-          minY: _minY,
-          maxY: _maxY,
-          minX: axis.minX,
-          maxX: axis.maxX,
-          // Clip to the plot: the forecast line runs to its full horizon, which can
-          // extend past the (constant-width) window's right edge — without clipping
-          // it would draw out over the margin. The preview has no forecast, and
-          // its right edge stays open so the end-of-line dot is not cut in half.
-          clipData: minimal
-              ? const FlClipData(
-                  top: true,
-                  bottom: true,
-                  left: true,
-                  right: false,
-                )
-              : const FlClipData.all(),
-          gridData: FlGridData(
-            show: !minimal,
-            drawVerticalLine: false,
-            horizontalInterval: _yInterval,
+      child: Stack(
+        children: [
+          chart,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: GlucoseYLabels(
+                values: _yLabels,
+                minY: _minY,
+                maxY: _maxY,
+                stripWidth: InsulinBarChart.axisInset,
+                bottomInset: showBottomTitles ? 24 : 0,
+                format: _formatY,
+              ),
+            ),
           ),
-          borderData: FlBorderData(show: false),
-          titlesData: _titles(context),
-          extraLinesData: _extraLines(context),
-          lineTouchData: _touchData(context),
-          betweenBarsData: betweenBars,
-          lineBarsData: [
-            ...bars,
-            if (highlightSpot != null) _highlightBar(context),
-          ],
-        ),
-        // No implicit morph animation: the number of zone bars changes between
-        // states, so fl_chart would interpolate between mismatched structures —
-        // which looked broken on load/update. Render each state directly.
-        duration: Duration.zero,
+        ],
       ),
+    );
+  }
+
+  Widget _chart(BuildContext context) {
+    return LineChart(
+      LineChartData(
+        minY: _minY,
+        maxY: _maxY,
+        minX: axis.minX,
+        maxX: axis.maxX,
+        // Clip to the plot: the forecast line runs to its full horizon, which can
+        // extend past the (constant-width) window's right edge — without clipping
+        // it would draw out over the margin. The preview has no forecast, and
+        // its right edge stays open so the end-of-line dot is not cut in half.
+        clipData: minimal
+            ? const FlClipData(
+                top: true,
+                bottom: true,
+                left: true,
+                right: false,
+              )
+            : const FlClipData.all(),
+        gridData: const FlGridData(show: false),
+        rangeAnnotations: _targetBand(),
+        borderData: FlBorderData(show: false),
+        titlesData: _titles(context),
+        extraLinesData: _extraLines(context),
+        lineTouchData: _touchData(context),
+        betweenBarsData: betweenBars,
+        lineBarsData: [
+          ...bars,
+          if (highlightSpot != null) _highlightBar(context),
+        ],
+      ),
+      // No implicit morph animation: the number of zone bars changes between
+      // states, so fl_chart would interpolate between mismatched structures —
+      // which looked broken on load/update. Render each state directly.
+      duration: Duration.zero,
     );
   }
 
   FlTitlesData _titles(BuildContext context) {
     return FlTitlesData(
       topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      leftTitles: AxisTitles(
+      // Only reserves the strip; the labels are laid over it by GlucoseYLabels,
+      // since 70 and 180 sit on no interval fl_chart could step through.
+      rightTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: !minimal,
-          reservedSize: 24,
-          interval: _yInterval,
-          getTitlesWidget: (value, _) => _label(context, _formatY(value)),
+          reservedSize: InsulinBarChart.axisInset,
+          interval: _maxY - _minY,
+          getTitlesWidget: (_, _) => const SizedBox.shrink(),
         ),
       ),
+      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       bottomTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: showBottomTitles,
@@ -179,13 +208,8 @@ class GlucoseLineChart extends StatelessWidget {
     return axis.clockLabel(value);
   }
 
-  Widget _label(BuildContext context, String text) => Text(
-    text,
-    style: TextStyle(
-      fontSize: minimal ? 13 : 10,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    ),
-  );
+  Widget _label(BuildContext context, String text) =>
+      Text(text, style: InkText.caption.copyWith(color: context.ink.muted));
 
   String _formatY(double value) {
     if (glucose.unit == GlucoseUnit.mgdl) {
@@ -211,53 +235,43 @@ class GlucoseLineChart extends StatelessWidget {
     );
   }
 
-  /// One dashed line per meal, with the labels of meals logged close together
-  /// stacked downward so they cannot print over each other
-  /// ([MealLabelRows]).
+  /// One dashed line per meal, running on from its label in the strip above.
   List<VerticalLine> _mealLines(Color color) {
-    final rows = MealLabelRows(
-      spanX: axis.maxX - axis.minX,
-    ).assign([for (final marker in mealMarkers) marker.x]);
-    return [
-      for (var index = 0; index < mealMarkers.length; index++)
-        _mealLine(mealMarkers[index], color, rows[index]),
-    ];
+    return [for (final marker in mealMarkers) _mealLine(marker, color)];
   }
 
-  /// [row] is how many label heights this one is dropped by, so a cluster reads
-  /// as a staircase instead of a smear.
-  VerticalLine _mealLine(({double x, Meal meal}) marker, Color color, int row) {
+  VerticalLine _mealLine(({double x, Meal meal}) marker, Color color) {
     return VerticalLine(
       x: marker.x,
       color: color.withValues(alpha: 0.35),
       strokeWidth: 1.5,
       dashArray: const [3, 4],
-      // Anchored at the top, but pushed to the RIGHT of the line so the carb
-      // amount sits beside it — the dashed line never runs through the text.
-      label: VerticalLineLabel(
-        show: true,
-        alignment: Alignment.topRight,
-        padding: EdgeInsets.only(left: 3, top: row * _mealLabelHeight),
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.bold,
-          color: color,
-        ),
-        labelResolver: (_) => '${marker.meal.carbs.toStringAsFixed(0)}g',
-      ),
+      // The carb label sits in the strip above the chart (MealLabelStrip),
+      // where it can be a pill and never covers the line.
     );
   }
 
-  /// One label's line height at font size 9, which is what a stacked label drops
-  /// by. A shade more than the glyphs need, so two rows are visibly two rows.
-  static const double _mealLabelHeight = 11;
+  /// The target range lightly behind the detail chart (range colour at 5 %),
+  /// the open preview keeps only its two dashed bounds.
+  RangeAnnotations _targetBand() {
+    return RangeAnnotations(
+      horizontalRangeAnnotations: [
+        if (!minimal)
+          HorizontalRangeAnnotation(
+            y1: glucose.toDisplay(glucose.targetLow),
+            y2: glucose.toDisplay(glucose.targetHigh),
+            color: colors.inRange.withValues(alpha: 0.05),
+          ),
+      ],
+    );
+  }
 
   HorizontalLine _boundLine(int mgdl, Color color) {
     return HorizontalLine(
       y: glucose.toDisplay(mgdl),
-      color: color.withValues(alpha: minimal ? 0.7 : 0.4),
+      color: color.withValues(alpha: 0.7),
       strokeWidth: 1,
-      dashArray: minimal ? const [2, 4] : null,
+      dashArray: const [2, 4],
     );
   }
 

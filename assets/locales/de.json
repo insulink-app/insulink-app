@@ -101,8 +101,8 @@
       "show_meals": "Mahlzeiten anzeigen",
       "insulin": {
         "_": "Insulin",
-        "basal": "Basal # E",
-        "bolus": "Bolus # E",
+        "basal": "Basal",
+        "bolus": "Bolus",
         "empty": "In diesem Zeitraum wurde kein Insulin abgegeben.",
         "at_moment": "Bolus um # Uhr",
         "over_hour": "Basal, # bis # Uhr"

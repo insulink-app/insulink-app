@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/chart/chart_sync.dart';
@@ -10,7 +12,7 @@ import 'package:insulink/src/theme/insulin_colors.dart';
 /// showing, basal and bolus told apart by colour.
 ///
 /// Drawn under the glucose chart and over the SAME window, sharing its plot
-/// geometry down to the pixel: [axisInset] matches the glucose chart's left
+/// geometry down to the pixel: [axisInset] matches the glucose chart's right
 /// `reservedSize`, so a bar sits under the glucose it belongs to rather than
 /// beside it. Get that wrong and the two charts are two pictures.
 ///
@@ -35,13 +37,14 @@ class InsulinBarChart extends StatefulWidget {
   /// through this one.
   final bool showMeals;
 
-  /// The width of the left axis strip. Must equal the glucose chart's leftTitles
-  /// `reservedSize`, which is what makes the two x axes the same axis.
-  static const double axisInset = 24;
+  /// The width of the axis label strip on the RIGHT of both charts. Must equal
+  /// the glucose chart's rightTitles `reservedSize`, which is what makes the two
+  /// x axes the same axis. The plot starts at the left edge.
+  static const double axisInset = 36;
 
   /// A bolus is a moment, so it keeps a fixed width. Basal is not: it is drawn
   /// as wide as the hour it covers, which makes it grow as the window narrows.
-  static const double bolusWidth = 9;
+  static const double bolusWidth = 7;
 
   @override
   State<InsulinBarChart> createState() => _InsulinBarChartState();
@@ -105,7 +108,7 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
                 )
               : _plot(context),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 14),
         _legend(context),
       ],
     );
@@ -136,12 +139,14 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
                     series: widget.series,
                     basal: colors.basal,
                     bolus: colors.bolus,
-                    labelColor: theme.colorScheme.onSurfaceVariant,
-                    mealColor: theme.colorScheme.onSurfaceVariant,
+                    labelColor: context.ink.muted,
+                    mealColor: context.ink.muted,
                     scrubColor: theme.colorScheme.onSurface.withValues(
                       alpha: 0.35,
                     ),
-                    leftInset: InsulinBarChart.axisInset,
+                    gridColor: context.ink.line,
+                    plotColor: context.ink.panel,
+                    rightInset: InsulinBarChart.axisInset,
                     bolusWidth: InsulinBarChart.bolusWidth,
                     ticks: widget.sync.ticks,
                     mealFractions: _mealFractions(),
@@ -174,7 +179,7 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
     }
     final theme = Theme.of(context);
     final plotWidth = width - InsulinBarChart.axisInset;
-    final x = InsulinBarChart.axisInset + fraction * plotWidth;
+    final x = fraction * plotWidth;
     final flip = x > width - _tooltipWidth - 8;
     return [
       Positioned(
@@ -193,7 +198,11 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '${touched.units.toStringAsFixed(2)} U',
+                Locales.string(
+                  context,
+                  'injection.bolus.value',
+                  params: [sportDecimal(touched.units, 2)],
+                ),
                 style: TextStyle(
                   color: theme.colorScheme.onInverseSurface,
                   fontWeight: FontWeight.bold,
@@ -253,10 +262,7 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
     if (width <= 0) {
       return;
     }
-    widget.sync.setScrub(
-      ((localX - InsulinBarChart.axisInset) / width).clamp(0.0, 1.0),
-      mirrored: true,
-    );
+    widget.sync.setScrub((localX / width).clamp(0.0, 1.0), mirrored: true);
   }
 
   void _clear() => widget.sync.setScrub(null);
@@ -267,48 +273,65 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
   Widget _legend(BuildContext context) {
     final colors = context.insulin;
     return Row(
+      spacing: 18,
       children: [
-        SizedBox(width: InsulinBarChart.axisInset),
         _key(
           context,
           colors.basal,
           'overview.chart.insulin.basal',
           widget.series.basalUnits,
+          round: false,
         ),
-        const SizedBox(width: 14),
         _key(
           context,
           colors.bolus,
           'overview.chart.insulin.bolus',
           widget.series.bolusUnits,
+          round: true,
         ),
       ],
     );
   }
 
+  /// A swatch shaped like its bars (a block for basal, a dot for bolus), the
+  /// kind muted and its total bold.
   Widget _key(
     BuildContext context,
     Color color,
     String labelKey,
-    double units,
-  ) {
+    double units, {
+    required bool round,
+  }) {
+    final ink = context.ink;
     return Row(
       mainAxisSize: MainAxisSize.min,
+      spacing: 8,
       children: [
         Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(round ? 5 : 2),
+          ),
         ),
-        const SizedBox(width: 5),
-        Text(
-          Locales.string(
-            context,
-            labelKey,
-          ).replaceFirst('#', units.toStringAsFixed(1)),
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        Text.rich(
+          TextSpan(
+            style: InkText.body.copyWith(
+              fontWeight: FontWeight.w400,
+              color: ink.muted,
+            ),
+            children: [
+              TextSpan(text: '${Locales.string(context, labelKey)}  '),
+              TextSpan(
+                text: Locales.string(
+                  context,
+                  'injection.bolus.value',
+                  params: [sportDecimal(units, 1)],
+                ),
+                style: TextStyle(fontWeight: FontWeight.w700, color: ink.text),
+              ),
+            ],
           ),
         ),
       ],

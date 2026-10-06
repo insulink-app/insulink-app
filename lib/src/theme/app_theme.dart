@@ -76,7 +76,7 @@ class AppTheme {
       scaffoldBackgroundColor: tokens.ground,
       pageTransitionsTheme: _pageTransitions(tokens),
       dividerColor: tokens.line,
-      extensions: _extensions(tokens),
+      extensions: _extensions(tokens, brightness),
     );
   }
 
@@ -193,9 +193,15 @@ class AppTheme {
     );
   }
 
-  /// The older extensions, now fed from the tokens. Basal is the accent drained
-  /// halfway into the panel: the same hue as bolus, but quieter.
-  static List<ThemeExtension<dynamic>> _extensions(InsulinkColors tokens) {
+  /// The older extensions, now fed from the tokens. Basal is the accent mixed
+  /// into the panel: the same hue as bolus, but quieter. The redesign asks for
+  /// 32 %, which lands just under 2:1 against the panel the bars stand on; 34 %
+  /// on dark and 42 % on the white light panel keep 2:1 and look the same.
+  static List<ThemeExtension<dynamic>> _extensions(
+    InsulinkColors tokens,
+    Brightness brightness,
+  ) {
+    final basalShare = brightness == Brightness.dark ? 0.34 : 0.42;
     return [
       tokens,
       GlucoseColors(inRange: tokens.range, low: tokens.low, high: tokens.high),
@@ -206,7 +212,7 @@ class AppTheme {
         positive: tokens.range,
       ),
       InsulinColors(
-        basal: Color.lerp(tokens.accent, tokens.panel, 0.5)!,
+        basal: Color.lerp(tokens.panel, tokens.accent, basalShare)!,
         bolus: tokens.accent,
       ),
     ];

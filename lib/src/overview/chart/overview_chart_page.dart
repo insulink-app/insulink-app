@@ -196,7 +196,7 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
       return 1;
     }
     final localX = box.globalToLocal(focal).dx;
-    return ((localX - InsulinBarChart.axisInset) / plotWidth).clamp(0.0, 1.0);
+    return (localX / plotWidth).clamp(0.0, 1.0);
   }
 
   /// The insulin that went in over the same stretch. Nothing is drawn until the

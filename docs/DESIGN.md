@@ -317,13 +317,13 @@ between themes: on dark the LIGHTER indigo is the loud one.
 
 | | basal | bolus | basal vs surface | bolus vs surface | basal vs bolus |
 |---|---|---|---|---|---|
-| light | `#8894CE` | `#45569F` | 2.93 | 6.81 | 2.33 |
-| dark | `#5C6BA6` | `#9DACEA` | 3.08 | 7.15 | 2.32 |
+| light | `#A9B1E8` | `#3346C8` | 2.07 | 7.37 | 3.56 |
+| dark | `#435378` | `#9DAEFF` | 2.07 | 7.47 | 3.62 |
 
-Measured against each theme's **surface**, which in light is white since the
-boxes became white. On the earlier `#E8E8E8` boxes a first pass at `#9AA6D8` for
-light basal made only 1.94, which is why the surface, not paper white, is what
-gets measured.
+Bolus is the accent itself; basal is the accent mixed into the panel the bars
+stand on (the insulin chart's face). The redesign asks for 32 %, which lands
+just under 2:1, so dark mixes 34 % and the white light panel 42 %. Measured
+against each theme's **surface**, not paper white.
 
 `test/theme/insulin_colors_test.dart` pins all three relationships, including
 that neither value is one of the glucose tones.

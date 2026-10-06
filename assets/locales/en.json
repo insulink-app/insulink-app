@@ -101,8 +101,8 @@
       "show_meals": "Show meals",
       "insulin": {
         "_": "Insulin",
-        "basal": "Basal # U",
-        "bolus": "Bolus # U",
+        "basal": "Basal",
+        "bolus": "Bolus",
         "empty": "No insulin was delivered in this window.",
         "at_moment": "Bolus at #",
         "over_hour": "Basal, # to #"

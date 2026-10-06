@@ -21,7 +21,7 @@ class MirroredReadout extends StatelessWidget {
     required this.dotColor,
     required this.value,
     required this.time,
-    required this.leftInset,
+    required this.rightInset,
   });
 
   /// Where the scrub sits across the plot, 0 at the left edge and 1 at the right.
@@ -40,8 +40,8 @@ class MirroredReadout extends StatelessWidget {
 
   final String time;
 
-  /// The axis strip on the left, which is not part of the plotting area.
-  final double leftInset;
+  /// The axis strip on the right, which is not part of the plotting area.
+  final double rightInset;
 
   static const double _width = 96;
 
@@ -49,8 +49,8 @@ class MirroredReadout extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final plotWidth = constraints.maxWidth - leftInset;
-        final x = leftInset + fraction * plotWidth;
+        final plotWidth = constraints.maxWidth - rightInset;
+        final x = fraction * plotWidth;
         final flip = x > constraints.maxWidth - _width - 8;
         return Stack(
           children: [

@@ -17,12 +17,17 @@ import 'package:insulink/src/overview/chart/chart_window.dart';
 import 'package:insulink/src/overview/chart/chart_x_axis.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
+import 'package:insulink/src/overview/chart/insulin_bar_chart.dart';
 import 'package:insulink/src/overview/chart/mirrored_readout.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/overview/chart/meal_label_rows.dart';
+import 'package:insulink/src/overview/chart/meal_label_strip.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// fl_chart line graph of glucose vs. time (hours, 0 = latest reading).
 class OverviewChart extends StatefulWidget {
@@ -130,9 +135,9 @@ class _OverviewChartState extends State<OverviewChart> {
   /// fraction across the plot and the zoom can hold that spot in place.
   final GlobalKey _plotKey = GlobalKey();
 
-  /// Width of the left Y-axis label strip (leftTitles reservedSize), excluded
-  /// from the plotting area when mapping a focal point to time.
-  static const _axisInset = 24.0;
+  /// Width of the Y-axis label strip on the right (rightTitles reservedSize),
+  /// excluded from the plotting area when mapping a focal point to time.
+  static const _axisInset = InsulinBarChart.axisInset;
 
   /// Index of the (transparent) bar carrying the tappable meal dots, or -1 when
   /// the meal overlay is off, and the markers behind it — so a tap on a dot can
@@ -324,7 +329,7 @@ class _OverviewChartState extends State<OverviewChart> {
     if (plotWidth <= 0) {
       return 1.0;
     }
-    return ((focalX - _axisInset) / plotWidth).clamp(0.0, 1.0);
+    return (focalX / plotWidth).clamp(0.0, 1.0);
   }
 
   void _onPinchPointerUp(PointerEvent event) {
@@ -442,6 +447,9 @@ class _OverviewChartState extends State<OverviewChart> {
     if (widget.preview) {
       return _chart(byTime, glucose, colors);
     }
+    // Built first: it settles the window and the meal markers the strip reads.
+    final chart = _pinchable(_chart(byTime, glucose, colors));
+    final strip = _mealStrip();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -455,8 +463,32 @@ class _OverviewChartState extends State<OverviewChart> {
             if (widget.navigable) Flexible(child: _navigator(context, byTime)),
           ],
         ),
-        const SizedBox(height: 24),
-        Expanded(child: _pinchable(_chart(byTime, glucose, colors))),
+        SizedBox(height: strip == null ? 24 : 16),
+        ?strip,
+        Expanded(child: chart),
+      ],
+    );
+  }
+
+  /// The carb labels over the chart, one pill per visible meal, stacked into a
+  /// second row where two meals sit close together. Null without meals.
+  Widget? _mealStrip() {
+    final axis = _axis;
+    if (axis == null || _mealMarkers.isEmpty) {
+      return null;
+    }
+    final rows = MealLabelRows(
+      spanX: axis.maxX - axis.minX,
+    ).assign([for (final marker in _mealMarkers) marker.x]);
+    return MealLabelStrip(
+      stripWidth: _axisInset,
+      labels: [
+        for (var index = 0; index < _mealMarkers.length; index++)
+          (
+            fraction: axis.fractionOf(_mealMarkers[index].x),
+            text: '${sportDecimal(_mealMarkers[index].meal.carbs, 0)} g',
+            row: rows[index],
+          ),
       ],
     );
   }
@@ -724,7 +756,7 @@ class _OverviewChartState extends State<OverviewChart> {
                   '${forecast ? '~' : ''}'
                   '${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
               time: _clockAt(axis, spot.x),
-              leftInset: _axisInset,
+              rightInset: _axisInset,
             ),
           ),
         ),
@@ -866,13 +898,12 @@ class _OverviewChartState extends State<OverviewChart> {
     if (!spots.hasBand) {
       return null;
     }
-    final scheme = Theme.of(context).colorScheme;
     bars.add(_bandEdgeBar([anchor, ...spots.low]));
     bars.add(_bandEdgeBar([anchor, ...spots.high]));
     return BetweenBarsData(
       fromIndex: bars.length - 2,
       toIndex: bars.length - 1,
-      color: scheme.onSurface.withValues(alpha: 0.12),
+      color: context.ink.text.withValues(alpha: 0.08),
     );
   }
 
@@ -899,11 +930,8 @@ class _OverviewChartState extends State<OverviewChart> {
   /// curve looking smooth); the gently-varying forecast values don't overshoot
   /// enough to matter.
   LineChartBarData _predictionBar(List<FlSpot> spots) {
-    final scheme = Theme.of(context).colorScheme;
-    final lineColor = scheme.onSurface.withValues(alpha: 0.5);
-    final dotColor = HSLColor.fromColor(
-      scheme.onSurface,
-    ).withLightness(0.6).toColor();
+    final lineColor = context.ink.muted;
+    final dotColor = context.ink.muted;
     return LineChartBarData(
       spots: spots,
       isCurved: true,
@@ -952,7 +980,7 @@ class _OverviewChartState extends State<OverviewChart> {
     List<({double x, Meal meal})> markers,
     ProfileGlucoseState glucose,
   ) {
-    final scheme = Theme.of(context).colorScheme;
+    final ink = context.ink;
     return LineChartBarData(
       spots: [
         for (final marker in markers)
@@ -964,9 +992,9 @@ class _OverviewChartState extends State<OverviewChart> {
         show: true,
         getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
           radius: 5,
-          color: scheme.onSurfaceVariant,
-          strokeColor: scheme.surface,
-          strokeWidth: 2,
+          color: ink.text,
+          strokeColor: ink.ground,
+          strokeWidth: 2.5,
         ),
       ),
     );
