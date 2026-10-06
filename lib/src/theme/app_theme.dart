@@ -61,6 +61,12 @@ class AppTheme {
       ),
       inputDecorationTheme: _inputTheme(tokens),
       bottomSheetTheme: _sheetTheme(tokens),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: tokens.accent,
+        foregroundColor: tokens.onAccent,
+        shape: const CircleBorder(),
+        sizeConstraints: const BoxConstraints.tightFor(width: 62, height: 62),
+      ),
       popupMenuTheme: PopupMenuThemeData(
         color: raised,
         elevation: 3,

@@ -125,6 +125,12 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 | 11 | Pumpe.dc.html | Pumpen-Detail |
 | 12 | Health.dc.html | Google Health |
 | 13 | Schlaf.dc.html | Schlaf-Detail |
+| 14 | Herz.dc.html | Herzfrequenz |
+| 15 | Gewicht.dc.html | Gewicht |
+| 16–21 | Analyse*.dc.html | Analyse-Tab: Bereiche, Muster, Kennwerte, Verlauf, Ereignisse, Prognose |
+| 22 | Inventar.dc.html | Inventar (Liste) |
+| 23 | InventarEdit.dc.html | Inventar-Artikel bearbeiten |
+| 24 | Verbindungen.dc.html | Verbindungen |
 
 ### Bolusrechner (Sheet)
 - Sheet in panel, Radius 28 oben, Griff 40 × 5. Kopf: Titel 24/800 links, runder Schließen-Button rechts.
@@ -184,6 +190,36 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 - Schlafphasen: ein Hypnogramm (Zeilen Wach/REM/Leicht/Tief, Phasen als Blöcke 16 px, dünne Verbindungslinien zwischen Wechseln, Uhrzeiten unten). Darunter, durch eine Linie getrennt, eine Liste **ohne Boxen**: je Phase eine Zeile mit Farbpunkt + Name (15), Anteilsbalken 6 px in der Phasenfarbe, Dauer fett rechts. Farben: Tief #8C7BFF, Leicht #5BC0F8, REM #2ED8B6, Wach = low.
 - Entwicklung: Segment-Schalter 7 T / 30 T / 90 T / 1 J / Alle + Kalender-Button. Balkendiagramm in Stunden, gestrichelte Durchschnittslinie, letzter Balken voll accent.
 - Verlauf: Liste in einem Panel mit Datum, Mini-Balken der Dauer und Dauer fett. „Mehr anzeigen“.
+
+
+### Analyse-Tab
+- Kopfzeile mit den drei Header-Buttons, darunter Seitentitel „Analyse“ (30/800).
+- Unterbereiche als **horizontal scrollbare Pillen-Reihe** (Bereiche, Muster, Kennwerte, Verlauf, Ereignisse, Prognose) statt 2 × 3-Raster. Aktive Pille hell (text-Farbe) mit dunkler Schrift, inaktive panel mit muted Schrift.
+- Darunter Zeitraum-Segment-Schalter 1 T / 3 T / 7 T / 30 T / 90 T + Kalender-Button (gleich wie Schlaf/Gewicht).
+- **Bereiche:** ein Panel: „91 % im Zielbereich“ groß, darunter links vertikaler gestapelter Balken (28 px, Segmente mit 3-px-Lücken), rechts Liste der fünf Bereiche (Farbpunkt, Name 15/700, Bereich 12 muted, Prozent rechts), Trennlinien dazwischen.
+- **Muster:** Abschnittskopf mit Untertitel. Panel mit AGP-Diagramm: Zielbereich leicht hinterlegt, Grenzen gestrichelt, Streuung als accent-Fläche 16 %, Median weiße Linie. Legende darunter.
+- **Kennwerte / Prognose-Werte:** ein Panel mit 2-Spalten-Raster, Zellen durch 1-px-Linien getrennt (keine Einzelkarten). Label 13 muted, Wert 28/800, Einheit klein.
+- **Verlauf:** Panel mit Tagesdurchschnitt als Linie mit Punkten und Streuungsband, Wochentage als X-Achse.
+- **Ereignisse:** oben zwei Zähler (Unterzucker / Überzucker), darunter Liste in einem Panel: Icon-Kreis (low/high getönt, Pfeil), Titel, Wert in Bereichsfarbe, rechts Datum relativ + Uhrzeit.
+- **Prognose:** zusätzlicher Segment-Schalter 30 min / 60 min, Kennwert-Raster, Diagramm „Gemessen“ (weiß) vs. „Prognose“ (accent) mit Legende.
+
+### Herzfrequenz
+- Kopf mit Einstellungs-Icon. Aktueller Wert groß mit Herz-Icon im getönten Kreis.
+- Datums-Navigation, dann Zeile Ø Tag / Min / Max in einem Panel mit vertikalen Trennlinien.
+- Segment-Schalter 24 h / 12 h / 6 h, Diagramm im Panel ohne Flächenfüllung; Linie in accent (#9DAEFF), Werte über 100 bpm in Violett (#C9A7FF), Schwelle gestrichelt in derselben Farbe. Bewusst **kein Rot/Gelb**, damit erhöhter Puls nicht als Warnung wirkt. Herz-Icon in accent auf accentSoft.
+
+### Gewicht
+- Oben ohne Karte: Wert 56/800 + kg, Änderungs-Chip rechts (grün ↓ / gelb ↑), darunter BMI-Pill.
+- Min / Ø / Max wie bei Herzfrequenz. Segment-Schalter + Kalender. Liniendiagramm mit gestrichelter Durchschnittslinie.
+- Verlauf als Liste in einem Panel: Gewicht fett, Datum relativ, Änderungs-Chip, Löschen-Icon. „+“ als runder FAB unten rechts.
+
+### Inventar
+- Je Artikel eine Karte: Name 17/700, rechts Stepper (− Zahl +) in ground-Pille, darunter Bestandsbalken, Zeile „x von y Stück“ + „noch n Tage“, darunter „Reicht bis …“ fett und ggf. Hinweis (z. B. Überschuss).
+- Bearbeiten: Felder mit Label darüber (panel, Radius 16), Bestand/Grundbestand und Typ/Sensor-Typ jeweils zweispaltig. Lieferungen als Liste in einem Panel (LKW-Icon, Datum, „+18“-Pill, ×). Löschen-Icon rot in der Kopfzeile, „Speichern“ als Primärbutton unten.
+
+### Verbindungen
+- Oben Gesamtstatus ohne Karte: grüner Haken im getönten Kreis, „Alles verbunden“ (20/800), darunter „3 von 3 Verbindungen aktiv“. Bei Problemen entsprechend „1 Verbindung braucht Aufmerksamkeit“ mit high/low-Farbe.
+- Je Verbindung eine schlichte Karte (Radius 22): Icon-Kreis 48 px mit Statuspunkt unten rechts, Name 17/700, darunter nur der Gerätename (14, muted: „Dexcom G7“, „Omnipod DASH“, „Fitbit Air“), Chevron. Der Verbindungsstatus steckt im Statuspunkt, kein „verbunden“-Text. Keine weiteren Kennzahlen.
 
 ### Google Health
 - Gerätekopf „Verbunden“, Panel „Letzte Werte“ (Schlüssel/Wert), darunter rote Zeile „Verbindung trennen“.

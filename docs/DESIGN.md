@@ -98,6 +98,13 @@ before drawing a new bar or button.
 | `DeviceHead` | `base/device_head.dart` | Device page top: 56 px disc, name 24/800, status line with a dot |
 | `NoticeBanner` | `base/notice_banner.dart` | Soft danger or warning strip, optional pill that ends what it reports |
 | `DangerActionButton` | `base/action_buttons.dart` | Soft danger fill, label in the danger colour; never an outline |
+| `PillScrollRow` | `base/pill_scroll_row.dart` | Horizontally scrolling pills, the lit one light with dark writing (analysis areas) |
+| `StepperPill` | `base/stepper_pill.dart` | "− n +" with round 44 px buttons in a page-colour pill (inventory stock) |
+| `MetricGrid` | `base/metric_grid.dart` | Figures two per row in one panel, cells parted by 1 px lines |
+| `StatStrip` | `base/stat_strip.dart` | Ø / Min / Max side by side in one panel with vertical lines |
+| `ChangeChip` | `base/change_chip.dart` | Change since the entry before: green ↓, amber ↑ |
+| `LabeledField` | `base/labeled_field.dart` | Label above a field filled with the panel colour, for forms on the page |
+| `StatusIcon` | `base/status_icon.dart` | Device glyph in a 48 px disc with a status dot at its lower right |
 | `FloatingDock` | `base/floating_dock.dart` | Tab capsule plus the round bolus button |
 | `DockTabs` | `base/dock_tabs.dart` | The tabs in the capsule: one pill that springs between them and follows a horizontal drag |
 | `TabTransition` | `base/tab_transition.dart` | Fade plus a short slide from the tab's side on every tab change |
