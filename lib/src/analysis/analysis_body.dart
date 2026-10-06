@@ -9,6 +9,9 @@ import 'package:insulink/src/analysis/history/glucose_history_view.dart';
 import 'package:insulink/src/analysis/patterns/patterns_view.dart';
 import 'package:insulink/src/analysis/range_selector.dart';
 import 'package:insulink/src/analysis/ranges/time_in_range_view.dart';
+import 'package:insulink/src/base/pill_scroll_row.dart';
+import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 class AnalysisBody extends AppPageBody {
   AnalysisBody({super.key})
@@ -45,38 +48,34 @@ class AnalysisBodyContent extends StatelessWidget {
     _AnalysisTab('analysis.tab.forecast', ForecastAccuracyView()),
   ];
 
+  /// The page title, the analyses as a scrolling row of pills, the window
+  /// picker, and the selected analysis. The pills drive the same tab
+  /// controller the views swipe with.
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return DefaultTabController(
       length: _tabs.length,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // App-style segmented pill selector (mirrors the overview chart's
-          // range selector): rounded track + a filled primary pill behind the
-          // active tab. Two rows so the tabs fit without overflowing.
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.dividerColor),
-              ),
-              child: _TwoRowTabs(
-                labels: [
-                  for (final t in _tabs) Locales.string(context, t.labelKey),
-                ],
-              ),
+            padding: const EdgeInsets.fromLTRB(
+              InkSpace.page,
+              4,
+              InkSpace.page,
+              14,
+            ),
+            child: LocaleText(
+              'analysis.label',
+              style: InkText.bigValue.copyWith(fontSize: 30),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 4),
-            child: AnalysisRangeSelector(),
-          ),
+          const _AnalysisPills(tabs: _tabs),
+          const SizedBox(height: 12),
+          const AnalysisRangeSelector(),
+          const SizedBox(height: 4),
           Expanded(
-            child: TabBarView(children: [for (final t in _tabs) t.view]),
+            child: TabBarView(children: [for (final tab in _tabs) tab.view]),
           ),
         ],
       ),
@@ -84,79 +83,28 @@ class AnalysisBodyContent extends StatelessWidget {
   }
 }
 
-/// The tab selector as two rows of pill segments (half the tabs each) driving
-/// the surrounding [TabController] — so they fit without a scrolling or
-/// overflowing single row. The active segment gets the filled primary pill.
-class _TwoRowTabs extends StatelessWidget {
-  const _TwoRowTabs({required this.labels});
+/// The analyses as [PillScrollRow] pills, kept in step with the tab
+/// controller both ways: a tap animates to the view, a swipe lights the pill.
+class _AnalysisPills extends StatelessWidget {
+  const _AnalysisPills({required this.tabs});
 
-  final List<String> labels;
+  final List<_AnalysisTab> tabs;
 
   @override
   Widget build(BuildContext context) {
     final controller = DefaultTabController.of(context);
-    final split = (labels.length / 2).ceil();
     return AnimatedBuilder(
       animation: controller,
-      builder: (context, _) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _row(context, controller, 0, split),
-            const SizedBox(height: 4),
-            _row(context, controller, split, labels.length),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _row(
-    BuildContext context,
-    TabController controller,
-    int start,
-    int end,
-  ) {
-    return Row(
-      children: [
-        for (var index = start; index < end; index++)
-          Expanded(child: _segment(context, controller, index)),
-      ],
-    );
-  }
-
-  Widget _segment(BuildContext context, TabController controller, int index) {
-    final theme = Theme.of(context);
-    final selected = controller.index == index;
-    return Padding(
-      padding: const EdgeInsets.all(2),
-      child: GestureDetector(
-        onTap: () => controller.animateTo(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? theme.colorScheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          // Scaled down rather than clipped: a row holds four tabs since the
-          // forecast one was added, and the longest German labels no longer fit
-          // a quarter of a narrow screen at full size.
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              labels[index],
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: selected ? FontWeight.bold : FontWeight.w600,
-                color: selected
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurface,
-              ),
+      builder: (context, _) => PillScrollRow<int>(
+        selected: controller.index,
+        onChanged: controller.animateTo,
+        options: [
+          for (var index = 0; index < tabs.length; index++)
+            (
+              value: index,
+              label: Locales.string(context, tabs[index].labelKey),
             ),
-          ),
-        ),
+        ],
       ),
     );
   }

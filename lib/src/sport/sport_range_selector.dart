@@ -97,9 +97,14 @@ class SportRangeSelector extends StatelessWidget {
 
   Widget _caption(BuildContext context, DateTimeRange range) {
     final locale = MaterialLocalizations.of(context);
-    final label =
-        '${locale.formatShortDate(range.start)} – '
-        '${locale.formatShortDate(range.end)}';
+    final label = Locales.string(
+      context,
+      'date.range',
+      params: [
+        locale.formatShortDate(range.start),
+        locale.formatShortDate(range.end),
+      ],
+    );
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Text(

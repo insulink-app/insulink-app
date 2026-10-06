@@ -17,6 +17,7 @@ class GlucoseYLabels extends StatelessWidget {
     required this.stripWidth,
     required this.bottomInset,
     required this.format,
+    this.leading = false,
   });
 
   /// In display units; values outside [minY]..[maxY] are left out.
@@ -32,6 +33,9 @@ class GlucoseYLabels extends StatelessWidget {
 
   final String Function(double value) format;
 
+  /// The strip sits at the left of the plot instead of the right.
+  final bool leading;
+
   static const double _lineHeight = 16;
 
   @override
@@ -45,14 +49,15 @@ class GlucoseYLabels extends StatelessWidget {
             for (final value in values)
               if (value >= minY && value <= maxY && maxY > minY)
                 Positioned(
-                  right: 0,
+                  left: leading ? 0 : null,
+                  right: leading ? null : 0,
                   width: stripWidth,
                   top:
                       (maxY - value) / (maxY - minY) * plotHeight -
                       _lineHeight / 2,
                   height: _lineHeight,
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 6),
+                    padding: EdgeInsets.only(left: leading ? 0 : 6),
                     child: Text(format(value), style: style, maxLines: 1),
                   ),
                 ),

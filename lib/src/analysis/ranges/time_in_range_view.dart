@@ -7,10 +7,12 @@ import 'package:insulink/src/analysis/ranges/glucose_band.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
-/// Dexcom-style "time in ranges": a single vertical stacked bar whose segments
-/// are sized by the share of readings in each glucose band, with the band name,
-/// its bounds and the percentage listed to the right.
+/// How the window split into the five glucose bands, in one panel: the
+/// in-range share large on top, a vertical stacked bar on the left, and the
+/// bands as rows with their bounds and share on the right.
 class TimeInRangeView extends StatelessWidget {
   const TimeInRangeView({super.key});
 
@@ -33,34 +35,75 @@ class TimeInRangeView extends StatelessWidget {
       glucose: glucose,
       colors: colors,
     ).build();
-
-    // Sits near the top (not stretched over the whole page) and is centred
-    // horizontally with a comfortable max width on wider screens.
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 28, 28, 16),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: SizedBox(
-            height: 260,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _StackedBar(bands: bands),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: _Legend(bands: bands, unitLabel: glucose.unit.label),
-                ),
-              ],
+      padding: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        8,
+        InkSpace.panelMargin,
+        120,
+      ),
+      child: InkPanel(
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _headline(context, bands),
+            const SizedBox(height: 18),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 20,
+                children: [
+                  _StackedBar(bands: bands),
+                  Expanded(
+                    child: _Legend(bands: bands, unitLabel: glucose.unit.label),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
+
+  /// "91 % im Zielbereich".
+  Widget _headline(BuildContext context, List<GlucoseBand> bands) {
+    final inRange = bands.firstWhere(
+      (band) => band.labelKey == 'analysis.range.in_range',
+    );
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      spacing: 12,
+      children: [
+        Text(
+          inRange.spacedPercent,
+          style: InkText.bigValue.copyWith(fontSize: 48),
+        ),
+        Flexible(
+          child: LocaleText(
+            'analysis.range.in_range_share',
+            style: InkText.label.copyWith(
+              fontSize: 15,
+              color: context.ink.muted,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-/// The single stacked bar — one coloured segment per band, sized by share.
+/// The share as the page writes it.
+extension _SpacedPercent on GlucoseBand {
+  /// "<1%" as "< 1 %", "4%" as "4 %": German spacing around the signs.
+  String get spacedPercent =>
+      pctLabel.replaceFirst('<', '< ').replaceFirst('%', ' %');
+}
+
+/// The bands as one 28 px column of segments with 3 px gaps, each as tall as
+/// its share; a non-empty band keeps at least a sliver.
 class _StackedBar extends StatelessWidget {
   const _StackedBar({required this.bands});
 
@@ -68,29 +111,32 @@ class _StackedBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shown = [
+      for (final band in bands)
+        if (band.fraction > 0) band,
+    ];
     return SizedBox(
-      width: 56,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          children: [
-            for (final band in bands)
-              if (band.fraction > 0)
-                Expanded(
-                  // Per-mille flex keeps the proportions; clamp to 1 so a tiny
-                  // but non-zero band stays visible as a sliver.
-                  flex: (band.fraction * 1000).round().clamp(1, 1000),
-                  child: Container(color: band.color),
+      width: 28,
+      child: Column(
+        spacing: 3,
+        children: [
+          for (final band in shown)
+            Expanded(
+              flex: (band.fraction * 1000).round().clamp(8, 1000),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: band.color,
+                  borderRadius: BorderRadius.circular(5),
                 ),
-          ],
-        ),
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
-/// The right-hand legend: band name + bounds + percentage, one row per band,
-/// spread over the full height so each roughly tracks its bar segment.
+/// The bands as rows parted by thin lines: colour dot, name over bounds, share.
 class _Legend extends StatelessWidget {
   const _Legend({required this.bands, required this.unitLabel});
 
@@ -99,53 +145,55 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final line = context.ink.line;
     return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [for (final band in bands) _row(context, band)],
+      children: [
+        for (var index = 0; index < bands.length; index++) ...[
+          if (index > 0) Divider(height: 1, thickness: 1, color: line),
+          _row(context, bands[index]),
+        ],
+      ],
     );
   }
 
   Widget _row(BuildContext context, GlucoseBand band) {
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: band.color,
-            borderRadius: BorderRadius.circular(3),
+    final colors = context.ink;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        spacing: 14,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: band.color,
+              shape: BoxShape.circle,
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(child: _labels(context, band)),
-        const SizedBox(width: 8),
-        Text(
-          band.pctLabel,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-
-  Widget _labels(BuildContext context, GlucoseBand band) {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        LocaleText(
-          band.labelKey,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        Text(
-          '${band.rangeLabel} $unitLabel',
-          style: TextStyle(
-            fontSize: 11,
-            color: scheme.onSurface.withValues(alpha: 0.5),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 3,
+              children: [
+                LocaleText(band.labelKey, style: InkText.row),
+                Text(
+                  '${band.rangeLabel} $unitLabel',
+                  style: InkText.caption.copyWith(color: colors.muted),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          Text(
+            band.spacedPercent,
+            style: InkText.rowTitle.copyWith(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

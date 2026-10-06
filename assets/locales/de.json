@@ -4,6 +4,7 @@
     "yesterday": "Gestern",
     "previous_day": "Vorheriger Tag",
     "next_day": "Nächster Tag",
+    "range": "# bis #",
     "weekday": {
       "1": "Mo",
       "2": "Di",
@@ -210,6 +211,8 @@
     "empty": "Noch keine Glukosedaten",
     "events": {
       "empty": "Noch keine Ereignisse",
+      "count_low": "Unterzucker",
+      "count_high": "Überzucker",
       "type": {
         "glucose_low": "Unterzucker",
         "glucose_low_urgent": "Akuter Unterzucker",
@@ -237,12 +240,23 @@
     },
     "patterns": {
       "title": "Ø nach Tageszeit",
-      "hint": "Durchschnittliche Glukose je Stunde des Tages"
+      "hint": "Durchschnittliche Glukose je Stunde des Tages",
+      "mean": "Ø",
+      "spread": "Streuung"
+    },
+    "history_chart": {
+      "title_hour": "Stundendurchschnitt",
+      "title_day": "Tagesdurchschnitt",
+      "title_month": "Monatsdurchschnitt",
+      "hint_hour": "Ø Glukose je Stunde mit Streuung",
+      "hint_day": "Ø Glukose je Tag mit Streuung",
+      "hint_month": "Ø Glukose je Monat mit Streuung"
     },
     "range": {
       "very_high": "Sehr hoch",
       "high": "Hoch",
       "in_range": "Im Zielbereich",
+      "in_range_share": "im Zielbereich",
       "low": "Niedrig",
       "very_low": "Sehr niedrig"
     },
@@ -257,6 +271,8 @@
       "coverage": "Im Band",
       "empty": "Noch keine Bewertung möglich",
       "empty_hint": "Sobald ein Modell für dich trainiert ist und Messwerte vorliegen, wird die Vorhersage hier bewertet.",
+      "measured": "Gemessen",
+      "predicted": "Prognose",
       "hint": "Skill-Score über 0 heißt: besser als die Annahme, dass der Wert bleibt, wo er ist. Bewertet wird das Modell auf Daten, mit denen es auch trainiert wurde. Die Werte fallen daher eher zu gut aus.",
       "unmatched": "Noch keine Messwerte zum Abgleich",
       "unmatched_hint": "Es liegen Vorhersagen vor, aber für ihren Zeitpunkt keine Messwerte auf diesem Gerät."

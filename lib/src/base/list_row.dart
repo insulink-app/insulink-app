@@ -20,6 +20,8 @@ class ListRow extends StatelessWidget {
     this.trailing,
     this.tone = ListRowTone.accent,
     this.onTap,
+    this.glyphColor,
+    this.subtitleColor,
   });
 
   final IconData icon;
@@ -28,6 +30,12 @@ class ListRow extends StatelessWidget {
   final Widget? trailing;
   final ListRowTone tone;
   final VoidCallback? onTap;
+
+  /// Overrides the tone's colour for the disc, e.g. a glucose zone colour.
+  final Color? glyphColor;
+
+  /// Overrides the muted subtitle, e.g. a value in its zone colour.
+  final Color? subtitleColor;
 
   @override
   Widget build(BuildContext context) {
@@ -51,11 +59,13 @@ class ListRow extends StatelessWidget {
     );
   }
 
-  Color _glyphColor(InsulinkColors colors) => switch (tone) {
-    ListRowTone.accent => colors.accent,
-    ListRowTone.neutral => colors.text,
-    ListRowTone.danger => colors.low,
-  };
+  Color _glyphColor(InsulinkColors colors) =>
+      glyphColor ??
+      switch (tone) {
+        ListRowTone.accent => colors.accent,
+        ListRowTone.neutral => colors.text,
+        ListRowTone.danger => colors.low,
+      };
 
   /// The disc is the glyph's own colour at 12 %, or the text colour at 6 % for
   /// a neutral row, so a red row is red all through.
@@ -87,7 +97,15 @@ class ListRow extends StatelessWidget {
           style: InkText.rowTitle.copyWith(color: titleColor),
         ),
         if (subtitle != null)
-          Text(subtitle!, style: InkText.label.copyWith(color: colors.muted)),
+          Text(
+            subtitle!,
+            style: subtitleColor == null
+                ? InkText.label.copyWith(color: colors.muted)
+                : InkText.label.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: subtitleColor,
+                  ),
+          ),
       ],
     );
   }

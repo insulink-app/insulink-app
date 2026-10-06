@@ -6,6 +6,12 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/list_row.dart';
+import 'package:insulink/src/base/relative_day.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Chronological log of notable events over the selected analysis window:
 /// glucose lows/highs, signal loss, and sensor swap/stop. Reads the store-backed
@@ -23,16 +29,89 @@ class EventLogView extends StatelessWidget {
         titleKey: 'analysis.events.empty',
       );
     }
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
-        child: ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-          itemCount: events.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (context, index) =>
-              _EventRow(event: events[index], glucose: glucose),
+    final colors = Theme.of(context).extension<GlucoseColors>()!;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        8,
+        InkSpace.panelMargin,
+        120,
+      ),
+      children: [
+        Row(
+          spacing: InkSpace.tileGap,
+          children: [
+            Expanded(
+              child: _Counter(
+                labelKey: 'analysis.events.count_low',
+                color: colors.low,
+                count: _count(events, 'glucose_low'),
+              ),
+            ),
+            Expanded(
+              child: _Counter(
+                labelKey: 'analysis.events.count_high',
+                color: colors.high,
+                count: _count(events, 'glucose_high'),
+              ),
+            ),
+          ],
         ),
+        const SizedBox(height: InkSpace.tileGap),
+        InkPanel.list(
+          rows: [
+            for (final event in events)
+              _EventRow(event: event, glucose: glucose),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Events of a kind, the urgent ones included ("glucose_low_urgent").
+  int _count(
+    List<({DateTime time, String type, int? value})> events,
+    String kind,
+  ) => events.where((event) => event.type.startsWith(kind)).length;
+}
+
+/// One count above the list: a dot in the zone colour, the kind, the number.
+class _Counter extends StatelessWidget {
+  const _Counter({
+    required this.labelKey,
+    required this.color,
+    required this.count,
+  });
+
+  final String labelKey;
+  final Color color;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.ink;
+    return InkPanel(
+      radius: InkRadius.tile,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Row(
+        spacing: 10,
+        children: [
+          Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          Expanded(
+            child: LocaleText(
+              labelKey,
+              style: InkText.body.copyWith(
+                fontWeight: FontWeight.w400,
+                color: colors.muted,
+              ),
+            ),
+          ),
+          Text('$count', style: InkText.bigValue.copyWith(fontSize: 22)),
+        ],
       ),
     );
   }
@@ -47,54 +126,20 @@ class _EventRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _EventStyle.of(event.type, context);
-    final scheme = Theme.of(context).colorScheme;
     final value = event.value;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: style.color.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(style.icon, color: style.color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                LocaleText(
-                  'analysis.events.type.${event.type}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                if (value != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatGlucose(value),
-                    style: TextStyle(fontSize: 13, color: style.color),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            _formatWhen(context, event.time),
-            style: TextStyle(
-              fontSize: 12,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
+    final time = MaterialLocalizations.of(context).formatTimeOfDay(
+      TimeOfDay.fromDateTime(event.time),
+      alwaysUse24HourFormat: true,
+    );
+    return ListRow(
+      icon: style.icon,
+      glyphColor: style.color,
+      title: Locales.string(context, 'analysis.events.type.${event.type}'),
+      subtitle: value == null ? null : _formatGlucose(value),
+      subtitleColor: style.color,
+      trailing: ListRowMeta(
+        date: RelativeDay(event.time).label(context),
+        time: time,
       ),
     );
   }
@@ -102,17 +147,9 @@ class _EventRow extends StatelessWidget {
   /// The triggering glucose value in the user's display unit (e.g. "62 mg/dL").
   String _formatGlucose(int mgdl) {
     final shown = glucose.unit == GlucoseUnit.mmol
-        ? glucose.toDisplay(mgdl).toStringAsFixed(1)
+        ? sportDecimal(glucose.toDisplay(mgdl), 1)
         : '$mgdl';
     return '$shown ${glucose.unit.label}';
-  }
-
-  /// "DD.MM.  HH:MM" in the platform locale's formats.
-  String _formatWhen(BuildContext context, DateTime time) {
-    final locale = MaterialLocalizations.of(context);
-    final date = locale.formatShortDate(time);
-    final clock = locale.formatTimeOfDay(TimeOfDay.fromDateTime(time));
-    return '$date  $clock';
   }
 }
 
@@ -134,7 +171,10 @@ class _EventStyle {
       case 'glucose_high_urgent':
         return _EventStyle(PhosphorIconsBold.arrowUp, colors.high);
       case 'signal_loss':
-        return _EventStyle(PhosphorIconsBold.wifiSlash, scheme.onSurface);
+        return _EventStyle(
+          PhosphorIconsBold.wifiSlash,
+          scheme.onSurfaceVariant,
+        );
       case 'new_sensor':
         return _EventStyle(PhosphorIconsBold.plusCircle, colors.inRange);
       case 'sensor_stopped':

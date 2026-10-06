@@ -4,6 +4,7 @@
     "yesterday": "Yesterday",
     "previous_day": "Previous day",
     "next_day": "Next day",
+    "range": "# to #",
     "weekday": {
       "1": "Mon",
       "2": "Tue",
@@ -210,6 +211,8 @@
     "empty": "No glucose data yet",
     "events": {
       "empty": "No events yet",
+      "count_low": "Lows",
+      "count_high": "Highs",
       "type": {
         "glucose_low": "Low glucose",
         "glucose_low_urgent": "Urgent low glucose",
@@ -237,12 +240,23 @@
     },
     "patterns": {
       "title": "Average by time of day",
-      "hint": "Mean glucose for each hour of the day"
+      "hint": "Mean glucose for each hour of the day",
+      "mean": "Ø",
+      "spread": "Spread"
+    },
+    "history_chart": {
+      "title_hour": "Hourly average",
+      "title_day": "Daily average",
+      "title_month": "Monthly average",
+      "hint_hour": "Ø glucose per hour with spread",
+      "hint_day": "Ø glucose per day with spread",
+      "hint_month": "Ø glucose per month with spread"
     },
     "range": {
       "very_high": "Very High",
       "high": "High",
       "in_range": "In Range",
+      "in_range_share": "in range",
       "low": "Low",
       "very_low": "Very Low"
     },
@@ -257,6 +271,8 @@
       "coverage": "Inside band",
       "empty": "Nothing to score yet",
       "empty_hint": "Once a model has been trained for you and readings have come in, the forecast is scored here.",
+      "measured": "Measured",
+      "predicted": "Forecast",
       "hint": "A skill score above 0 means better than assuming glucose stays where it is. The model is scored on data it was also trained on, so these numbers flatter it.",
       "unmatched": "No readings to compare against",
       "unmatched_hint": "Forecasts came back, but this device holds no readings for the times they were made for."
