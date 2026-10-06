@@ -45,7 +45,7 @@ class _PodLoopModeCardState extends State<PodLoopModeCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _header(context),
+          _header(context, mode),
           const SizedBox(height: 14),
           SegmentedToggle<PodLoopMode>(
             semanticsLabel: Locales.string(context, 'pump.loop.title'),
@@ -64,11 +64,6 @@ class _PodLoopModeCardState extends State<PodLoopModeCard> {
                 ),
             ],
           ),
-          const SizedBox(height: 10),
-          LocaleText(
-            'pump.loop.hint.${mode.name}',
-            style: InkText.caption.copyWith(color: context.ink.muted),
-          ),
           ..._stoppedNotice(context, controller),
           ..._blockedNotice(context),
         ],
@@ -77,8 +72,9 @@ class _PodLoopModeCardState extends State<PodLoopModeCard> {
   }
 
   /// The title over what the automation last decided; a tap opens the journal
-  /// that line comes from.
-  Widget _header(BuildContext context) {
+  /// that line comes from. What the current mode does sits behind an info glyph
+  /// beside the title rather than as a paragraph on the page.
+  Widget _header(BuildContext context, PodLoopMode mode) {
     return InkWell(
       onTap: () => PodLoopJournalPage.open(context),
       borderRadius: BorderRadius.circular(12),
@@ -90,7 +86,12 @@ class _PodLoopModeCardState extends State<PodLoopModeCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 3,
               children: [
-                LocaleText('pump.loop.title', style: InkText.row),
+                Row(
+                  children: [
+                    LocaleText('pump.loop.title', style: InkText.row),
+                    _modeInfo(context, mode),
+                  ],
+                ),
                 const PodLoopCycleLine(),
               ],
             ),
@@ -101,6 +102,24 @@ class _PodLoopModeCardState extends State<PodLoopModeCard> {
             color: context.ink.muted,
           ),
         ],
+      ),
+    );
+  }
+
+  /// A tap shows what the selected mode does, for a while, then lets it go.
+  Widget _modeInfo(BuildContext context, PodLoopMode mode) {
+    return Tooltip(
+      message: Locales.string(context, 'pump.loop.hint.${mode.name}'),
+      triggerMode: TooltipTriggerMode.tap,
+      showDuration: const Duration(seconds: 8),
+      preferBelow: true,
+      child: SizedBox.square(
+        dimension: InkSpace.minTouch,
+        child: Icon(
+          PhosphorIconsRegular.info,
+          size: 18,
+          color: context.ink.muted,
+        ),
       ),
     );
   }
