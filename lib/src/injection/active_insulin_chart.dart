@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 
 /// Graphs how the active insulin (IOB) rises at each bolus and decays away — the
 /// sampled [curve] from [ActiveInsulin], with a marker on where "now" sits so the
@@ -119,7 +120,7 @@ class ActiveInsulinChart extends StatelessWidget {
             Locales.string(
               context,
               'injection.bolus.value',
-              params: [value.toStringAsFixed(1)],
+              params: [sportDecimal(value, 1)],
             ),
           ),
         ),

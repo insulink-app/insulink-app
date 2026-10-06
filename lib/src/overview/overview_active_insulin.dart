@@ -14,6 +14,7 @@ import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 
 /// The insulin summary on the overview: the units still working from recent
 /// boluses as the headline, the IOB curve underneath as a sparkline, and one
@@ -182,6 +183,6 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
   String _units(BuildContext context, double units) => Locales.string(
     context,
     'injection.bolus.value',
-    params: [units.toStringAsFixed(1)],
+    params: [sportDecimal(units, 1)],
   );
 }

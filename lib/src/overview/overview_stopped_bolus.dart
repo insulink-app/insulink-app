@@ -4,6 +4,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/overview_notice.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 
 /// What became of a bolus that did not simply run its course: one the user
 /// stopped, one the pod refused, or one whose fate the app cannot establish.
@@ -45,8 +46,8 @@ class StoppedBolusNotice extends StatelessWidget {
     final stopped = controller.cancelledBolus;
     if (stopped != null) {
       return Locales.string(context, 'pump.bolus.stopped')
-          .replaceFirst('#', stopped.given.toStringAsFixed(2))
-          .replaceFirst('#', stopped.programmed.toStringAsFixed(2));
+          .replaceFirst('#', sportDecimal(stopped.given, 2))
+          .replaceFirst('#', sportDecimal(stopped.programmed, 2));
     }
     final failure = dispatcher.failure;
     if (failure == null) {
