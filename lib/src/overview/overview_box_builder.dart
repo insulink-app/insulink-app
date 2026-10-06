@@ -6,12 +6,12 @@ import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_tile_builder.dart';
 import 'package:insulink/src/overview/overview_box.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
-import 'package:insulink/src/sport/activity/sport_summary_tile.dart';
+import 'package:insulink/src/base/stat_tile.dart';
 import 'package:insulink/src/sport/activity/today_tile_builder.dart';
 import 'package:insulink/src/sport/sport_state.dart';
 import 'package:provider/provider.dart';
 
-/// Builds the [SportSummaryTile] for an [OverviewBox], delegating to the Sport or
+/// Builds the [StatTile] for an [OverviewBox], delegating to the Sport or
 /// nutrition tile builder depending on the box's source — a box maps to its
 /// source by NAME, so there is no per-box wiring here at all.
 class OverviewBoxBuilder {
@@ -36,7 +36,7 @@ class OverviewBoxBuilder {
     ),
   );
 
-  SportSummaryTile build(BuildContext context, OverviewBox box) {
+  StatTile build(BuildContext context, OverviewBox box) {
     final todayTile = box.asTodayTile;
     return todayTile != null
         ? today.build(context, todayTile)

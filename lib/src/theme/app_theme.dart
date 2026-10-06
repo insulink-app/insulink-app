@@ -66,7 +66,10 @@ class AppTheme {
         elevation: 3,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      appBarTheme: AppBarTheme(backgroundColor: tokens.ground),
+      appBarTheme: AppBarTheme(
+        backgroundColor: tokens.ground,
+        titleTextStyle: InkText.pageTitle.copyWith(color: tokens.text),
+      ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: tokens.dock,
       ),

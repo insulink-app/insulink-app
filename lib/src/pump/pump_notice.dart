@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/notice_banner.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-
-/// How loudly a notice speaks: something went wrong, or something merely needs
-/// knowing.
-enum NoticeTone { danger, warning }
 
 /// A tinted line on the pump pages that stays until something replaces it.
 ///
@@ -55,32 +52,13 @@ class PumpNotice extends StatelessWidget {
   final IconData icon;
   final NoticeTone tone;
 
-  Color _accent(BuildContext context) =>
-      tone == NoticeTone.danger ? context.danger : context.warning;
-
   @override
   Widget build(BuildContext context) {
-    final accent = _accent(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accent.withValues(alpha: 0.24)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: accent),
-          const SizedBox(width: 8),
-          Expanded(child: _body(context, accent)),
-        ],
-      ),
-    );
+    return NoticeBanner(icon: icon, tone: tone, child: _body(context));
   }
 
-  Widget _body(BuildContext context, Color accent) {
-    final style = TextStyle(fontSize: 13, color: accent);
+  Widget _body(BuildContext context) {
+    final style = InkText.label.copyWith(color: context.ink.text);
     final key = textKey;
     if (key != null) {
       return LocaleText(key, style: style);

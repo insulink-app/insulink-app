@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/heartbeat_pulse.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// A single summary tile: glyph + label + big value (optional unit), tappable.
 /// Used in the Sport tab, the nutrition tab and on the overview.
-class SportSummaryTile extends StatelessWidget {
-  const SportSummaryTile({
+class StatTile extends StatelessWidget {
+  const StatTile({
     super.key,
     required this.icon,
     required this.labelKey,
@@ -44,7 +45,7 @@ class SportSummaryTile extends StatelessWidget {
       child: Material(
         color: colors.panel,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(InkRadius.tile),
           side: BorderSide(color: colors.border),
         ),
         clipBehavior: Clip.antiAlias,
@@ -57,7 +58,7 @@ class SportSummaryTile extends StatelessWidget {
               children: [
                 if (progress != null) _fill(colors),
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
                   child: Row(
                     spacing: 14,
                     children: [
@@ -74,19 +75,14 @@ class SportSummaryTile extends StatelessWidget {
     );
   }
 
-  /// The goal progress: a soft accent area from the left edge, closed by a
-  /// 2 px accent line where it ends.
+  /// The goal progress: a soft accent area from the left edge, without an edge
+  /// line where it ends, which would otherwise run through the text.
   Widget _fill(InsulinkColors colors) {
     return Positioned.fill(
       child: FractionallySizedBox(
-        alignment: Alignment.centerLeft,
+        alignment: AlignmentDirectional.centerStart,
         widthFactor: progress!.clamp(0.0, 1.0),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.accentSoft,
-            border: Border(right: BorderSide(color: colors.accent, width: 2)),
-          ),
-        ),
+        child: ColoredBox(color: colors.accentSoft),
       ),
     );
   }
@@ -100,7 +96,7 @@ class SportSummaryTile extends StatelessWidget {
   Widget _glyph(InsulinkColors colors) {
     Widget glyph = Icon(icon, size: 26, color: colors.accent);
     if (pulse) {
-      glyph = _HeartbeatBadge(child: glyph);
+      glyph = HeartbeatPulse(child: glyph);
     }
     return glyph;
   }
@@ -115,7 +111,7 @@ class SportSummaryTile extends StatelessWidget {
           Locales.string(context, labelKey),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 13, color: colors.muted),
+          style: InkText.caption.copyWith(color: colors.muted),
         ),
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -131,57 +127,10 @@ class SportSummaryTile extends StatelessWidget {
               ),
             ),
             if (unit != null)
-              Text(
-                unit!,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colors.muted,
-                ),
-              ),
+              Text(unit!, style: InkText.unit.copyWith(color: colors.muted)),
           ],
         ),
       ],
     );
-  }
-}
-
-/// Scales its child with a continuous double-thump heartbeat (the classic
-/// lub-dub), mimicking a pulse. Self-driving (repeats forever) — the parent shows
-/// it only while a live heart rate is streaming.
-class _HeartbeatBadge extends StatefulWidget {
-  const _HeartbeatBadge({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_HeartbeatBadge> createState() => _HeartbeatState();
-}
-
-class _HeartbeatState extends State<_HeartbeatBadge>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..repeat();
-
-  // Two quick thumps early in the cycle, then rest — the classic lub-dub.
-  late final Animation<double> _scale = TweenSequence<double>([
-    TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.18), weight: 12),
-    TweenSequenceItem(tween: Tween(begin: 1.18, end: 1.0), weight: 12),
-    TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.12), weight: 12),
-    TweenSequenceItem(tween: Tween(begin: 1.12, end: 1.0), weight: 12),
-    TweenSequenceItem(tween: ConstantTween(1.0), weight: 52),
-  ]).animate(_controller);
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(scale: _scale, child: widget.child);
   }
 }

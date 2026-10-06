@@ -8,7 +8,7 @@ import 'package:insulink/src/hba1c/hba1c_state.dart';
 import 'package:insulink/src/sport/activity/activity_detail_page.dart';
 import 'package:insulink/src/sport/activity/activity_estimate.dart';
 import 'package:insulink/src/sport/activity/sport_activity_state.dart';
-import 'package:insulink/src/sport/activity/sport_summary_tile.dart';
+import 'package:insulink/src/base/stat_tile.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
@@ -47,7 +47,7 @@ String todayTileLabelKey(TodayTile tile) => switch (tile) {
   TodayTile.hba1c => 'hba1c._',
 };
 
-/// Builds the [SportSummaryTile] for a Today box from the current sport + Google Health
+/// Builds the [StatTile] for a Today box from the current sport + Google Health
 /// state: value, unit, and the tap target for the tiles that have a detail page.
 class TodayTileBuilder {
   final SportActivityState activity;
@@ -66,11 +66,11 @@ class TodayTileBuilder {
   double get _calories =>
       activity.importedCalories ?? estimatedCalories(_distanceKm, _weightKg);
 
-  SportSummaryTile build(BuildContext context, TodayTile tile) {
+  StatTile build(BuildContext context, TodayTile tile) {
     final icon = todayTileIcon(tile);
     final label = todayTileLabelKey(tile);
     if (tile.isGoogleHealth && !health.connected) {
-      return SportSummaryTile(
+      return StatTile(
         icon: icon,
         labelKey: label,
         value: '–',
@@ -79,7 +79,7 @@ class TodayTileBuilder {
     }
     switch (tile) {
       case TodayTile.steps:
-        return SportSummaryTile(
+        return StatTile(
           icon: icon,
           labelKey: label,
           value: sportInt(activity.todaySteps),
@@ -87,7 +87,7 @@ class TodayTileBuilder {
           onTap: () => _detail(context, ActivityMetric.steps),
         );
       case TodayTile.distance:
-        return SportSummaryTile(
+        return StatTile(
           icon: icon,
           labelKey: label,
           value: sportDecimal(_distanceKm, 2),
@@ -96,7 +96,7 @@ class TodayTileBuilder {
           onTap: () => _detail(context, ActivityMetric.distance),
         );
       case TodayTile.calories:
-        return SportSummaryTile(
+        return StatTile(
           icon: icon,
           labelKey: label,
           value: sportInt(_calories.round()),
@@ -106,7 +106,7 @@ class TodayTileBuilder {
         );
       case TodayTile.weight:
         final weight = sport.latestWeight;
-        return SportSummaryTile(
+        return StatTile(
           icon: icon,
           labelKey: label,
           value: weight == null ? '–' : sportDecimal(weight.kg, 1),
@@ -125,7 +125,7 @@ class TodayTileBuilder {
           GoogleHealthMetric.restingHr,
         );
       case TodayTile.sleep:
-        return SportSummaryTile(
+        return StatTile(
           icon: icon,
           labelKey: label,
           value: formatSleepMinutes(health.lastSleepMinutes),
@@ -137,7 +137,7 @@ class TodayTileBuilder {
         // [latestHr]; [hasLiveHr] is the source-agnostic freshness flag.
         final live = health.hasLiveHr;
         final bpm = health.latestHr;
-        return SportSummaryTile(
+        return StatTile(
           icon: icon,
           labelKey: label,
           value: bpm == null ? '–' : sportInt(bpm),
@@ -164,13 +164,9 @@ class TodayTileBuilder {
   /// The newest lab result, or an em dash until one is entered — the box stays
   /// tappable either way, because an empty box that opens the page is how the
   /// user notes their first reading.
-  SportSummaryTile _hba1cTile(
-    BuildContext context,
-    IconData icon,
-    String label,
-  ) {
+  StatTile _hba1cTile(BuildContext context, IconData icon, String label) {
     final latest = hba1c.latest;
-    return SportSummaryTile(
+    return StatTile(
       icon: icon,
       labelKey: label,
       value: latest == null ? '–' : sportDecimal(latest.percent, 1),
@@ -181,7 +177,7 @@ class TodayTileBuilder {
     );
   }
 
-  SportSummaryTile _metric(
+  StatTile _metric(
     BuildContext context,
     IconData icon,
     String label,
@@ -189,7 +185,7 @@ class TodayTileBuilder {
     String unit,
     GoogleHealthMetric metric,
   ) {
-    return SportSummaryTile(
+    return StatTile(
       icon: icon,
       labelKey: label,
       value: value == null ? '–' : sportInt(value),

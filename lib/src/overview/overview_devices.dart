@@ -3,7 +3,7 @@ import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/overview_pod_life.dart';
-import 'package:insulink/src/overview/overview_section.dart';
+import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/overview/overview_sensor_life.dart';
 import 'package:insulink/src/pump/loop/loop_overview_line.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
@@ -33,7 +33,7 @@ class OverviewDevices extends StatelessWidget {
             style: InkText.section,
           ),
         ),
-        OverviewSection(
+        InkPanel(
           padding: EdgeInsets.fromLTRB(16, 16, 16, hasPod ? 2 : 16),
           child: _content(context, hasSensor, hasPod),
         ),

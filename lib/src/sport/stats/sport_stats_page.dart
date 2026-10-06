@@ -3,7 +3,7 @@ import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_leading_badge.dart';
-import 'package:insulink/src/sport/activity/sport_summary_tile.dart';
+import 'package:insulink/src/base/stat_tile.dart';
 import 'package:insulink/src/sport/stats/exercise_stat_detail_page.dart';
 import 'package:insulink/src/sport/stats/sport_stat_format.dart';
 import 'package:insulink/src/sport/stats/sport_stats.dart';
@@ -62,7 +62,7 @@ class _SportStatsPageState extends State<SportStatsPage> {
         Row(
           children: [
             Expanded(
-              child: SportSummaryTile(
+              child: StatTile(
                 icon: PhosphorIconsBold.barbell,
                 labelKey: 'sport.stats.total_sessions',
                 value: '${stats.totalSessions}',
@@ -70,7 +70,7 @@ class _SportStatsPageState extends State<SportStatsPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: SportSummaryTile(
+              child: StatTile(
                 icon: PhosphorIconsBold.listChecks,
                 labelKey: 'sport.stats.total_sets',
                 value: '${stats.totalSets}',
@@ -82,7 +82,7 @@ class _SportStatsPageState extends State<SportStatsPage> {
         Row(
           children: [
             Expanded(
-              child: SportSummaryTile(
+              child: StatTile(
                 icon: PhosphorIconsBold.repeat,
                 labelKey: 'sport.stats.total_reps',
                 value: '${stats.totalReps}',
@@ -90,7 +90,7 @@ class _SportStatsPageState extends State<SportStatsPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: SportSummaryTile(
+              child: StatTile(
                 icon: PhosphorIconsBold.timer,
                 labelKey: 'sport.stats.total_time',
                 value: '${stats.totalTrainingMinutes}',

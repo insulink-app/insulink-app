@@ -3,7 +3,7 @@ import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/cgm/sensor_sync.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/overview/overview_section.dart';
+import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/sensor/info/sensor_format.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -35,7 +35,7 @@ class SensorRestoreCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
-        OverviewSection(
+        InkPanel(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

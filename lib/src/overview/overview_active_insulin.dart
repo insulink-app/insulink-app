@@ -10,7 +10,7 @@ import 'package:insulink/src/injection/active_insulin_page.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
-import 'package:insulink/src/overview/overview_section.dart';
+import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:provider/provider.dart';
@@ -87,9 +87,7 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const ActiveInsulinPage()),
           ),
-          child: OverviewSection(
-            child: _content(context, parts, insulin, meals),
-          ),
+          child: InkPanel(child: _content(context, parts, insulin, meals)),
         ),
         const SizedBox(height: 16),
       ],

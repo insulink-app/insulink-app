@@ -87,7 +87,16 @@ before drawing a new bar or button.
 | Widget | File | What it is |
 |---|---|---|
 | `SegmentBar` | `base/segment_bar.dart` | Rounded segments with gaps: range scale, time in range, device days (`.count`) |
-| `HeaderIconButton` | `base/header_icon_button.dart` | 44 px round header button, optional status dot ringed in `ground` |
+| `HeaderIconButton` | `base/header_icon_button.dart` | 44 px round header button, optional status dot ringed in `ground`; `.plain` without a face for section headers and page bars |
+| `SectionHeader` | `base/section_header.dart` | Section title 18/700 in sentence case, plain controls on the right, 28 px above |
+| `InkPanel` | `base/ink_panel.dart` | Panel with radius 20 and a faint rim; `.list` stacks rows with 1 px lines between them |
+| `ListRow` / `ListRowMeta` | `base/list_row.dart` | 68 px row: icon disc (accent, neutral or danger), title and subtitle, date over time |
+| `KeyValueRow` | `base/key_value_row.dart` | Key muted left, value bold right |
+| `StatTile` | `base/stat_tile.dart` | The Today tiles: glyph, label, big value, goal progress as a soft area without an edge |
+| `SegmentedToggle` | `base/segmented_toggle.dart` | Pill track, active option in the accent; `.page` on the page, default inside a panel |
+| `DeviceHead` | `base/device_head.dart` | Device page top: 56 px disc, name 24/800, status line with a dot |
+| `NoticeBanner` | `base/notice_banner.dart` | Soft danger or warning strip, optional pill that ends what it reports |
+| `DangerActionButton` | `base/action_buttons.dart` | Soft danger fill, label in the danger colour; never an outline |
 | `FloatingDock` | `base/floating_dock.dart` | Tab capsule plus the round bolus button |
 | `DockTabs` | `base/dock_tabs.dart` | The tabs in the capsule: one pill that springs between them and follows a horizontal drag |
 | `TabTransition` | `base/tab_transition.dart` | Fade plus a short slide from the tab's side on every tab change |
@@ -187,7 +196,7 @@ those alone.
 |---|---|---|
 | Filled **circle**, neutral | The row's identity — never pressable | `SportLeadingBadge`, `EmptyState`, `FoodProductCard` |
 | Filled **circle**, `primary` | A control that happens to be round | `drink_add_row` quick-add (the `InkWell` wraps the circle itself) |
-| Bare glyph | Information, or a tile that is itself the control | `SportSummaryTile`, stat rows |
+| Bare glyph | Information, or a tile that is itself the control | `StatTile`, stat rows |
 | Filled **pill** + label | The obvious button: 54 px high, radius 27 (the theme sets both) | `FilledButton`, `cardio_section` start buttons |
 
 Two things were tried and **rejected** — don't reintroduce them:
@@ -195,7 +204,7 @@ Two things were tried and **rejected** — don't reintroduce them:
 - **Tinted square faces with rims on every `IconButton`** (via `iconButtonTheme`).
   It marks controls unambiguously and reads as clutter on app bars and dense rows.
   The theme now sets only the icon-button *colour*, no face.
-- **A badge inside `SportSummaryTile`.** That tile is already a control (tinted
+- **A badge inside `StatTile`.** That tile is already a control (tinted
   face, border, progress fill). A badge inside it is a second competing shape:
   filled it looked like a button parked on a button, neutral it punched a grey
   hole through the tint. The glyph goes bare there.

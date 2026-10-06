@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// A horizontal track with a coloured band between [startFraction] and
 /// [endFraction] (both 0..1). The shared primitive behind the glucose range bar
@@ -47,7 +48,7 @@ class TrackBar extends StatelessWidget {
   Widget _track(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
+        color: context.ink.line,
         borderRadius: BorderRadius.circular(height / 2),
       ),
     );

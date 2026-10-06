@@ -454,7 +454,7 @@ The load-bearing parts (regressing any of these is a visible bug):
 - **Shape says affordance**: a neutral filled circle is a row's *identity* badge
   and is never pressable; a bare glyph is information (or a tile that is itself
   the control); a filled rounded-rect with a label is the button. Tinted square
-  faces on `IconButton`s, and badges inside `SportSummaryTile`, were both tried
+  faces on `IconButton`s, and badges inside `StatTile`, were both tried
   and rejected — don't reintroduce them.
 - **Light: white boxes and bottom nav on a faintly grey page**, and from the box
   the ladder steps DOWN, the dark one steps up — so "raised" is *darker* than its

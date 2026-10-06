@@ -4,6 +4,9 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// A round 44 px header button: panel face, faint rim, a glyph in full text
 /// colour, and optionally a status dot in its top-right corner.
+///
+/// [HeaderIconButton.plain] is the same control without a face, in the muted
+/// tone: the controls beside a section title and in a pushed page's bar.
 class HeaderIconButton extends StatelessWidget {
   const HeaderIconButton({
     super.key,
@@ -11,7 +14,15 @@ class HeaderIconButton extends StatelessWidget {
     required this.labelKey,
     required this.onTap,
     this.statusColor,
-  });
+  }) : plain = false;
+
+  const HeaderIconButton.plain({
+    super.key,
+    required this.icon,
+    required this.labelKey,
+    required this.onTap,
+    this.statusColor,
+  }) : plain = true;
 
   final IconData icon;
 
@@ -21,6 +32,9 @@ class HeaderIconButton extends StatelessWidget {
 
   /// Colour of the status dot; null draws none.
   final Color? statusColor;
+
+  /// No face and no rim, glyph in the muted tone.
+  final bool plain;
 
   static const double size = 44;
 
@@ -46,22 +60,26 @@ class HeaderIconButton extends StatelessWidget {
 
   Widget _face(InsulinkColors colors) {
     return Material(
-      color: colors.panel,
-      shape: CircleBorder(side: BorderSide(color: colors.border)),
+      color: plain ? Colors.transparent : colors.panel,
+      shape: CircleBorder(
+        side: plain ? BorderSide.none : BorderSide(color: colors.border),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Icon(icon, size: 20, color: colors.text),
+        child: Icon(icon, size: 20, color: plain ? colors.muted : colors.text),
       ),
     );
   }
 
   /// A 10 px dot with a 2.5 px ring in the page colour, so it reads as sitting
-  /// on top of the button rather than inside it.
+  /// on top of the button rather than inside it. Without a face it sits on the
+  /// glyph's corner instead of the rim.
   Widget _dot(InsulinkColors colors) {
+    final inset = plain ? 8.0 : 1.0;
     return Positioned(
-      top: 1,
-      right: 1,
+      top: inset,
+      right: inset,
       child: Container(
         width: 10,
         height: 10,
