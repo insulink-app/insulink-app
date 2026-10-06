@@ -15,6 +15,7 @@ import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/overview/chart/chart_range_switcher.dart';
 
 /// Full-screen glucose chart, opened by tapping the overview preview. Shows the
 /// interactive chart (range selector + scrub tooltip) with room to breathe, and
@@ -208,15 +209,18 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
     if (from == null || to == null) {
       return const SizedBox.shrink();
     }
-    return InsulinBarChart(
-      sync: _sync,
-      showMeals: _showMeals,
-      series: InsulinChartSeries(
-        basalHours: context.watch<PodController>().store.basalHours,
-        meals: meals,
-        from: from,
-        to: to,
-        liveEdge: _sync.liveEdge,
+    return ChartRangeSwitcher(
+      generation: _sync.rangeSwitches,
+      child: InsulinBarChart(
+        sync: _sync,
+        showMeals: _showMeals,
+        series: InsulinChartSeries(
+          basalHours: context.watch<PodController>().store.basalHours,
+          meals: meals,
+          from: from,
+          to: to,
+          liveEdge: _sync.liveEdge,
+        ),
       ),
     );
   }

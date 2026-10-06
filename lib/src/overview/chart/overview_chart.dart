@@ -28,6 +28,7 @@ import 'package:insulink/src/overview/chart/meal_label_rows.dart';
 import 'package:insulink/src/overview/chart/meal_label_strip.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/overview/chart/chart_range_switcher.dart';
 
 /// fl_chart line graph of glucose vs. time (hours, 0 = latest reading).
 class OverviewChart extends StatefulWidget {
@@ -223,7 +224,13 @@ class _OverviewChartState extends State<OverviewChart> {
     }
   }
 
+  /// A range picked on the selector, as opposed to a pinch: the one change the
+  /// chart cross-fades for ([ChartRangeSwitcher]).
+  int _rangeSwitches = 0;
+
   void _setRange(int hours) {
+    _rangeSwitches++;
+    widget.sync?.noteRangeSwitch();
     _applyRange(hours.toDouble());
     _persistRange();
   }
@@ -447,9 +454,9 @@ class _OverviewChartState extends State<OverviewChart> {
     if (widget.preview) {
       return _chart(byTime, glucose, colors);
     }
-    // Built first: it settles the window and the meal markers the strip reads.
-    final chart = _pinchable(_chart(byTime, glucose, colors));
-    final strip = _mealStrip();
+    // Built first: it settles the window and the meal markers the labels read.
+    final chart = _chart(byTime, glucose, colors);
+    final labels = _mealStrip();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -463,15 +470,40 @@ class _OverviewChartState extends State<OverviewChart> {
             if (widget.navigable) Flexible(child: _navigator(context, byTime)),
           ],
         ),
-        SizedBox(height: strip == null ? 24 : 16),
-        ?strip,
-        Expanded(child: chart),
+        const SizedBox(height: 16),
+        Expanded(
+          child: _pinchable(
+            ChartRangeSwitcher(
+              generation: _rangeSwitches,
+              child: _withMealLabels(chart, labels),
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  /// The carb labels over the chart, one pill per visible meal, stacked into a
-  /// second row where two meals sit close together. Null without meals.
+  /// The carb labels laid INTO the chart at its top, so they cost the plot no
+  /// height. Touches go through them to the chart.
+  Widget _withMealLabels(Widget chart, Widget? labels) {
+    if (labels == null) {
+      return chart;
+    }
+    return Stack(
+      children: [
+        Positioned.fill(child: chart),
+        Positioned(
+          top: 4,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(child: labels),
+        ),
+      ],
+    );
+  }
+
+  /// The carb labels, one pill per visible meal, stacked into a second row
+  /// where two meals sit close together. Null without meals.
   Widget? _mealStrip() {
     final axis = _axis;
     if (axis == null || _mealMarkers.isEmpty) {

@@ -68,6 +68,15 @@ class ChartSync extends ChangeNotifier {
 
   bool get hasWindow => from != null && to != null;
 
+  /// How often a range was picked on the selector (not pinched), so both
+  /// charts can cross-fade into the new window together.
+  int rangeSwitches = 0;
+
+  void noteRangeSwitch() {
+    rangeSwitches++;
+    notifyListeners();
+  }
+
   /// Called after the frame by the chart that owns the window, never during a
   /// build.
   void reportWindow({
