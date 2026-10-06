@@ -484,10 +484,16 @@ class _OverviewChartState extends State<OverviewChart> {
 
   /// The carb labels laid INTO the chart at its top, so they cost the plot no
   /// height. Touches go through them to the chart.
+  ///
+  /// They step aside while a value is read out, from either chart of the pair:
+  /// the readout sits above the reading, which near the top of the plot is
+  /// exactly where the labels are, and a readout half hidden behind a pill is
+  /// no readout. Only the labels listen, so a scrub still rebuilds nothing else.
   Widget _withMealLabels(Widget chart, Widget? labels) {
     if (labels == null) {
       return chart;
     }
+    final sync = widget.sync;
     return Stack(
       children: [
         Positioned.fill(child: chart),
@@ -495,7 +501,19 @@ class _OverviewChartState extends State<OverviewChart> {
           top: 4,
           left: 0,
           right: 0,
-          child: IgnorePointer(child: labels),
+          child: IgnorePointer(
+            child: sync == null
+                ? labels
+                : ListenableBuilder(
+                    listenable: sync,
+                    builder: (_, child) => AnimatedOpacity(
+                      opacity: sync.scrub == null ? 1 : 0,
+                      duration: const Duration(milliseconds: 120),
+                      child: child,
+                    ),
+                    child: labels,
+                  ),
+          ),
         ),
       ],
     );
