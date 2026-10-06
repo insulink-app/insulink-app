@@ -10,6 +10,7 @@ import 'package:insulink/src/overview/overview_pod_warnings.dart';
 import 'package:insulink/src/overview/overview_running_bolus.dart';
 import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_data_view.dart';
+import 'package:insulink/src/overview/overview_header_glucose.dart';
 import 'package:insulink/src/overview/overview_states.dart';
 import 'package:insulink/src/overview/sensor_restore_offer.dart';
 import 'package:insulink/src/pump/pod_restore_card.dart';
@@ -49,6 +50,19 @@ class _OverviewTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
     final colors = context.insulinkColors;
+    return Row(
+      children: [
+        _pill(context, controller, colors),
+        const Expanded(child: Center(child: OverviewHeaderGlucose())),
+      ],
+    );
+  }
+
+  Widget _pill(
+    BuildContext context,
+    CgmController controller,
+    InsulinkColors colors,
+  ) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Semantics(

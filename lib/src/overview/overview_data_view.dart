@@ -20,10 +20,13 @@ import 'package:provider/provider.dart';
 /// provider generation key, which recreates the Navigator and drops PageStorage,
 /// snapping the list back to the top. This outlives that; it resets only on a
 /// cold process start.
-double _overviewScrollOffset = 0;
+///
+/// A notifier because the header listens too: it fades the current value in as
+/// the large one scrolls away under it (`OverviewHeaderGlucose`).
+final ValueNotifier<double> overviewScrollOffset = ValueNotifier<double>(0);
 
 /// Normal view once a (live or cached) reading exists: headline value + chart.
-/// Stateful so it can own a [ScrollController] that restores [_overviewScrollOffset]
+/// Stateful so it can own a [ScrollController] that restores [overviewScrollOffset]
 /// on (re)build and keeps it current as the user scrolls.
 class OverviewDataView extends StatefulWidget {
   const OverviewDataView({
@@ -43,12 +46,12 @@ class OverviewDataView extends StatefulWidget {
 
 class _OverviewDataViewState extends State<OverviewDataView> {
   late final ScrollController _scroll = ScrollController(
-    initialScrollOffset: _overviewScrollOffset,
+    initialScrollOffset: overviewScrollOffset.value,
   )..addListener(_remember);
 
   void _remember() {
     if (_scroll.hasClients) {
-      _overviewScrollOffset = _scroll.offset;
+      overviewScrollOffset.value = _scroll.offset;
     }
   }
 

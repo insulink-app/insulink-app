@@ -13,8 +13,7 @@ import 'package:provider/provider.dart';
 /// The current glucose value, large and open on the page: the number with its
 /// trend arrow beside it, and underneath the unit and the trend in words.
 ///
-/// Colour only when it means something: the value and arrow are plain text
-/// colour, red below the target range, and muted while [stale].
+/// Value and arrow share one colour ([GlucoseDisplayFormat.tone]).
 class GlucoseHero extends StatelessWidget {
   const GlucoseHero({
     super.key,
@@ -33,7 +32,9 @@ class GlucoseHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glucose = context.watch<ProfileGlucoseState>();
-    final color = _valueColor(context.insulinkColors, glucose);
+    final color = GlucoseDisplayFormat(
+      glucose,
+    ).tone(context.insulinkColors, mgdl, stale: stale);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -42,14 +43,6 @@ class GlucoseHero extends StatelessWidget {
         _captionRow(context, glucose, color),
       ],
     );
-  }
-
-  Color _valueColor(InsulinkColors colors, ProfileGlucoseState glucose) {
-    final value = mgdl;
-    if (value == null || stale) {
-      return colors.muted;
-    }
-    return value < glucose.targetLow ? colors.low : colors.text;
   }
 
   /// No value yet (just after a re-login/restore) shows a spinner where the
