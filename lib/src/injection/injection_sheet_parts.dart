@@ -4,8 +4,10 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// One group of the bolus calculator: a 32 px icon tile and a title over the
-/// group's fields, on a raised card inside the sheet. The bolus card is the
-/// [emphasised] one: tinted with the accent, its icon tile filled.
+/// group's fields, on a raised card inside the sheet. Kept quiet on purpose:
+/// all cards alike, neutral icon tiles, and only the [emphasised] bolus tile
+/// touched with the accent. The accent is for the "Next" button and the field
+/// being typed in.
 class InjectionCard extends StatelessWidget {
   const InjectionCard({
     super.key,
@@ -26,18 +28,9 @@ class InjectionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: emphasised
-            ? Color.alphaBlend(
-                colors.accent.withValues(alpha: 0.06),
-                colors.panelRaised,
-              )
-            : colors.panelRaised,
+        color: colors.panelRaised,
         borderRadius: BorderRadius.circular(InkRadius.tile),
-        border: Border.all(
-          color: emphasised
-              ? colors.accent.withValues(alpha: 0.22)
-              : colors.border,
-        ),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -62,14 +55,14 @@ class InjectionCard extends StatelessWidget {
       height: 32,
       decoration: BoxDecoration(
         color: emphasised
-            ? colors.accent
-            : colors.accent.withValues(alpha: 0.14),
+            ? colors.accent.withValues(alpha: 0.14)
+            : colors.text.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(
         icon,
         size: 18,
-        color: emphasised ? colors.onAccent : colors.accent,
+        color: emphasised ? colors.accent : colors.muted,
       ),
     );
   }

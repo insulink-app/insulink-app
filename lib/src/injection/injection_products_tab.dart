@@ -110,7 +110,7 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
     );
   }
 
-  /// "Products" muted on the left, a soft pill on the right that adds one: a
+  /// "Products" muted on the left, a neutral pill on the right that adds one: a
   /// quiet control that does not compete with the solid "Next" below.
   Widget _addRow() {
     final colors = context.ink;
@@ -139,8 +139,8 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
             style: TextButton.styleFrom(
               minimumSize: const Size(0, 44),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              backgroundColor: colors.accentSoft,
-              foregroundColor: colors.accentText,
+              backgroundColor: colors.text.withValues(alpha: 0.06),
+              foregroundColor: colors.text,
               textStyle: InkText.body.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
