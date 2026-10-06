@@ -2,43 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_detail_sheet.dart';
-import 'package:insulink/src/sport/sport_leading_badge.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/list_row.dart';
+import 'package:insulink/src/base/relative_day.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// One logged meal as a list tile, matching the sport activity tiles: a tinted
 /// badge, the carb amount as the title (a meal is characterized by its carbs),
 /// the bolus + product count as subtitle, and the date/time trailing. Tap opens
 /// [MealDetailSheet].
 class MealCard extends StatelessWidget {
-  const MealCard({super.key, required this.meal, this.showDate = true});
+  const MealCard({
+    super.key,
+    required this.meal,
+    this.showDate = true,
+    this.framed = true,
+  });
 
   final Meal meal;
   final bool showDate;
 
+  /// A row standing on its own gets its own panel; inside an
+  /// [InkPanel.list] it is a bare row and the panel draws the lines.
+  final bool framed;
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final locale = MaterialLocalizations.of(context);
-    return ListTile(
-      tileColor: scheme.onSurface.withValues(alpha: 0.04),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
-      leading: const SportLeadingBadge(icon: PhosphorIconsBold.forkKnife),
-      title: Text(
-        '${meal.carbs.toStringAsFixed(0)} g '
-        '${Locales.string(context, 'nutrition.stats.carbs')}',
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Text(_subtitle(context)),
-      trailing: _trailing(context, locale),
+    final row = ListRow(
+      icon: PhosphorIconsBold.forkKnife,
+      title:
+          '${sportDecimal(meal.carbs, 0)} g '
+          '${Locales.string(context, 'nutrition.stats.carbs')}',
+      subtitle: _subtitle(context),
+      trailing: _trailing(context),
       onTap: () => showMealDetail(context, meal),
     );
+    return framed ? InkPanel.list(rows: [row]) : row;
   }
 
   String _subtitle(BuildContext context) {
-    final bolus = '${meal.bolus.toStringAsFixed(1)} E';
+    final bolus = Locales.string(
+      context,
+      'nutrition.meals.bolus_value',
+      params: [sportDecimal(meal.bolus, 1)],
+    );
     if (meal.entries.isEmpty) {
       return bolus;
     }
@@ -50,34 +59,16 @@ class MealCard extends StatelessWidget {
     return '$bolus · $products';
   }
 
-  /// Right-hand corner: the time, with the date stacked above it (the home list
-  /// and the log page have no day section headers).
-  Widget _trailing(BuildContext context, MaterialLocalizations locale) {
-    final scheme = Theme.of(context).colorScheme;
-    final time = Text(
-      locale.formatTimeOfDay(TimeOfDay.fromDateTime(meal.time)),
-      style: TextStyle(
-        fontWeight: FontWeight.w600,
-        color: scheme.onSurface.withValues(alpha: 0.7),
-      ),
+  /// Right-hand corner: the time, with the day named above it (the home list
+  /// has no day section headers; the log page does, and shows the time only).
+  Widget _trailing(BuildContext context) {
+    final time = MaterialLocalizations.of(context).formatTimeOfDay(
+      TimeOfDay.fromDateTime(meal.time),
+      alwaysUse24HourFormat: true,
     );
     if (!showDate) {
-      return time;
+      return Text(time, style: InkText.row);
     }
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          locale.formatMediumDate(meal.time),
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-        const SizedBox(height: 2),
-        time,
-      ],
-    );
+    return ListRowMeta(date: RelativeDay(meal.time).label(context), time: time);
   }
 }

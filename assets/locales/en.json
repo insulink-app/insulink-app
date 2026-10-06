@@ -796,6 +796,7 @@
       "log_empty": "Nothing logged today yet",
       "goal_title": "Daily goal",
       "free": "Custom",
+      "of": "of #",
       "free_title": "Enter amount",
       "free_hint": "e.g. 300",
       "add": "Add"
@@ -804,6 +805,7 @@
       "_": "Products",
       "empty": "Scan a barcode to add a product",
       "delete_confirm": "Delete this product?",
+      "remove": "Remove product",
       "scan_hint": "Point the product barcode into the frame",
       "search_hint": "Search the product database…",
       "search_start": "Type at least 2 characters to search",
@@ -831,6 +833,7 @@
       "empty_hint": "They appear here once you deliver a bolus.",
       "products": "Products",
       "products_count": "# products",
+      "bolus_value": "# U bolus",
       "show_more": "Show more",
       "delete": "Delete meal",
       "delete_confirm": "Delete this meal?"

@@ -9,6 +9,8 @@ import 'package:insulink/src/nutrition/food/food_products_page.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/section_header.dart';
 
 /// Product database section: the products the user added, each with its
 /// per-100 g nutrition, plus add / search / scan actions (see [FoodAddActions]).
@@ -22,22 +24,16 @@ class FoodSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _header(),
-        const SizedBox(height: 12),
         if (products.isEmpty) _empty(context) else _list(context, products),
       ],
     );
   }
 
   Widget _header() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        LocaleText(
-          'nutrition.food',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const FoodAddActions(),
-      ],
+    return const SectionHeader(
+      titleKey: 'nutrition.food',
+      topGap: 0,
+      actions: [FoodAddActions()],
     );
   }
 
@@ -45,20 +41,23 @@ class FoodSection extends StatelessWidget {
     final state = context.read<FoodState>();
     final visible = products.take(3).toList();
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final product in visible)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: FoodProductCard(
-              product: product,
-              onTap: () => showFoodEditor(context, product: product),
-              onRemove: () => confirmDelete(
-                context,
-                messageKey: 'nutrition.food.delete_confirm',
-                onConfirm: () => state.removeProduct(product),
+        InkPanel.list(
+          rows: [
+            for (final product in visible)
+              FoodProductCard(
+                product: product,
+                framed: false,
+                onTap: () => showFoodEditor(context, product: product),
+                onRemove: () => confirmDelete(
+                  context,
+                  messageKey: 'nutrition.food.delete_confirm',
+                  onConfirm: () => state.removeProduct(product),
+                ),
               ),
-            ),
-          ),
+          ],
+        ),
         if (products.length > 3) _showMore(context),
       ],
     );

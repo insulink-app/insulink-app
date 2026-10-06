@@ -6,6 +6,8 @@ import 'package:insulink/src/nutrition/meal/meal_log_page.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/section_header.dart';
 
 /// The meal log on the nutrition page: the three most recent meals as tiles
 /// (matching the sport activity list), with a "Show more" into the full log
@@ -22,30 +24,29 @@ class MealSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        LocaleText(
-          'nutrition.meals',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
+        const SectionHeader(titleKey: 'nutrition.meals', topGap: 0),
         if (recent.isEmpty)
           _empty(context)
         else
-          for (final meal in recent)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: MealCard(meal: meal),
-            ),
+          InkPanel.list(
+            rows: [
+              for (final meal in recent) MealCard(meal: meal, framed: false),
+            ],
+          ),
         if (meals.length > recent.length) _showMore(context),
       ],
     );
   }
 
   Widget _showMore(BuildContext context) {
-    return TextButton(
-      onPressed: () => Navigator.of(
-        context,
-      ).push(MaterialPageRoute<void>(builder: (_) => const MealLogPage())),
-      child: LocaleText('nutrition.meals.show_more'),
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: TextButton(
+        onPressed: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const MealLogPage())),
+        child: LocaleText('nutrition.meals.show_more'),
+      ),
     );
   }
 

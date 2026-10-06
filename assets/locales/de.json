@@ -796,6 +796,7 @@
       "log_empty": "Heute noch nichts getrunken",
       "goal_title": "Tagesziel",
       "free": "Frei",
+      "of": "von #",
       "free_title": "Menge eingeben",
       "free_hint": "z. B. 300",
       "add": "Hinzufügen"
@@ -804,6 +805,7 @@
       "_": "Produkte",
       "empty": "Barcode scannen, um ein Produkt hinzuzufügen",
       "delete_confirm": "Dieses Produkt löschen?",
+      "remove": "Produkt entfernen",
       "scan_hint": "Produkt-Barcode in den Rahmen halten",
       "search_hint": "Produktdatenbank durchsuchen…",
       "search_start": "Mindestens 2 Zeichen eingeben",
@@ -831,6 +833,7 @@
       "empty_hint": "Sie erscheinen hier, sobald du einen Bolus abgibst.",
       "products": "Produkte",
       "products_count": "# Produkte",
+      "bolus_value": "# E Bolus",
       "show_more": "Mehr anzeigen",
       "delete": "Mahlzeit löschen",
       "delete_confirm": "Diese Mahlzeit löschen?"

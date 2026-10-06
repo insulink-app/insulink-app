@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/list_row.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// One stored product: a unit-aware icon badge with its name, brand and reported
 /// serving. Tap opens the portion picker; the × removes it.
@@ -10,106 +14,42 @@ class FoodProductCard extends StatelessWidget {
     required this.product,
     required this.onTap,
     required this.onRemove,
+    this.framed = true,
   });
 
   final FoodProduct product;
   final VoidCallback onTap;
   final VoidCallback onRemove;
 
+  /// A row standing on its own gets its own panel; inside an
+  /// [InkPanel.list] it is a bare row and the panel draws the lines.
+  final bool framed;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Material(
-      color: scheme.onSurface.withValues(alpha: 0.03),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 12, 6, 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: scheme.onSurface.withValues(alpha: 0.07)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _badge(scheme),
-              const SizedBox(width: 12),
-              Expanded(child: _details(scheme)),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: Icon(
-                  PhosphorIconsBold.x,
-                  size: 18,
-                  color: scheme.onSurface.withValues(alpha: 0.4),
-                ),
-                onPressed: onRemove,
-              ),
-            ],
-          ),
-        ),
+    final row = ListRow(
+      icon: product.unit == 'ml'
+          ? PhosphorIconsBold.drop
+          : PhosphorIconsBold.forkKnife,
+      tone: ListRowTone.neutral,
+      title: product.name.isEmpty ? product.barcode : product.name,
+      subtitle: _subtitle(),
+      trailing: IconButton(
+        tooltip: Locales.string(context, 'nutrition.food.remove'),
+        icon: Icon(PhosphorIconsBold.x, size: 18, color: context.ink.muted),
+        onPressed: onRemove,
       ),
+      onTap: onTap,
     );
-  }
-
-  /// A round, neutral icon badge saying what the product is: a drink glass for
-  /// `ml` products, cutlery for solids. Neutral and round on purpose — it names
-  /// the row, it is not something to press.
-  Widget _badge(ColorScheme scheme) {
-    final isDrink = product.unit == 'ml';
-    return Container(
-      width: 44,
-      height: 44,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        isDrink ? PhosphorIconsBold.drop : PhosphorIconsBold.forkKnife,
-        color: scheme.onSurfaceVariant,
-        size: 22,
-      ),
-    );
-  }
-
-  Widget _details(ColorScheme scheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          product.name.isEmpty ? product.barcode : product.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        ),
-        _subtitle(scheme),
-      ],
-    );
+    return framed ? InkPanel.list(rows: [row]) : row;
   }
 
   /// Brand and/or the reported serving, whichever exist.
-  Widget _subtitle(ColorScheme scheme) {
+  String? _subtitle() {
     final parts = [
       if (product.brand.isNotEmpty) product.brand,
       if (product.servingLabel.isNotEmpty) product.servingLabel,
     ];
-    if (parts.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Padding(
-      padding: const EdgeInsets.only(top: 2),
-      child: Text(
-        parts.join(' · '),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 12,
-          color: scheme.onSurface.withValues(alpha: 0.55),
-        ),
-      ),
-    );
+    return parts.isEmpty ? null : parts.join(', ');
   }
 }
