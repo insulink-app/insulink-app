@@ -132,12 +132,12 @@ class _AuthPageState extends State<AuthPage> {
       onPressed: _busy ? null : _submit,
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
       child: _busy
-          ? const SizedBox(
+          ? SizedBox(
               width: 22,
               height: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
               ),
             )
           : LocaleText(_signUp ? 'auth.signup' : 'auth.signin'),

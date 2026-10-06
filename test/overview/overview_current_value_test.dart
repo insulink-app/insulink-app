@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/overview/overview_current_value.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
+import 'package:insulink/src/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
 ProfileGlucoseState glucoseState(GlucoseUnit unit) => ProfileGlucoseState(
@@ -19,6 +20,7 @@ Widget wrap(Widget child, {GlucoseUnit unit = GlucoseUnit.mgdl}) {
   return ChangeNotifierProvider<ProfileGlucoseState>(
     create: (_) => glucoseState(unit),
     child: MaterialApp(
+      theme: AppTheme.light,
       home: Scaffold(body: Center(child: child)),
     ),
   );

@@ -64,7 +64,7 @@ class _InjectionButtonState extends State<InjectionButton>
             child: Icon(
               PhosphorIconsRegular.syringe,
               size: 35,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
         );

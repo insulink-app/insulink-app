@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/theme/app_theme.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 
 void main() {
@@ -13,15 +14,15 @@ void main() {
     });
 
     test('lerp at t=0 / t=1 returns the endpoints', () {
-      const a = GlucoseColors.headlineLight;
-      const b = GlucoseColors.headlineDark;
+      final a = AppTheme.light.extension<GlucoseColors>()!;
+      final b = AppTheme.dark.extension<GlucoseColors>()!;
       expect(a.lerp(b, 0).inRange, a.inRange);
       expect(a.lerp(b, 1).inRange, b.inRange);
     });
 
     test('lerp blends the channels midway', () {
-      const a = GlucoseColors.headlineLight;
-      const b = GlucoseColors.headlineDark;
+      final a = AppTheme.light.extension<GlucoseColors>()!;
+      final b = AppTheme.dark.extension<GlucoseColors>()!;
       final mid = a.lerp(b, 0.5);
       expect(mid.low, Color.lerp(a.low, b.low, 0.5));
     });

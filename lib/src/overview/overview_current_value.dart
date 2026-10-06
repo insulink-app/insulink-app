@@ -24,11 +24,7 @@ class OverviewCurrentValue extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glucose = context.watch<ProfileGlucoseState>();
-    // The big headline uses its own per-theme palette (defined explicitly in
-    // GlucoseColors): deeper on the light background, brighter on the dark one.
-    final colors = Theme.of(context).brightness == Brightness.dark
-        ? GlucoseColors.headlineDark
-        : GlucoseColors.headlineLight;
+    final colors = Theme.of(context).extension<GlucoseColors>()!;
     final value = mgdl;
     // A stale (cached / synced, not live) value is shown grey regardless of its
     // low/high zone, so it clearly reads as not-live.

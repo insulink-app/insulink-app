@@ -49,7 +49,9 @@ class HourRangeSelector extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+            color: isSelected
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.onSurface,
           ),
         ),
       ),

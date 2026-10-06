@@ -23,9 +23,7 @@ class SportVitalsBar extends StatelessWidget {
   /// The palette the big overview readout uses, so a glanced-at value mid-set
   /// reads the same colour as on the overview page.
   GlucoseColors _colors(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark
-      ? GlucoseColors.headlineDark
-      : GlucoseColors.headlineLight;
+      Theme.of(context).extension<GlucoseColors>()!;
 
   /// ponytail: fixed pulse zones (normal / elevated / high) — there is no
   /// HR-zone setting yet; wire it up once the profile grows one.

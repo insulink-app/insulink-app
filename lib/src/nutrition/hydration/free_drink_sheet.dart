@@ -122,7 +122,6 @@ class _FreeDrinkSheetState extends State<_FreeDrinkSheet> {
       child: LocaleText(
         'nutrition.hydration.add',
         style: const TextStyle(
-          color: Colors.white,
           fontWeight: FontWeight.w600,
           fontSize: 15,
         ),

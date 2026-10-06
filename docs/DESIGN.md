@@ -1,8 +1,8 @@
 # Design system (theme, colour roles, affordance)
 
 Everything visual is defined in `lib/src/theme/`:
-`app_theme.dart` (both `ThemeData`s), `accent_colors.dart` and `glucose_colors.dart`
-(two `ThemeExtension`s). No widget invents a colour — if a value is needed that
+`insulink_colors.dart` (the design tokens), `app_theme.dart` (both `ThemeData`s,
+built from the tokens) and the `ThemeExtension`s fed from them. No widget invents a colour — if a value is needed that
 the scheme has no role for, the role is added here, not hard-coded at the call site.
 
 ## The one rule that explains most of the file
@@ -36,33 +36,42 @@ sed -n '/ColorScheme.dark(/,/^    ),/p'  lib/src/theme/app_theme.dart | grep -oE
 diff /tmp/l /tmp/d && echo "symmetric"
 ```
 
-## Two accents, because one colour cannot do both jobs
+## Tokens, and one accent
 
-The brand indigo-blue has to serve two opposite purposes on a dark background, and
-a single value loses one of them:
-
-- **Fill** — a button with white text on top. Wants a mid tone.
-- **Foreground** — a label or glyph drawn *on* a dark surface. Wants a light tone.
-
-So there are two, same hue:
+Since the redesign (reference: `docs/redesign/`) every colour starts in
+`InsulinkColors` (`insulink_colors.dart`, read as `context.insulinkColors`).
+`AppTheme` builds both themes through **one** builder from those tokens, so a
+role can no longer be set in one theme and missed in the other; the symmetry
+check below still holds by construction.
 
 | Token | Dark | Light | Used for |
 |---|---|---|---|
-| `colorScheme.primary` | `#5D73CC` | `#45569F` | Fills only: filled/elevated buttons, solid badges, tints |
-| `AccentColors.onSurface` (`context.accent`) | `#9DACEA` | `#45569F` | The accent drawn ON a surface |
+| ground | `#0F1B26` | `#EDF2F6` | Page, app bar |
+| panel | `#152432` | `#FFFFFF` | Panels, tiles, header buttons (`surface`) |
+| line | `#26394B` | `#D3DEE7` | Dividers, empty segments |
+| border | text at 7 % | text at 6 % | 1 px rim of tiles and buttons |
+| text | `#EAF1F6` | `#0F1B26` | Primary text, glucose value (`onSurface`) |
+| muted | `#97A9BA` | `#4D6175` | Labels, units, axes (`onSurfaceVariant`) |
+| accent | `#9DAEFF` | `#3346C8` | `primary`, `context.accent`, icons, progress |
+| onAccent | `#0F1B26` | `#FFFFFF` | `onPrimary` |
+| accentSoft / accentText | accent at 16 % / `#C4CEFF` | accent at 10 % / `#2A3AA8` | Active tab, profile button |
+| range / high / low | `#7CCB8F` / `#F4B740` / `#FF6B7F` | `#3B8A4F` / `#A86A00` / `#C8293F` | `GlucoseColors` and `StatusColors` |
+| lowSoft | low at 14 % | low at 10 % | Warning banners |
+| dock | `#1B2B3B` | `#FFFFFF` | Navigation capsule (with `dockShadow`, the only shadow) |
 
-On light they are the same colour — a deep indigo-blue on a near-white page is
-legible either way. The split exists purely because dark forces it.
+**One accent.** The app used to split the brand colour into a mid-tone FILL
+(`primary`, white text on top) and a lighter FOREGROUND (`context.accent`),
+because on dark one value could not do both. The redesign gives that up on
+purpose: `primary` IS the accent, and what sits on it takes `onPrimary`, which on
+dark is the dark ground colour. Every filled button is therefore light indigo
+with dark content on dark. The consequence for call sites: **never put a literal
+`Colors.white` on a `primary` fill**, use `onPrimary` or the button's own
+foreground.
 
-The indigo-blue is the old brand indigo pulled part-way toward the calm blue-grey
-of the surfaces (statistic boxes): softened from the original neon, but kept
-saturated enough to read as a real accent rather than grey. On dark it is lifted
-a touch (`#5D73CC`) so it sits ON the surface instead of glowing off it.
-
-Rejected alternative, for the record: the textbook Material 3 move is a light
-`primary` plus a dark `onPrimary`, which fixes every foreground with one value
-and zero call-site edits. It was tried and reverted — it turns every filled
-button into light-indigo-with-dark-text, which is not the product's look.
+The font is **Atkinson Hyperlegible Next**, bundled in `assets/fonts/` (400, 600,
+700, 800; OFL). Every `TextTheme` role carries `FontFeature.tabularFigures()`,
+and inline styles inherit it through the default text style, so ticking numbers
+do not jitter.
 
 ## Three foreground tones
 
@@ -70,7 +79,7 @@ button into light-indigo-with-dark-text, which is not the product's look.
 |---|---|---|
 | Full | `onSurface` (white / black) | Primary text, and **bare controls** — `IconButton` and `TextButton` — at full strength |
 | Accent | `context.accent` | Interactive affordances that carry the brand: outlined-button labels, chevrons, tappable banners, summary-tile glyphs |
-| Muted | `onSurfaceVariant` (`#A6AEBF` / `#5A6070`) | Anything that only informs: glyphs beside a statistic, secondary labels, units |
+| Muted | `onSurfaceVariant` (`#97A9BA` / `#4D6175`) | Anything that only informs: glyphs beside a statistic, secondary labels, units |
 
 A control **without a container of its own** (`IconButton`, `TextButton`) takes
 the Full tone, not the accent: tinting it made routine actions shout, and the
@@ -127,22 +136,12 @@ nothing stable to contrast against.
 button dimmed to half while disabled, carries information in its alpha — leave
 those alone.
 
-## The stat boxes keep the original indigo
+## The stat boxes follow the accent
 
-`StatBoxColors` (`stat_box_colors.dart`, a `ThemeExtension`, read as
-`context.statBox`) is the one place that does NOT follow `primary`. The stat
-boxes (`SportSummaryTile` — the overview boxes and the Today/nutrition tiles)
-looked best at the app's first, more saturated brand indigo; `primary` was later
-softened toward a calmer blue-grey, which washed the boxes and their icons out.
-So the boxes carry their own fixed tone here instead:
-
-| Field | Dark | Light | For |
-|---|---|---|---|
-| `icon` | `#93A6FF` | `#3F51B5` | The tile glyph, drawn on the tinted face |
-| `tintBase` | `#5A73F2` | `#3F51B5` | Base for the panel/border/fill tints (its own `BrandTints`, 0.08 / 0.20 / 0.13–0.22) |
-
-Change `primary` freely — the boxes stay put. If you *want* them to track a new
-brand colour, update these two values too; nothing else references them.
+`StatBoxColors` (`context.statBox`) used to hold the first, more saturated brand
+indigo apart from a softened `primary`. With one accent there is nothing left to
+hold apart: both fields are now the `accent` token. The extension stays because
+its tint helpers (`panel`, `line`, `fill`) are read by the tiles.
 
 ## Shape language
 
@@ -165,31 +164,22 @@ Two things were tried and **rejected** — don't reintroduce them:
 
 ## Surface ladders
 
-Dark steps **up** from the page. Light puts white boxes and a white navigation
-bar on a faintly grey page, so a card reads as a sheet lying on the page, and from
-the box it steps **down**: anything inside a box (badges, inputs) is a shade deeper
-than the white it sits on, which is why "raised" is *darker* than its box. An
-earlier light ladder made the page the brightest thing (`#FAFAFA`) with grey
-`#E8E8E8` boxes, which read as holes in the page rather than as cards.
+Dark steps **up** from the page, light puts white panels on a faintly blue-grey
+page and steps **down** from the panel. Both fall out of one rule: the
+`surfaceContainer*` rungs are mixed from `panel` toward `line` (35 % and 70 %),
+which is lighter than the panel on dark and deeper on light.
 
 | Rung | Dark | Light |
 |---|---|---|
-| Page / app bar | `#15181D` | `#F2F3F5` |
-| Box (`surface`), bottom nav | `#1F232A` | `#FFFFFF` |
-| `surfaceContainerHigh` | `#242933` | `#EDEFF2` |
-| `surfaceContainerHighest` (badges, inputs) | `#2A2F38` | `#E4E7EC` |
-| Border / divider | `#2B3038` | `#B4B9C2` (`outline`) |
+| Page / app bar (ground) | `#0F1B26` | `#EDF2F6` |
+| Panel (`surface`) | `#152432` | `#FFFFFF` |
+| `surfaceContainerHigh` | `#1B2B3B` | `#F0F3F7` |
+| `surfaceContainerHighest` (badges, inputs, popups) | `#213344` | `#E0E8EE` |
+| Divider (line) | `#26394B` | `#D3DEE7` |
+| `outline` (line 40 % toward muted) | `#536677` | `#9DACB9` |
 
-The dark neutrals take their **hue** from the insulink website
-(`assets/css/style.css`: `--bg #0d1117`, `--surface #161b22`, …) so app and site
-stay related, but they are lifted a rung and pulled well down in saturation. The
-site's values are near-black and strongly blue; on a phone at arm's length that
-made the accent glare and left too little separation for cards to read as cards.
-Grey with a blue lean, not blue-grey.
-
-`dividerColor` doubles as the box border (`OverviewSection`), so it must stay
-close to `surface`. A border much lighter than its fill draws a hard ring around
-every card.
+`dividerColor` doubles as the `OverviewSection` border; the redesign drops that
+border on panels (only tiles keep the faint `border` token).
 
 ## Rules for call sites
 
@@ -247,18 +237,22 @@ Where the five went: `injection_confirm_page` (sticky inline error),
 `health_import_button` (checkmark on success / `Alert` on failure),
 `developer_log_panel` (self-confirming button).
 
-## Reference contrast values (dark)
+## Reference contrast values
 
-Measured against `surface #1F232A`, for calibrating future changes:
+Measured for calibrating future changes (WCAG; text ≥4.5:1, graphics ≥3:1):
 
-| Pair | Ratio |
-|---|---|
-| `primary #5D73CC` as a foreground | ~4.4:1 — the reason the accent exists |
-| same at `alpha: 0.7` | ~2.9:1 — under even the 3:1 floor for graphics |
-| `accent #9DACEA` as a foreground | ~7.6:1 |
-| `primary` behind white text | ~4.1:1 |
+| Pair | Dark | Light |
+|---|---|---|
+| accent on panel | 7.5:1 | 7.4:1 |
+| onAccent on accent | 8.2:1 | 7.4:1 |
+| muted on ground | 7.2:1 | 5.7:1 |
+| low on ground | 6.4:1 | 4.8:1 |
+| high on ground | 9.7:1 | **3.9:1** |
+| range on ground | 9.0:1 | **3.8:1** |
 
-Non-text/graphics need ≥3:1, normal text ≥4.5:1.
+The light `high` and `range` tokens clear the graphics floor but not the text
+floor on the page. They are fine for the chart, bars and large numbers; as
+`context.warning` / `context.positive` small TEXT they are under 4.5:1.
 
 ## Insulin has its own two colours
 

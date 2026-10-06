@@ -91,7 +91,6 @@ class EditorSheet extends StatelessWidget {
         child: LocaleText(
           'alert.done',
           style: const TextStyle(
-            color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 15,
           ),

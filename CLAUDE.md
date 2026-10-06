@@ -403,8 +403,13 @@ glucose/bolus/silent profile state, and `CgmController`) and `MaterialApp`
 
 ### Theme & design system (`lib/src/theme/`)
 
-`app_theme.dart` holds both `ThemeData`s; `accent_colors.dart` and
-`glucose_colors.dart` are `ThemeExtension`s. **No widget invents a colour** —
+`insulink_colors.dart` (`InsulinkColors`, `context.insulinkColors`) holds the
+redesign's design tokens and is the **single source** of every colour: `app_theme.dart`
+builds both `ThemeData`s from it through one builder, and feeds `ColorScheme` and
+the older extensions (`GlucoseColors`, `AccentColors`, `StatusColors`,
+`StatBoxColors`, `InsulinColors`) from the tokens. The font is the bundled
+Atkinson Hyperlegible Next (`assets/fonts/`), with tabular figures on every
+`TextTheme` role. **No widget invents a colour** —
 needed a value the scheme has no role for? Add the role here, don't hard-code it
 at the call site. Full rationale + the measured contrast values: `docs/DESIGN.md`.
 
@@ -421,13 +426,13 @@ The load-bearing parts (regressing any of these is a visible bug):
   `OutlinedButton` draw their label in `colorScheme.primary` (the *fill* colour,
   ~4:1 as a label on dark), `IconButton` in `onSurfaceVariant` (the *decoration*
   tone). Both are corrected per theme in `app_theme.dart`.
-- **Two accents, same hue, because one colour can't do both jobs on dark**:
-  `colorScheme.primary` (`#5A73F2`) is a **fill** only — a button with white text
-  on top. `AccentColors.onSurface`, read as `context.accent`, (`#93A6FF` dark) is
-  the accent **drawn on** a surface. `primary` as a foreground only reaches ~4:1.
-  On light both are the same indigo. Don't "simplify" them back into one, and
-  don't lighten `primary` into the M3 light-primary/dark-onPrimary pattern — that
-  was tried and reverted (it recolours every filled button).
+- **One accent since the redesign**: `colorScheme.primary` and `context.accent`
+  are both the `accent` token (`#9DAEFF` dark, `#3346C8` light), and content on
+  a fill takes `onPrimary` (= `onAccent`: dark `#0F1B26` on dark, white on
+  light). The old split (mid-tone fill + white text, lighter foreground accent)
+  was deliberately given up for the redesign's light-indigo fill with dark
+  content. So **never hard-code `Colors.white` on a `primary` fill** — use
+  `colorScheme.onPrimary`, or let the button's own foreground apply.
 - **Three foreground tones**: `onSurface` = text + **bare controls** (`IconButton`,
   `TextButton` — no container of their own, so no tint); `context.accent` =
   affordances that carry the brand and have a shape to carry it (outlined-button

@@ -150,7 +150,9 @@ class _TwoRowTabs extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: selected ? FontWeight.bold : FontWeight.w600,
-                color: selected ? Colors.white : theme.colorScheme.onSurface,
+                color: selected
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurface,
               ),
             ),
           ),

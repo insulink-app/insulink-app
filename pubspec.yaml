@@ -98,6 +98,17 @@ flutter:
     - assets/images/languages/
     - assets/sounds/
     - assets/vendor_keys/
+  fonts:
+    - family: AtkinsonHyperlegibleNext
+      fonts:
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-ExtraBold.ttf
+          weight: 800
 
   # To add assets to your application, add an assets section, like this:
   # assets:
