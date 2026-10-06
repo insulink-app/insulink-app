@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/connections/connection_row.dart';
+import 'package:insulink/src/connections/device_attention.dart';
 import 'package:insulink/src/connections/history/device_history_page.dart';
 import 'package:insulink/src/connections/history/device_history_sync.dart';
 import 'package:insulink/src/google_health/google_health_body.dart';
-import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_delivery_log_page.dart';
 import 'package:insulink/src/pump/pump_actions.dart';
 import 'package:insulink/src/pump/pump_body.dart';
 import 'package:insulink/src/sensor/sensor_body.dart';
-import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Opens the connections page (Sensor + Pump + Google Health) on top of the current tab.
@@ -77,7 +76,7 @@ class ConnectionsBodyContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasSensor = context.watch<CgmController>().hasSensor;
+    final attention = DeviceAttention.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       children: [
@@ -86,9 +85,7 @@ class ConnectionsBodyContent extends StatelessWidget {
           labelKey: "sensor.label",
           page: const SensorBodyContent(),
           actions: const [DeviceHistoryButton(kind: DeviceHistoryKind.sensors)],
-          // The sensor's only notification is the "no sensor" attention dot,
-          // mirrored here from the navigator badge.
-          notify: !hasSensor,
+          notify: attention.sensor,
         ),
         const SizedBox(height: 14),
         ConnectionRow(
@@ -100,12 +97,14 @@ class ConnectionsBodyContent extends StatelessWidget {
             PodDeliveryLogButton(),
             DeviceHistoryButton(kind: DeviceHistoryKind.pumps),
           ],
+          notify: attention.pump,
         ),
         const SizedBox(height: 14),
         ConnectionRow(
           icon: PhosphorIconsBold.watch,
           labelKey: "google_health.label",
           page: const GoogleHealthBodyContent(),
+          notify: attention.googleHealth,
         ),
       ],
     );

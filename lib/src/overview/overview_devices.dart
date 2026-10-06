@@ -34,7 +34,10 @@ class OverviewDevices extends StatelessWidget {
             style: InsulinkTextStyles.sectionTitle,
           ),
         ),
-        OverviewSection(child: _content(context, hasSensor, hasPod)),
+        OverviewSection(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, hasPod ? 2 : 16),
+          child: _content(context, hasSensor, hasPod),
+        ),
       ],
     );
   }

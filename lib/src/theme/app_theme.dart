@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
@@ -64,6 +65,7 @@ class AppTheme {
         backgroundColor: tokens.dock,
       ),
       scaffoldBackgroundColor: tokens.ground,
+      pageTransitionsTheme: _pageTransitions(tokens),
       dividerColor: tokens.line,
       extensions: _extensions(tokens),
     );
@@ -90,6 +92,20 @@ class AppTheme {
       onSurfaceVariant: tokens.muted,
       error: tokens.low,
       onError: tokens.onAccent,
+    );
+  }
+
+  /// Every pushed page fades forward over the page colour on Android (the
+  /// panel colour Material would use flashes on the darker ground); iOS keeps
+  /// its own swipe-back transition.
+  static PageTransitionsTheme _pageTransitions(InsulinkColors tokens) {
+    return PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(
+          backgroundColor: tokens.ground,
+        ),
+        TargetPlatform.iOS: const CupertinoPageTransitionsBuilder(),
+      },
     );
   }
 

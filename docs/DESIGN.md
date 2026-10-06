@@ -83,6 +83,9 @@ before drawing a new bar or button.
 | `SegmentBar` | `base/segment_bar.dart` | Rounded segments with gaps: range scale, time in range, device days (`.count`) |
 | `HeaderIconButton` | `base/header_icon_button.dart` | 44 px round header button, optional status dot ringed in `ground` |
 | `FloatingDock` | `base/floating_dock.dart` | Tab capsule plus the round bolus button |
+| `DockTabs` | `base/dock_tabs.dart` | The tabs in the capsule: one pill that springs between them and follows a horizontal drag |
+| `TabTransition` | `base/tab_transition.dart` | Fade plus a short slide from the tab's side on every tab change |
+| `DeviceAttention` | `connections/device_attention.dart` | Which devices need the user; the header dot and the devices page rows both read it |
 | `GlucoseHero` | `overview/glucose_hero.dart` | Value, rotated trend arrow, unit and trend words |
 | `RangeScale` | `overview/range_scale.dart` | 40 to 250 mg/dL scale split at the user's targets, knob on the value |
 | `OverviewDevices` | `overview/overview_devices.dart` | Sensor, pod and reservoir, automation row, in one panel |

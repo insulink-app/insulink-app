@@ -36,7 +36,7 @@ class OverviewTimeInRange extends StatelessWidget {
       container: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 10,
+        spacing: 14,
         children: [
           _summary(context, inRange, low, high),
           SegmentBar(

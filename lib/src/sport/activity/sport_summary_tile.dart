@@ -54,10 +54,11 @@ class SportSummaryTile extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 92),
             child: Stack(
+              alignment: AlignmentDirectional.centerStart,
               children: [
                 if (progress != null) _fill(colors),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+                  padding: const EdgeInsets.all(16),
                   child: Row(
                     spacing: 14,
                     children: [

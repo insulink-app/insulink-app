@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/base/nav_badge.dart';
+import 'package:insulink/src/base/dock_tabs.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/injection/injection_button.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/insulink_colors.dart';
 
 /// The floating navigation: a capsule with the tabs and, beside it, the round
@@ -84,77 +83,11 @@ class FloatingDock extends StatelessWidget {
         border: Border.all(color: colors.border),
         boxShadow: colors.dockShadow,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          for (var index = 0; index < pageBodies.length; index++)
-            _tab(context, colors, index),
-        ],
-      ),
-    );
-  }
-
-  Widget _tab(BuildContext context, InsulinkColors colors, int index) {
-    final body = pageBodies[index];
-    final label = Locales.string(context, body.name);
-    final selected = index == selectedIndex;
-    final count = badges[index];
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      excludeSemantics: true,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          selected
-              ? _activeTab(colors, body, label)
-              : _idleTab(colors, body, index),
-          if (count != null && count != 0) NavBadge(count: count),
-        ],
-      ),
-    );
-  }
-
-  /// The current tab as a pill: icon and label on the soft accent.
-  Widget _activeTab(InsulinkColors colors, AppPageBody body, String label) {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
-      decoration: BoxDecoration(
-        color: colors.accentSoft,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 8,
-        children: [
-          Icon(body.unselectedIcon, size: 22, color: colors.accentText),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: colors.accentText,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Any other tab: only its icon, muted, on a 48 px round target.
-  Widget _idleTab(InsulinkColors colors, AppPageBody body, int index) {
-    return SizedBox.square(
-      dimension: 48,
-      child: Material(
-        type: MaterialType.transparency,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => onSelect(index),
-          child: Icon(body.unselectedIcon, size: 22, color: colors.muted),
-        ),
+      child: DockTabs(
+        pageBodies: pageBodies,
+        selectedIndex: selectedIndex,
+        badges: badges,
+        onSelect: onSelect,
       ),
     );
   }

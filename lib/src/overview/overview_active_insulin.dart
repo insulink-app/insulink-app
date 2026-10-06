@@ -12,6 +12,7 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/overview/overview_section.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
+import 'package:insulink/src/theme/insulink_text_styles.dart';
 import 'package:provider/provider.dart';
 
 /// The insulin summary on the overview: the units still working from recent
@@ -162,28 +163,20 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
   /// Section title on the left, the units on board on the right — the one number
   /// that carries the box, so it stays the only large thing in it.
   ///
-  /// onSurface, not a literal white: it reads white on the dark theme and stays
-  /// legible on the light one, where white on white would be invisible.
+  /// Top-aligned with both lines at height 1: in this font the capitals and
+  /// digits then start ~0.08 em below each text box, so the title's top edge
+  /// lines up with the number's within a pixel.
   Widget _headline(BuildContext context, double units) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: LocaleText(
             'overview.active_insulin.title',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: InsulinkTextStyles.sectionTitle.copyWith(height: 1),
           ),
         ),
-        Text(
-          _units(context, units),
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            height: 1,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
+        Text(_units(context, units), style: InsulinkTextStyles.statValue),
       ],
     );
   }
