@@ -15,6 +15,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/sport/sport_range_selector.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/google_health/sleep_nights.dart';
 
 /// The sleep page: one night in detail (stepped through with the pager) and
 /// the nights of the chosen window as a trend and a list. Everything comes
@@ -97,9 +98,8 @@ class _SleepPageState extends State<SleepPage> {
         nights.length;
     final stages = night.sleepStages;
     final hasStages = stages != null && !stages.isEmpty;
-    final metrics = hasStages
-        ? SleepMetrics.of(stages, night.sleepTimeline)
-        : null;
+    final timeline = _timeline(night);
+    final metrics = hasStages ? SleepMetrics.of(stages, timeline) : null;
     return [
       SleepNightPager(
         date: night.date,
@@ -113,7 +113,7 @@ class _SleepPageState extends State<SleepPage> {
         minutes: _minutes(night),
         averageMinutes: average,
         index: metrics?.sleepIndex,
-        timeline: night.sleepTimeline,
+        timeline: timeline,
       ),
       if (metrics != null && _targets != null) ...[
         _header(
@@ -124,7 +124,7 @@ class _SleepPageState extends State<SleepPage> {
       ],
       if (hasStages) ...[
         _header('google_health.sleep_stage'),
-        SleepPhasesPanel(stages: stages, timeline: night.sleepTimeline),
+        SleepPhasesPanel(stages: stages, timeline: timeline),
       ],
       _header('google_health.sleep_page.trend'),
       SleepTrendSection(
@@ -136,6 +136,18 @@ class _SleepPageState extends State<SleepPage> {
       _header('google_health.sleep_page.history'),
       SleepHistoryPanel(nights: nights),
     ];
+  }
+
+  /// The night's own session out of what was stored for the day. Days imported
+  /// before the importer grouped by session can still carry a stretch of the
+  /// next night (cut at midnight), which made the night read as falling asleep
+  /// at 23:59 and waking at 23:52.
+  List<SleepSegment>? _timeline(GoogleHealthDay night) {
+    final stored = night.sleepTimeline;
+    if (stored == null || stored.isEmpty) {
+      return stored;
+    }
+    return SleepNights(stored).longest;
   }
 
   void _select(GoogleHealthDay night) =>
