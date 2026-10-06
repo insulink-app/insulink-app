@@ -1,43 +1,47 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/overview/chart/meal_label_rows.dart';
 
-/// A 24-hour window, so the crowding threshold is about 1.4 hours.
-const _rows = MealLabelRows(spanX: 24);
+const _rows = MealLabelRows();
+
+({double left, double right}) _label(double left, [double width = 56]) =>
+    (left: left, right: left + width);
 
 /// Meals minutes apart put their carb labels on top of each other, and dropping
-/// one would hide a meal the chart still draws a line for. So they stack, and
-/// the stacking has to reset as soon as there is room again.
+/// one would hide a meal the chart still draws a line for. So they stack, by
+/// their real width in pixels, and only as far as they have to.
 void main() {
   test('a single meal sits in the top row', () {
-    expect(_rows.assign([6]), [0]);
+    expect(_rows.assign([_label(40)]), [0]);
   });
 
-  test('meals far apart all sit in the top row', () {
-    expect(_rows.assign([2, 8, 14, 20]), [0, 0, 0, 0]);
+  test('labels with room between them all sit in the top row', () {
+    expect(_rows.assign([_label(0), _label(80), _label(160)]), [0, 0, 0]);
   });
 
-  test('a crowded pair steps down', () {
-    expect(_rows.assign([6, 6.5]), [0, 1]);
+  test('two labels that would touch step down', () {
+    expect(_rows.assign([_label(100), _label(130)]), [0, 1]);
   });
 
-  test('a cluster steps down in the order it happened', () {
-    expect(_rows.assign([6, 6.3, 6.6, 6.9]), [0, 1, 2, 0]);
+  test('a gap smaller than the spacing still counts as touching', () {
+    expect(_rows.assign([_label(0), _label(60)]), [0, 1]);
+    expect(_rows.assign([_label(0), _label(62)]), [0, 0]);
   });
 
-  test('room after a cluster resets to the top', () {
-    expect(_rows.assign([6, 6.3, 18, 18.4]), [0, 1, 0, 1]);
+  test('a label goes back up as soon as the top row has room', () {
+    expect(_rows.assign([_label(0), _label(20), _label(70)]), [0, 1, 0]);
   });
 
-  test('just past the threshold is room, just inside it is not', () {
-    expect(_rows.assign([6, 6 + _rows.threshold * 1.01]), [0, 0]);
-    expect(_rows.assign([6, 6 + _rows.threshold * 0.99]), [0, 1]);
+  test('a full stack puts the next label where the overlap is least', () {
+    expect(_rows.assign([_label(0), _label(10), _label(20), _label(30)]), [
+      0,
+      1,
+      2,
+      0,
+    ]);
   });
 
-  test('the threshold scales with the window, not with the clock', () {
-    const narrow = MealLabelRows(spanX: 3);
-    // 20 minutes apart: crowded on a 24 h window, roomy on a 3 h one.
-    expect(_rows.assign([6, 6.33]), [0, 1]);
-    expect(narrow.assign([6, 6.33]), [0, 0]);
+  test('the order the meals come in does not matter', () {
+    expect(_rows.assign([_label(130), _label(100)]), [1, 0]);
   });
 
   test('no meals, no rows', () {

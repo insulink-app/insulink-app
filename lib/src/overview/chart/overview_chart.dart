@@ -24,7 +24,6 @@ import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:insulink/src/overview/chart/meal_label_rows.dart';
 import 'package:insulink/src/overview/chart/meal_label_strip.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
@@ -502,24 +501,20 @@ class _OverviewChartState extends State<OverviewChart> {
     );
   }
 
-  /// The carb labels, one pill per visible meal, stacked into a second row
-  /// where two meals sit close together. Null without meals.
+  /// The carb labels, one pill per visible meal; the strip measures them and
+  /// stacks the ones that would touch. Null without meals.
   Widget? _mealStrip() {
     final axis = _axis;
     if (axis == null || _mealMarkers.isEmpty) {
       return null;
     }
-    final rows = MealLabelRows(
-      spanX: axis.maxX - axis.minX,
-    ).assign([for (final marker in _mealMarkers) marker.x]);
     return MealLabelStrip(
       stripWidth: _axisInset,
       labels: [
-        for (var index = 0; index < _mealMarkers.length; index++)
+        for (final marker in _mealMarkers)
           (
-            fraction: axis.fractionOf(_mealMarkers[index].x),
-            text: '${sportDecimal(_mealMarkers[index].meal.carbs, 0)} g',
-            row: rows[index],
+            fraction: axis.fractionOf(marker.x),
+            text: '${sportDecimal(marker.meal.carbs, 0)} g',
           ),
       ],
     );
