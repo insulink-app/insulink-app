@@ -151,14 +151,16 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/images/icon-foreground.png"
 
 flutter_native_splash:
-  color: "#FAFAFA"
-  color_dark: "#15181D"
+  color: "#EDF2F6"
+  color_dark: "#0F1B26"
   image: assets/images/splash-black.png
   image_dark: assets/images/splash-white.png
   fullscreen: true
   android_gravity: center
+  # The web demo keeps its hand-written splash in web/index.html; the generator would replace it.
+  web: false
   android_12:
-    color: "#FAFAFA"
-    color_dark: "#15181D"
+    color: "#EDF2F6"
+    color_dark: "#0F1B26"
     image: assets/images/splash-black.png
     image_dark: assets/images/splash-white.png
