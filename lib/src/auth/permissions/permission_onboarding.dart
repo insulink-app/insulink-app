@@ -34,6 +34,14 @@ class _PermissionOnboardingState extends State<PermissionOnboarding> {
 
   static final List<PermissionRequest> _permissions = [
     (
+      icon: PhosphorIconsBold.camera,
+      titleKey: 'permission.camera.title',
+      bodyKey: 'permission.camera.body',
+      request: () async {
+        await Permission.camera.request();
+      },
+    ),
+    (
       icon: PhosphorIconsBold.bluetooth,
       titleKey: 'permission.bluetooth.title',
       bodyKey: 'permission.bluetooth.body',

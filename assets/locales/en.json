@@ -36,6 +36,10 @@
   "permission": {
     "next": "Allow",
     "continue": "Continue",
+    "camera": {
+      "title": "Camera",
+      "body": "Insulink uses the camera to scan the QR code when pairing a sensor and to scan food barcodes."
+    },
     "bluetooth": {
       "title": "Bluetooth",
       "body": "Insulink connects to your Dexcom G7 over Bluetooth to read your glucose. Without it the app can't find your sensor."
