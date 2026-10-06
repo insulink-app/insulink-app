@@ -2,6 +2,8 @@
   "date": {
     "today": "Heute",
     "yesterday": "Gestern",
+    "previous_day": "Vorheriger Tag",
+    "next_day": "Nächster Tag",
     "weekday": {
       "1": "Mo",
       "2": "Di",
@@ -704,11 +706,14 @@
     },
     "hr_min": "Min",
     "hr_max": "Max",
+    "hr_avg": "Ø Tag",
+    "hr_highlight": "über # bpm hervorgehoben",
+    "hr_now": "Aktuell",
     "hr_zones": {
       "title": "Pulszonen",
       "elevated": "Erhöht ab",
       "high": "Hoch ab",
-      "note": "Legt die Farbschwellen im Puls-Diagramm fest: grün unter „Erhöht ab“, orange bis „Hoch ab“, darüber rot.",
+      "note": "Ab „Erhöht ab“ hebt das Puls-Diagramm die Werte violett hervor.",
       "save": "Speichern"
     }
   },

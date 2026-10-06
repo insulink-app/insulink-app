@@ -3,7 +3,10 @@ import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/base/change_chip.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/relative_day.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Small pill badge for the change against the previous entry.
 ///
@@ -28,33 +31,10 @@ class MeasurementDeltaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final up = delta > 0;
-    final bad = up == risingIsBad;
-    final color = bad ? context.warning : context.positive;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            up ? PhosphorIconsBold.arrowUp : PhosphorIconsBold.arrowDown,
-            size: 12,
-            color: color,
-          ),
-          const SizedBox(width: 2),
-          Text(
-            '${sportDecimal(delta.abs(), decimals)} $unit',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
+    return ChangeChip(
+      label: '${sportDecimal(delta.abs(), decimals)} $unit',
+      up: up,
+      bad: up == risingIsBad,
     );
   }
 }
@@ -72,6 +52,7 @@ class MeasurementRow extends StatelessWidget {
     required this.onEdit,
     this.previous,
     this.decimals = 1,
+    this.framed = true,
   });
 
   final double value;
@@ -87,25 +68,24 @@ class MeasurementRow extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onEdit;
 
+  /// Whether the row brings its own panel (see [build]).
+  final bool framed;
+
+  /// A bare row inside an [InkPanel.list]; [framed] gives a row standing on
+  /// its own a panel of its own.
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final delta = previous == null ? null : value - previous!;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onEdit,
+    final row = InkWell(
+      onTap: onEdit,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 68),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+          padding: const EdgeInsets.fromLTRB(16, 10, 6, 10),
           child: Row(
+            spacing: 6,
             children: [
-              Expanded(child: _valueAndDate(context, scheme)),
+              Expanded(child: _valueAndDate(context)),
               if (delta != null && delta != 0)
                 MeasurementDeltaChip(
                   delta: delta,
@@ -113,7 +93,12 @@ class MeasurementRow extends StatelessWidget {
                   decimals: decimals,
                 ),
               IconButton(
-                icon: const Icon(PhosphorIconsBold.trash, size: 20),
+                tooltip: Locales.string(context, 'alert.delete'),
+                icon: Icon(
+                  PhosphorIconsBold.trash,
+                  size: 20,
+                  color: context.ink.muted,
+                ),
                 onPressed: () => confirmDelete(
                   context,
                   messageKey: deleteConfirmKey,
@@ -125,24 +110,21 @@ class MeasurementRow extends StatelessWidget {
         ),
       ),
     );
+    return framed ? InkPanel.list(rows: [row]) : row;
   }
 
-  Widget _valueAndDate(BuildContext context, ColorScheme scheme) {
+  Widget _valueAndDate(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 3,
       children: [
         Text(
           '${sportDecimal(value, decimals)} $unit',
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          style: InkText.rowTitle.copyWith(fontSize: 17),
         ),
-        const SizedBox(height: 2),
         Text(
-          '${Locales.string(context, 'date.weekday.${time.weekday}')} '
-          '${time.day}.${time.month}.${time.year}',
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
+          RelativeDay(time).label(context),
+          style: InkText.label.copyWith(color: context.ink.muted),
         ),
       ],
     );

@@ -4,170 +4,80 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/base/measurement_row.dart';
-import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:insulink/src/theme/brand_tints.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
-/// Highlighted "Current" box: current weight + trend, with min/avg/max of the
-/// selected range below. [ranged] are the entries in the selected window,
-/// [latest] is always the newest overall value.
+/// The weight at the top of the page, open without a card: "Aktuell" over the
+/// latest value large, the change since the entry before on the right, and
+/// the BMI as a pill underneath when a height is stored.
 class WeightCurrentCard extends StatelessWidget {
   const WeightCurrentCard({
     super.key,
     required this.latest,
     required this.previousKg,
-    required this.ranged,
     this.bmi,
   });
 
   final WeightEntry latest;
   final double? previousKg;
-  final List<WeightEntry> ranged;
 
   /// Body-mass index (from the stored height), shown as a pill when available.
   final double? bmi;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final colors = context.ink;
     final delta = previousKg == null ? null : latest.kg - previousKg!;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.08)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           LocaleText(
             'sport.weight.current',
-            style: TextStyle(
-              fontSize: 13,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
+            style: InkText.label.copyWith(color: colors.muted),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
                 sportDecimal(latest.kg, 1),
-                style: const TextStyle(
-                  fontSize: 46,
-                  fontWeight: FontWeight.bold,
+                style: InkText.bigValue.copyWith(
+                  fontSize: 56,
+                  letterSpacing: -2,
                 ),
               ),
-              const SizedBox(width: 6),
-              Text(
-                'kg',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: scheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-              if (bmi != null) ...[
-                const SizedBox(width: 12),
-                _bmiPill(context, scheme),
-              ],
+              const SizedBox(width: 8),
+              Text('kg', style: InkText.section.copyWith(color: colors.muted)),
               const Spacer(),
               if (delta != null && delta != 0)
                 MeasurementDeltaChip(delta: delta, unit: 'kg'),
             ],
           ),
-          if (ranged.length >= 2) ...[
-            const SizedBox(height: 18),
-            Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
-            const SizedBox(height: 16),
-            _stats(context, scheme),
+          if (bmi != null) ...[
+            const SizedBox(height: 12),
+            _bmiPill(context, colors),
           ],
         ],
       ),
     );
   }
 
-  Widget _bmiPill(BuildContext context, ColorScheme scheme) {
+  Widget _bmiPill(BuildContext context, InsulinkColors colors) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: scheme.tintPanel,
-        borderRadius: BorderRadius.circular(10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: ShapeDecoration(
+        color: colors.accentSoft,
+        shape: const StadiumBorder(),
       ),
       child: Text(
         '${Locales.string(context, 'sport.weight.bmi')} ${sportDecimal(bmi!, 1)}',
-        style: TextStyle(
-          fontSize: 13,
+        style: InkText.label.copyWith(
           fontWeight: FontWeight.w700,
-          color: scheme.primary,
+          color: colors.accentText,
         ),
       ),
-    );
-  }
-
-  Widget _stats(BuildContext context, ColorScheme scheme) {
-    final values = ranged.map((entry) => entry.kg);
-    final min = values.reduce((a, b) => a < b ? a : b);
-    final max = values.reduce((a, b) => a > b ? a : b);
-    final avg = values.reduce((a, b) => a + b) / ranged.length;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _stat(
-          context,
-          scheme,
-          PhosphorIconsBold.arrowDown,
-          'sport.weight.min',
-          min,
-        ),
-        _stat(
-          context,
-          scheme,
-          PhosphorIconsBold.chartLine,
-          'sport.weight.avg',
-          avg,
-        ),
-        _stat(
-          context,
-          scheme,
-          PhosphorIconsBold.arrowUp,
-          'sport.weight.max',
-          max,
-        ),
-      ],
-    );
-  }
-
-  Widget _stat(
-    BuildContext context,
-    ColorScheme scheme,
-    IconData icon,
-    String labelKey,
-    double kg,
-  ) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: scheme.onSurfaceVariant),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              Locales.string(context, labelKey),
-              style: TextStyle(
-                fontSize: 11,
-                color: scheme.onSurface.withValues(alpha: 0.55),
-              ),
-            ),
-            const SizedBox(height: 1),
-            Text(
-              '${sportDecimal(kg, 1)} kg',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

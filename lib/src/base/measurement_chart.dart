@@ -1,6 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:intl/intl.dart';
 
 /// One plotted measurement: when it was taken and what it read.
 typedef MeasurementPoint = ({int atEpochMs, double value});
@@ -22,6 +24,7 @@ class MeasurementChart extends StatefulWidget {
     required this.points,
     required this.unit,
     this.goal,
+    this.average,
     this.decimals = 1,
   });
 
@@ -33,6 +36,9 @@ class MeasurementChart extends StatefulWidget {
   /// Target value drawn as a labelled horizontal line, and folded into the Y
   /// range so the line is always visible.
   final double? goal;
+
+  /// Drawn as a dashed line across the chart; null draws none.
+  final double? average;
 
   /// Decimal places for values in the tooltip and the goal label.
   final int decimals;
@@ -52,7 +58,7 @@ class _MeasurementChartState extends State<MeasurementChart> {
   @override
   Widget build(BuildContext context) {
     final points = widget.points;
-    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final colors = context.ink;
     final spots = [
       for (final point in points)
         FlSpot(point.atEpochMs.toDouble(), point.value),
@@ -72,10 +78,15 @@ class _MeasurementChartState extends State<MeasurementChart> {
         maxX: maxX == minX ? minX + 1 : maxX,
         minY: minValue - pad,
         maxY: maxValue + pad,
-        gridData: const FlGridData(show: true, drawVerticalLine: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: colors.panelRaised, strokeWidth: 1),
+        ),
         borderData: FlBorderData(show: false),
         titlesData: _titles(context, minX, maxX, span),
-        extraLinesData: _goalLine(context, goal),
+        extraLinesData: _lines(context, goal),
         lineTouchData: _touchData(context),
         lineBarsData: [
           LineChartBarData(
@@ -84,8 +95,16 @@ class _MeasurementChartState extends State<MeasurementChart> {
             curveSmoothness: 0.2,
             preventCurveOverShooting: true,
             barWidth: 2.5,
-            color: onSurface.withValues(alpha: 0.85),
-            dotData: FlDotData(show: points.length == 1),
+            color: colors.text,
+            dotData: FlDotData(
+              checkToShowDot: (spot, bar) => spot.x == bar.spots.last.x,
+              getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
+                radius: 5,
+                color: colors.text,
+                strokeColor: colors.panel,
+                strokeWidth: 2.5,
+              ),
+            ),
           ),
         ],
       ),
@@ -93,29 +112,37 @@ class _MeasurementChartState extends State<MeasurementChart> {
     );
   }
 
-  /// Dashed target line with the goal value labelled above it.
-  ExtraLinesData _goalLine(BuildContext context, double? goal) {
-    if (goal == null) {
-      return const ExtraLinesData();
-    }
-    final accent = Theme.of(context).colorScheme.primary;
+  /// The dashed average (when given) and the target line with the goal value
+  /// labelled above it.
+  ExtraLinesData _lines(BuildContext context, double? goal) {
+    final colors = context.ink;
+    final accent = colors.accent;
+    final average = widget.average;
     return ExtraLinesData(
       horizontalLines: [
-        HorizontalLine(
-          y: goal,
-          color: accent.withValues(alpha: 0.7),
-          strokeWidth: 1.5,
-          label: HorizontalLineLabel(
-            show: true,
-            alignment: Alignment.bottomLeft,
-            style: TextStyle(
-              fontSize: 10,
-              color: accent,
-              fontWeight: FontWeight.w600,
-            ),
-            labelResolver: (_) => _label(goal),
+        if (average != null)
+          HorizontalLine(
+            y: average,
+            color: colors.text.withValues(alpha: 0.6),
+            strokeWidth: 1.5,
+            dashArray: const [4, 4],
           ),
-        ),
+        if (goal != null)
+          HorizontalLine(
+            y: goal,
+            color: accent.withValues(alpha: 0.7),
+            strokeWidth: 1.5,
+            label: HorizontalLineLabel(
+              show: true,
+              alignment: Alignment.bottomLeft,
+              style: TextStyle(
+                fontSize: 10,
+                color: accent,
+                fontWeight: FontWeight.w600,
+              ),
+              labelResolver: (_) => _label(goal),
+            ),
+          ),
       ],
     );
   }
@@ -198,7 +225,6 @@ class _MeasurementChartState extends State<MeasurementChart> {
     double maxX,
     double span,
   ) {
-    final locale = MaterialLocalizations.of(context);
     return FlTitlesData(
       topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -216,10 +242,12 @@ class _MeasurementChartState extends State<MeasurementChart> {
               meta: meta,
               fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
               child: Text(
-                locale.formatShortDate(date),
-                style: TextStyle(
-                  fontSize: 9,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                DateFormat.MMMd(
+                  Localizations.localeOf(context).toLanguageTag(),
+                ).format(date),
+                style: InkText.axis.copyWith(
+                  fontSize: 12,
+                  color: context.ink.muted,
                 ),
               ),
             );
@@ -234,9 +262,9 @@ class _MeasurementChartState extends State<MeasurementChart> {
             meta: meta,
             child: Text(
               value.toStringAsFixed(span < 5 ? 1 : 0),
-              style: TextStyle(
-                fontSize: 10,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              style: InkText.axis.copyWith(
+                fontSize: 12,
+                color: context.ink.muted,
               ),
             ),
           ),

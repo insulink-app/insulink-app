@@ -4,14 +4,16 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// ‹ date › to step through the nights: two round buttons with the night's
-/// date between them. A button at the end of the list is dimmed and inert.
-class SleepNightPager extends StatelessWidget {
-  const SleepNightPager({
+/// ‹ date › to step through days or nights: two round buttons with the date
+/// between them. A button at the end is dimmed and inert.
+class DayPager extends StatelessWidget {
+  const DayPager({
     super.key,
     required this.date,
     required this.onPrevious,
     required this.onNext,
+    this.previousLabelKey = 'date.previous_day',
+    this.nextLabelKey = 'date.next_day',
   });
 
   final DateTime date;
@@ -20,16 +22,16 @@ class SleepNightPager extends StatelessWidget {
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
 
+  /// Read out by screen readers for the two buttons.
+  final String previousLabelKey;
+  final String nextLabelKey;
+
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toLanguageTag();
     return Row(
       children: [
-        _step(
-          PhosphorIconsBold.caretLeft,
-          'google_health.sleep_page.previous_night',
-          onPrevious,
-        ),
+        _step(PhosphorIconsBold.caretLeft, previousLabelKey, onPrevious),
         Expanded(
           child: Text(
             DateFormat.MMMEd(locale).format(date),
@@ -37,11 +39,7 @@ class SleepNightPager extends StatelessWidget {
             style: InkText.row,
           ),
         ),
-        _step(
-          PhosphorIconsBold.caretRight,
-          'google_health.sleep_page.next_night',
-          onNext,
-        ),
+        _step(PhosphorIconsBold.caretRight, nextLabelKey, onNext),
       ],
     );
   }

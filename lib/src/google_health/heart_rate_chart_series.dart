@@ -10,11 +10,18 @@ import 'heart_rate_zones.dart';
 /// glucose chart's zone splitter, but its own class: the glucose one is coupled
 /// to that domain's low/in/high thresholds.
 class HeartRateChartSeries {
-  HeartRateChartSeries({required this.points, required this.zones});
+  HeartRateChartSeries({
+    required this.points,
+    required this.zones,
+    required this.palette,
+  });
 
   /// Samples as chart spots (x = hours, y = bpm), ascending in x.
   final List<FlSpot> points;
   final HeartRateZones zones;
+
+  /// Line colour per zone index (see [HeartRateZones.zoneOf]).
+  final List<Color> palette;
 
   final List<FlSpot> _spots = [];
   final List<int> _zoneIdx = [];
@@ -68,11 +75,11 @@ class HeartRateChartSeries {
   /// is the higher zone of its two endpoints, so any excursion is coloured).
   List<LineChartBarData> _bars() {
     if (_spots.length < 2) {
-      return _spots.isEmpty ? [] : [_bar(_spots, zones.colors[_zoneIdx.first])];
+      return _spots.isEmpty ? [] : [_bar(_spots, palette[_zoneIdx.first])];
     }
     final segColors = [
       for (var index = 0; index < _spots.length - 1; index++)
-        zones.colors[_zoneIdx[index] > _zoneIdx[index + 1]
+        palette[_zoneIdx[index] > _zoneIdx[index + 1]
             ? _zoneIdx[index]
             : _zoneIdx[index + 1]],
     ];
@@ -97,10 +104,6 @@ class HeartRateChartSeries {
       barWidth: 3,
       color: color,
       dotData: const FlDotData(show: false),
-      belowBarData: BarAreaData(
-        show: true,
-        color: color.withValues(alpha: 0.12),
-      ),
     );
   }
 }

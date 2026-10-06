@@ -10,6 +10,13 @@ import 'package:insulink/src/sport/weight/weight_entry_row.dart';
 import 'package:insulink/src/sport/weight/weight_entry_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/metric_grid.dart';
+import 'package:insulink/src/base/section_header.dart';
+import 'package:insulink/src/base/stat_strip.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Weight history: current value + range metrics, chart with range picker and
 /// the entries (newest first). "+" opens the sheet.
@@ -22,6 +29,11 @@ class WeightDetailPage extends StatefulWidget {
 
 class _WeightDetailPageState extends State<WeightDetailPage> {
   SportRange _range = const SportRange.preset(90);
+
+  static const int _page = 8;
+
+  /// How many history rows are shown; "show more" adds a page.
+  int _shown = _page;
 
   List<WeightEntry> _inRange(List<WeightEntry> all) {
     final now = DateTime.now();
@@ -58,64 +70,138 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),
               ),
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
               children: [
                 WeightCurrentCard(
                   latest: weights.last,
                   previousKg: weights.length >= 2
                       ? weights[weights.length - 2].kg
                       : null,
-                  ranged: ranged,
                   bmi: context.watch<SportState>().bmi,
                 ),
-                const SizedBox(height: 20),
+                if (ranged.length >= 2) ...[
+                  const SizedBox(height: 18),
+                  _stats(context, ranged),
+                ],
+                const SizedBox(height: 18),
                 SportRangeSelector(
                   value: _range,
                   onChanged: (range) => setState(() => _range = range),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 _chartCard(context, ranged),
-                const SizedBox(height: 24),
-                LocaleText(
-                  'sport.weight.history',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                for (var index = ranged.length - 1; index >= 0; index--)
-                  WeightEntryRow(
-                    entry: ranged[index],
-                    previousKg: index > 0 ? ranged[index - 1].kg : null,
-                    onDelete: () =>
-                        context.read<SportState>().removeWeight(ranged[index]),
-                    onEdit: () =>
-                        showWeightEntrySheet(context, existing: ranged[index]),
-                  ),
+                ..._history(context, ranged),
               ],
             ),
     );
   }
 
+  double _average(List<WeightEntry> ranged) =>
+      ranged.map((entry) => entry.kg).reduce((sum, kg) => sum + kg) /
+      ranged.length;
+
+  /// Min, Ø and Max over the window.
+  Widget _stats(BuildContext context, List<WeightEntry> ranged) {
+    final values = ranged.map((entry) => entry.kg);
+    MetricCell cell(String key, double kg) => (
+      label: Locales.string(context, key),
+      value: sportDecimal(kg, 1),
+      unit: 'kg',
+    );
+    return StatStrip(
+      cells: [
+        cell(
+          'sport.weight.min',
+          values.reduce((low, kg) => low < kg ? low : kg),
+        ),
+        cell('sport.weight.avg', _average(ranged)),
+        cell(
+          'sport.weight.max',
+          values.reduce((high, kg) => high > kg ? high : kg),
+        ),
+      ],
+    );
+  }
+
   Widget _chartCard(BuildContext context, List<WeightEntry> ranged) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 20, 16, 12),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
-      child: SizedBox(
-        height: 200,
-        child: ranged.isEmpty
-            ? Center(child: LocaleText('sport.weight.empty'))
-            : WeightChart(
-                weights: ranged,
-                goalKg: context.watch<SportState>().weightGoalKg,
+    final colors = context.ink;
+    final average = ranged.isEmpty ? null : _average(ranged);
+    return InkPanel(
+      padding: const EdgeInsets.fromLTRB(12, 18, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (average != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Row(
+                spacing: 10,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    child: Divider(thickness: 1.5, color: colors.accent),
+                  ),
+                  Text(
+                    Locales.string(
+                      context,
+                      'google_health.sleep_page.average',
+                      params: ['${sportDecimal(average, 1)} kg'],
+                    ),
+                    style: InkText.caption.copyWith(color: colors.muted),
+                  ),
+                ],
               ),
+            ),
+            const SizedBox(height: 14),
+          ],
+          SizedBox(
+            height: 220,
+            child: ranged.isEmpty
+                ? Center(child: LocaleText('sport.weight.empty'))
+                : WeightChart(
+                    weights: ranged,
+                    goalKg: context.watch<SportState>().weightGoalKg,
+                    averageKg: average,
+                  ),
+          ),
+        ],
       ),
     );
+  }
+
+  /// The entries newest first, in one panel, a page at a time.
+  List<Widget> _history(BuildContext context, List<WeightEntry> ranged) {
+    if (ranged.isEmpty) {
+      return const [];
+    }
+    final visible = ranged.reversed.take(_shown).toList();
+    return [
+      const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8),
+        child: SectionHeader(titleKey: 'sport.weight.history'),
+      ),
+      InkPanel.list(
+        rows: [
+          for (final entry in visible)
+            WeightEntryRow(
+              entry: entry,
+              framed: false,
+              previousKg: _previous(ranged, entry),
+              onDelete: () => context.read<SportState>().removeWeight(entry),
+              onEdit: () => showWeightEntrySheet(context, existing: entry),
+            ),
+        ],
+      ),
+      if (ranged.length > _shown)
+        TextButton(
+          onPressed: () => setState(() => _shown += _page),
+          child: LocaleText('nutrition.meals.show_more'),
+        ),
+    ];
+  }
+
+  double? _previous(List<WeightEntry> ranged, WeightEntry entry) {
+    final index = ranged.indexOf(entry);
+    return index > 0 ? ranged[index - 1].kg : null;
   }
 }

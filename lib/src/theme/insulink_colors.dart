@@ -30,6 +30,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     required this.sleepLight,
     required this.sleepRem,
     required this.sleepRestless,
+    required this.pulseHigh,
     required this.dockShadow,
   });
 
@@ -91,6 +92,11 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
   final Color sleepRem;
   final Color sleepRestless;
 
+  /// Pulse above the user's "elevated" threshold. Violet on purpose, not red or
+  /// amber, so a raised pulse does not read as a warning. Light takes a deeper
+  /// violet than the spec's dark value to stay readable on white.
+  final Color pulseHigh;
+
   /// The only shadow in the app, under the navigation capsule and bolus button.
   final List<BoxShadow> dockShadow;
 
@@ -116,6 +122,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     sleepLight: Color(0xFF5BC0F8),
     sleepRem: Color(0xFF2ED8B6),
     sleepRestless: Color(0xFFF06292),
+    pulseHigh: Color(0xFFC9A7FF),
     dockShadow: [
       BoxShadow(
         color: Color(0x73000000),
@@ -147,6 +154,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     sleepLight: Color(0xFF5BC0F8),
     sleepRem: Color(0xFF2ED8B6),
     sleepRestless: Color(0xFFF06292),
+    pulseHigh: Color(0xFF7B4FCC),
     dockShadow: [
       BoxShadow(
         color: Color(0x1F0F1B26),
@@ -179,6 +187,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     Color? sleepLight,
     Color? sleepRem,
     Color? sleepRestless,
+    Color? pulseHigh,
     List<BoxShadow>? dockShadow,
   }) {
     return InsulinkColors(
@@ -203,6 +212,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
       sleepLight: sleepLight ?? this.sleepLight,
       sleepRem: sleepRem ?? this.sleepRem,
       sleepRestless: sleepRestless ?? this.sleepRestless,
+      pulseHigh: pulseHigh ?? this.pulseHigh,
       dockShadow: dockShadow ?? this.dockShadow,
     );
   }
@@ -235,6 +245,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
       sleepLight: blend(sleepLight, other.sleepLight),
       sleepRem: blend(sleepRem, other.sleepRem),
       sleepRestless: blend(sleepRestless, other.sleepRestless),
+      pulseHigh: blend(pulseHigh, other.pulseHigh),
       dockShadow: BoxShadow.lerpList(dockShadow, other.dockShadow, t)!,
     );
   }

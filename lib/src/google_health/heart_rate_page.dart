@@ -1,8 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:insulink/src/base/hour_range_selector.dart';
-import 'package:insulink/src/google_health/fitbit_heart_rate_monitor.dart';
 import 'package:insulink/src/google_health/google_health_importer.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/google_health/intraday_pulse_store.dart';
@@ -15,6 +13,13 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/day_pager.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/metric_grid.dart';
+import 'package:insulink/src/base/segmented_toggle.dart';
+import 'package:insulink/src/base/stat_strip.dart';
+import 'package:insulink/src/google_health/heart_rate_hero.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 typedef _HrSample = ({DateTime at, int bpm});
 
@@ -159,8 +164,18 @@ class _HeartRatePageState extends State<HeartRatePage> {
       ),
       body: Column(
         children: [
-          _liveBanner(context),
-          _dayPicker(context),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: HeartRateHero(),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+            child: DayPager(
+              date: _day,
+              onPrevious: () => _shift(-1),
+              onNext: _isToday ? null : () => _shift(1),
+            ),
+          ),
           Expanded(
             child: FutureBuilder<List<_HrSample>>(
               future: _future,
@@ -177,83 +192,6 @@ class _HeartRatePageState extends State<HeartRatePage> {
                 return _content(context, samples);
               },
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Real-time BLE pulse from the worn Fitbit (see [FitbitHeartRateMonitor]),
-  /// with its scan/connect/stream status so a missing pulse is diagnosable.
-  Widget _liveBanner(BuildContext context) {
-    final health = context.watch<GoogleHealthState>();
-    final monitor = health.liveHrMonitor;
-    final scheme = Theme.of(context).colorScheme;
-    return ListenableBuilder(
-      listenable: monitor,
-      builder: (context, _) {
-        // Live from either source: this isolate's band reader OR the service's
-        // push (which owns the band while backgrounded). Tapping only restarts
-        // the local reader when nothing is streaming from anywhere.
-        final live = health.hasLiveHr;
-        final bpm = health.latestHr;
-        return InkWell(
-          onTap: live || monitor.isRunning ? null : monitor.start,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  PhosphorIconsFill.heart,
-                  color: live
-                      ? scheme.error
-                      : scheme.onSurface.withValues(alpha: 0.3),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  live && bpm != null ? '$bpm' : '–',
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Padding(
-                  padding: EdgeInsets.only(top: 6),
-                  child: Text('bpm', style: TextStyle(fontSize: 14)),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _dayPicker(BuildContext context) {
-    final locale = MaterialLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: const Icon(PhosphorIconsBold.caretLeft),
-            onPressed: () => _shift(-1),
-          ),
-          Text(
-            locale.formatMediumDate(_day),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          IconButton(
-            icon: const Icon(PhosphorIconsBold.caretRight),
-            onPressed: _isToday ? null : () => _shift(1),
           ),
         ],
       ),
@@ -299,7 +237,6 @@ class _HeartRatePageState extends State<HeartRatePage> {
   }
 
   Widget _contentBody(BuildContext context, List<_HrSample> samples) {
-    final scheme = Theme.of(context).colorScheme;
     final visible = [
       for (final sample in samples)
         if (_xOf(sample.at) >= _leftX) sample,
@@ -313,98 +250,77 @@ class _HeartRatePageState extends State<HeartRatePage> {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 96),
       children: [
-        _statsRow(
-          context,
-          scheme,
-          avg.round(),
-          bpms.reduce((a, b) => a < b ? a : b),
-          bpms.reduce((a, b) => a > b ? a : b),
+        StatStrip(
+          cells: [
+            _bpmCell(context, 'google_health.hr_avg', avg.round()),
+            _bpmCell(
+              context,
+              'google_health.hr_min',
+              bpms.reduce((low, value) => low < value ? low : value),
+            ),
+            _bpmCell(
+              context,
+              'google_health.hr_max',
+              bpms.reduce((high, value) => high > value ? high : value),
+            ),
+          ],
         ),
-        const SizedBox(height: 20),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: HourRangeSelector(selected: _rangeHours, onChanged: _setRange),
+        const SizedBox(height: 18),
+        SegmentedToggle<int>.page(
+          expand: true,
+          selected: _rangeHours,
+          onChanged: _setRange,
+          options: const [
+            (value: 24, label: '24 h'),
+            (value: 12, label: '12 h'),
+            (value: 6, label: '6 h'),
+          ],
         ),
-        const SizedBox(height: 16),
-        _chartCard(scheme, visible),
+        const SizedBox(height: 10),
+        _chartCard(context, visible),
       ],
     );
   }
 
-  Widget _statsRow(
-    BuildContext context,
-    ColorScheme scheme,
-    int avg,
-    int min,
-    int max,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+  MetricCell _bpmCell(BuildContext context, String labelKey, int value) => (
+    label: Locales.string(context, labelKey),
+    value: sportInt(value),
+    unit: 'bpm',
+  );
+
+  /// The chart in a panel, with a key for the violet highlight above it.
+  Widget _chartCard(BuildContext context, List<_HrSample> samples) {
+    final colors = context.ink;
+    return InkPanel(
+      padding: const EdgeInsets.fromLTRB(12, 18, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _stat(context, scheme, 'sport.activity.detail.average', avg),
-          _stat(context, scheme, 'google_health.hr_min', min),
-          _stat(context, scheme, 'google_health.hr_max', max),
-        ],
-      ),
-    );
-  }
-
-  Widget _stat(
-    BuildContext context,
-    ColorScheme scheme,
-    String labelKey,
-    int value,
-  ) {
-    return Column(
-      children: [
-        Text(
-          Locales.string(context, labelKey),
-          style: TextStyle(
-            fontSize: 11,
-            color: scheme.onSurface.withValues(alpha: 0.55),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text.rich(
-          TextSpan(
-            text: sportInt(value),
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            children: [
-              TextSpan(
-                text: ' bpm',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.normal,
-                  color: scheme.onSurface.withValues(alpha: 0.6),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Row(
+              spacing: 10,
+              children: [
+                SizedBox(
+                  width: 16,
+                  child: Divider(thickness: 1.5, color: colors.pulseHigh),
                 ),
-              ),
-            ],
+                Text(
+                  Locales.string(
+                    context,
+                    'google_health.hr_highlight',
+                    params: ['${_zones.elevated}'],
+                  ),
+                  style: InkText.caption.copyWith(color: colors.muted),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _chartCard(ColorScheme scheme, List<_HrSample> samples) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(8, 20, 16, 12),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
-      child: SizedBox(
-        height: 240,
-        child: LineChart(_chartData(scheme, samples)),
+          const SizedBox(height: 16),
+          SizedBox(height: 240, child: LineChart(_chartData(colors, samples))),
+        ],
       ),
     );
   }
@@ -449,9 +365,21 @@ class _HeartRatePageState extends State<HeartRatePage> {
     ];
   }
 
-  LineChartData _chartData(ColorScheme scheme, List<_HrSample> samples) {
+  /// Accent below the elevated threshold, violet from there on: a raised pulse
+  /// is not a warning, so neither red nor amber.
+  List<Color> _palette(InsulinkColors colors) => [
+    colors.accent,
+    colors.pulseHigh,
+    colors.pulseHigh,
+  ];
+
+  LineChartData _chartData(InsulinkColors colors, List<_HrSample> samples) {
     final spots = _chartSpots(samples);
-    final series = HeartRateChartSeries(points: spots, zones: _zones);
+    final series = HeartRateChartSeries(
+      points: spots,
+      zones: _zones,
+      palette: _palette(colors),
+    );
     final bars = series.buildBars();
     // Transparent overlay owning touch, so a scrub snaps to a single sample
     // rather than to each zone bar (which share boundary crossing points).
@@ -481,19 +409,28 @@ class _HeartRatePageState extends State<HeartRatePage> {
         show: true,
         drawVerticalLine: false,
         horizontalInterval: yInterval,
-        getDrawingHorizontalLine: (_) => FlLine(
-          color: scheme.onSurface.withValues(alpha: 0.06),
-          strokeWidth: 1,
-        ),
+        getDrawingHorizontalLine: (_) =>
+            FlLine(color: colors.line, strokeWidth: 1),
       ),
       borderData: FlBorderData(show: false),
-      titlesData: _titles(yInterval),
-      lineTouchData: _touch(scheme),
+      extraLinesData: ExtraLinesData(
+        horizontalLines: [
+          HorizontalLine(
+            y: _zones.elevated.toDouble(),
+            color: colors.pulseHigh.withValues(alpha: 0.7),
+            strokeWidth: 1,
+            dashArray: const [3, 4],
+          ),
+        ],
+      ),
+      titlesData: _titles(colors, yInterval),
+      lineTouchData: _touch(colors),
       lineBarsData: bars,
     );
   }
 
-  LineTouchData _touch(ColorScheme scheme) {
+  LineTouchData _touch(InsulinkColors colors) {
+    final scheme = Theme.of(context).colorScheme;
     return LineTouchData(
       // Only the transparent overlay (barWidth 0) shows a touch dot — otherwise
       // both zone bars meeting at a crossing each draw one (a green + an orange
@@ -513,8 +450,8 @@ class _HeartRatePageState extends State<HeartRatePage> {
               FlDotData(
                 getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
                   radius: 4,
-                  color: _zones.colorFor(spot.y),
-                  strokeColor: Colors.white,
+                  color: _palette(colors)[_zones.zoneOf(spot.y)],
+                  strokeColor: colors.ground,
                   strokeWidth: 1.5,
                 ),
               ),
@@ -559,7 +496,8 @@ class _HeartRatePageState extends State<HeartRatePage> {
         '${time.minute.toString().padLeft(2, '0')}';
   }
 
-  FlTitlesData _titles(double yInterval) {
+  FlTitlesData _titles(InsulinkColors colors, double yInterval) {
+    final style = InkText.axis.copyWith(fontSize: 12, color: colors.muted);
     return FlTitlesData(
       topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -567,17 +505,11 @@ class _HeartRatePageState extends State<HeartRatePage> {
         sideTitles: SideTitles(
           showTitles: true,
           interval: yInterval,
-          reservedSize: 32,
+          reservedSize: 36,
           maxIncluded: false,
           getTitlesWidget: (value, meta) => SideTitleWidget(
             meta: meta,
-            child: Text(
-              '${value.round()}',
-              style: TextStyle(
-                fontSize: 9,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
+            child: Text('${value.round()}', style: style),
           ),
         ),
       ),
@@ -592,12 +524,14 @@ class _HeartRatePageState extends State<HeartRatePage> {
             final clock = _wholeHour.add(Duration(hours: value.round()));
             return SideTitleWidget(
               meta: meta,
+              fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
               child: Text(
-                '${clock.hour.toString().padLeft(2, '0')}:00',
-                style: TextStyle(
-                  fontSize: 9,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Locales.string(
+                  context,
+                  'overview.chart.hour',
+                  params: ['${clock.hour}'],
                 ),
+                style: style,
               ),
             );
           },

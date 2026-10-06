@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 
-/// User-configurable heart-rate zones for the pulse chart: green below
-/// [elevated] bpm, orange up to [high] bpm, red above. Self-persists to secure
+/// User-configurable heart-rate zones for the pulse chart. The chart draws the
+/// pulse in the accent below [elevated] bpm and violet from there on; [high]
+/// is kept and edited but no longer changes the colour. Self-persists to secure
 /// storage (like the Profile*State classes). Kept in the heart-rate feature
 /// folder since only the pulse page uses it.
 class HeartRateZones {
@@ -23,22 +23,9 @@ class HeartRateZones {
   static const maxBpm = 240;
   static const _gap = 5;
 
-  static const green = Color(0xFF43A047);
-  static const orange = Color(0xFFFB8C00);
-  static const red = Color(0xFFE53935);
-
-  /// Zone colour for a bpm value (green / orange / red).
-  Color colorFor(num bpm) {
-    if (bpm < elevated) {
-      return green;
-    }
-    return bpm < high ? orange : red;
-  }
-
-  /// Zone index (0 green, 1 orange, 2 red) — used by the chart's band splitter.
+  /// Zone index (0 below elevated, 1 elevated, 2 high), used by the chart's
+  /// band splitter.
   int zoneOf(num bpm) => bpm < elevated ? 0 : (bpm < high ? 1 : 2);
-
-  List<Color> get colors => const [green, orange, red];
 
   /// Copy with clamped, still-ordered thresholds (elevated at least [_gap] below
   /// high).

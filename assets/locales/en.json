@@ -2,6 +2,8 @@
   "date": {
     "today": "Today",
     "yesterday": "Yesterday",
+    "previous_day": "Previous day",
+    "next_day": "Next day",
     "weekday": {
       "1": "Mon",
       "2": "Tue",
@@ -704,11 +706,14 @@
     },
     "hr_min": "Min",
     "hr_max": "Max",
+    "hr_avg": "Ø day",
+    "hr_highlight": "above # bpm highlighted",
+    "hr_now": "Now",
     "hr_zones": {
       "title": "Pulse zones",
       "elevated": "Elevated from",
       "high": "High from",
-      "note": "Sets the colour thresholds on the pulse chart: green below “Elevated from”, orange up to “High from”, red above.",
+      "note": "From \"Elevated from\" on, the pulse chart highlights values in violet.",
       "save": "Save"
     }
   },

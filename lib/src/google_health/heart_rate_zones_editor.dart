@@ -3,6 +3,7 @@ import 'package:insulink/src/google_health/heart_rate_zones.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Edits the two pulse-zone thresholds (green→orange "elevated", orange→red
 /// "high") with the same stepper rows the profile uses elsewhere, for the
@@ -48,14 +49,14 @@ class _HeartRateZonesEditorState extends State<HeartRateZonesEditor> {
         _row(
           'google_health.hr_zones.elevated',
           zones.elevated,
-          HeartRateZones.orange,
+          context.ink.pulseHigh,
           (value) => _update(zones.copyWith(elevated: value)),
         ),
         const SizedBox(height: 16),
         _row(
           'google_health.hr_zones.high',
           zones.high,
-          HeartRateZones.red,
+          context.ink.pulseHigh,
           (value) => _update(zones.copyWith(high: value)),
         ),
         const SizedBox(height: 12),

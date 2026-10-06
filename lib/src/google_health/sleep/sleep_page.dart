@@ -6,7 +6,7 @@ import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/google_health/sleep/sleep_hero_card.dart';
 import 'package:insulink/src/google_health/sleep/sleep_history_panel.dart';
 import 'package:insulink/src/google_health/sleep/sleep_index_panel.dart';
-import 'package:insulink/src/google_health/sleep/sleep_night_pager.dart';
+import 'package:insulink/src/base/day_pager.dart';
 import 'package:insulink/src/google_health/sleep/sleep_phases_panel.dart';
 import 'package:insulink/src/google_health/sleep/sleep_trend_section.dart';
 import 'package:insulink/src/google_health/sleep_metrics.dart';
@@ -101,7 +101,9 @@ class _SleepPageState extends State<SleepPage> {
     final timeline = _timeline(night);
     final metrics = hasStages ? SleepMetrics.of(stages, timeline) : null;
     return [
-      SleepNightPager(
+      DayPager(
+        previousLabelKey: 'google_health.sleep_page.previous_night',
+        nextLabelKey: 'google_health.sleep_page.next_night',
         date: night.date,
         onPrevious: index > 0 ? () => _select(nights[index - 1]) : null,
         onNext: index < nights.length - 1
