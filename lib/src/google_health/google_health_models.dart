@@ -135,3 +135,12 @@ String formatSleepMinutes(int? minutes) {
   }
   return '${minutes ~/ 60}h ${minutes % 60}m';
 }
+
+/// Minutes as the sleep page writes them: "7 h 53 min", or "16 min" under an
+/// hour. [formatSleepMinutes] stays the compact form for the tiles.
+String formatSleepDuration(int minutes) {
+  if (minutes < 60) {
+    return '$minutes min';
+  }
+  return '${minutes ~/ 60} h ${minutes % 60} min';
+}

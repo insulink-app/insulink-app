@@ -124,6 +124,7 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 | 10 | Sensor.dc.html | Sensor-Detail |
 | 11 | Pumpe.dc.html | Pumpen-Detail |
 | 12 | Health.dc.html | Google Health |
+| 13 | Schlaf.dc.html | Schlaf-Detail |
 
 ### Bolusrechner (Sheet)
 - Sheet in panel, Radius 28 oben, Griff 40 × 5. Kopf: Titel 24/800 links, runder Schließen-Button rechts.
@@ -175,6 +176,14 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
   2. Leiste temporäre Rate: Fläche high 10 %, Icon, „Temporär 0,00 E/h“ (Wert in high), Pill „Beenden“.
   3. Button „Abgabe stoppen“ (danger).
 - Pod-Daten (Schlüssel/Wert, Aktualisieren-Icon mit Hinweispunkt), „Pod verwalten“ (Pod deaktivieren, Pod vergessen, rot).
+
+### Schlaf
+- Kopf mit Zurück + Titel, darunter Datums-Navigation (runde Buttons ‹ › und Datum mittig).
+- Hero-Karte (Radius 26): links „Geschlafen“, Dauer groß (Zahlen 50/800, h/min klein muted), „Ø 7 h 20 min pro Nacht“; rechts Ring 96 px mit Schlafindex (range-Farbe). Darunter ein Phasen-Streifen (12 px, Phasen in zeitlicher Reihenfolge eingefärbt) mit Mond + Einschlafzeit links und Aufwachzeit + Sonne rechts.
+- Schlafindex: Kopfzeile mit Hinweis „✓ alle im Zielbereich“ (range). Ein Panel mit drei Zeilen: Label links, Wert fett rechts, darunter Skala (Spur 6 px, Zielbereich als grün getönter Abschnitt, Wert als grüner Punkt 16 px mit Ring in panel). Unten kleine Legende „Zielbereich“. Keine Kacheln.
+- Schlafphasen: ein Hypnogramm (Zeilen Wach/REM/Leicht/Tief, Phasen als Blöcke 16 px, dünne Verbindungslinien zwischen Wechseln, Uhrzeiten unten). Darunter, durch eine Linie getrennt, eine Liste **ohne Boxen**: je Phase eine Zeile mit Farbpunkt + Name (15), Anteilsbalken 6 px in der Phasenfarbe, Dauer fett rechts. Farben: Tief #8C7BFF, Leicht #5BC0F8, REM #2ED8B6, Wach = low.
+- Entwicklung: Segment-Schalter 7 T / 30 T / 90 T / 1 J / Alle + Kalender-Button. Balkendiagramm in Stunden, gestrichelte Durchschnittslinie, letzter Balken voll accent.
+- Verlauf: Liste in einem Panel mit Datum, Mini-Balken der Dauer und Dauer fett. „Mehr anzeigen“.
 
 ### Google Health
 - Gerätekopf „Verbunden“, Panel „Letzte Werte“ (Schlüssel/Wert), darunter rote Zeile „Verbindung trennen“.

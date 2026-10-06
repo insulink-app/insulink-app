@@ -26,6 +26,10 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     required this.highSoft,
     required this.lowSoft,
     required this.dock,
+    required this.sleepDeep,
+    required this.sleepLight,
+    required this.sleepRem,
+    required this.sleepRestless,
     required this.dockShadow,
   });
 
@@ -80,6 +84,13 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
   /// The floating navigation capsule.
   final Color dock;
 
+  /// Sleep stages: deep, light, REM and restless (awake is [low]). One set for
+  /// both themes, as the redesign gives only one.
+  final Color sleepDeep;
+  final Color sleepLight;
+  final Color sleepRem;
+  final Color sleepRestless;
+
   /// The only shadow in the app, under the navigation capsule and bolus button.
   final List<BoxShadow> dockShadow;
 
@@ -101,6 +112,10 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     highSoft: Color(0x1FF4B740),
     lowSoft: Color(0x24FF6B7F),
     dock: Color(0xFF1B2B3B),
+    sleepDeep: Color(0xFF8C7BFF),
+    sleepLight: Color(0xFF5BC0F8),
+    sleepRem: Color(0xFF2ED8B6),
+    sleepRestless: Color(0xFFF06292),
     dockShadow: [
       BoxShadow(
         color: Color(0x73000000),
@@ -128,6 +143,10 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     highSoft: Color(0x1AA86A00),
     lowSoft: Color(0x1AC8293F),
     dock: Color(0xFFFFFFFF),
+    sleepDeep: Color(0xFF8C7BFF),
+    sleepLight: Color(0xFF5BC0F8),
+    sleepRem: Color(0xFF2ED8B6),
+    sleepRestless: Color(0xFFF06292),
     dockShadow: [
       BoxShadow(
         color: Color(0x1F0F1B26),
@@ -156,6 +175,10 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     Color? highSoft,
     Color? lowSoft,
     Color? dock,
+    Color? sleepDeep,
+    Color? sleepLight,
+    Color? sleepRem,
+    Color? sleepRestless,
     List<BoxShadow>? dockShadow,
   }) {
     return InsulinkColors(
@@ -176,6 +199,10 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
       highSoft: highSoft ?? this.highSoft,
       lowSoft: lowSoft ?? this.lowSoft,
       dock: dock ?? this.dock,
+      sleepDeep: sleepDeep ?? this.sleepDeep,
+      sleepLight: sleepLight ?? this.sleepLight,
+      sleepRem: sleepRem ?? this.sleepRem,
+      sleepRestless: sleepRestless ?? this.sleepRestless,
       dockShadow: dockShadow ?? this.dockShadow,
     );
   }
@@ -204,6 +231,10 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
       highSoft: blend(highSoft, other.highSoft),
       lowSoft: blend(lowSoft, other.lowSoft),
       dock: blend(dock, other.dock),
+      sleepDeep: blend(sleepDeep, other.sleepDeep),
+      sleepLight: blend(sleepLight, other.sleepLight),
+      sleepRem: blend(sleepRem, other.sleepRem),
+      sleepRestless: blend(sleepRestless, other.sleepRestless),
       dockShadow: BoxShadow.lerpList(dockShadow, other.dockShadow, t)!,
     );
   }

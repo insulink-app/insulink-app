@@ -12,11 +12,16 @@ class InkPanel extends StatelessWidget {
     required Widget this.child,
     this.padding = const EdgeInsets.all(InkSpace.panelPadding),
     this.color,
+    this.radius = InkRadius.panel,
   }) : rows = null;
 
-  const InkPanel.list({super.key, required List<Widget> this.rows, this.color})
-    : child = null,
-      padding = EdgeInsets.zero;
+  const InkPanel.list({
+    super.key,
+    required List<Widget> this.rows,
+    this.color,
+    this.radius = InkRadius.panel,
+  }) : child = null,
+       padding = EdgeInsets.zero;
 
   final Widget? child;
   final List<Widget>? rows;
@@ -28,6 +33,9 @@ class InkPanel extends StatelessWidget {
   /// Overrides the panel colour, for a card that sits inside a sheet.
   final Color? color;
 
+  /// Corner radius; a page's lead card takes a larger one.
+  final double radius;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.ink;
@@ -37,7 +45,7 @@ class InkPanel extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: color ?? colors.panel,
-        borderRadius: BorderRadius.circular(InkRadius.panel),
+        borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: colors.border),
       ),
       child: child ?? _rows(colors),

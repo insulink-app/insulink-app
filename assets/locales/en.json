@@ -660,7 +660,14 @@
       "rem": "REM",
       "light": "Light",
       "awake": "Awake",
-      "restless": "Restless"
+      "restless": "Restless",
+      "short": {
+        "deep": "Deep",
+        "light": "Light",
+        "rem": "REM",
+        "awake": "Awake",
+        "restless": "Restless"
+      }
     },
     "sleep_stats": {
       "index": "Sleep index",
@@ -671,6 +678,22 @@
       "min": "Min",
       "max": "Max",
       "save": "Save"
+    },
+    "sleep_page": {
+      "slept": "Slept",
+      "average_per_night": "Ø # per night",
+      "index": "Index",
+      "index_semantics": "Sleep index # of 100",
+      "all_in_target": "all in target range",
+      "target_range": "Target range",
+      "trend": "Trend",
+      "average": "Average #",
+      "history": "History",
+      "show_more": "Show more",
+      "previous_night": "Previous night",
+      "next_night": "Next night",
+      "fell_asleep": "Fell asleep #",
+      "woke_up": "Woke up #"
     },
     "hr_min": "Min",
     "hr_max": "Max",
@@ -933,11 +956,12 @@
       "subtitle": "Sync the last ~90 days"
     },
     "range": {
-      "d7": "7d",
-      "d30": "30d",
-      "d90": "90d",
-      "d365": "1y",
-      "all": "All"
+      "d7": "7 d",
+      "d30": "30 d",
+      "d90": "90 d",
+      "d365": "1 y",
+      "all": "All",
+      "pick": "Choose period"
     },
     "logbook": {
       "_": "Logbook",

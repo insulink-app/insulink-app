@@ -660,7 +660,14 @@
       "rem": "REM",
       "light": "Leichtschlaf",
       "awake": "Wach",
-      "restless": "Unruhe"
+      "restless": "Unruhe",
+      "short": {
+        "deep": "Tief",
+        "light": "Leicht",
+        "rem": "REM",
+        "awake": "Wach",
+        "restless": "Unruhe"
+      }
     },
     "sleep_stats": {
       "index": "Schlafindex",
@@ -671,6 +678,22 @@
       "min": "Min",
       "max": "Max",
       "save": "Speichern"
+    },
+    "sleep_page": {
+      "slept": "Geschlafen",
+      "average_per_night": "Ø # pro Nacht",
+      "index": "Index",
+      "index_semantics": "Schlafindex # von 100",
+      "all_in_target": "alle im Zielbereich",
+      "target_range": "Zielbereich",
+      "trend": "Entwicklung",
+      "average": "Durchschnitt #",
+      "history": "Verlauf",
+      "show_more": "Mehr anzeigen",
+      "previous_night": "Vorherige Nacht",
+      "next_night": "Nächste Nacht",
+      "fell_asleep": "Eingeschlafen #",
+      "woke_up": "Aufgewacht #"
     },
     "hr_min": "Min",
     "hr_max": "Max",
@@ -933,11 +956,12 @@
       "subtitle": "Letzte ~90 Tage synchronisieren"
     },
     "range": {
-      "d7": "7T",
-      "d30": "30T",
-      "d90": "90T",
-      "d365": "1J",
-      "all": "Alle"
+      "d7": "7 T",
+      "d30": "30 T",
+      "d90": "90 T",
+      "d365": "1 J",
+      "all": "Alle",
+      "pick": "Zeitraum wählen"
     },
     "logbook": {
       "_": "Logbuch",

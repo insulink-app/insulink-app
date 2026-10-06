@@ -17,7 +17,8 @@ class SegmentedToggle<T> extends StatelessWidget {
     required this.selected,
     required this.onChanged,
     this.semanticsLabel,
-  }) : onPage = false;
+  }) : onPage = false,
+       expand = true;
 
   const SegmentedToggle.page({
     super.key,
@@ -25,6 +26,7 @@ class SegmentedToggle<T> extends StatelessWidget {
     required this.selected,
     required this.onChanged,
     this.semanticsLabel,
+    this.expand = false,
   }) : onPage = true;
 
   final List<ToggleOption<T>> options;
@@ -35,6 +37,9 @@ class SegmentedToggle<T> extends StatelessWidget {
   final String? semanticsLabel;
 
   final bool onPage;
+
+  /// Options share the full width instead of hugging their labels.
+  final bool expand;
 
   double get _optionHeight => onPage ? 36 : 42;
 
@@ -52,13 +57,13 @@ class SegmentedToggle<T> extends StatelessWidget {
           border: onPage ? Border.all(color: colors.border) : null,
         ),
         child: Row(
-          mainAxisSize: onPage ? MainAxisSize.min : MainAxisSize.max,
+          mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
           spacing: onPage ? 2 : 4,
           children: [
             for (final option in options)
-              onPage
-                  ? _option(colors, option)
-                  : Expanded(child: _option(colors, option)),
+              expand
+                  ? Expanded(child: _option(colors, option))
+                  : _option(colors, option),
           ],
         ),
       ),
@@ -80,7 +85,7 @@ class SegmentedToggle<T> extends StatelessWidget {
           child: Container(
             height: _optionHeight,
             alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: EdgeInsets.symmetric(horizontal: expand ? 4 : 14),
             child: Text(
               option.label,
               style: InkText.row.copyWith(

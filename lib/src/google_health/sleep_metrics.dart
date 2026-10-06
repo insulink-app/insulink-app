@@ -1,3 +1,4 @@
+import 'package:insulink/src/google_health/sleep_targets_state.dart';
 import 'google_health_models.dart';
 
 /// The derived quality figures for one night, computed from the stage totals
@@ -21,6 +22,16 @@ class SleepMetrics {
     required this.timeToSolidMinutes,
     required this.sleepIndex,
   });
+
+  /// Whether every figure sits inside its target window. A night without a
+  /// time to deep sleep does not count as inside.
+  bool meets(SleepTargets targets) {
+    final timeToSolid = timeToSolidMinutes;
+    return timeToSolid != null &&
+        targets.timeToSolid.contains(timeToSolid) &&
+        targets.deep.contains(deepMinutes) &&
+        targets.interruption.contains(interruptionMinutes);
+  }
 
   factory SleepMetrics.of(SleepStages stages, List<SleepSegment>? timeline) =>
       SleepMetrics(

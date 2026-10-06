@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/header_icon_button.dart';
+import 'package:insulink/src/base/segmented_toggle.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Selected time window of a sport detail page: a preset (days), "All" or a
@@ -30,9 +33,9 @@ class SportRange {
   DateTime? get endTo => custom?.end;
 }
 
-/// Range picker in the analysis-page style (equal-width segments + calendar),
-/// controlled locally instead of coupled to a controller — reused by the weight
-/// and activity detail pages.
+/// Range picker: a pill track with the presets and "All", and beside it a round
+/// calendar button for a custom range. Controlled locally instead of coupled to
+/// a controller; reused by the weight, activity and sleep detail pages.
 class SportRangeSelector extends StatelessWidget {
   const SportRangeSelector({
     super.key,
@@ -42,45 +45,33 @@ class SportRangeSelector extends StatelessWidget {
 
   static const _presets = [7, 30, 90, 365];
 
+  /// The track's value for "All"; a custom range lights no option at all.
+  static const int _allKey = 0;
+  static const int _customKey = -1;
+
   final SportRange value;
   final ValueChanged<SportRange> onChanged;
+
+  int get _selectedKey {
+    if (value.custom != null) {
+      return _customKey;
+    }
+    return value.days ?? _allKey;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Row(
+          spacing: 8,
           children: [
-            for (final days in _presets)
-              Expanded(
-                child: _segment(
-                  context,
-                  selected: value.days == days,
-                  onTap: () => onChanged(SportRange.preset(days)),
-                  child: Text(
-                    Locales.string(context, 'sport.range.d$days'),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            Expanded(
-              child: _segment(
-                context,
-                selected: value.isAll,
-                onTap: () => onChanged(const SportRange.all()),
-                child: Text(
-                  Locales.string(context, 'sport.range.all'),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-            Expanded(
-              child: _segment(
-                context,
-                selected: value.custom != null,
-                onTap: () => _pickCustom(context),
-                child: const Icon(PhosphorIconsBold.calendarBlank, size: 18),
-              ),
+            Expanded(child: _track(context)),
+            HeaderIconButton(
+              icon: PhosphorIconsRegular.calendarBlank,
+              labelKey: 'sport.range.pick',
+              statusColor: value.custom != null ? context.ink.accent : null,
+              onTap: () => _pickCustom(context),
             ),
           ],
         ),
@@ -89,38 +80,18 @@ class SportRangeSelector extends StatelessWidget {
     );
   }
 
-  Widget _segment(
-    BuildContext context, {
-    required bool selected,
-    required VoidCallback onTap,
-    required Widget child,
-  }) {
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: selected
-                ? onSurface.withValues(alpha: 0.24)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Theme.of(context).dividerColor),
-          ),
-          child: DefaultTextStyle.merge(
-            style: TextStyle(
-              color: onSurface,
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
-            ),
-            child: child,
-          ),
-        ),
+  Widget _track(BuildContext context) {
+    return SegmentedToggle<int>.page(
+      expand: true,
+      selected: _selectedKey,
+      onChanged: (key) => onChanged(
+        key == _allKey ? const SportRange.all() : SportRange.preset(key),
       ),
+      options: [
+        for (final days in _presets)
+          (value: days, label: Locales.string(context, 'sport.range.d$days')),
+        (value: _allKey, label: Locales.string(context, 'sport.range.all')),
+      ],
     );
   }
 
@@ -133,10 +104,7 @@ class SportRangeSelector extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 12,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-        ),
+        style: InkText.caption.copyWith(color: context.ink.muted),
       ),
     );
   }

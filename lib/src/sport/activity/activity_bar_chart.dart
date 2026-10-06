@@ -1,5 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:flutter/services.dart';
 
 /// Daily values of a metric as bars (X = day, ascending). Expects [days] already
@@ -16,6 +18,9 @@ import 'package:flutter/services.dart';
 /// look identical: an HbA1c of 6.8 and 7.4 differ by 8 % of a 0-based bar but by
 /// half a 4-based one. [decimals] follows, since such a value needs its axis
 /// labelled finer than whole numbers.
+///
+/// [average] adds a dashed line at that value; [highlightLast] keeps only the
+/// latest bar in the full colour so today stands out from the history.
 class ActivityBarChart<T> extends StatefulWidget {
   const ActivityBarChart({
     super.key,
@@ -26,6 +31,9 @@ class ActivityBarChart<T> extends StatefulWidget {
     required this.color,
     this.baseline = 0,
     this.decimals = 0,
+    this.average,
+    this.highlightLast = false,
+    this.axisSuffix = '',
   });
 
   final List<T> days;
@@ -35,6 +43,11 @@ class ActivityBarChart<T> extends StatefulWidget {
   final Color color;
   final double baseline;
   final int decimals;
+  final double? average;
+  final bool highlightLast;
+
+  /// Appended to every y label, e.g. " h".
+  final String axisSuffix;
 
   @override
   State<ActivityBarChart<T>> createState() => _ActivityBarChartState<T>();
@@ -59,7 +72,13 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
         maxY: maxY <= widget.baseline
             ? widget.baseline + 1
             : widget.baseline + (maxY - widget.baseline) * 1.15,
-        gridData: const FlGridData(show: true, drawVerticalLine: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: context.ink.panelRaised, strokeWidth: 1),
+        ),
+        extraLinesData: _averageLine(context),
         borderData: FlBorderData(show: false),
         barTouchData: _touchData(context, locale),
         titlesData: _titles(locale),
@@ -71,7 +90,7 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
                 BarChartRodData(
                   fromY: widget.baseline,
                   toY: widget.value(days[index]),
-                  color: widget.color,
+                  color: _barColor(index),
                   width: (260 / days.length).clamp(2, 14).toDouble(),
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(3),
@@ -82,6 +101,28 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
         ],
       ),
       duration: Duration.zero,
+    );
+  }
+
+  Color _barColor(int index) {
+    final isLast = index == widget.days.length - 1;
+    return !widget.highlightLast || isLast
+        ? widget.color
+        : widget.color.withValues(alpha: 0.45);
+  }
+
+  ExtraLinesData _averageLine(BuildContext context) {
+    final average = widget.average;
+    return ExtraLinesData(
+      horizontalLines: [
+        if (average != null)
+          HorizontalLine(
+            y: average,
+            color: context.ink.text.withValues(alpha: 0.6),
+            strokeWidth: 1.5,
+            dashArray: const [4, 4],
+          ),
+      ],
     );
   }
 
@@ -119,6 +160,21 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
     );
   }
 
+  /// The day under the first or last bar: without the year while the whole
+  /// chart lies in the current one, as the year then says nothing.
+  String _axisDate(
+    BuildContext context,
+    MaterialLocalizations locale,
+    DateTime date,
+  ) {
+    final first = widget.date(widget.days.first);
+    if (first.year != DateTime.now().year) {
+      return locale.formatShortDate(date);
+    }
+    final tag = Localizations.localeOf(context).toLanguageTag();
+    return DateFormat.MMMd(tag).format(date);
+  }
+
   /// Light haptic tick when the highlighted bar changes while scrubbing.
   void _onTouch(FlTouchEvent event, BarTouchResponse? response) {
     final index = response?.spot?.touchedBarGroupIndex;
@@ -145,10 +201,10 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
             child: Text(
               value >= 1000
                   ? '${(value / 1000).toStringAsFixed(0)}k'
-                  : value.toStringAsFixed(widget.decimals),
-              style: TextStyle(
-                fontSize: 10,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  : '${value.toStringAsFixed(widget.decimals)}${widget.axisSuffix}',
+              style: InkText.axis.copyWith(
+                fontSize: 12,
+                color: context.ink.muted,
               ),
             ),
           ),
@@ -167,10 +223,10 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
               meta: meta,
               fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
               child: Text(
-                locale.formatShortDate(widget.date(widget.days[index])),
-                style: TextStyle(
-                  fontSize: 9,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                _axisDate(context, locale, widget.date(widget.days[index])),
+                style: InkText.axis.copyWith(
+                  fontSize: 12,
+                  color: context.ink.muted,
                 ),
               ),
             );

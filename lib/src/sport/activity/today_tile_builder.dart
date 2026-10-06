@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/google_health/google_health_detail_page.dart';
+import 'package:insulink/src/google_health/sleep/sleep_page.dart';
 import 'package:insulink/src/google_health/google_health_models.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/google_health/heart_rate_page.dart';
@@ -204,7 +205,9 @@ class TodayTileBuilder {
   void _googleHealthDetail(BuildContext context, GoogleHealthMetric metric) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => GoogleHealthDetailPage(metric: metric),
+        builder: (_) => metric == GoogleHealthMetric.sleep
+            ? const SleepPage()
+            : GoogleHealthDetailPage(metric: metric),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/google_health/google_health_models.dart';
 import 'package:insulink/src/google_health/sleep_metrics.dart';
+import 'package:insulink/src/google_health/sleep_targets_state.dart';
 
 void main() {
   int minutes(int m) => m * 60000;
@@ -41,5 +42,35 @@ void main() {
     );
     expect(metrics.deepMinutes, 90);
     expect(metrics.interruptionMinutes, 25);
+  });
+
+  test('all in target only when every figure sits in its window', () {
+    final timeline = [
+      seg(SleepStage.light, 0, 20),
+      seg(SleepStage.deep, 20, 120),
+    ];
+    final inside = SleepMetrics.of(
+      const SleepStages(deep: 100, light: 20, awake: 10),
+      timeline,
+    );
+    expect(inside.meets(SleepTargets.defaults), isTrue);
+
+    final restless = SleepMetrics.of(
+      const SleepStages(deep: 100, light: 20, awake: 45),
+      timeline,
+    );
+    expect(restless.meets(SleepTargets.defaults), isFalse);
+
+    final noTimeline = SleepMetrics.of(
+      const SleepStages(deep: 100, light: 20, awake: 10),
+      null,
+    );
+    expect(noTimeline.meets(SleepTargets.defaults), isFalse);
+  });
+
+  test('sleep page duration reads "7 h 53 min" and "16 min"', () {
+    expect(formatSleepDuration(473), '7 h 53 min');
+    expect(formatSleepDuration(16), '16 min');
+    expect(formatSleepDuration(60), '1 h 0 min');
   });
 }

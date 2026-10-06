@@ -28,7 +28,9 @@ class HeaderIconButton extends StatelessWidget {
 
   /// Locale key read out by screen readers.
   final String labelKey;
-  final VoidCallback onTap;
+
+  /// Null draws the button dimmed and reports it as disabled.
+  final VoidCallback? onTap;
 
   /// Colour of the status dot; null draws none.
   final Color? statusColor;
@@ -43,6 +45,7 @@ class HeaderIconButton extends StatelessWidget {
     final colors = context.ink;
     return Semantics(
       button: true,
+      enabled: onTap != null,
       label: Locales.string(context, labelKey),
       excludeSemantics: true,
       child: SizedBox.square(
@@ -50,7 +53,12 @@ class HeaderIconButton extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Positioned.fill(child: _face(colors)),
+            Positioned.fill(
+              child: Opacity(
+                opacity: onTap == null ? 0.35 : 1,
+                child: _face(colors),
+              ),
+            ),
             if (statusColor != null) _dot(colors),
           ],
         ),

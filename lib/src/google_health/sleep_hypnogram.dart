@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 import 'google_health_models.dart';
 import 'sleep_hypnogram_tooltip.dart';
@@ -48,6 +49,7 @@ class SleepHypnogram extends StatelessWidget {
     required this.colors,
     required this.labels,
     required this.axisColor,
+    required this.lineColor,
   });
 
   final List<SleepSegment> segments;
@@ -57,6 +59,9 @@ class SleepHypnogram extends StatelessWidget {
   final Map<SleepStage, Color> colors;
   final Map<SleepStage, String> labels;
   final Color axisColor;
+
+  /// The faint line through each lane and the risers between lanes.
+  final Color lineColor;
 
   /// Top-to-bottom lane order: shallowest (awake) to deepest (deep). Only lanes
   /// with segments this night are shown, so a stage with no time (e.g. restless)
@@ -69,12 +74,18 @@ class SleepHypnogram extends StatelessWidget {
     SleepStage.deep,
   ];
 
-  static const _laneHeight = 30.0;
+  static const _laneHeight = 33.0;
+
+  /// Width of the lane labels on the left.
+  static const _labelWidth = 54.0;
+
+  /// Clock labels under the plot land on every second full hour.
+  static const _tickHours = 2;
 
   /// Stretches shorter than this are folded into the surrounding stage so the
   /// hypnogram doesn't jitter with tiny blips.
   // ponytail: 5 min heuristic — bump if the trace is still too busy.
-  static const _mergeBelowMs = 5 * 60 * 1000;
+  static const mergeBelowMs = 5 * 60 * 1000;
 
   List<SleepStage> _lanesOf(List<SleepSegment> shown) {
     final present = shown.map((segment) => segment.stage).toSet();
@@ -86,7 +97,7 @@ class SleepHypnogram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shown = mergeShortSleepSegments(segments, minMs: _mergeBelowMs);
+    final shown = mergeShortSleepSegments(segments, minMs: mergeBelowMs);
     final lanes = _lanesOf(shown);
     final start = shown.first.startMs;
     // Max end, not last.endMs — segments are sorted by START, so an
@@ -103,7 +114,7 @@ class SleepHypnogram extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
-                width: 90,
+                width: _labelWidth,
                 child: Column(
                   children: [
                     for (final stage in lanes)
@@ -112,7 +123,10 @@ class SleepHypnogram extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           child: Text(
                             labels[stage] ?? '',
-                            style: TextStyle(fontSize: 12, color: axisColor),
+                            style: InkText.axis.copyWith(
+                              fontSize: 12,
+                              color: axisColor,
+                            ),
                           ),
                         ),
                       ),
@@ -127,8 +141,8 @@ class SleepHypnogram extends StatelessWidget {
                     colors: colors,
                     start: start,
                     end: end,
-                    trackColor: axisColor.withValues(alpha: 0.08),
-                    riserColor: axisColor.withValues(alpha: 0.15),
+                    lineColor: lineColor,
+                    riserColor: axisColor.withValues(alpha: 0.35),
                   ),
                   segments: shown,
                   colors: colors,
@@ -140,24 +154,44 @@ class SleepHypnogram extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.only(left: 70),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _hhmm(start),
-                style: TextStyle(fontSize: 11, color: axisColor),
-              ),
-              Text(
-                _hhmm(end),
-                style: TextStyle(fontSize: 11, color: axisColor),
-              ),
-            ],
-          ),
+          padding: const EdgeInsets.only(left: _labelWidth),
+          child: SizedBox(height: 16, child: _ticks(start, end)),
         ),
       ],
+    );
+  }
+
+  /// "00:00", "02:00", … on the full hours inside the night, each centred on
+  /// its time and kept inside the plot at both ends.
+  Widget _ticks(int start, int end) {
+    final style = InkText.axis.copyWith(fontSize: 12, color: axisColor);
+    final first = DateTime.fromMillisecondsSinceEpoch(start);
+    var tick = DateTime(first.year, first.month, first.day, first.hour + 1);
+    while (tick.hour % _tickHours != 0) {
+      tick = tick.add(const Duration(hours: 1));
+    }
+    final ticks = <int>[];
+    for (
+      ;
+      tick.millisecondsSinceEpoch < end;
+      tick = tick.add(const Duration(hours: _tickHours))
+    ) {
+      ticks.add(tick.millisecondsSinceEpoch);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) => Stack(
+        clipBehavior: Clip.none,
+        children: [
+          for (final ms in ticks)
+            Positioned(
+              left: (ms - start) / (end - start) * constraints.maxWidth - 18,
+              width: 36,
+              child: Text(_hhmm(ms), style: style, textAlign: TextAlign.center),
+            ),
+        ],
+      ),
     );
   }
 
@@ -176,7 +210,7 @@ class _HypnogramPainter extends CustomPainter {
     required this.colors,
     required this.start,
     required this.end,
-    required this.trackColor,
+    required this.lineColor,
     required this.riserColor,
   });
 
@@ -185,10 +219,11 @@ class _HypnogramPainter extends CustomPainter {
   final Map<SleepStage, Color> colors;
   final int start;
   final int end;
-  final Color trackColor;
+  final Color lineColor;
   final Color riserColor;
 
-  static const _barInset = 6.0;
+  /// Blocks are 16 px high inside their 33 px lane.
+  static const _barInset = 8.5;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -197,7 +232,7 @@ class _HypnogramPainter extends CustomPainter {
       return;
     }
     final laneHeight = size.height / lanes.length;
-    _paintTracks(canvas, size, laneHeight);
+    _paintLaneLines(canvas, size, laneHeight);
     _paintRisers(canvas, size, span, laneHeight);
     _paintBars(canvas, size, span, laneHeight);
   }
@@ -206,21 +241,15 @@ class _HypnogramPainter extends CustomPainter {
 
   double _laneCenter(int lane, double laneHeight) => (lane + 0.5) * laneHeight;
 
-  /// A faint full-width rounded track behind each lane, like a progress bar's
-  /// unfilled groove — the coloured bars sit on top of it.
-  void _paintTracks(Canvas canvas, Size size, double laneHeight) {
-    final track = Paint()..color = trackColor;
+  /// A faint line through the middle of each lane, so a block reads as sitting
+  /// on its stage's row.
+  void _paintLaneLines(Canvas canvas, Size size, double laneHeight) {
+    final line = Paint()
+      ..color = lineColor
+      ..strokeWidth = 1;
     for (var lane = 0; lane < lanes.length; lane++) {
-      final rect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          0,
-          lane * laneHeight + _barInset,
-          size.width,
-          laneHeight - 2 * _barInset,
-        ),
-        const Radius.circular(6),
-      );
-      canvas.drawRRect(rect, track);
+      final y = _laneCenter(lane, laneHeight);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), line);
     }
   }
 
@@ -261,7 +290,7 @@ class _HypnogramPainter extends CustomPainter {
           right,
           (lane + 1) * laneHeight - _barInset,
         ),
-        const Radius.circular(6),
+        const Radius.circular(5),
       );
       canvas.drawRRect(rect, Paint()..color = colors[segment.stage]!);
     }

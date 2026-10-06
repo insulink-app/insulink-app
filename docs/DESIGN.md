@@ -64,6 +64,7 @@ check below still holds by construction.
 | highSoft | high at 12 % | high at 10 % | Notice banners (temporary basal rate) |
 | lowSoft | low at 14 % | low at 10 % | Warning banners, danger buttons |
 | dock | `#1B2B3B` | `#FFFFFF` | Navigation capsule (with `dockShadow`, the only shadow) |
+| sleepDeep / sleepLight / sleepRem / sleepRestless | `#8C7BFF` / `#5BC0F8` / `#2ED8B6` / `#F06292` | same | Sleep stages (awake is `low`); one set, the spec gives no light variant |
 
 **One accent.** The app used to split the brand colour into a mid-tone FILL
 (`primary`, white text on top) and a lighter FOREGROUND (`context.accent`),
