@@ -15,6 +15,7 @@ import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// "Routines" section of the sport home page: list of routines (tap = edit, play
 /// = start), plus access to the exercise library and "+ Routine".
@@ -73,17 +74,35 @@ class RoutinesSection extends StatelessWidget {
             for (final routine in routines) _routineCard(context, routine),
           ].pickedUpByLongPress(),
         ),
-        SportAddTile(
-          labelKey: 'sport.routines.new',
-          onTap: () => _create(context),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          icon: const Icon(PhosphorIconsFill.play, size: 16),
-          label: LocaleText('sport.workout.free'),
-          onPressed: () => _startFree(context),
+        Row(
+          spacing: 10,
+          children: [
+            Expanded(
+              child: SportAddTile(
+                labelKey: 'sport.routines.new',
+                onTap: () => _create(context),
+              ),
+            ),
+            Expanded(child: _freeButton(context)),
+          ],
         ),
       ],
+    );
+  }
+
+  /// The quieter of the two: a soft accent pill beside "New routine".
+  Widget _freeButton(BuildContext context) {
+    final colors = context.ink;
+    return FilledButton.icon(
+      icon: const Icon(PhosphorIconsFill.play, size: 16),
+      label: LocaleText('sport.workout.free', maxLines: 1),
+      onPressed: () => _startFree(context),
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(54),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        backgroundColor: colors.accentSoft,
+        foregroundColor: colors.accentText,
+      ),
     );
   }
 
@@ -208,9 +227,9 @@ class RoutinesSection extends StatelessWidget {
     final duration = Locales.string(
       context,
       'sport.routines.est_duration',
-      params: [sportClock(seconds)],
+      params: [sportHoursMinutes((seconds / 60).round())],
     );
-    return '$count · $duration';
+    return '$count, $duration';
   }
 
   Widget _playButton(

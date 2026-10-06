@@ -26,3 +26,11 @@ String sportClock(int seconds) {
   }
   return '${hours.toString().padLeft(2, '0')}:$mm:$ss';
 }
+
+/// Minutes as a reading: "1 h 8 min", or "49 min" under an hour.
+String sportHoursMinutes(int minutes) {
+  if (minutes < 60) {
+    return '$minutes min';
+  }
+  return '${minutes ~/ 60} h ${minutes % 60} min';
+}
