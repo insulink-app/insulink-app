@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/nav_badge.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// One tab in the dock: its icon always, its label fading in as the gliding
 /// pill arrives ([closeness] 1 = the pill is on it), and its badge.
@@ -52,7 +52,7 @@ class DockTabSlot extends StatelessWidget {
   }
 
   Widget _content(BuildContext context, String label) {
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     final tone = Color.lerp(colors.muted, colors.accentText, closeness)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/header_account_button.dart';
 import 'package:insulink/src/base/header_device_button.dart';
 import 'package:insulink/src/base/header_inventory_button.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The app bar every tab shares: the page's own title on the left, three
 /// separate round buttons on the right, 20 px from the edges.
@@ -26,7 +26,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
   /// straight through to the page.
   @override
   Widget build(BuildContext context) {
-    final ground = context.insulinkColors.ground;
+    final ground = context.ink.ground;
     return Stack(
       clipBehavior: Clip.none,
       children: [

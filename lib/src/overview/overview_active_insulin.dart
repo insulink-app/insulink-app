@@ -12,7 +12,7 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/overview/overview_section.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:provider/provider.dart';
 
 /// The insulin summary on the overview: the units still working from recent
@@ -173,10 +173,10 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
         Expanded(
           child: LocaleText(
             'overview.active_insulin.title',
-            style: InsulinkTextStyles.sectionTitle.copyWith(height: 1),
+            style: InkText.section.copyWith(height: 1),
           ),
         ),
-        Text(_units(context, units), style: InsulinkTextStyles.statValue),
+        Text(_units(context, units), style: InkText.bigValue),
       ],
     );
   }

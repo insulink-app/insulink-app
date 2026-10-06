@@ -38,8 +38,12 @@ diff /tmp/l /tmp/d && echo "symmetric"
 
 ## Tokens, and one accent
 
-Since the redesign (reference: `docs/redesign/`) every colour starts in
-`InsulinkColors` (`insulink_colors.dart`, read as `context.insulinkColors`).
+Since the redesign (reference: `docs/redesign/`: `DESIGN.md` is the spec,
+`screens/*.png` the target picture of every screen, `reference/` the mockup
+source with exact values) every colour starts in `InsulinkColors`
+(`insulink_colors.dart`). Widgets import `insulink_theme.dart`, which re-exports
+it and adds `InkSpace` (gaps), `InkRadius` (corners), `InkText` (type roles) and
+`context.ink` (the tokens).
 `AppTheme` builds both themes through **one** builder from those tokens, so a
 role can no longer be set in one theme and missed in the other; the symmetry
 check below still holds by construction.
@@ -47,7 +51,8 @@ check below still holds by construction.
 | Token | Dark | Light | Used for |
 |---|---|---|---|
 | ground | `#0F1B26` | `#EDF2F6` | Page, app bar |
-| panel | `#152432` | `#FFFFFF` | Panels, tiles, header buttons (`surface`) |
+| panel | `#152432` | `#FFFFFF` | Panels, tiles, header buttons (`surface`), sheets |
+| panelRaised | `#1A2C3D` | `#F5F8FB` | Cards inside a sheet, buttons on a panel |
 | line | `#26394B` | `#D3DEE7` | Dividers, empty segments |
 | border | text at 7 % | text at 6 % | 1 px rim of tiles and buttons |
 | text | `#EAF1F6` | `#0F1B26` | Primary text, glucose value (`onSurface`) |
@@ -56,7 +61,8 @@ check below still holds by construction.
 | onAccent | `#0F1B26` | `#FFFFFF` | `onPrimary` |
 | accentSoft / accentText | accent at 16 % / `#C4CEFF` | accent at 10 % / `#2A3AA8` | Active tab, profile button |
 | range / high / low | `#7CCB8F` / `#F4B740` / `#FF6B7F` | `#3B8A4F` / `#A86A00` / `#C8293F` | `GlucoseColors` and `StatusColors` |
-| lowSoft | low at 14 % | low at 10 % | Warning banners |
+| highSoft | high at 12 % | high at 10 % | Notice banners (temporary basal rate) |
+| lowSoft | low at 14 % | low at 10 % | Warning banners, danger buttons |
 | dock | `#1B2B3B` | `#FFFFFF` | Navigation capsule (with `dockShadow`, the only shadow) |
 
 **One accent.** The app used to split the brand colour into a mid-tone FILL
@@ -89,14 +95,14 @@ before drawing a new bar or button.
 | `GlucoseHero` | `overview/glucose_hero.dart` | Value, rotated trend arrow, unit and trend words |
 | `RangeScale` | `overview/range_scale.dart` | 40 to 250 mg/dL scale split at the user's targets, knob on the value |
 | `OverviewDevices` | `overview/overview_devices.dart` | Sensor, pod and reservoir, automation row, in one panel |
-| `InsulinkTextStyles` | `theme/insulink_text_styles.dart` | The spec's type roles (value 124/800, stat 30/800, …) |
+| `InkText`, `InkSpace`, `InkRadius` | `theme/insulink_theme.dart` | The spec's type roles (value 124/800, stat 30/800, …), gaps and corner radii |
 
 Three things that are not obvious:
 
 - **The redesign's type roles are NOT on the `TextTheme`.** Material draws its
   own widgets from those roles (`headlineSmall` is every dialog title,
   `bodyLarge` every text field), so mapping 30/800 onto them would blow up
-  dialogs and inputs. They live in `InsulinkTextStyles` instead.
+  dialogs and inputs. They live in `InkText` instead.
 - **The dock sits in the scaffold's navigation slot, not over the body.** The
   page ends where the dock starts, so no tab's last rows can hide behind it
   (every tab pads its own scroll view, and `extendBody` would have needed all
@@ -182,7 +188,7 @@ those alone.
 | Filled **circle**, neutral | The row's identity — never pressable | `SportLeadingBadge`, `EmptyState`, `FoodProductCard` |
 | Filled **circle**, `primary` | A control that happens to be round | `drink_add_row` quick-add (the `InkWell` wraps the circle itself) |
 | Bare glyph | Information, or a tile that is itself the control | `SportSummaryTile`, stat rows |
-| Filled rounded-rect + label | The obvious button | `FilledButton`, `cardio_section` start buttons |
+| Filled **pill** + label | The obvious button: 54 px high, radius 27 (the theme sets both) | `FilledButton`, `cardio_section` start buttons |
 
 Two things were tried and **rejected** — don't reintroduce them:
 

@@ -4,6 +4,7 @@ import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Combined sign-in / sign-up screen. Toggles between the two modes; on success
 /// the tokens are stored by [AuthService] and [onAuthenticated] advances the
@@ -106,7 +107,10 @@ class _AuthPageState extends State<AuthPage> {
       controller: controller,
       obscureText: obscure,
       enabled: !_busy,
-      decoration: InputDecoration(labelText: Locales.string(context, labelKey)),
+      decoration: InputDecoration(
+        labelText: Locales.string(context, labelKey),
+        fillColor: context.ink.panel,
+      ),
     );
   }
 
@@ -117,6 +121,7 @@ class _AuthPageState extends State<AuthPage> {
       enabled: !_busy,
       decoration: InputDecoration(
         labelText: Locales.string(context, 'auth.password'),
+        fillColor: context.ink.panel,
         suffixIcon: IconButton(
           icon: Icon(
             _showPassword ? PhosphorIconsBold.eyeSlash : PhosphorIconsBold.eye,

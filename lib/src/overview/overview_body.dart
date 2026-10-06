@@ -3,7 +3,7 @@ import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/connections/status/connection_status_page.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/overview/battery_saver_banner.dart';
 import 'package:insulink/src/overview/advisory_bolus_notice.dart';
 import 'package:insulink/src/overview/overview_pod_warnings.dart';
@@ -49,7 +49,7 @@ class _OverviewTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     return Row(
       children: [
         _pill(context, controller, colors),

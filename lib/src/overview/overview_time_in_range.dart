@@ -5,8 +5,7 @@ import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:provider/provider.dart';
 
 /// Time in range over the last 24 h: the in-range share large, low and high as
@@ -57,18 +56,18 @@ class OverviewTimeInRange extends StatelessWidget {
     GlucoseBand low,
     GlucoseBand high,
   ) {
-    final muted = context.insulinkColors.muted;
+    final muted = context.ink.muted;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(_percent(inRange), style: InsulinkTextStyles.statValue),
+        Text(_percent(inRange), style: InkText.bigValue),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             Locales.string(context, 'overview.in_range_window'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: InsulinkTextStyles.label.copyWith(color: muted),
+            style: InkText.label.copyWith(color: muted),
           ),
         ),
         _legend(low, muted),

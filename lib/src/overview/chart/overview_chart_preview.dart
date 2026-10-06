@@ -7,8 +7,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_bounds.dart';
 import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The overview's 24 h glucose chart: a tappable "Glucose · 24 h ›" row over a
@@ -54,19 +53,19 @@ class OverviewChartPreview extends StatelessWidget {
   }
 
   Widget _title(BuildContext context) {
-    final muted = context.insulinkColors.muted;
+    final muted = context.ink.muted;
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 44),
       child: Row(
         children: [
           Text(
             Locales.string(context, 'overview.glucose'),
-            style: InsulinkTextStyles.sectionTitle,
+            style: InkText.section,
           ),
           const Spacer(),
           Text(
             Locales.string(context, 'overview.chart_window'),
-            style: InsulinkTextStyles.label.copyWith(color: muted),
+            style: InkText.label.copyWith(color: muted),
           ),
           const SizedBox(width: 2),
           Icon(PhosphorIconsRegular.caretRight, size: 18, color: muted),

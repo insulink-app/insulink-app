@@ -13,6 +13,7 @@ import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Edit a routine: name, ordered exercise list (reorder by holding), add
 /// exercise, and start the workout.
@@ -90,6 +91,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 labelText: Locales.string(context, 'sport.routines.name'),
+                fillColor: context.ink.panel,
               ),
               onChanged: (value) =>
                   _training.renameRoutine(routine.id, value.trim()),

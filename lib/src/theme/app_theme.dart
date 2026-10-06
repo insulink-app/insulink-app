@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:insulink/src/theme/insulin_colors.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
 /// The app's light and dark Material 3 themes, both built from the
@@ -13,15 +13,12 @@ import 'package:insulink/src/theme/status_colors.dart';
 class AppTheme {
   const AppTheme._();
 
-  /// Shared corner radius for every button, so the whole app matches.
-  static const double buttonRadius = 14;
+  /// Every button is a pill (`docs/redesign/DESIGN.md`, "Buttons").
+  static const StadiumBorder _buttonShape = StadiumBorder();
 
-  /// The bundled typeface (`assets/fonts/`, declared in `pubspec.yaml`).
-  static const String fontFamily = 'AtkinsonHyperlegibleNext';
-
-  static final RoundedRectangleBorder _buttonShape = RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(buttonRadius),
-  );
+  /// The redesign's button height. The width stays the call site's: a minimum
+  /// of [double.infinity] would break every button that sits in a [Row].
+  static const Size _buttonSize = Size(64, 54);
 
   static final ThemeData light = _build(InsulinkColors.light, Brightness.light);
   static final ThemeData dark = _build(InsulinkColors.dark, Brightness.dark);
@@ -34,15 +31,23 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      fontFamily: fontFamily,
+      fontFamily: InkText.fontFamily,
       textTheme: _tabularFigures,
       primaryColor: tokens.text,
       colorScheme: _scheme(tokens, brightness),
       filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(shape: _buttonShape),
+        style: FilledButton.styleFrom(
+          shape: _buttonShape,
+          minimumSize: _buttonSize,
+          textStyle: InkText.button,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(shape: _buttonShape),
+        style: ElevatedButton.styleFrom(
+          shape: _buttonShape,
+          minimumSize: _buttonSize,
+          textStyle: InkText.button,
+        ),
       ),
       outlinedButtonTheme: _outlinedButtons(tokens),
       textButtonTheme: TextButtonThemeData(
@@ -54,7 +59,8 @@ class AppTheme {
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(foregroundColor: tokens.text),
       ),
-      inputDecorationTheme: _inputTheme(raised, tokens),
+      inputDecorationTheme: _inputTheme(tokens),
+      bottomSheetTheme: _sheetTheme(tokens),
       popupMenuTheme: PopupMenuThemeData(
         color: raised,
         elevation: 3,
@@ -141,28 +147,46 @@ class AppTheme {
     return OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         shape: _buttonShape,
+        minimumSize: _buttonSize,
+        textStyle: InkText.button,
         foregroundColor: tokens.accent,
         side: BorderSide(color: tokens.accent.withValues(alpha: 0.55)),
       ),
     );
   }
 
-  /// Filled, borderless text fields with a soft rounded shape; focus draws a
-  /// thin accent ring and the floating label stays muted instead of becoming a
-  /// second accent in the field's corner.
-  static InputDecorationTheme _inputTheme(Color fill, InsulinkColors tokens) {
+  /// Filled, borderless text fields in the page colour, sunk into the panel or
+  /// sheet they sit in; focus draws a thin accent ring and the floating label
+  /// stays muted instead of becoming a second accent in the field's corner. A
+  /// field standing directly on the page sets the panel colour itself.
+  static InputDecorationTheme _inputTheme(InsulinkColors tokens) {
     OutlineInputBorder ring(Color color, double width) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(buttonRadius),
+      borderRadius: BorderRadius.circular(InkRadius.field),
       borderSide: BorderSide(color: color, width: width),
     );
     return InputDecorationTheme(
       filled: true,
-      fillColor: fill,
+      fillColor: tokens.ground,
+      hintStyle: TextStyle(color: tokens.muted.withValues(alpha: 0.6)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: ring(Colors.transparent, 0),
       enabledBorder: ring(Colors.transparent, 0),
-      focusedBorder: ring(tokens.accent, 1.6),
+      focusedBorder: ring(tokens.accent, 1.5),
       floatingLabelStyle: TextStyle(color: tokens.muted),
+    );
+  }
+
+  /// Sheets in the panel colour with large top corners. Their grab handle is
+  /// the shared `GrabHandle`, so Material's own handle stays off.
+  static BottomSheetThemeData _sheetTheme(InsulinkColors tokens) {
+    return BottomSheetThemeData(
+      backgroundColor: tokens.panel,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(InkRadius.sheet),
+        ),
+      ),
     );
   }
 

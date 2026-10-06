@@ -5,8 +5,7 @@ import 'package:insulink/src/cgm/glucose_trend_icon.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/glucose_display_format.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -34,7 +33,7 @@ class GlucoseHero extends StatelessWidget {
     final glucose = context.watch<ProfileGlucoseState>();
     final color = GlucoseDisplayFormat(
       glucose,
-    ).tone(context.insulinkColors, mgdl, stale: stale);
+    ).tone(context.ink, mgdl, stale: stale);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -63,7 +62,7 @@ class GlucoseHero extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               GlucoseDisplayFormat(glucose).value(value),
-              style: InsulinkTextStyles.glucoseValue.copyWith(color: color),
+              style: InkText.glucoseHero.copyWith(color: color),
             ),
           ),
         ),
@@ -85,7 +84,7 @@ class GlucoseHero extends StatelessWidget {
     ProfileGlucoseState glucose,
     Color color,
   ) {
-    final muted = context.insulinkColors.muted;
+    final muted = context.ink.muted;
     return DefaultTextStyle.merge(
       style: TextStyle(fontSize: 15, color: muted),
       child: Row(

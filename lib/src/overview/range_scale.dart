@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/segment_bar.dart';
 import 'package:insulink/src/overview/glucose_display_format.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:provider/provider.dart';
 
 /// Where the current value sits between low and high: a low / in range / high
@@ -25,7 +24,7 @@ class RangeScale extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glucose = context.watch<ProfileGlucoseState>();
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     return ExcludeSemantics(
       child: SizedBox(
         height: 44,
@@ -110,7 +109,7 @@ class RangeScale extends StatelessWidget {
       child: Text(
         GlucoseDisplayFormat(glucose).value(bound),
         textAlign: TextAlign.center,
-        style: InsulinkTextStyles.axis.copyWith(color: colors.muted),
+        style: InkText.axis.copyWith(color: colors.muted),
       ),
     );
   }

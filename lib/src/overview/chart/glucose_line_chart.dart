@@ -1,5 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/overview/chart/chart_x_axis.dart';
@@ -236,7 +236,7 @@ class GlucoseLineChart extends StatelessWidget {
   LineChartBarData _highlightBar(BuildContext context) {
     final spot = highlightSpot!;
     final color = _zoneForDisplay(spot.y);
-    final ring = context.insulinkColors.ground;
+    final ring = context.ink.ground;
     return LineChartBarData(
       spots: [spot],
       barWidth: 0,
@@ -278,7 +278,7 @@ class GlucoseLineChart extends StatelessWidget {
         HSLColor.fromColor(
           theme.colorScheme.onSurface,
         ).withLightness(0.6).toColor(),
-        context.insulinkColors.ground,
+        context.ink.ground,
       ),
     );
   }

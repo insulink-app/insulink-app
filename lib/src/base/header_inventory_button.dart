@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/header_icon_button.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -18,7 +18,7 @@ class HeaderInventoryButton extends StatelessWidget {
     return HeaderIconButton(
       icon: PhosphorIconsRegular.package,
       labelKey: 'inventory.label',
-      statusColor: needsAttention ? context.insulinkColors.low : null,
+      statusColor: needsAttention ? context.ink.low : null,
       onTap: () => openInventoryPage(context),
     );
   }

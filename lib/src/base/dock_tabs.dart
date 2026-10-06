@@ -3,7 +3,7 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/dock_tab_slot.dart';
 import 'package:insulink/src/base/page_body.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The tabs inside the dock's capsule, with one pill that glides between them.
 ///
@@ -171,7 +171,7 @@ class _DockTabsState extends State<DockTabs>
       height: 48,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: context.insulinkColors.accentSoft,
+          color: context.ink.accentSoft,
           borderRadius: BorderRadius.circular(24),
         ),
       ),

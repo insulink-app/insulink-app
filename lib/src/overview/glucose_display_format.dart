@@ -1,7 +1,7 @@
 import 'package:flutter/painting.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/sport/sport_format.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Glucose numbers for the overview, in the user's unit and German notation
 /// ("137", "6,7", "+0,3"), like every other number on the redesigned page.

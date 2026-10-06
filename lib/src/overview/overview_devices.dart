@@ -7,8 +7,7 @@ import 'package:insulink/src/overview/overview_section.dart';
 import 'package:insulink/src/overview/overview_sensor_life.dart';
 import 'package:insulink/src/pump/loop/loop_overview_line.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:provider/provider.dart';
 
 /// The devices panel: the sensor's remaining days, the pod's days beside its
@@ -31,7 +30,7 @@ class OverviewDevices extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
           child: Text(
             Locales.string(context, 'overview.devices'),
-            style: InsulinkTextStyles.sectionTitle,
+            style: InkText.section,
           ),
         ),
         OverviewSection(
@@ -68,7 +67,7 @@ class OverviewDevices extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Divider(height: 1, thickness: 1, color: context.insulinkColors.line),
+        Divider(height: 1, thickness: 1, color: context.ink.line),
         const PodLoopOverviewLine(),
       ],
     );

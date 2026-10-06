@@ -5,8 +5,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_reservoir_level.dart';
 import 'package:insulink/src/sport/sport_format.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -101,7 +100,7 @@ class PodReservoirBar extends StatelessWidget {
         Text(
           Locales.string(context, 'pump.status.reservoir'),
           style: overview
-              ? InsulinkTextStyles.row
+              ? InkText.row
               : TextStyle(
                   fontSize: 12,
                   color: scheme.onSurface.withValues(alpha: 0.6),
@@ -123,7 +122,7 @@ class PodReservoirBar extends StatelessWidget {
   }
 
   Widget _overviewBar(BuildContext context) {
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     return LinearProgressIndicator(
       value: _level.fraction,
       minHeight: 6,

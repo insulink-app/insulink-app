@@ -37,6 +37,7 @@ import 'package:insulink/src/sport/activity/sport_goals_editor.dart';
 import 'package:insulink/src/profile/theme/profile_theme_selection.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// One profile topic in the overview: title, icon, search synonyms and the
 /// settings widgets shown on its sub-page.
@@ -300,6 +301,7 @@ class _ProfilePageState extends State<ProfilePage> {
       controller: _search,
       decoration: InputDecoration(
         hintText: Locales.string(context, "profile.search"),
+        fillColor: context.ink.panel,
         prefixIcon: const Icon(PhosphorIconsBold.magnifyingGlass),
         suffixIcon: _query.isEmpty
             ? null

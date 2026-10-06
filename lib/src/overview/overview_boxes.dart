@@ -8,8 +8,7 @@ import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/activity/reorderable_tile_grid.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/sport/activity/tile_layout_editor.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:provider/provider.dart';
 
 /// Personalizable summary boxes on the overview: Sport metrics AND nutrition
@@ -33,7 +32,7 @@ class OverviewBoxes extends StatelessWidget {
               Expanded(
                 child: Text(
                   Locales.string(context, 'date.today'),
-                  style: InsulinkTextStyles.sectionTitle,
+                  style: InkText.section,
                 ),
               ),
               _headerButton(
@@ -76,7 +75,7 @@ class OverviewBoxes extends StatelessWidget {
       constraints: const BoxConstraints.tightFor(width: 44, height: 44),
       padding: EdgeInsets.zero,
       tooltip: Locales.string(context, tooltipKey),
-      icon: Icon(icon, size: 20, color: context.insulinkColors.muted),
+      icon: Icon(icon, size: 20, color: context.ink.muted),
       onPressed: onPressed,
     );
   }

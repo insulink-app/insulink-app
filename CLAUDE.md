@@ -401,9 +401,21 @@ glucose/bolus/silent profile state, and `CgmController`) and `MaterialApp`
   session — see `archiveSince` / `archiveRange` under Data + persistence. Default
   window is 14 d (`CgmController.statsWindow`, clinical AGP).
 
+### UI redesign
+
+- `docs/redesign/DESIGN.md` is the spec, `docs/redesign/screens/*.png` the
+  target picture of each screen (the screenshot wins where the two disagree).
+- Only the view layer changes. BLE, service, state and calculation logic stay
+  untouched, and no function is removed.
+- Colours, gaps and radii only through `theme/insulink_theme.dart`
+  (`context.ink`, `InkSpace`, `InkRadius`, `InkText`); no colour literals in
+  widgets.
+- Every icon button gets a `Semantics` label; touch targets are at least 44 px.
+
 ### Theme & design system (`lib/src/theme/`)
 
-`insulink_colors.dart` (`InsulinkColors`, `context.insulinkColors`) holds the
+`insulink_colors.dart` (`InsulinkColors`, read as `context.ink` via
+`insulink_theme.dart`, which also holds `InkSpace`/`InkRadius`/`InkText`) holds the
 redesign's design tokens and is the **single source** of every colour: `app_theme.dart`
 builds both `ThemeData`s from it through one builder, and feeds `ColorScheme` and
 the older extensions (`GlucoseColors`, `AccentColors`, `StatusColors`,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/injection_page.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The round bolus button beside the navigation capsule: the accent filled
@@ -11,7 +11,7 @@ class InjectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     return Semantics(
       button: true,
       label: Locales.string(context, 'injection.title'),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// A single summary tile: glyph + label + big value (optional unit), tappable.
 /// Used in the Sport tab, the nutrition tab and on the overview.
@@ -39,7 +38,7 @@ class SportSummaryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     return Opacity(
       opacity: unavailable ? 0.45 : 1.0,
       child: Material(
@@ -128,7 +127,7 @@ class SportSummaryTile extends StatelessWidget {
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: InsulinkTextStyles.statValue,
+                style: InkText.bigValue,
               ),
             ),
             if (unit != null)

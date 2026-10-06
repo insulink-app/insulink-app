@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/dock_tabs.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/injection/injection_button.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The floating navigation: a capsule with the tabs and, beside it, the round
 /// bolus button.
@@ -29,7 +29,7 @@ class FloatingDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     return ColoredBox(
       color: colors.ground,
       child: Stack(

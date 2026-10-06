@@ -6,7 +6,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/glucose_hero.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/app_theme.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:provider/provider.dart';
 
 import '../support/locale_pump.dart';

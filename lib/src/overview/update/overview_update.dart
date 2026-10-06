@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/overview/update/overview_clock_painter.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Compact "next reading" indicator: an animated clock whose ring fills as the
 /// next reading approaches (cadence per [intervalSec] — ~5 min on the G7, ~1 min
@@ -42,7 +42,7 @@ class _OverviewUpdateState extends State<OverviewUpdate>
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     return AnimatedBuilder(
       animation: _spin,
       builder: (context, _) {

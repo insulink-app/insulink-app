@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// A panel on the overview: the devices, or a notice. Flat panel colour with
 /// rounded corners and no rim, so the page reads as calm grouped areas; the
@@ -23,7 +23,7 @@ class OverviewSection extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: context.insulinkColors.panel,
+        color: context.ink.panel,
         borderRadius: BorderRadius.circular(20),
       ),
       child: child,

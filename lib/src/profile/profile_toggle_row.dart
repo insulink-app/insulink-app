@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// A settings toggle row: localized label on the left, switch flush right.
 ///
@@ -42,7 +43,7 @@ class ProfileToggleRow extends StatelessWidget {
             onChanged: onChanged,
             activeThumbColor: active,
             activeTrackColor: active.withValues(alpha: 0.45),
-            inactiveThumbColor: Colors.grey,
+            inactiveThumbColor: context.ink.muted,
           ),
         ],
       ),

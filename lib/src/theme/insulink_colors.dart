@@ -5,12 +5,13 @@ import 'package:flutter/material.dart';
 /// ([GlucoseColors], [AccentColors], [StatusColors], …) from these, so a token
 /// changed here moves the whole app. Values and roles: `docs/DESIGN.md`.
 ///
-/// Read with `context.insulinkColors`.
+/// Read with `context.ink` (`insulink_theme.dart`).
 @immutable
 class InsulinkColors extends ThemeExtension<InsulinkColors> {
   const InsulinkColors({
     required this.ground,
     required this.panel,
+    required this.panelRaised,
     required this.line,
     required this.border,
     required this.text,
@@ -22,6 +23,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     required this.range,
     required this.high,
     required this.low,
+    required this.highSoft,
     required this.lowSoft,
     required this.dock,
     required this.dockShadow,
@@ -32,6 +34,9 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
 
   /// Panels, tiles and header buttons.
   final Color panel;
+
+  /// Cards inside a sheet and buttons on a panel: one step up from [panel].
+  final Color panelRaised;
 
   /// Dividers and empty segments.
   final Color line;
@@ -66,7 +71,10 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
   /// Glucose below the target range.
   final Color low;
 
-  /// Background of a low warning banner.
+  /// Background of a notice banner (a temporary basal rate).
+  final Color highSoft;
+
+  /// Background of a low warning banner and of a danger button.
   final Color lowSoft;
 
   /// The floating navigation capsule.
@@ -78,6 +86,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
   static const dark = InsulinkColors(
     ground: Color(0xFF0F1B26),
     panel: Color(0xFF152432),
+    panelRaised: Color(0xFF1A2C3D),
     line: Color(0xFF26394B),
     border: Color(0x12EAF1F6),
     text: Color(0xFFEAF1F6),
@@ -89,6 +98,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     range: Color(0xFF7CCB8F),
     high: Color(0xFFF4B740),
     low: Color(0xFFFF6B7F),
+    highSoft: Color(0x1FF4B740),
     lowSoft: Color(0x24FF6B7F),
     dock: Color(0xFF1B2B3B),
     dockShadow: [
@@ -103,6 +113,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
   static const light = InsulinkColors(
     ground: Color(0xFFEDF2F6),
     panel: Color(0xFFFFFFFF),
+    panelRaised: Color(0xFFF5F8FB),
     line: Color(0xFFD3DEE7),
     border: Color(0x0F0F1B26),
     text: Color(0xFF0F1B26),
@@ -114,6 +125,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     range: Color(0xFF3B8A4F),
     high: Color(0xFFA86A00),
     low: Color(0xFFC8293F),
+    highSoft: Color(0x1AA86A00),
     lowSoft: Color(0x1AC8293F),
     dock: Color(0xFFFFFFFF),
     dockShadow: [
@@ -129,6 +141,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
   InsulinkColors copyWith({
     Color? ground,
     Color? panel,
+    Color? panelRaised,
     Color? line,
     Color? border,
     Color? text,
@@ -140,6 +153,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     Color? range,
     Color? high,
     Color? low,
+    Color? highSoft,
     Color? lowSoft,
     Color? dock,
     List<BoxShadow>? dockShadow,
@@ -147,6 +161,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     return InsulinkColors(
       ground: ground ?? this.ground,
       panel: panel ?? this.panel,
+      panelRaised: panelRaised ?? this.panelRaised,
       line: line ?? this.line,
       border: border ?? this.border,
       text: text ?? this.text,
@@ -158,6 +173,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
       range: range ?? this.range,
       high: high ?? this.high,
       low: low ?? this.low,
+      highSoft: highSoft ?? this.highSoft,
       lowSoft: lowSoft ?? this.lowSoft,
       dock: dock ?? this.dock,
       dockShadow: dockShadow ?? this.dockShadow,
@@ -173,6 +189,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     return InsulinkColors(
       ground: blend(ground, other.ground),
       panel: blend(panel, other.panel),
+      panelRaised: blend(panelRaised, other.panelRaised),
       line: blend(line, other.line),
       border: blend(border, other.border),
       text: blend(text, other.text),
@@ -184,15 +201,10 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
       range: blend(range, other.range),
       high: blend(high, other.high),
       low: blend(low, other.low),
+      highSoft: blend(highSoft, other.highSoft),
       lowSoft: blend(lowSoft, other.lowSoft),
       dock: blend(dock, other.dock),
       dockShadow: BoxShadow.lerpList(dockShadow, other.dockShadow, t)!,
     );
   }
-}
-
-/// Terse access at the call sites, mirroring `context.accent`.
-extension InsulinkColorsContext on BuildContext {
-  InsulinkColors get insulinkColors =>
-      Theme.of(this).extension<InsulinkColors>()!;
 }

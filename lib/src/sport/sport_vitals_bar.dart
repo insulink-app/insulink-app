@@ -6,6 +6,7 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Compact live-vitals strip for a training in progress — the strength routine
 /// AND the endurance recording: current glucose (from the CGM pipeline, stained
@@ -47,7 +48,7 @@ class SportVitalsBar extends StatelessWidget {
     final mgdl = controller.currentMgdl;
     // A stale (cached, not live) value is grey, matching the overview headline.
     final glucoseColor = (mgdl == null || controller.currentIsStale)
-        ? Colors.grey
+        ? context.ink.muted
         : _colors(context).forValue(mgdl, glucose);
     final trend = controller.displayTrendPerMin;
     // Keep the last known bpm on screen and grey it when it is no longer live —
@@ -76,7 +77,7 @@ class SportVitalsBar extends StatelessWidget {
             PhosphorIconsFill.heart,
             bpm == null
                 ? scheme.onSurface.withValues(alpha: 0.3)
-                : (pulseLive ? _pulseColor(context, bpm) : Colors.grey),
+                : (pulseLive ? _pulseColor(context, bpm) : context.ink.muted),
             bpm == null ? '–' : '$bpm bpm',
           ),
         ],

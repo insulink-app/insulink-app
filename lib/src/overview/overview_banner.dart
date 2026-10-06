@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_mode_window.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Prominent, tappable strip above the overview's content that says a global
 /// mode is holding something back, and clears that mode when tapped.
@@ -36,7 +36,7 @@ class OverviewBanner extends StatelessWidget {
   /// One tone for every banner so they read as one kind of thing.
   @override
   Widget build(BuildContext context) {
-    final amber = context.insulinkColors.high;
+    final amber = context.ink.high;
     return Material(
       color: amber.withValues(alpha: 0.14),
       borderRadius: BorderRadius.circular(12),

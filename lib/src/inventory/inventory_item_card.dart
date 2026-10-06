@@ -6,6 +6,7 @@ import '../localization/locales.dart';
 import 'inventory_item.dart';
 import 'inventory_state.dart';
 import 'inventory_stock_stepper.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// One inventory item: name, a stock bar (current vs base stock), a +/- stepper
 /// to adjust it, the projected run-out, the surplus expected after the next
@@ -105,7 +106,7 @@ class InventoryItemCard extends StatelessWidget {
   ) {
     final color = switch (status) {
       StockStatus.shortage => scheme.error,
-      StockStatus.low => Colors.orange,
+      StockStatus.low => context.warning,
       StockStatus.ok => scheme.primary,
     };
     return ClipRRect(
@@ -138,7 +139,7 @@ class InventoryItemCard extends StatelessWidget {
     ColorScheme scheme,
   ) {
     final shortage = status == StockStatus.shortage;
-    final color = shortage ? scheme.error : Colors.orange;
+    final color = shortage ? scheme.error : context.warning;
     return Text(
       Locales.string(
         context,

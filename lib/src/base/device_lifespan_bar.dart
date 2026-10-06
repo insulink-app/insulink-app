@@ -4,8 +4,7 @@ import 'package:insulink/src/base/device_lifespan.dart';
 import 'package:insulink/src/base/segment_bar.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
 /// How much life a worn device has left, as one rectangle per remaining unit:
@@ -69,7 +68,7 @@ class DeviceLifespanBar extends StatelessWidget {
         LocaleText(
           overview ? overviewTitleKey : pageTitleKey,
           style: overview
-              ? InsulinkTextStyles.row
+              ? InkText.row
               : TextStyle(
                   fontSize: 12,
                   color: scheme.onSurface.withValues(alpha: 0.6),
@@ -86,9 +85,7 @@ class DeviceLifespanBar extends StatelessWidget {
     ColorScheme scheme,
     DeviceLifespan life,
   ) {
-    final normalColor = overview
-        ? context.insulinkColors.muted
-        : scheme.onSurface;
+    final normalColor = overview ? context.ink.muted : scheme.onSurface;
     return Text(
       _remainingText(context, life),
       style: TextStyle(
@@ -137,7 +134,7 @@ class DeviceLifespanBar extends StatelessWidget {
   /// The final day keeps the day segments and fills the last one by the share
   /// of that day still left, instead of switching to 24 hour segments.
   Widget _overviewSegments(BuildContext context, DeviceLifespan life) {
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     if (life.hoursMode) {
       return _lastDaySegments(colors, life);
     }

@@ -37,12 +37,6 @@ button:focus-visible,a:focus-visible{outline:3px solid #9DAEFF;outline-offset:2p
   </header>
 
   <section aria-label="Aktueller Glukosewert" style="padding: 20px 20px 0 20px">
-    <sc-if value="{{alert}}" hint-placeholder-val="{{ false }}">
-      <div role="status" style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 10px 14px; border-radius: 14px; background: {{t.lowSoft}}; color: {{t.low}}; font-size: 15px; font-weight: 700">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20zM12 10v4M12 17h.01"></path></svg>
-        <span>Unter 70 mg/dL und fallend</span>
-      </div>
-    </sc-if>
     <div style="display: flex; align-items: center; gap: 10px">
       <span style="font-size: 124px; line-height: 0.8; font-weight: 800; letter-spacing: -0.055em; color: {{valueColor}}">{{value}}</span>
       <svg width="84" height="84" viewBox="2 2 20 20" fill="none" stroke="{{trendColor}}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Trend: {{trendWord}}" style="flex: none; transform: rotate({{trendDeg}}deg)"><path d="M4.5 12h14M12.5 6l6 6-6 6"></path></svg>
@@ -173,7 +167,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #9DAEFF;outline-offset:2p
       <sc-for list="{{stats}}" as="s" hint-placeholder-count="6">
         <a href="#" aria-label="{{s.aria}}" style="position: relative; display: flex; align-items: center; gap: 14px; min-height: 92px; padding: 0 14px 0 18px; box-sizing: border-box; border-radius: 22px; border: 1px solid {{t.dockBorder}}; background: {{t.panel}}; overflow: hidden; text-decoration: none">
           <sc-if value="{{s.hasGoal}}" hint-placeholder-val="{{ false }}">
-            <span aria-hidden="true" style="position: absolute; left: 0; top: 0; bottom: 0; width: {{s.fill}}; background: {{t.accentSoft}}; border-right: 2px solid {{t.accent}}"></span>
+            <span aria-hidden="true" style="position: absolute; left: 0; top: 0; bottom: 0; width: {{s.fill}}; background: {{t.accentSoft}}"></span>
           </sc-if>
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="{{t.accent}}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: relative; flex: none"><path d="{{s.icon}}"></path></svg>
           <span style="position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0">
@@ -251,7 +245,6 @@ class Component extends DCLogic {
 
     return {
       t: t,
-      alert: low,
       value: String(current),
       valueColor: low ? t.low : t.text,
       markerFill: low ? t.low : t.range,

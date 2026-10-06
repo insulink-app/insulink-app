@@ -3,7 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/base/header_icon_button.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_page.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Header shortcut to the profile: a round badge with the first letter of the
@@ -15,7 +15,7 @@ class HeaderAccountButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     return Semantics(
       button: true,
       label: Locales.string(context, 'profile.label'),

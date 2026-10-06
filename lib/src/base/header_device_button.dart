@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/header_icon_button.dart';
 import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/connections/device_attention.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Header shortcut to the devices page, with a red dot while any device needs
@@ -17,7 +17,7 @@ class HeaderDeviceButton extends StatelessWidget {
     return HeaderIconButton(
       icon: PhosphorIconsRegular.plug,
       labelKey: 'connections.label',
-      statusColor: attention.any ? context.insulinkColors.low : null,
+      statusColor: attention.any ? context.ink.low : null,
       onTap: () => openConnectionsPage(context),
     );
   }

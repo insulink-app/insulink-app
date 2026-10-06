@@ -4,8 +4,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/sport/sport_format.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/insulink_text_styles.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -28,7 +27,7 @@ class PodLoopOverviewLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PodController>().store;
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     if (store.loopMode == PodLoopMode.engaged) {
       return _row(
         context,
@@ -77,7 +76,7 @@ class PodLoopOverviewLine extends StatelessWidget {
     required String title,
     String? value,
   }) {
-    final colors = context.insulinkColors;
+    final colors = context.ink;
     return InkWell(
       onTap: () => openPumpPage(context),
       child: ConstrainedBox(
@@ -97,13 +96,13 @@ class PodLoopOverviewLine extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: InsulinkTextStyles.row.copyWith(
+                  style: InkText.row.copyWith(
                     fontWeight: FontWeight.w600,
                     color: text,
                   ),
                 ),
               ),
-              if (value != null) Text(value, style: InsulinkTextStyles.row),
+              if (value != null) Text(value, style: InkText.row),
               Icon(PhosphorIconsBold.caretRight, size: 18, color: colors.muted),
             ],
           ),

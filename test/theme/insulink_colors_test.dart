@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/theme/app_theme.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 void main() {
   final themes = {'light': AppTheme.light, 'dark': AppTheme.dark};

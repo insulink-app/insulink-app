@@ -6,7 +6,7 @@ import 'package:insulink/src/cgm/glucose_trend_icon.dart';
 import 'package:insulink/src/overview/glucose_display_format.dart';
 import 'package:insulink/src/overview/overview_data_view.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
-import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -61,7 +61,7 @@ class OverviewHeaderGlucose extends StatelessWidget {
     final glucose = context.watch<ProfileGlucoseState>();
     final format = GlucoseDisplayFormat(glucose);
     final color = format.tone(
-      context.insulinkColors,
+      context.ink,
       mgdl,
       stale: controller.currentIsStale,
     );
