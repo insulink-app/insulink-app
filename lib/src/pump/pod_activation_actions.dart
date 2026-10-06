@@ -8,6 +8,7 @@ import 'package:insulink/src/pump/pod_basal_adapter.dart';
 import 'package:insulink/src/pump/protocol/pod_activation_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/base/button_loader.dart';
 
 /// The buttons at the foot of the wizard, one set per stage.
 ///
@@ -142,11 +143,7 @@ class _BusyButton extends StatelessWidget {
     return FilledButton.icon(
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
       onPressed: null,
-      icon: const SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      ),
+      icon: const ButtonLoader(),
       label: LocaleText('pump.activate.working'),
     );
   }

@@ -6,6 +6,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/brand_tints.dart';
+import 'package:insulink/src/base/button_loader.dart';
 
 /// Confirmation step before a bolus is delivered: a summary of carbs, glucose
 /// and the (possibly edited) bolus, confirmed with the device biometric. Pops
@@ -158,11 +159,7 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
               FilledButton.icon(
                 onPressed: _authenticating ? null : _confirm,
                 icon: _authenticating
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                    ? const ButtonLoader()
                     : Icon(_buttonIcon),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
