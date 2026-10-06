@@ -92,6 +92,17 @@ class ChartXAxis {
     return ticks;
   }
 
+  /// The clock time at [value] as "4:00", the overview preview's short form;
+  /// an hours-ago offset when there is no anchor.
+  String clockLabel(double value) {
+    final start = anchor;
+    if (start == null) {
+      return '${value.toInt()}h';
+    }
+    final time = start.add(Duration(seconds: ((value - shift) * 3600).round()));
+    return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
   /// The clock time at [value], or an hours-ago offset when there is no anchor.
   ///
   /// A tick that lands off the hour (a deep zoom) shows its minutes too, so two

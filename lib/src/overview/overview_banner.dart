@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/notice_banner.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_mode_window.dart';
@@ -36,47 +37,30 @@ class OverviewBanner extends StatelessWidget {
   /// One tone for every banner so they read as one kind of thing.
   @override
   Widget build(BuildContext context) {
-    final amber = context.ink.high;
-    return Material(
-      color: amber.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            children: [
-              Icon(icon, color: amber, size: 22),
-              const SizedBox(width: 12),
-              Expanded(child: _text(context)),
-            ],
-          ),
-        ),
-      ),
+    return NoticeBanner(
+      icon: icon,
+      tone: NoticeTone.warning,
+      onTap: onTap,
+      child: _text(context),
     );
   }
 
   Widget _text(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = context.ink;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 2,
       children: [
         LocaleText(
           titleKey,
-          style: TextStyle(
-            fontSize: 14,
+          style: InkText.label.copyWith(
             fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface,
+            color: colors.text,
           ),
         ),
-        const SizedBox(height: 2),
         Text(
           _hint(context),
-          style: TextStyle(
-            fontSize: 12,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
+          style: InkText.caption.copyWith(color: colors.muted),
         ),
       ],
     );

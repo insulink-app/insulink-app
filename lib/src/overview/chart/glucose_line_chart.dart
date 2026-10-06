@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/overview/chart/chart_x_axis.dart';
 import 'package:insulink/src/overview/chart/meal_label_rows.dart';
@@ -98,8 +99,16 @@ class GlucoseLineChart extends StatelessWidget {
           maxX: axis.maxX,
           // Clip to the plot: the forecast line runs to its full horizon, which can
           // extend past the (constant-width) window's right edge — without clipping
-          // it would draw out over the margin.
-          clipData: const FlClipData.all(),
+          // it would draw out over the margin. The preview has no forecast, and
+          // its right edge stays open so the end-of-line dot is not cut in half.
+          clipData: minimal
+              ? const FlClipData(
+                  top: true,
+                  bottom: true,
+                  left: true,
+                  right: false,
+                )
+              : const FlClipData.all(),
           gridData: FlGridData(
             show: !minimal,
             drawVerticalLine: false,
@@ -140,14 +149,34 @@ class GlucoseLineChart extends StatelessWidget {
           showTitles: showBottomTitles,
           reservedSize: 24,
           interval: axis.interval,
-          // Drop the fractional min/max edge ticks so only full hours show.
+          // Drop the fractional min/max edge ticks so only full hours show. The
+          // preview keeps its right edge for "now".
           minIncluded: false,
-          maxIncluded: false,
-          getTitlesWidget: (value, _) =>
-              _label(context, axis.label(context, value)),
+          maxIncluded: minimal,
+          getTitlesWidget: (value, meta) => SideTitleWidget(
+            meta: meta,
+            fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
+            child: _label(context, _bottomText(context, value, meta)),
+          ),
         ),
       ),
     );
+  }
+
+  /// The preview reads like the redesign: clock times ("4:00") and "now" at the
+  /// right edge, with a tick that would crowd "now" left out. The full chart
+  /// keeps its hour labels.
+  String _bottomText(BuildContext context, double value, TitleMeta meta) {
+    if (!minimal) {
+      return axis.label(context, value);
+    }
+    if (value == meta.max) {
+      return Locales.string(context, 'overview.chart.axis_now');
+    }
+    if (meta.max - value < axis.interval * 0.4) {
+      return '';
+    }
+    return axis.clockLabel(value);
   }
 
   Widget _label(BuildContext context, String text) => Text(

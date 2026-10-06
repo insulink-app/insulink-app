@@ -23,8 +23,8 @@ class SportBody extends AppPageBody {
   SportBody({super.key})
     : super(
         name: "sport.label",
-        unselectedIcon: PhosphorIconsRegular.courtBasketball,
-        selectedIcon: PhosphorIconsFill.courtBasketball,
+        unselectedIcon: PhosphorIconsRegular.personSimpleRun,
+        selectedIcon: PhosphorIconsFill.personSimpleRun,
       );
 
   @override

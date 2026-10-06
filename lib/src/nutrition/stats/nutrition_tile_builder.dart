@@ -5,6 +5,7 @@ import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_detail_page.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_tile.dart';
 import 'package:insulink/src/base/stat_tile.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 
 /// Builds the [StatTile] for a nutrition box from today's meals +
 /// hydration. Shared by the nutrition stats grid and the overview's nutrition
@@ -27,7 +28,7 @@ class NutritionTileBuilder {
         return StatTile(
           icon: icon,
           labelKey: labelKey,
-          value: meals.todayCarbs.toStringAsFixed(0),
+          value: sportDecimal(meals.todayCarbs, 0),
           unit: 'g',
           progress: _progress(meals.todayCarbs, hydration.carbsGoalG),
           onTap: openDetail,
@@ -36,7 +37,7 @@ class NutritionTileBuilder {
         return StatTile(
           icon: icon,
           labelKey: labelKey,
-          value: meals.todayProtein.toStringAsFixed(0),
+          value: sportDecimal(meals.todayProtein, 0),
           unit: 'g',
           progress: _progress(meals.todayProtein, hydration.proteinGoalG),
           onTap: openDetail,
@@ -45,7 +46,7 @@ class NutritionTileBuilder {
         return StatTile(
           icon: icon,
           labelKey: labelKey,
-          value: meals.todayBolus.toStringAsFixed(1),
+          value: sportDecimal(meals.todayBolus, 1),
           unit: 'E',
           onTap: openDetail,
         );

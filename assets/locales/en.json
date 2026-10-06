@@ -97,6 +97,7 @@
       "empty": "no readings yet",
       "hour": "#:00",
       "now": "Now",
+      "axis_now": "now",
       "show_meals": "Show meals",
       "insulin": {
         "_": "Insulin",

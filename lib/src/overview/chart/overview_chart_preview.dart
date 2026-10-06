@@ -25,6 +25,10 @@ class OverviewChartPreview extends StatelessWidget {
   /// down (every `byTime` read rebuilds it out of the archive).
   final SplayTreeMap<int, int> byTime;
 
+  /// The plot sits narrower than the title row above it, as in the redesign,
+  /// so the end-of-line dot and the "now" label have room at the edges.
+  static const double _plotInset = 24;
+
   @override
   Widget build(BuildContext context) {
     final bounds = GlucoseChartBounds(byTime.values);
@@ -37,8 +41,9 @@ class OverviewChartPreview extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _title(context),
-          SizedBox(
+          Container(
             height: math.max(200.0, (bounds.maxMgdl - bounds.minMgdl) * 0.9),
+            padding: const EdgeInsets.symmetric(horizontal: _plotInset),
             child: OverviewChart(
               byTime: byTime,
               sensorStart: controller.sensorStart,

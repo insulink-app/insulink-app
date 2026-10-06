@@ -21,7 +21,6 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// Bold weight, unlike the rest of the app: a summary box carries its glyph
 /// bare, with no badge behind it, so the thin Regular stroke washes out against
 /// the box's tint. The heavier stroke gives it presence without a louder colour.
-/// The live heart stays Fill — it beats, and a solid shape reads at a glance.
 IconData todayTileIcon(TodayTile tile) => switch (tile) {
   TodayTile.steps => PhosphorIconsBold.personSimpleWalk,
   TodayTile.distance => PhosphorIconsBold.ruler,
@@ -29,7 +28,7 @@ IconData todayTileIcon(TodayTile tile) => switch (tile) {
   TodayTile.weight => PhosphorIconsBold.scales,
   TodayTile.restingHr => PhosphorIconsBold.heartbeat,
   TodayTile.sleep => PhosphorIconsBold.moon,
-  TodayTile.heartRate => PhosphorIconsFill.heart,
+  TodayTile.heartRate => PhosphorIconsBold.heart,
   TodayTile.respiratoryRate => PhosphorIconsBold.wind,
   TodayTile.hba1c => PhosphorIconsBold.testTube,
 };

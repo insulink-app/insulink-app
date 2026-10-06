@@ -85,7 +85,6 @@ class _OverviewDataViewState extends State<OverviewDataView> {
         ),
         const SizedBox(height: 28),
         const OverviewActiveInsulin(),
-        const SizedBox(height: 12),
         const OverviewDevices(),
         const SizedBox(height: 24),
         const OverviewBoxes(),
@@ -109,13 +108,12 @@ class _OverviewDataViewState extends State<OverviewDataView> {
         RangeScale(mgdl: controller.currentMgdl),
         const SizedBox(height: 18),
         _chart(),
-        const SizedBox(height: 32),
+        const SizedBox(height: 22),
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => appTab.value = kAnalysisTabIndex,
           child: const OverviewTimeInRange(),
         ),
-        const SizedBox(height: 12),
       ],
     );
   }

@@ -97,6 +97,7 @@
       "empty": "Noch keine Messwerte",
       "hour": "# Uhr",
       "now": "Jetzt",
+      "axis_now": "jetzt",
       "show_meals": "Mahlzeiten anzeigen",
       "insulin": {
         "_": "Insulin",
