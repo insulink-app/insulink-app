@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/header.dart';
 import 'package:insulink/src/base/navigator.dart';
 import 'package:insulink/src/base/page_body.dart';
-import 'package:insulink/src/injection/injection_button.dart';
 import 'package:insulink/src/nutrition/nutrition_body.dart';
 import 'package:insulink/src/overview/overview_body.dart';
 import 'package:insulink/src/sport/sport_body.dart';
@@ -183,8 +182,6 @@ class AppPageState extends State<AppPage> with WidgetsBindingObserver {
           pageBodies: pageBodies,
         ),
         body: pageBodies[_selectedIndex].content(context),
-        floatingActionButton: InjectionButton(),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }

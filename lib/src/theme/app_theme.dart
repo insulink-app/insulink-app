@@ -3,7 +3,6 @@ import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:insulink/src/theme/insulin_colors.dart';
 import 'package:insulink/src/theme/insulink_colors.dart';
-import 'package:insulink/src/theme/stat_box_colors.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
 /// The app's light and dark Material 3 themes, both built from the
@@ -158,7 +157,6 @@ class AppTheme {
       tokens,
       GlucoseColors(inRange: tokens.range, low: tokens.low, high: tokens.high),
       AccentColors(onSurface: tokens.accent),
-      StatBoxColors(icon: tokens.accent, tintBase: tokens.accent),
       StatusColors(
         danger: tokens.low,
         warning: tokens.high,

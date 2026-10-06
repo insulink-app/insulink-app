@@ -6,9 +6,10 @@ import 'package:flutter/rendering.dart';
 import 'package:insulink/src/base/page.dart';
 import 'package:insulink/src/base/page_body.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
-import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/connections/status/connection_status_page.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/insulink_colors.dart';
 import 'package:insulink/src/overview/battery_saver_banner.dart';
 import 'package:insulink/src/overview/advisory_bolus_notice.dart';
 import 'package:insulink/src/overview/overview_pod_warnings.dart';
@@ -18,10 +19,9 @@ import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
 import 'package:insulink/src/overview/overview_active_insulin.dart';
 import 'package:insulink/src/overview/overview_boxes.dart';
-import 'package:insulink/src/overview/overview_current_value.dart';
+import 'package:insulink/src/overview/glucose_hero.dart';
 import 'package:insulink/src/overview/overview_section.dart';
-import 'package:insulink/src/overview/overview_pod_life.dart';
-import 'package:insulink/src/overview/overview_sensor_life.dart';
+import 'package:insulink/src/overview/overview_devices.dart';
 import 'package:insulink/src/overview/overview_time_in_range.dart';
 import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_states.dart';
@@ -30,7 +30,6 @@ import 'package:insulink/src/pump/pod_restore_card.dart';
 import 'package:insulink/src/profile/battery/profile_battery_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:provider/provider.dart';
 
 class OverviewBody extends AppPageBody {
@@ -63,14 +62,27 @@ class _OverviewTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: () => openConnectionStatus(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        child: OverviewUpdate(
-          lastUpdate: controller.lastUpdate,
-          intervalSec: controller.sensorType.readingIntervalSec,
+    final colors = context.insulinkColors;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        button: true,
+        label: Locales.string(context, 'connections.label'),
+        child: Material(
+          color: colors.panel,
+          shape: StadiumBorder(side: BorderSide(color: colors.border)),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => openConnectionStatus(context),
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.fromLTRB(9, 0, 14, 0),
+              child: OverviewUpdate(
+                lastUpdate: controller.lastUpdate,
+                intervalSec: controller.sensorType.readingIntervalSec,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -208,7 +220,7 @@ class _DataViewState extends State<_DataView> {
         // buried on the pump page.
         const PodRestoreCard(),
         const SizedBox(height: 16),
-        OverviewCurrentValue(
+        GlucoseHero(
           mgdl: controller.currentMgdl,
           trendPerMin: controller.displayTrendPerMin,
           stale: controller.currentIsStale,
@@ -234,22 +246,8 @@ class _DataViewState extends State<_DataView> {
           child: const OverviewSection(child: OverviewTimeInRange()),
         ),
         const SizedBox(height: 16),
-        if (controller.sensorStart != null) ...[
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => openSensorPage(context),
-            child: const OverviewSection(child: OverviewSensorLife()),
-          ),
-          const SizedBox(height: 16),
-        ],
-        if (context.watch<PodController>().hasPod) ...[
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => openPumpPage(context),
-            child: const OverviewSection(child: OverviewPodLife()),
-          ),
-          const SizedBox(height: 16),
-        ],
+        const OverviewDevices(),
+        const SizedBox(height: 16),
         const OverviewBoxes(),
       ],
     );

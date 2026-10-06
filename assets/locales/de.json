@@ -176,6 +176,17 @@
       "title": "Pod",
       "open": "Pumpe",
       "dismiss": "Ausblenden"
+    },
+    "devices": "Geräte",
+    "chart_window": "24 Std.",
+    "in_range_window": "im Zielbereich, 24 Std.",
+    "trend": {
+      "rising_fast": "Steigt schnell",
+      "rising": "Steigt",
+      "stable": "Stabil",
+      "falling": "Fällt",
+      "falling_fast": "Fällt schnell",
+      "per_min": "# pro Min."
     }
   },
   "analysis": {
@@ -602,7 +613,8 @@
       "overview": {
         "off": "Automatische Abgabe ist aus",
         "stopped": "Automatische Abgabe wurde beendet",
-        "engaged": "Automatische Abgabe ist aktiv"
+        "engaged": "Automatische Abgabe ist aktiv",
+        "rate": "# E/h"
       },
       "auth_reason": "Automatische Insulinabgabe aktivieren",
       "journal": "Entscheidungen der Automatik",

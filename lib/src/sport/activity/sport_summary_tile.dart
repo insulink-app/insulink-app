@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/theme/stat_box_colors.dart';
+import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_text_styles.dart';
 
-/// A single summary "box": glyph + label + big value (optional unit), tappable.
-/// Used both in the Sport tab's activity card and on the overview.
+/// A single summary tile: glyph + label + big value (optional unit), tappable.
+/// Used in the Sport tab, the nutrition tab and on the overview.
 class SportSummaryTile extends StatelessWidget {
   const SportSummaryTile({
     super.key,
@@ -32,117 +33,112 @@ class SportSummaryTile extends StatelessWidget {
   /// while a live BLE pulse is streaming).
   final bool pulse;
 
-  /// Optional daily-goal progress in 0..1. When set, the box background fills
-  /// from the left in proportion to how close today is to the goal (brighter
-  /// once reached).
+  /// Optional daily-goal progress in 0..1. When set, the tile fills from the
+  /// left in proportion to how close today is to the goal.
   final double? progress;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final box = context.statBox;
+    final colors = context.insulinkColors;
     return Opacity(
       opacity: unavailable ? 0.45 : 1.0,
       child: Material(
-        color: box.panel,
+        color: colors.panel,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: box.line),
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: colors.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: unavailable ? null : onTap,
-          child: Stack(
-            children: [
-              if (progress != null) _fill(box),
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _glyph(context),
-                    const SizedBox(width: 12),
-                    Expanded(child: _text(context, scheme)),
-                  ],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 92),
+            child: Stack(
+              children: [
+                if (progress != null) _fill(colors),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+                  child: Row(
+                    spacing: 14,
+                    children: [
+                      _glyph(colors),
+                      Expanded(child: _text(context, colors)),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// The proportional background fill, anchored to the left edge and filling the
-  /// full tile height.
-  Widget _fill(StatBoxColors box) {
-    final value = progress!.clamp(0.0, 1.0);
-    final reached = value >= 1.0;
+  /// The goal progress: a soft accent area from the left edge, closed by a
+  /// 2 px accent line where it ends.
+  Widget _fill(InsulinkColors colors) {
     return Positioned.fill(
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
-        widthFactor: value,
-        child: ColoredBox(color: box.fill(reached ? 0.22 : 0.13)),
+        widthFactor: progress!.clamp(0.0, 1.0),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.accentSoft,
+            border: Border(right: BorderSide(color: colors.accent, width: 2)),
+          ),
+        ),
       ),
     );
   }
 
   /// The tile's glyph, deliberately bare — no badge behind it.
   ///
-  /// This tile is itself the control: its tinted face, border and progress fill
-  /// already say "press me". A badge inside it adds a second, competing shape —
-  /// filled it looked like a button parked on a button, neutral it punched a
-  /// grey hole through the tint. So the glyph carries itself instead: sized to
-  /// hold its own against the 28px value beside it, and weighted with the
-  /// accent. The fixed slot keeps every tile's text in one column.
-  Widget _glyph(BuildContext context) {
-    Widget glyph = Icon(icon, size: 26, color: context.statBox.icon);
+  /// This tile is itself the control: its face, rim and progress fill already
+  /// say "press me". A badge inside it adds a second, competing shape — filled
+  /// it looked like a button parked on a button, neutral it punched a hole
+  /// through the face. So the glyph carries itself in the accent instead.
+  Widget _glyph(InsulinkColors colors) {
+    Widget glyph = Icon(icon, size: 26, color: colors.accent);
     if (pulse) {
       glyph = _HeartbeatBadge(child: glyph);
     }
-    return SizedBox(width: 34, height: 40, child: Center(child: glyph));
+    return glyph;
   }
 
-  Widget _text(BuildContext context, ColorScheme scheme) {
+  Widget _text(BuildContext context, InsulinkColors colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
+      spacing: 4,
       children: [
         Text(
           Locales.string(context, labelKey),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
+          style: TextStyle(fontSize: 13, color: colors.muted),
         ),
-        const SizedBox(height: 4),
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
+          spacing: 4,
           children: [
             Flexible(
               child: Text(
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: InsulinkTextStyles.statValue,
               ),
             ),
-            if (unit != null) ...[
-              const SizedBox(width: 3),
+            if (unit != null)
               Text(
                 unit!,
                 style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface.withValues(alpha: 0.6),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colors.muted,
                 ),
               ),
-            ],
           ],
         ),
       ],

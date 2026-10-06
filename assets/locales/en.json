@@ -176,6 +176,17 @@
       "title": "Pod",
       "open": "Pump",
       "dismiss": "Dismiss"
+    },
+    "devices": "Devices",
+    "chart_window": "24 h",
+    "in_range_window": "in range, 24 h",
+    "trend": {
+      "rising_fast": "Rising fast",
+      "rising": "Rising",
+      "stable": "Steady",
+      "falling": "Falling",
+      "falling_fast": "Falling fast",
+      "per_min": "# per min"
     }
   },
   "analysis": {
@@ -602,7 +613,8 @@
       "overview": {
         "off": "Automated delivery is off",
         "stopped": "Automated delivery has stopped",
-        "engaged": "Automated delivery is active"
+        "engaged": "Automated delivery is active",
+        "rate": "# U/h"
       },
       "auth_reason": "Turn on automated insulin delivery",
       "journal": "Automation decisions",

@@ -407,7 +407,7 @@ glucose/bolus/silent profile state, and `CgmController`) and `MaterialApp`
 redesign's design tokens and is the **single source** of every colour: `app_theme.dart`
 builds both `ThemeData`s from it through one builder, and feeds `ColorScheme` and
 the older extensions (`GlucoseColors`, `AccentColors`, `StatusColors`,
-`StatBoxColors`, `InsulinColors`) from the tokens. The font is the bundled
+`InsulinColors`) from the tokens. The font is the bundled
 Atkinson Hyperlegible Next (`assets/fonts/`), with tabular figures on every
 `TextTheme` role. **No widget invents a colour** —
 needed a value the scheme has no role for? Add the role here, don't hard-code it

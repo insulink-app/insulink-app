@@ -3,33 +3,42 @@ import 'package:insulink/src/base/header_account_button.dart';
 import 'package:insulink/src/base/header_device_button.dart';
 import 'package:insulink/src/base/header_inventory_button.dart';
 
-class Header extends StatefulWidget implements PreferredSizeWidget {
+/// The app bar every tab shares: the page's own title on the left, three
+/// separate round buttons on the right, 20 px from the edges.
+class Header extends StatelessWidget implements PreferredSizeWidget {
   /// Title widget for the currently shown page (see [AppPageBody.title]).
   final Widget? title;
 
   const Header({super.key, this.title});
 
-  @override
-  State<Header> createState() => _HeaderState();
+  static const double _edge = 20;
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
+  Size get preferredSize => const Size.fromHeight(64);
 
-class _HeaderState extends State<Header> {
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      toolbarHeight: preferredSize.height,
       surfaceTintColor: Colors.transparent,
+      scrolledUnderElevation: 0,
       centerTitle: false,
-      title: widget.title,
-      titleSpacing: 10,
-      actions: <Widget>[
-        HeaderInventoryButton(),
-        HeaderDeviceButton(),
-        HeaderAccountButton(),
-      ],
+      title: title,
+      titleSpacing: _edge,
       automaticallyImplyLeading: false,
+      actions: const [
+        Padding(
+          padding: EdgeInsets.only(right: _edge),
+          child: Row(
+            spacing: 8,
+            children: [
+              HeaderInventoryButton(),
+              HeaderDeviceButton(),
+              HeaderAccountButton(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

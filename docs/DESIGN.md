@@ -136,13 +136,6 @@ nothing stable to contrast against.
 button dimmed to half while disabled, carries information in its alpha — leave
 those alone.
 
-## The stat boxes follow the accent
-
-`StatBoxColors` (`context.statBox`) used to hold the first, more saturated brand
-indigo apart from a softened `primary`. With one accent there is nothing left to
-hold apart: both fields are now the `accent` token. The extension stays because
-its tint helpers (`panel`, `line`, `fill`) are read by the tiles.
-
 ## Shape language
 
 | Silhouette | Meaning | Example |

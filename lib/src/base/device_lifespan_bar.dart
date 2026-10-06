@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:insulink/src/base/device_lifespan.dart';
+import 'package:insulink/src/base/segment_bar.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_text_styles.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
 /// How much life a worn device has left, as one rectangle per remaining unit:
@@ -27,9 +30,9 @@ class DeviceLifespanBar extends StatelessWidget {
   final DateTime start;
   final int sessionLengthSec;
 
-  /// On the overview the header matches the other section titles (large + bold,
-  /// full-strength) with a greyed value on the right; on a device page it keeps
-  /// the original compact look (greyed title, full-strength value).
+  /// On the overview it takes the redesign's panel look (bold row title, muted
+  /// value, thin accent segments); on a device page it keeps the original
+  /// compact look (greyed title, full-strength value).
   final bool overview;
 
   /// Names the device in the overview header. The remaining-time wording itself
@@ -50,8 +53,8 @@ class DeviceLifespanBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _header(context, scheme, life),
-        const SizedBox(height: 6),
-        _segmentBar(scheme, life),
+        SizedBox(height: overview ? 8 : 6),
+        overview ? _overviewSegments(context, life) : _segmentBar(scheme, life),
       ],
     );
   }
@@ -66,7 +69,7 @@ class DeviceLifespanBar extends StatelessWidget {
         LocaleText(
           overview ? overviewTitleKey : pageTitleKey,
           style: overview
-              ? const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+              ? InsulinkTextStyles.row
               : TextStyle(
                   fontSize: 12,
                   color: scheme.onSurface.withValues(alpha: 0.6),
@@ -84,12 +87,12 @@ class DeviceLifespanBar extends StatelessWidget {
     DeviceLifespan life,
   ) {
     final normalColor = overview
-        ? scheme.onSurface.withValues(alpha: 0.6)
+        ? context.insulinkColors.muted
         : scheme.onSurface;
     return Text(
       _remainingText(context, life),
       style: TextStyle(
-        fontSize: 12,
+        fontSize: overview ? 14 : 12,
         fontWeight: overview ? FontWeight.normal : FontWeight.w600,
         color: life.expired
             ? context.danger
@@ -128,6 +131,18 @@ class DeviceLifespanBar extends StatelessWidget {
         ? 'sensor.life.remaining_hours'
         : 'sensor.life.remaining';
     return Locales.string(context, key, params: ['${life.filledSegments}']);
+  }
+
+  /// The overview's segments: 6 px, accent for what is left, line for the rest.
+  Widget _overviewSegments(BuildContext context, DeviceLifespan life) {
+    final colors = context.insulinkColors;
+    return SegmentBar.count(
+      total: life.totalSegments,
+      filled: life.filledSegments,
+      fill: colors.accent,
+      empty: colors.line,
+      gap: life.hoursMode ? 2 : 4,
+    );
   }
 
   Widget _segmentBar(ColorScheme scheme, DeviceLifespan life) {

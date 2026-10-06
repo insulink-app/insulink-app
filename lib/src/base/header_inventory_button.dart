@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/header_icon_button.dart';
+import 'package:insulink/src/theme/insulink_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -13,34 +15,11 @@ class HeaderInventoryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final needsAttention = context.watch<InventoryState>().hasWarning;
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        IconButton(
-          icon: const Icon(PhosphorIconsBold.package, size: 28),
-          color: const Color(0xFFB3B3B3),
-          onPressed: () => openInventoryPage(context),
-        ),
-        if (needsAttention)
-          Positioned(
-            right: 8,
-            top: 8,
-            child: Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.error,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color:
-                      Theme.of(context).appBarTheme.backgroundColor ??
-                      Theme.of(context).scaffoldBackgroundColor,
-                  width: 1.5,
-                ),
-              ),
-            ),
-          ),
-      ],
+    return HeaderIconButton(
+      icon: PhosphorIconsRegular.package,
+      labelKey: 'inventory.label',
+      statusColor: needsAttention ? context.insulinkColors.low : null,
+      onTap: () => openInventoryPage(context),
     );
   }
 }

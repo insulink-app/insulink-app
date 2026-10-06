@@ -90,10 +90,7 @@ class EditorSheet extends StatelessWidget {
         onPressed: () => Navigator.of(context).pop(),
         child: LocaleText(
           'alert.done',
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
       ),
     );

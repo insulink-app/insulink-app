@@ -18,7 +18,11 @@ class GlucoseChartSeries {
     required this.glucose,
     required this.colors,
     this.windowEnd = 1 << 62,
+    this.minimal = false,
   });
+
+  /// The overview preview's line: thinner, with no area filled beneath it.
+  final bool minimal;
 
   /// All cached readings (secsSinceStart → mg/dL), oldest first.
   final List<MapEntry<int, int>> entries;
@@ -219,17 +223,18 @@ class GlucoseChartSeries {
     return colors.inRange;
   }
 
-  /// A solid, single-colour line piece (+ faded fill below it) for one zone run.
+  /// A solid, single-colour line piece for one zone run, with a faded fill
+  /// below it except in [minimal] mode.
   LineChartBarData _zoneBar(List<FlSpot> spots, Color color) {
     return LineChartBarData(
       spots: spots,
       isCurved: true,
       curveSmoothness: 0.2,
-      barWidth: 3,
+      barWidth: minimal ? 2.5 : 3,
       color: color,
       dotData: FlDotData(show: showDots),
       belowBarData: BarAreaData(
-        show: true,
+        show: !minimal,
         color: color.withValues(alpha: 0.15),
       ),
     );

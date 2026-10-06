@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_colors.dart';
 
-/// A boxed section on the overview: rounded surface card with a subtle border,
-/// so the page reads as distinct grouped sections.
+/// A panel on the overview: the devices, or a notice. Flat panel colour with
+/// rounded corners and no rim, so the page reads as calm grouped areas; the
+/// glucose area above it stays open without one.
 class OverviewSection extends StatelessWidget {
   const OverviewSection({super.key, required this.child});
 
@@ -9,14 +11,12 @@ class OverviewSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: context.insulinkColors.panel,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.dividerColor),
       ),
       child: child,
     );

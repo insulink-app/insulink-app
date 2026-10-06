@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/device_lifespan.dart';
 import 'package:insulink/src/base/device_lifespan_bar.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/pump/loop/loop_overview_line.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_reservoir_level.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_colors.dart';
+import 'package:insulink/src/theme/insulink_text_styles.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:provider/provider.dart';
 
-/// Remaining pod life and reservoir on the overview — the same day/hour segment
-/// bar the sensor uses, with the reservoir added underneath.
+/// Remaining pod life and reservoir on the overview, side by side in the
+/// devices panel: the same day/hour segments the sensor uses, and the reservoir
+/// as a fill bar.
 ///
 /// Renders nothing while no pod is paired, so a user without one sees no empty
 /// section.
@@ -28,19 +31,22 @@ class OverviewPodLife extends StatelessWidget {
     if (!controller.hasPod || start == null) {
       return const SizedBox.shrink();
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 16,
       children: [
-        DeviceLifespanBar(
-          start: start,
-          sessionLengthSec: controller.store.expiryHours * 3600,
-          overview: true,
-          overviewTitleKey: 'pump.label',
-          pageTitleKey: 'pump.life.title',
+        Expanded(
+          child: DeviceLifespanBar(
+            start: start,
+            sessionLengthSec: controller.store.expiryHours * 3600,
+            overview: true,
+            overviewTitleKey: 'pump.label',
+            pageTitleKey: 'pump.life.title',
+          ),
         ),
-        const SizedBox(height: 8),
-        PodReservoirBar(controller: controller),
-        const PodLoopOverviewLine(),
+        Expanded(
+          child: PodReservoirBar(controller: controller, overview: true),
+        ),
       ],
     );
   }
@@ -59,9 +65,16 @@ class OverviewPodLife extends StatelessWidget {
 /// than shown as a number: a precise figure the pod did not give would invite
 /// decisions it cannot support. The same applies while no status has been read.
 class PodReservoirBar extends StatelessWidget {
-  const PodReservoirBar({super.key, required this.controller});
+  const PodReservoirBar({
+    super.key,
+    required this.controller,
+    this.overview = false,
+  });
 
   final PodController controller;
+
+  /// The overview's panel look: bold title, muted value, a thin accent fill.
+  final bool overview;
 
   PodReservoirLevel get _level => PodReservoirLevel(
     hasStatus: controller.status != null,
@@ -75,8 +88,8 @@ class PodReservoirBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _header(context, scheme),
-        const SizedBox(height: 6),
-        _bar(context, scheme),
+        SizedBox(height: overview ? 8 : 6),
+        overview ? _overviewBar(context) : _bar(context, scheme),
       ],
     );
   }
@@ -87,16 +100,18 @@ class PodReservoirBar extends StatelessWidget {
       children: [
         Text(
           Locales.string(context, 'pump.status.reservoir'),
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
+          style: overview
+              ? InsulinkTextStyles.row
+              : TextStyle(
+                  fontSize: 12,
+                  color: scheme.onSurface.withValues(alpha: 0.6),
+                ),
         ),
         const Spacer(),
         Text(
           _value(context),
           style: TextStyle(
-            fontSize: 12,
+            fontSize: overview ? 14 : 12,
             fontWeight: level.isLow ? FontWeight.w600 : FontWeight.normal,
             color: level.isLow
                 ? context.warning
@@ -104,6 +119,17 @@ class PodReservoirBar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _overviewBar(BuildContext context) {
+    final colors = context.insulinkColors;
+    return LinearProgressIndicator(
+      value: _level.fraction,
+      minHeight: 6,
+      borderRadius: BorderRadius.circular(3),
+      color: _level.isLow ? colors.high : colors.accent,
+      backgroundColor: colors.line,
     );
   }
 
@@ -134,6 +160,10 @@ class PodReservoirBar extends StatelessWidget {
     if (level.isAboveRange) {
       return Locales.string(context, 'pump.status.reservoir_plenty');
     }
-    return '${level.units!.toStringAsFixed(2)} U';
+    return Locales.string(
+      context,
+      'pump.bolus.units',
+      params: [sportDecimal(level.units!, 2)],
+    );
   }
 }

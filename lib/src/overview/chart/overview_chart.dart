@@ -78,8 +78,7 @@ class OverviewChart extends StatefulWidget {
   State<OverviewChart> createState() => _OverviewChartState();
 }
 
-class _OverviewChartState extends State<OverviewChart>
-    with SingleTickerProviderStateMixin {
+class _OverviewChartState extends State<OverviewChart> {
   static const _kRangeKey = 'chart_range_hours';
   static const _storage = FlutterSecureStorage();
 
@@ -102,30 +101,6 @@ class _OverviewChartState extends State<OverviewChart>
   /// in absolute time — NOT multiples of the window — so zooming leaves the
   /// scrolled-to position fixed instead of snapping back to now.
   int _panSecs = 0;
-
-  /// Drives the latest-reading dot's pulsing halo.
-  late final AnimationController _pulse;
-
-  /// The halo phase the chart actually renders, sampled from [_pulse] in
-  /// [_pulseSteps] steps. The marker is a dot painter INSIDE the chart, so every
-  /// phase change re-lays-out the whole fl_chart — axis label widgets included —
-  /// and at the display's frame rate that alone ate a chunk of every frame's
-  /// budget, which is what made the overview stutter while scrolling.
-  ///
-  /// ponytail: sampled, not moved out of the chart. 32 steps over 2.2 s is ~15
-  /// Hz and grows the ring ~0.7 px per step, so the motion still reads as
-  /// continuous. If the ripple ever has to be perfectly smooth, draw it as an
-  /// overlay above a static chart instead — that needs the plot rect, which is
-  /// fl_chart-internal geometry we'd have to reproduce.
-  static const _pulseSteps = 32;
-  final ValueNotifier<double> _phase = ValueNotifier<double>(0);
-
-  void _samplePulse() {
-    final sampled = (_pulse.value * _pulseSteps).floor() / _pulseSteps;
-    if (sampled != _phase.value) {
-      _phase.value = sampled;
-    }
-  }
 
   /// Index of the transparent overlay bar that owns touch (so the haptic and
   /// tooltip ignore the per-zone colour bars + interpolated crossing points).
@@ -172,13 +147,6 @@ class _OverviewChartState extends State<OverviewChart>
     widget.sync
       ?..addListener(_onSyncChanged)
       ..onPinch = applyPinch;
-    _pulse =
-        AnimationController(
-            vsync: this,
-            duration: const Duration(milliseconds: 2200),
-          )
-          ..addListener(_samplePulse)
-          ..repeat();
   }
 
   @override
@@ -237,8 +205,6 @@ class _OverviewChartState extends State<OverviewChart>
     widget.sync
       ?..removeListener(_onSyncChanged)
       ..onPinch = null;
-    _pulse.dispose();
-    _phase.dispose();
     super.dispose();
   }
 
@@ -640,6 +606,7 @@ class _OverviewChartState extends State<OverviewChart>
       shift: shift,
       glucose: glucose,
       colors: colors,
+      minimal: widget.preview,
     );
     final bars = series.buildBars();
     // Dashed forecast line past the latest reading. Always built (anchored at the
@@ -693,7 +660,7 @@ class _OverviewChartState extends State<OverviewChart>
       '$latestSecs-${entries.length}-$effectiveRange-$panSecs'
       '-$predictionCount-${prediction.band != null}-${mealMarkers.length}',
     );
-    GlucoseLineChart chart(double pulse) => GlucoseLineChart(
+    final chart = GlucoseLineChart(
       key: key,
       bars: bars,
       betweenBars: [if (prediction.band != null) prediction.band!],
@@ -707,22 +674,16 @@ class _OverviewChartState extends State<OverviewChart>
       minYmgdl: widget.minYmgdl,
       maxYmgdl: widget.maxYmgdl,
       highlightSpot: widget.preview ? highlightSpot : null,
-      pulse: pulse,
       // The labels move under the insulin chart whenever one is stacked below,
       // so the two plots touch and read as one picture with one axis.
       showBottomTitles: widget.sync == null,
       mealMarkers: mealMarkers,
     );
-    // Only the overview preview pulses; the detail page renders once (no per-
-    // frame relayout of the full chart).
-    if (!widget.preview) {
-      _buzzForMirror(mirrored);
-      return _withMirror(chart(0), touchSpots, mirrored, axis, glucose);
+    if (widget.preview) {
+      return chart;
     }
-    return ValueListenableBuilder<double>(
-      valueListenable: _phase,
-      builder: (context, phase, _) => chart(phase),
-    );
+    _buzzForMirror(mirrored);
+    return _withMirror(chart, touchSpots, mirrored, axis, glucose);
   }
 
   /// Lays the readout for a scrub on the chart below over this one.
