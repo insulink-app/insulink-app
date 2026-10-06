@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/enum_locale_key.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/pump/loop/loop_journal_page.dart';
 import 'package:insulink/src/pump/pod_store.dart';
-import 'package:insulink/src/theme/accent_colors.dart';
-import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 
 /// What the automation last decided, in one line.
 ///
@@ -20,34 +19,18 @@ class PodLoopCycleLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final style = InkText.caption.copyWith(color: context.ink.muted);
     final cycles = context.watch<PodController>().store.loopCycles;
     if (cycles.isEmpty) {
-      return LocaleText(
-        'pump.loop.no_cycle',
-        style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
-      );
+      return LocaleText('pump.loop.no_cycle', style: style);
     }
-    return InkWell(
-      onTap: () => PodLoopJournalPage.open(context),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              _describe(context, cycles.first),
-              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
-            ),
-          ),
-          Icon(PhosphorIconsBold.caretRight, size: 14, color: context.accent),
-        ],
-      ),
-    );
+    return Text(_describe(context, cycles.first), style: style);
   }
 
   String _describe(BuildContext context, PodLoopCycle cycle) {
     final line = Locales.string(context, 'pump.loop.last')
         .replaceFirst('#', _clock(cycle.at))
-        .replaceFirst('#', cycle.unitsPerHour.toStringAsFixed(2))
+        .replaceFirst('#', sportDecimal(cycle.unitsPerHour, 2))
         .replaceFirst(
           '#',
           Locales.string(context, 'pump.loop.reason.${cycle.reason.localeKey}'),

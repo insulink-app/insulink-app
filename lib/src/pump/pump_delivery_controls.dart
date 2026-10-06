@@ -7,6 +7,7 @@ import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/base/action_buttons.dart';
 
 /// The one control that decides whether insulin is flowing: stop it, or put the
 /// pod back on its schedule.
@@ -28,14 +29,10 @@ class PodStopButton extends StatelessWidget {
     if (controller.isSuspended) {
       return const _ResumeButton();
     }
-    return FilledButton.icon(
-      style: FilledButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.error,
-        minimumSize: const Size.fromHeight(46),
-      ),
+    return DangerActionButton(
+      labelKey: 'pump.action.suspend',
+      icon: PhosphorIconsFill.pause,
       onPressed: controller.isBusy ? null : () => _confirm(context, controller),
-      icon: const Icon(PhosphorIconsBold.pause, size: 20),
-      label: LocaleText('pump.action.suspend'),
     );
   }
 
@@ -63,7 +60,7 @@ class _ResumeButton extends StatelessWidget {
     final controller = context.watch<PodController>();
     final basal = PodBasalAdapter(context.watch<ProfileBasalState>().active);
     return FilledButton.icon(
-      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
       onPressed: controller.isBusy || !basal.isProgrammable
           ? null
           : () => _confirm(context, controller, basal),

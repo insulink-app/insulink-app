@@ -52,8 +52,8 @@ class DeviceLifespanBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _header(context, scheme, life),
-        SizedBox(height: overview ? 8 : 6),
-        overview ? _overviewSegments(context, life) : _segmentBar(scheme, life),
+        const SizedBox(height: 8),
+        _segments(context, life),
       ],
     );
   }
@@ -69,10 +69,7 @@ class DeviceLifespanBar extends StatelessWidget {
           overview ? overviewTitleKey : pageTitleKey,
           style: overview
               ? InkText.row
-              : TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface.withValues(alpha: 0.6),
-                ),
+              : InkText.label.copyWith(color: context.ink.muted),
         ),
         const Spacer(),
         _remainingLabel(context, scheme, life),
@@ -85,12 +82,11 @@ class DeviceLifespanBar extends StatelessWidget {
     ColorScheme scheme,
     DeviceLifespan life,
   ) {
-    final normalColor = overview ? context.ink.muted : scheme.onSurface;
+    final normalColor = overview ? context.ink.muted : context.ink.text;
+    final style = overview ? InkText.label : InkText.row;
     return Text(
       _remainingText(context, life),
-      style: TextStyle(
-        fontSize: overview ? 14 : 12,
-        fontWeight: overview ? FontWeight.normal : FontWeight.w600,
+      style: style.copyWith(
         color: life.expired
             ? context.danger
             : life.inGrace
@@ -130,10 +126,11 @@ class DeviceLifespanBar extends StatelessWidget {
     return Locales.string(context, key, params: ['${life.filledSegments}']);
   }
 
-  /// The overview's segments: 6 px, accent for what is left, line for the rest.
-  /// The final day keeps the day segments and fills the last one by the share
-  /// of that day still left, instead of switching to 24 hour segments.
-  Widget _overviewSegments(BuildContext context, DeviceLifespan life) {
+  /// 6 px segments, accent for what is left, line for the rest, on the overview
+  /// and the device pages alike. The final day keeps the day segments and fills
+  /// the last one by the share of that day still left, instead of switching to
+  /// 24 hour segments.
+  Widget _segments(BuildContext context, DeviceLifespan life) {
     final colors = context.ink;
     if (life.hoursMode) {
       return _lastDaySegments(colors, life);
@@ -169,32 +166,6 @@ class DeviceLifespanBar extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _segmentBar(ColorScheme scheme, DeviceLifespan life) {
-    final gap = life.hoursMode ? 2.0 : 4.0;
-    return Row(
-      children: [
-        for (var index = 0; index < life.totalSegments; index++) ...[
-          if (index > 0) SizedBox(width: gap),
-          Expanded(
-            child: _segment(scheme, filled: index < life.filledSegments),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _segment(ColorScheme scheme, {required bool filled}) {
-    return Container(
-      height: 9,
-      decoration: BoxDecoration(
-        color: filled
-            ? scheme.primary
-            : scheme.onSurface.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(3),
       ),
     );
   }

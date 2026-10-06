@@ -101,8 +101,8 @@
       "show_meals": "Mahlzeiten anzeigen",
       "insulin": {
         "_": "Insulin",
-        "basal": "Basal # U",
-        "bolus": "Bolus # U",
+        "basal": "Basal # E",
+        "bolus": "Bolus # E",
         "empty": "In diesem Zeitraum wurde kein Insulin abgegeben.",
         "at_moment": "Bolus um # Uhr",
         "over_hour": "Basal, # bis # Uhr"
@@ -521,15 +521,17 @@
       "apply": "Temporäres Basal starten",
       "set": "Temporäres Basal",
       "running": "Temporär # E/Std beenden",
+      "active": "Temporär",
       "end": {
         "title": "Temporäres Basal beenden?",
-        "body": "Der Pod läuft dann wieder auf deinem Basalprogramm statt auf # U/h.",
+        "body": "Der Pod läuft dann wieder auf deinem Basalprogramm statt auf # E/h.",
         "confirm": "Beenden"
       }
     },
     "type": {
       "dash": "Omnipod DASH"
     },
+    "manage": "Pod verwalten",
     "info": {
       "title": "Pod-Daten"
     },
@@ -581,7 +583,7 @@
         "engaged": "Die Automatik ersetzt dein Basalprogramm alle fünf Minuten durch eine berechnete temporäre Rate."
       },
       "no_cycle": "Noch keine Entscheidung berechnet.",
-      "last": "Zuletzt #: # U/h, #",
+      "last": "Zuletzt #: # E/h, #",
       "reason": {
         "holding_schedule": "auf Kurs",
         "correcting": "korrigiert",
@@ -625,8 +627,8 @@
       "journal": "Entscheidungen der Automatik",
       "not_sent": "nicht gesendet",
       "at_glucose": "bei # mg/dL, # mg/dL pro Minute",
-      "on_board": "# U aktiv",
-      "schedule_was": "Basalprogramm # U/h"
+      "on_board": "# E aktiv",
+      "schedule_was": "Basalprogramm # E/h"
     },
     "forget": {
       "_": "Diesen Pod vergessen?",
@@ -1304,11 +1306,11 @@
       },
       "max_rate": {
         "_": "Höchste Basalrate",
-        "value": "# U/h"
+        "value": "# E/h"
       },
       "max_iob": {
         "_": "Höchstes aktives Insulin",
-        "value": "# U"
+        "value": "# E"
       }
     },
     "pod_temp_basal_beep": {
@@ -1376,7 +1378,7 @@
       "pump_unknown": "Unklar, ob die Pumpe abgegeben hat. Prüfe den Pod, bevor du erneut dosierst."
     },
     "next": "Weiter",
-    "active_insulin_pump": "davon # U aus der Pumpe, nicht selbst gespritzt"
+    "active_insulin_pump": "davon # E aus der Pumpe, nicht selbst gespritzt"
   },
   "service": {
     "connecting": "Verbinde…",

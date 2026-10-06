@@ -521,6 +521,7 @@
       "apply": "Start temporary basal",
       "set": "Temporary basal",
       "running": "End temporary # U/h",
+      "active": "Temporary",
       "end": {
         "title": "End the temporary basal?",
         "body": "The pod goes back to your basal schedule instead of # U/h.",
@@ -530,6 +531,7 @@
     "type": {
       "dash": "Omnipod DASH"
     },
+    "manage": "Manage pod",
     "info": {
       "title": "Pod data"
     },

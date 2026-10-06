@@ -1,6 +1,7 @@
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 import 'package:insulink/src/sensor/info/sensor_attributes.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 
 /// Turns a pod status into the labelled rows the device page shows, reusing the
 /// sensor page's section layout so both device pages read the same.
@@ -63,13 +64,15 @@ class PodStatusAttributes {
     if (units == null) {
       return localize('pump.status.reservoir_plenty');
     }
-    return '${units.toStringAsFixed(2)} U';
+    return localize(
+      'pump.bolus.units',
+    ).replaceFirst('#', sportDecimal(units, 2));
   }
 
   String _duration(Duration age) {
     final hours = age.inHours;
     final minutes = age.inMinutes % 60;
-    return '${hours}h ${minutes}min';
+    return '$hours h $minutes min';
   }
 
   String _readAt() {

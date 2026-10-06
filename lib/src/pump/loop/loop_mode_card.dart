@@ -4,7 +4,6 @@ import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/localization/enum_locale_key.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/profile/profile_segments.dart';
 import 'package:insulink/src/pump/loop/loop_cycle_line.dart';
 import 'package:insulink/src/pump/loop/loop_switch.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
@@ -12,6 +11,10 @@ import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/segmented_toggle.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/pump/loop/loop_journal_page.dart';
 
 /// The switch that hands basal delivery to the automation, on the pump page.
 ///
@@ -36,59 +39,81 @@ class _PodLoopModeCardState extends State<PodLoopModeCard> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<PodController>();
-    final scheme = Theme.of(context).colorScheme;
     final mode = controller.store.loopMode;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
+    return InkPanel(
+      padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const LocaleText(
-            'pump.loop.title',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          _header(context),
+          const SizedBox(height: 14),
+          SegmentedToggle<PodLoopMode>(
+            semanticsLabel: Locales.string(context, 'pump.loop.title'),
+            selected: mode,
+            onChanged: controller.isBusy
+                ? null
+                : (picked) => _onPicked(context, controller, mode, picked),
+            options: [
+              for (final option in PodLoopMode.values)
+                (
+                  value: option,
+                  label: Locales.string(
+                    context,
+                    'pump.loop.mode.${option.name}',
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 10),
           LocaleText(
             'pump.loop.hint.${mode.name}',
-            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+            style: InkText.caption.copyWith(color: context.ink.muted),
           ),
-          const SizedBox(height: 12),
-          ProfileSegments(_modes(context, controller, mode)),
           ..._stoppedNotice(context, controller),
           ..._blockedNotice(context),
-          const SizedBox(height: 12),
-          const PodLoopCycleLine(),
         ],
       ),
     );
   }
 
-  List<ProfileSegment> _modes(
+  /// The title over what the automation last decided; a tap opens the journal
+  /// that line comes from.
+  Widget _header(BuildContext context) {
+    return InkWell(
+      onTap: () => PodLoopJournalPage.open(context),
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
+        spacing: 10,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 3,
+              children: [
+                LocaleText('pump.loop.title', style: InkText.row),
+                const PodLoopCycleLine(),
+              ],
+            ),
+          ),
+          Icon(
+            PhosphorIconsBold.caretRight,
+            size: 18,
+            color: context.ink.muted,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onPicked(
     BuildContext context,
     PodController controller,
     PodLoopMode current,
+    PodLoopMode picked,
   ) {
-    return [
-      for (final mode in PodLoopMode.values)
-        (
-          labelKey: 'pump.loop.mode.${mode.name}',
-          selected: mode == current,
-          // No custom fill. ProfileSegments draws a selected label in `surface`,
-          // which on dark is near-black and makes only 3.6:1 on the primary
-          // indigo; the default fill is the near-white `onSurface` and reads
-          // cleanly in both themes. The warning and the biometric are what mark
-          // this choice as the consequential one, not a colour.
-          fill: null,
-          onTap: controller.isBusy || mode == current
-              ? null
-              : () => _pick(context, controller, mode),
-        ),
-    ];
+    if (picked != current) {
+      _pick(context, controller, picked);
+    }
   }
 
   /// Engaging is the only direction that starts insulin nobody asked for by hand,

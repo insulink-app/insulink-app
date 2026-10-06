@@ -87,8 +87,8 @@ class PodReservoirBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _header(context, scheme),
-        SizedBox(height: overview ? 8 : 6),
-        overview ? _overviewBar(context) : _bar(context, scheme),
+        const SizedBox(height: 8),
+        _bar(context),
       ],
     );
   }
@@ -101,27 +101,26 @@ class PodReservoirBar extends StatelessWidget {
           Locales.string(context, 'pump.status.reservoir'),
           style: overview
               ? InkText.row
-              : TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface.withValues(alpha: 0.6),
-                ),
+              : InkText.label.copyWith(color: context.ink.muted),
         ),
         const Spacer(),
         Text(
           _value(context),
-          style: TextStyle(
-            fontSize: overview ? 14 : 12,
-            fontWeight: level.isLow ? FontWeight.w600 : FontWeight.normal,
+          style: (overview ? InkText.label : InkText.row).copyWith(
+            fontWeight: overview && !level.isLow ? null : FontWeight.w700,
             color: level.isLow
                 ? context.warning
-                : scheme.onSurface.withValues(alpha: 0.6),
+                : overview
+                ? context.ink.muted
+                : context.ink.text,
           ),
         ),
       ],
     );
   }
 
-  Widget _overviewBar(BuildContext context) {
+  /// 6 px, accent on the line track, amber once the reservoir runs low.
+  Widget _bar(BuildContext context) {
     final colors = context.ink;
     return LinearProgressIndicator(
       value: _level.fraction,
@@ -129,25 +128,6 @@ class PodReservoirBar extends StatelessWidget {
       borderRadius: BorderRadius.circular(3),
       color: _level.isLow ? colors.high : colors.accent,
       backgroundColor: colors.line,
-    );
-  }
-
-  Widget _bar(BuildContext context, ColorScheme scheme) {
-    final level = _level;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(3),
-      child: Stack(
-        children: [
-          Container(height: 9, color: scheme.onSurface.withValues(alpha: 0.12)),
-          FractionallySizedBox(
-            widthFactor: level.fraction,
-            child: Container(
-              height: 9,
-              color: level.isLow ? context.warning : scheme.primary,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
