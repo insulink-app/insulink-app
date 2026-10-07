@@ -105,6 +105,7 @@ before drawing a new bar or button.
 | `ChangeChip` | `base/change_chip.dart` | Change since the entry before: green ↓, amber ↑ |
 | `LabeledField` | `base/labeled_field.dart` | Label above a field filled with the panel colour, for forms on the page |
 | `StatusIcon` | `base/status_icon.dart` | Device glyph in a 48 px disc with a status dot at its lower right |
+| `PagePrimaryButton` | `base/page_primary_button.dart` | Full-width 58 px primary at the foot of onboarding and sign-in; accent at 35 % while disabled |
 | `FloatingDock` | `base/floating_dock.dart` | Tab capsule plus the round bolus button |
 | `DockTabs` | `base/dock_tabs.dart` | The tabs in the capsule: one pill that springs between them and follows a horizontal drag |
 | `TabTransition` | `base/tab_transition.dart` | Fade plus a short slide from the tab's side on every tab change |
