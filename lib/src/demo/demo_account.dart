@@ -18,6 +18,11 @@ class DemoAccount {
 
   final DateTime now;
 
+  /// What the sign-in page is filled with after signing out of the demo, and
+  /// what the demo backend accepts. Not a secret: any pair would do.
+  static const String signInName = 'Demo';
+  static const String signInPassword = 'demo';
+
   final Random _random = Random(2026);
 
   late final DemoCalendar _calendar = DemoCalendar(now);
@@ -60,6 +65,13 @@ class DemoAccount {
     '/pump/history/': _list('pumps', DemoDevices(now).pumps),
     '/pump/register/': {'success': true, 'pump_id': 1},
     '/sensor/register/': {'success': true, 'sensor_id': 1},
+    '/signin/': {
+      'success': true,
+      'user': 1,
+      'name': signInName,
+      'authentication_token': 'demo',
+      'refresh_token': 'demo',
+    },
   };
 
   List<Map<String, Object>> get _glucoseEntries => [

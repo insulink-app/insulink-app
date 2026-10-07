@@ -165,10 +165,9 @@
     },
     "advisory_bolus": "# E über die Benachrichtigung abgegeben, um # Uhr.",
     "restore": {
-      "title": "Vorherigen Sensor verwenden?",
-      "body": "In deinem Konto ist ein Sensor hinterlegt. Übernimm ihn, um ohne erneutes Koppeln weiterzulesen.",
-      "body_scan": "In deinem Konto ist ein Sensor hinterlegt. Halte dein Handy kurz an den Sensor, um ihn zu übernehmen und weiterzulesen.",
-      "use": "Verwenden",
+      "title": "Sensor aus deinem Konto",
+      "scan_hint": "Zum Übernehmen das Handy kurz an den Sensor halten.",
+      "use": "Übernehmen",
       "scan": "Scannen",
       "dismiss": "Nicht jetzt"
     },
@@ -336,8 +335,8 @@
       "remaining": "noch # Tage",
       "remaining_hours": "noch # Stunden",
       "remaining_minutes": "noch # Minuten",
-      "grace": "Kulanzzeit · noch # Std.",
-      "grace_minutes": "Kulanzzeit · noch # Min."
+      "grace": "noch # Std.",
+      "grace_minutes": "noch # Min."
     },
     "control": {
       "end_session": "Sitzung beenden",
@@ -477,10 +476,9 @@
     },
     "restore": {
       "_": "Pod aus deinem Konto",
-      "body": "Für dein Konto ist ein Pod gespeichert, lokal aber keiner. Du kannst ihn übernehmen, ohne neu zu koppeln. Das ist etwa nach einem App-Reset nötig, damit du einen laufenden Pod weiter steuern und stoppen kannst.",
-      "remaining": "Restlaufzeit: #",
-      "use": "Pod übernehmen",
-      "discard": "Dieser Pod existiert nicht mehr",
+      "remaining": "noch #",
+      "use": "Übernehmen",
+      "discard": "Nicht mehr da",
       "discard_title": "Diesen Pod nicht mehr vorschlagen?",
       "discard_body": "Sage das nur für einen Pod, der nicht mehr am Körper ist. Er bleibt in deinem Pumpenverlauf, wird aber nicht mehr vorgeschlagen. Einen Pod, den du noch trägst, kannst du hier danach nicht mehr übernehmen.",
       "discard_confirm": "Verwerfen"
@@ -671,6 +669,8 @@
     "label": "Google Health",
     "connect": "Verbinden",
     "disconnect": "Trennen",
+    "disconnect_row": "Verbindung trennen",
+    "latest": "Letzte Werte",
     "disconnect_confirm": "Google Health wirklich trennen? Die zugehörigen Boxen werden dann ausgegraut.",
     "hint": "Koppelt die Google-Health-App (Health Connect). Deine Wearable-App muss installiert sein und ihre Daten dorthin synchronisieren.",
     "denied": "Zugriff auf Google Health verweigert.",
@@ -682,7 +682,7 @@
     "status": {
       "connected": "Verbunden",
       "disconnected": "Nicht verbunden",
-      "source": "Über Google Health"
+      "source": "Daten über Google Health"
     },
     "detail": {
       "empty": "Noch keine Daten. Google Health synchronisieren."
@@ -1578,5 +1578,9 @@
   },
   "vendor_keys": {
     "missing": "Herstellerschlüssel fehlen. Dieser Build kann sich nicht koppeln mit: #. Lege assets/vendor_keys/vendor_keys.json an und baue die App neu."
+  },
+  "scan": {
+    "torch_on": "Licht einschalten",
+    "torch_off": "Licht ausschalten"
   }
 }

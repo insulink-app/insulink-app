@@ -37,6 +37,16 @@ class PumpNotice extends StatelessWidget {
         tone: NoticeTone.danger,
       );
 
+  /// Something to set right that is not a failure: the pod is fine and keeps
+  /// delivering. Amber with an info glyph, so it stays apart from the red stop
+  /// control and real failures.
+  const PumpNotice.attention(String key)
+    : this._(
+        textKey: key,
+        icon: PhosphorIconsFill.info,
+        tone: NoticeTone.warning,
+      );
+
   /// The fingerprint in front of the cannula was declined. Deliberately not an
   /// error: nothing went wrong and the pod is untouched, so it explains rather
   /// than alarms.

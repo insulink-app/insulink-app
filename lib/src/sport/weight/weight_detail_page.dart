@@ -137,9 +137,12 @@ class _WeightDetailPageState extends State<WeightDetailPage> {
               child: Row(
                 spacing: 10,
                 children: [
-                  SizedBox(
-                    width: 16,
-                    child: Divider(thickness: 1.5, color: colors.accent),
+                  Row(
+                    spacing: 2,
+                    children: [
+                      for (var dash = 0; dash < 4; dash++)
+                        Container(width: 3, height: 1.5, color: colors.accent),
+                    ],
                   ),
                   Text(
                     Locales.string(

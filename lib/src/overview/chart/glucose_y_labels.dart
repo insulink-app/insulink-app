@@ -57,7 +57,7 @@ class GlucoseYLabels extends StatelessWidget {
                       _lineHeight / 2,
                   height: _lineHeight,
                   child: Padding(
-                    padding: EdgeInsets.only(left: leading ? 0 : 6),
+                    padding: EdgeInsets.only(left: leading ? 0 : 4),
                     child: Text(format(value), style: style, maxLines: 1),
                   ),
                 ),

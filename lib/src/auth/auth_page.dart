@@ -3,6 +3,8 @@ import 'package:insulink/src/auth/auth_mode_switch.dart';
 import 'package:insulink/src/auth/auth_service.dart';
 import 'package:insulink/src/auth/brand_mark.dart';
 import 'package:insulink/src/base/labeled_field.dart';
+import 'package:insulink/src/demo/demo_account.dart';
+import 'package:insulink/src/demo/demo_mode.dart';
 import 'package:insulink/src/base/page_primary_button.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -25,8 +27,12 @@ class AuthPage extends StatefulWidget {
 
 class _AuthPageState extends State<AuthPage> {
   final _service = AuthService();
-  final _name = TextEditingController();
-  final _password = TextEditingController();
+  final _name = TextEditingController(
+    text: DemoMode.enabled ? DemoAccount.signInName : '',
+  );
+  final _password = TextEditingController(
+    text: DemoMode.enabled ? DemoAccount.signInPassword : '',
+  );
   bool _signUp = false;
   bool _busy = false;
   bool _showPassword = false;
@@ -62,34 +68,46 @@ class _AuthPageState extends State<AuthPage> {
 
   /// Logo, title and subtitle centred above the fields and the button, all in
   /// the middle of the screen; the switch to the other mode at the foot.
+  ///
+  /// With the keyboard up the form drops to just above it and the scroll view
+  /// starts from its end, so the password field and the button stay in sight
+  /// while the name is typed; the mode switch steps aside meanwhile.
   @override
   Widget build(BuildContext context) {
+    final typing = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
+            reverse: typing,
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: Center(child: _form())),
-                    AuthModeSwitch(
-                      signUp: _signUp,
-                      onPressed: _busy
-                          ? null
-                          : () => setState(() => _signUp = !_signUp),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
+              child: IntrinsicHeight(child: _layout(typing)),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _layout(bool typing) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Align(
+            alignment: typing ? Alignment.bottomCenter : Alignment.center,
+            child: _form(),
+          ),
+        ),
+        if (!typing)
+          AuthModeSwitch(
+            signUp: _signUp,
+            onPressed: _busy ? null : () => setState(() => _signUp = !_signUp),
+          ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 

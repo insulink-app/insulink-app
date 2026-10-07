@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/key_value_row.dart';
+import 'package:insulink/src/base/list_row.dart';
+import 'package:insulink/src/base/notice_banner.dart';
+import 'package:insulink/src/base/section_header.dart';
 import 'package:insulink/src/google_health/google_health_importer.dart';
-import 'package:insulink/src/google_health/google_health_metric_list.dart';
+import 'package:insulink/src/google_health/google_health_models.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/theme/status_colors.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// Connection box for the Google Health device page, styled like the sensor's status
-/// box: an icon badge + status, the latest metrics when connected, and a
-/// connect / disconnect button. "Connecting" grants Health Connect access; the
-/// Google Health itself is paired in the Google Health app.
+/// Everything under the Google Health device head. Connected: "Letzte Werte"
+/// as key/value rows in one panel, then "Verbindung trennen" as a red row in
+/// a panel of its own. Not connected: what connecting does, or why it failed,
+/// and the primary button that connects.
 class GoogleHealthStatusBox extends StatelessWidget {
   const GoogleHealthStatusBox({super.key, required this.health});
 
@@ -18,147 +25,94 @@ class GoogleHealthStatusBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _header(scheme),
-          if (health.connected) ...[
-            const SizedBox(height: 18),
-            GoogleHealthMetricList(health: health),
-          ] else ...[
-            const SizedBox(height: 14),
-            _hintOrFailure(scheme),
-          ],
-          const SizedBox(height: 16),
-          _action(context),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: health.connected ? _connected(context) : _disconnected(context),
     );
   }
 
-  /// The box's own explanatory line: normally what connecting will do, but after
-  /// a failed attempt, why it failed.
-  ///
-  /// The failure belongs here rather than in a passing notice — a denied
-  /// permission is a standing condition, not an event, so it stays visible next
-  /// to the button that retries it, and it survives leaving and reopening the
-  /// page. It replaces the hint instead of joining it: once connecting has
-  /// failed, telling the user what connecting would do is no longer the point.
-  Widget _hintOrFailure(ColorScheme scheme) {
+  List<Widget> _connected(BuildContext context) {
+    return [
+      const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8),
+        child: SectionHeader(titleKey: 'google_health.latest'),
+      ),
+      InkPanel.list(
+        rows: [
+          _row(
+            context,
+            'google_health.resting_hr',
+            _bpm(health.todayRestingHr),
+          ),
+          _row(context, 'google_health.heart_rate', _bpm(health.latestHr)),
+          _row(
+            context,
+            'google_health.respiratory_rate',
+            _unit(health.latestRespiratoryRate, 'rpm'),
+          ),
+          _row(
+            context,
+            'google_health.sleep',
+            formatSleepMinutes(health.lastSleepMinutes),
+          ),
+        ],
+      ),
+      const SizedBox(height: InkSpace.tileGap * 2),
+      InkPanel.list(
+        rows: [
+          ListRow(
+            icon: PhosphorIconsBold.linkBreak,
+            title: Locales.string(context, 'google_health.disconnect_row'),
+            tone: ListRowTone.danger,
+            onTap: health.busy ? null : () => _confirmDisconnect(context),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  /// The hint, or after a failed attempt why it failed: a denied permission is
+  /// a standing condition, so it stays next to the button that retries it and
+  /// survives leaving the page. It replaces the hint instead of joining it.
+  List<Widget> _disconnected(BuildContext context) {
     final failure = health.connectFailure;
-    if (failure == null) {
-      return LocaleText(
-        'google_health.hint',
-        style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
-      );
-    }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(PhosphorIconsBold.warning, size: 15, color: scheme.error),
-        const SizedBox(width: 8),
-        Expanded(
+    final textStyle = InkText.label.copyWith(color: context.ink.text);
+    return [
+      const SizedBox(height: 24),
+      if (failure == null)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: LocaleText(
+            'google_health.hint',
+            style: InkText.label.copyWith(color: context.ink.muted),
+          ),
+        )
+      else
+        NoticeBanner(
+          icon: PhosphorIconsFill.warningCircle,
+          tone: NoticeTone.danger,
           child: LocaleText(
             failure == GoogleHealthImportResult.denied
                 ? 'google_health.denied'
                 : 'google_health.unavailable',
-            style: TextStyle(fontSize: 13, height: 1.3, color: scheme.error),
+            style: textStyle,
           ),
         ),
-      ],
-    );
+      const SizedBox(height: 20),
+      FilledButton.icon(
+        onPressed: health.busy ? null : () => health.connect(),
+        icon: const Icon(PhosphorIconsBold.link, size: 20),
+        label: LocaleText('google_health.connect'),
+      ),
+    ];
   }
 
-  Color _accent(ColorScheme scheme) {
-    return scheme.onSurface.withValues(alpha: health.connected ? 0.8 : 0.35);
-  }
+  Widget _row(BuildContext context, String labelKey, String value) =>
+      KeyValueRow(label: Locales.string(context, labelKey), value: value);
 
-  Widget _header(ColorScheme scheme) {
-    final accent = _accent(scheme);
-    return Row(
-      children: [
-        Container(
-          width: 58,
-          height: 58,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: accent.withValues(alpha: 0.15),
-          ),
-          child: Icon(
-            health.connected
-                ? PhosphorIconsBold.watch
-                : PhosphorIconsBold.watch,
-            size: 30,
-            color: accent,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              LocaleText(
-                health.connected
-                    ? 'google_health.status.connected'
-                    : 'google_health.status.disconnected',
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 2),
-              LocaleText(
-                'google_health.status.source',
-                style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  String _bpm(int? value) => _unit(value, 'bpm');
 
-  Widget _action(BuildContext context) {
-    if (health.busy) {
-      return const Center(
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 3),
-        ),
-      );
-    }
-    if (health.connected) {
-      return OutlinedButton.icon(
-        onPressed: () => _confirmDisconnect(context),
-        icon: const Icon(PhosphorIconsBold.linkBreak, size: 20),
-        label: LocaleText('google_health.disconnect'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: context.danger,
-          minimumSize: const Size.fromHeight(46),
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.4),
-          ),
-        ),
-      );
-    }
-    // The outcome needs no handling here: connect() records it and notifies, and
-    // the box renders it — see _hintOrFailure.
-    return FilledButton.tonalIcon(
-      onPressed: () => health.connect(),
-      icon: const Icon(PhosphorIconsBold.link, size: 20),
-      label: LocaleText('google_health.connect'),
-      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
-    );
-  }
+  String _unit(int? value, String unit) => value == null ? '–' : '$value $unit';
 
   void _confirmDisconnect(BuildContext context) {
     Alert(

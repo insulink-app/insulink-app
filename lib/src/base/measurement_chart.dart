@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:intl/intl.dart';
@@ -53,7 +54,7 @@ class _MeasurementChartState extends State<MeasurementChart> {
   int? _lastTouchedIndex;
 
   String _label(double value) =>
-      '${value.toStringAsFixed(widget.decimals)}${widget.unit.isEmpty ? '' : ' ${widget.unit}'}';
+      '${sportDecimal(value, widget.decimals)}${widget.unit.isEmpty ? '' : ' ${widget.unit}'}';
 
   @override
   Widget build(BuildContext context) {
@@ -112,8 +113,8 @@ class _MeasurementChartState extends State<MeasurementChart> {
     );
   }
 
-  /// The dashed average (when given) and the target line with the goal value
-  /// labelled above it.
+  /// The average as a dashed accent line (when given) and the target as a
+  /// solid muted line with the goal value labelled above it.
   ExtraLinesData _lines(BuildContext context, double? goal) {
     final colors = context.ink;
     final accent = colors.accent;
@@ -123,21 +124,21 @@ class _MeasurementChartState extends State<MeasurementChart> {
         if (average != null)
           HorizontalLine(
             y: average,
-            color: colors.text.withValues(alpha: 0.6),
+            color: accent,
             strokeWidth: 1.5,
             dashArray: const [4, 4],
           ),
         if (goal != null)
           HorizontalLine(
             y: goal,
-            color: accent.withValues(alpha: 0.7),
+            color: colors.muted,
             strokeWidth: 1.5,
             label: HorizontalLineLabel(
               show: true,
               alignment: Alignment.bottomLeft,
               style: TextStyle(
                 fontSize: 10,
-                color: accent,
+                color: colors.muted,
                 fontWeight: FontWeight.w600,
               ),
               labelResolver: (_) => _label(goal),

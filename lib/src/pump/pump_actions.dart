@@ -369,11 +369,11 @@ class PodBasalOutOfDateNotice extends StatelessWidget {
       return const SizedBox.shrink();
     }
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(top: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          PumpNotice.problem(
+          PumpNotice.attention(
             controller.knowsPodSchedule
                 ? 'pump.basal.out_of_date'
                 : 'pump.basal.unknown',

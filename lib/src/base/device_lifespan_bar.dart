@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
 import 'package:insulink/src/base/device_lifespan.dart';
-import 'package:insulink/src/base/segment_bar.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
-/// How much life a worn device has left, as one rectangle per remaining unit:
-/// one per day normally, switching to one per HOUR over the final 24 h so the
-/// last day stays meaningful. Remaining units are filled with the accent colour,
-/// elapsed ones greyed out.
+/// How much life a worn device has left, as one segment per day of its
+/// lifetime: days still ahead in the accent colour, the day under way filled
+/// by the share of it left, elapsed days greyed out.
 ///
 /// Shared by the CGM sensor and the Omnipod pod, which differ only in their
 /// lifetime and their title — a pod's 80 h reads as three rated days plus an
@@ -101,8 +99,8 @@ class DeviceLifespanBar extends StatelessWidget {
   /// Minutes come BEFORE the grace check on purpose. A device usually spends its
   /// last hour inside the grace window, and that branch counts in hours, so the
   /// grace wording would have swallowed the minutes exactly where they matter
-  /// most. It keeps its own wording, because "past its rated life" is worth
-  /// saying whichever unit the number is in.
+  /// most. Grace is told by the warning colour alone; a "grace period" word
+  /// did not fit the pump's box.
   String _remainingText(BuildContext context, DeviceLifespan life) {
     if (life.expired) {
       return Locales.string(context, 'sensor.value.expired');
@@ -126,46 +124,35 @@ class DeviceLifespanBar extends StatelessWidget {
     return Locales.string(context, key, params: ['${life.filledSegments}']);
   }
 
-  /// 6 px segments, accent for what is left, line for the rest, on the overview
-  /// and the device pages alike. The final day keeps the day segments and fills
-  /// the last one by the share of that day still left, instead of switching to
-  /// 24 hour segments.
+  /// 6 px day segments, accent for what is left, line for the rest, on the
+  /// overview and the device pages alike. The day under way is filled by the
+  /// share of it still left, so the bar shrinks through the day instead of
+  /// jumping a whole segment at midnight of the session.
   Widget _segments(BuildContext context, DeviceLifespan life) {
     final colors = context.ink;
-    if (life.hoursMode) {
-      return _lastDaySegments(colors, life);
-    }
-    return SegmentBar.count(
-      total: life.totalDays,
-      filled: life.filledSegments,
-      fill: colors.accent,
-      empty: colors.line,
-    );
-  }
-
-  Widget _lastDaySegments(InsulinkColors colors, DeviceLifespan life) {
     return SizedBox(
       height: 6,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 4,
         children: [
-          for (var day = 0; day < life.totalDays; day++) ...[
-            if (day > 0) const SizedBox(width: 4),
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: ColoredBox(
-                  color: colors.line,
-                  child: FractionallySizedBox(
-                    alignment: AlignmentDirectional.centerStart,
-                    widthFactor: day == 0 ? life.lastDayFraction : 0,
-                    child: ColoredBox(color: colors.accent),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          for (var day = 0; day < life.totalDays; day++)
+            Expanded(child: _daySegment(colors, life.dayFraction(day))),
         ],
+      ),
+    );
+  }
+
+  Widget _daySegment(InsulinkColors colors, double fraction) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(3),
+      child: ColoredBox(
+        color: colors.line,
+        child: FractionallySizedBox(
+          alignment: AlignmentDirectional.centerStart,
+          widthFactor: fraction,
+          child: ColoredBox(color: colors.accent),
+        ),
       ),
     );
   }

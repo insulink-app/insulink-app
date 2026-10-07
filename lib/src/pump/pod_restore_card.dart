@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/alert/alert.dart';
+import 'package:insulink/src/base/restore_offer_card.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_backup_restore.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
-import 'package:insulink/src/theme/accent_colors.dart';
-import 'package:insulink/src/theme/brand_tints.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
@@ -119,90 +118,36 @@ class _PodRestoreCardState extends State<PodRestoreCard> {
     }
   }
 
+  /// The pod as a [RestoreOfferCard]: "Omnipod DASH · noch 52 h", "Nicht mehr
+  /// da" (asks before retiring it) and "Übernehmen". Both buttons rest while
+  /// either answer is under way.
   @override
   Widget build(BuildContext context) {
     final offer = _offer;
     if (offer == null) {
       return const SizedBox.shrink();
     }
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      // The card's own gap, because it collapses to nothing when there is no pod
-      // on file — a spacer at the call site would be left hanging.
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: scheme.tintPanel,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.accent.withValues(alpha: 0.24)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _header(context),
-          const SizedBox(height: 6),
-          LocaleText(
-            'pump.restore.body',
-            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _remaining(context, offer),
-            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-            ),
-            onPressed: _adopting || _discarding ? null : _use,
-            icon: const Icon(PhosphorIconsBold.cloudArrowDown, size: 18),
-            label: LocaleText('pump.restore.use'),
-          ),
-          const SizedBox(height: 6),
-          // Quieter than the offer it sits under, because adopting the pod is
-          // what a user with one on their body is here to do. This is the answer
-          // for the other case, not a second thing to weigh.
-          TextButton(
-            onPressed: _adopting || _discarding ? null : _confirmDiscard,
-            child: LocaleText(
-              'pump.restore.discard',
-              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
-            ),
-          ),
-        ],
-      ),
+    final idle = !_adopting && !_discarding;
+    return RestoreOfferCard(
+      icon: PhosphorIconsBold.syringe,
+      titleKey: 'pump.restore._',
+      detail:
+          '${Locales.string(context, 'pump.type.dash')} · '
+          '${_remaining(context, offer)}',
+      secondaryLabelKey: 'pump.restore.discard',
+      onSecondary: idle ? _confirmDiscard : null,
+      primaryLabelKey: 'pump.restore.use',
+      onPrimary: idle ? _use : null,
     );
   }
 
-  Widget _header(BuildContext context) {
-    return Row(
-      children: [
-        Icon(PhosphorIconsFill.syringe, size: 18, color: context.accent),
-        const SizedBox(width: 8),
-        Expanded(
-          child: LocaleText(
-            'pump.restore._',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: context.accent,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// How much of the pod's life is left, so the user can tell whether adopting it
-  /// is still worth doing.
+  /// How much of the pod's life is left, so the user can tell whether adopting
+  /// it is still worth doing.
   String _remaining(BuildContext context, PodRestore offer) {
     final left = offer.remaining;
-    final hours = left.inHours;
-    final minutes = left.inMinutes % 60;
     return Locales.string(
       context,
       'pump.restore.remaining',
-    ).replaceFirst('#', '${hours}h ${minutes}min');
+    ).replaceFirst('#', '${left.inHours} h ${left.inMinutes % 60} min');
   }
 }

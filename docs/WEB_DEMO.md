@@ -86,12 +86,15 @@ the locale is read from storage once.
 
 ## Code outside `lib/src/demo/` that knows about the demo
 
-Kept to three switches on `DemoMode.enabled` (`--dart-define=DEMO=true`):
+Kept to a handful of switches on `DemoMode.enabled` (`--dart-define=DEMO=true`):
 
 - `VendorKeysWarning`: no warning.
 - `demo_pod.dart`: `demoPodEnabled` follows it, so the pump page talks to the
   in-memory demo pod.
 - `PodBlePermissions.ensure`: true, there is no radio to ask for.
+- `AuthPage`: the fields come filled with `DemoAccount.signInName` /
+  `signInPassword`, so a visitor who signs out can sign straight back in; the
+  demo backend answers `/signin/` with a token for them.
 - `CgmController.init`: starts `DemoLiveSensor`, which feeds the controller's
   service-message handler because the browser has no service isolate.
 

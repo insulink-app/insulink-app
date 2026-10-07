@@ -11,7 +11,8 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The overview's 24 h glucose chart: a tappable "Glucose · 24 h ›" row over a
-/// non-interactive chart. Tapping either opens the full-screen chart page.
+/// non-interactive chart as wide as the panels below it; the title row keeps
+/// the glucose area's inset. Tapping either opens the full-screen chart page.
 class OverviewChartPreview extends StatelessWidget {
   const OverviewChartPreview({
     super.key,
@@ -25,10 +26,6 @@ class OverviewChartPreview extends StatelessWidget {
   /// down (every `byTime` read rebuilds it out of the archive).
   final SplayTreeMap<int, int> byTime;
 
-  /// The plot sits narrower than the title row above it, as in the redesign,
-  /// so the end-of-line dot and the "now" label have room at the edges.
-  static const double _plotInset = 24;
-
   @override
   Widget build(BuildContext context) {
     final bounds = GlucoseChartBounds(byTime.values);
@@ -41,9 +38,8 @@ class OverviewChartPreview extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _title(context),
-          Container(
+          SizedBox(
             height: math.max(200.0, (bounds.maxMgdl - bounds.minMgdl) * 0.9),
-            padding: const EdgeInsets.symmetric(horizontal: _plotInset),
             child: OverviewChart(
               byTime: byTime,
               sensorStart: controller.sensorStart,
@@ -59,8 +55,9 @@ class OverviewChartPreview extends StatelessWidget {
 
   Widget _title(BuildContext context) {
     final muted = context.ink.muted;
-    return ConstrainedBox(
+    return Container(
       constraints: const BoxConstraints(minHeight: 44),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: [
           Text(

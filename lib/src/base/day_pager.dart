@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/header_icon_button.dart';
+import 'package:insulink/src/base/relative_day.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
-import 'package:intl/intl.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// ‹ date › to step through days or nights: two round buttons with the date
-/// between them. A button at the end is dimmed and inert.
+/// ‹ date › to step through days or nights: two round buttons with the day
+/// between them, "Heute" and "Gestern" by name. A button at the end is dimmed and inert.
 class DayPager extends StatelessWidget {
   const DayPager({
     super.key,
@@ -28,13 +28,12 @@ class DayPager extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final locale = Localizations.localeOf(context).toLanguageTag();
     return Row(
       children: [
         _step(PhosphorIconsBold.caretLeft, previousLabelKey, onPrevious),
         Expanded(
           child: Text(
-            DateFormat.MMMEd(locale).format(date),
+            RelativeDay(date).label(context),
             textAlign: TextAlign.center,
             style: InkText.row,
           ),

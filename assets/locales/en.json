@@ -165,10 +165,9 @@
     },
     "advisory_bolus": "# U delivered from the notification, at #.",
     "restore": {
-      "title": "Use your previous sensor?",
-      "body": "Your account has a sensor on file. Adopt it to keep reading without re-pairing.",
-      "body_scan": "Your account has a sensor on file. Hold your phone against it to adopt it and keep reading.",
-      "use": "Use it",
+      "title": "Sensor from your account",
+      "scan_hint": "Hold your phone against the sensor to take it over.",
+      "use": "Adopt",
       "scan": "Scan",
       "dismiss": "Not now"
     },
@@ -336,8 +335,8 @@
       "remaining": "# days left",
       "remaining_hours": "# hours left",
       "remaining_minutes": "# minutes left",
-      "grace": "Grace period · # h left",
-      "grace_minutes": "Grace period · # min left"
+      "grace": "# h left",
+      "grace_minutes": "# min left"
     },
     "control": {
       "end_session": "End session",
@@ -477,10 +476,9 @@
     },
     "restore": {
       "_": "Pod from your account",
-      "body": "Your account has a pod on file but this device has none. You can adopt it without re-pairing. That is what you need after an app reset, so a pod that is still running stays controllable and stoppable.",
-      "remaining": "Time left: #",
-      "use": "Adopt pod",
-      "discard": "This pod is gone",
+      "remaining": "# left",
+      "use": "Adopt",
+      "discard": "It is gone",
       "discard_title": "Stop offering this pod?",
       "discard_body": "Say this only for a pod that is no longer on your body. It stays in your pump history, but it will not be offered again, so a pod you are still wearing could not be taken over here afterwards.",
       "discard_confirm": "Discard"
@@ -671,6 +669,8 @@
     "label": "Google Health",
     "connect": "Connect",
     "disconnect": "Disconnect",
+    "disconnect_row": "Disconnect",
+    "latest": "Latest values",
     "disconnect_confirm": "Really disconnect Google Health? Its boxes will then be greyed out.",
     "hint": "Couples the Google Health app (Health Connect). Your wearable's app must be installed and syncing its data there.",
     "denied": "Access to Google Health was denied.",
@@ -682,7 +682,7 @@
     "status": {
       "connected": "Connected",
       "disconnected": "Not connected",
-      "source": "Via Google Health"
+      "source": "Data via Google Health"
     },
     "detail": {
       "empty": "No data yet. Sync Google Health."
@@ -1578,5 +1578,9 @@
   },
   "vendor_keys": {
     "missing": "Vendor keys missing. This build cannot pair with: #. Add assets/vendor_keys/vendor_keys.json and build the app again."
+  },
+  "scan": {
+    "torch_on": "Turn light on",
+    "torch_off": "Turn light off"
   }
 }

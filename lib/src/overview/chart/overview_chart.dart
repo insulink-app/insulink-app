@@ -139,6 +139,10 @@ class _OverviewChartState extends State<OverviewChart> {
   /// excluded from the plotting area when mapping a focal point to time.
   static const _axisInset = InsulinBarChart.axisInset;
 
+  /// The range toggle keeps the page margin while the plot below it runs to
+  /// the screen's left edge.
+  static const double _controlsInset = 16;
+
   /// Index of the (transparent) bar carrying the tappable meal dots, or -1 when
   /// the meal overlay is off, and the markers behind it — so a tap on a dot can
   /// resolve back to its [Meal] and open its details.
@@ -358,20 +362,28 @@ class _OverviewChartState extends State<OverviewChart> {
   /// Light haptic tick when the highlighted point changes while scrubbing. Use
   /// the overlay (real-reading) bar's spot, so movement is tracked per actual
   /// reading rather than per colour segment.
+  /// Drops the scrub readout. A tap on a meal ends the touch too: it opens
+  /// the meal's sheet, and a readout left standing would keep the chart in
+  /// hover mode behind it and after it closes.
+  void _endScrub() {
+    _lastTouchedIndex = null;
+    widget.sync?.setScrub(null);
+  }
+
   void _onChartTouch(FlTouchEvent event, LineTouchResponse? response) {
     final spots = response?.lineBarSpots;
     if (event is FlTapUpEvent && spots != null && _mealBarIndex >= 0) {
       for (final spot in spots) {
         if (spot.barIndex == _mealBarIndex &&
             spot.spotIndex < _mealMarkers.length) {
+          _endScrub();
           showMealDetail(context, _mealMarkers[spot.spotIndex].meal);
           return;
         }
       }
     }
     if (!event.isInterestedForInteractions || spots == null || spots.isEmpty) {
-      _lastTouchedIndex = null;
-      widget.sync?.setScrub(null);
+      _endScrub();
       return;
     }
     final touch = spots.firstWhere(
@@ -459,15 +471,19 @@ class _OverviewChartState extends State<OverviewChart> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            HourRangeSelector(
-              selected: _rangeHours.round(),
-              onChanged: _setRange,
-            ),
-            if (widget.navigable) Flexible(child: _navigator(context, byTime)),
-          ],
+        Padding(
+          padding: const EdgeInsets.only(left: _controlsInset),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              HourRangeSelector(
+                selected: _rangeHours.round(),
+                onChanged: _setRange,
+              ),
+              if (widget.navigable)
+                Flexible(child: _navigator(context, byTime)),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         Expanded(

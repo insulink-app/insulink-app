@@ -6,24 +6,63 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The app bar every tab shares: the page's own title on the left, three
 /// separate round buttons on the right, 20 px from the edges.
-class Header extends StatelessWidget implements PreferredSizeWidget {
+class Header extends StatefulWidget implements PreferredSizeWidget {
   /// Title widget for the currently shown page (see [AppPageBody.title]).
   final Widget? title;
 
   const Header({super.key, this.title});
 
-  static const double _edge = 20;
-
   @override
   Size get preferredSize => const Size.fromHeight(64);
+
+  @override
+  State<Header> createState() => _HeaderState();
+}
+
+class _HeaderState extends State<Header> {
+  static const double _edge = 20;
 
   /// How far the header's fade reaches down over the page.
   static const double _fade = 24;
 
+  ScrollNotificationObserverState? _observer;
+
+  /// Whether page content sits under the header, so the fade has something
+  /// to fade. At rest the page's top stays clear of it.
+  bool _scrolledUnder = false;
+
+  /// Listens to the page's scrolling the way [AppBar] does for its own
+  /// "scrolled under" state, through the Scaffold's observer.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _observer?.removeListener(_onScroll);
+    _observer = ScrollNotificationObserver.maybeOf(context);
+    _observer?.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _observer?.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  void _onScroll(ScrollNotification notification) {
+    final metrics = notification.metrics;
+    if (notification is! ScrollUpdateNotification ||
+        metrics.axis != Axis.vertical) {
+      return;
+    }
+    final under = metrics.extentBefore > 0;
+    if (under != _scrolledUnder) {
+      setState(() => _scrolledUnder = under);
+    }
+  }
+
   /// The app bar plus a soft fade painted below it, over the top of the page,
   /// so content scrolling up runs out into the header like it runs into the
-  /// dock instead of being cut at a hard edge. Painted only: touches go
-  /// straight through to the page.
+  /// dock instead of being cut at a hard edge. Shown only while content is
+  /// under the header, and painted only: touches go straight to the page.
   @override
   Widget build(BuildContext context) {
     final ground = context.ink.ground;
@@ -37,12 +76,16 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
           bottom: -_fade,
           height: _fade,
           child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [ground, ground.withValues(alpha: 0)],
+            child: AnimatedOpacity(
+              opacity: _scrolledUnder ? 1 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [ground, ground.withValues(alpha: 0)],
+                  ),
                 ),
               ),
             ),
@@ -54,11 +97,11 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
 
   Widget _bar() {
     return AppBar(
-      toolbarHeight: preferredSize.height,
+      toolbarHeight: widget.preferredSize.height,
       surfaceTintColor: Colors.transparent,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      title: title,
+      title: widget.title,
       titleSpacing: _edge,
       automaticallyImplyLeading: false,
       actions: const [

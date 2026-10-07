@@ -40,7 +40,7 @@ class InsulinBarChart extends StatefulWidget {
   /// The width of the axis label strip on the RIGHT of both charts. Must equal
   /// the glucose chart's rightTitles `reservedSize`, which is what makes the two
   /// x axes the same axis. The plot starts at the left edge.
-  static const double axisInset = 36;
+  static const double axisInset = 30;
 
   /// A bolus is a moment, so it keeps a fixed width. Basal is not: it is drawn
   /// as wide as the hour it covers, which makes it grow as the window narrows.
@@ -109,7 +109,10 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
               : _plot(context),
         ),
         const SizedBox(height: 14),
-        _legend(context),
+        Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: _legend(context),
+        ),
       ],
     );
   }

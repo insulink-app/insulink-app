@@ -79,10 +79,7 @@ class _OverviewDataViewState extends State<OverviewDataView> {
       children: [
         const SensorRestoreOffer(),
         const PodRestoreCard(),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: _glucoseArea(),
-        ),
+        _glucoseArea(),
         const SizedBox(height: 28),
         const OverviewActiveInsulin(),
         const OverviewDevices(),
@@ -92,6 +89,15 @@ class _OverviewDataViewState extends State<OverviewDataView> {
     );
   }
 
+  /// The open glucose area sits a little inside the page margin; the chart
+  /// alone does not, so it is as wide as the panels below it.
+  Widget _inset(Widget child) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: _areaInset),
+    child: child,
+  );
+
+  static const double _areaInset = 8;
+
   /// Value, scale, chart and time in range: open on the page, no panel.
   Widget _glucoseArea() {
     final controller = widget.controller;
@@ -99,20 +105,24 @@ class _OverviewDataViewState extends State<OverviewDataView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 20),
-        GlucoseHero(
-          mgdl: controller.currentMgdl,
-          trendPerMin: controller.displayTrendPerMin,
-          stale: controller.currentIsStale,
+        _inset(
+          GlucoseHero(
+            mgdl: controller.currentMgdl,
+            trendPerMin: controller.displayTrendPerMin,
+            stale: controller.currentIsStale,
+          ),
         ),
         const SizedBox(height: 22),
-        RangeScale(mgdl: controller.currentMgdl),
+        _inset(RangeScale(mgdl: controller.currentMgdl)),
         const SizedBox(height: 18),
         _chart(),
         const SizedBox(height: 22),
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => appTab.value = kAnalysisTabIndex,
-          child: const OverviewTimeInRange(),
+        _inset(
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => appTab.value = kAnalysisTabIndex,
+            child: const OverviewTimeInRange(),
+          ),
         ),
       ],
     );
