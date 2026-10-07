@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
@@ -67,7 +68,7 @@ class TrainingStatsPanel extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(icon, color: scheme.onSurfaceVariant, size: 22),
+          Icon(icon, color: context.ink.muted, size: 22),
           const SizedBox(height: 8),
           Text(
             value,

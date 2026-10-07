@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
@@ -127,7 +128,12 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
         slivers: [
           _mapHeader(training),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+            padding: const EdgeInsets.fromLTRB(
+              InkSpace.panelMargin,
+              20,
+              InkSpace.panelMargin,
+              24,
+            ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 TrainingStatsPanel(training: training),
@@ -154,7 +160,12 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
     }
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        padding: const EdgeInsets.fromLTRB(
+          InkSpace.panelMargin,
+          8,
+          InkSpace.panelMargin,
+          8,
+        ),
         child: PendingTrainingActions(
           training.id,
           onDecided: () => Navigator.of(context).pop(),
@@ -178,7 +189,12 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
       collapsedHeight: 300,
       expandedHeight: 460,
       flexibleSpace: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        padding: const EdgeInsets.fromLTRB(
+          InkSpace.panelMargin,
+          12,
+          InkSpace.panelMargin,
+          16,
+        ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: training.track.length >= 2

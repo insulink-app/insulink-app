@@ -6,17 +6,18 @@ import 'package:geolocator/geolocator.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/training/cardio_map.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
-import 'package:insulink/src/sport/sport_vitals_bar.dart';
+import 'package:insulink/src/sport/training/active_training.dart';
+import 'package:insulink/src/sport/training/cardio_live_panel.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 enum _Phase { countdown, recording }
 
@@ -257,32 +258,13 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
     super.dispose();
   }
 
+  /// The map fills the screen; back, the training's pill and pause float on
+  /// it, the live panel sits at the foot.
   @override
   Widget build(BuildContext context) {
     final active = _state.activeTraining;
     final type = active?.type ?? widget.type ?? CardioType.walk;
     return Scaffold(
-      appBar: AppBar(
-        surfaceTintColor: Colors.transparent,
-        title: LocaleText(type.labelKey),
-        actions: [
-          if (active != null)
-            IconButton(
-              icon: Icon(
-                active.isPaused
-                    ? PhosphorIconsFill.play
-                    : PhosphorIconsBold.pause,
-              ),
-              tooltip: Locales.string(
-                context,
-                active.isPaused
-                    ? 'sport.trainings.resume'
-                    : 'sport.trainings.pause',
-              ),
-              onPressed: _togglePause,
-            ),
-        ],
-      ),
       body: Stack(
         children: [
           CardioMap(
@@ -292,123 +274,101 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
             fallbackCenter: _fallbackCenter,
           ),
           if (_phase == _Phase.countdown) _countdownOverlay(context),
+          SafeArea(child: _header(context, type, active)),
           if (_phase == _Phase.recording)
             Align(
               alignment: Alignment.bottomCenter,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [const SportVitalsBar(), _panel(context)],
+              child: SafeArea(
+                child: CardioLivePanel(
+                  duration: formatDuration(active?.elapsed ?? Duration.zero),
+                  distance: formatDistanceKm(_distanceM),
+                  speed: formatSpeed(_speedKmh),
+                  paused: active?.isPaused ?? false,
+                  onStop: _confirmStop,
+                ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  /// Back, the pill naming the training with a dot that is lit while it
+  /// records, and pause / resume, all floating over the map.
+  Widget _header(
+    BuildContext context,
+    CardioType type,
+    ActiveTraining? active,
+  ) {
+    final colors = context.ink;
+    final recording = active != null && !active.isPaused;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        8,
+        InkSpace.panelMargin,
+        0,
+      ),
+      child: Row(
+        children: [
+          MapOverlayButton(
+            icon: PhosphorIconsBold.arrowLeft,
+            tooltipKey: 'sport.trainings.back',
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: ShapeDecoration(
+              color: colors.ground.withValues(alpha: 0.85),
+              shape: const StadiumBorder(),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 10,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: recording ? colors.low : colors.muted,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                LocaleText(
+                  type.labelKey,
+                  style: InkText.rowTitle.copyWith(fontSize: 17),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          if (active != null)
+            MapOverlayButton(
+              icon: active.isPaused
+                  ? PhosphorIconsFill.play
+                  : PhosphorIconsFill.pause,
+              tooltipKey: active.isPaused
+                  ? 'sport.trainings.resume'
+                  : 'sport.trainings.pause',
+              onTap: _togglePause,
+            )
+          else
+            const SizedBox.square(dimension: InkSpace.minTouch),
         ],
       ),
     );
   }
 
   Widget _countdownOverlay(BuildContext context) {
+    final colors = context.ink;
     return Container(
-      color: Colors.black.withValues(alpha: 0.45),
+      color: colors.ground.withValues(alpha: 0.6),
       alignment: Alignment.center,
       child: Text(
         '$_count',
-        style: const TextStyle(
-          fontSize: 120,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
+        style: InkText.bigValue.copyWith(fontSize: 120, color: colors.text),
       ),
-    );
-  }
-
-  Widget _panel(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final active = _state.activeTraining;
-    final paused = active?.isPaused ?? false;
-    return Container(
-      // Side margins match SportVitalsBar's, so the two stacked cards line up.
-      margin: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _metric(
-                context,
-                'sport.trainings.duration',
-                formatDuration(active?.elapsed ?? Duration.zero),
-              ),
-              _metric(
-                context,
-                'sport.trainings.distance',
-                formatDistanceKm(_distanceM),
-              ),
-              _metric(context, 'sport.trainings.speed', formatSpeed(_speedKmh)),
-            ],
-          ),
-          if (paused) ...[
-            const SizedBox(height: 8),
-            LocaleText(
-              'sport.trainings.paused',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 56,
-            width: double.infinity,
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-              icon: const Icon(PhosphorIconsFill.stop, size: 28),
-              label: LocaleText(
-                'sport.trainings.stop',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              onPressed: _confirmStop,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metric(BuildContext context, String labelKey, String value) {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          Locales.string(context, labelKey),
-          style: TextStyle(
-            fontSize: 11,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-      ],
     );
   }
 }

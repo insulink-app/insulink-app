@@ -770,6 +770,8 @@
       "last_contact": "# ago",
       "never": "no contact yet",
       "not_set_up": "not set up",
+      "received": "Received",
+      "no_reception": "No reception",
       "slice_covered": "# to ##, data received",
       "slice_gap": "# to ##, no data"
     }
@@ -1052,7 +1054,8 @@
       "duration": "Duration",
       "distance": "Distance",
       "speed": "Speed",
-      "stop": "Stop",
+      "stop": "End training",
+      "back": "Back",
       "stop_confirm": "Really end the training?",
       "pause": "Pause",
       "resume": "Resume",

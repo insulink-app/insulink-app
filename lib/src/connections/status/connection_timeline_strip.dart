@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The coverage strip itself: one slice per bucket, and a way to point at one.
 ///
@@ -80,7 +80,7 @@ class ConnectionTimelineStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: covered[index]
             ? scheme.primary
-            : context.warning.withValues(alpha: 0.35),
+            : context.ink.line,
         borderRadius: BorderRadius.circular(2),
         border: isSelected
             ? Border.all(color: scheme.onSurface, width: 1.5)

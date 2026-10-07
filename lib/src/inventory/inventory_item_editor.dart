@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
@@ -233,7 +234,12 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
   /// "Speichern" pinned under the form, above the keyboard and the system bar.
   Widget _saveButton() {
     return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      minimum: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        8,
+        InkSpace.panelMargin,
+        16,
+      ),
       child: FilledButton.icon(
         icon: const Icon(PhosphorIconsBold.check),
         label: LocaleText('inventory.save'),
@@ -248,7 +254,12 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
       appBar: _appBar(),
       bottomNavigationBar: _saveButton(),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+        padding: const EdgeInsets.fromLTRB(
+          InkSpace.panelMargin,
+          18,
+          InkSpace.panelMargin,
+          24,
+        ),
         children: [
           _field('inventory.name', _name),
           const SizedBox(height: 14),

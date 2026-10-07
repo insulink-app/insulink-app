@@ -19,7 +19,14 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 /// owns the single band link (see `CgmTaskHandler._startBackgroundHr`), so a
 /// second reader here would fight it and read nothing.
 class SportVitalsBar extends StatelessWidget {
-  const SportVitalsBar({super.key});
+  const SportVitalsBar({super.key}) : chips = false;
+
+  /// The same two readings as two chips side by side, for the live training's
+  /// panel (`docs/redesign/screens/30-training-live.png`): the glyph carries
+  /// the colour, the number stays in the text colour with its unit muted.
+  const SportVitalsBar.chips({super.key}) : chips = true;
+
+  final bool chips;
 
   /// The palette the big overview readout uses, so a glanced-at value mid-set
   /// reads the same colour as on the overview page.
@@ -55,6 +62,38 @@ class SportVitalsBar extends StatelessWidget {
     // same stale treatment as the glucose reading, rather than blinking to '–'.
     final bpm = health.latestHr;
     final pulseLive = health.hasLiveHr;
+    if (chips) {
+      return Row(
+        spacing: 10,
+        children: [
+          Expanded(
+            child: _chip(
+              context,
+              PhosphorIconsBold.drop,
+              glucoseColor,
+              mgdl == null ? '–' : glucose.format(mgdl),
+              glucose.unit.label,
+              trailing: mgdl != null && trend != null
+                  ? GlucoseTrendIcon(
+                      perMin: trend,
+                      color: context.ink.text,
+                      size: 18,
+                    )
+                  : null,
+            ),
+          ),
+          Expanded(
+            child: _chip(
+              context,
+              PhosphorIconsBold.heart,
+              pulseLive ? context.ink.pulseHigh : context.ink.muted,
+              bpm == null ? '–' : '$bpm',
+              'bpm',
+            ),
+          ),
+        ],
+      );
+    }
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -101,6 +140,53 @@ class SportVitalsBar extends StatelessWidget {
         ),
         if (trailing != null) ...[const SizedBox(width: 4), trailing],
       ],
+    );
+  }
+
+  /// One chip of the live panel: glyph, value, muted unit, optional trend.
+  Widget _chip(
+    BuildContext context,
+    IconData icon,
+    Color glyph,
+    String value,
+    String unit, {
+    Widget? trailing,
+  }) {
+    final colors = context.ink;
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: colors.ground,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        spacing: 8,
+        children: [
+          Icon(icon, size: 18, color: glyph),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text.rich(
+                  TextSpan(
+                    text: value,
+                    style: InkText.rowTitle.copyWith(fontSize: 17),
+                    children: [
+                      TextSpan(
+                        text: ' $unit',
+                        style: InkText.label.copyWith(color: colors.muted),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
     );
   }
 }

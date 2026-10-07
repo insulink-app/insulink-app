@@ -85,7 +85,12 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            padding: const EdgeInsets.fromLTRB(
+              InkSpace.panelMargin,
+              16,
+              InkSpace.panelMargin,
+              8,
+            ),
             child: TextField(
               controller: _name,
               textCapitalization: TextCapitalization.sentences,
@@ -138,7 +143,12 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   /// does not collide with the "Add exercise" tile.
   Widget _startBar(SportRoutine routine) {
     return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      minimum: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        8,
+        InkSpace.panelMargin,
+        16,
+      ),
       child: SizedBox(
         height: 64,
         child: FilledButton.icon(
@@ -170,7 +180,12 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     if (routine.items.isEmpty) {
       return ListView(
         physics: _bouncy,
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+        padding: const EdgeInsets.fromLTRB(
+          InkSpace.panelMargin,
+          24,
+          InkSpace.panelMargin,
+          24,
+        ),
         children: [
           Center(child: LocaleText('sport.routines.no_items')),
           const SizedBox(height: 20),
@@ -180,7 +195,12 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     }
     return ReorderableListView(
       physics: _bouncy,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      padding: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        8,
+        InkSpace.panelMargin,
+        24,
+      ),
       footer: Padding(padding: const EdgeInsets.only(top: 2), child: addTile),
       proxyDecorator: _transparentDrag,
       onReorderItem: (oldIndex, newIndex) =>

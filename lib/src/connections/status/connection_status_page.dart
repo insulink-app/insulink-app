@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/connections/status/connection_status_reader.dart';
 import 'package:insulink/src/connections/status/connection_timeline.dart';
 import 'package:insulink/src/connections/status/connection_timeline_bar.dart';
@@ -71,14 +72,42 @@ class _ConnectionStatusPageState extends State<ConnectionStatusPage> {
     );
   }
 
+  /// "Letzte 24 Stunden" with the key of the cells beside it: received in
+  /// the accent, no reception in the neutral line colour.
   Widget _windowNote() {
-    return LocaleText(
-      'connections.status.window',
-      params: ['${_timeline.window.inHours}'],
-      style: TextStyle(
-        fontSize: 13,
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
+    final colors = context.ink;
+    final style = TextStyle(fontSize: 13, color: colors.muted);
+    return Row(
+      spacing: 12,
+      children: [
+        Expanded(
+          child: LocaleText(
+            'connections.status.window',
+            params: ['${_timeline.window.inHours}'],
+            style: style,
+          ),
+        ),
+        _key(colors.accent, 'connections.status.received', style),
+        _key(colors.line, 'connections.status.no_reception', style),
+      ],
+    );
+  }
+
+  Widget _key(Color color, String labelKey, TextStyle style) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 6,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        LocaleText(labelKey, style: style),
+      ],
     );
   }
 }

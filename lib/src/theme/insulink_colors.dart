@@ -31,6 +31,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     required this.sleepRem,
     required this.sleepRestless,
     required this.pulseHigh,
+    required this.pace,
     required this.dockShadow,
   });
 
@@ -97,6 +98,10 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
   /// violet than the spec's dark value to stay readable on white.
   final Color pulseHigh;
 
+  /// Speed in a training's chart: teal, apart from glucose (accent) and the
+  /// pulse (violet), and neither red nor green.
+  final Color pace;
+
   /// The only shadow in the app, under the navigation capsule and bolus button.
   final List<BoxShadow> dockShadow;
 
@@ -123,6 +128,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     sleepRem: Color(0xFF2ED8B6),
     sleepRestless: Color(0xFFF06292),
     pulseHigh: Color(0xFFC9A7FF),
+    pace: Color(0xFF2ED8B6),
     dockShadow: [
       BoxShadow(
         color: Color(0x73000000),
@@ -155,6 +161,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     sleepRem: Color(0xFF2ED8B6),
     sleepRestless: Color(0xFFF06292),
     pulseHigh: Color(0xFF7B4FCC),
+    pace: Color(0xFF0B7F6A),
     dockShadow: [
       BoxShadow(
         color: Color(0x1F0F1B26),
@@ -188,6 +195,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
     Color? sleepRem,
     Color? sleepRestless,
     Color? pulseHigh,
+    Color? pace,
     List<BoxShadow>? dockShadow,
   }) {
     return InsulinkColors(
@@ -213,6 +221,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
       sleepRem: sleepRem ?? this.sleepRem,
       sleepRestless: sleepRestless ?? this.sleepRestless,
       pulseHigh: pulseHigh ?? this.pulseHigh,
+      pace: pace ?? this.pace,
       dockShadow: dockShadow ?? this.dockShadow,
     );
   }
@@ -246,6 +255,7 @@ class InsulinkColors extends ThemeExtension<InsulinkColors> {
       sleepRem: blend(sleepRem, other.sleepRem),
       sleepRestless: blend(sleepRestless, other.sleepRestless),
       pulseHigh: blend(pulseHigh, other.pulseHigh),
+      pace: blend(pace, other.pace),
       dockShadow: BoxShadow.lerpList(dockShadow, other.dockShadow, t)!,
     );
   }
