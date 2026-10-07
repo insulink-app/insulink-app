@@ -5,6 +5,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// "− 16 +" in a pill in the page colour: two round 44 px buttons around the
 /// count. A button that cannot act ([onMinus] or [onPlus] null) is dimmed.
+/// With [onValueTap] the count itself opens an editor for an exact value.
 class StepperPill extends StatelessWidget {
   const StepperPill({
     super.key,
@@ -13,6 +14,7 @@ class StepperPill extends StatelessWidget {
     required this.onPlus,
     required this.minusLabelKey,
     required this.plusLabelKey,
+    this.onValueTap,
   });
 
   final String value;
@@ -22,6 +24,8 @@ class StepperPill extends StatelessWidget {
   /// Read out by screen readers for the two buttons.
   final String minusLabelKey;
   final String plusLabelKey;
+
+  final VoidCallback? onValueTap;
 
   @override
   Widget build(BuildContext context) {
@@ -42,14 +46,23 @@ class StepperPill extends StatelessWidget {
             minusLabelKey,
             onMinus,
           ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 40),
-            child: Text(
-              value,
-              textAlign: TextAlign.center,
-              style: InkText.rowTitle.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
+          GestureDetector(
+            onTap: onValueTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minWidth: 40,
+                minHeight: InkSpace.minTouch,
+              ),
+              child: Center(
+                widthFactor: 1,
+                child: Text(
+                  value,
+                  textAlign: TextAlign.center,
+                  style: InkText.rowTitle.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ),
           ),

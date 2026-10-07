@@ -4,6 +4,8 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../localization/locale_text.dart';
+import '../localization/locales.dart';
+import '../theme/insulink_theme.dart';
 import 'inventory_calendar_page.dart';
 import 'inventory_item.dart';
 import 'inventory_item_card.dart';
@@ -53,6 +55,7 @@ class _InventoryPageState extends State<InventoryPage> {
         actions: [
           IconButton(
             icon: const Icon(PhosphorIconsBold.calendarBlank),
+            tooltip: Locales.string(context, 'inventory.calendar'),
             onPressed: () => openInventoryCalendarPage(context),
           ),
         ],
@@ -70,7 +73,12 @@ class _InventoryPageState extends State<InventoryPage> {
               child: Center(child: LocaleText('inventory.empty')),
             )
           : ReorderableListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
+              padding: const EdgeInsets.fromLTRB(
+                InkSpace.panelMargin,
+                16,
+                InkSpace.panelMargin,
+                120,
+              ),
               onReorderItem: (oldIndex, newIndex) =>
                   context.read<InventoryState>().reorder(oldIndex, newIndex),
               buildDefaultDragHandles: false,
@@ -78,7 +86,7 @@ class _InventoryPageState extends State<InventoryPage> {
                 for (final item in items)
                   Padding(
                     key: ValueKey(item.id),
-                    padding: const EdgeInsets.only(bottom: 14),
+                    padding: const EdgeInsets.only(bottom: InkSpace.tileGap),
                     child: InventoryItemCard(
                       item: item,
                       onEdit: () => _openEditor(context, item: item),

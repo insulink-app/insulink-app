@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../base/stepper_pill.dart';
 import '../localization/locales.dart';
+import '../theme/insulink_theme.dart';
+import '../theme/status_colors.dart';
 import 'inventory_item.dart';
+import 'inventory_sheets.dart';
 import 'inventory_state.dart';
-import 'inventory_stock_stepper.dart';
-import 'package:insulink/src/theme/status_colors.dart';
+import 'inventory_stock_bar.dart';
 
-/// One inventory item: name, a stock bar (current vs base stock), a +/- stepper
-/// to adjust it, the projected run-out, the surplus expected after the next
-/// delivery, and a coloured warning line when it needs restocking. Tapping the
-/// card opens [onEdit].
+/// One inventory item as a card: name with the stock stepper, the stock bar
+/// (current vs base stock) with "x von y Stück" and the days left, the
+/// projected run-out in bold, the surplus expected before the next delivery,
+/// and a coloured warning line when it needs restocking. Tapping the card
+/// opens [onEdit].
 class InventoryItemCard extends StatelessWidget {
   const InventoryItemCard({
     super.key,
@@ -24,74 +28,41 @@ class InventoryItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.ink;
     final now = DateTime.now();
-    final scheme = Theme.of(context).colorScheme;
     final status = item.status(now);
-    final locale = Localizations.localeOf(context).toString();
+    final surplus = item.surplusBeforeNextDelivery(now);
     return Material(
-      color: scheme.onSurface.withValues(alpha: 0.04),
-      borderRadius: BorderRadius.circular(20),
+      color: colors.panel,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(InkRadius.tile),
+        side: BorderSide(color: colors.border),
+      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
         onTap: onEdit,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: scheme.onSurface.withValues(alpha: 0.07)),
-          ),
-          padding: const EdgeInsets.all(18),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.name,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  InventoryStockStepper(
-                    stock: item.stock,
-                    onChanged: (value) =>
-                        context.read<InventoryState>().setStock(item.id, value),
-                  ),
-                ],
+              _head(context),
+              InventoryStockBar(item: item, status: status, now: now),
+              const SizedBox(height: 10),
+              Text(
+                _runOutText(context, now),
+                style: InkText.label.copyWith(fontWeight: FontWeight.w700),
               ),
-              if (item.baseStock > 0) ...[
-                const SizedBox(height: 4),
-                _stockBar(context, status, scheme),
-                const SizedBox(height: 4),
-                Text(
-                  Locales.string(
-                    context,
-                    'inventory.stock_of',
-                    params: ['${item.stock}', '${item.baseStock}'],
-                  ),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 8),
-              Text(_runOutText(context, now, locale)),
-              if ((item.surplusBeforeNextDelivery(now) ?? -1) >= 0)
-                Text(
+              if ((surplus ?? -1) >= 0)
+                _muted(
                   Locales.string(
                     context,
                     'inventory.surplus',
-                    params: ['${item.surplusBeforeNextDelivery(now)!.round()}'],
+                    params: ['${surplus!.round()}'],
                   ),
-                  style: TextStyle(color: scheme.onSurfaceVariant),
+                  colors,
                 ),
-              if (status != StockStatus.ok) ...[
-                const SizedBox(height: 6),
-                _warning(context, status, scheme),
-              ],
+              if (status != StockStatus.ok) _warning(context, status),
             ],
           ),
         ),
@@ -99,53 +70,80 @@ class InventoryItemCard extends StatelessWidget {
     );
   }
 
-  Widget _stockBar(
-    BuildContext context,
-    StockStatus status,
-    ColorScheme scheme,
-  ) {
-    final color = switch (status) {
-      StockStatus.shortage => scheme.error,
-      StockStatus.low => context.warning,
-      StockStatus.ok => scheme.primary,
-    };
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
-      child: LinearProgressIndicator(
-        value: item.stockFraction,
-        minHeight: 8,
-        backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
-        valueColor: AlwaysStoppedAnimation(color),
-      ),
+  Widget _head(BuildContext context) {
+    final stock = item.stock;
+    void setStock(int value) =>
+        context.read<InventoryState>().setStock(item.id, value);
+    return Row(
+      spacing: 10,
+      children: [
+        Expanded(
+          child: Text(
+            item.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: InkText.rowTitle.copyWith(fontSize: 17),
+          ),
+        ),
+        StepperPill(
+          value: '$stock',
+          onMinus: stock > 0 ? () => setStock(stock - 1) : null,
+          onPlus: () => setStock(stock + 1),
+          onValueTap: () => _typeStock(context, setStock),
+          minusLabelKey: 'inventory.decrease',
+          plusLabelKey: 'inventory.increase',
+        ),
+      ],
     );
   }
 
-  String _runOutText(BuildContext context, DateTime now, String locale) {
+  /// Opens the number sheet to set the stock to an exact count.
+  Future<void> _typeStock(
+    BuildContext context,
+    ValueChanged<int> setStock,
+  ) async {
+    final value = await showNumberSheet(
+      context,
+      titleKey: 'inventory.set_stock',
+      initial: item.stock,
+    );
+    if (value != null) {
+      setStock(value);
+    }
+  }
+
+  String _runOutText(BuildContext context, DateTime now) {
     final runOut = item.runOutDate(now);
     if (runOut == null) {
       return Locales.string(context, 'inventory.runs_out_never');
     }
-    final days = runOut.difference(now).inDays;
+    final locale = Localizations.localeOf(context).toString();
     return Locales.string(
       context,
       'inventory.runs_out',
-      params: [DateFormat.yMMMd(locale).format(runOut), '$days'],
+      params: [DateFormat.yMMMd(locale).format(runOut)],
     );
   }
 
-  Widget _warning(
-    BuildContext context,
-    StockStatus status,
-    ColorScheme scheme,
-  ) {
+  Widget _muted(String text, InsulinkColors colors) => Padding(
+    padding: const EdgeInsets.only(top: 3),
+    child: Text(text, style: InkText.caption.copyWith(color: colors.muted)),
+  );
+
+  Widget _warning(BuildContext context, StockStatus status) {
     final shortage = status == StockStatus.shortage;
-    final color = shortage ? scheme.error : context.warning;
-    return Text(
-      Locales.string(
-        context,
-        shortage ? 'inventory.shortage_warning' : 'inventory.low_warning',
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Text(
+        Locales.string(
+          context,
+          shortage ? 'inventory.shortage_warning' : 'inventory.low_warning',
+        ),
+        style: InkText.caption.copyWith(
+          fontWeight: FontWeight.w700,
+          color: shortage ? context.danger : context.warning,
+        ),
       ),
-      style: TextStyle(color: color, fontWeight: FontWeight.w600),
     );
   }
 }
