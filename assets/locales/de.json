@@ -1060,6 +1060,7 @@
       "distance": "Strecke",
       "speed": "Tempo",
       "stop": "Training beenden",
+      "stop_action": "Beenden",
       "back": "Zurück",
       "stop_confirm": "Training wirklich beenden?",
       "pause": "Pausieren",

@@ -12,7 +12,7 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/training/km_splits.dart';
-import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/sport/training/series_thinning.dart';
 import 'package:provider/provider.dart';
 
 /// The three plottable metrics, in the fixed order they occupy in the chart's
@@ -146,15 +146,28 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     return [?before, ...inside, ?after];
   }
 
-  _Series get _heartSeries => _normalise([
-    for (final sample in _heart)
-      (x: _xOf(sample.at.millisecondsSinceEpoch), value: sample.bpm.toDouble()),
-  ]);
+  /// Pulse and speed arrive about once a second, far denser than the chart
+  /// can show; both are averaged over short stretches first (see
+  /// [SeriesThinning]), so the lines read as curves instead of noise. The
+  /// tooltip then shows the stretch's average.
+  SeriesThinning get _thinning => SeriesThinning(spanMinutes: _windowMaxX);
 
-  _Series get _speedSeries => _normalise([
-    for (final sample in trackSpeeds(widget.track))
-      (x: _xOf(sample.tMs), value: sample.kmh),
-  ]);
+  _Series get _heartSeries => _normalise(
+    _thinning.thin([
+      for (final sample in _heart)
+        (
+          x: _xOf(sample.at.millisecondsSinceEpoch),
+          value: sample.bpm.toDouble(),
+        ),
+    ]),
+  );
+
+  _Series get _speedSeries => _normalise(
+    _thinning.thin([
+      for (final sample in trackSpeeds(widget.track))
+        (x: _xOf(sample.tMs), value: sample.kmh),
+    ]),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -467,26 +480,33 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
       1 => '${raw.round()} bpm',
       _ => formatSpeed(raw),
     };
-    final color = switch (spot.barIndex) {
-      0 => scheme.onInverseSurface,
-      1 => scheme.error,
-      _ => context.positive,
+    final colors = context.ink;
+    final lineColor = switch (spot.barIndex) {
+      0 => colors.accent,
+      1 => colors.pulseHigh,
+      _ => colors.pace,
     };
     return LineTooltipItem(
-      text,
-      TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
-      children: showTime
-          ? [
-              TextSpan(
-                text: '\n${_clockAt(spot.x)}',
-                style: TextStyle(
-                  color: scheme.onInverseSurface.withValues(alpha: 0.7),
-                  fontWeight: FontWeight.normal,
-                  fontSize: 11,
-                ),
-              ),
-            ]
-          : null,
+      '● ',
+      TextStyle(color: lineColor, fontSize: 13),
+      children: [
+        TextSpan(
+          text: text,
+          style: TextStyle(
+            color: scheme.onInverseSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        if (showTime)
+          TextSpan(
+            text: '\n${_clockAt(spot.x)}',
+            style: TextStyle(
+              color: scheme.onInverseSurface.withValues(alpha: 0.7),
+              fontWeight: FontWeight.normal,
+              fontSize: 11,
+            ),
+          ),
+      ],
     );
   }
 

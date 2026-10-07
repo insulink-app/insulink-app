@@ -228,7 +228,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       iconColor: context.danger,
       description: 'sport.trainings.stop_confirm',
       cancelButton: true,
-      confirmButtonText: 'sport.trainings.stop',
+      confirmButtonText: 'sport.trainings.stop_action',
       confirmButtonColor: Theme.of(context).colorScheme.error,
       callback: _stop,
     ).show(context);

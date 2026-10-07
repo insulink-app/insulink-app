@@ -1060,6 +1060,7 @@
       "distance": "Distance",
       "speed": "Speed",
       "stop": "End training",
+      "stop_action": "End",
       "back": "Back",
       "stop_confirm": "Really end the training?",
       "pause": "Pause",
