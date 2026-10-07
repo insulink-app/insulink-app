@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'sport_models.dart';
@@ -230,7 +232,11 @@ class SportStore {
   /// persists; a confirm that never reaches the backend is silently wiped by the
   /// next pull (which replaces the local list with the server's). A reject only
   /// drops a pending entry, and pending is device-local — nothing to push.
+  /// The browser demo has no notification taps and no `dart:io` file system.
   Future<bool> applyTrainingDecisions() async {
+    if (kIsWeb) {
+      return false;
+    }
     final file = _decisionFile;
     if (!await file.exists()) {
       return false;

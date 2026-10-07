@@ -32,7 +32,9 @@ skipped `DemoBackend`.
 
 ## What the demo entry point does differently
 
-`lib/main_demo.dart` replaces `main.dart`:
+`lib/main_demo.dart` replaces `main.dart`. The start itself lives in
+`lib/src/demo/demo_app.dart` (`DemoApp`), which the screenshot run shares
+(`docs/SCREENSHOTS.md`):
 
 - **No vendor keys.** `VendorKeys.ensureLoaded` is never called, and the web build
   never bundles `vendor_keys.json` anyway (only Gradle copies it). The start-up

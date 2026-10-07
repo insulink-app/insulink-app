@@ -734,6 +734,9 @@ the widget cannot drift away from the app on what is in range.
 - `docs/WEB_DEMO.md` — the **browser demo** on the website: the `main_demo.dart`
   entry point, the in-zone fake backend, the dummy data and the three `DemoMode`
   switches outside `lib/src/demo/`.
+- `docs/SCREENSHOTS.md` — the **screenshots** published with the web demo on every
+  main push: the URLs, the integration test that takes them, and what the test
+  binding changes (start in the body, frame-by-frame pumps, no start errors).
 - `docs/BATTERY.md` — the two-level battery saver: what each level pauses, why the
   gate sits in `BackgroundLocationSampler.tick()`, and why a manual cardio
   recording must force the detection service up.
