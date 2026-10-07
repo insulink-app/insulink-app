@@ -8,6 +8,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/account_sync.dart';
 import 'package:insulink/src/auth/auth_gate.dart';
+import 'package:insulink/src/base/launch_hold.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 import 'package:insulink/src/base/bouncy_scroll_behavior.dart';
@@ -72,8 +73,11 @@ typedef AppPreferences = ({
   PodStore podStore,
 });
 
+/// The native splash stays up until [AuthGate] knows its first page
+/// ([LaunchHold]), so the launch hands over straight to that page.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  const LaunchHold().hold();
   await Locales.init(["de", "en"]);
   await VendorKeys.ensureLoaded();
   // Required so the UI isolate can exchange data with the foreground-service

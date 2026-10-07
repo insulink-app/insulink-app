@@ -105,8 +105,13 @@ Kept to a handful of switches on `DemoMode.enabled` (`--dart-define=DEMO=true`):
 ## `web/index.html`
 
 - **Splash**: the native splash's colours and logo (`web/splash/`, downscaled from
-  `assets/images/splash-*.png`), light and dark, with a loading bar. It fades out on
-  `flutter-first-frame`, so it also covers the dummy data being generated.
+  `assets/images/splash-*.png`), light and dark, and no loader. It fades out on
+  `flutter-first-frame`, which the app holds back until its first page is ready
+  (`LaunchHold`, released by `AuthGate`), so it covers the dummy data being
+  generated and never hands over to a blank frame. The fade starts 0.15 s late
+  and the logo grows slightly as it goes, while the page rises in underneath
+  (`LaunchReveal`): one movement instead of a loader and a cut. The phone app
+  does the same with the native splash.
 - **Rounds itself when embedded**: with `?frame=<radius>` (the website passes
   its `--screen-radius`) the page clips its own body to that radius, with root
   and body transparent (with a transparent root the browser paints body's

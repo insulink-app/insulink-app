@@ -30,17 +30,19 @@
     #splash {
       position: fixed; inset: 0; z-index: 10;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: #EDF2F6; transition: opacity 0.35s ease;
+      background: #EDF2F6; transition: opacity 0.5s ease 0.15s;
     }
-    #splash img { width: 220px; height: 220px; }
+    /* No loader: the logo alone, and on the hand-over it grows slightly as it
+       fades, while the app rises in underneath (LaunchReveal). The fade waits a
+       moment so the app's first picture is painted before the splash thins,
+       never a blank screen between the two. */
+    #splash img { width: 220px; height: 220px; transition: transform 0.65s cubic-bezier(0.2, 0, 0, 1); }
     #splash .dark { display: none; }
-    #splash .bar { width: 72px; height: 3px; border-radius: 3px; overflow: hidden; background: rgba(51, 70, 200, 0.15); margin-top: -40px; }
-    #splash .bar::after {
-      content: ""; display: block; width: 40%; height: 100%; border-radius: 3px;
-      background: #3346C8; animation: splash-slide 1.1s ease-in-out infinite;
-    }
     #splash.done { opacity: 0; pointer-events: none; }
-    @keyframes splash-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+    #splash.done img { transform: scale(1.06); }
+    @media (prefers-reduced-motion: reduce) {
+      #splash, #splash img { transition: none; }
+    }
     :root.dark, :root.dark body, :root.dark #splash { background: #0F1B26; }
     /* Embedded on the website (?frame=<radius>): the page rounds its own corners,
        because browsers do not reliably clip a composited iframe to a rounded box
@@ -52,8 +54,6 @@
     :root.framed body { clip-path: inset(0 round var(--frame-radius)); }
     :root.dark #splash .light { display: none; }
     :root.dark #splash .dark { display: block; }
-    :root.dark #splash .bar { background: rgba(157, 174, 255, 0.18); }
-    :root.dark #splash .bar::after { background: #9DAEFF; }
   </style>
   <script>
     /* Dark splash when the embedding website asks for it (?theme=dark, the same
@@ -77,16 +77,16 @@
   <div id="splash" aria-label="Insulink">
     <img class="light" src="splash/splash-black.png" alt="">
     <img class="dark" src="splash/splash-white.png" alt="">
-    <div class="bar"></div>
   </div>
 
   <script>
-    /* Fades the splash out once Flutter has painted (the demo data is generated
-       before runApp, so this also covers that). */
+    /* Fades the splash out once Flutter has painted its first frame, which the
+       app holds back until its first page is ready (LaunchHold), so the demo
+       data and the sign-in are covered too. */
     window.addEventListener("flutter-first-frame", function () {
       var splash = document.getElementById("splash");
       splash.classList.add("done");
-      setTimeout(function () { splash.remove(); }, 400);
+      setTimeout(function () { splash.remove(); }, 700);
     });
 
     /* Mouse wheel inside the demo. Every wheel event has its default cancelled, so

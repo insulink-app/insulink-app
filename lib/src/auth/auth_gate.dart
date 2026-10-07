@@ -4,6 +4,8 @@ import 'package:insulink/src/auth/auth_page.dart';
 import 'package:insulink/src/auth/biometric_lock.dart';
 import 'package:insulink/src/auth/legal_page.dart';
 import 'package:insulink/src/auth/permissions/permission_onboarding.dart';
+import 'package:insulink/src/base/launch_hold.dart';
+import 'package:insulink/src/base/launch_reveal.dart';
 import 'package:insulink/src/base/page.dart';
 import 'package:insulink/main.dart';
 
@@ -30,19 +32,27 @@ class _AuthGateState extends State<AuthGate> {
     _load();
   }
 
+  /// Reads which page comes first, then lets the first frame through
+  /// ([LaunchHold]) so the splash hands over straight to that page, never to
+  /// the blank frame before it. Released even if reading fails, so a broken
+  /// storage cannot keep the splash up forever.
   Future<void> _load() async {
-    final legal = await _storage.read(key: "legal_accepted") == "true";
-    final done = await _storage.read(key: "onboarding_done") == "true";
-    final token = await _storage.read(key: "authentication_token") ?? "";
-    if (!mounted) {
-      return;
+    try {
+      final legal = await _storage.read(key: "legal_accepted") == "true";
+      final done = await _storage.read(key: "onboarding_done") == "true";
+      final token = await _storage.read(key: "authentication_token") ?? "";
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _legalAccepted = legal;
+        _onboardingDone = done;
+        _authenticated = token.isNotEmpty;
+        _loading = false;
+      });
+    } finally {
+      const LaunchHold().release();
     }
-    setState(() {
-      _legalAccepted = legal;
-      _onboardingDone = done;
-      _authenticated = token.isNotEmpty;
-      _loading = false;
-    });
   }
 
   Future<void> _acceptLegal() async {
@@ -77,6 +87,10 @@ class _AuthGateState extends State<AuthGate> {
     if (_loading) {
       return const Scaffold(body: SizedBox.shrink());
     }
+    return LaunchReveal(child: _firstPage());
+  }
+
+  Widget _firstPage() {
     if (!_legalAccepted) {
       return LegalPage(onAccepted: _acceptLegal);
     }
