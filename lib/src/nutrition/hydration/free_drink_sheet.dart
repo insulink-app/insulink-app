@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:flutter/services.dart';
-import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 
 /// Bottom sheet to enter a free drink amount in millilitres, in the app's sheet
 /// style. Returns the amount, or null if dismissed.
 Future<int?> showFreeDrinkSheet(BuildContext context) {
-  return showModalBottomSheet<int>(
+  return showInkSheet<int>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => const _FreeDrinkSheet(),
   );
 }
@@ -44,29 +41,12 @@ class _FreeDrinkSheetState extends State<_FreeDrinkSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        24,
-        12,
-        24,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
+    return InkSheet(
+      titleKey: 'nutrition.hydration.free_title',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const GrabHandle(),
-          const SizedBox(height: 18),
-          LocaleText(
-            'nutrition.hydration.free_title',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 20),
           _field(accent),
           const SizedBox(height: 20),
           _addButton(accent),
@@ -121,10 +101,7 @@ class _FreeDrinkSheetState extends State<_FreeDrinkSheet> {
       onPressed: _ml > 0 ? _submit : null,
       child: LocaleText(
         'nutrition.hydration.add',
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
       ),
     );
   }

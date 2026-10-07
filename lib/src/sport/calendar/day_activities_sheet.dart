@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/base/grab_handle.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/sport/activity/activity_entry.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -18,9 +19,8 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// Lists the routines and endurance trainings logged on [day], each tappable to
 /// its detail page. Opened from a day cell on the sport calendar.
 Future<void> showDayActivitiesSheet(BuildContext context, DateTime day) {
-  return showModalBottomSheet(
+  return showInkSheet(
     context: context,
-    backgroundColor: Colors.transparent,
     builder: (_) => MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: context.read<TrainingState>()),
@@ -43,7 +43,6 @@ class _DayActivitiesSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final training = context.watch<TrainingState>();
     final cardio = context.watch<CardioTrainingState>();
     final entries = [
@@ -51,40 +50,29 @@ class _DayActivitiesSheet extends StatelessWidget {
         if (_isSameDay(DateTime.fromMillisecondsSinceEpoch(entry.startMs), day))
           entry,
     ];
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    return InkSheet(
+      title: Text(
+        MaterialLocalizations.of(context).formatMediumDate(day),
+        style: InkText.bigValue.copyWith(fontSize: 20),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const GrabHandle(),
-            const SizedBox(height: 16),
-            Text(
-              MaterialLocalizations.of(context).formatMediumDate(day),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Scrollable so a busy day never overflows the sheet.
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                if (entries.isEmpty) LocaleText('sport.calendar.empty'),
+                for (final entry in entries)
+                  entry.session != null
+                      ? _routineTile(context, entry.session!)
+                      : _trainingTile(context, entry.training!),
+              ],
             ),
-            const SizedBox(height: 16),
-            // Scrollable so a busy day never overflows the sheet.
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  if (entries.isEmpty) LocaleText('sport.calendar.empty'),
-                  for (final entry in entries)
-                    entry.session != null
-                        ? _routineTile(context, entry.session!)
-                        : _trainingTile(context, entry.training!),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

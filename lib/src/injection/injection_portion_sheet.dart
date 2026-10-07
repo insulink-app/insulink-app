@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/circle_icon_button.dart';
-import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
@@ -18,14 +19,8 @@ Future<double?> showPortionSheet(
   FoodProduct product,
   double initialGrams,
 ) {
-  return showModalBottomSheet<double>(
+  return showInkSheet<double>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => _PortionSheet(product: product, initialGrams: initialGrams),
   );
 }
@@ -83,27 +78,17 @@ class _PortionSheetState extends State<_PortionSheet> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 12,
-        bottom: 24 + bottomInset,
+    return InkSheet(
+      title: Text(
+        widget.product.name.isEmpty
+            ? widget.product.barcode
+            : widget.product.name,
+        style: InkText.bigValue.copyWith(fontSize: 20),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const GrabHandle(),
-          const SizedBox(height: 20),
-          Text(
-            widget.product.name.isEmpty
-                ? widget.product.barcode
-                : widget.product.name,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
           Row(
             children: [
               CircleIconButton(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -305,7 +306,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
   /// The sheet behind the "exercise X/Y · set N/M" header: skip, swap, jump to
   /// any exercise, or add one to the running workout.
   void _showJump() {
-    showModalBottomSheet<void>(
+    showInkSheet<void>(
       context: context,
       builder: (_) => WorkoutJumpSheet(
         runner: _runner,

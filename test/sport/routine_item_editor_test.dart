@@ -6,6 +6,7 @@ import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 import 'package:insulink/src/sport/sport_sync.dart';
 import 'package:insulink/src/sport/training_state.dart';
+import 'package:insulink/src/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
 import '../support/secure_storage_mock.dart';
@@ -39,6 +40,7 @@ void main() {
       ChangeNotifierProvider<TrainingState>.value(
         value: state,
         child: MaterialApp(
+          theme: AppTheme.dark,
           localizationsDelegates: Locales.delegates,
           supportedLocales: Locales.supportedLocales,
           home: Builder(

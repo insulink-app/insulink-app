@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/base/measurement_entry_sheet.dart';
 import 'package:insulink/src/hba1c/hba1c_entry.dart';
 import 'package:insulink/src/hba1c/hba1c_state.dart';
@@ -12,14 +13,8 @@ import 'package:provider/provider.dart';
 /// entered wrong would sit in the history for months.
 Future<void> showHba1cEntrySheet(BuildContext context, {Hba1cEntry? existing}) {
   final state = context.read<Hba1cState>();
-  return showModalBottomSheet(
+  return showInkSheet(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => MeasurementEntrySheet(
       titleKey: existing == null ? 'hba1c.add' : 'hba1c.edit',
       fieldLabelKey: 'hba1c._',

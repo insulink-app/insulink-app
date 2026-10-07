@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/food/food_add_actions.dart';
@@ -42,10 +43,8 @@ Future<FoodProduct?> pickFoodProduct(BuildContext context) async {
 }
 
 Future<_PickerOutcome?> _showPicker(BuildContext context) {
-  return showModalBottomSheet<_PickerOutcome>(
+  return showInkSheet<_PickerOutcome>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
     builder: (_) => const _ProductPicker(),
   );
 }
@@ -105,43 +104,30 @@ class _ProductPickerState extends State<_ProductPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final products = context.watch<FoodState>().products;
     final filtered = _filtered(products);
-    return Padding(
-      padding: EdgeInsets.only(top: 12, bottom: bottomInset),
+    return InkSheet(
+      title: Row(
+        children: [
+          Expanded(
+            child: LocaleText(
+              'injection.products.pick',
+              style: InkText.bigValue.copyWith(fontSize: 20),
+            ),
+          ),
+          FoodAddActions(
+            onScanRequested: () =>
+                Navigator.of(context).pop(const _PickerOutcome.scan()),
+            onCreated: (product) =>
+                Navigator.of(context).pop(_PickerOutcome.picked(product)),
+          ),
+        ],
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 8, 8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(PhosphorIconsBold.arrowLeft),
-                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                Expanded(
-                  child: LocaleText(
-                    'injection.products.pick',
-                    style: InkText.pageTitle.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                FoodAddActions(
-                  onScanRequested: () =>
-                      Navigator.of(context).pop(const _PickerOutcome.scan()),
-                  onCreated: (product) =>
-                      Navigator.of(context).pop(_PickerOutcome.picked(product)),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.only(bottom: 12),
             child: TextField(
               controller: _search,
               autofocus: true,

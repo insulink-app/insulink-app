@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../localization/locale_text.dart';
-import 'grab_handle.dart';
+import '../theme/insulink_theme.dart';
+import 'ink_sheet.dart';
 
-/// Shared chrome for the focused settings bottom-sheet editors (glucose ranges,
-/// bolus factors): the rounded container, grab handle, title + current-value
-/// header, the editor [children], and a "Done" button. Keeps dragging away from
+/// Shared body of the focused settings sheet editors (glucose ranges, bolus
+/// factors) as an [InkSheet]: title with the current value beside it, the
+/// editor [children], and a "Done" button. Keeps dragging away from
 /// the scrolling settings list behind it.
 class EditorSheet extends StatelessWidget {
   const EditorSheet({
@@ -23,76 +24,38 @@ class EditorSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      // Lift the sheet above the keyboard when an inline field is focused
-      // (otherwise the keyboard covers the value being edited).
-      padding: EdgeInsets.fromLTRB(
-        20,
-        12,
-        20,
-        20 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: SafeArea(
-        top: false,
+    return InkSheet(
+      title: _header(),
+      child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const GrabHandle(),
-            const SizedBox(height: 18),
-            _header(),
-            const SizedBox(height: 22),
             ...children,
             const SizedBox(height: 24),
-            _doneButton(context),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: LocaleText('alert.done'),
+            ),
           ],
         ),
       ),
     );
   }
 
+  /// The title with the current value beside it, in [accent].
   Widget _header() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      spacing: 12,
       children: [
-        LocaleText(
-          titleKey,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        Text(
-          valueText,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: accent,
+        Expanded(
+          child: LocaleText(
+            titleKey,
+            style: InkText.bigValue.copyWith(fontSize: 20),
           ),
         ),
+        Text(valueText, style: InkText.rowTitle.copyWith(color: accent)),
       ],
-    );
-  }
-
-  Widget _doneButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        style: FilledButton.styleFrom(
-          backgroundColor: accent,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: () => Navigator.of(context).pop(),
-        child: LocaleText(
-          'alert.done',
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-        ),
-      ),
     );
   }
 }

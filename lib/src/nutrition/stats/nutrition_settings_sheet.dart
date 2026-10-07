@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_state.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_goals_editor.dart';
@@ -10,11 +11,8 @@ import 'package:provider/provider.dart';
 /// box-layout editor. Replaces the old hydration-only sheet — reached from the
 /// single settings button in the stats header.
 Future<void> showNutritionSettingsSheet(BuildContext context) async {
-  await showModalBottomSheet<void>(
+  await showInkSheet<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => ChangeNotifierProvider<NutritionState>.value(
       value: context.read<NutritionState>(),
       child: const _NutritionSettingsSheet(),

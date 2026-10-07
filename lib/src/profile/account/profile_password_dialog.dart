@@ -15,10 +15,8 @@ class ProfilePasswordDialog {
     final next = TextEditingController();
     Alert(
       icon: PhosphorIconsBold.lock,
-      content: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-        child: _PasswordFields(current: current, next: next),
-      ),
+      description: "profile.account.change_password",
+      content: _PasswordFields(current: current, next: next),
       cancelButton: true,
       confirmButtonText: "profile.account.save",
       callback: () => _submit(context, current.text, next.text),

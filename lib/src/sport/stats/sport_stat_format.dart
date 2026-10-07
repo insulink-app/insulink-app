@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 
@@ -11,7 +12,7 @@ String formatScore(BuildContext context, double score, ExerciseKind kind) {
   }
   switch (kind) {
     case ExerciseKind.weighted:
-      return '${score.toStringAsFixed(1)} ${Locales.string(context, 'sport.stats.kg')}';
+      return '${sportDecimal(score, 1)} ${Locales.string(context, 'sport.stats.kg')}';
     case ExerciseKind.timed:
       return Locales.string(
         context,

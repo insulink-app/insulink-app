@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -14,15 +15,11 @@ Future<int?> showNumberSheet(
   int? initial,
 }) {
   final controller = TextEditingController(text: initial?.toString() ?? '');
-  return showModalBottomSheet<int>(
+  return showInkSheet<int>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
     builder: (sheetContext) => _SheetBody(
+      titleKey: titleKey,
       children: [
-        LocaleText(titleKey, style: _titleStyle),
-        const SizedBox(height: 16),
         TextField(
           controller: controller,
           autofocus: true,
@@ -46,34 +43,27 @@ Future<Delivery?> showDeliverySheet(
   BuildContext context, {
   Delivery? existing,
 }) {
-  return showModalBottomSheet<Delivery>(
+  return showInkSheet<Delivery>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
     builder: (_) => _DeliverySheet(existing: existing),
   );
 }
 
-const _titleStyle = TextStyle(fontSize: 17, fontWeight: FontWeight.bold);
-
-/// Sheet padding + keyboard inset, shared by the sheets above.
+/// The [InkSheet] both sheets above share: their title and fields.
 class _SheetBody extends StatelessWidget {
-  const _SheetBody({required this.children});
+  const _SheetBody({required this.titleKey, required this.children});
 
+  final String titleKey;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
-        ),
+    return InkSheet(
+      titleKey: titleKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
       ),
     );
   }
@@ -129,9 +119,8 @@ class _DeliverySheetState extends State<_DeliverySheet> {
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toString();
     return _SheetBody(
+      titleKey: 'inventory.delivery',
       children: [
-        LocaleText('inventory.delivery', style: _titleStyle),
-        const SizedBox(height: 16),
         OutlinedButton.icon(
           onPressed: _pickDate,
           icon: const Icon(Icons.calendar_today, size: 18),

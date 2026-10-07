@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/base/stepped_slider.dart';
-import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
@@ -17,10 +17,8 @@ import 'package:provider/provider.dart';
 /// user is actually making — "less than usual for a while" — and because it stays
 /// meaningful across the day as the schedule changes underneath it.
 void openTempBasalSheet(BuildContext context) {
-  showModalBottomSheet<void>(
+  showInkSheet<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
     builder: (_) => const PodTempBasalSheet(),
   );
 }
@@ -67,24 +65,12 @@ class _PodTempBasalSheetState extends State<PodTempBasalSheet> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 12,
-        bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
-      ),
+    return InkSheet(
+      titleKey: 'pump.temp.title',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const GrabHandle(),
-          const SizedBox(height: 20),
-          LocaleText(
-            'pump.temp.title',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
           LocaleText(
             'pump.temp.body',
             style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),

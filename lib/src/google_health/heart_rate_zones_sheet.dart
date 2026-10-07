@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -14,9 +15,8 @@ Future<HeartRateZones?> showHeartRateZonesSheet(
   BuildContext context,
   HeartRateZones current,
 ) {
-  return showModalBottomSheet<HeartRateZones>(
+  return showInkSheet<HeartRateZones>(
     context: context,
-    showDragHandle: true,
     builder: (_) => _HeartRateZonesSheet(current: current),
   );
 }
@@ -41,17 +41,12 @@ class _HeartRateZonesSheetState extends State<_HeartRateZonesSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+    return InkSheet(
+      titleKey: 'google_health.hr_zones.title',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LocaleText(
-            'google_health.hr_zones.title',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
           _row(
             'google_health.hr_zones.elevated',
             context.ink.pulseHigh,

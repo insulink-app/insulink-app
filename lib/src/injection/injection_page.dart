@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/base/grab_handle.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/injection/carbs_on_board.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
@@ -17,7 +17,6 @@ import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:insulink/src/base/header_icon_button.dart';
 import 'package:insulink/src/injection/injection_sheet_parts.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
@@ -25,12 +24,7 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 /// Opens the bolus-calculator as a modal bottom sheet. The glucose field is
 /// prefilled with the latest reading from [CgmController] when available.
 Future<void> showInjectionSheet(BuildContext context) {
-  return showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    builder: (_) => const InjectionSheet(),
-  );
+  return showInkSheet(context: context, builder: (_) => const InjectionSheet());
 }
 
 /// Carbs (a manual amount PLUS the ones summed from picked products) + current
@@ -273,57 +267,27 @@ class _InjectionSheetState extends State<InjectionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 12,
-        bottom: 24 + bottomInset,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const GrabHandle(),
-          const SizedBox(height: 14),
-          _header(context),
-          const SizedBox(height: 14),
-          _mealCard(),
-          const SizedBox(height: 12),
-          _glucoseCard(),
-          const SizedBox(height: 12),
-          _bolusCard(context),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: (_bolus == null || _glucose == null || _exceedsMax)
-                ? null
-                : _next,
-            child: LocaleText('injection.next'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// The title large on the left, a round close button on the right.
-  Widget _header(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(start: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: LocaleText(
-              'injection.title',
-              style: InkText.deviceTitle.copyWith(letterSpacing: 0),
+    return InkSheet(
+      titleKey: 'injection.title',
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _mealCard(),
+            const SizedBox(height: 12),
+            _glucoseCard(),
+            const SizedBox(height: 12),
+            _bolusCard(context),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: (_bolus == null || _glucose == null || _exceedsMax)
+                  ? null
+                  : _next,
+              child: LocaleText('injection.next'),
             ),
-          ),
-          HeaderIconButton(
-            icon: PhosphorIconsBold.x,
-            labelKey: 'alert.close',
-            onTap: () => Navigator.of(context).pop(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/base/segmented_toggle.dart';
+import 'package:insulink/src/base/labeled_field.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:flutter/services.dart';
-import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:provider/provider.dart';
@@ -19,11 +21,8 @@ Future<FoodProduct?> showFoodEditor(
   BuildContext context, {
   FoodProduct? product,
 }) {
-  return showModalBottomSheet<FoodProduct>(
+  return showInkSheet<FoodProduct>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => _FoodEditorSheet(product: product ?? FoodProduct.blank()),
   );
 }
@@ -101,145 +100,142 @@ class _FoodEditorSheetState extends State<_FoodEditorSheet> {
     Navigator.pop(context, saved);
   }
 
+  /// Name, brand, serving size with the g/ml switch beside it, serving
+  /// description, then the nutrients per 100 g or ml as a 2 × 2 grid and
+  /// "Fertig" (`docs/redesign/screens/34-produkt-bearbeiten.png`).
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        20,
-        12,
-        20,
-        20 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
+    return InkSheet(
+      titleKey: widget.product.name.isEmpty
+          ? 'nutrition.food.add_title'
+          : 'nutrition.food.edit_title',
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 14,
           children: [
-            const GrabHandle(),
-            const SizedBox(height: 16),
             _field('nutrition.food.name', _name),
             _field('nutrition.food.brand', _brand),
-            _unitSelector(theme),
-            _field(
-              'nutrition.food.serving_size',
-              _serving,
-              number: true,
-              suffix: _unit,
-            ),
+            _servingRow(),
             _field('nutrition.food.serving_label', _servingLabel),
-            const SizedBox(height: 16),
-            LocaleText(
-              'nutrition.food.per_100',
-              params: [_unit],
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant,
+            _nutrientsHeader(),
+            _pair(
+              _field(
+                'nutrition.food.carbs_long',
+                _carbs,
+                number: true,
+                suffix: 'g',
+              ),
+              _field(
+                'nutrition.food.energy',
+                _kcal,
+                number: true,
+                suffix: 'kcal',
               ),
             ),
-            const SizedBox(height: 14),
-            _field('nutrition.food.carbs', _carbs, number: true, suffix: 'g'),
-            _field('nutrition.food.fat', _fat, number: true, suffix: 'g'),
-            _field(
-              'nutrition.food.protein',
-              _protein,
-              number: true,
-              suffix: 'g',
-            ),
-            _field('nutrition.food.kcal', _kcal, number: true, suffix: 'kcal'),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _save,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const LocaleText(
-                'alert.done',
-                style: TextStyle(fontWeight: FontWeight.w600),
+            _pair(
+              _field('nutrition.food.fat', _fat, number: true, suffix: 'g'),
+              _field(
+                'nutrition.food.protein',
+                _protein,
+                number: true,
+                suffix: 'g',
               ),
             ),
+            const SizedBox(height: 10),
+            FilledButton(onPressed: _save, child: LocaleText('alert.done')),
           ],
         ),
       ),
     );
   }
 
+  /// A labelled field filled with the page colour, the unit at its end.
   Widget _field(
     String labelKey,
     TextEditingController controller, {
     bool number = false,
     String? suffix,
   }) {
-    final theme = Theme.of(context);
-    final accent = theme.colorScheme.primary;
-    final radius = BorderRadius.circular(14);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return LabeledField(
+      labelKey: labelKey,
+      fill: context.ink.ground,
       child: TextField(
         controller: controller,
-        cursorColor: accent,
         keyboardType: number
             ? const TextInputType.numberWithOptions(decimal: true)
             : TextInputType.text,
         inputFormatters: number
             ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))]
             : null,
-        decoration: InputDecoration(
-          labelText: Locales.string(context, labelKey),
-          // No local floatingLabelStyle — inherit the theme's neutral-grey label
-          // instead of tinting it primary.
-          suffixText: suffix,
-          isDense: true,
-          filled: true,
-          fillColor: theme.colorScheme.onSurface.withValues(alpha: 0.04),
-          border: OutlineInputBorder(
-            borderRadius: radius,
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: radius,
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: radius,
-            borderSide: BorderSide(color: accent, width: 1.5),
-          ),
-        ),
+        decoration: InputDecoration(suffixText: suffix),
       ),
     );
   }
 
-  Widget _unitSelector(ThemeData theme) {
-    final accent = theme.colorScheme.primary;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: SegmentedButton<String>(
-        showSelectedIcon: false,
-        style: SegmentedButton.styleFrom(
-          backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.04),
-          foregroundColor: theme.colorScheme.onSurface,
-          selectedBackgroundColor: accent,
-          selectedForegroundColor: theme.colorScheme.onPrimary,
-          side: BorderSide(color: theme.dividerColor),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+  Widget _pair(Widget left, Widget right) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 10,
+      children: [
+        Expanded(child: left),
+        Expanded(child: right),
+      ],
+    );
+  }
+
+  /// The serving size with the small g/ml switch to its right, in place of
+  /// the full-width unit selector.
+  Widget _servingRow() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      spacing: 10,
+      children: [
+        Expanded(
+          child: _field(
+            'nutrition.food.serving_size',
+            _serving,
+            number: true,
+            suffix: _unit,
           ),
         ),
-        segments: const [
-          ButtonSegment(value: 'g', label: Text('g')),
-          ButtonSegment(value: 'ml', label: Text('ml')),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: SizedBox(
+            width: 112,
+            child: SegmentedToggle<String>(
+              selected: _unit,
+              onChanged: (unit) => setState(() => _unit = unit),
+              options: const [
+                (value: 'g', label: 'g'),
+                (value: 'ml', label: 'ml'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// "Nährwerte" with "pro 100 ml" on the right.
+  Widget _nutrientsHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: LocaleText(
+              'nutrition.food.nutrients',
+              style: InkText.section,
+            ),
+          ),
+          LocaleText(
+            'nutrition.food.per_100',
+            params: [_unit],
+            style: InkText.label.copyWith(color: context.ink.muted),
+          ),
         ],
-        selected: {_unit},
-        onSelectionChanged: (selection) =>
-            setState(() => _unit = selection.first),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/base/measurement_entry_sheet.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_state.dart';
@@ -11,14 +12,8 @@ Future<void> showWeightEntrySheet(
   WeightEntry? existing,
 }) {
   final state = context.read<SportState>();
-  return showModalBottomSheet(
+  return showInkSheet(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => MeasurementEntrySheet(
       titleKey: existing == null ? 'sport.weight.add' : 'sport.weight.edit',
       fieldLabelKey: 'sport.weight',

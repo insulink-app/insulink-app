@@ -16,6 +16,7 @@ class SportEditableNumber extends StatefulWidget {
     this.decimal = false,
     this.width = 96,
     this.style = const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    this.plain = false,
   });
 
   final String valueText;
@@ -26,6 +27,10 @@ class SportEditableNumber extends StatefulWidget {
   final double width;
   final TextStyle style;
   final void Function(double value) onSubmit;
+
+  /// Rests as the bare number, without the tinted pill, where the figure sits
+  /// in a strip that already says it is a value (the meal detail).
+  final bool plain;
 
   @override
   State<SportEditableNumber> createState() => _SportEditableNumberState();
@@ -98,13 +103,16 @@ class _SportEditableNumberState extends State<SportEditableNumber> {
   Widget _text(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
     return Material(
-      color: accent.withValues(alpha: 0.06),
+      color: widget.plain ? Colors.transparent : accent.withValues(alpha: 0.06),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: _start,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          padding: EdgeInsets.symmetric(
+            vertical: 8,
+            horizontal: widget.plain ? 0 : 8,
+          ),
           child: Text(
             widget.valueText,
             textAlign: TextAlign.center,

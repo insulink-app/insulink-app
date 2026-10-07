@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 
-import '../../base/grab_handle.dart';
 import '../../localization/locale_text.dart';
 import '../../localization/locales.dart';
 import 'libre3_scan_icons.dart';
@@ -62,32 +62,22 @@ class _Libre3NfcScanSheetState extends State<Libre3NfcScanSheet> {
     super.dispose();
   }
 
-  /// The sheet draws its own full-width surface (the route is transparent), like
-  /// [EditorSheet] does for the settings editors.
+  /// An [InkSheet] without a title: the phase's own centred title says what
+  /// is going on, and the close button stands alone at the top right.
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: _scheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-      child: SafeArea(
-        top: false,
-        child: ValueListenableBuilder<Libre3ScanPhase>(
-          valueListenable: widget.phase,
-          builder: (context, phase, _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const GrabHandle(),
-              const SizedBox(height: 28),
-              if (phase == Libre3ScanPhase.scanning)
-                ..._scanning()
-              else
-                ..._success(),
-            ],
-          ),
+    return InkSheet(
+      child: ValueListenableBuilder<Libre3ScanPhase>(
+        valueListenable: widget.phase,
+        builder: (context, phase, _) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            if (phase == Libre3ScanPhase.scanning)
+              ..._scanning()
+            else
+              ..._success(),
+          ],
         ),
       ),
     );

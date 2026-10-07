@@ -411,6 +411,15 @@ glucose/bolus/silent profile state, and `CgmController`) and `MaterialApp`
   (`context.ink`, `InkSpace`, `InkRadius`, `InkText`); no colour literals in
   widgets.
 - Every icon button gets a `Semantics` label; touch targets are at least 44 px.
+- **Popups only through `InkDialog` and `InkSheet`** (`base/ink_dialog.dart`,
+  `base/ink_sheet.dart`, `docs/redesign/DESIGN.md` "Popups"). Never call
+  `showDialog`, `showGeneralDialog`, `showModalBottomSheet`, `AlertDialog` or
+  `SimpleDialog` directly: a dialog is an `InkDialog(...).show(context)` (or the
+  older `Alert`, which renders one), a sheet is `showInkSheet(builder: ...)`
+  whose content is an `InkSheet`. Dialogs float at the foot over the blurred
+  page with the action stacked above "Abbrechen"; every sheet has the grab
+  handle and a close button at the top right, even when it can be swiped away.
+  Action buttons in a dialog carry one word.
 
 ### Theme & design system (`lib/src/theme/`)
 

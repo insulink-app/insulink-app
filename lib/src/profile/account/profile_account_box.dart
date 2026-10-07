@@ -152,17 +152,20 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
     final controller = TextEditingController(text: current);
     Alert(
       icon: PhosphorIconsBold.pencilSimple,
-      content: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-        child: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 50,
-          textInputAction: TextInputAction.done,
-          decoration: InputDecoration(
-            counterText: "",
-            prefixIcon: const Icon(PhosphorIconsBold.user),
-            hintText: Locales.string(context, "profile.account.name"),
+      description: "profile.account.rename",
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        maxLength: 50,
+        textInputAction: TextInputAction.done,
+        decoration: InputDecoration(
+          counterText: "",
+          prefixIcon: const Icon(PhosphorIconsBold.user),
+          hintText: Locales.string(context, "profile.account.name"),
+          suffixIcon: IconButton(
+            icon: const Icon(PhosphorIconsBold.xCircle),
+            tooltip: Locales.string(context, "profile.account.clear"),
+            onPressed: controller.clear,
           ),
         ),
       ),

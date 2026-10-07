@@ -8,9 +8,12 @@ typedef MetricCell = ({String label, String value, String? unit});
 /// Figures in one panel, two per row, the cells parted by 1 px lines instead of
 /// being separate cards: the analysis key figures and the forecast scores.
 class MetricGrid extends StatelessWidget {
-  const MetricGrid({super.key, required this.cells});
+  const MetricGrid({super.key, required this.cells, this.icons});
 
   final List<MetricCell> cells;
+
+  /// A small muted glyph before each label, in the order of [cells].
+  final List<IconData>? icons;
 
   @override
   Widget build(BuildContext context) {
@@ -25,11 +28,11 @@ class MetricGrid extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(child: _cell(context, cells[row * 2])),
+                  Expanded(child: _cell(context, row * 2)),
                   VerticalDivider(width: 1, thickness: 1, color: line),
                   Expanded(
                     child: row * 2 + 1 < cells.length
-                        ? _cell(context, cells[row * 2 + 1])
+                        ? _cell(context, row * 2 + 1)
                         : const SizedBox.shrink(),
                   ),
                 ],
@@ -41,17 +44,27 @@ class MetricGrid extends StatelessWidget {
     );
   }
 
-  Widget _cell(BuildContext context, MetricCell cell) {
+  Widget _cell(BuildContext context, int index) {
     final colors = context.ink;
+    final cell = cells[index];
+    final icon = icons?[index];
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 20, 14, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 8,
         children: [
-          Text(
-            cell.label,
-            style: InkText.caption.copyWith(color: colors.muted),
+          Row(
+            spacing: 6,
+            children: [
+              if (icon != null) Icon(icon, size: 16, color: colors.muted),
+              Flexible(
+                child: Text(
+                  cell.label,
+                  style: InkText.caption.copyWith(color: colors.muted),
+                ),
+              ),
+            ],
           ),
           Text.rich(
             TextSpan(

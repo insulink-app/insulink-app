@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 
 /// Sub-page for one profile topic: its title in the app bar and the topic's
@@ -27,7 +28,12 @@ class ProfileTopicPage extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+            padding: const EdgeInsets.fromLTRB(
+              InkSpace.panelMargin,
+              16,
+              InkSpace.panelMargin,
+              40,
+            ),
             sliver: SliverFillRemaining(
               hasScrollBody: false,
               child: Column(
