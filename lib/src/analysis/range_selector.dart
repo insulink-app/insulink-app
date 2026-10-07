@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/analysis/analysis_segment.dart';
+import 'package:insulink/src/base/header_icon_button.dart';
+import 'package:insulink/src/base/segmented_toggle.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:provider/provider.dart';
@@ -16,40 +18,48 @@ const _presets = [1, 3, 7, 30, 90];
 class AnalysisRangeSelector extends StatelessWidget {
   const AnalysisRangeSelector({super.key});
 
+  /// The presets on a pill track, a round calendar button beside it for a
+  /// custom window, the same look as the sleep and weight pages.
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
     final isCustom = controller.statsIsCustom;
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: InkSpace.panelMargin),
+      child: Column(
+        children: [
+          Row(
+            spacing: 8,
             children: [
-              for (final days in _presets)
-                Expanded(
-                  child: AnalysisSegment(
-                    selected:
-                        !isCustom && controller.statsPreset.inDays == days,
-                    onTap: () => controller.statsPreset = Duration(days: days),
-                    child: Text(
-                      Locales.string(context, 'analysis.window.d$days'),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
               Expanded(
-                child: AnalysisSegment(
-                  selected: isCustom,
-                  onTap: () => _pickCustom(context, controller),
-                  child: const Icon(PhosphorIconsBold.calendarBlank, size: 18),
+                child: SegmentedToggle<int>.page(
+                  expand: true,
+                  selected: isCustom ? -1 : controller.statsPreset.inDays,
+                  onChanged: (days) =>
+                      controller.statsPreset = Duration(days: days),
+                  options: [
+                    for (final days in _presets)
+                      (
+                        value: days,
+                        label: Locales.string(
+                          context,
+                          'analysis.window.d$days',
+                        ),
+                      ),
+                  ],
                 ),
+              ),
+              HeaderIconButton(
+                icon: PhosphorIconsRegular.calendarBlank,
+                labelKey: 'sport.range.pick',
+                statusColor: isCustom ? context.ink.accent : null,
+                onTap: () => _pickCustom(context, controller),
               ),
             ],
           ),
-        ),
-        if (isCustom) _customCaption(context, controller),
-      ],
+          if (isCustom) _customCaption(context, controller),
+        ],
+      ),
     );
   }
 
@@ -60,17 +70,19 @@ class AnalysisRangeSelector extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final locale = MaterialLocalizations.of(context);
-    final label =
-        '${locale.formatShortDate(from)} – '
-        '${locale.formatShortDate(to.subtract(const Duration(days: 1)))}';
+    final label = Locales.string(
+      context,
+      'date.range',
+      params: [
+        locale.formatShortDate(from),
+        locale.formatShortDate(to.subtract(const Duration(days: 1))),
+      ],
+    );
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 12,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-        ),
+        style: InkText.caption.copyWith(color: context.ink.muted),
       ),
     );
   }

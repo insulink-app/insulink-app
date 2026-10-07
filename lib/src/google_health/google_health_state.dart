@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:insulink/src/cgm/service/service_presence.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'fitbit_heart_rate_monitor.dart';
@@ -85,7 +86,7 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
   /// to host it. When a service runs it owns the band and feeds us `t:'hr'`
   /// pushes instead, which is what keeps streaming once the app is gone.
   Future<void> _startLocalBandIfNoService() async {
-    if (await FlutterForegroundTask.isRunningService) {
+    if (await const ServicePresence().running) {
       return;
     }
     await _bleMonitor.start();

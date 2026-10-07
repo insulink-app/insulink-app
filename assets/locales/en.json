@@ -2,6 +2,9 @@
   "date": {
     "today": "Today",
     "yesterday": "Yesterday",
+    "previous_day": "Previous day",
+    "next_day": "Next day",
+    "range": "# to #",
     "weekday": {
       "1": "Mon",
       "2": "Tue",
@@ -30,12 +33,17 @@
     "ok": "OK",
     "continue": "Continue",
     "cancel": "Cancel",
+    "close": "Close",
     "done": "Done",
     "delete": "Delete"
   },
   "permission": {
     "next": "Allow",
     "continue": "Continue",
+    "camera": {
+      "title": "Camera",
+      "body": "Insulink uses the camera to scan the QR code when pairing a sensor and to scan food barcodes."
+    },
     "bluetooth": {
       "title": "Bluetooth",
       "body": "Insulink connects to your Dexcom G7 over Bluetooth to read your glucose. Without it the app can't find your sensor."
@@ -65,19 +73,28 @@
       "prefix": "I accept the ",
       "terms": "Terms of Service",
       "and": " and ",
-      "privacy": "Privacy Policy"
+      "privacy": "Privacy Policy",
+      "suffix": "."
     }
   },
   "auth": {
     "title": "Welcome",
-    "subtitle_signin": "Sign in to your account",
+    "subtitle_signin": "Sign in with your account.",
     "subtitle_signup": "Create your account",
     "name": "Name",
     "password": "Password",
+    "show_password": "Show password",
+    "name_hint": "Your name",
     "signin": "Sign in",
     "signup": "Create account",
-    "to_signup": "No account yet? Sign up",
-    "to_signin": "Already have an account? Sign in",
+    "to_signup": {
+      "prefix": "No account yet?",
+      "link": "Sign up"
+    },
+    "to_signin": {
+      "prefix": "Already have an account?",
+      "link": "Sign in"
+    },
     "error": {
       "invalid": "Name or password is incorrect.",
       "signup_failed": "Could not create the account. Please check your details.",
@@ -93,11 +110,12 @@
       "empty": "no readings yet",
       "hour": "#:00",
       "now": "Now",
+      "axis_now": "now",
       "show_meals": "Show meals",
       "insulin": {
         "_": "Insulin",
-        "basal": "Basal # U",
-        "bolus": "Bolus # U",
+        "basal": "Basal",
+        "bolus": "Bolus",
         "empty": "No insulin was delivered in this window.",
         "at_moment": "Bolus at #",
         "over_hour": "Basal, # to #"
@@ -147,10 +165,9 @@
     },
     "advisory_bolus": "# U delivered from the notification, at #.",
     "restore": {
-      "title": "Use your previous sensor?",
-      "body": "Your account has a sensor on file. Adopt it to keep reading without re-pairing.",
-      "body_scan": "Your account has a sensor on file. Hold your phone against it to adopt it and keep reading.",
-      "use": "Use it",
+      "title": "Sensor from your account",
+      "scan_hint": "Hold your phone against the sensor to take it over.",
+      "use": "Adopt",
       "scan": "Scan",
       "dismiss": "Not now"
     },
@@ -176,6 +193,17 @@
       "title": "Pod",
       "open": "Pump",
       "dismiss": "Dismiss"
+    },
+    "devices": "Devices",
+    "chart_window": "24 h",
+    "in_range_window": "in range, 24 h",
+    "trend": {
+      "rising_fast": "Rising fast",
+      "rising": "Rising",
+      "stable": "Steady",
+      "falling": "Falling",
+      "falling_fast": "Falling fast",
+      "per_min": "# per min"
     }
   },
   "analysis": {
@@ -191,6 +219,8 @@
     "empty": "No glucose data yet",
     "events": {
       "empty": "No events yet",
+      "count_low": "Lows",
+      "count_high": "Highs",
       "type": {
         "glucose_low": "Low glucose",
         "glucose_low_urgent": "Urgent low glucose",
@@ -211,19 +241,30 @@
     "avg": {
       "mean": "Avg. Glucose",
       "gmi": "GMI",
-      "cv": "Variability",
-      "sd": "Std. Dev.",
-      "max": "Highest",
-      "min": "Lowest"
+      "cv": "Variability (CV)",
+      "sd": "Standard deviation",
+      "max": "Highest value",
+      "min": "Lowest value"
     },
     "patterns": {
       "title": "Average by time of day",
-      "hint": "Mean glucose for each hour of the day"
+      "hint": "Mean glucose for each hour of the day",
+      "mean": "Ø",
+      "spread": "Spread"
+    },
+    "history_chart": {
+      "title_hour": "Hourly average",
+      "title_day": "Daily average",
+      "title_month": "Monthly average",
+      "hint_hour": "Ø glucose per hour with spread",
+      "hint_day": "Ø glucose per day with spread",
+      "hint_month": "Ø glucose per month with spread"
     },
     "range": {
       "very_high": "Very High",
       "high": "High",
       "in_range": "In Range",
+      "in_range_share": "in range",
       "low": "Low",
       "very_low": "Very Low"
     },
@@ -238,6 +279,8 @@
       "coverage": "Inside band",
       "empty": "Nothing to score yet",
       "empty_hint": "Once a model has been trained for you and readings have come in, the forecast is scored here.",
+      "measured": "Measured",
+      "predicted": "Forecast",
       "hint": "A skill score above 0 means better than assuming glucose stays where it is. The model is scored on data it was also trained on, so these numbers flatter it.",
       "unmatched": "No readings to compare against",
       "unmatched_hint": "Forecasts came back, but this device holds no readings for the times they were made for."
@@ -245,11 +288,15 @@
   },
   "sensor": {
     "label": "Sensor",
+    "manage": "Manage sensor",
+    "unit": {
+      "day": "d"
+    },
     "info": {
-      "status": "STATUS",
-      "device": "DEVICE",
-      "session": "SESSION",
-      "battery": "BATTERY",
+      "status": "Status",
+      "device": "Device",
+      "session": "Session",
+      "battery": "Battery",
       "empty": "no sensor info yet",
       "title": "Sensor data",
       "live": "Live reading"
@@ -288,8 +335,8 @@
       "remaining": "# days left",
       "remaining_hours": "# hours left",
       "remaining_minutes": "# minutes left",
-      "grace": "Grace period · # h left",
-      "grace_minutes": "Grace period · # min left"
+      "grace": "# h left",
+      "grace_minutes": "# min left"
     },
     "control": {
       "end_session": "End session",
@@ -429,10 +476,9 @@
     },
     "restore": {
       "_": "Pod from your account",
-      "body": "Your account has a pod on file but this device has none. You can adopt it without re-pairing. That is what you need after an app reset, so a pod that is still running stays controllable and stoppable.",
-      "remaining": "Time left: #",
-      "use": "Adopt pod",
-      "discard": "This pod is gone",
+      "remaining": "# left",
+      "use": "Adopt",
+      "discard": "It is gone",
       "discard_title": "Stop offering this pod?",
       "discard_body": "Say this only for a pod that is no longer on your body. It stays in your pump history, but it will not be offered again, so a pod you are still wearing could not be taken over here afterwards.",
       "discard_confirm": "Discard"
@@ -505,6 +551,7 @@
       "apply": "Start temporary basal",
       "set": "Temporary basal",
       "running": "End temporary # U/h",
+      "active": "Temporary",
       "end": {
         "title": "End the temporary basal?",
         "body": "The pod goes back to your basal schedule instead of # U/h.",
@@ -514,6 +561,7 @@
     "type": {
       "dash": "Omnipod DASH"
     },
+    "manage": "Manage pod",
     "info": {
       "title": "Pod data"
     },
@@ -535,6 +583,7 @@
       "basal_total": "Basal total",
       "bolus_total": "Bolus total",
       "total": "Since pod start",
+      "history": "History",
       "hour_span": "# to #"
     },
     "bolus": {
@@ -600,9 +649,10 @@
         "confirm": "Turn on"
       },
       "overview": {
-        "off": "Automated delivery is off",
-        "stopped": "Automated delivery has stopped",
-        "engaged": "Automated delivery is active"
+        "off": "Automated delivery off",
+        "stopped": "Automated delivery stopped",
+        "engaged": "Automated delivery on",
+        "rate": "# U/h"
       },
       "auth_reason": "Turn on automated insulin delivery",
       "journal": "Automation decisions",
@@ -620,6 +670,8 @@
     "label": "Google Health",
     "connect": "Connect",
     "disconnect": "Disconnect",
+    "disconnect_row": "Disconnect",
+    "latest": "Latest values",
     "disconnect_confirm": "Really disconnect Google Health? Its boxes will then be greyed out.",
     "hint": "Couples the Google Health app (Health Connect). Your wearable's app must be installed and syncing its data there.",
     "denied": "Access to Google Health was denied.",
@@ -631,7 +683,7 @@
     "status": {
       "connected": "Connected",
       "disconnected": "Not connected",
-      "source": "Via Google Health"
+      "source": "Data via Google Health"
     },
     "detail": {
       "empty": "No data yet. Sync Google Health."
@@ -643,7 +695,14 @@
       "rem": "REM",
       "light": "Light",
       "awake": "Awake",
-      "restless": "Restless"
+      "restless": "Restless",
+      "short": {
+        "deep": "Deep",
+        "light": "Light",
+        "rem": "REM",
+        "awake": "Awake",
+        "restless": "Restless"
+      }
     },
     "sleep_stats": {
       "index": "Sleep index",
@@ -655,30 +714,58 @@
       "max": "Max",
       "save": "Save"
     },
+    "sleep_page": {
+      "slept": "Slept",
+      "average_per_night": "Ø # per night",
+      "index": "Index",
+      "index_semantics": "Sleep index # of 100",
+      "all_in_target": "all in target range",
+      "target_range": "Target range",
+      "trend": "Trend",
+      "average": "Average #",
+      "history": "History",
+      "show_more": "Show more",
+      "previous_night": "Previous night",
+      "next_night": "Next night",
+      "fell_asleep": "Fell asleep #",
+      "woke_up": "Woke up #"
+    },
     "hr_min": "Min",
     "hr_max": "Max",
+    "hr_avg": "Ø day",
+    "hr_highlight": "above # bpm highlighted",
+    "hr_now": "Now",
     "hr_zones": {
       "title": "Pulse zones",
       "elevated": "Elevated from",
       "high": "High from",
-      "note": "Sets the colour thresholds on the pulse chart: green below “Elevated from”, orange up to “High from”, red above.",
+      "note": "From \"Elevated from\" on, the pulse chart highlights values in violet.",
       "save": "Save"
     }
   },
   "connections": {
     "label": "Connections",
+    "not_paired": "Not paired",
+    "not_connected": "Not connected",
+    "band": "Fitbit Air",
+    "all_connected": "All connected",
+    "active_count": "# of ## connections active",
+    "attention_one": "1 connection needs attention",
+    "attention_many": "# connections need attention",
     "history": {
       "sensors": "Sensor history",
       "pumps": "Pump history",
       "empty": "No devices recorded yet.",
       "failed": "The history could not be loaded.",
-      "active": "Active",
-      "discarded": "Removed",
-      "ended": "Finished",
-      "now": "now",
       "range": "# to ##",
-      "worn": "Worn # of ## d",
-      "sensor_code": "Sensor code #"
+      "code": "Code #",
+      "code_label": "Sensor code",
+      "active_since": "Active since #",
+      "of_days": "of # d",
+      "worn_label": "worn",
+      "early": "removed early",
+      "earlier_sensors": "Earlier sensors",
+      "earlier_pumps": "Earlier pods"
     },
     "status": {
       "title": "Reception",
@@ -686,6 +773,9 @@
       "last_contact": "# ago",
       "never": "no contact yet",
       "not_set_up": "not set up",
+      "received": "Received",
+      "no_reception": "No reception",
+      "axis_start": "# h ago",
       "slice_covered": "# to ##, data received",
       "slice_gap": "# to ##, no data"
     }
@@ -715,7 +805,15 @@
     "date": "Date",
     "save": "Save",
     "units": "# units",
-    "runs_out": "Lasts until # (## days left)",
+    "runs_out": "Lasts until #",
+    "days_left": "# days left",
+    "decrease": "Decrease stock",
+    "increase": "Increase stock",
+    "edit_title": "Edit item",
+    "add_title": "Add item",
+    "add_delivery": "Add delivery",
+    "remove_delivery": "Remove delivery",
+    "delete": "Delete item",
     "runs_out_never": "Lasts indefinitely",
     "surplus": "Surplus before delivery: #",
     "shortage_warning": "Shortage before the next delivery",
@@ -753,6 +851,7 @@
       "log_empty": "Nothing logged today yet",
       "goal_title": "Daily goal",
       "free": "Custom",
+      "of": "of #",
       "free_title": "Enter amount",
       "free_hint": "e.g. 300",
       "add": "Add"
@@ -761,6 +860,7 @@
       "_": "Products",
       "empty": "Scan a barcode to add a product",
       "delete_confirm": "Delete this product?",
+      "remove": "Remove product",
       "scan_hint": "Point the product barcode into the frame",
       "search_hint": "Search the product database…",
       "search_start": "Type at least 2 characters to search",
@@ -769,13 +869,23 @@
       "brand": "Brand",
       "serving_size": "Serving size",
       "serving_label": "Serving description",
-      "per_100": "Nutrition per 100 #",
+      "per_100": "per 100 #",
+        "add_title": "Add product",
+        "edit_title": "Edit product",
+        "nutrients": "Nutrition",
+        "carbs_long": "Carbohydrates",
+        "energy": "Energy",
       "carbs": "Carbs",
       "fat": "Fat",
       "protein": "Protein",
       "kcal": "kcal",
       "show_more": "Show more",
-      "all": "All products"
+      "all": "All products",
+      "action": {
+        "create": "Create product",
+        "search": "Search the product database",
+        "scan": "Scan barcode"
+      }
     },
     "meals": {
       "_": "Meals",
@@ -783,6 +893,10 @@
       "empty_hint": "They appear here once you deliver a bolus.",
       "products": "Products",
       "products_count": "# products",
+        "products_count_one": "1 product",
+        "title": "Meal",
+        "glucose": "Glucose",
+      "bolus_value": "# U bolus",
       "show_more": "Show more",
       "delete": "Delete meal",
       "delete_confirm": "Delete this meal?"
@@ -855,7 +969,10 @@
       "edit": "Edit routine",
       "name": "Name",
       "count": "# exercises",
-      "start": "Start",
+      "start": "Start routine",
+      "item_summary": "# sets × ##, ### s rest",
+      "item_summary_one": "# set × ##, ### s rest",
+      "remove_item": "Remove exercise",
       "add_exercise": "Add exercise",
       "no_items": "No exercises in this routine yet.",
       "delete_confirm": "Delete this routine?",
@@ -916,11 +1033,12 @@
       "subtitle": "Sync the last ~90 days"
     },
     "range": {
-      "d7": "7d",
-      "d30": "30d",
-      "d90": "90d",
-      "d365": "1y",
-      "all": "All"
+      "d7": "7 d",
+      "d30": "30 d",
+      "d90": "90 d",
+      "d365": "1 y",
+      "all": "All",
+      "pick": "Choose period"
     },
     "logbook": {
       "_": "Logbook",
@@ -934,6 +1052,7 @@
       "delete_confirm": "Delete this log entry?",
       "edit_set": "Edit set",
       "add_set": "Add set",
+      "delete_set": "Delete set",
       "delete_set_confirm": "Delete this set?"
     },
     "calendar": {
@@ -951,7 +1070,9 @@
       "duration": "Duration",
       "distance": "Distance",
       "speed": "Speed",
-      "stop": "Stop",
+      "stop": "End training",
+      "stop_action": "End",
+      "back": "Back",
       "stop_confirm": "Really end the training?",
       "pause": "Pause",
       "resume": "Resume",
@@ -1002,7 +1123,7 @@
       "progression": "Progression",
       "not_enough_data": "Not enough sessions for a trend yet.",
       "empty": "No completed workouts yet.",
-      "card_subtitle": "# sets · last #",
+      "card_subtitle": "# sets, last ##",
       "reps": "# reps",
       "seconds": "# s",
       "kg": "kg",
@@ -1019,6 +1140,7 @@
   },
   "profile": {
     "label": "Profile",
+    "settings": "Settings",
     "sport_goals": "Sport goals",
     "nutrition_goals": "Nutrition goals",
     "sleep": "Sleep",
@@ -1026,6 +1148,8 @@
       "_": "Account",
       "name": "Name",
       "save": "Save",
+      "rename": "Change name",
+      "clear": "Clear",
       "logout": "Log out",
       "logout_confirm": "Are you sure you want to log out?",
       "change_password": "Change password",
@@ -1099,7 +1223,10 @@
     },
     "alarmtone": {
       "_": "Alarm tones",
-      "description": "Pick the tone for each alarm. Tap a style to hear it. Every style keeps the alarm recognizable: falling notes mean low, rising notes mean high, three motifs instead of two mean urgent. \"Off\" silences that one alarm; the others stay audible.",
+      "description": "Tap a style to hear it. \"Off\" mutes only that one alarm.",
+      "meaning_low": "Falling tones: low",
+      "meaning_high": "Rising tones: high",
+      "meaning_urgent": "Three motifs instead of two: urgent",
       "slot": {
         "low_warning": "Low glucose",
         "low_urgent": "Urgently low glucose",
@@ -1311,6 +1438,9 @@
     },
     "products": {
       "add": "Add product",
+      "add_short": "Add",
+      "saved": "Saved products",
+      "carbs_column": "Carbs per 100 g",
       "empty": "No products selected yet",
       "total": "Total carbs",
       "carbs": "carbs",
@@ -1325,6 +1455,9 @@
     },
     "confirm": {
       "title": "Confirm bolus",
+      "to_pump": "to #",
+      "active": "Active insulin",
+      "active_subtracted": "# U subtracted",
       "button": "Confirm",
       "reason": "Confirm your bolus",
       "success": "Bolus confirmed",
@@ -1471,5 +1604,9 @@
   },
   "vendor_keys": {
     "missing": "Vendor keys missing. This build cannot pair with: #. Add assets/vendor_keys/vendor_keys.json and build the app again."
+  },
+  "scan": {
+    "torch_on": "Turn light on",
+    "torch_off": "Turn light off"
   }
 }

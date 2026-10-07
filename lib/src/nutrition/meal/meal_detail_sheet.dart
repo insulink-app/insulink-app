@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/base/relative_day.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
-import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/food/food_editor_sheet.dart';
@@ -8,7 +11,6 @@ import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
-import 'package:insulink/src/nutrition/meal/meal_time.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -17,14 +19,8 @@ import 'package:insulink/src/theme/status_colors.dart';
 /// Opens the details of a logged [meal]: carbs / glucose / bolus, and — when the
 /// bolus was dosed over the food database — the products that made it up.
 Future<void> showMealDetail(BuildContext context, Meal meal) {
-  return showModalBottomSheet(
+  return showInkSheet(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => MealDetailSheet(meal: meal),
   );
 }
@@ -75,227 +71,343 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     );
   }
 
+  /// Header with the meal's time, the carbs / glucose / bolus strip, the
+  /// products, and "Mahlzeit löschen" at the foot
+  /// (`docs/redesign/screens/39-mahlzeit-detail.png`).
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const GrabHandle(),
-          const SizedBox(height: 20),
-          _header(context),
-          const SizedBox(height: 20),
-          _stats(context),
-          if (meal.entries.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            LocaleText(
-              'nutrition.meals.products',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            for (final entry in meal.entries) _entryRow(context, entry),
+    final colors = context.ink;
+    return InkSheet(
+      title: _header(colors),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _stats(colors),
+            if (meal.entries.isNotEmpty) ...[
+              _productsHeader(colors),
+              _products(colors),
+            ],
+            const SizedBox(height: 16),
+            Center(child: _deleteButton(context)),
           ],
-          const SizedBox(height: 24),
-          _deleteButton(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _header(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(child: _carbs(context)),
-        _timeButton(context),
-      ],
-    );
-  }
-
-  /// The carbs headline. Editable inline for a manual meal; read-only when the
-  /// meal was dosed over the food database, where the total is the sum of the
-  /// listed products (edit those, not the total).
-  Widget _carbs(BuildContext context) {
-    const numberStyle = TextStyle(
-      fontSize: 34,
-      fontWeight: FontWeight.bold,
-      height: 1,
-    );
-    const suffixStyle = TextStyle(fontSize: 16, fontWeight: FontWeight.w600);
-    final suffix = ' g ${Locales.string(context, 'nutrition.food.carbs')}';
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        if (meal.entries.isEmpty)
-          SportEditableNumber(
-            valueText: meal.carbs.toStringAsFixed(0),
-            initial: meal.carbs,
-            min: 0,
-            max: 999,
-            width: 74,
-            style: numberStyle,
-            onSubmit: (value) => _update(meal.copyWith(carbs: value)),
-          )
-        else
-          Text(meal.carbs.toStringAsFixed(0), style: numberStyle),
-        Flexible(
-          child: Text(
-            suffix,
-            style: suffixStyle,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// The meal time, tappable to correct it via the native date/time pickers.
-  Widget _timeButton(BuildContext context) {
-    return TextButton(
-      onPressed: _editTime,
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Text(
-        mealTimeLabel(meal.time),
-        style: TextStyle(
-          fontSize: 14,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
         ),
       ),
     );
   }
 
-  Widget _stats(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 18),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.07)),
-      ),
-      child: Column(
-        children: [
-          _statRow(
-            context,
-            PhosphorIconsBold.drop,
-            'injection.glucose',
-            SportEditableNumber(
-              valueText: '${meal.glucoseMgdl} mg/dL',
-              initial: meal.glucoseMgdl.toDouble(),
-              min: 20,
-              max: 600,
-              width: 104,
-              onSubmit: (value) =>
-                  _update(meal.copyWith(glucoseMgdl: value.round())),
-            ),
-          ),
-          Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
-          _statRow(
-            context,
-            PhosphorIconsBold.drop,
-            'injection.bolus',
-            SportEditableNumber(
-              valueText: '${meal.bolus.toStringAsFixed(1)} E',
-              initial: meal.bolus,
-              min: 0,
-              max: 100,
-              decimal: true,
-              width: 88,
-              onSubmit: (value) => _update(meal.copyWith(bolus: value)),
-            ),
-          ),
-        ],
-      ),
+  /// Cutlery in an accent disc, "Mahlzeit", and the time under it, tappable
+  /// to correct it.
+  Widget _header(InsulinkColors colors) {
+    final time = MaterialLocalizations.of(context).formatTimeOfDay(
+      TimeOfDay.fromDateTime(meal.time),
+      alwaysUse24HourFormat: true,
     );
-  }
-
-  Widget _statRow(
-    BuildContext context,
-    IconData icon,
-    String labelKey,
-    Widget trailing,
-  ) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Expanded(
-            child: LocaleText(
-              labelKey,
-              style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.65)),
-            ),
+    return Row(
+      spacing: 14,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colors.accent.withValues(alpha: 0.14),
           ),
-          trailing,
-        ],
-      ),
-    );
-  }
-
-  Widget _entryRow(BuildContext context, MealEntry entry) {
-    final scheme = Theme.of(context).colorScheme;
-    final product = _findProduct(context, entry);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: product == null
-              ? null
-              : () => showFoodEditor(context, product: product),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-            child: Row(
+          child: Icon(
+            PhosphorIconsBold.forkKnife,
+            size: 20,
+            color: colors.accent,
+          ),
+        ),
+        Expanded(
+          child: InkWell(
+            onTap: _editTime,
+            borderRadius: BorderRadius.circular(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _entrySubtitle(context, entry),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ],
-                  ),
+                LocaleText(
+                  'nutrition.meals.title',
+                  style: InkText.bigValue.copyWith(fontSize: 20),
                 ),
                 Text(
-                  '${entry.carbs.toStringAsFixed(0)} g',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  '${RelativeDay(meal.time).label(context)}, $time',
+                  style: InkText.label.copyWith(color: colors.muted),
                 ),
-                if (product != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: Icon(
-                      PhosphorIconsBold.caretRight,
-                      color: scheme.onSurface.withValues(alpha: 0.3),
-                    ),
-                  ),
               ],
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  /// Carbs, glucose and bolus side by side on the page colour, parted by
+  /// lines; each value editable in place as before. The carbs are read-only
+  /// when they are the sum of the listed products.
+  Widget _stats(InsulinkColors colors) {
+    final bolusUnit = Locales.string(
+      context,
+      'injection.bolus.value',
+      params: [''],
+    ).trim();
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: colors.ground,
+        borderRadius: BorderRadius.circular(InkRadius.panel),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(
+              child: _stat(
+                colors,
+                PhosphorIconsBold.forkKnife,
+                'nutrition.food.carbs',
+                meal.entries.isEmpty
+                    ? _editable(
+                        sportDecimal(meal.carbs, 0),
+                        meal.carbs,
+                        0,
+                        999,
+                        (value) => _update(meal.copyWith(carbs: value)),
+                        color: colors.accentText,
+                      )
+                    : Text(
+                        sportDecimal(meal.carbs, 0),
+                        style: _valueStyle.copyWith(color: colors.accentText),
+                      ),
+                'g',
+              ),
+            ),
+            VerticalDivider(width: 1, thickness: 1, color: colors.line),
+            Expanded(
+              child: _stat(
+                colors,
+                PhosphorIconsBold.drop,
+                'nutrition.meals.glucose',
+                _editable(
+                  '${meal.glucoseMgdl}',
+                  meal.glucoseMgdl.toDouble(),
+                  20,
+                  600,
+                  (value) => _update(meal.copyWith(glucoseMgdl: value.round())),
+                ),
+                'mg/dL',
+              ),
+            ),
+            VerticalDivider(width: 1, thickness: 1, color: colors.line),
+            Expanded(
+              child: _stat(
+                colors,
+                PhosphorIconsBold.syringe,
+                'injection.bolus',
+                _editable(
+                  sportDecimal(meal.bolus, 1),
+                  meal.bolus,
+                  0,
+                  100,
+                  (value) => _update(meal.copyWith(bolus: value)),
+                  decimal: true,
+                ),
+                bolusUnit,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static const _valueStyle = TextStyle(
+    fontSize: 22,
+    fontWeight: FontWeight.w800,
+    height: 1.1,
+  );
+
+  Widget _editable(
+    String text,
+    double initial,
+    double min,
+    double max,
+    ValueChanged<double> onSubmit, {
+    bool decimal = false,
+    Color? color,
+  }) {
+    return SportEditableNumber(
+      valueText: text,
+      initial: initial,
+      min: min,
+      max: max,
+      decimal: decimal,
+      width: 15.0 * text.length + 6,
+      plain: true,
+      style: _valueStyle.copyWith(color: color),
+      onSubmit: onSubmit,
+    );
+  }
+
+  /// One figure of the strip: a small glyph and label, the value with its
+  /// unit beside it.
+  Widget _stat(
+    InsulinkColors colors,
+    IconData icon,
+    String labelKey,
+    Widget value,
+    String unit,
+  ) {
+    return Column(
+      spacing: 6,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 6,
+          children: [
+            Icon(icon, size: 16, color: colors.muted),
+            LocaleText(
+              labelKey,
+              style: InkText.caption.copyWith(color: colors.muted),
+            ),
+          ],
+        ),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            spacing: 4,
+            children: [
+              value,
+              Text(unit, style: InkText.unit.copyWith(color: colors.muted)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// "Produkte" with the count on the right.
+  Widget _productsHeader(InsulinkColors colors) {
+    final count = meal.entries.length;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 24, 8, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: LocaleText(
+              'nutrition.meals.products',
+              style: InkText.section,
+            ),
+          ),
+          LocaleText(
+            count == 1
+                ? 'nutrition.meals.products_count_one'
+                : 'nutrition.meals.products_count',
+            params: ['$count'],
+            style: InkText.label.copyWith(color: colors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The products as rows on the page colour, parted by lines.
+  Widget _products(InsulinkColors colors) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: colors.ground,
+        borderRadius: BorderRadius.circular(InkRadius.panel),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          children: [
+            for (var index = 0; index < meal.entries.length; index++) ...[
+              if (index > 0)
+                Divider(height: 1, thickness: 1, color: colors.line),
+              _entryRow(colors, meal.entries[index]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Name over brand and portion, "33 g KH" on the right; a saved product
+  /// opens its editor.
+  Widget _entryRow(InsulinkColors colors, MealEntry entry) {
+    final product = _findProduct(context, entry);
+    final brand = product?.brand ?? '';
+    final subtitle = _entrySubtitle(context, entry);
+    final carbsUnit = Locales.string(context, 'nutrition.food.carbs');
+    return InkWell(
+      onTap: product == null
+          ? null
+          : () => showFoodEditor(context, product: product),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+        child: Row(
+          spacing: 10,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 3,
+                children: [
+                  Text(
+                    entry.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: InkText.rowTitle,
+                  ),
+                  Text(
+                    brand.isEmpty ? subtitle : '$brand, $subtitle',
+                    style: InkText.label.copyWith(color: colors.muted),
+                  ),
+                ],
+              ),
+            ),
+            Text.rich(
+              TextSpan(
+                text: sportDecimal(entry.carbs, 0),
+                style: InkText.rowTitle.copyWith(fontSize: 17),
+                children: [
+                  TextSpan(
+                    text: ' g $carbsUnit',
+                    style: InkText.label.copyWith(color: colors.muted),
+                  ),
+                ],
+              ),
+            ),
+            if (product != null)
+              Icon(PhosphorIconsBold.caretRight, size: 18, color: colors.muted),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// "Mahlzeit löschen" as a red text button, no fill; asks first.
+  Widget _deleteButton(BuildContext context) {
+    return TextButton.icon(
+      onPressed: () => confirmDelete(
+        context,
+        messageKey: 'nutrition.meals.delete_confirm',
+        onConfirm: () {
+          context.read<MealState>().removeMeal(meal);
+          Navigator.of(context).pop();
+        },
+      ),
+      style: TextButton.styleFrom(foregroundColor: context.danger),
+      icon: const Icon(PhosphorIconsBold.trash, size: 20),
+      label: LocaleText(
+        'nutrition.meals.delete',
+        style: InkText.button.copyWith(color: context.danger),
       ),
     );
   }
@@ -312,24 +424,6 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
       }
     }
     return null;
-  }
-
-  Widget _deleteButton(BuildContext context) {
-    return TextButton.icon(
-      onPressed: () => confirmDelete(
-        context,
-        messageKey: 'nutrition.meals.delete_confirm',
-        onConfirm: () {
-          context.read<MealState>().removeMeal(meal);
-          Navigator.of(context).pop();
-        },
-      ),
-      icon: Icon(PhosphorIconsBold.trash, size: 20, color: context.danger),
-      label: LocaleText(
-        'nutrition.meals.delete',
-        style: TextStyle(color: context.danger),
-      ),
-    );
   }
 
   /// The amount in the product's unit, prefixed with the serving count when the

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/connections/status/connection_timeline.dart';
 import 'package:insulink/src/connections/status/connection_timeline_strip.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -18,9 +19,14 @@ class ConnectionTimelineBar extends StatefulWidget {
     super.key,
     required this.device,
     required this.timeline,
+    this.detailKey,
   });
 
   final DeviceConnection device;
+
+  /// The paired device under the name ("Dexcom G7"), as the connections page
+  /// says it; null for none.
+  final String? detailKey;
 
   /// The window the strip covers, so each slice can name its own half hour.
   final ConnectionTimeline timeline;
@@ -39,12 +45,12 @@ class _ConnectionTimelineBarState extends State<ConnectionTimelineBar> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _header(context, scheme),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           if (widget.device.isKnown) _strip() else _emptyStrip(context, scheme),
           const SizedBox(height: 4),
           _sliceLine(scheme),
@@ -66,13 +72,10 @@ class _ConnectionTimelineBarState extends State<ConnectionTimelineBar> {
   Widget _sliceLine(ColorScheme scheme) {
     final index = _selected;
     return SizedBox(
-      height: 15,
+      height: 18,
       child: Text(
         index == null ? '' : _sliceText(index),
-        style: TextStyle(
-          fontSize: 11,
-          color: scheme.onSurface.withValues(alpha: 0.6),
-        ),
+        style: InkText.caption.copyWith(color: context.ink.muted),
       ),
     );
   }
@@ -91,19 +94,43 @@ class _ConnectionTimelineBarState extends State<ConnectionTimelineBar> {
   String _clock(DateTime time) =>
       '${twoDigits(time.hour)}:${twoDigits(time.minute)}';
 
+  /// The device glyph in an accent disc, its name over the paired device,
+  /// and how long ago it was last heard from on the right.
   Widget _header(BuildContext context, ColorScheme scheme) {
+    final colors = context.ink;
+    final detail = widget.detailKey;
     return Row(
+      spacing: 14,
       children: [
-        Icon(widget.device.icon, size: 18, color: scheme.onSurfaceVariant),
-        const SizedBox(width: 8),
-        LocaleText(
-          widget.device.labelKey,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colors.accent.withValues(alpha: 0.12),
+          ),
+          child: Icon(widget.device.icon, size: 20, color: colors.accent),
         ),
-        const Spacer(),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 2,
+            children: [
+              LocaleText(
+                widget.device.labelKey,
+                style: InkText.rowTitle.copyWith(fontSize: 17),
+              ),
+              if (detail != null)
+                LocaleText(
+                  detail,
+                  style: InkText.label.copyWith(color: colors.muted),
+                ),
+            ],
+          ),
+        ),
         Text(
           _contactText(context),
-          style: TextStyle(fontSize: 12, color: _contactColor(context, scheme)),
+          style: InkText.label.copyWith(color: _contactColor(context, scheme)),
         ),
       ],
     );
@@ -131,22 +158,22 @@ class _ConnectionTimelineBarState extends State<ConnectionTimelineBar> {
     if (widget.device.lastContact == null || silentNow) {
       return context.warning;
     }
-    return scheme.onSurface.withValues(alpha: 0.6);
+    return context.ink.muted;
   }
 
   /// A device that was never set up gets a flat grey bar and says so, rather
   /// than a full-width outage it never had.
   Widget _emptyStrip(BuildContext context, ColorScheme scheme) {
     return Container(
-      height: 14,
+      height: 22,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(2),
+        color: context.ink.line,
+        borderRadius: BorderRadius.circular(3),
       ),
       child: LocaleText(
         'connections.status.not_set_up',
-        style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+        style: InkText.caption.copyWith(color: context.ink.muted),
       ),
     );
   }

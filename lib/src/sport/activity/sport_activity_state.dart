@@ -170,9 +170,10 @@ class SportActivityState extends ChangeNotifier {
 
   /// Requests ACTIVITY_RECOGNITION (if needed) and subscribes to the step
   /// counter. Idempotent — called on first opening the Sport tab, not at app
-  /// start (the onboarding step requests the permission).
+  /// start (the onboarding step requests the permission). The browser demo has
+  /// no step counter, and permission_handler throws for it on web.
   Future<void> ensureStarted() async {
-    if (_subscription != null) {
+    if (_subscription != null || kIsWeb) {
       return;
     }
     if (!await Permission.activityRecognition.request().isGranted) {
@@ -188,7 +189,7 @@ class SportActivityState extends ChangeNotifier {
   /// who granted it during onboarding, without forcing a dialog on the rest (they
   /// are still prompted the first time they open the Sport tab via [ensureStarted]).
   Future<void> startIfPermitted() async {
-    if (_subscription != null) {
+    if (_subscription != null || kIsWeb) {
       return;
     }
     if (await Permission.activityRecognition.isGranted) {

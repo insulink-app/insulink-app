@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Bolusrechner</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/ba4843934d08b8ecaa5a3a1708de4732">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.s input::placeholder{color:#4F6377}
+.card{border-radius:22px;background:#1A2C3D;border:1px solid rgba(234,241,246,.07);padding:16px}
+.hd{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700}
+.chip{width:32px;height:32px;border-radius:10px;background:rgba(157,174,255,.14);color:#9DAEFF;display:grid;place-items:center;flex:none}
+.fld{display:flex;align-items:center;gap:8px;height:58px;margin-top:12px;padding:0 18px;border-radius:16px;background:#0F1B26;border:1.5px solid transparent}
+.fld.on{border-color:#9DAEFF}
+.fld input{flex:1;min-width:0;border:none;background:transparent;font-size:22px;font-weight:800;outline:none;padding:0}
+.fld span{font-size:15px;color:#97A9BA}
+</style>
+</helmet>
+<div class="s" style="height: 844px; background: #070D13">
+  <div role="dialog" aria-labelledby="bolus-h" style="position: absolute; left: 0; right: 0; top: 60px; bottom: 0; display: flex; flex-direction: column; gap: 10px; padding: 10px 16px 28px 16px; border-radius: 28px 28px 0 0; background: #152432">
+    <span aria-hidden="true" style="display: block; width: 40px; height: 5px; margin: 0 auto; border-radius: 3px; background: #33475A"></span>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin: 6px 0 4px 4px">
+      <h1 id="bolus-h" style="margin: 0; font-size: 24px; font-weight: 800">Bolusrechner</h1>
+      <button class="ib" aria-label="Schließen" style="background: #1A2C3D"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#97A9BA" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+    </div>
+
+    <section class="card">
+      <label for="kh" class="hd"><span class="chip"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v8a2 2 0 0 0 4 0V2M8 2v20M17 2c-2 1-3 4-3 8h3v12"></path></svg></span>Kohlenhydrate</label>
+      <div class="fld on"><input id="kh" inputmode="decimal" placeholder="0"><span>g</span></div>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin: 12px -6px -6px 2px">
+        <span style="font-size: 14px; color: #97A9BA">Produkte</span>
+        <button style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 20px; border: none; background: rgba(157,174,255,0.14); color: #C4CEFF; font-size: 14px; font-weight: 700; cursor: pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          Hinzufügen
+        </button>
+      </div>
+    </section>
+
+    <section class="card">
+      <label for="bg" class="hd"><span class="chip"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></svg></span>Aktueller Glukosewert</label>
+      <div class="fld"><input id="bg" inputmode="numeric" value="80"><span>mg/dL</span></div>
+    </section>
+
+    <section class="card" style="background: rgba(157,174,255,0.10); border-color: rgba(157,174,255,0.22)">
+      <label for="bolus" class="hd"><span class="chip" style="background: #9DAEFF; color: #0F1B26"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 2 4 4M16 4l4 4M19 5l-9.5 9.5M14 6l4 4-8.5 8.5H5.5v-4zM5.5 18.5 2 22"></path></svg></span>Bolus</label>
+      <div class="fld" style="height: 84px; background: #0F1B26"><input id="bolus" inputmode="decimal" value="0,0" style="font-size: 52px; letter-spacing: -0.04em"><span style="font-size: 20px; font-weight: 700">E</span></div>
+      <p style="display: flex; align-items: center; gap: 7px; margin: 10px 2px 0 2px; font-size: 13px; color: #97A9BA"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>Aktives Insulin 1,1 E bereits abgezogen</p>
+    </section>
+
+    <button class="btn pri" style="margin-top: auto">Weiter</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

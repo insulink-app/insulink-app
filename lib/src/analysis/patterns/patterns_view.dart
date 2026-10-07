@@ -2,13 +2,14 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/analysis/patterns/hourly_glucose_pattern.dart';
-import 'package:insulink/src/analysis/patterns/pattern_chart.dart';
+import 'package:insulink/src/analysis/analysis_chart_section.dart';
+import 'package:insulink/src/analysis/glucose_band_chart.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/localization/locales.dart';
 
 /// "Patterns": average glucose by hour-of-day across the long-term archive, so
 /// recurring daily highs/lows stand out. A neutral median-style line with a
@@ -32,42 +33,16 @@ class PatternsView extends StatelessWidget {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _title(context),
-          const SizedBox(height: 20),
-          Expanded(child: _chart(pattern, glucose, colors)),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-
-  Widget _title(BuildContext context) {
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        LocaleText(
-          'analysis.patterns.title',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        LocaleText(
-          'analysis.patterns.hint',
-          style: TextStyle(
-            fontSize: 12,
-            color: onSurface.withValues(alpha: 0.5),
-          ),
-        ),
-      ],
+    return AnalysisChartSection(
+      titleKey: 'analysis.patterns.title',
+      hintKey: 'analysis.patterns.hint',
+      withKey: true,
+      chart: _chart(context, pattern, glucose, colors),
     );
   }
 
   Widget _chart(
+    BuildContext context,
     List<({int hour, double mean, double sd})> pattern,
     ProfileGlucoseState glucose,
     GlucoseColors colors,
@@ -91,12 +66,22 @@ class PatternsView extends StatelessWidget {
         ),
       );
     }
-    return PatternChart(
+    return GlucoseBandChart(
       meanSpots: meanSpots,
       upperSpots: upperSpots,
       lowerSpots: lowerSpots,
       glucose: glucose,
       colors: colors,
+      minX: 0,
+      maxX: 23,
+      xInterval: 6,
+      xLabel: (hour) => hour % 6 == 0 && hour < 23
+          ? Locales.string(
+              context,
+              'overview.chart.hour',
+              params: ['${hour.toInt()}'],
+            )
+          : null,
     );
   }
 }

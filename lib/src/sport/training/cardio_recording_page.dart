@@ -6,17 +6,19 @@ import 'package:geolocator/geolocator.dart';
 import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/training/cardio_map.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
-import 'package:insulink/src/sport/sport_vitals_bar.dart';
+import 'package:insulink/src/sport/training/active_training.dart';
+import 'package:insulink/src/sport/training/cardio_live_panel.dart';
+import 'package:insulink/src/sport/training/training_countdown.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 enum _Phase { countdown, recording }
 
@@ -36,11 +38,21 @@ class CardioRecordingPage extends StatefulWidget {
   State<CardioRecordingPage> createState() => _CardioRecordingPageState();
 }
 
-class _CardioRecordingPageState extends State<CardioRecordingPage> {
+class _CardioRecordingPageState extends State<CardioRecordingPage>
+    with SingleTickerProviderStateMixin {
   late final CardioTrainingState _state = context.read<CardioTrainingState>();
   final MapController _map = MapController();
 
   _Phase _phase = _Phase.recording;
+
+  /// The countdown's camera move: from [_introFromZoom] in to [_liveZoom] over
+  /// the three seconds, so the start reads as arriving at the spot.
+  late final AnimationController _intro = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 3),
+  )..addListener(_zoomIn);
+  static const _introFromZoom = 14.0;
+  static const _liveZoom = 16.0;
   int _count = 3;
   Timer? _countdown;
   Timer? _ticker;
@@ -83,7 +95,10 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_points.isEmpty) {
           try {
-            _map.move(center, 16);
+            _map.move(
+              center,
+              _intro.isAnimating ? _map.camera.zoom : _liveZoom,
+            );
           } catch (_) {}
         }
       });
@@ -101,6 +116,20 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       const Duration(seconds: 1),
       (_) => _countTick(),
     );
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _intro.value = 1;
+    } else {
+      _intro.forward();
+    }
+  }
+
+  /// One step of the countdown's zoom, around whatever the map is centred on.
+  void _zoomIn() {
+    final eased = Curves.easeInOutCubic.transform(_intro.value);
+    final zoom = _introFromZoom + (_liveZoom - _introFromZoom) * eased;
+    try {
+      _map.move(_map.camera.center, zoom);
+    } catch (_) {}
   }
 
   Future<void> _countTick() async {
@@ -227,7 +256,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       iconColor: context.danger,
       description: 'sport.trainings.stop_confirm',
       cancelButton: true,
-      confirmButtonText: 'sport.trainings.stop',
+      confirmButtonText: 'sport.trainings.stop_action',
       confirmButtonColor: Theme.of(context).colorScheme.error,
       callback: _stop,
     ).show(context);
@@ -253,36 +282,18 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
   void dispose() {
     _countdown?.cancel();
     _ticker?.cancel();
+    _intro.dispose();
     WakelockPlus.disable();
     super.dispose();
   }
 
+  /// The map fills the screen; back, the training's pill and pause float on
+  /// it, the live panel sits at the foot.
   @override
   Widget build(BuildContext context) {
     final active = _state.activeTraining;
     final type = active?.type ?? widget.type ?? CardioType.walk;
     return Scaffold(
-      appBar: AppBar(
-        surfaceTintColor: Colors.transparent,
-        title: LocaleText(type.labelKey),
-        actions: [
-          if (active != null)
-            IconButton(
-              icon: Icon(
-                active.isPaused
-                    ? PhosphorIconsFill.play
-                    : PhosphorIconsBold.pause,
-              ),
-              tooltip: Locales.string(
-                context,
-                active.isPaused
-                    ? 'sport.trainings.resume'
-                    : 'sport.trainings.pause',
-              ),
-              onPressed: _togglePause,
-            ),
-        ],
-      ),
       body: Stack(
         children: [
           CardioMap(
@@ -290,125 +301,98 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
             points: _points,
             live: true,
             fallbackCenter: _fallbackCenter,
+            initialZoom: _phase == _Phase.countdown
+                ? _introFromZoom
+                : _liveZoom,
           ),
           if (_phase == _Phase.countdown) _countdownOverlay(context),
+          SafeArea(child: _header(context, type, active)),
           if (_phase == _Phase.recording)
             Align(
               alignment: Alignment.bottomCenter,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [const SportVitalsBar(), _panel(context)],
+              child: SafeArea(
+                child: CardioLivePanel(
+                  duration: formatDuration(active?.elapsed ?? Duration.zero),
+                  distance: formatDistanceKm(_distanceM),
+                  speed: formatSpeed(_speedKmh),
+                  paused: active?.isPaused ?? false,
+                  onStop: _confirmStop,
+                ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  /// Back, the pill naming the training with a dot that is lit while it
+  /// records, and pause / resume, all floating over the map.
+  Widget _header(
+    BuildContext context,
+    CardioType type,
+    ActiveTraining? active,
+  ) {
+    final colors = context.ink;
+    final recording = active != null && !active.isPaused;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        8,
+        InkSpace.panelMargin,
+        0,
+      ),
+      child: Row(
+        children: [
+          MapOverlayButton(
+            icon: PhosphorIconsBold.arrowLeft,
+            tooltipKey: 'sport.trainings.back',
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: ShapeDecoration(
+              color: colors.ground.withValues(alpha: 0.85),
+              shape: const StadiumBorder(),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 10,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: recording ? colors.low : colors.muted,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                LocaleText(
+                  type.labelKey,
+                  style: InkText.rowTitle.copyWith(fontSize: 17),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          if (active != null)
+            MapOverlayButton(
+              icon: active.isPaused
+                  ? PhosphorIconsFill.play
+                  : PhosphorIconsFill.pause,
+              tooltipKey: active.isPaused
+                  ? 'sport.trainings.resume'
+                  : 'sport.trainings.pause',
+              onTap: _togglePause,
+            )
+          else
+            const SizedBox.square(dimension: InkSpace.minTouch),
         ],
       ),
     );
   }
 
   Widget _countdownOverlay(BuildContext context) {
-    return Container(
-      color: Colors.black.withValues(alpha: 0.45),
-      alignment: Alignment.center,
-      child: Text(
-        '$_count',
-        style: const TextStyle(
-          fontSize: 120,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  Widget _panel(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final active = _state.activeTraining;
-    final paused = active?.isPaused ?? false;
-    return Container(
-      // Side margins match SportVitalsBar's, so the two stacked cards line up.
-      margin: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _metric(
-                context,
-                'sport.trainings.duration',
-                formatDuration(active?.elapsed ?? Duration.zero),
-              ),
-              _metric(
-                context,
-                'sport.trainings.distance',
-                formatDistanceKm(_distanceM),
-              ),
-              _metric(context, 'sport.trainings.speed', formatSpeed(_speedKmh)),
-            ],
-          ),
-          if (paused) ...[
-            const SizedBox(height: 8),
-            LocaleText(
-              'sport.trainings.paused',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 56,
-            width: double.infinity,
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-              icon: const Icon(PhosphorIconsFill.stop, size: 28),
-              label: LocaleText(
-                'sport.trainings.stop',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              onPressed: _confirmStop,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metric(BuildContext context, String labelKey, String value) {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          Locales.string(context, labelKey),
-          style: TextStyle(
-            fontSize: 11,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-      ],
-    );
+    return TrainingCountdown(count: _count);
   }
 }

@@ -6,6 +6,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// One chosen product with its portion in the product's unit; carbs scale from
 /// the per-100 g value.
@@ -101,27 +102,50 @@ class _InjectionProductsTabState extends State<InjectionProductsTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _addRow(),
+        if (_items.isNotEmpty) const SizedBox(height: 6),
         for (final item in _items) _row(item),
-        const SizedBox(height: 4),
-        _addButton(),
         if (_items.isNotEmpty || widget.manualCarbs > 0) _total(),
       ],
     );
   }
 
-  /// Outlined "add" tile — a transparent button so it reads as the add action
-  /// without competing with the solid "Next" button below. Colours come from
-  /// the theme, which tunes them per light/dark; only the sizing is local.
-  Widget _addButton() {
-    return OutlinedButton.icon(
-      onPressed: _addProduct,
-      icon: const Icon(PhosphorIconsBold.plus, size: 20),
-      label: LocaleText('injection.products.add'),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-      ),
+  /// "Products" muted on the left, a neutral pill on the right that adds one: a
+  /// quiet control that does not compete with the solid "Next" below.
+  Widget _addRow() {
+    final colors = context.ink;
+    return Row(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 4),
+            child: LocaleText(
+              'injection.products_tab',
+              style: InkText.body.copyWith(
+                fontWeight: FontWeight.w400,
+                color: colors.muted,
+              ),
+            ),
+          ),
+        ),
+        Semantics(
+          label: Locales.string(context, 'injection.products.add'),
+          excludeSemantics: true,
+          button: true,
+          child: TextButton.icon(
+            onPressed: _addProduct,
+            icon: const Icon(PhosphorIconsBold.plus, size: 18),
+            label: LocaleText('injection.products.add_short'),
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              backgroundColor: colors.text.withValues(alpha: 0.06),
+              foregroundColor: colors.text,
+              textStyle: InkText.body.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

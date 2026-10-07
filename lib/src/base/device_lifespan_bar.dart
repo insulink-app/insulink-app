@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/device_lifespan.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
-/// How much life a worn device has left, as one rectangle per remaining unit:
-/// one per day normally, switching to one per HOUR over the final 24 h so the
-/// last day stays meaningful. Remaining units are filled with the accent colour,
-/// elapsed ones greyed out.
+/// How much life a worn device has left, as one segment per day of its
+/// lifetime: days still ahead in the accent colour, the day under way filled
+/// by the share of it left, elapsed days greyed out.
 ///
 /// Shared by the CGM sensor and the Omnipod pod, which differ only in their
 /// lifetime and their title — a pod's 80 h reads as three rated days plus an
@@ -27,9 +27,9 @@ class DeviceLifespanBar extends StatelessWidget {
   final DateTime start;
   final int sessionLengthSec;
 
-  /// On the overview the header matches the other section titles (large + bold,
-  /// full-strength) with a greyed value on the right; on a device page it keeps
-  /// the original compact look (greyed title, full-strength value).
+  /// On the overview it takes the redesign's panel look (bold row title, muted
+  /// value, thin accent segments); on a device page it keeps the original
+  /// compact look (greyed title, full-strength value).
   final bool overview;
 
   /// Names the device in the overview header. The remaining-time wording itself
@@ -50,8 +50,8 @@ class DeviceLifespanBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _header(context, scheme, life),
-        const SizedBox(height: 6),
-        _segmentBar(scheme, life),
+        const SizedBox(height: 8),
+        _segments(context, life),
       ],
     );
   }
@@ -66,11 +66,8 @@ class DeviceLifespanBar extends StatelessWidget {
         LocaleText(
           overview ? overviewTitleKey : pageTitleKey,
           style: overview
-              ? const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
-              : TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface.withValues(alpha: 0.6),
-                ),
+              ? InkText.row
+              : InkText.label.copyWith(color: context.ink.muted),
         ),
         const Spacer(),
         _remainingLabel(context, scheme, life),
@@ -83,14 +80,11 @@ class DeviceLifespanBar extends StatelessWidget {
     ColorScheme scheme,
     DeviceLifespan life,
   ) {
-    final normalColor = overview
-        ? scheme.onSurface.withValues(alpha: 0.6)
-        : scheme.onSurface;
+    final normalColor = overview ? context.ink.muted : context.ink.text;
+    final style = overview ? InkText.label : InkText.row;
     return Text(
       _remainingText(context, life),
-      style: TextStyle(
-        fontSize: 12,
-        fontWeight: overview ? FontWeight.normal : FontWeight.w600,
+      style: style.copyWith(
         color: life.expired
             ? context.danger
             : life.inGrace
@@ -105,8 +99,8 @@ class DeviceLifespanBar extends StatelessWidget {
   /// Minutes come BEFORE the grace check on purpose. A device usually spends its
   /// last hour inside the grace window, and that branch counts in hours, so the
   /// grace wording would have swallowed the minutes exactly where they matter
-  /// most. It keeps its own wording, because "past its rated life" is worth
-  /// saying whichever unit the number is in.
+  /// most. Grace is told by the warning colour alone; a "grace period" word
+  /// did not fit the pump's box.
   String _remainingText(BuildContext context, DeviceLifespan life) {
     if (life.expired) {
       return Locales.string(context, 'sensor.value.expired');
@@ -130,28 +124,35 @@ class DeviceLifespanBar extends StatelessWidget {
     return Locales.string(context, key, params: ['${life.filledSegments}']);
   }
 
-  Widget _segmentBar(ColorScheme scheme, DeviceLifespan life) {
-    final gap = life.hoursMode ? 2.0 : 4.0;
-    return Row(
-      children: [
-        for (var index = 0; index < life.totalSegments; index++) ...[
-          if (index > 0) SizedBox(width: gap),
-          Expanded(
-            child: _segment(scheme, filled: index < life.filledSegments),
-          ),
+  /// 6 px day segments, accent for what is left, line for the rest, on the
+  /// overview and the device pages alike. The day under way is filled by the
+  /// share of it still left, so the bar shrinks through the day instead of
+  /// jumping a whole segment at midnight of the session.
+  Widget _segments(BuildContext context, DeviceLifespan life) {
+    final colors = context.ink;
+    return SizedBox(
+      height: 6,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 4,
+        children: [
+          for (var day = 0; day < life.totalDays; day++)
+            Expanded(child: _daySegment(colors, life.dayFraction(day))),
         ],
-      ],
+      ),
     );
   }
 
-  Widget _segment(ColorScheme scheme, {required bool filled}) {
-    return Container(
-      height: 9,
-      decoration: BoxDecoration(
-        color: filled
-            ? scheme.primary
-            : scheme.onSurface.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(3),
+  Widget _daySegment(InsulinkColors colors, double fraction) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(3),
+      child: ColoredBox(
+        color: colors.line,
+        child: FractionallySizedBox(
+          alignment: AlignmentDirectional.centerStart,
+          widthFactor: fraction,
+          child: ColoredBox(color: colors.accent),
+        ),
       ),
     );
   }

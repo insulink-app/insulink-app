@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/connections/history/device_history_active_card.dart';
+import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/connections/history/device_history.dart';
 import 'package:insulink/src/connections/history/device_history_row.dart';
@@ -86,12 +89,60 @@ class _DeviceHistoryPageState extends State<DeviceHistoryPage> {
     if (entries.isEmpty) {
       return _notice('connections.history.empty');
     }
+    final active = entries.where((entry) => entry.isActive).toList();
+    final earlier = entries.where((entry) => !entry.isActive).toList();
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        itemCount: entries.length,
-        itemBuilder: (_, index) => DeviceHistoryRow(entry: entries[index]),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          InkSpace.panelMargin,
+          16,
+          InkSpace.panelMargin,
+          24,
+        ),
+        children: [
+          for (final entry in active)
+            Padding(
+              padding: const EdgeInsets.only(bottom: InkSpace.tileGap),
+              child: DeviceHistoryActiveCard(entry: entry, icon: _icon),
+            ),
+          if (earlier.isNotEmpty) ...[
+            _earlierHeader(earlier.length, topGap: active.isEmpty ? 0 : 18),
+            InkPanel.list(
+              radius: InkRadius.tile,
+              rows: [
+                for (final entry in earlier) DeviceHistoryRow(entry: entry),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  IconData get _icon => widget.kind == DeviceHistoryKind.sensors
+      ? PhosphorIconsBold.drop
+      : PhosphorIconsBold.syringe;
+
+  /// "Frühere Sensoren" / "Frühere Pods" with their count on the right.
+  Widget _earlierHeader(int count, {required double topGap}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(8, topGap, 8, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: LocaleText(
+              widget.kind == DeviceHistoryKind.sensors
+                  ? 'connections.history.earlier_sensors'
+                  : 'connections.history.earlier_pumps',
+              style: InkText.section,
+            ),
+          ),
+          Text(
+            '$count',
+            style: InkText.label.copyWith(color: context.ink.muted),
+          ),
+        ],
       ),
     );
   }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The coverage strip itself: one slice per bucket, and a way to point at one.
 ///
@@ -28,7 +28,7 @@ class ConnectionTimelineStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 14,
+      height: 22,
       child: LayoutBuilder(
         builder: (context, constraints) => MouseRegion(
           onHover: (event) => _pick(event.localPosition.dx, constraints),
@@ -67,7 +67,7 @@ class ConnectionTimelineStrip extends StatelessWidget {
     return Row(
       children: [
         for (var index = 0; index < covered.length; index++) ...[
-          if (index > 0) const SizedBox(width: 1),
+          if (index > 0) const SizedBox(width: 2),
           Expanded(child: _slice(context, scheme, index)),
         ],
       ],
@@ -78,10 +78,8 @@ class ConnectionTimelineStrip extends StatelessWidget {
     final isSelected = index == selected;
     return Container(
       decoration: BoxDecoration(
-        color: covered[index]
-            ? scheme.primary
-            : context.warning.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(2),
+        color: covered[index] ? scheme.primary : context.ink.line,
+        borderRadius: BorderRadius.circular(3),
         border: isSelected
             ? Border.all(color: scheme.onSurface, width: 1.5)
             : null,

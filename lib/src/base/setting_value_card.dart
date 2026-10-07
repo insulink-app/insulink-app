@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/base/setting_value_editor_sheet.dart';
@@ -25,11 +26,8 @@ class SettingValueCard extends StatelessWidget {
   final void Function(int) onChanged;
 
   void _openEditor(BuildContext context) {
-    showModalBottomSheet<void>(
+    showInkSheet<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
       builder: (_) => SettingValueEditorSheet(
         labelKey: labelKey,
         valueKey: valueKey,

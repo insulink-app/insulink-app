@@ -2,6 +2,9 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/base/section_header.dart';
+import 'package:insulink/src/base/ink_panel.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/google_health/google_health_importer.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -9,7 +12,7 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/training/km_splits.dart';
-import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/sport/training/series_thinning.dart';
 import 'package:provider/provider.dart';
 
 /// The three plottable metrics, in the fixed order they occupy in the chart's
@@ -143,15 +146,28 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     return [?before, ...inside, ?after];
   }
 
-  _Series get _heartSeries => _normalise([
-    for (final sample in _heart)
-      (x: _xOf(sample.at.millisecondsSinceEpoch), value: sample.bpm.toDouble()),
-  ]);
+  /// Pulse and speed arrive about once a second, far denser than the chart
+  /// can show; both are averaged over short stretches first (see
+  /// [SeriesThinning]), so the lines read as curves instead of noise. The
+  /// tooltip then shows the stretch's average.
+  SeriesThinning get _thinning => SeriesThinning(spanMinutes: _windowMaxX);
 
-  _Series get _speedSeries => _normalise([
-    for (final sample in trackSpeeds(widget.track))
-      (x: _xOf(sample.tMs), value: sample.kmh),
-  ]);
+  _Series get _heartSeries => _normalise(
+    _thinning.thin([
+      for (final sample in _heart)
+        (
+          x: _xOf(sample.at.millisecondsSinceEpoch),
+          value: sample.bpm.toDouble(),
+        ),
+    ]),
+  );
+
+  _Series get _speedSeries => _normalise(
+    _thinning.thin([
+      for (final sample in trackSpeeds(widget.track))
+        (x: _xOf(sample.tMs), value: sample.kmh),
+    ]),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -160,64 +176,44 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     final glucose = _glucoseSeries;
     final heart = _heartSeries;
     final speed = _speedSeries;
-    final glucoseColor = scheme.primary;
-    final heartColor = scheme.error;
-    final speedColor = context.positive;
+    final colors = context.ink;
+    final glucoseColor = colors.accent;
+    final heartColor = colors.pulseHigh;
+    final speedColor = colors.pace;
     // The box is ALWAYS shown (no spinner): the chart area holds the line as soon
     // as there's data, and only once loading is finished with genuinely nothing
     // to show does it swap to the empty-state message.
     final empty = glucose.isEmpty && heart.isEmpty && speed.isEmpty;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 16, 16, 12),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
+    final panel = InkPanel(
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 6),
-            child: LocaleText(
-              'sport.trainings.metrics',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurface.withValues(alpha: 0.7),
-              ),
+          if (!empty)
+            Wrap(
+              spacing: 18,
+              runSpacing: 8,
+              children: [
+                if (!glucose.isEmpty)
+                  _legendChip(
+                    _Metric.glucose,
+                    glucoseColor,
+                    'sport.trainings.glucose',
+                  ),
+                if (!heart.isEmpty)
+                  _legendChip(
+                    _Metric.heart,
+                    heartColor,
+                    'sport.trainings.heart_rate',
+                  ),
+                if (!speed.isEmpty)
+                  _legendChip(
+                    _Metric.speed,
+                    speedColor,
+                    'sport.trainings.speed',
+                  ),
+              ],
             ),
-          ),
-          if (!empty) ...[
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: Wrap(
-                spacing: 16,
-                runSpacing: 8,
-                children: [
-                  if (!glucose.isEmpty)
-                    _legendChip(
-                      _Metric.glucose,
-                      glucoseColor,
-                      'sport.trainings.glucose',
-                    ),
-                  if (!heart.isEmpty)
-                    _legendChip(
-                      _Metric.heart,
-                      heartColor,
-                      'sport.trainings.heart_rate',
-                    ),
-                  if (!speed.isEmpty)
-                    _legendChip(
-                      _Metric.speed,
-                      speedColor,
-                      'sport.trainings.speed',
-                    ),
-                ],
-              ),
-            ),
-          ],
           const SizedBox(height: 18),
           SizedBox(
             height: 210,
@@ -239,6 +235,16 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
         ],
       ),
     );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: SectionHeader(titleKey: 'sport.trainings.metrics', topGap: 8),
+        ),
+        panel,
+      ],
+    );
   }
 
   /// The series to actually plot for [metric]: the real one, or an empty series
@@ -248,10 +254,11 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
     return _hidden.contains(metric) ? const _Series([], []) : series;
   }
 
-  /// A tappable legend entry: tap toggles its metric on the plot. When off, the
-  /// dot and label dim and the label is struck through.
+  /// A tappable legend entry, a short stroke in the line's colour and its
+  /// name: tap toggles its metric on the plot. When off, the stroke and label
+  /// dim and the label is struck through.
   Widget _legendChip(_Metric metric, Color color, String labelKey) {
-    final scheme = Theme.of(context).colorScheme;
+    final colors = context.ink;
     final hidden = _hidden.contains(metric);
     return InkWell(
       borderRadius: BorderRadius.circular(6),
@@ -264,22 +271,22 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          spacing: 7,
           children: [
             Container(
-              width: 9,
-              height: 9,
+              width: 16,
+              height: 2.5,
               decoration: BoxDecoration(
                 color: hidden ? color.withValues(alpha: 0.3) : color,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(width: 6),
             LocaleText(
               labelKey,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: hidden ? scheme.onSurface.withValues(alpha: 0.35) : null,
+              style: InkText.label.copyWith(
+                color: hidden
+                    ? colors.muted.withValues(alpha: 0.5)
+                    : colors.muted,
                 decoration: hidden ? TextDecoration.lineThrough : null,
               ),
             ),
@@ -318,16 +325,14 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
         show: true,
         drawVerticalLine: false,
         horizontalInterval: 0.5,
-        getDrawingHorizontalLine: (_) => FlLine(
-          color: scheme.onSurface.withValues(alpha: 0.06),
-          strokeWidth: 1,
-        ),
+        getDrawingHorizontalLine: (_) =>
+            FlLine(color: context.ink.line, strokeWidth: 1),
       ),
       borderData: FlBorderData(show: false),
       titlesData: _titles(scheme, rangeX),
       lineTouchData: _touch(scheme, glucose, heart, speed),
       lineBarsData: [
-        _bar(glucose, glucoseColor, fill: true),
+        _bar(glucose, glucoseColor, fill: false),
         _bar(heart, heartColor, fill: false),
         _bar(speed, speedColor, fill: false),
       ],
@@ -372,9 +377,9 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
             meta: meta,
             child: Text(
               _clockAt(value),
-              style: TextStyle(
-                fontSize: 9,
-                color: scheme.onSurface.withValues(alpha: 0.5),
+              style: InkText.axis.copyWith(
+                fontSize: 12,
+                color: context.ink.muted,
               ),
             ),
           ),
@@ -416,7 +421,11 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
           _lastHapticMinute = minute;
           HapticFeedback.selectionClick();
         }
-        widget.onHoverMs(widget.startMs + (spot.x * 60000).round());
+        final minutes = (response?.touchChartCoordinate.dx ?? spot.x).clamp(
+          0.0,
+          _windowMaxX,
+        );
+        widget.onHoverMs(widget.startMs + (minutes * 60000).round());
       },
       getTouchedSpotIndicator: (barData, indexes) => [
         for (final _ in indexes)
@@ -475,26 +484,33 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
       1 => '${raw.round()} bpm',
       _ => formatSpeed(raw),
     };
-    final color = switch (spot.barIndex) {
-      0 => scheme.onInverseSurface,
-      1 => scheme.error,
-      _ => context.positive,
+    final colors = context.ink;
+    final lineColor = switch (spot.barIndex) {
+      0 => colors.accent,
+      1 => colors.pulseHigh,
+      _ => colors.pace,
     };
     return LineTooltipItem(
-      text,
-      TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
-      children: showTime
-          ? [
-              TextSpan(
-                text: '\n${_clockAt(spot.x)}',
-                style: TextStyle(
-                  color: scheme.onInverseSurface.withValues(alpha: 0.7),
-                  fontWeight: FontWeight.normal,
-                  fontSize: 11,
-                ),
-              ),
-            ]
-          : null,
+      '● ',
+      TextStyle(color: lineColor, fontSize: 13),
+      children: [
+        TextSpan(
+          text: text,
+          style: TextStyle(
+            color: scheme.onInverseSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        if (showTime)
+          TextSpan(
+            text: '\n${_clockAt(spot.x)}',
+            style: TextStyle(
+              color: scheme.onInverseSurface.withValues(alpha: 0.7),
+              fontWeight: FontWeight.normal,
+              fontSize: 11,
+            ),
+          ),
+      ],
     );
   }
 

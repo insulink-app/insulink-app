@@ -9,6 +9,7 @@ import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/training/pending_training_actions.dart';
 import 'package:provider/provider.dart';
 import 'package:insulink/src/theme/brand_tints.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// "Trainings" section of the sport home page: three start buttons
 /// (walk/jog/cycle), a resume banner and any pending auto-detected trainings.
@@ -106,31 +107,31 @@ class CardioSection extends StatelessWidget {
     );
   }
 
+  /// A soft accent tile per training type, its glyph over its name.
   Widget _startButton(BuildContext context, CardioType type) {
-    final scheme = Theme.of(context).colorScheme;
+    final colors = context.ink;
     return Material(
-      color: scheme.primary,
-      borderRadius: BorderRadius.circular(18),
+      color: colors.accent.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(InkRadius.tile),
+        side: BorderSide(color: colors.accent.withValues(alpha: 0.22)),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) => CardioRecordingPage(type: type),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 22),
           child: Column(
             children: [
-              Icon(type.icon, color: scheme.onPrimary, size: 26),
-              const SizedBox(height: 6),
+              Icon(type.icon, color: colors.accent, size: 26),
+              const SizedBox(height: 8),
               Text(
                 Locales.string(context, type.labelKey),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: scheme.onPrimary,
-                ),
+                style: InkText.row.copyWith(color: colors.text),
               ),
             ],
           ),

@@ -182,7 +182,8 @@ jobs:
   # ---------------------------------------------------------------------------
   # Browser demo for the website (docs/WEB_DEMO.md): every main push rebuilds it
   # from lib/main_demo.dart and publishes it to this repo's GitHub Pages, which
-  # the website's hero loads in an iframe. The website repo holds no app code,
+  # the website's hero loads in an iframe. The demo's screenshots ride along
+  # under /screenshots/ (docs/SCREENSHOTS.md). The website repo holds no app code,
   # so this deploy IS the website update. Gated on `verify`, so a red build never
   # reaches the page. Needs Settings > Pages > Source: "GitHub Actions" once.
   # ---------------------------------------------------------------------------
@@ -214,6 +215,22 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Screenshots of the demo in both languages and themes (docs/SCREENSHOTS.md),
+      # driven in the runner's Chrome. Before the demo build, because
+      # `flutter drive` builds into build/web too.
+      - name: Take screenshots
+        run: |
+          "$CHROMEWEBDRIVER/chromedriver" --port=4444 &
+          for language in de en; do
+            for theme in dark light; do
+              flutter drive --release -d web-server --browser-name=chrome \
+                --driver=test_driver/integration_test.dart \
+                --target=integration_test/screenshots_test.dart \
+                --browser-dimension=412x915@2 --dart-define=DEMO=true \
+                --dart-define=LANGUAGE=$language --dart-define=THEME=$theme
+            done
+          done
+
       # Served from https://insulink-app.github.io/insulink-app/, hence the base
       # href. canvaskit/ is dropped: the engine loads CanvasKit from gstatic by
       # default, so the 37 MB local copy would never be fetched.
@@ -222,6 +239,7 @@ jobs:
           flutter build web --release -t lib/main_demo.dart \
             --dart-define=DEMO=true --base-href /insulink-app/
           rm -rf build/web/canvaskit build/web/.last_build_id
+          cp -r build/screenshots build/web/screenshots
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

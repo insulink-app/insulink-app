@@ -1,55 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/base/header_icon_button.dart';
+import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_page.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-class HeaderAccountButton extends StatefulWidget
-    implements PreferredSizeWidget {
+/// Header shortcut to the profile: a round badge with the first letter of the
+/// stored name, or a person glyph while the name is empty.
+class HeaderAccountButton extends StatelessWidget {
   const HeaderAccountButton({super.key});
 
-  @override
-  State<HeaderAccountButton> createState() => _HeaderAccountButtonState();
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-
-class _HeaderAccountButtonState extends State<HeaderAccountButton> {
   static const _storage = FlutterSecureStorage();
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: _avatar(Theme.of(context)),
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ProfilePage()),
-        );
-      },
+    final colors = context.ink;
+    return Semantics(
+      button: true,
+      label: Locales.string(context, 'profile.label'),
+      excludeSemantics: true,
+      child: SizedBox.square(
+        dimension: HeaderIconButton.size,
+        child: Material(
+          color: colors.accentSoft,
+          shape: CircleBorder(side: BorderSide(color: colors.border)),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute<void>(builder: (_) => ProfilePage())),
+            child: Center(child: _initial(colors)),
+          ),
+        ),
+      ),
     );
   }
 
-  /// Circular badge showing the first letter of the stored name (or a person
-  /// glyph when it is empty), matching the profile account box avatar.
-  Widget _avatar(ThemeData theme) {
+  Widget _initial(InsulinkColors colors) {
     return FutureBuilder<String?>(
       future: _storage.read(key: "name"),
       builder: (context, snapshot) {
-        final initial = (snapshot.data ?? "").trim();
-        return CircleAvatar(
-          radius: 20,
-          backgroundColor: theme.colorScheme.primary,
-          child: initial.isEmpty
-              ? Icon(PhosphorIconsBold.user, color: theme.colorScheme.onPrimary)
-              : Text(
-                  initial[0].toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                ),
+        final name = (snapshot.data ?? "").trim();
+        if (name.isEmpty) {
+          return Icon(
+            PhosphorIconsBold.user,
+            size: 20,
+            color: colors.accentText,
+          );
+        }
+        return Text(
+          name[0].toUpperCase(),
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: colors.accentText,
+          ),
         );
       },
     );

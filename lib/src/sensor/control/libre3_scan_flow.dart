@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 
 import '../../alert/alert.dart';
 import '../../cgm/cgm_controller.dart';
@@ -35,15 +36,8 @@ class Libre3ScanFlow {
     var scanned = false;
     var cancelled = false;
     var sheetOpen = true;
-    showModalBottomSheet<void>(
+    showInkSheet<void>(
       context: context,
-      // Same recipe as every other sheet in the app (see EditorSheet callers):
-      // scroll-controlled + transparent, with the sheet drawing its own surface,
-      // so it spans the full width instead of Material's centred 640-px box.
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      constraints: const BoxConstraints(maxWidth: double.infinity),
       builder: (_) => Libre3NfcScanSheet(
         phase: phase,
         onCancel: navigator.maybePop,

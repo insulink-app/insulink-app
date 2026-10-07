@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 
 import 'google_health_models.dart';
+import 'package:insulink/src/google_health/sleep_nights.dart';
 
 /// Outcome of reading Google Health metrics from Health Connect.
 enum GoogleHealthImportResult { success, unavailable, denied }
@@ -140,7 +141,7 @@ class GoogleHealthImporter {
     DateTime start,
     DateTime end,
   ) async {
-    final byDay = <String, List<SleepSegment>>{};
+    final segments = <SleepSegment>[];
     try {
       final points = await _health.getHealthDataFromTypes(
         types: _stageTypes,
@@ -152,21 +153,33 @@ class GoogleHealthImporter {
         if (index < 0 || !point.dateTo.isAfter(point.dateFrom)) {
           continue;
         }
-        byDay
-            .putIfAbsent(_dateKey(point.dateTo.toLocal()), () => [])
-            .add(
-              SleepSegment(
-                stage: SleepStage.values[index],
-                startMs: point.dateFrom.millisecondsSinceEpoch,
-                endMs: point.dateTo.millisecondsSinceEpoch,
-              ),
-            );
+        segments.add(
+          SleepSegment(
+            stage: SleepStage.values[index],
+            startMs: point.dateFrom.millisecondsSinceEpoch,
+            endMs: point.dateTo.millisecondsSinceEpoch,
+          ),
+        );
       }
     } catch (_) {
       /* skip if unavailable */
     }
-    for (final segments in byDay.values) {
-      segments.sort((a, b) => a.startMs.compareTo(b.startMs));
+    return _byWakeDay(segments);
+  }
+
+  /// Whole sessions keyed by the day they END on, never single segments: a
+  /// night across midnight stays one night on its wake-up day. Two sessions
+  /// ending on one day (a night and a nap) keep the longer one, which is the
+  /// night the sleep page is about.
+  Map<String, List<SleepSegment>> _byWakeDay(List<SleepSegment> segments) {
+    final byDay = <String, List<SleepSegment>>{};
+    for (final night in SleepNights(segments).all) {
+      final key = _dateKey(DateTime.fromMillisecondsSinceEpoch(night.endMs));
+      final kept = byDay[key];
+      if (kept == null ||
+          night.endMs - night.first.startMs > kept.endMs - kept.first.startMs) {
+        byDay[key] = night;
+      }
     }
     return byDay;
   }

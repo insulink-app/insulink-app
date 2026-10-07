@@ -7,6 +7,9 @@ import 'package:insulink/src/sport/sport_leading_badge.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training/cardio_training_tile.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/list_row.dart';
+import 'package:insulink/src/base/relative_day.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// One logged activity — a routine session or an endurance training — as a
 /// tappable list tile. Shared by the home activities list and the logbook.
@@ -73,31 +76,13 @@ class _RoutineSessionTile extends StatelessWidget {
     MaterialLocalizations locale,
     DateTime started,
   ) {
-    final scheme = Theme.of(context).colorScheme;
-    final time = Text(
-      locale.formatTimeOfDay(TimeOfDay.fromDateTime(started)),
-      style: TextStyle(
-        fontWeight: FontWeight.w600,
-        color: scheme.onSurface.withValues(alpha: 0.7),
-      ),
+    final time = locale.formatTimeOfDay(
+      TimeOfDay.fromDateTime(started),
+      alwaysUse24HourFormat: true,
     );
     if (!showDate) {
-      return time;
+      return Text(time, style: InkText.row);
     }
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          locale.formatMediumDate(started),
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-        const SizedBox(height: 2),
-        time,
-      ],
-    );
+    return ListRowMeta(date: RelativeDay(started).label(context), time: time);
   }
 }

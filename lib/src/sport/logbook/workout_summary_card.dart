@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/logbook/workout_progress_ring.dart';
 import 'package:insulink/src/sport/logbook/workout_summary.dart';
@@ -13,7 +15,7 @@ import 'package:provider/provider.dart';
 /// End-of-workout headline: one overall training value — each exercise's change
 /// versus the previous session of the same routine, averaged so every exercise
 /// counts the same — as a big progress ring, with the concrete figures
-/// (exercises, sets, duration) small beneath it.
+/// (exercises, sets, duration) as rows beside it, all in one panel.
 /// Reused on the finish screen and the logbook detail page. Reads the
 /// predecessor from [TrainingState] (watched, so an in-place logbook edit
 /// recomputes it).
@@ -31,19 +33,14 @@ class WorkoutSummaryCard extends StatelessWidget {
         ? null
         : effortRatioVsPrevious(session, previousSession);
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.08)),
-      ),
-      child: Column(
+    return InkPanel(
+      radius: InkRadius.tile,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      child: Row(
+        spacing: 24,
         children: [
           _ring(context, scheme, ratio),
-          const SizedBox(height: 24),
-          _concreteStats(context, scheme, current),
+          Expanded(child: _concreteStats(context, scheme, current)),
         ],
       ),
     );
@@ -69,9 +66,9 @@ class WorkoutSummaryCard extends StatelessWidget {
     }
     final percent = ((ratio - 1) * 100).round();
     final color = percent == 0
-        ? scheme.onSurface.withValues(alpha: 0.6)
+        ? context.ink.muted
         : percent > 0
-        ? context.positive
+        ? context.ink.range
         : context.danger;
     return WorkoutProgressRing(
       fraction: ratio,
@@ -107,11 +104,7 @@ class WorkoutSummaryCard extends StatelessWidget {
         else
           Text(
             value!,
-            style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-              color: valueColor,
-            ),
+            style: InkText.bigValue.copyWith(fontSize: 26, color: valueColor),
           ),
         const SizedBox(height: 4),
         SizedBox(
@@ -119,64 +112,57 @@ class WorkoutSummaryCard extends StatelessWidget {
           child: Text(
             Locales.string(context, label),
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              height: 1.15,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
+            style: InkText.caption.copyWith(color: context.ink.muted),
           ),
         ),
       ],
     );
   }
 
-  /// The concrete figures under the headline: exercises, sets, duration.
+  /// The concrete figures beside the ring: exercises, sets, duration, as
+  /// label / value rows parted by thin lines.
   Widget _concreteStats(
     BuildContext context,
     ColorScheme scheme,
     WorkoutSummary current,
   ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    final rows = [
+      _stat(context, 'sport.summary.exercises', sportInt(current.exercises)),
+      _stat(context, 'sport.routines.sets', sportInt(current.sets)),
+      _stat(
+        context,
+        'sport.logbook.duration',
+        sportClock(current.durationSecs),
+      ),
+    ];
+    return Column(
       children: [
-        _stat(
-          context,
-          scheme,
-          'sport.summary.exercises',
-          sportInt(current.exercises),
-        ),
-        _stat(context, scheme, 'sport.routines.sets', sportInt(current.sets)),
-        _stat(
-          context,
-          scheme,
-          'sport.logbook.duration',
-          sportClock(current.durationSecs),
-        ),
+        for (var index = 0; index < rows.length; index++) ...[
+          if (index > 0)
+            Divider(height: 1, thickness: 1, color: context.ink.line),
+          rows[index],
+        ],
       ],
     );
   }
 
-  Widget _stat(
-    BuildContext context,
-    ColorScheme scheme,
-    String labelKey,
-    String value,
-  ) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          Locales.string(context, labelKey),
-          style: TextStyle(
-            fontSize: 13,
-            color: scheme.onSurface.withValues(alpha: 0.55),
+  Widget _stat(BuildContext context, String labelKey, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              Locales.string(context, labelKey),
+              style: InkText.body.copyWith(
+                fontWeight: FontWeight.w400,
+                color: context.ink.muted,
+              ),
+            ),
           ),
-        ),
-      ],
+          Text(value, style: InkText.bigValue.copyWith(fontSize: 20)),
+        ],
+      ),
     );
   }
 }

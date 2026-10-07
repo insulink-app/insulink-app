@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/localization/locale_text.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Uniform "add" tile for the sport area: full width, rounded primary-tint
@@ -17,33 +17,16 @@ class SportAddTile extends StatelessWidget {
   final VoidCallback onTap;
   final IconData icon;
 
+  /// The primary pill: 54 px, accent with the content on it.
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: scheme.primary,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20, color: scheme.onPrimary),
-              const SizedBox(width: 8),
-              Text(
-                Locales.string(context, labelKey),
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: scheme.onPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
+    return FilledButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 20),
+      label: LocaleText(labelKey, maxLines: 1),
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(54),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
       ),
     );
   }

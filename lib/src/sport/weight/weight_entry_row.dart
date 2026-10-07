@@ -11,12 +11,14 @@ class WeightEntryRow extends StatelessWidget {
     required this.previousKg,
     required this.onDelete,
     required this.onEdit,
+    this.framed = true,
   });
 
   final WeightEntry entry;
   final double? previousKg;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final bool framed;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +30,7 @@ class WeightEntryRow extends StatelessWidget {
       deleteConfirmKey: 'sport.weight.delete_confirm',
       onDelete: onDelete,
       onEdit: onEdit,
+      framed: framed,
     );
   }
 }

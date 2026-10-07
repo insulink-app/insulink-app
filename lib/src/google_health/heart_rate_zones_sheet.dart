@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 
 import 'heart_rate_zones.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Bottom sheet to adjust the two pulse-zone thresholds (green→orange,
 /// orange→red) with – / + steppers. Returns the saved [HeartRateZones], or null
@@ -13,9 +15,8 @@ Future<HeartRateZones?> showHeartRateZonesSheet(
   BuildContext context,
   HeartRateZones current,
 ) {
-  return showModalBottomSheet<HeartRateZones>(
+  return showInkSheet<HeartRateZones>(
     context: context,
-    showDragHandle: true,
     builder: (_) => _HeartRateZonesSheet(current: current),
   );
 }
@@ -40,27 +41,22 @@ class _HeartRateZonesSheetState extends State<_HeartRateZonesSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+    return InkSheet(
+      titleKey: 'google_health.hr_zones.title',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LocaleText(
-            'google_health.hr_zones.title',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
           _row(
             'google_health.hr_zones.elevated',
-            HeartRateZones.orange,
+            context.ink.pulseHigh,
             _zones.elevated,
             (delta) => _bump(elevated: _zones.elevated + delta),
           ),
           const SizedBox(height: 16),
           _row(
             'google_health.hr_zones.high',
-            HeartRateZones.red,
+            context.ink.pulseHigh,
             _zones.high,
             (delta) => _bump(high: _zones.high + delta),
           ),

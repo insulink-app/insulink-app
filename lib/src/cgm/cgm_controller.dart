@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:insulink/src/cgm/service/service_presence.dart';
 // NotificationVisibility is hidden here: both plugins define one, and the
 // foreground service's notification is configured with the foreground-task
 // package's version.
@@ -624,7 +625,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     if (key.isEmpty || !_isPaired(key)) {
       return;
     }
-    final running = await FlutterForegroundTask.isRunningService;
+    final running = await const ServicePresence().running;
     if (_disposed) {
       return;
     }
@@ -761,7 +762,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _refreshServiceState() async {
-    final running = await FlutterForegroundTask.isRunningService;
+    final running = await const ServicePresence().running;
     if (_disposed) {
       return;
     }
@@ -889,7 +890,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   /// (`_restartCooldown`). With no service running there is nothing to do, and
   /// the next start reads the setting anyway.
   Future<void> applyNotificationStyle() async {
-    if (!await FlutterForegroundTask.isRunningService || _disposed) {
+    if (!await const ServicePresence().running || _disposed) {
       return;
     }
     await _initForegroundTask();
@@ -922,7 +923,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       // A detection-only service (started by ensureDetectionService) has no
       // connectedDevice FGS type and a stale empty pairing code, so replace it
       // with a fresh, sensor-aware isolate rather than reusing it.
-      if (await FlutterForegroundTask.isRunningService) {
+      if (await const ServicePresence().running) {
         await FlutterForegroundTask.stopService();
       }
       await _startService(forSensor: true);
@@ -1126,7 +1127,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     if (!force && (await ProfileBatteryState.loadActive()).pausesDetection) {
       return;
     }
-    if (await FlutterForegroundTask.isRunningService) {
+    if (await const ServicePresence().running) {
       return;
     }
     if (!await Permission.location.isGranted) {

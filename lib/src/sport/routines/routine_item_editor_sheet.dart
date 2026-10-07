@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
@@ -16,11 +17,8 @@ Future<void> showRoutineItemEditorSheet(
   required String routineId,
   required int index,
 }) {
-  return showModalBottomSheet(
+  return showInkSheet(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => ChangeNotifierProvider.value(
       value: context.read<TrainingState>(),
       child: _RoutineItemEditorSheet(routineId: routineId, index: index),

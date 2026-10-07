@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/analysis/analysis_segment.dart';
 import 'package:insulink/src/analysis/averages/glucose_summary.dart';
 import 'package:insulink/src/analysis/forecast/forecast_accuracy.dart';
-import 'package:insulink/src/analysis/forecast/forecast_accuracy_chart.dart';
+import 'package:insulink/src/analysis/forecast/forecast_chart_panel.dart';
 import 'package:insulink/src/analysis/forecast/forecast_backtest.dart';
 import 'package:insulink/src/analysis/stat_tiles.dart';
 import 'package:insulink/src/base/empty_state.dart';
@@ -12,6 +11,9 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/base/segmented_toggle.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// "Forecast": how well the model's own predictions matched what the sensor
 /// went on to read, scored on this device.
@@ -108,21 +110,24 @@ class _ForecastAccuracyViewState extends State<ForecastAccuracyView> {
 
   Widget _selector(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-      child: Row(
-        children: [
+      padding: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        4,
+        InkSpace.panelMargin,
+        12,
+      ),
+      child: SegmentedToggle<int>.page(
+        expand: true,
+        selected: _horizon,
+        onChanged: _select,
+        options: [
           for (final horizon in _horizons)
-            Expanded(
-              child: AnalysisSegment(
-                selected: horizon == _horizon,
-                onTap: () => _select(horizon),
-                child: Text(
-                  Locales.string(
-                    context,
-                    'analysis.forecast.horizon',
-                  ).replaceFirst('#', '$horizon'),
-                ),
-              ),
+            (
+              value: horizon,
+              label: Locales.string(
+                context,
+                'analysis.forecast.horizon',
+              ).replaceFirst('#', '$horizon'),
             ),
         ],
       ),
@@ -156,7 +161,12 @@ class _ForecastAccuracyViewState extends State<ForecastAccuracyView> {
       );
     }
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        4,
+        InkSpace.panelMargin,
+        120,
+      ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
@@ -164,16 +174,13 @@ class _ForecastAccuracyViewState extends State<ForecastAccuracyView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               AnalysisStatTiles(stats: _stats(score, glucose)),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 220,
-                child: ForecastAccuracyChart(
-                  outcomes: score.outcomes,
-                  glucose: glucose,
-                ),
+              const SizedBox(height: 10),
+              ForecastChartPanel(score: score, glucose: glucose),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: _hint(context),
               ),
-              const SizedBox(height: 16),
-              _hint(context),
             ],
           ),
         ),
@@ -190,7 +197,7 @@ class _ForecastAccuracyViewState extends State<ForecastAccuracyView> {
     return [
       GlucoseStat(
         'analysis.forecast.skill',
-        score.skillScore.toStringAsFixed(2),
+        sportDecimal(score.skillScore, 2),
         '',
       ),
       GlucoseStat(
@@ -225,10 +232,7 @@ class _ForecastAccuracyViewState extends State<ForecastAccuracyView> {
   Widget _hint(BuildContext context) {
     return LocaleText(
       'analysis.forecast.hint',
-      style: TextStyle(
-        fontSize: 12,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-      ),
+      style: InkText.caption.copyWith(color: context.ink.muted),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/glucose_range_bar.dart';
 import 'package:insulink/src/profile/glucose/glucose_range_editor_sheet.dart';
@@ -32,11 +33,8 @@ class GlucoseRangeCard extends StatelessWidget {
   final VoidCallback? onTest;
 
   void _openEditor(BuildContext context) {
-    showModalBottomSheet<void>(
+    showInkSheet<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
       builder: (_) => GlucoseRangeEditorSheet(
         state: state,
         accent: accent,

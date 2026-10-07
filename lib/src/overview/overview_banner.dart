@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/notice_banner.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/profile_mode_window.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Prominent, tappable strip above the overview's content that says a global
 /// mode is holding something back, and clears that mode when tapped.
@@ -19,10 +21,6 @@ class OverviewBanner extends StatelessWidget {
     required this.onTap,
   });
 
-  /// Amber: not an error, but not the resting state either. Deliberately one
-  /// fixed tone for every banner so they read as one kind of thing.
-  static const accent = Color(0xFFE8A13A);
-
   final IconData icon;
   final String titleKey;
 
@@ -35,48 +33,34 @@ class OverviewBanner extends StatelessWidget {
 
   final VoidCallback onTap;
 
+  /// Amber (the `high` token): not an error, but not the resting state either.
+  /// One tone for every banner so they read as one kind of thing.
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: accent.withValues(alpha: 0.15),
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            children: [
-              Icon(icon, color: accent, size: 22),
-              const SizedBox(width: 12),
-              Expanded(child: _text(context)),
-            ],
-          ),
-        ),
-      ),
+    return NoticeBanner(
+      icon: icon,
+      tone: NoticeTone.warning,
+      onTap: onTap,
+      child: _text(context),
     );
   }
 
   Widget _text(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = context.ink;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 2,
       children: [
         LocaleText(
           titleKey,
-          style: TextStyle(
-            fontSize: 14,
+          style: InkText.label.copyWith(
             fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface,
+            color: colors.text,
           ),
         ),
-        const SizedBox(height: 2),
         Text(
           _hint(context),
-          style: TextStyle(
-            fontSize: 12,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
+          style: InkText.caption.copyWith(color: colors.muted),
         ),
       ],
     );

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:insulink/src/base/grab_handle.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_format.dart';
@@ -114,24 +115,12 @@ class _MeasurementEntrySheetState extends State<MeasurementEntrySheet> {
   @override
   Widget build(BuildContext context) {
     final value = _value;
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 12,
-        bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
-      ),
+    return InkSheet(
+      titleKey: widget.titleKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const GrabHandle(),
-          const SizedBox(height: 20),
-          LocaleText(
-            widget.titleKey,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 24),
           TextField(
             controller: _controller,
             autofocus: true,
@@ -153,9 +142,6 @@ class _MeasurementEntrySheetState extends State<MeasurementEntrySheet> {
           const SizedBox(height: 24),
           FilledButton(
             onPressed: value == null ? null : _save,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-            ),
             child: LocaleText('alert.done'),
           ),
         ],
@@ -181,8 +167,8 @@ class MeasurementTimeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(12),
+      color: context.ink.ground,
+      borderRadius: BorderRadius.circular(InkRadius.field),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,

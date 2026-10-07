@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/section_header.dart';
+import 'package:insulink/src/base/list_row.dart';
+import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/account/profile_account_box.dart';
@@ -37,6 +40,7 @@ import 'package:insulink/src/sport/activity/sport_goals_editor.dart';
 import 'package:insulink/src/profile/theme/profile_theme_selection.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// One profile topic in the overview: title, icon, search synonyms and the
 /// settings widgets shown on its sub-page.
@@ -278,15 +282,27 @@ class _ProfilePageState extends State<ProfilePage> {
           title: LocaleText("profile.label"),
         ),
         body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+          padding: const EdgeInsets.fromLTRB(
+            InkSpace.panelMargin,
+            12,
+            InkSpace.panelMargin,
+            40,
+          ),
           children: [
             _searchField(),
             const SizedBox(height: 16),
             if (!searching) ...[
               const ProfileAccountBox(),
-              const SizedBox(height: 20),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: SectionHeader(titleKey: 'profile.settings'),
+              ),
             ],
-            for (final topic in visible) _topicRow(topic),
+            if (visible.isNotEmpty)
+              InkPanel.list(
+                radius: InkRadius.tile,
+                rows: [for (final topic in visible) _topicRow(topic)],
+              ),
             if (searching && visible.isEmpty) _noResults(),
             if (!searching) _footer(),
           ],
@@ -300,6 +316,7 @@ class _ProfilePageState extends State<ProfilePage> {
       controller: _search,
       decoration: InputDecoration(
         hintText: Locales.string(context, "profile.search"),
+        fillColor: context.ink.panel,
         prefixIcon: const Icon(PhosphorIconsBold.magnifyingGlass),
         suffixIcon: _query.isEmpty
             ? null
@@ -311,60 +328,22 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// A tappable topic row: tinted icon, title and a chevron → its sub-page.
+  /// One settings row of the panel: icon disc, title and a chevron to its
+  /// sub-page.
   Widget _topicRow(ProfileTopic topic) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => ProfileTopicPage(
-                titleKey: topic.titleKey,
-                children: topic.children(),
-              ),
-            ),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: scheme.onSurface.withValues(alpha: 0.07),
-              ),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: scheme.onSurface.withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(topic.icon, size: 22, color: scheme.onSurface),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: LocaleText(
-                    topic.titleKey,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Icon(
-                  PhosphorIconsBold.caretRight,
-                  size: 18,
-                  color: scheme.onSurface.withValues(alpha: 0.4),
-                ),
-              ],
-            ),
+    return ListRow(
+      icon: topic.icon,
+      title: Locales.string(context, topic.titleKey),
+      trailing: Icon(
+        PhosphorIconsBold.caretRight,
+        size: 18,
+        color: context.ink.muted,
+      ),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ProfileTopicPage(
+            titleKey: topic.titleKey,
+            children: topic.children(),
           ),
         ),
       ),

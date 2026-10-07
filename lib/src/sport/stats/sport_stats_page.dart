@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/base/section_header.dart';
+import 'package:insulink/src/base/metric_grid.dart';
+import 'package:insulink/src/base/list_row.dart';
+import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/sport/sport_leading_badge.dart';
-import 'package:insulink/src/sport/activity/sport_summary_tile.dart';
 import 'package:insulink/src/sport/stats/exercise_stat_detail_page.dart';
 import 'package:insulink/src/sport/stats/sport_stat_format.dart';
 import 'package:insulink/src/sport/stats/sport_stats.dart';
@@ -38,178 +42,116 @@ class _SportStatsPageState extends State<SportStatsPage> {
               titleKey: 'sport.stats.empty',
             )
           : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 64),
+              padding: const EdgeInsets.fromLTRB(
+                InkSpace.panelMargin,
+                12,
+                InkSpace.panelMargin,
+                64,
+              ),
               children: [
                 _summary(context, stats),
-                const SizedBox(height: 28),
                 SportStatsChartsView(
                   sessions: training.sessions,
                   routines: training.routines,
                 ),
-                const SizedBox(height: 28),
                 _perExerciseHeader(context),
-                const SizedBox(height: 12),
-                for (final stat in exerciseStats) _exerciseCard(context, stat),
-              ],
-            ),
-    );
-  }
-
-  /// 2×2 grid so each value has room (the three-across row clipped the numbers).
-  Widget _summary(BuildContext context, SportStats stats) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: SportSummaryTile(
-                icon: PhosphorIconsBold.barbell,
-                labelKey: 'sport.stats.total_sessions',
-                value: '${stats.totalSessions}',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: SportSummaryTile(
-                icon: PhosphorIconsBold.listChecks,
-                labelKey: 'sport.stats.total_sets',
-                value: '${stats.totalSets}',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: SportSummaryTile(
-                icon: PhosphorIconsBold.repeat,
-                labelKey: 'sport.stats.total_reps',
-                value: '${stats.totalReps}',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: SportSummaryTile(
-                icon: PhosphorIconsBold.timer,
-                labelKey: 'sport.stats.total_time',
-                value: '${stats.totalTrainingMinutes}',
-                unit: Locales.string(context, 'sport.stats.min'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _perExerciseHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        LocaleText(
-          'sport.stats.per_exercise',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        PopupMenuButton<StatSort>(
-          initialValue: _sort,
-          onSelected: (sort) => setState(() => _sort = sort),
-          icon: const Icon(PhosphorIconsBold.arrowsDownUp, size: 20),
-          itemBuilder: (context) => [
-            for (final sort in StatSort.values)
-              PopupMenuItem(
-                value: sort,
-                child: LocaleText('sport.stats.sort_${sort.name}'),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _exerciseCard(BuildContext context, ExerciseStat stat) {
-    final scheme = Theme.of(context).colorScheme;
-    final lastAt = DateTime.fromMillisecondsSinceEpoch(stat.lastAtMs);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => ExerciseStatDetailPage(stat: stat),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Row(
-              children: [
-                const SportLeadingBadge(icon: PhosphorIconsBold.barbell),
-                const SizedBox(width: 14),
-                Expanded(child: _titleBlock(context, stat, scheme, lastAt)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      formatScore(context, stat.best, stat.exercise.kind),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    LocaleText(
-                      'sport.stats.best',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: scheme.onSurface.withValues(alpha: 0.5),
-                      ),
-                    ),
+                InkPanel.list(
+                  rows: [
+                    for (final stat in exerciseStats)
+                      _exerciseRow(context, stat),
                   ],
                 ),
               ],
             ),
-          ),
+    );
+  }
+
+  /// The four totals in one panel, two by two, parted by lines.
+  Widget _summary(BuildContext context, SportStats stats) {
+    return MetricGrid(
+      icons: const [
+        PhosphorIconsBold.barbell,
+        PhosphorIconsBold.listChecks,
+        PhosphorIconsBold.repeat,
+        PhosphorIconsBold.timer,
+      ],
+      cells: [
+        _cell(context, 'sport.stats.total_sessions', stats.totalSessions, null),
+        _cell(context, 'sport.stats.total_sets', stats.totalSets, null),
+        _cell(context, 'sport.stats.total_reps', stats.totalReps, null),
+        _cell(
+          context,
+          'sport.stats.total_time',
+          stats.totalTrainingMinutes,
+          Locales.string(context, 'sport.stats.min'),
         ),
+      ],
+    );
+  }
+
+  MetricCell _cell(BuildContext context, String key, int value, String? unit) =>
+      (label: Locales.string(context, key), value: sportInt(value), unit: unit);
+
+  /// "Pro Übung" with the sort menu on the right.
+  Widget _perExerciseHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: SectionHeader(
+        titleKey: 'sport.stats.per_exercise',
+        actions: [
+          PopupMenuButton<StatSort>(
+            initialValue: _sort,
+            onSelected: (sort) => setState(() => _sort = sort),
+            icon: const Icon(PhosphorIconsBold.arrowsDownUp, size: 20),
+            itemBuilder: (context) => [
+              for (final sort in StatSort.values)
+                PopupMenuItem(
+                  value: sort,
+                  child: LocaleText('sport.stats.sort_${sort.name}'),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _titleBlock(
-    BuildContext context,
-    ExerciseStat stat,
-    ColorScheme scheme,
-    DateTime lastAt,
-  ) {
-    final subtitle = Locales.string(
-      context,
-      'sport.stats.card_subtitle',
-      params: [
-        '${stat.totalSets}',
-        MaterialLocalizations.of(context).formatMediumDate(lastAt),
-      ],
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          stat.exercise.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+  /// One exercise: barbell disc, name over "80 Sätze, zuletzt …", the best
+  /// score on the right; opens its progression.
+  Widget _exerciseRow(BuildContext context, ExerciseStat stat) {
+    final colors = context.ink;
+    final lastAt = DateTime.fromMillisecondsSinceEpoch(stat.lastAtMs);
+    return ListRow(
+      icon: PhosphorIconsBold.barbell,
+      title: stat.exercise.name,
+      subtitle: Locales.string(
+        context,
+        'sport.stats.card_subtitle',
+        params: [
+          '${stat.totalSets}',
+          MaterialLocalizations.of(context).formatMediumDate(lastAt),
+        ],
+      ),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ExerciseStatDetailPage(stat: stat),
         ),
-        const SizedBox(height: 3),
-        Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 13,
-            color: scheme.onSurface.withValues(alpha: 0.6),
+      ),
+      trailing: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 2,
+        children: [
+          Text(
+            formatScore(context, stat.best, stat.exercise.kind),
+            style: InkText.rowTitle,
           ),
-        ),
-      ],
+          LocaleText(
+            'sport.stats.best',
+            style: InkText.caption.copyWith(color: colors.muted),
+          ),
+        ],
+      ),
     );
   }
 }

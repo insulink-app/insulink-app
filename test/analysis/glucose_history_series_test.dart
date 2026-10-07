@@ -58,4 +58,21 @@ void main() {
     expect(spots.first.y, 120);
     expect(spots.last.y, 90);
   });
+
+  test('the spread is one standard deviation either side of the mean', () {
+    final day = DateTime(2026, 10, 5, 12);
+    final archive = SplayTreeMap<int, int>.from({
+      _min(day): 100,
+      _min(day.add(const Duration(minutes: 5))): 140,
+    });
+    final series = GlucoseHistorySeries(
+      archive,
+      const Duration(days: 7),
+      _mgdl(),
+    );
+    final means = series.build();
+    expect(means.single.y, 120);
+    expect(series.upperSpots.single.y, 140);
+    expect(series.lowerSpots.single.y, 100);
+  });
 }

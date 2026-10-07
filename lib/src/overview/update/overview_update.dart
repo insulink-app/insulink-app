@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/overview/update/overview_clock_painter.dart';
-import 'package:insulink/src/theme/status_colors.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Compact "next reading" indicator: an animated clock whose ring fills as the
 /// next reading approaches (cadence per [intervalSec] — ~5 min on the G7, ~1 min
@@ -42,27 +42,27 @@ class _OverviewUpdateState extends State<OverviewUpdate>
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final colors = context.ink;
     return AnimatedBuilder(
       animation: _spin,
       builder: (context, _) {
-        final state = _resolve(scheme);
+        final state = _resolve(colors);
         return Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: 30,
-              height: 30,
+            SizedBox.square(
+              dimension: 26,
               child: CustomPaint(
                 painter: ClockRingPainter(
                   progress: state.progress,
                   spin: _spin.value,
-                  color: state.color,
-                  track: scheme.onSurface.withValues(alpha: 0.12),
+                  color: state.ring,
+                  track: colors.line,
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            _countdownText(state.color, state.value),
+            const SizedBox(width: 8),
+            _countdownText(state.text, state.value),
           ],
         );
       },
@@ -72,36 +72,36 @@ class _OverviewUpdateState extends State<OverviewUpdate>
   Text _countdownText(Color color, String value) {
     return Text(
       value,
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        fontFeatures: const [FontFeature.tabularFigures()],
-        color: color,
-      ),
+      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color),
     );
   }
 
-  /// Ring fill, colour and countdown label for the current moment. Grey + "—"
-  /// without data; orange "+m:ss" once a reading is overdue; otherwise the
-  /// remaining time toward the next ~5-minute slot.
-  ({double progress, Color color, String value}) _resolve(ColorScheme scheme) {
+  /// Ring fill, colours and countdown label for the current moment. Muted "—"
+  /// without data; amber "+m:ss" once a reading is overdue; otherwise the
+  /// remaining time toward the next slot, with the ring in the accent.
+  ({double progress, Color ring, Color text, String value}) _resolve(
+    InsulinkColors colors,
+  ) {
     final last = widget.lastUpdate;
     if (last == null) {
-      return (progress: 0, color: scheme.onSurfaceVariant, value: '—');
+      return (progress: 0, ring: colors.muted, text: colors.muted, value: '—');
     }
     final elapsed = DateTime.now().difference(last);
     final remaining = Duration(seconds: widget.intervalSec) - elapsed;
     final progress = (elapsed.inSeconds / widget.intervalSec).clamp(0.0, 1.0);
     if (remaining.isNegative) {
+      final overdue = '+${_mmss(remaining)}';
       return (
         progress: progress,
-        color: context.warning,
-        value: '+${_mmss(remaining)}',
+        ring: colors.high,
+        text: colors.high,
+        value: overdue,
       );
     }
     return (
       progress: progress,
-      color: scheme.onSurface.withValues(alpha: 0.5),
+      ring: colors.accent,
+      text: colors.muted,
       value: _mmss(remaining),
     );
   }

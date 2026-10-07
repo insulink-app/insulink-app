@@ -17,12 +17,17 @@ import 'package:insulink/src/overview/chart/chart_window.dart';
 import 'package:insulink/src/overview/chart/chart_x_axis.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
+import 'package:insulink/src/overview/chart/insulin_bar_chart.dart';
 import 'package:insulink/src/overview/chart/mirrored_readout.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/overview/chart/meal_label_strip.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/overview/chart/chart_range_switcher.dart';
 
 /// fl_chart line graph of glucose vs. time (hours, 0 = latest reading).
 class OverviewChart extends StatefulWidget {
@@ -78,8 +83,7 @@ class OverviewChart extends StatefulWidget {
   State<OverviewChart> createState() => _OverviewChartState();
 }
 
-class _OverviewChartState extends State<OverviewChart>
-    with SingleTickerProviderStateMixin {
+class _OverviewChartState extends State<OverviewChart> {
   static const _kRangeKey = 'chart_range_hours';
   static const _storage = FlutterSecureStorage();
 
@@ -102,30 +106,6 @@ class _OverviewChartState extends State<OverviewChart>
   /// in absolute time — NOT multiples of the window — so zooming leaves the
   /// scrolled-to position fixed instead of snapping back to now.
   int _panSecs = 0;
-
-  /// Drives the latest-reading dot's pulsing halo.
-  late final AnimationController _pulse;
-
-  /// The halo phase the chart actually renders, sampled from [_pulse] in
-  /// [_pulseSteps] steps. The marker is a dot painter INSIDE the chart, so every
-  /// phase change re-lays-out the whole fl_chart — axis label widgets included —
-  /// and at the display's frame rate that alone ate a chunk of every frame's
-  /// budget, which is what made the overview stutter while scrolling.
-  ///
-  /// ponytail: sampled, not moved out of the chart. 32 steps over 2.2 s is ~15
-  /// Hz and grows the ring ~0.7 px per step, so the motion still reads as
-  /// continuous. If the ripple ever has to be perfectly smooth, draw it as an
-  /// overlay above a static chart instead — that needs the plot rect, which is
-  /// fl_chart-internal geometry we'd have to reproduce.
-  static const _pulseSteps = 32;
-  final ValueNotifier<double> _phase = ValueNotifier<double>(0);
-
-  void _samplePulse() {
-    final sampled = (_pulse.value * _pulseSteps).floor() / _pulseSteps;
-    if (sampled != _phase.value) {
-      _phase.value = sampled;
-    }
-  }
 
   /// Index of the transparent overlay bar that owns touch (so the haptic and
   /// tooltip ignore the per-zone colour bars + interpolated crossing points).
@@ -155,9 +135,9 @@ class _OverviewChartState extends State<OverviewChart>
   /// fraction across the plot and the zoom can hold that spot in place.
   final GlobalKey _plotKey = GlobalKey();
 
-  /// Width of the left Y-axis label strip (leftTitles reservedSize), excluded
-  /// from the plotting area when mapping a focal point to time.
-  static const _axisInset = 24.0;
+  /// Width of the Y-axis label strip on the left (leftTitles reservedSize),
+  /// excluded from the plotting area when mapping a focal point to time.
+  static const _axisInset = InsulinBarChart.axisInset;
 
   /// Index of the (transparent) bar carrying the tappable meal dots, or -1 when
   /// the meal overlay is off, and the markers behind it — so a tap on a dot can
@@ -172,13 +152,6 @@ class _OverviewChartState extends State<OverviewChart>
     widget.sync
       ?..addListener(_onSyncChanged)
       ..onPinch = applyPinch;
-    _pulse =
-        AnimationController(
-            vsync: this,
-            duration: const Duration(milliseconds: 2200),
-          )
-          ..addListener(_samplePulse)
-          ..repeat();
   }
 
   @override
@@ -237,8 +210,6 @@ class _OverviewChartState extends State<OverviewChart>
     widget.sync
       ?..removeListener(_onSyncChanged)
       ..onPinch = null;
-    _pulse.dispose();
-    _phase.dispose();
     super.dispose();
   }
 
@@ -252,7 +223,13 @@ class _OverviewChartState extends State<OverviewChart>
     }
   }
 
+  /// A range picked on the selector, as opposed to a pinch: the one change the
+  /// chart cross-fades for ([ChartRangeSwitcher]).
+  int _rangeSwitches = 0;
+
   void _setRange(int hours) {
+    _rangeSwitches++;
+    widget.sync?.noteRangeSwitch();
     _applyRange(hours.toDouble());
     _persistRange();
   }
@@ -381,20 +358,28 @@ class _OverviewChartState extends State<OverviewChart>
   /// Light haptic tick when the highlighted point changes while scrubbing. Use
   /// the overlay (real-reading) bar's spot, so movement is tracked per actual
   /// reading rather than per colour segment.
+  /// Drops the scrub readout. A tap on a meal ends the touch too: it opens
+  /// the meal's sheet, and a readout left standing would keep the chart in
+  /// hover mode behind it and after it closes.
+  void _endScrub() {
+    _lastTouchedIndex = null;
+    widget.sync?.setScrub(null);
+  }
+
   void _onChartTouch(FlTouchEvent event, LineTouchResponse? response) {
     final spots = response?.lineBarSpots;
     if (event is FlTapUpEvent && spots != null && _mealBarIndex >= 0) {
       for (final spot in spots) {
         if (spot.barIndex == _mealBarIndex &&
             spot.spotIndex < _mealMarkers.length) {
+          _endScrub();
           showMealDetail(context, _mealMarkers[spot.spotIndex].meal);
           return;
         }
       }
     }
     if (!event.isInterestedForInteractions || spots == null || spots.isEmpty) {
-      _lastTouchedIndex = null;
-      widget.sync?.setScrub(null);
+      _endScrub();
       return;
     }
     final touch = spots.firstWhere(
@@ -476,6 +461,9 @@ class _OverviewChartState extends State<OverviewChart>
     if (widget.preview) {
       return _chart(byTime, glucose, colors);
     }
+    // Built first: it settles the window and the meal markers the labels read.
+    final chart = _chart(byTime, glucose, colors);
+    final labels = _mealStrip();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -489,8 +477,71 @@ class _OverviewChartState extends State<OverviewChart>
             if (widget.navigable) Flexible(child: _navigator(context, byTime)),
           ],
         ),
-        const SizedBox(height: 24),
-        Expanded(child: _pinchable(_chart(byTime, glucose, colors))),
+        const SizedBox(height: 16),
+        Expanded(
+          child: _pinchable(
+            ChartRangeSwitcher(
+              generation: _rangeSwitches,
+              child: _withMealLabels(chart, labels),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The carb labels laid INTO the chart at its top, so they cost the plot no
+  /// height. Touches go through them to the chart.
+  ///
+  /// They step aside while a value is read out, from either chart of the pair:
+  /// the readout sits above the reading, which near the top of the plot is
+  /// exactly where the labels are, and a readout half hidden behind a pill is
+  /// no readout. Only the labels listen, so a scrub still rebuilds nothing else.
+  Widget _withMealLabels(Widget chart, Widget? labels) {
+    if (labels == null) {
+      return chart;
+    }
+    final sync = widget.sync;
+    return Stack(
+      children: [
+        Positioned.fill(child: chart),
+        Positioned(
+          top: 4,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(
+            child: sync == null
+                ? labels
+                : ListenableBuilder(
+                    listenable: sync,
+                    builder: (_, child) => AnimatedOpacity(
+                      opacity: sync.scrub == null ? 1 : 0,
+                      duration: const Duration(milliseconds: 120),
+                      child: child,
+                    ),
+                    child: labels,
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The carb labels, one pill per visible meal; the strip measures them and
+  /// stacks the ones that would touch. Null without meals.
+  Widget? _mealStrip() {
+    final axis = _axis;
+    if (axis == null || _mealMarkers.isEmpty) {
+      return null;
+    }
+    return MealLabelStrip(
+      stripWidth: _axisInset,
+      labels: [
+        for (final marker in _mealMarkers)
+          (
+            fraction: axis.fractionOf(marker.x),
+            text: '${sportDecimal(marker.meal.carbs, 0)} g',
+          ),
       ],
     );
   }
@@ -640,6 +691,7 @@ class _OverviewChartState extends State<OverviewChart>
       shift: shift,
       glucose: glucose,
       colors: colors,
+      minimal: widget.preview,
     );
     final bars = series.buildBars();
     // Dashed forecast line past the latest reading. Always built (anchored at the
@@ -693,7 +745,7 @@ class _OverviewChartState extends State<OverviewChart>
       '$latestSecs-${entries.length}-$effectiveRange-$panSecs'
       '-$predictionCount-${prediction.band != null}-${mealMarkers.length}',
     );
-    GlucoseLineChart chart(double pulse) => GlucoseLineChart(
+    final chart = GlucoseLineChart(
       key: key,
       bars: bars,
       betweenBars: [if (prediction.band != null) prediction.band!],
@@ -707,22 +759,16 @@ class _OverviewChartState extends State<OverviewChart>
       minYmgdl: widget.minYmgdl,
       maxYmgdl: widget.maxYmgdl,
       highlightSpot: widget.preview ? highlightSpot : null,
-      pulse: pulse,
       // The labels move under the insulin chart whenever one is stacked below,
       // so the two plots touch and read as one picture with one axis.
       showBottomTitles: widget.sync == null,
       mealMarkers: mealMarkers,
     );
-    // Only the overview preview pulses; the detail page renders once (no per-
-    // frame relayout of the full chart).
-    if (!widget.preview) {
-      _buzzForMirror(mirrored);
-      return _withMirror(chart(0), touchSpots, mirrored, axis, glucose);
+    if (widget.preview) {
+      return chart;
     }
-    return ValueListenableBuilder<double>(
-      valueListenable: _phase,
-      builder: (context, phase, _) => chart(phase),
-    );
+    _buzzForMirror(mirrored);
+    return _withMirror(chart, touchSpots, mirrored, axis, glucose);
   }
 
   /// Lays the readout for a scrub on the chart below over this one.
@@ -763,7 +809,7 @@ class _OverviewChartState extends State<OverviewChart>
                   '${forecast ? '~' : ''}'
                   '${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
               time: _clockAt(axis, spot.x),
-              leftInset: _axisInset,
+              axisInset: _axisInset,
             ),
           ),
         ),
@@ -905,13 +951,12 @@ class _OverviewChartState extends State<OverviewChart>
     if (!spots.hasBand) {
       return null;
     }
-    final scheme = Theme.of(context).colorScheme;
     bars.add(_bandEdgeBar([anchor, ...spots.low]));
     bars.add(_bandEdgeBar([anchor, ...spots.high]));
     return BetweenBarsData(
       fromIndex: bars.length - 2,
       toIndex: bars.length - 1,
-      color: scheme.onSurface.withValues(alpha: 0.12),
+      color: context.ink.text.withValues(alpha: 0.08),
     );
   }
 
@@ -938,11 +983,8 @@ class _OverviewChartState extends State<OverviewChart>
   /// curve looking smooth); the gently-varying forecast values don't overshoot
   /// enough to matter.
   LineChartBarData _predictionBar(List<FlSpot> spots) {
-    final scheme = Theme.of(context).colorScheme;
-    final lineColor = scheme.onSurface.withValues(alpha: 0.5);
-    final dotColor = HSLColor.fromColor(
-      scheme.onSurface,
-    ).withLightness(0.6).toColor();
+    final lineColor = context.ink.muted;
+    final dotColor = context.ink.muted;
     return LineChartBarData(
       spots: spots,
       isCurved: true,
@@ -991,7 +1033,7 @@ class _OverviewChartState extends State<OverviewChart>
     List<({double x, Meal meal})> markers,
     ProfileGlucoseState glucose,
   ) {
-    final scheme = Theme.of(context).colorScheme;
+    final ink = context.ink;
     return LineChartBarData(
       spots: [
         for (final marker in markers)
@@ -1003,9 +1045,9 @@ class _OverviewChartState extends State<OverviewChart>
         show: true,
         getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
           radius: 5,
-          color: scheme.onSurfaceVariant,
-          strokeColor: scheme.surface,
-          strokeWidth: 2,
+          color: ink.text,
+          strokeColor: ink.ground,
+          strokeWidth: 2.5,
         ),
       ),
     );

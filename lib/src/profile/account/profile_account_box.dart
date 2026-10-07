@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/base/ink_panel.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:provider/provider.dart';
@@ -28,34 +30,23 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.appBarTheme.backgroundColor,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+    return InkPanel.list(
+      radius: InkRadius.tile,
+      rows: [
+        Padding(padding: const EdgeInsets.all(16), child: _nameRow(theme)),
+        _actionButton(
+          icon: PhosphorIconsBold.lock,
+          labelKey: "profile.account.change_password",
+          onPressed: () => const ProfilePasswordDialog().show(context),
+          chevron: true,
         ),
-      ),
-      child: Column(
-        children: [
-          _nameRow(theme),
-          const SizedBox(height: 8),
-          _actionButton(
-            icon: PhosphorIconsBold.lock,
-            labelKey: "profile.account.change_password",
-            onPressed: () => const ProfilePasswordDialog().show(context),
-          ),
-          const SizedBox(height: 8),
-          _actionButton(
-            icon: PhosphorIconsBold.signOut,
-            labelKey: "profile.account.logout",
-            onPressed: _confirmLogout,
-            color: context.danger,
-          ),
-        ],
-      ),
+        _actionButton(
+          icon: PhosphorIconsBold.signOut,
+          labelKey: "profile.account.logout",
+          onPressed: _confirmLogout,
+          color: context.danger,
+        ),
+      ],
     );
   }
 
@@ -74,19 +65,13 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
                 children: [
                   LocaleText(
                     "profile.account.name",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
+                    style: InkText.caption.copyWith(color: context.ink.muted),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     name ?? "-",
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: InkText.bigValue.copyWith(fontSize: 20),
                   ),
                 ],
               ),
@@ -102,49 +87,63 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
     );
   }
 
-  /// Circular badge showing the first letter of the stored name (or a person
-  /// glyph when it is empty), tinted with the theme primary.
+  /// 56 px accent badge with the first letter of the stored name in the
+  /// colour on the accent (or a person glyph when it is empty).
   Widget _avatar(ThemeData theme, String? name) {
+    final colors = context.ink;
     final initial = (name ?? "").trim();
     return CircleAvatar(
-      radius: 24,
-      backgroundColor: theme.colorScheme.primary,
+      radius: 28,
+      backgroundColor: colors.accent,
       child: initial.isEmpty
-          ? Icon(PhosphorIconsBold.user, color: theme.colorScheme.onPrimary)
+          ? Icon(PhosphorIconsBold.user, color: colors.onAccent)
           : Text(
               initial[0].toUpperCase(),
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onPrimary,
+              style: InkText.bigValue.copyWith(
+                fontSize: 24,
+                color: colors.onAccent,
               ),
             ),
     );
   }
 
-  /// Shared compact, left-aligned action row for the card (change password /
-  /// log out) — one builder so both stay pixel-identical, tightly stacked, and
-  /// their leading icons line up.
+  /// One action row of the panel (change password / log out): the bare icon,
+  /// the label, and a chevron where it opens something. The panel draws the
+  /// lines between the rows.
   Widget _actionButton({
     required IconData icon,
     required String labelKey,
     required VoidCallback onPressed,
     Color? color,
+    bool chevron = false,
   }) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: color,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          minimumSize: Size.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          visualDensity: VisualDensity.compact,
-          alignment: Alignment.centerLeft,
+    final colors = context.ink;
+    final tone = color ?? colors.text;
+    return InkWell(
+      onTap: onPressed,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 56),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: Row(
+            spacing: 14,
+            children: [
+              Icon(icon, size: 20, color: tone),
+              Expanded(
+                child: LocaleText(
+                  labelKey,
+                  style: InkText.row.copyWith(color: tone),
+                ),
+              ),
+              if (chevron)
+                Icon(
+                  PhosphorIconsBold.caretRight,
+                  size: 18,
+                  color: colors.muted,
+                ),
+            ],
+          ),
         ),
-        icon: Icon(icon, size: 18),
-        label: LocaleText(labelKey, style: const TextStyle(fontSize: 14)),
       ),
     );
   }
@@ -153,17 +152,20 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
     final controller = TextEditingController(text: current);
     Alert(
       icon: PhosphorIconsBold.pencilSimple,
-      content: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-        child: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 50,
-          textInputAction: TextInputAction.done,
-          decoration: InputDecoration(
-            counterText: "",
-            prefixIcon: const Icon(PhosphorIconsBold.user),
-            hintText: Locales.string(context, "profile.account.name"),
+      description: "profile.account.rename",
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        maxLength: 50,
+        textInputAction: TextInputAction.done,
+        decoration: InputDecoration(
+          counterText: "",
+          prefixIcon: const Icon(PhosphorIconsBold.user),
+          hintText: Locales.string(context, "profile.account.name"),
+          suffixIcon: IconButton(
+            icon: const Icon(PhosphorIconsBold.xCircle),
+            tooltip: Locales.string(context, "profile.account.clear"),
+            onPressed: controller.clear,
           ),
         ),
       ),

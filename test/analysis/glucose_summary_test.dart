@@ -24,7 +24,7 @@ void main() {
       final stats = GlucoseSummary([100, 100, 100], glucoseState()).build();
       expect(statValue(stats, 'mean'), '100');
       expect(statValue(stats, 'sd'), '0');
-      expect(statValue(stats, 'cv'), '0.0');
+      expect(statValue(stats, 'cv'), '0,0');
       expect(statValue(stats, 'max'), '100');
       expect(statValue(stats, 'min'), '100');
     });
@@ -34,14 +34,14 @@ void main() {
       final stats = GlucoseSummary([80, 120], glucoseState()).build();
       expect(statValue(stats, 'mean'), '100');
       expect(statValue(stats, 'sd'), '20');
-      expect(statValue(stats, 'cv'), '20.0');
+      expect(statValue(stats, 'cv'), '20,0');
       expect(statValue(stats, 'max'), '120');
       expect(statValue(stats, 'min'), '80');
     });
 
     test('GMI uses the standard CGM formula 3.31 + 0.02392 * mean', () {
       final stats = GlucoseSummary([100], glucoseState()).build();
-      expect(statValue(stats, 'gmi'), '5.7'); // 3.31 + 2.392 = 5.702
+      expect(statValue(stats, 'gmi'), '5,7'); // 3.31 + 2.392 = 5.702
     });
 
     test('formats values in the chosen display unit', () {

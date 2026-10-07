@@ -8,6 +8,7 @@ import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/sport/activity/reorderable_tile_grid.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/sport/activity/tile_layout_editor.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:provider/provider.dart';
 
 /// Personalizable summary boxes on the overview: Sport metrics AND nutrition
@@ -24,14 +25,19 @@ class OverviewBoxes extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 4),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
+              Expanded(
+                child: Text(
+                  Locales.string(context, 'date.today'),
+                  style: InkText.section,
+                ),
+              ),
               _headerButton(
                 context,
-                PhosphorIconsBold.squaresFour,
+                PhosphorIconsRegular.squaresFour,
                 'overview.boxes.all',
                 () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
@@ -41,14 +47,13 @@ class OverviewBoxes extends StatelessWidget {
               ),
               _headerButton(
                 context,
-                PhosphorIconsBold.slidersHorizontal,
+                PhosphorIconsRegular.slidersHorizontal,
                 'sport.layout.title',
                 () => _edit(context, layout),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 4),
         ReorderableTileGrid<OverviewBox>(
           tiles: layout.visible(true),
           state: layout,
@@ -58,7 +63,7 @@ class OverviewBoxes extends StatelessWidget {
     );
   }
 
-  /// One muted header action. `onSurfaceVariant` weight, not the accent: these
+  /// One muted header action on a 44 px target. Muted, not the accent: these
   /// are controls for the section, not affordances that carry the brand.
   Widget _headerButton(
     BuildContext context,
@@ -67,13 +72,10 @@ class OverviewBoxes extends StatelessWidget {
     VoidCallback onPressed,
   ) {
     return IconButton(
-      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+      padding: EdgeInsets.zero,
       tooltip: Locales.string(context, tooltipKey),
-      icon: Icon(
-        icon,
-        size: 20,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-      ),
+      icon: Icon(icon, size: 20, color: context.ink.muted),
       onPressed: onPressed,
     );
   }

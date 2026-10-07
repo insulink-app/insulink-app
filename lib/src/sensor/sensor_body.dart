@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/base/pinned_header_scroll.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/sensor/control/sensor_control_box.dart';
 import 'package:insulink/src/sensor/info/libre3_sensor_info.dart';
 import 'package:insulink/src/sensor/info/sensor_info.dart';
@@ -20,27 +18,15 @@ class SensorBodyContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-        child: PinnedHeaderScroll(
-          header: SensorControlBox(controller: controller),
-          child: _info(controller),
-        ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
+        children: [
+          SensorControlBox(
+            controller: controller,
+            details: _sensorInfo(controller),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _info(CgmController controller) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        LocaleText(
-          'sensor.info.title',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        _sensorInfo(controller),
-      ],
     );
   }
 

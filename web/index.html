@@ -26,22 +26,22 @@
 
   <style>
     /* Same colours and logo as the native splash (flutter_native_splash in pubspec.yaml). */
-    html, body { margin: 0; height: 100%; background: #F2F3F5; overscroll-behavior: none; }
+    html, body { margin: 0; height: 100%; background: #EDF2F6; overscroll-behavior: none; }
     #splash {
       position: fixed; inset: 0; z-index: 10;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: #F2F3F5; transition: opacity 0.35s ease;
+      background: #EDF2F6; transition: opacity 0.35s ease;
     }
     #splash img { width: 220px; height: 220px; }
     #splash .dark { display: none; }
-    #splash .bar { width: 72px; height: 3px; border-radius: 3px; overflow: hidden; background: rgba(69, 86, 159, 0.15); margin-top: -40px; }
+    #splash .bar { width: 72px; height: 3px; border-radius: 3px; overflow: hidden; background: rgba(51, 70, 200, 0.15); margin-top: -40px; }
     #splash .bar::after {
       content: ""; display: block; width: 40%; height: 100%; border-radius: 3px;
-      background: #45569F; animation: splash-slide 1.1s ease-in-out infinite;
+      background: #3346C8; animation: splash-slide 1.1s ease-in-out infinite;
     }
     #splash.done { opacity: 0; pointer-events: none; }
     @keyframes splash-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
-    :root.dark, :root.dark body, :root.dark #splash { background: #15181D; }
+    :root.dark, :root.dark body, :root.dark #splash { background: #0F1B26; }
     /* Embedded on the website (?frame=<radius>): the page rounds its own corners,
        because browsers do not reliably clip a composited iframe to a rounded box
        and the website therefore does not clip it at all. Root and body are both
@@ -52,8 +52,8 @@
     :root.framed body { clip-path: inset(0 round var(--frame-radius)); }
     :root.dark #splash .light { display: none; }
     :root.dark #splash .dark { display: block; }
-    :root.dark #splash .bar { background: rgba(147, 166, 255, 0.18); }
-    :root.dark #splash .bar::after { background: #93A6FF; }
+    :root.dark #splash .bar { background: rgba(157, 174, 255, 0.18); }
+    :root.dark #splash .bar::after { background: #9DAEFF; }
   </style>
   <script>
     /* Dark splash when the embedding website asks for it (?theme=dark, the same

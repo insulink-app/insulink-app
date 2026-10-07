@@ -28,13 +28,8 @@ class AverageView extends StatelessWidget {
     final stats = GlucoseSummary(values, glucose).build();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: AnalysisStatTiles(stats: stats),
-        ),
-      ),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 120),
+      child: AnalysisStatTiles(stats: stats),
     );
   }
 }

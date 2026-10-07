@@ -74,6 +74,8 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -98,6 +100,17 @@ flutter:
     - assets/images/languages/
     - assets/sounds/
     - assets/vendor_keys/
+  fonts:
+    - family: AtkinsonHyperlegibleNext
+      fonts:
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-ExtraBold.ttf
+          weight: 800
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -140,14 +153,16 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/images/icon-foreground.png"
 
 flutter_native_splash:
-  color: "#FAFAFA"
-  color_dark: "#15181D"
+  color: "#EDF2F6"
+  color_dark: "#0F1B26"
   image: assets/images/splash-black.png
   image_dark: assets/images/splash-white.png
   fullscreen: true
   android_gravity: center
+  # The web demo keeps its hand-written splash in web/index.html; the generator would replace it.
+  web: false
   android_12:
-    color: "#FAFAFA"
-    color_dark: "#15181D"
+    color: "#EDF2F6"
+    color_dark: "#0F1B26"
     image: assets/images/splash-black.png
     image_dark: assets/images/splash-white.png

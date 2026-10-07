@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/base/grab_handle.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_models.dart';
@@ -11,14 +11,8 @@ Future<void> showExerciseEditorSheet(
   BuildContext context, {
   SportExercise? existing,
 }) {
-  return showModalBottomSheet(
+  return showInkSheet(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => ChangeNotifierProvider.value(
       value: context.read<TrainingState>(),
       child: _ExerciseEditorSheet(existing: existing),
@@ -67,26 +61,14 @@ class _ExerciseEditorSheetState extends State<_ExerciseEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 12,
-        bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
-      ),
+    return InkSheet(
+      titleKey: widget.existing == null
+          ? 'sport.exercises.add'
+          : 'sport.exercises.edit',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const GrabHandle(),
-          const SizedBox(height: 20),
-          LocaleText(
-            widget.existing == null
-                ? 'sport.exercises.add'
-                : 'sport.exercises.edit',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 24),
           TextField(
             controller: _name,
             autofocus: widget.existing == null,

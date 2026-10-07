@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Sensor</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/ba4843934d08b8ecaa5a3a1708de4732">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s" style="height: 1120px">
+  <header class="bar">
+    <button class="ib plain" aria-label="Zurück"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg></button>
+    <h1>Sensor</h1>
+    <button class="ib plain" aria-label="Verlauf"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"></path></svg></button>
+  </header>
+
+  <div class="dev">
+    <span class="big"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="2"></circle><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"></path></svg></span>
+    <div>
+      <h2>Dexcom G7</h2>
+      <div class="status"><i></i>Verbunden, 80 mg/dL</div>
+    </div>
+  </div>
+
+  <div style="margin: 24px 20px 0 20px">
+    <div class="lr"><span>Haltbarkeit</span><b>noch 5 Tage</b></div>
+    <div class="seg" style="grid-template-columns: repeat(10, minmax(0, 1fr))"><i></i><i></i><i></i><i></i><i></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i></div>
+  </div>
+
+  <div class="sec-h" style="margin-top: 32px"><h2>Status</h2></div>
+  <div class="panel">
+    <div class="kv"><span class="k">Status</span><span class="v" style="display: flex; align-items: center; gap: 7px"><i style="width: 8px; height: 8px; border-radius: 4px; background: #7CCB8F; display: block"></i>OK</span></div>
+    <div class="kv"><span class="k">Letzter Messwert</span><span class="v">Heute, 16:54:46</span></div>
+    <div class="kv"><span class="k">Gestartet</span><span class="v">30.09., 17:11</span></div>
+    <div class="kv"><span class="k">Alter</span><span class="v">5 T 23 h</span></div>
+    <div class="kv"><span class="k">Kalibrierung</span><span class="v">erlaubt</span></div>
+  </div>
+
+  <div class="sec-h"><h2>Gerät</h2></div>
+  <div class="panel">
+    <div class="kv"><span class="k">Firmware</span><span class="v">45.192.109.78</span></div>
+    <div class="kv"><span class="k">Software-Nr.</span><span class="v">14252</span></div>
+    <div class="kv"><span class="k">Silicon</span><span class="v">0x21803f2</span></div>
+    <div class="kv"><span class="k">Seriennummer</span><span class="v">187955736647</span></div>
+  </div>
+
+  <div class="sec-h"><h2>Sitzung</h2></div>
+  <div class="panel">
+    <button class="row" style="min-height: 60px">
+      <span class="ico neutral"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none"></rect></svg></span>
+      <span class="grow"><span class="t1" style="font-size: 15px">Sitzung beenden</span></span>
+    </button>
+    <button class="row" style="min-height: 60px">
+      <span class="ico red"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M9 15l-1.5 1.5a3 3 0 0 1-4-4L5 11M15 9l1.5-1.5a3 3 0 0 1 4 4L19 13M8 3v3M3 8h3M16 21v-3M21 16h-3"></path></svg></span>
+      <span class="grow"><span class="t1 red-t" style="font-size: 15px">Sensor stoppen</span></span>
+    </button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1120}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

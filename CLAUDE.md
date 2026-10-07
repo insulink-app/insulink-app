@@ -401,10 +401,36 @@ glucose/bolus/silent profile state, and `CgmController`) and `MaterialApp`
   session — see `archiveSince` / `archiveRange` under Data + persistence. Default
   window is 14 d (`CgmController.statsWindow`, clinical AGP).
 
+### UI redesign
+
+- `docs/redesign/DESIGN.md` is the spec, `docs/redesign/screens/*.png` the
+  target picture of each screen (the screenshot wins where the two disagree).
+- Only the view layer changes. BLE, service, state and calculation logic stay
+  untouched, and no function is removed.
+- Colours, gaps and radii only through `theme/insulink_theme.dart`
+  (`context.ink`, `InkSpace`, `InkRadius`, `InkText`); no colour literals in
+  widgets.
+- Every icon button gets a `Semantics` label; touch targets are at least 44 px.
+- **Popups only through `InkDialog` and `InkSheet`** (`base/ink_dialog.dart`,
+  `base/ink_sheet.dart`, `docs/redesign/DESIGN.md` "Popups"). Never call
+  `showDialog`, `showGeneralDialog`, `showModalBottomSheet`, `AlertDialog` or
+  `SimpleDialog` directly: a dialog is an `InkDialog(...).show(context)` (or the
+  older `Alert`, which renders one), a sheet is `showInkSheet(builder: ...)`
+  whose content is an `InkSheet`. Dialogs float at the foot over the blurred
+  page with the action stacked above "Abbrechen"; every sheet has the grab
+  handle and a close button at the top right, even when it can be swiped away.
+  Action buttons in a dialog carry one word.
+
 ### Theme & design system (`lib/src/theme/`)
 
-`app_theme.dart` holds both `ThemeData`s; `accent_colors.dart` and
-`glucose_colors.dart` are `ThemeExtension`s. **No widget invents a colour** —
+`insulink_colors.dart` (`InsulinkColors`, read as `context.ink` via
+`insulink_theme.dart`, which also holds `InkSpace`/`InkRadius`/`InkText`) holds the
+redesign's design tokens and is the **single source** of every colour: `app_theme.dart`
+builds both `ThemeData`s from it through one builder, and feeds `ColorScheme` and
+the older extensions (`GlucoseColors`, `AccentColors`, `StatusColors`,
+`InsulinColors`) from the tokens. The font is the bundled
+Atkinson Hyperlegible Next (`assets/fonts/`), with tabular figures on every
+`TextTheme` role. **No widget invents a colour** —
 needed a value the scheme has no role for? Add the role here, don't hard-code it
 at the call site. Full rationale + the measured contrast values: `docs/DESIGN.md`.
 
@@ -421,13 +447,13 @@ The load-bearing parts (regressing any of these is a visible bug):
   `OutlinedButton` draw their label in `colorScheme.primary` (the *fill* colour,
   ~4:1 as a label on dark), `IconButton` in `onSurfaceVariant` (the *decoration*
   tone). Both are corrected per theme in `app_theme.dart`.
-- **Two accents, same hue, because one colour can't do both jobs on dark**:
-  `colorScheme.primary` (`#5A73F2`) is a **fill** only — a button with white text
-  on top. `AccentColors.onSurface`, read as `context.accent`, (`#93A6FF` dark) is
-  the accent **drawn on** a surface. `primary` as a foreground only reaches ~4:1.
-  On light both are the same indigo. Don't "simplify" them back into one, and
-  don't lighten `primary` into the M3 light-primary/dark-onPrimary pattern — that
-  was tried and reverted (it recolours every filled button).
+- **One accent since the redesign**: `colorScheme.primary` and `context.accent`
+  are both the `accent` token (`#9DAEFF` dark, `#3346C8` light), and content on
+  a fill takes `onPrimary` (= `onAccent`: dark `#0F1B26` on dark, white on
+  light). The old split (mid-tone fill + white text, lighter foreground accent)
+  was deliberately given up for the redesign's light-indigo fill with dark
+  content. So **never hard-code `Colors.white` on a `primary` fill** — use
+  `colorScheme.onPrimary`, or let the button's own foreground apply.
 - **Three foreground tones**: `onSurface` = text + **bare controls** (`IconButton`,
   `TextButton` — no container of their own, so no tint); `context.accent` =
   affordances that carry the brand and have a shape to carry it (outlined-button
@@ -437,7 +463,7 @@ The load-bearing parts (regressing any of these is a visible bug):
 - **Shape says affordance**: a neutral filled circle is a row's *identity* badge
   and is never pressable; a bare glyph is information (or a tile that is itself
   the control); a filled rounded-rect with a label is the button. Tinted square
-  faces on `IconButton`s, and badges inside `SportSummaryTile`, were both tried
+  faces on `IconButton`s, and badges inside `StatTile`, were both tried
   and rejected — don't reintroduce them.
 - **Light: white boxes and bottom nav on a faintly grey page**, and from the box
   the ladder steps DOWN, the dark one steps up — so "raised" is *darker* than its
@@ -708,6 +734,9 @@ the widget cannot drift away from the app on what is in range.
 - `docs/WEB_DEMO.md` — the **browser demo** on the website: the `main_demo.dart`
   entry point, the in-zone fake backend, the dummy data and the three `DemoMode`
   switches outside `lib/src/demo/`.
+- `docs/SCREENSHOTS.md` — the **screenshots** published with the web demo on every
+  main push: the URLs, the integration test that takes them, and what the test
+  binding changes (start in the body, frame-by-frame pumps, no start errors).
 - `docs/BATTERY.md` — the two-level battery saver: what each level pauses, why the
   gate sits in `BackgroundLocationSampler.tick()`, and why a manual cardio
   recording must force the detection service up.

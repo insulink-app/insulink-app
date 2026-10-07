@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/relative_day.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/sport/training/cardio_metric.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// The stat tiles (distance / duration / average speed) and the start/end times
-/// of a completed training — the numeric summary under the route map.
+/// The numeric summary under the route map (screen 29): the day on the left
+/// and the clock span on the right, then distance, duration and average
+/// speed in one panel, parted by lines, with muted glyphs.
 class TrainingStatsPanel extends StatelessWidget {
   const TrainingStatsPanel({super.key, required this.training});
 
@@ -14,121 +19,67 @@ class TrainingStatsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: [_tiles(context), const SizedBox(height: 12), _times(context)],
-    );
-  }
-
-  Widget _tiles(BuildContext context) {
-    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: _tile(
-            context,
-            PhosphorIconsBold.ruler,
-            'sport.trainings.distance',
-            formatDistanceKm(training.distanceM),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _tile(
-            context,
-            PhosphorIconsBold.timer,
-            'sport.trainings.duration',
-            formatDuration(training.duration),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _tile(
-            context,
-            PhosphorIconsBold.gauge,
-            'sport.trainings.avg_speed',
-            formatSpeed(training.avgSpeedKmh),
+        _when(context),
+        const SizedBox(height: 14),
+        InkPanel(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+          child: CardioMetricRow(
+            metrics: [
+              CardioMetric(
+                icon: PhosphorIconsBold.ruler,
+                formatted: formatDistanceKm(training.distanceM),
+                labelKey: 'sport.trainings.distance',
+                size: 26,
+              ),
+              CardioMetric(
+                icon: PhosphorIconsBold.timer,
+                formatted: formatDuration(training.duration),
+                labelKey: 'sport.trainings.duration',
+                size: 26,
+              ),
+              CardioMetric(
+                icon: PhosphorIconsBold.gauge,
+                formatted: formatSpeed(training.avgSpeedKmh),
+                labelKey: 'sport.trainings.avg_speed',
+                size: 26,
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _tile(
-    BuildContext context,
-    IconData icon,
-    String labelKey,
-    String value,
-  ) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: scheme.onSurfaceVariant, size: 22),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            Locales.string(context, labelKey),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _times(BuildContext context) {
+  /// The day as the lists name it, and the clock span in bold ("16:21 bis
+  /// 16:40": the design's dash is no punctuation the app's strings use).
+  Widget _when(BuildContext context) {
+    final colors = context.ink;
     final locale = MaterialLocalizations.of(context);
     final start = DateTime.fromMillisecondsSinceEpoch(training.startMs);
     final end = DateTime.fromMillisecondsSinceEpoch(training.endMs);
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        children: [
-          _timeRow(context, 'sport.trainings.start', locale, start),
-          Divider(color: scheme.onSurface.withValues(alpha: 0.08), height: 1),
-          _timeRow(context, 'sport.trainings.end', locale, end),
-        ],
-      ),
+    String clock(DateTime time) => locale.formatTimeOfDay(
+      TimeOfDay.fromDateTime(time),
+      alwaysUse24HourFormat: true,
     );
-  }
-
-  Widget _timeRow(
-    BuildContext context,
-    String labelKey,
-    MaterialLocalizations locale,
-    DateTime time,
-  ) {
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            Locales.string(context, labelKey),
-            style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
+          Expanded(
+            child: Text(
+              RelativeDay(start).label(context),
+              style: InkText.label.copyWith(fontSize: 15, color: colors.muted),
+            ),
           ),
           Text(
-            '${locale.formatMediumDate(time)} · '
-            '${locale.formatTimeOfDay(TimeOfDay.fromDateTime(time))}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            Locales.string(
+              context,
+              'connections.history.range',
+              params: [clock(start), clock(end)],
+            ),
+            style: InkText.row.copyWith(color: colors.text),
           ),
         ],
       ),

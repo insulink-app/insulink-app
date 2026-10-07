@@ -21,7 +21,7 @@ class MirroredReadout extends StatelessWidget {
     required this.dotColor,
     required this.value,
     required this.time,
-    required this.leftInset,
+    required this.axisInset,
   });
 
   /// Where the scrub sits across the plot, 0 at the left edge and 1 at the right.
@@ -41,18 +41,27 @@ class MirroredReadout extends StatelessWidget {
   final String time;
 
   /// The axis strip on the left, which is not part of the plotting area.
-  final double leftInset;
+  final double axisInset;
 
-  static const double _width = 96;
+  /// fl_chart's own tooltip geometry (its `LineTouchTooltipData` defaults), so
+  /// the readout for a scrub below sits exactly where a touch here puts it:
+  /// centred on the reading, its lower edge this far above the dot.
+  static const double _margin = 16;
+  static const EdgeInsets _padding = EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 8,
+  );
+  static const double _maxContentWidth = 120;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final plotWidth = constraints.maxWidth - leftInset;
-        final x = leftInset + fraction * plotWidth;
-        final flip = x > constraints.maxWidth - _width - 8;
+        final plotWidth = constraints.maxWidth - axisInset;
+        final x = axisInset + fraction * plotWidth;
+        final dotY = valueFraction * constraints.maxHeight;
         return Stack(
+          clipBehavior: Clip.none,
           children: [
             Positioned.fill(
               child: CustomPaint(
@@ -67,10 +76,15 @@ class MirroredReadout extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: 0,
-              left: flip ? null : x + 8,
-              right: flip ? constraints.maxWidth - x + 8 : null,
-              child: _pill(context),
+              left: x,
+              top: dotY,
+              child: FractionalTranslation(
+                translation: const Offset(-0.5, -1),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: _margin),
+                  child: _pill(context),
+                ),
+              ),
             ),
           ],
         );
@@ -78,35 +92,39 @@ class MirroredReadout extends StatelessWidget {
     );
   }
 
+  /// The same pill the chart's touch tooltip draws: inverse surface, value in
+  /// bold over the time, centred.
   Widget _pill(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      width: _width,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      constraints: BoxConstraints(
+        maxWidth: _maxContentWidth + _padding.horizontal,
+      ),
+      padding: _padding,
       decoration: BoxDecoration(
         color: scheme.inverseSurface,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: scheme.onInverseSurface,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+      child: Text.rich(
+        TextSpan(
+          text: value,
+          style: TextStyle(
+            color: scheme.onInverseSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
           ),
-          Text(
-            time,
-            style: TextStyle(
-              color: scheme.onInverseSurface.withValues(alpha: 0.7),
-              fontSize: 11,
+          children: [
+            TextSpan(
+              text: '\n$time',
+              style: TextStyle(
+                color: scheme.onInverseSurface.withValues(alpha: 0.7),
+                fontWeight: FontWeight.normal,
+                fontSize: 11,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }

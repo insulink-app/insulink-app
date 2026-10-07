@@ -6,12 +6,16 @@ import 'package:insulink/src/pump/loop/loop_mode_card.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_restore_card.dart';
 import 'package:insulink/src/pump/pod_status_attributes.dart';
-import 'package:insulink/src/pump/pod_status_box.dart';
+import 'package:insulink/src/pump/pod_head_section.dart';
 import 'package:insulink/src/pump/pump_actions.dart';
 import 'package:insulink/src/pump/pump_notice.dart';
-import 'package:insulink/src/sensor/info/sensor_info_section.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/base/key_value_row.dart';
+import 'package:insulink/src/base/section_header.dart';
+import 'package:insulink/src/pump/pump_delivery_controls.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The pump device page, shown inside the Devices tab (see [DevicesBody]).
 ///
@@ -49,7 +53,7 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
     final controller = context.watch<PodController>();
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         child: controller.hasPod && controller.store.isActivated
             ? _pod(context, controller)
             : _setup(),
@@ -57,14 +61,11 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
     );
   }
 
-  /// With a pod: status box, the automation switch, then the details, all in one
-  /// ordinary scroll.
-  ///
-  /// Deliberately NOT the sensor page's pinned-and-fading header. That behaviour
-  /// suits a box that is only ever read: it dissolves as the detail list takes
-  /// its place. This page's top holds a CONTROL, and a control that fades while
-  /// you scroll towards the list underneath it is both distracting and, past half
-  /// transparency, no longer tappable. Scrolling here just moves the page.
+  /// With a pod, in the redesign's order (`docs/redesign/screens/11-pumpe.png`):
+  /// the device head with life and reservoir, delivery (automation, temporary
+  /// rate, stop), the pod's data, and at the bottom the two actions that end
+  /// the pod. One ordinary scroll, no pinned header: a control that fades while
+  /// you scroll is distracting and, past half transparency, no longer tappable.
   ///
   /// Pulling it down re-reads the pod. Everything on the page is a cached status
   /// that ages on its own, and a pull is the gesture a phone user already makes
@@ -72,18 +73,58 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
   Widget _pod(BuildContext context, PodController controller) {
     return RefreshIndicator(
       onRefresh: controller.refresh,
-      child: SingleChildScrollView(
+      child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            PodStatusBox(controller: controller),
-            const SizedBox(height: 12),
-            const PodLoopModeCard(),
-            const SizedBox(height: 18),
-            _details(context, controller),
-          ],
-        ),
+        padding: const EdgeInsets.only(top: 8, bottom: 32),
+        children: [
+          PodHeadSection(controller: controller),
+          _header('pump.status.delivery', topGap: 32),
+          ..._delivery(context, controller),
+          _header('pump.info.title', actions: const [PodRefreshButton()]),
+          _details(context, controller),
+          _header('pump.manage'),
+          const InkPanel.list(rows: [PodDeactivateButton(), PodForgetButton()]),
+        ],
+      ),
+    );
+  }
+
+  /// The automation, a running temporary rate, and the stop, as separate
+  /// elements 10 px apart. A failure stays here until the next action replaces
+  /// it, never timed out, because it is not something to miss.
+  ///
+  /// A stale READING is not in here. It is the ordinary resting state of a pod
+  /// nobody has just read; it is marked with a dot on the refresh button
+  /// instead (see [PodRefreshButton]), which puts the notice on the control
+  /// that fixes it.
+  List<Widget> _delivery(BuildContext context, PodController controller) {
+    return [
+      const PodLoopModeCard(),
+      const SizedBox(height: InkSpace.tileGap),
+      const PodTempBasalButton(),
+      const SizedBox(height: InkSpace.tileGap),
+      const PodStopButton(),
+      const PodSilenceAlertsButton(),
+      if (controller.failure != null) ...[
+        const SizedBox(height: InkSpace.tileGap),
+        PumpNotice.failure(controller.failure!),
+      ],
+      const PodBasalOutOfDateNotice(),
+    ];
+  }
+
+  /// Section titles line up with the page text, 8 px inside the panels' edge.
+  Widget _header(
+    String titleKey, {
+    List<Widget> actions = const [],
+    double topGap = InkSpace.sectionGap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: SectionHeader(
+        titleKey: titleKey,
+        actions: actions,
+        topGap: topGap,
       ),
     );
   }
@@ -98,55 +139,20 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
     return const SingleChildScrollView(child: PodSetupBox());
   }
 
+  /// What the pod last reported, as key/value rows in one panel.
   Widget _details(BuildContext context, PodController controller) {
     final sections = PodStatusAttributes(
       status: controller.status,
       readAt: controller.statusReadAt,
       localize: (key) => Locales.string(context, key),
     ).build();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _heading(),
-        const SizedBox(height: 4),
-        ..._notices(context, controller),
-        const PodBasalOutOfDateNotice(),
-        SensorSectionList(sections: sections),
+    return InkPanel.list(
+      rows: [
+        for (final section in sections)
+          for (final item in section.items)
+            KeyValueRow(label: item.key, value: item.value),
       ],
     );
-  }
-
-  /// The detail heading with the re-read beside it: the control belongs to what
-  /// it refreshes, rather than sitting at the far end of the page.
-  Widget _heading() {
-    return Row(
-      children: [
-        Expanded(
-          child: LocaleText(
-            'pump.info.title',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-        ),
-        const PodRefreshButton(),
-      ],
-    );
-  }
-
-  /// A pump failure stays on screen until the next action replaces it, never
-  /// timed out, because it is not something to miss.
-  ///
-  /// A stale READING is not in here. It is the ordinary resting state of a pod
-  /// nobody has just read, so a card explaining it sat on the page most of the
-  /// time it was open. It is marked with a dot on the refresh button instead
-  /// (see [PodRefreshButton]), which puts the notice on the control that fixes
-  /// it.
-  List<Widget> _notices(BuildContext context, PodController controller) {
-    return [
-      if (controller.failure != null) ...[
-        PumpNotice.failure(controller.failure!),
-        const SizedBox(height: 14),
-      ],
-    ];
   }
 }
 
@@ -163,13 +169,7 @@ class PodSetupBox extends StatelessWidget {
     // before delivery starts. That pod needs the wizard finished, not a new one.
     final controller = context.watch<PodController>();
     final paired = controller.hasPod;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
+    return InkPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

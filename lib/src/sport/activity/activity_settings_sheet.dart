@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -16,11 +17,8 @@ import 'package:provider/provider.dart';
 /// The stride length feeds the distance estimate of the "Today" tiles; the
 /// height feeds the BMI. Both are synced to the backend when the sheet closes.
 Future<void> showActivitySettingsSheet(BuildContext context) async {
-  await showModalBottomSheet(
+  await showInkSheet(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: context.read<SportState>()),

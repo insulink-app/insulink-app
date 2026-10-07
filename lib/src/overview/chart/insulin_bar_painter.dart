@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/overview/chart/chart_dashes.dart';
 import 'package:insulink/src/overview/chart/chart_x_axis.dart';
 import 'package:insulink/src/overview/chart/insulin_chart_series.dart';
@@ -20,9 +21,11 @@ import 'package:insulink/src/overview/chart/insulin_chart_series.dart';
 /// stands ON the band it happened during rather than colliding with it or hiding
 /// it. Two equal bars fighting for the same pixels could only ever be read wrong.
 ///
-/// [leftInset] is the width of the axis strip and must match the glucose chart's
-/// `reservedSize` exactly, or the two plot areas start at different x and every
-/// bar sits beside the glucose it belongs to rather than under it.
+/// [axisInset] is the width of the axis strip on the left and must match the
+/// glucose chart's `reservedSize` exactly, or the two plot areas start at
+/// different x and every bar sits beside the glucose it belongs to rather than
+/// under it. The plot is painted shifted right by it, so every x below is
+/// measured from the plot's own left edge.
 class InsulinBarPainter extends CustomPainter {
   const InsulinBarPainter({
     required this.series,
@@ -30,7 +33,9 @@ class InsulinBarPainter extends CustomPainter {
     required this.bolus,
     required this.labelColor,
     required this.scrubColor,
-    required this.leftInset,
+    required this.gridColor,
+    required this.plotColor,
+    required this.axisInset,
     required this.bolusWidth,
     required this.mealColor,
     this.ticks = const [],
@@ -44,7 +49,16 @@ class InsulinBarPainter extends CustomPainter {
   final Color bolus;
   final Color labelColor;
   final Color scrubColor;
-  final double leftInset;
+
+  /// The lines at each step of the unit scale, the top one being the shared
+  /// edge with the glucose chart above.
+  final Color gridColor;
+
+  /// The plot's own face, so the insulin reads as the lower part of one chart.
+  final Color plotColor;
+
+  /// The axis label strip on the left, which is not part of the plot.
+  final double axisInset;
   final double bolusWidth;
   final Color mealColor;
 
@@ -62,11 +76,7 @@ class InsulinBarPainter extends CustomPainter {
   /// The bar under the pointer, kept full strength while the rest dim.
   final InsulinBar? highlighted;
 
-  /// The gridlines fl_chart draws by default, which is what the glucose chart
-  /// above uses. Copied rather than invented so the two read as one chart.
-  static const Color gridColor = Colors.blueGrey;
-  static const double gridWidth = 0.4;
-  static const List<double> gridDash = [8, 4];
+  static const double gridWidth = 1;
 
   /// The scrub line the glucose chart draws while a finger is on it.
   static const double scrubWidth = 1.5;
@@ -81,25 +91,44 @@ class InsulinBarPainter extends CustomPainter {
   /// for them on the chart above.
   static const double bottomInset = 24;
 
-  /// Room above the baseline so the topmost axis label is not cut off by the
-  /// edge. The bars hang DOWN from that baseline, so nothing else needs it.
-  static const double topPad = 8;
+  /// The baseline sits at the very top: it is the glucose chart's bottom edge,
+  /// and the bars hang DOWN from it. The zero step carries no label, so
+  /// nothing above it needs room.
+  static const double topPad = 0;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final plotWidth = size.width - leftInset;
+    final plotWidth = size.width - axisInset;
     if (plotWidth <= 0 || size.height <= 0) {
       return;
     }
-    _paintGrid(canvas, size);
+    canvas.save();
+    canvas.translate(axisInset, 0);
+    _paintFace(canvas, size, plotWidth);
+    _paintGrid(canvas, size, plotWidth);
     _paintMeals(canvas, size, plotWidth);
     _paintBasal(canvas, size, plotWidth);
     _paintBoluses(canvas, size, plotWidth);
     _paintScrub(canvas, size, plotWidth);
     _paintTicks(canvas, size, plotWidth);
+    canvas.restore();
   }
 
-  void _paintGrid(Canvas canvas, Size size) {
+  void _paintFace(Canvas canvas, Size size, double plotWidth) {
+    canvas.drawRect(
+      Rect.fromLTRB(
+        0,
+        _yFor(0, size.height),
+        plotWidth,
+        _yFor(series.axisMax, size.height),
+      ),
+      Paint()..color = plotColor,
+    );
+  }
+
+  /// A solid line at every step of the unit scale, labelled on the left; the
+  /// zero line is the shared edge and goes unlabelled.
+  void _paintGrid(Canvas canvas, Size size, double plotWidth) {
     final paint = Paint()
       ..color = gridColor
       ..strokeWidth = gridWidth;
@@ -109,14 +138,10 @@ class InsulinBarPainter extends CustomPainter {
       value += series.axisStep
     ) {
       final y = _yFor(value, size.height);
-      paintDashedLine(
-        canvas,
-        Offset(leftInset, y),
-        Offset(size.width, y),
-        paint,
-        gridDash,
-      );
-      _paintLabel(canvas, value, y);
+      canvas.drawLine(Offset(0, y), Offset(plotWidth, y), paint);
+      if (value > 0) {
+        _paintLabel(canvas, value, y, plotWidth);
+      }
     }
   }
 
@@ -126,7 +151,7 @@ class InsulinBarPainter extends CustomPainter {
       ..color = mealColor.withValues(alpha: 0.35)
       ..strokeWidth = mealWidth;
     for (final fraction in mealFractions) {
-      final x = leftInset + fraction * plotWidth;
+      final x = fraction * plotWidth;
       paintDashedLine(
         canvas,
         Offset(x, 0),
@@ -142,17 +167,11 @@ class InsulinBarPainter extends CustomPainter {
   void _paintTicks(Canvas canvas, Size size, double plotWidth) {
     for (final tick in ticks) {
       final text = TextPainter(
-        text: TextSpan(
-          text: tick.label,
-          style: TextStyle(fontSize: 10, color: labelColor),
-        ),
+        text: TextSpan(text: tick.label, style: _labelStyle),
         textDirection: TextDirection.ltr,
       )..layout();
-      final centre = leftInset + tick.fraction * plotWidth;
-      final left = (centre - text.width / 2).clamp(
-        leftInset,
-        size.width - text.width,
-      );
+      final centre = tick.fraction * plotWidth;
+      final left = (centre - text.width / 2).clamp(0.0, plotWidth - text.width);
       text.paint(canvas, Offset(left, size.height - bottomInset + 6));
     }
   }
@@ -176,11 +195,8 @@ class InsulinBarPainter extends CustomPainter {
       final startsBefore = series.fractionOf(bar.at) <= 0;
       final endsAfter = series.fractionOf(bar.coversUntil) >= 1;
       final left =
-          leftInset +
-          series.fractionOf(bar.at) * plotWidth +
-          (startsBefore ? 0 : 0.5);
+          series.fractionOf(bar.at) * plotWidth + (startsBefore ? 0 : 0.5);
       final right =
-          leftInset +
           series.fractionOf(bar.coversUntil) * plotWidth -
           (endsAfter ? 0 : 0.5);
       final corner = const Radius.circular(2);
@@ -189,7 +205,7 @@ class InsulinBarPainter extends CustomPainter {
           Rect.fromLTRB(
             left,
             baseline,
-            right.clamp(left + 1, size.width),
+            right.clamp(left + 1, plotWidth),
             _yFor(bar.units, size.height),
           ),
           bottomLeft: startsBefore ? Radius.zero : corner,
@@ -204,7 +220,7 @@ class InsulinBarPainter extends CustomPainter {
   void _paintBoluses(Canvas canvas, Size size, double plotWidth) {
     final baseline = _yFor(0, size.height);
     for (final bar in series.bars.where((entry) => entry.isBolus)) {
-      final centre = leftInset + series.fractionOf(bar.at) * plotWidth;
+      final centre = series.fractionOf(bar.at) * plotWidth;
       final paint = Paint()..color = bolus.withValues(alpha: _alphaFor(bar));
       canvas.drawRRect(
         RRect.fromRectAndRadius(
@@ -214,7 +230,7 @@ class InsulinBarPainter extends CustomPainter {
             centre + bolusWidth / 2,
             _yFor(bar.units, size.height),
           ),
-          const Radius.circular(3),
+          Radius.circular(bolusWidth / 2),
         ),
         paint,
       );
@@ -231,7 +247,7 @@ class InsulinBarPainter extends CustomPainter {
     if (fraction == null) {
       return;
     }
-    final x = leftInset + fraction * plotWidth;
+    final x = fraction * plotWidth;
     final paint = Paint()
       ..color = scrubColor
       ..strokeWidth = scrubWidth;
@@ -244,19 +260,20 @@ class InsulinBarPainter extends CustomPainter {
     );
   }
 
-  void _paintLabel(Canvas canvas, double value, double y) {
+  void _paintLabel(Canvas canvas, double value, double y, double plotWidth) {
     final text = TextPainter(
-      text: TextSpan(
-        text: _format(value),
-        style: TextStyle(fontSize: 10, color: labelColor),
-      ),
+      text: TextSpan(text: _format(value), style: _labelStyle),
       textDirection: TextDirection.ltr,
     )..layout();
-    text.paint(canvas, Offset(leftInset - text.width - 4, y - text.height / 2));
+    text.paint(canvas, Offset(-axisInset, y - text.height / 2));
   }
 
-  String _format(double value) =>
-      value >= 10 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+  TextStyle get _labelStyle => InkText.caption.copyWith(color: labelColor);
+
+  /// Whole units without decimals, a fraction with a German comma.
+  String _format(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(1).replaceFirst('.', ',');
 
   /// Where a value sits vertically, measured DOWN from the baseline at the top.
   ///
@@ -275,6 +292,8 @@ class InsulinBarPainter extends CustomPainter {
         old.basal != basal ||
         old.bolus != bolus ||
         old.bolusWidth != bolusWidth ||
+        old.gridColor != gridColor ||
+        old.plotColor != plotColor ||
         old.ticks != ticks ||
         old.mealFractions != mealFractions;
   }

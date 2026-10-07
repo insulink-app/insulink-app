@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/scanner_torch_button.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../localization/locale_text.dart';
@@ -54,6 +55,7 @@ class _BarcodeScanPageState extends State<BarcodeScanPage> {
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [ScannerTorchButton(controller: _controller)],
       ),
       body: Stack(
         fit: StackFit.expand,

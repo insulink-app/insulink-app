@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/food/food_add_actions.dart';
@@ -6,6 +7,9 @@ import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/base/ink_panel.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Searchable bottom-sheet list to pick one saved product. Also offers the same
 /// add / search / scan actions as the nutrition page ([FoodAddActions]), so a
@@ -39,14 +43,8 @@ Future<FoodProduct?> pickFoodProduct(BuildContext context) async {
 }
 
 Future<_PickerOutcome?> _showPicker(BuildContext context) {
-  return showModalBottomSheet<_PickerOutcome>(
+  return showInkSheet<_PickerOutcome>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => const _ProductPicker(),
   );
 }
@@ -106,48 +104,38 @@ class _ProductPickerState extends State<_ProductPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final products = context.watch<FoodState>().products;
     final filtered = _filtered(products);
-    return Padding(
-      padding: EdgeInsets.only(top: 12, bottom: bottomInset),
+    return InkSheet(
+      title: Row(
+        children: [
+          Expanded(
+            child: LocaleText(
+              'injection.products.pick',
+              style: InkText.bigValue.copyWith(fontSize: 20),
+            ),
+          ),
+          FoodAddActions(
+            onScanRequested: () =>
+                Navigator.of(context).pop(const _PickerOutcome.scan()),
+            onCreated: (product) =>
+                Navigator.of(context).pop(_PickerOutcome.picked(product)),
+          ),
+        ],
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 8, 8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(PhosphorIconsBold.arrowLeft),
-                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                Expanded(
-                  child: LocaleText(
-                    'injection.products.pick',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                FoodAddActions(
-                  onScanRequested: () =>
-                      Navigator.of(context).pop(const _PickerOutcome.scan()),
-                  onCreated: (product) =>
-                      Navigator.of(context).pop(_PickerOutcome.picked(product)),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            padding: const EdgeInsets.only(bottom: 12),
             child: TextField(
               controller: _search,
               autofocus: true,
               decoration: InputDecoration(
-                prefixIcon: const Icon(PhosphorIconsBold.magnifyingGlass),
+                prefixIcon: Icon(
+                  PhosphorIconsBold.magnifyingGlass,
+                  color: context.ink.muted,
+                ),
                 hintText: Locales.string(context, 'injection.products.search'),
                 suffixIcon: _search.text.isEmpty
                     ? null
@@ -176,11 +164,17 @@ class _ProductPickerState extends State<_ProductPicker> {
             )
           else
             Flexible(
-              child: ListView.builder(
+              child: ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                itemCount: filtered.length,
-                itemBuilder: (context, index) => _tile(filtered[index]),
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                children: [
+                  _columnHeads(),
+                  const SizedBox(height: 8),
+                  InkPanel.list(
+                    color: context.ink.panelRaised,
+                    rows: [for (final product in filtered) _tile(product)],
+                  ),
+                ],
               ),
             ),
         ],
@@ -188,79 +182,65 @@ class _ProductPickerState extends State<_ProductPicker> {
     );
   }
 
-  Widget _tile(FoodProduct product) {
-    final scheme = Theme.of(context).colorScheme;
-    final subtitle = [
-      if (product.brand.isNotEmpty) product.brand,
-      Locales.string(
-        context,
-        'injection.products.carbs_per_100',
-        params: [product.carbs100g.toStringAsFixed(0)],
-      ),
-    ].join(' · ');
+  /// "Saved products" on the left, what the number on the right means on the
+  /// right.
+  Widget _columnHeads() {
+    final style = InkText.caption.copyWith(color: context.ink.muted);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () =>
-              Navigator.of(context).pop(_PickerOutcome.picked(product)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-            child: Row(
-              children: [
-                _badge(scheme, product.unit == 'ml'),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name.isEmpty ? product.barcode : product.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  PhosphorIconsBold.caretRight,
-                  color: scheme.onSurface.withValues(alpha: 0.3),
-                ),
-              ],
-            ),
-          ),
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          Expanded(child: LocaleText('injection.products.saved', style: style)),
+          LocaleText('injection.products.carbs_column', style: style),
+        ],
       ),
     );
   }
 
-  Widget _badge(ColorScheme scheme, bool isDrink) {
-    return Container(
-      width: 40,
-      height: 40,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        isDrink ? PhosphorIconsBold.drop : PhosphorIconsBold.forkKnife,
-        color: scheme.onSurfaceVariant,
-        size: 20,
+  /// One product: name over brand, its carbs per 100 g on the right. The whole
+  /// row picks it; no icon and no chevron.
+  Widget _tile(FoodProduct product) {
+    final colors = context.ink;
+    return InkWell(
+      onTap: () => Navigator.of(context).pop(_PickerOutcome.picked(product)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 66),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Row(
+            spacing: 12,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 3,
+                  children: [
+                    Text(
+                      product.name.isEmpty ? product.barcode : product.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: InkText.row.copyWith(color: colors.text),
+                    ),
+                    if (product.brand.isNotEmpty)
+                      Text(
+                        product.brand,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: InkText.caption.copyWith(color: colors.muted),
+                      ),
+                  ],
+                ),
+              ),
+              Text(
+                '${sportDecimal(product.carbs100g, 0)} g',
+                style: InkText.rowTitle.copyWith(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

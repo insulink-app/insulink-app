@@ -6,6 +6,7 @@ import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_running_bolus.dart';
 import 'package:insulink/src/theme/accent_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 
 /// The card the overview shows while the pod works through a bolus: how much is
 /// out, how much is left, and the way to stop it.
@@ -66,7 +67,7 @@ class RunningBolusCard extends StatelessWidget {
           ),
         ),
         Text(
-          bolus.deliveredUnits(now).toStringAsFixed(2),
+          sportDecimal(bolus.deliveredUnits(now), 2),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -76,7 +77,7 @@ class RunningBolusCard extends StatelessWidget {
           ),
         ),
         Text(
-          ' / ${bolus.programmedUnits.toStringAsFixed(2)} U',
+          ' / ${Locales.string(context, 'injection.bolus.value', params: [sportDecimal(bolus.programmedUnits, 2)])}',
           style: TextStyle(
             fontSize: 13,
             height: 1.4,

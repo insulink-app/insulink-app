@@ -15,6 +15,7 @@ import 'package:insulink/src/nutrition/meal/meal_time.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 
 /// Breaks the overview's single active-insulin number down into the individual
 /// doses still working, so the user can see WHICH meals' boluses make it up and
@@ -171,7 +172,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
               Locales.string(
                 context,
                 'injection.bolus.value',
-                params: [parts.beyondBoluses.toStringAsFixed(2)],
+                params: [sportDecimal(parts.beyondBoluses, 2)],
               ),
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
@@ -204,7 +205,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
           Locales.string(
             context,
             'injection.bolus.value',
-            params: [parts.total.toStringAsFixed(1)],
+            params: [sportDecimal(parts.total, 1)],
           ),
           style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
         ),
@@ -216,7 +217,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
             Locales.string(
               context,
               'injection.active_insulin_pump',
-              params: [parts.beyondBoluses.toStringAsFixed(1)],
+              params: [sportDecimal(parts.beyondBoluses, 1)],
             ),
             style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
           ),
@@ -276,7 +277,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
                       Locales.string(
                         context,
                         'overview.active_insulin.remaining',
-                        params: [dose.remaining.toStringAsFixed(1)],
+                        params: [sportDecimal(dose.remaining, 1)],
                       ),
                       style: const TextStyle(
                         fontSize: 17,
@@ -290,7 +291,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
                   Locales.string(
                     context,
                     'overview.active_insulin.of_bolus',
-                    params: [dose.meal.bolus.toStringAsFixed(1)],
+                    params: [sportDecimal(dose.meal.bolus, 1)],
                   ),
                   style: TextStyle(
                     fontSize: 12,

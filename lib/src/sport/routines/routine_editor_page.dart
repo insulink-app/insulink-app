@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/base/long_press_reorder.dart';
+import 'package:insulink/src/sensor/info/sensor_format.dart';
+import 'package:insulink/src/base/page_primary_button.dart';
+import 'package:insulink/src/base/labeled_field.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/exercises/exercises_page.dart';
 import 'package:insulink/src/sport/routines/routine_duration.dart';
-import 'package:insulink/src/sport/routines/routine_item_editor_sheet.dart';
-import 'package:insulink/src/sport/sport_add_tile.dart';
-import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/sport/routines/routine_items_panel.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner_page.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// Edit a routine: name, ordered exercise list (reorder by holding), add
 /// exercise, and start the workout.
@@ -81,178 +82,100 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
         ],
       ),
       bottomNavigationBar: routine.items.isEmpty ? null : _startBar(routine),
-      body: Column(
+      body: ListView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        padding: const EdgeInsets.fromLTRB(
+          InkSpace.panelMargin,
+          16,
+          InkSpace.panelMargin,
+          24,
+        ),
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          LabeledField(
+            labelKey: 'sport.routines.name',
             child: TextField(
               controller: _name,
               textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: Locales.string(context, 'sport.routines.name'),
-              ),
               onChanged: (value) =>
                   _training.renameRoutine(routine.id, value.trim()),
             ),
           ),
-          if (routine.items.isNotEmpty) _durationHint(routine),
-          Expanded(child: _itemsList(routine)),
+          _itemsHeader(routine),
+          if (routine.items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+              child: LocaleText(
+                'sport.routines.no_items',
+                style: InkText.label.copyWith(color: context.ink.muted),
+              ),
+            ),
+          RoutineItemsPanel(routine: routine, onAdd: _addExercise),
         ],
       ),
     );
   }
 
-  Widget _durationHint(SportRoutine routine) {
-    final scheme = Theme.of(context).colorScheme;
+  /// "Übungen" with the estimated total on the right ("ca. 1 h 8 min").
+  Widget _itemsHeader(SportRoutine routine) {
+    final colors = context.ink;
     final seconds = estimatedRoutineSeconds(
       routine,
       _training.exercises,
       _training.sessions,
     );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+      padding: const EdgeInsets.fromLTRB(8, 28, 8, 12),
       child: Row(
         children: [
-          Icon(
-            PhosphorIconsBold.clock,
-            size: 16,
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            Locales.string(
-              context,
-              'sport.routines.est_duration',
-              params: [sportClock(seconds)],
+          Expanded(
+            child: LocaleText(
+              'sport.summary.exercises',
+              style: InkText.section,
             ),
-            style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.6)),
           ),
+          if (routine.items.isNotEmpty) ...[
+            Icon(PhosphorIconsBold.clock, size: 18, color: colors.muted),
+            const SizedBox(width: 6),
+            Text(
+              Locales.string(
+                context,
+                'sport.routines.est_duration',
+                params: [formatSensorDuration(seconds)],
+              ),
+              style: InkText.label.copyWith(color: colors.muted),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  /// Large, prominent "Start" button in the bottom bar — unlike the old FAB, it
-  /// does not collide with the "Add exercise" tile.
+  /// "Routine starten", pinned under the list.
   Widget _startBar(SportRoutine routine) {
     return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: SizedBox(
-        height: 64,
-        child: FilledButton.icon(
-          icon: const Icon(PhosphorIconsFill.play, size: 34),
-          label: LocaleText(
-            'sport.routines.start',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      minimum: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        8,
+        InkSpace.panelMargin,
+        16,
+      ),
+      child: PagePrimaryButton(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => WorkoutRunnerPage(routine: routine),
           ),
-          style: FilledButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-          ),
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => WorkoutRunnerPage(routine: routine),
-            ),
-          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 12,
+          children: [
+            const Icon(PhosphorIconsFill.play, size: 20),
+            LocaleText('sport.routines.start'),
+          ],
         ),
       ),
     );
-  }
-
-  Widget _itemsList(SportRoutine routine) {
-    final addTile = SportAddTile(
-      labelKey: 'sport.routines.add_exercise',
-      onTap: _addExercise,
-    );
-    if (routine.items.isEmpty) {
-      return ListView(
-        physics: _bouncy,
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-        children: [
-          Center(child: LocaleText('sport.routines.no_items')),
-          const SizedBox(height: 20),
-          addTile,
-        ],
-      );
-    }
-    return ReorderableListView(
-      physics: _bouncy,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      footer: Padding(padding: const EdgeInsets.only(top: 2), child: addTile),
-      proxyDecorator: _transparentDrag,
-      onReorderItem: (oldIndex, newIndex) =>
-          _training.reorderRoutineItems(routine.id, oldIndex, newIndex),
-      buildDefaultDragHandles: false,
-      children: [
-        for (var index = 0; index < routine.items.length; index++)
-          _itemRow(routine, index),
-      ].pickedUpByLongPress(),
-    );
-  }
-
-  static const _bouncy = BouncingScrollPhysics(
-    parent: AlwaysScrollableScrollPhysics(),
-  );
-
-  /// Drag proxy without the default elevated shadow — the row keeps its own
-  /// (transparent-material) look so nothing "pops" while reordering.
-  Widget _transparentDrag(
-    Widget child,
-    int index,
-    Animation<double> animation,
-  ) {
-    return Material(color: Colors.transparent, child: child);
-  }
-
-  Widget _itemRow(SportRoutine routine, int index) {
-    final item = routine.items[index];
-    final exercise = _training.exerciseById(item.exerciseId);
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      key: ValueKey(item.id),
-      padding: const EdgeInsets.only(bottom: 10),
-      // Background lives on the Container (part of the reordered subtree) so it
-      // moves with the row; ListTile.tileColor would paint via Ink on an
-      // ancestor Material and lag behind the drag transform.
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: scheme.onSurface.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-        ),
-        child: ListTile(
-          leading: const Icon(PhosphorIconsBold.dotsSixVertical),
-          title: Text(
-            exercise?.name ?? '—',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(_summary(item, exercise)),
-          trailing: IconButton(
-            icon: const Icon(PhosphorIconsBold.trash, size: 20),
-            onPressed: () => confirmDelete(
-              context,
-              messageKey: 'sport.routines.item_delete_confirm',
-              onConfirm: () => _training.removeRoutineItem(routine.id, index),
-            ),
-          ),
-          onTap: () => showRoutineItemEditorSheet(
-            context,
-            routineId: routine.id,
-            index: index,
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _summary(RoutineItem item, SportExercise? exercise) {
-    final timed = exercise?.kind == ExerciseKind.timed;
-    final core = '${item.targetSets} × ${item.target}${timed ? ' s' : ''}';
-    final weight = exercise?.kind == ExerciseKind.weighted
-        ? ' · ${sportDecimal(item.targetWeight, 1)} kg'
-        : '';
-    return '$core$weight · ${item.restSeconds}s';
   }
 }

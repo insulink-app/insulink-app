@@ -55,6 +55,15 @@ void main() {
       expect(life.hoursMode, isTrue);
       expect(life.filledSegments, 24);
     });
+
+    test('the day under way is filled by the share of it left', () {
+      expect(after(const Duration(days: 9, hours: 18)).dayFraction(0), 0.75);
+      expect(after(const Duration(days: 11)).dayFraction(0), 0);
+      final midLife = after(const Duration(days: 2, hours: 6)); // 8.25 d left
+      expect(midLife.dayFraction(7), 1);
+      expect(midLife.dayFraction(8), 0.25);
+      expect(midLife.dayFraction(9), 0);
+    });
   });
 
   group('grace period (rated lifetime up, sensor still reading)', () {

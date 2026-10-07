@@ -4,6 +4,7 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/overview_notice.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/sport/sport_format.dart';
 
 /// Says that insulin went out while the app was not involved: the user tapped
 /// the button on a pre-warning or a high alarm, and the SERVICE delivered it.
@@ -37,7 +38,7 @@ class AdvisoryBolusNotice extends StatelessWidget {
   /// user may be reading this hours later.
   String _message(BuildContext context, double units, DateTime at) {
     return Locales.string(context, 'overview.advisory_bolus')
-        .replaceFirst('#', units.toStringAsFixed(2))
+        .replaceFirst('#', sportDecimal(units, 2))
         .replaceFirst(
           '#',
           '${at.hour.toString().padLeft(2, '0')}:'

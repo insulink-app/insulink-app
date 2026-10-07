@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/auth/permissions/permission_onboarding.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/base/button_loader.dart';
+import 'package:insulink/src/base/page_primary_button.dart';
 
 /// A single explained-permission page: icon, title, rationale and an allow
 /// button. Pure presentation — the parent owns the request and navigation.
@@ -51,20 +53,10 @@ class PermissionStep extends StatelessWidget {
           const Spacer(),
           _dots(scheme),
           const SizedBox(height: 24),
-          FilledButton(
+          PagePrimaryButton(
             onPressed: busy ? null : onAllow,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-            ),
             child: busy
-                ? SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: scheme.onPrimary,
-                    ),
-                  )
+                ? const ButtonLoader(size: 22)
                 : LocaleText(
                     isLast ? 'permission.continue' : 'permission.next',
                   ),

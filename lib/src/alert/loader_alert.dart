@@ -1,36 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_dialog.dart';
 
-class LoaderAlert extends StatefulWidget {
-  const LoaderAlert({super.key});
-
-  @override
-  State<LoaderAlert> createState() => _LoaderAlertState();
+/// A spinner card while a request runs, as an [InkDialog]; the caller pops it
+/// when the request is done.
+class LoaderAlert {
+  const LoaderAlert();
 
   void show(BuildContext context) {
-    showDialog(context: context, builder: (BuildContext context) => this);
-  }
-}
-
-class _LoaderAlertState extends State<LoaderAlert> {
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(15.0)),
-      ),
-      content: SizedBox(
-        height: 100,
-        child: Center(
-          child: SizedBox(
-            width: 30,
-            height: 30,
-            child: CircularProgressIndicator(
-              color: Theme.of(context).colorScheme.onSurface,
-              strokeWidth: 4,
-            ),
-          ),
-        ),
-      ),
-    );
+    const InkDialog.loading().show(context);
   }
 }

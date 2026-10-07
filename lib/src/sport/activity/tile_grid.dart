@@ -13,7 +13,7 @@ class TileGrid<T> extends StatelessWidget {
   final List<T> tiles;
   final Widget Function(BuildContext context, T tile, double width) tileBuilder;
 
-  static const _gutter = 12.0;
+  static const _gutter = 10.0;
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
@@ -30,10 +31,10 @@ const _darkLabels =
 /// [TileLayer.maxNativeZoom] scales the z16 tile up instead.
 const _maxNativeZoom = 16;
 
-/// How far the DARK base map is dimmed. Esri's dark canvas is a mid grey
-/// (its land is ~#4D4D4F); at this scale the land comes out around #2A2A2B,
-/// just above the app's dark surface (#1F232A) instead of glowing against it.
-const _darkDim = 0.55;
+/// The brightness of a road on Esri's dark canvas (0..1). The tint maps it to
+/// the app's line colour; everything darker (land, water) falls between that
+/// and the page colour.
+const _roadLuminance = 0.45;
 
 /// Basemap with the training route as a polyline. [live] keeps the map
 /// viewport controlled by the caller (recenter while recording); otherwise it
@@ -46,7 +47,12 @@ class CardioMap extends StatelessWidget {
     this.live = false,
     this.fallbackCenter,
     this.highlight,
+    this.initialZoom = 16,
   });
+
+  /// Where the camera starts; a live recording starts further out and zooms
+  /// in during its countdown.
+  final double initialZoom;
 
   final List<TrackPoint> points;
   final MapController? controller;
@@ -72,8 +78,9 @@ class CardioMap extends StatelessWidget {
     final map = FlutterMap(
       mapController: controller,
       options: MapOptions(
+        backgroundColor: context.ink.ground,
         initialCenter: center,
-        initialZoom: 16,
+        initialZoom: initialZoom,
         // Larger rotation threshold so a pinch-zoom doesn't tilt the map by
         // accident; programmatic moveAndRotate (live recenter) is unaffected.
         interactionOptions: const InteractionOptions(
@@ -87,7 +94,7 @@ class CardioMap extends StatelessWidget {
             : null,
       ),
       children: [
-        _tiles(isDark ? _darkBase : _lightBase, dim: isDark),
+        _tiles(isDark ? _darkBase : _lightBase, tint: isDark),
         _tiles(isDark ? _darkLabels : _lightLabels),
         if (route.length >= 2)
           PolylineLayer(
@@ -100,53 +107,20 @@ class CardioMap extends StatelessWidget {
             markers: [
               Marker(
                 point: route.last,
-                width: 18,
-                height: 18,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
+                width: 44,
+                height: 44,
+                child: _liveMarker(context.ink),
               ),
             ],
           ),
         if (!live && route.length >= 2)
           MarkerLayer(
             markers: [
-              _badgeMarker(route.first, PhosphorIconsFill.play),
-              _badgeMarker(route.last, PhosphorIconsBold.flagCheckered),
+              _startMarker(context.ink, route.first),
+              _finishMarker(context.ink, route.last),
             ],
           ),
-        if (highlight != null)
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: highlight!,
-                width: 24,
-                height: 24,
-                child: Container(
-                  decoration: BoxDecoration(
-                    // Neutral hover point, not a series colour: white on dark,
-                    // black on light, ringed by its opposite to stay visible.
-                    color: isDark ? Colors.white : Colors.black,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark ? Colors.black : Colors.white,
-                      width: 3,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+        if (highlight != null) _HoverMarker(position: highlight!),
       ],
     );
     // Zoom + fit-route controls, mirroring the web route map. Only on the static
@@ -167,8 +141,8 @@ class CardioMap extends StatelessWidget {
         Positioned(
           top: 12,
           right: 12,
-          child: _MapButton(
-            icon: PhosphorIconsBold.arrowsOut,
+          child: MapOverlayButton(
+            icon: PhosphorIconsBold.cornersOut,
             tooltipKey: 'sport.trainings.reset_view',
             onTap: () => controller!.fitCamera(
               CameraFit.bounds(
@@ -182,21 +156,59 @@ class CardioMap extends StatelessWidget {
     );
   }
 
-  /// A neutral round start/finish badge — same muted color for both, told apart
-  /// by the icon (▶ = start, checkered flag = finish) so the ends read clearly
-  /// without a loud red/green.
-  Marker _badgeMarker(LatLng point, IconData icon) {
+  /// Where the recording is now: an accent dot ringed in the page colour, in
+  /// an accent-tinted halo so it stays findable on the tinted map
+  /// (`docs/redesign/screens/30-training-live.png`).
+  Widget _liveMarker(InsulinkColors colors) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.accentSoft,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Container(
+        width: 21,
+        height: 21,
+        decoration: BoxDecoration(
+          color: colors.accent,
+          shape: BoxShape.circle,
+          border: Border.all(color: colors.ground, width: 3),
+        ),
+      ),
+    );
+  }
+
+  /// The start as a small light dot ringed in the page colour, no icon: the
+  /// finish is the route's one marker. Same on every map in the app.
+  Marker _startMarker(InsulinkColors colors, LatLng point) {
     return Marker(
       point: point,
-      width: 30,
-      height: 30,
+      width: 17,
+      height: 17,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF37474F),
+          color: colors.text,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2.5),
+          border: Border.all(color: colors.ground, width: 3),
         ),
-        child: Icon(icon, color: Colors.white, size: 17),
+      ),
+    );
+  }
+
+  /// The finish: a light disc with a dark flag, no colour, so neither end of
+  /// the route reads as good or bad.
+  Marker _finishMarker(InsulinkColors colors, LatLng point) {
+    return Marker(
+      point: point,
+      width: 32,
+      height: 32,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.text,
+          shape: BoxShape.circle,
+          border: Border.all(color: colors.ground, width: 2),
+        ),
+        child: Icon(PhosphorIconsFill.flag, color: colors.ground, size: 16),
       ),
     );
   }
@@ -204,16 +216,16 @@ class CardioMap extends StatelessWidget {
   /// One tile layer of the basemap. Two of them are stacked (map, then place
   /// names), so the settings that matter live in one place.
   ///
-  /// [dim] darkens the tile, and is what the two-layer split buys us: Esri's
+  /// [tint] recolours the tile, and is what the two-layer split buys us: Esri's
   /// dark canvas is a mid grey that glows against this app's much darker page,
-  /// but dimming the whole map would take the place names down with it. Only
-  /// the BASE layer is dimmed; the labels stay as bright as they were.
-  Widget _tiles(String urlTemplate, {bool dim = false}) {
+  /// but tinting the whole map would take the place names down with it. Only
+  /// the BASE layer is tinted; the labels stay as bright as they were.
+  Widget _tiles(String urlTemplate, {bool tint = false}) {
     return TileLayer(
       urlTemplate: urlTemplate,
       maxNativeZoom: _maxNativeZoom,
       userAgentPackageName: 'de.insulink.app',
-      tileBuilder: dim ? _dimTiles : null,
+      tileBuilder: tint ? _tintTiles : null,
       // Degrade quietly without network (e.g. in the emulator) instead of
       // logging every missing tile as an exception.
       evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
@@ -221,19 +233,30 @@ class CardioMap extends StatelessWidget {
     );
   }
 
-  /// Scales the base map's brightness to [_darkDim] so its land lands just
-  /// above the app's own dark surface: a shade lighter, so the map still reads
-  /// as a panel on the page rather than a hole in it.
-  Widget _dimTiles(BuildContext context, Widget tile, TileImage image) {
+  /// Turns the grey dark canvas into the app's own slate: each pixel's
+  /// brightness is laid out from the page colour (black, the water) up to
+  /// the line colour (a road), so the map sits in the palette of the panels
+  /// around it instead of a neutral grey.
+  Widget _tintTiles(BuildContext context, Widget tile, TileImage image) {
+    final colors = context.ink;
     return ColorFiltered(
-      colorFilter: const ColorFilter.matrix(<double>[
-        _darkDim, 0, 0, 0, 0, //
-        0, _darkDim, 0, 0, 0, //
-        0, 0, _darkDim, 0, 0, //
-        0, 0, 0, 1, 0, //
-      ]),
+      colorFilter: ColorFilter.matrix(_tintMatrix(colors.ground, colors.line)),
       child: tile,
     );
+  }
+
+  List<double> _tintMatrix(Color dark, Color road) {
+    List<double> row(double from, double to) {
+      final span = (to - from) / _roadLuminance;
+      return [0.2126 * span, 0.7152 * span, 0.0722 * span, 0, from * 255];
+    }
+
+    return [
+      ...row(dark.r, road.r),
+      ...row(dark.g, road.g),
+      ...row(dark.b, road.b),
+      0, 0, 0, 1, 0, //
+    ];
   }
 }
 
@@ -254,13 +277,13 @@ class _ZoomControls extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _MapButton(
+        MapOverlayButton(
           icon: PhosphorIconsBold.plus,
           tooltipKey: 'sport.trainings.zoom_in',
           onTap: () => _zoomBy(1),
         ),
         const SizedBox(height: 8),
-        _MapButton(
+        MapOverlayButton(
           icon: PhosphorIconsBold.minus,
           tooltipKey: 'sport.trainings.zoom_out',
           onTap: () => _zoomBy(-1),
@@ -270,10 +293,12 @@ class _ZoomControls extends StatelessWidget {
   }
 }
 
-/// One themed, elevated map-overlay button: surface fill so it stays legible on
-/// the tiles, icon in the foreground tone.
-class _MapButton extends StatelessWidget {
-  const _MapButton({
+/// One round button floating over a map (zoom, fit, and the live training's
+/// back and pause): 44 px, the page colour at 85 % so the tiles
+/// show faintly through, the glyph in the text colour.
+class MapOverlayButton extends StatelessWidget {
+  const MapOverlayButton({
+    super.key,
     required this.icon,
     required this.tooltipKey,
     required this.onTap,
@@ -281,27 +306,78 @@ class _MapButton extends StatelessWidget {
 
   final IconData icon;
   final String tooltipKey;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final colors = context.ink;
     return Tooltip(
       message: Locales.string(context, tooltipKey),
       child: Material(
-        color: scheme.surface,
-        elevation: 2,
-        borderRadius: BorderRadius.circular(10),
+        color: colors.ground.withValues(alpha: 0.85),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
           onTap: onTap,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(icon, size: 18, color: scheme.onSurface),
+          child: SizedBox.square(
+            dimension: InkSpace.minTouch,
+            child: Icon(icon, size: 20, color: colors.text),
           ),
         ),
       ),
     );
   }
+}
+
+/// The chart-hover position on the route. It glides to each new position
+/// instead of jumping, so sweeping a finger along the chart draws a smooth
+/// trace on the map. A light disc ringed in the page colour.
+class _HoverMarker extends StatelessWidget {
+  const _HoverMarker({required this.position});
+
+  final LatLng position;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.ink;
+    return TweenAnimationBuilder<LatLng>(
+      tween: _LatLngTween(begin: position, end: position),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (context, point, _) => MarkerLayer(
+        markers: [
+          Marker(
+            point: point,
+            width: 24,
+            height: 24,
+            child: Container(
+              decoration: BoxDecoration(
+                color: colors.text,
+                shape: BoxShape.circle,
+                border: Border.all(color: colors.ground, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.ground.withValues(alpha: 0.5),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Interpolates a map position, for [TweenAnimationBuilder].
+class _LatLngTween extends Tween<LatLng> {
+  _LatLngTween({required LatLng begin, required LatLng end})
+    : super(begin: begin, end: end);
+
+  @override
+  LatLng lerp(double t) => LatLng(
+    begin!.latitude + (end!.latitude - begin!.latitude) * t,
+    begin!.longitude + (end!.longitude - begin!.longitude) * t,
+  );
 }

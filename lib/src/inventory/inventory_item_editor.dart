@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../base/confirm_delete.dart';
+import '../base/labeled_field.dart';
 import '../localization/locale_text.dart';
 import '../localization/locales.dart';
+import '../theme/status_colors.dart';
+import 'inventory_delivery_list.dart';
+import 'inventory_dropdown.dart';
 import 'inventory_item.dart';
 import 'inventory_sheets.dart';
 import 'inventory_state.dart';
@@ -112,8 +116,7 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
         0;
   }
 
-  /// Animate a conditional field in/out (the brand + days fields). A null child
-  /// collapses it away.
+  /// Animate the days field in/out. A null child collapses it away.
   Widget _reveal(String id, Widget? child) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
@@ -128,247 +131,172 @@ class _InventoryItemEditorState extends State<InventoryItemEditor> {
           ? SizedBox(key: ValueKey('$id-none'), width: double.infinity)
           : Padding(
               key: ValueKey(id),
-              padding: const EdgeInsets.only(top: 16),
+              padding: const EdgeInsets.only(top: 14),
               child: child,
             ),
     );
   }
 
-  /// A soft, rounded, filled dropdown that fills the row width like the text
-  /// fields above it. Uses M3 [DropdownMenu] instead of [DropdownButtonFormField]
-  /// because the latter's popup renders wider than its field and drifts to the
-  /// screen edges; [DropdownMenu]'s menu tracks the field width, and
-  /// [DropdownMenu.expandedInsets] `zero` makes the field fill the row exactly.
-  Widget _dropdown<T>(
+  /// A labelled text field; [digits] limits it to whole numbers.
+  Widget _field(
     String labelKey,
-    T selected,
-    List<T> values,
-    String Function(T) labelKeyOf,
-    ValueChanged<T> onChanged,
-  ) {
-    final scheme = Theme.of(context).colorScheme;
-    return DropdownMenu<T>(
-      key: ValueKey(selected),
-      initialSelection: selected,
-      expandedInsets: EdgeInsets.zero,
-      requestFocusOnTap: false,
-      label: LocaleText(labelKey),
-      trailingIcon: const Icon(PhosphorIconsBold.caretDown, size: 16),
-      selectedTrailingIcon: const Icon(PhosphorIconsBold.caretUp, size: 16),
-      onSelected: (value) {
-        if (value != null) {
-          onChanged(value);
-        }
+    TextEditingController controller, {
+    TextInputType? keyboard,
+    bool digits = false,
+  }) {
+    return LabeledField(
+      labelKey: labelKey,
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboard,
+        inputFormatters: digits
+            ? [FilteringTextInputFormatter.digitsOnly]
+            : null,
+      ),
+    );
+  }
+
+  /// Two fields side by side; a missing [right] lets [left] take the row.
+  Widget _pair(Widget left, Widget? right) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 10,
+      children: [
+        Expanded(child: left),
+        if (right != null) Expanded(child: right),
+      ],
+    );
+  }
+
+  /// The brand picker for a sensor or a pump; none for any other item.
+  Widget? _brandDropdown() {
+    return switch (_type) {
+      ItemType.sensor => InventoryDropdown<SensorBrand>(
+        labelKey: 'inventory.brand',
+        selected: _brand,
+        values: SensorBrand.values,
+        labelKeyOf: (brand) => 'inventory.brand_${brand.wireKey}',
+        onChanged: (brand) => setState(() => _brand = brand),
+      ),
+      ItemType.pump => InventoryDropdown<PumpBrand>(
+        labelKey: 'inventory.brand',
+        selected: _pumpBrand,
+        values: PumpBrand.values,
+        labelKeyOf: (brand) => 'inventory.pump_brand_${brand.wireKey}',
+        onChanged: (brand) => setState(() => _pumpBrand = brand),
+      ),
+      ItemType.other => null,
+    };
+  }
+
+  /// Known hardware carries its own run time; everything else, an "other"
+  /// item or a brand the app has no figure for, takes the number typed here.
+  Widget? _daysField() {
+    if (!_needsManualDuration) {
+      return null;
+    }
+    return _field(
+      'inventory.days_per_unit',
+      _daysPerUnit,
+      keyboard: const TextInputType.numberWithOptions(decimal: true),
+    );
+  }
+
+  void _confirmDelete() {
+    confirmDelete(
+      context,
+      messageKey: 'inventory.delete_confirm',
+      onConfirm: () {
+        context.read<InventoryState>().remove(widget.existing!.id);
+        Navigator.pop(context);
       },
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: scheme.onSurface.withValues(alpha: 0.04),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
+    );
+  }
+
+  PreferredSizeWidget _appBar() {
+    final editing = widget.existing != null;
+    return AppBar(
+      surfaceTintColor: Colors.transparent,
+      title: LocaleText(
+        editing ? 'inventory.edit_title' : 'inventory.add_title',
       ),
-      menuStyle: MenuStyle(
-        backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainerHighest),
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        ),
-      ),
-      dropdownMenuEntries: [
-        for (final value in values)
-          DropdownMenuEntry(
-            value: value,
-            label: Locales.string(context, labelKeyOf(value)),
+      actions: [
+        if (editing)
+          IconButton(
+            icon: Icon(PhosphorIconsBold.trash, color: context.danger),
+            tooltip: Locales.string(context, 'inventory.delete'),
+            onPressed: _confirmDelete,
           ),
       ],
     );
   }
 
-  /// One planned delivery as a soft rounded row: truck glyph, date, a tinted
-  /// "+N" quantity pill and a remove button. Tapping the row edits it.
-  Widget _deliveryTile(Delivery delivery, String locale) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Material(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => _editDelivery(delivery),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: scheme.onSurface.withValues(alpha: 0.07),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(PhosphorIconsBold.truck, size: 18, color: scheme.primary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(DateFormat.yMMMd(locale).format(delivery.date)),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '+${delivery.quantity}',
-                    style: TextStyle(
-                      color: scheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(PhosphorIconsBold.x, size: 16),
-                  visualDensity: VisualDensity.compact,
-                  // ponytail: no confirm — an uncommitted form edit, only "save"
-                  // persists it, so a prompt per delivery row would just nag.
-                  onPressed: () => setState(() => _deliveries.remove(delivery)),
-                ),
-              ],
-            ),
-          ),
-        ),
+  /// "Speichern" pinned under the form, above the keyboard and the system bar.
+  Widget _saveButton() {
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        8,
+        InkSpace.panelMargin,
+        16,
+      ),
+      child: FilledButton.icon(
+        icon: const Icon(PhosphorIconsBold.check),
+        label: LocaleText('inventory.save'),
+        onPressed: _save,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final locale = Localizations.localeOf(context).toString();
     return Scaffold(
-      appBar: AppBar(
-        surfaceTintColor: Colors.transparent,
-        title: LocaleText('inventory.label'),
-        actions: [
-          if (widget.existing != null)
-            IconButton(
-              icon: const Icon(PhosphorIconsBold.trash),
-              onPressed: () => confirmDelete(
-                context,
-                messageKey: 'inventory.delete_confirm',
-                onConfirm: () {
-                  context.read<InventoryState>().remove(widget.existing!.id);
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-          IconButton(
-            icon: const Icon(PhosphorIconsBold.check),
-            onPressed: _save,
-          ),
-        ],
-      ),
+      appBar: _appBar(),
+      bottomNavigationBar: _saveButton(),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(
+          InkSpace.panelMargin,
+          18,
+          InkSpace.panelMargin,
+          24,
+        ),
         children: [
-          TextField(
-            controller: _name,
-            decoration: InputDecoration(
-              labelText: Locales.string(context, 'inventory.name'),
+          _field('inventory.name', _name),
+          const SizedBox(height: 14),
+          _pair(
+            _field(
+              'inventory.stock',
+              _stock,
+              keyboard: TextInputType.number,
+              digits: true,
+            ),
+            _field(
+              'inventory.base_stock',
+              _baseStock,
+              keyboard: TextInputType.number,
+              digits: true,
             ),
           ),
+          const SizedBox(height: 14),
+          _pair(
+            InventoryDropdown<ItemType>(
+              labelKey: 'inventory.type',
+              selected: _type,
+              values: ItemType.values,
+              labelKeyOf: (type) => 'inventory.type_${type.wireKey}',
+              onChanged: (type) => setState(() => _type = type),
+            ),
+            _brandDropdown(),
+          ),
+          _reveal('days', _daysField()),
           const SizedBox(height: 16),
-          TextField(
-            controller: _stock,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              labelText: Locales.string(context, 'inventory.stock'),
-            ),
+          InventoryDeliveryList(
+            deliveries: _deliveries,
+            onAdd: _editDelivery,
+            onEdit: _editDelivery,
+            onRemove: (delivery) =>
+                setState(() => _deliveries.remove(delivery)),
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _baseStock,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              labelText: Locales.string(context, 'inventory.base_stock'),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _dropdown<ItemType>(
-            'inventory.type',
-            _type,
-            ItemType.values,
-            (type) => 'inventory.type_${type.wireKey}',
-            (type) => setState(() => _type = type),
-          ),
-          _reveal('brand', switch (_type) {
-            ItemType.sensor => _dropdown<SensorBrand>(
-              'inventory.brand',
-              _brand,
-              SensorBrand.values,
-              (brand) => 'inventory.brand_${brand.wireKey}',
-              (brand) => setState(() => _brand = brand),
-            ),
-            ItemType.pump => _dropdown<PumpBrand>(
-              'inventory.brand',
-              _pumpBrand,
-              PumpBrand.values,
-              (brand) => 'inventory.pump_brand_${brand.wireKey}',
-              (brand) => setState(() => _pumpBrand = brand),
-            ),
-            ItemType.other => null,
-          }),
-          // Known hardware carries its own run time; everything else takes the
-          // number the user types. That covers an "other" item as before, and now
-          // also a sensor or pump brand the app has no figure for.
-          _reveal(
-            'days',
-            _needsManualDuration
-                ? TextField(
-                    controller: _daysPerUnit,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: Locales.string(
-                        context,
-                        'inventory.days_per_unit',
-                      ),
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              LocaleText(
-                'inventory.deliveries',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                icon: const Icon(PhosphorIconsBold.plus),
-                onPressed: () => _editDelivery(),
-              ),
-            ],
-          ),
-          if (_deliveries.isEmpty)
-            LocaleText(
-              'inventory.no_deliveries',
-              style: TextStyle(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-            ),
-          for (final delivery in _deliveries) _deliveryTile(delivery, locale),
         ],
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/sport/training_state.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
@@ -23,7 +24,7 @@ class WorkoutJumpSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = runner.routine.items;
-    return SafeArea(
+    return InkSheet(
       child: ListView(
         shrinkWrap: true,
         children: [

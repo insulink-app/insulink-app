@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
@@ -15,11 +16,8 @@ Future<void> showSetEditorSheet(
   required ExerciseKind kind,
   required ValueChanged<SetLog> onChanged,
 }) {
-  return showModalBottomSheet(
+  return showInkSheet(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => _SetEditorSheet(set: set, kind: kind, onChanged: onChanged),
   );
 }

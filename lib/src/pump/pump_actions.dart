@@ -14,6 +14,11 @@ import 'package:insulink/src/pump/pod_temp_basal_sheet.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/base/notice_banner.dart';
+import 'package:insulink/src/base/list_row.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/base/header_icon_button.dart';
 
 /// Starts an activation. The wizard itself explains what activating does — it
 /// primes the pod and binds it to this app for good — and asks before anything
@@ -50,51 +55,19 @@ class PodActivateButton extends StatelessWidget {
 class PodRefreshButton extends StatelessWidget {
   const PodRefreshButton({super.key});
 
+  /// A stale reading is marked with a dot on the control that fixes it,
+  /// instead of a banner saying so: an old reading is the ordinary resting
+  /// state of a pod nobody has just read, and a warning that is always there is
+  /// one nobody reads. The screen-reader label still spells it out.
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<PodController>();
     final stale = _isStale(controller);
-    return IconButton(
-      onPressed: controller.isBusy ? null : controller.refresh,
-      tooltip: Locales.string(
-        context,
-        stale ? 'pump.status.stale' : 'pump.action.refresh',
-      ),
-      icon: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          const Icon(PhosphorIconsBold.arrowsClockwise, size: 20),
-          if (stale) _staleDot(context),
-        ],
-      ),
-    );
-  }
-
-  /// A dot on the control that fixes it, instead of a banner saying so.
-  ///
-  /// The old notice was a full-width card explaining that the reading was a few
-  /// minutes old, which is the ordinary resting state of a pod nobody has just
-  /// read: the page carried a warning most of the time it was open, and a warning
-  /// that is always there is one nobody reads. The dot says the same thing where
-  /// the answer is, and the tooltip still spells it out.
-  Widget _staleDot(BuildContext context) {
-    return Positioned(
-      right: -1,
-      top: -1,
-      child: Container(
-        width: 7,
-        height: 7,
-        decoration: BoxDecoration(
-          color: context.warning,
-          shape: BoxShape.circle,
-          // Cut out of the icon rather than floating on it, so the dot reads as
-          // a mark ON the control at any icon size.
-          border: Border.all(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            width: 1.5,
-          ),
-        ),
-      ),
+    return HeaderIconButton.plain(
+      icon: PhosphorIconsBold.arrowsClockwise,
+      labelKey: stale ? 'pump.status.stale' : 'pump.action.refresh',
+      statusColor: stale ? context.ink.high : null,
+      onTap: controller.isBusy ? null : controller.refresh,
     );
   }
 
@@ -125,21 +98,36 @@ class PodTempBasalButton extends StatelessWidget {
         onPressed: controller.isBusy ? null : () => openTempBasalSheet(context),
       );
     }
-    return OutlinedButton.icon(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: context.warning,
-        minimumSize: const Size.fromHeight(46),
-        side: BorderSide(color: context.warning.withValues(alpha: 0.4)),
-      ),
-      onPressed: controller.isBusy
+    return NoticeBanner(
+      icon: PhosphorIconsBold.prohibit,
+      tone: NoticeTone.warning,
+      actionLabelKey: 'pump.temp.end.confirm',
+      onAction: controller.isBusy
           ? null
           : () => _confirmEnd(context, controller, temporary),
-      icon: const Icon(PhosphorIconsBold.prohibit, size: 20),
-      label: Text(
-        Locales.string(
-          context,
-          'pump.temp.running',
-        ).replaceFirst('#', temporary.unitsPerHour.toStringAsFixed(2)),
+      child: _runningLabel(context, temporary),
+    );
+  }
+
+  /// "Temporär 0,00 E/h", the rate in the warning colour.
+  Widget _runningLabel(BuildContext context, PodTemporaryBasal temporary) {
+    final colors = context.ink;
+    final rate = Locales.string(
+      context,
+      'pump.loop.overview.rate',
+      params: [sportDecimal(temporary.unitsPerHour, 2)],
+    );
+    return Text.rich(
+      TextSpan(
+        style: InkText.body.copyWith(fontWeight: FontWeight.w700),
+        children: [
+          TextSpan(text: Locales.string(context, 'pump.temp.active')),
+          const TextSpan(text: ' '),
+          TextSpan(
+            text: rate,
+            style: TextStyle(color: colors.high),
+          ),
+        ],
       ),
     );
   }
@@ -178,7 +166,7 @@ class PodTempBasalButton extends StatelessWidget {
               Locales.string(
                 context,
                 'pump.temp.end.body',
-              ).replaceFirst('#', temporary.unitsPerHour.toStringAsFixed(2)),
+              ).replaceFirst('#', sportDecimal(temporary.unitsPerHour, 2)),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 14, height: 1.35),
             ),
@@ -231,10 +219,14 @@ class PodDeactivateButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<PodController>();
-    return DangerActionButton(
-      labelKey: 'pump.action.deactivate',
-      icon: PhosphorIconsBold.trash,
-      onPressed: controller.isBusy ? null : () => _confirm(context, controller),
+    return Opacity(
+      opacity: controller.isBusy ? 0.5 : 1,
+      child: ListRow(
+        icon: PhosphorIconsBold.trash,
+        title: Locales.string(context, 'pump.action.deactivate'),
+        tone: ListRowTone.danger,
+        onTap: controller.isBusy ? null : () => _confirm(context, controller),
+      ),
     );
   }
 
@@ -305,10 +297,11 @@ class PodForgetButton extends StatelessWidget {
     // NOT gated on isBusy, unlike every other control here. What makes a pod
     // unreachable is that the attempt to reach it is not finishing, so a way out
     // that waits for the app to stop trying is no way out at all.
-    return DangerActionButton(
-      labelKey: 'pump.action.forget',
+    return ListRow(
       icon: PhosphorIconsBold.linkBreak,
-      onPressed: () => _confirm(context, controller),
+      title: Locales.string(context, 'pump.action.forget'),
+      tone: ListRowTone.danger,
+      onTap: () => _confirm(context, controller),
     );
   }
 
@@ -376,11 +369,11 @@ class PodBasalOutOfDateNotice extends StatelessWidget {
       return const SizedBox.shrink();
     }
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(top: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          PumpNotice.problem(
+          PumpNotice.attention(
             controller.knowsPodSchedule
                 ? 'pump.basal.out_of_date'
                 : 'pump.basal.unknown',

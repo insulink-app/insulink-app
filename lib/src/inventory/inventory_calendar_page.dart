@@ -7,6 +7,7 @@ import '../localization/locales.dart';
 import 'inventory_calendar.dart';
 import 'inventory_events.dart';
 import 'inventory_state.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// Opens the inventory calendar (from the inventory page's header icon).
 void openInventoryCalendarPage(BuildContext context) {
@@ -83,7 +84,7 @@ class _EventRow extends StatelessWidget {
       dense: true,
       leading: Icon(
         isDelivery ? PhosphorIconsBold.package : PhosphorIconsBold.warning,
-        color: isDelivery ? scheme.primary : Colors.orange,
+        color: isDelivery ? scheme.primary : context.warning,
       ),
       title: Text(event.itemName),
       subtitle: LocaleText(

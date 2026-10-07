@@ -15,6 +15,7 @@ import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/overview/chart/chart_range_switcher.dart';
 
 /// Full-screen glucose chart, opened by tapping the overview preview. Shows the
 /// interactive chart (range selector + scrub tooltip) with room to breathe, and
@@ -195,8 +196,8 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
     if (plotWidth <= 0) {
       return 1;
     }
-    final localX = box.globalToLocal(focal).dx;
-    return ((localX - InsulinBarChart.axisInset) / plotWidth).clamp(0.0, 1.0);
+    final localX = box.globalToLocal(focal).dx - InsulinBarChart.axisInset;
+    return (localX / plotWidth).clamp(0.0, 1.0);
   }
 
   /// The insulin that went in over the same stretch. Nothing is drawn until the
@@ -208,15 +209,18 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
     if (from == null || to == null) {
       return const SizedBox.shrink();
     }
-    return InsulinBarChart(
-      sync: _sync,
-      showMeals: _showMeals,
-      series: InsulinChartSeries(
-        basalHours: context.watch<PodController>().store.basalHours,
-        meals: meals,
-        from: from,
-        to: to,
-        liveEdge: _sync.liveEdge,
+    return ChartRangeSwitcher(
+      generation: _sync.rangeSwitches,
+      child: InsulinBarChart(
+        sync: _sync,
+        showMeals: _showMeals,
+        series: InsulinChartSeries(
+          basalHours: context.watch<PodController>().store.basalHours,
+          meals: meals,
+          from: from,
+          to: to,
+          liveEdge: _sync.liveEdge,
+        ),
       ),
     );
   }
@@ -241,7 +245,8 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
       ),
       // Glucose above, the insulin that moved it below, sharing one window.
       body: Padding(
-        // Room under the insulin chart so its legend is not pressed against the
+        // The page margin on both sides, the labels inside it on the left; room
+        // under the insulin chart so its legend is not pressed against the
         // bottom edge of the screen.
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         child: Listener(

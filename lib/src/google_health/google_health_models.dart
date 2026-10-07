@@ -1,6 +1,8 @@
 /// JSON-serialisable Google Health domain model.
 library;
 
+import 'package:insulink/src/sport/sport_format.dart';
+
 /// One calendar day of Google Health health data read from Health Connect. [dateKey] is
 /// `yyyy-mm-dd` (local). All metrics are nullable because a given day may only
 /// carry some of them (e.g. resting HR but no sleep session yet).
@@ -135,3 +137,7 @@ String formatSleepMinutes(int? minutes) {
   }
   return '${minutes ~/ 60}h ${minutes % 60}m';
 }
+
+/// Minutes as the sleep page writes them: "7 h 53 min", or "16 min" under an
+/// hour. [formatSleepMinutes] stays the compact form for the tiles.
+String formatSleepDuration(int minutes) => sportHoursMinutes(minutes);

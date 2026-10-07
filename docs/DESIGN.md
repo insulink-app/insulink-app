@@ -1,8 +1,8 @@
 # Design system (theme, colour roles, affordance)
 
 Everything visual is defined in `lib/src/theme/`:
-`app_theme.dart` (both `ThemeData`s), `accent_colors.dart` and `glucose_colors.dart`
-(two `ThemeExtension`s). No widget invents a colour — if a value is needed that
+`insulink_colors.dart` (the design tokens), `app_theme.dart` (both `ThemeData`s,
+built from the tokens) and the `ThemeExtension`s fed from them. No widget invents a colour — if a value is needed that
 the scheme has no role for, the role is added here, not hard-coded at the call site.
 
 ## The one rule that explains most of the file
@@ -36,33 +36,105 @@ sed -n '/ColorScheme.dark(/,/^    ),/p'  lib/src/theme/app_theme.dart | grep -oE
 diff /tmp/l /tmp/d && echo "symmetric"
 ```
 
-## Two accents, because one colour cannot do both jobs
+## Tokens, and one accent
 
-The brand indigo-blue has to serve two opposite purposes on a dark background, and
-a single value loses one of them:
-
-- **Fill** — a button with white text on top. Wants a mid tone.
-- **Foreground** — a label or glyph drawn *on* a dark surface. Wants a light tone.
-
-So there are two, same hue:
+Since the redesign (reference: `docs/redesign/`: `DESIGN.md` is the spec,
+`screens/*.png` the target picture of every screen, `reference/` the mockup
+source with exact values) every colour starts in `InsulinkColors`
+(`insulink_colors.dart`). Widgets import `insulink_theme.dart`, which re-exports
+it and adds `InkSpace` (gaps), `InkRadius` (corners), `InkText` (type roles) and
+`context.ink` (the tokens).
+`AppTheme` builds both themes through **one** builder from those tokens, so a
+role can no longer be set in one theme and missed in the other; the symmetry
+check below still holds by construction.
 
 | Token | Dark | Light | Used for |
 |---|---|---|---|
-| `colorScheme.primary` | `#5D73CC` | `#45569F` | Fills only: filled/elevated buttons, solid badges, tints |
-| `AccentColors.onSurface` (`context.accent`) | `#9DACEA` | `#45569F` | The accent drawn ON a surface |
+| ground | `#0F1B26` | `#EDF2F6` | Page, app bar |
+| panel | `#152432` | `#FFFFFF` | Panels, tiles, header buttons (`surface`), sheets |
+| panelRaised | `#1A2C3D` | `#F5F8FB` | Cards inside a sheet, buttons on a panel |
+| line | `#26394B` | `#D3DEE7` | Dividers, empty segments |
+| border | text at 7 % | text at 6 % | 1 px rim of tiles and buttons |
+| text | `#EAF1F6` | `#0F1B26` | Primary text, glucose value (`onSurface`) |
+| muted | `#97A9BA` | `#4D6175` | Labels, units, axes (`onSurfaceVariant`) |
+| accent | `#9DAEFF` | `#3346C8` | `primary`, `context.accent`, icons, progress |
+| onAccent | `#0F1B26` | `#FFFFFF` | `onPrimary` |
+| accentSoft / accentText | accent at 16 % / `#C4CEFF` | accent at 10 % / `#2A3AA8` | Active tab, profile button |
+| range / high / low | `#7CCB8F` / `#F4B740` / `#FF6B7F` | `#3B8A4F` / `#A86A00` / `#C8293F` | `GlucoseColors` and `StatusColors` |
+| highSoft | high at 12 % | high at 10 % | Notice banners (temporary basal rate) |
+| lowSoft | low at 14 % | low at 10 % | Warning banners, danger buttons |
+| dock | `#1B2B3B` | `#FFFFFF` | Navigation capsule (with `dockShadow`, the only shadow) |
+| sleepDeep / sleepLight / sleepRem / sleepRestless | `#8C7BFF` / `#5BC0F8` / `#2ED8B6` / `#F06292` | same | Sleep stages (awake is `low`); one set, the spec gives no light variant |
 
-On light they are the same colour — a deep indigo-blue on a near-white page is
-legible either way. The split exists purely because dark forces it.
+**One accent.** The app used to split the brand colour into a mid-tone FILL
+(`primary`, white text on top) and a lighter FOREGROUND (`context.accent`),
+because on dark one value could not do both. The redesign gives that up on
+purpose: `primary` IS the accent, and what sits on it takes `onPrimary`, which on
+dark is the dark ground colour. Every filled button is therefore light indigo
+with dark content on dark. The consequence for call sites: **never put a literal
+`Colors.white` on a `primary` fill**, use `onPrimary` or the button's own
+foreground.
 
-The indigo-blue is the old brand indigo pulled part-way toward the calm blue-grey
-of the surfaces (statistic boxes): softened from the original neon, but kept
-saturated enough to read as a real accent rather than grey. On dark it is lifted
-a touch (`#5D73CC`) so it sits ON the surface instead of glowing off it.
+The font is **Atkinson Hyperlegible Next**, bundled in `assets/fonts/` (400, 600,
+700, 800; OFL). Every `TextTheme` role carries `FontFeature.tabularFigures()`,
+and inline styles inherit it through the default text style, so ticking numbers
+do not jitter.
 
-Rejected alternative, for the record: the textbook Material 3 move is a light
-`primary` plus a dark `onPrimary`, which fixes every foreground with one value
-and zero call-site edits. It was tried and reverted — it turns every filled
-button into light-indigo-with-dark-text, which is not the product's look.
+## Redesign building blocks
+
+The overview (reference: `docs/redesign/`) is built from these; reuse them
+before drawing a new bar or button.
+
+| Widget | File | What it is |
+|---|---|---|
+| `SegmentBar` | `base/segment_bar.dart` | Rounded segments with gaps: range scale, time in range, device days (`.count`) |
+| `HeaderIconButton` | `base/header_icon_button.dart` | 44 px round header button, optional status dot ringed in `ground`; `.plain` without a face for section headers and page bars |
+| `SectionHeader` | `base/section_header.dart` | Section title 18/700 in sentence case, plain controls on the right, 28 px above |
+| `InkPanel` | `base/ink_panel.dart` | Panel with radius 20 and a faint rim; `.list` stacks rows with 1 px lines between them |
+| `ListRow` / `ListRowMeta` | `base/list_row.dart` | 68 px row: icon disc (accent, neutral or danger), title and subtitle, date over time |
+| `KeyValueRow` | `base/key_value_row.dart` | Key muted left, value bold right |
+| `StatTile` | `base/stat_tile.dart` | The Today tiles: glyph, label, big value, goal progress as a soft area closed by a 2 px accent line (kept on purpose, the spec drops it) |
+| `SegmentedToggle` | `base/segmented_toggle.dart` | Pill track, active option in the accent; `.page` on the page, default inside a panel |
+| `DeviceHead` | `base/device_head.dart` | Device page top: 56 px disc, name 24/800, status line with a dot |
+| `NoticeBanner` | `base/notice_banner.dart` | Soft danger or warning strip, optional pill that ends what it reports |
+| `DangerActionButton` | `base/action_buttons.dart` | Soft danger fill, label in the danger colour; never an outline |
+| `PillScrollRow` | `base/pill_scroll_row.dart` | Horizontally scrolling pills, the lit one light with dark writing (analysis areas) |
+| `StepperPill` | `base/stepper_pill.dart` | "− n +" with round 44 px buttons in a page-colour pill (inventory stock) |
+| `MetricGrid` | `base/metric_grid.dart` | Figures two per row in one panel, cells parted by 1 px lines |
+| `StatStrip` | `base/stat_strip.dart` | Ø / Min / Max side by side in one panel with vertical lines |
+| `ChangeChip` | `base/change_chip.dart` | Change since the entry before: green ↓, amber ↑ |
+| `LabeledField` | `base/labeled_field.dart` | Label above a field filled with the panel colour, for forms on the page |
+| `StatusIcon` | `base/status_icon.dart` | Device glyph in a 48 px disc with a status dot at its lower right |
+| `PagePrimaryButton` | `base/page_primary_button.dart` | Full-width 58 px primary at the foot of onboarding and sign-in; accent at 35 % while disabled |
+| `FloatingDock` | `base/floating_dock.dart` | Tab capsule plus the round bolus button |
+| `DockTabs` | `base/dock_tabs.dart` | The tabs in the capsule: one pill that springs between them and follows a horizontal drag |
+| `TabTransition` | `base/tab_transition.dart` | Fade plus a short slide from the tab's side on every tab change |
+| `DeviceAttention` | `connections/device_attention.dart` | Which devices need the user; the header dot and the devices page rows both read it |
+| `GlucoseHero` | `overview/glucose_hero.dart` | Value, rotated trend arrow, unit and trend words |
+| `RangeScale` | `overview/range_scale.dart` | 40 to 250 mg/dL scale split at the user's targets, knob on the value |
+| `OverviewDevices` | `overview/overview_devices.dart` | Sensor, pod and reservoir, automation row, in one panel |
+| `InkText`, `InkSpace`, `InkRadius` | `theme/insulink_theme.dart` | The spec's type roles (value 124/800, stat 30/800, …), gaps and corner radii |
+
+Three things that are not obvious:
+
+- **The redesign's type roles are NOT on the `TextTheme`.** Material draws its
+  own widgets from those roles (`headlineSmall` is every dialog title,
+  `bodyLarge` every text field), so mapping 30/800 onto them would blow up
+  dialogs and inputs. They live in `InkText` instead.
+- **The dock sits in the scaffold's navigation slot, not over the body.** The
+  page ends where the dock starts, so no tab's last rows can hide behind it
+  (every tab pads its own scroll view, and `extendBody` would have needed all
+  nine of them changed). The fade the content runs out into is only painted
+  32 px above the slot, behind an `IgnorePointer`.
+- **A `DecoratedBox` without a child has no height.** In a `Row` it gets its
+  width from `Expanded` but collapses to 0 px tall unless the row stretches its
+  children; `SegmentBar` sets `CrossAxisAlignment.stretch` for exactly this
+  (`test/base/segment_bar_test.dart`).
+
+Numbers on the overview are German notation (`GlucoseDisplayFormat`,
+`sportDecimal`), like the Sport tiles. `ProfileGlucoseState.format` keeps its
+plain format because the home-screen widget, fed from the service isolate,
+reads it too.
 
 ## Three foreground tones
 
@@ -70,7 +142,7 @@ button into light-indigo-with-dark-text, which is not the product's look.
 |---|---|---|
 | Full | `onSurface` (white / black) | Primary text, and **bare controls** — `IconButton` and `TextButton` — at full strength |
 | Accent | `context.accent` | Interactive affordances that carry the brand: outlined-button labels, chevrons, tappable banners, summary-tile glyphs |
-| Muted | `onSurfaceVariant` (`#A6AEBF` / `#5A6070`) | Anything that only informs: glyphs beside a statistic, secondary labels, units |
+| Muted | `onSurfaceVariant` (`#97A9BA` / `#4D6175`) | Anything that only informs: glyphs beside a statistic, secondary labels, units |
 
 A control **without a container of its own** (`IconButton`, `TextButton`) takes
 the Full tone, not the accent: tinting it made routine actions shout, and the
@@ -127,69 +199,43 @@ nothing stable to contrast against.
 button dimmed to half while disabled, carries information in its alpha — leave
 those alone.
 
-## The stat boxes keep the original indigo
-
-`StatBoxColors` (`stat_box_colors.dart`, a `ThemeExtension`, read as
-`context.statBox`) is the one place that does NOT follow `primary`. The stat
-boxes (`SportSummaryTile` — the overview boxes and the Today/nutrition tiles)
-looked best at the app's first, more saturated brand indigo; `primary` was later
-softened toward a calmer blue-grey, which washed the boxes and their icons out.
-So the boxes carry their own fixed tone here instead:
-
-| Field | Dark | Light | For |
-|---|---|---|---|
-| `icon` | `#93A6FF` | `#3F51B5` | The tile glyph, drawn on the tinted face |
-| `tintBase` | `#5A73F2` | `#3F51B5` | Base for the panel/border/fill tints (its own `BrandTints`, 0.08 / 0.20 / 0.13–0.22) |
-
-Change `primary` freely — the boxes stay put. If you *want* them to track a new
-brand colour, update these two values too; nothing else references them.
-
 ## Shape language
 
 | Silhouette | Meaning | Example |
 |---|---|---|
 | Filled **circle**, neutral | The row's identity — never pressable | `SportLeadingBadge`, `EmptyState`, `FoodProductCard` |
 | Filled **circle**, `primary` | A control that happens to be round | `drink_add_row` quick-add (the `InkWell` wraps the circle itself) |
-| Bare glyph | Information, or a tile that is itself the control | `SportSummaryTile`, stat rows |
-| Filled rounded-rect + label | The obvious button | `FilledButton`, `cardio_section` start buttons |
+| Bare glyph | Information, or a tile that is itself the control | `StatTile`, stat rows |
+| Filled **pill** + label | The obvious button: 54 px high, radius 27 (the theme sets both) | `FilledButton`, `cardio_section` start buttons |
 
 Two things were tried and **rejected** — don't reintroduce them:
 
 - **Tinted square faces with rims on every `IconButton`** (via `iconButtonTheme`).
   It marks controls unambiguously and reads as clutter on app bars and dense rows.
   The theme now sets only the icon-button *colour*, no face.
-- **A badge inside `SportSummaryTile`.** That tile is already a control (tinted
+- **A badge inside `StatTile`.** That tile is already a control (tinted
   face, border, progress fill). A badge inside it is a second competing shape:
   filled it looked like a button parked on a button, neutral it punched a grey
   hole through the tint. The glyph goes bare there.
 
 ## Surface ladders
 
-Dark steps **up** from the page. Light puts white boxes and a white navigation
-bar on a faintly grey page, so a card reads as a sheet lying on the page, and from
-the box it steps **down**: anything inside a box (badges, inputs) is a shade deeper
-than the white it sits on, which is why "raised" is *darker* than its box. An
-earlier light ladder made the page the brightest thing (`#FAFAFA`) with grey
-`#E8E8E8` boxes, which read as holes in the page rather than as cards.
+Dark steps **up** from the page, light puts white panels on a faintly blue-grey
+page and steps **down** from the panel. Both fall out of one rule: the
+`surfaceContainer*` rungs are mixed from `panel` toward `line` (35 % and 70 %),
+which is lighter than the panel on dark and deeper on light.
 
 | Rung | Dark | Light |
 |---|---|---|
-| Page / app bar | `#15181D` | `#F2F3F5` |
-| Box (`surface`), bottom nav | `#1F232A` | `#FFFFFF` |
-| `surfaceContainerHigh` | `#242933` | `#EDEFF2` |
-| `surfaceContainerHighest` (badges, inputs) | `#2A2F38` | `#E4E7EC` |
-| Border / divider | `#2B3038` | `#B4B9C2` (`outline`) |
+| Page / app bar (ground) | `#0F1B26` | `#EDF2F6` |
+| Panel (`surface`) | `#152432` | `#FFFFFF` |
+| `surfaceContainerHigh` | `#1B2B3B` | `#F0F3F7` |
+| `surfaceContainerHighest` (badges, inputs, popups) | `#213344` | `#E0E8EE` |
+| Divider (line) | `#26394B` | `#D3DEE7` |
+| `outline` (line 40 % toward muted) | `#536677` | `#9DACB9` |
 
-The dark neutrals take their **hue** from the insulink website
-(`assets/css/style.css`: `--bg #0d1117`, `--surface #161b22`, …) so app and site
-stay related, but they are lifted a rung and pulled well down in saturation. The
-site's values are near-black and strongly blue; on a phone at arm's length that
-made the accent glare and left too little separation for cards to read as cards.
-Grey with a blue lean, not blue-grey.
-
-`dividerColor` doubles as the box border (`OverviewSection`), so it must stay
-close to `surface`. A border much lighter than its fill draws a hard ring around
-every card.
+`dividerColor` doubles as the `OverviewSection` border; the redesign drops that
+border on panels (only tiles keep the faint `border` token).
 
 ## Rules for call sites
 
@@ -247,18 +293,22 @@ Where the five went: `injection_confirm_page` (sticky inline error),
 `health_import_button` (checkmark on success / `Alert` on failure),
 `developer_log_panel` (self-confirming button).
 
-## Reference contrast values (dark)
+## Reference contrast values
 
-Measured against `surface #1F232A`, for calibrating future changes:
+Measured for calibrating future changes (WCAG; text ≥4.5:1, graphics ≥3:1):
 
-| Pair | Ratio |
-|---|---|
-| `primary #5D73CC` as a foreground | ~4.4:1 — the reason the accent exists |
-| same at `alpha: 0.7` | ~2.9:1 — under even the 3:1 floor for graphics |
-| `accent #9DACEA` as a foreground | ~7.6:1 |
-| `primary` behind white text | ~4.1:1 |
+| Pair | Dark | Light |
+|---|---|---|
+| accent on panel | 7.5:1 | 7.4:1 |
+| onAccent on accent | 8.2:1 | 7.4:1 |
+| muted on ground | 7.2:1 | 5.7:1 |
+| low on ground | 6.4:1 | 4.8:1 |
+| high on ground | 9.7:1 | **3.9:1** |
+| range on ground | 9.0:1 | **3.8:1** |
 
-Non-text/graphics need ≥3:1, normal text ≥4.5:1.
+The light `high` and `range` tokens clear the graphics floor but not the text
+floor on the page. They are fine for the chart, bars and large numbers; as
+`context.warning` / `context.positive` small TEXT they are under 4.5:1.
 
 ## Insulin has its own two colours
 
@@ -275,13 +325,13 @@ between themes: on dark the LIGHTER indigo is the loud one.
 
 | | basal | bolus | basal vs surface | bolus vs surface | basal vs bolus |
 |---|---|---|---|---|---|
-| light | `#8894CE` | `#45569F` | 2.93 | 6.81 | 2.33 |
-| dark | `#5C6BA6` | `#9DACEA` | 3.08 | 7.15 | 2.32 |
+| light | `#A9B1E8` | `#3346C8` | 2.07 | 7.37 | 3.56 |
+| dark | `#435378` | `#9DAEFF` | 2.07 | 7.47 | 3.62 |
 
-Measured against each theme's **surface**, which in light is white since the
-boxes became white. On the earlier `#E8E8E8` boxes a first pass at `#9AA6D8` for
-light basal made only 1.94, which is why the surface, not paper white, is what
-gets measured.
+Bolus is the accent itself; basal is the accent mixed into the panel the bars
+stand on (the insulin chart's face). The redesign asks for 32 %, which lands
+just under 2:1, so dark mixes 34 % and the white light panel 42 %. Measured
+against each theme's **surface**, not paper white.
 
 `test/theme/insulin_colors_test.dart` pins all three relationships, including
 that neither value is one of the glucose tones.

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:collection';
 
 import 'package:fl_chart/fl_chart.dart';
@@ -37,10 +38,19 @@ class GlucoseHistorySeries {
   List<DateTime> get starts => _starts;
   List<DateTime> _starts = const [];
 
+  /// The spread band around [build]'s means, one spot per non-empty bucket at
+  /// mean ± one standard deviation. Filled by [build].
+  List<FlSpot> get upperSpots => _upper;
+  List<FlSpot> get lowerSpots => _lower;
+  List<FlSpot> _upper = const [];
+  List<FlSpot> _lower = const [];
+
   /// Mean-glucose spot per non-empty bucket (x = bucket index, y = display unit).
   List<FlSpot> build() {
     if (archive.isEmpty) {
       _starts = const [];
+      _upper = const [];
+      _lower = const [];
       return const [];
     }
     final kind = bucket;
@@ -52,15 +62,19 @@ class GlucoseHistorySeries {
         _starts[i].millisecondsSinceEpoch: i,
     };
     final sums = List<double>.filled(_starts.length, 0);
+    final squares = List<double>.filled(_starts.length, 0);
     final counts = List<int>.filled(_starts.length, 0);
     archive.forEach((epochMin, mgdl) {
       final index =
           indexOf[_floor(_localOf(epochMin), kind).millisecondsSinceEpoch];
       if (index != null) {
         sums[index] += mgdl;
+        squares[index] += mgdl * mgdl.toDouble();
         counts[index] += 1;
       }
     });
+    _upper = _band(sums, squares, counts, 1);
+    _lower = _band(sums, squares, counts, -1);
     return [
       for (var i = 0; i < _starts.length; i++)
         if (counts[i] > 0)
@@ -69,6 +83,40 @@ class GlucoseHistorySeries {
             glucose.toDisplay((sums[i] / counts[i]).round()),
           ),
     ];
+  }
+
+  /// Mean plus ([side] 1) or minus (-1) one standard deviation per bucket, from
+  /// the running sums of values and squares.
+  List<FlSpot> _band(
+    List<double> sums,
+    List<double> squares,
+    List<int> counts,
+    int side,
+  ) {
+    return [
+      for (var index = 0; index < counts.length; index++)
+        if (counts[index] > 0)
+          FlSpot(
+            index.toDouble(),
+            glucose.toDisplay(
+              (sums[index] / counts[index] +
+                      side *
+                          _deviation(
+                            sums[index],
+                            squares[index],
+                            counts[index],
+                          ))
+                  .round()
+                  .clamp(0, 400),
+            ),
+          ),
+    ];
+  }
+
+  double _deviation(double sum, double square, int count) {
+    final mean = sum / count;
+    final variance = square / count - mean * mean;
+    return variance <= 0 ? 0 : math.sqrt(variance);
   }
 
   DateTime _localOf(int epochMin) =>
