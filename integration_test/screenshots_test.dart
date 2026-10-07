@@ -104,11 +104,11 @@ Future<void> openSetting(
   BuildContext home,
   String titleKey,
 ) async {
+  final row = find.text(Locales.string(home, titleKey)).first;
   Navigator.of(
     home,
   ).push(MaterialPageRoute<void>(builder: (_) => ProfilePage()));
   await settle(tester);
-  final row = find.text(Locales.string(home, titleKey)).first;
   await tester.ensureVisible(row);
   await settle(tester);
   await tester.tap(row);
