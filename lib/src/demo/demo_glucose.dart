@@ -1,10 +1,11 @@
 import 'dart:math';
 
+import 'package:insulink/src/demo/demo_drift.dart';
 import 'package:insulink/src/demo/demo_glucose_range.dart';
 
 /// A month of believable CGM readings every five minutes, up to [now]: a gentle
 /// day rhythm, a rise after each meal and the occasional dip after it, plus a
-/// random drift. Seeded, so every visitor sees the same month.
+/// smooth random drift ([DemoDrift]). Seeded, so every visitor sees the same month.
 class DemoGlucose {
   DemoGlucose({required this.now, required this.random});
 
@@ -42,10 +43,10 @@ class DemoGlucose {
 
   Map<DateTime, int> _generate() {
     final readings = <DateTime, int>{};
-    var drift = 0.0;
+    final drift = DemoDrift(random);
     for (var time = start; !time.isAfter(end); time = time.add(step)) {
-      drift = (drift + random.nextDouble() * 6 - 3) * 0.96;
-      final value = range.easedTowards(shapeAt(time) + drift, time, end);
+      drift.step();
+      final value = range.easedTowards(shapeAt(time) + drift.value, time, end);
       readings[time] = value.round().clamp(48, 290);
     }
     return readings;

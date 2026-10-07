@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:insulink/src/cgm/cgm_store.dart';
+import 'package:insulink/src/demo/demo_drift.dart';
 import 'package:insulink/src/demo/demo_glucose.dart';
 import 'package:insulink/src/demo/demo_sensor.dart';
 
@@ -12,7 +13,7 @@ import 'package:insulink/src/demo/demo_sensor.dart';
 ///
 /// The browser has no service isolate, so this runs in the page itself. Each
 /// value continues the newest archived one along the slope of the demo curve
-/// ([DemoGlucose.shapeAt]) with a little noise, so the line goes on without a
+/// ([DemoGlucose.shapeAt]) with a smooth drift ([DemoDrift]), so the line goes on without a
 /// jump, and stays in the target range ([DemoGlucoseRange]) so the headline is
 /// always green. A tab that was asleep catches up on every reading it missed.
 class DemoLiveSensor {
@@ -22,9 +23,9 @@ class DemoLiveSensor {
   final void Function(Object data) onData;
 
   static const Duration checkEvery = Duration(seconds: 15);
-  static const double noiseMgdl = 2.5;
 
   final Random _random = Random();
+  late final DemoDrift _drift = DemoDrift(_random);
   late final DemoGlucose _shape = DemoGlucose(
     now: DateTime.now(),
     random: _random,
@@ -79,8 +80,7 @@ class DemoLiveSensor {
     final previous = _lastMgdl!;
     final slope =
         _shape.shapeAt(at) - _shape.shapeAt(at.subtract(DemoGlucose.step));
-    final noise = (_random.nextDouble() - 0.5) * 2 * noiseMgdl;
-    final mgdl = _shape.range.keep(previous + slope + noise).round();
+    final mgdl = _shape.range.keep(previous + slope + _drift.step()).round();
     final trendTenths = ((mgdl - previous) / DemoGlucose.step.inMinutes * 10)
         .round();
     final start = store.loadSensorStart(DemoSensor.key) ?? at;
