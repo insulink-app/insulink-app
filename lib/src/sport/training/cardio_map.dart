@@ -157,17 +157,18 @@ class CardioMap extends StatelessWidget {
   }
 
   /// Where the recording is now: an accent dot ringed in the page colour, in
-  /// a soft halo so it stays findable on the tinted map.
+  /// an accent-tinted halo so it stays findable on the tinted map
+  /// (`docs/redesign/screens/30-training-live.png`).
   Widget _liveMarker(InsulinkColors colors) {
     return Container(
       decoration: BoxDecoration(
-        color: colors.panelRaised.withValues(alpha: 0.9),
+        color: colors.accentSoft,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
       child: Container(
-        width: 20,
-        height: 20,
+        width: 21,
+        height: 21,
         decoration: BoxDecoration(
           color: colors.accent,
           shape: BoxShape.circle,
