@@ -131,6 +131,9 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 | 22 | Inventar.dc.html | Inventar (Liste) |
 | 23 | InventarEdit.dc.html | Inventar-Artikel bearbeiten |
 | 24 | Verbindungen.dc.html | Verbindungen |
+| 25 | Willkommen.dc.html | Onboarding: Willkommen + Bedingungen |
+| 26 | Berechtigungen.dc.html | Onboarding: Berechtigungen (seitenweise wie bisher, Beispiel Bluetooth) |
+| 27 | Login.dc.html | Anmelden |
 
 ### Bolusrechner (Sheet)
 - Sheet in panel, Radius 28 oben, Griff 40 × 5. Kopf: Titel 24/800 links, runder Schließen-Button rechts.
@@ -220,6 +223,21 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 ### Verbindungen
 - Oben Gesamtstatus ohne Karte: grüner Haken im getönten Kreis, „Alles verbunden“ (20/800), darunter „3 von 3 Verbindungen aktiv“. Bei Problemen entsprechend „1 Verbindung braucht Aufmerksamkeit“ mit high/low-Farbe.
 - Je Verbindung eine schlichte Karte (Radius 22): Icon-Kreis 48 px mit Statuspunkt unten rechts, Name 17/700, darunter nur der Gerätename (14, muted: „Dexcom G7“, „Omnipod DASH“, „Fitbit Air“), Chevron. Der Verbindungsstatus steckt im Statuspunkt, kein „verbunden“-Text. Keine weiteren Kennzahlen.
+
+
+### Onboarding: Willkommen
+- Inhalt **zentriert**, vertikal mittig: Logo (Unendlich-Zeichen in accent) in einem getönten Quadrat 96 px (Radius 30), Titel „Willkommen bei Insulink“ 38/800 zweizeilig, Untertitel 17 muted.
+- Unten: Zustimmung als Karte (panel, Radius 18) mit eigener Checkbox 24 px (accent, Haken in onAccent) und Links „AGB“ / „Datenschutzerklärung“ in accentText, unterstrichen.
+- Primärbutton Höhe 58: „Los geht's →“; deaktiviert (accent 35 %), solange nicht akzeptiert.
+
+### Onboarding: Berechtigungen
+- **Bleibt seitenweise wie bisher** (eine Seite pro Berechtigung, Punkte-Navigation, Texte und Icons unverändert).
+- Nur der Button unten wird an den neuen Primärbutton angeglichen: Höhe 58, Radius 29, Text 17/700 in onAccent, volle Breite.
+
+### Anmelden
+- Vertikal mittig, Logo (64 px, accent), „Willkommen“ (34/800) und „Melde dich mit deinem Konto an.“ **zentriert**; Felder und Button volle Breite.
+- Felder mit Label darüber (panel, Radius 16, Höhe 56, Fokus-Rand accent), Passwort mit Auge-Icon.
+- Primärbutton „Anmelden“ Höhe 58. Ganz unten zentriert: „Noch kein Konto? **Registrieren**“ (Link in accentText, fett).
 
 ### Google Health
 - Gerätekopf „Verbunden“, Panel „Letzte Werte“ (Schlüssel/Wert), darunter rote Zeile „Verbindung trennen“.

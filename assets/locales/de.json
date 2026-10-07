@@ -73,19 +73,28 @@
       "prefix": "Ich akzeptiere die ",
       "terms": "AGB",
       "and": " und ",
-      "privacy": "Datenschutzerklärung"
+      "privacy": "Datenschutzerklärung",
+      "suffix": "."
     }
   },
   "auth": {
     "title": "Willkommen",
-    "subtitle_signin": "Melde dich an",
+    "subtitle_signin": "Melde dich mit deinem Konto an.",
     "subtitle_signup": "Erstelle dein Konto",
     "name": "Name",
     "password": "Passwort",
+    "show_password": "Passwort anzeigen",
+    "name_hint": "Dein Name",
     "signin": "Anmelden",
     "signup": "Konto erstellen",
-    "to_signup": "Noch kein Konto? Registrieren",
-    "to_signin": "Bereits ein Konto? Anmelden",
+    "to_signup": {
+      "prefix": "Noch kein Konto?",
+      "link": "Registrieren"
+    },
+    "to_signin": {
+      "prefix": "Bereits ein Konto?",
+      "link": "Anmelden"
+    },
     "error": {
       "invalid": "Name oder Passwort ist falsch.",
       "signup_failed": "Konto konnte nicht erstellt werden. Bitte überprüfe deine Angaben.",

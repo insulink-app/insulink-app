@@ -1,7 +1,7 @@
 body{margin:0}
 .s{position:relative;width:390px;box-sizing:border-box;background:#0F1B26;color:#EAF1F6;font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;font-variant-numeric:tabular-nums;overflow:hidden}
 .s *{box-sizing:border-box}
-.s button,.s input{font:inherit;color:inherit}
+.s button,.s input{font-family:inherit;color:inherit}
 .s a{color:inherit;text-decoration:none}
 .s svg{display:block}
 .s button:focus-visible,.s a:focus-visible,.s input:focus-visible{outline:3px solid #9DAEFF;outline-offset:2px}

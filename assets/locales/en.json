@@ -73,19 +73,28 @@
       "prefix": "I accept the ",
       "terms": "Terms of Service",
       "and": " and ",
-      "privacy": "Privacy Policy"
+      "privacy": "Privacy Policy",
+      "suffix": "."
     }
   },
   "auth": {
     "title": "Welcome",
-    "subtitle_signin": "Sign in to your account",
+    "subtitle_signin": "Sign in with your account.",
     "subtitle_signup": "Create your account",
     "name": "Name",
     "password": "Password",
+    "show_password": "Show password",
+    "name_hint": "Your name",
     "signin": "Sign in",
     "signup": "Create account",
-    "to_signup": "No account yet? Sign up",
-    "to_signin": "Already have an account? Sign in",
+    "to_signup": {
+      "prefix": "No account yet?",
+      "link": "Sign up"
+    },
+    "to_signin": {
+      "prefix": "Already have an account?",
+      "link": "Sign in"
+    },
     "error": {
       "invalid": "Name or password is incorrect.",
       "signup_failed": "Could not create the account. Please check your details.",
