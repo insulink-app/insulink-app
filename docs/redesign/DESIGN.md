@@ -142,6 +142,12 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 | 31 | Empfang.dc.html | Empfang der letzten 24 h |
 | 32 | RoutineEdit.dc.html | Routine bearbeiten |
 | 33 | Profil.dc.html | Profil & Einstellungen |
+| 34 | ProduktEdit.dc.html | Produkt bearbeiten (Sheet) |
+| 35 | Uebungsstatistik.dc.html | Übungsstatistiken |
+| 36 | Alarmtoene.dc.html | Alarmtöne |
+| 37 | DialogName.dc.html | Dialog mit Eingabe (Name ändern) |
+| 38 | DialogLoeschen.dc.html | Dialog Bestätigung/Löschen |
+| 39 | MahlzeitDetail.dc.html | Mahlzeit-Detail (Sheet) |
 
 ### Bolusrechner (Sheet)
 - Sheet in panel, Radius 28 oben, Griff 40 × 5. Kopf: Titel 24/800 links, runder Schließen-Button rechts.
@@ -275,6 +281,39 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 ### Profil
 - Suchfeld oben. Konto als EIN Panel: oben Avatar 56 px (accent mit onAccent-Buchstabe), Label „Name“ muted + Name 20/800, Stift-Button rechts; darunter Trennlinie und die Zeilen „Passwort ändern“ (Chevron) und „Abmelden“ (rot), Icons ohne Kreis.
 - „Einstellungen": ein Panel mit Zeilen Sprache, Darstellung, Glukose, Bolus, Basalrate, Körpermaße (Icon, Titel, Chevron).
+
+### Popups: Dialoge (verbindlich für ALLE bestehenden und künftigen Dialoge)
+- Hintergrund: Seite darunter geblurrt (sigma ~4) + Scrim `rgba(4,9,14,.55)`.
+- **Schwebende Karte unten** (daumenfreundlich): 12 px Abstand links/rechts/unten, Radius 32, Fläche panelRaised (#1A2C3D), 1 px Rand `rgba(234,241,246,.08)`, Innenabstand 28/16/12. Bei Eingabe-Dialogen sitzt die Karte direkt über der Tastatur.
+- Inhalt **zentriert**: Icon-Kreis 56 px (Bearbeiten: accentText auf 16 % accent, Löschen: low auf 14 % low), Titel 21/800, optional ein kurzer Satz 15 muted.
+- Eingabefeld: 56 hoch, Radius 18, ground, Fokus 1,5 px accent, Icon links, Leeren-Button rechts.
+- Buttons **gestapelt**, volle Breite: oben die Aktion (52 hoch, `btn pri` bzw. solid low mit Text in ground), darunter „Abbrechen“ als Textbutton ohne Fläche.
+
+### Popups: Bottom-Sheets (verbindlich für ALLE bestehenden und künftigen Sheets)
+- Radius oben 28, Fläche panel, Griff 40×5 in #33475A, darunter Titelzeile: Titel 20/800 links, runder Schließen-Button 40 px (#1E3042) rechts.
+- **Pflicht: JEDES Sheet hat oben rechts einen X-Button (Schließen)**, auch wenn es per Wischen schließbar ist. Ohne Titel steht das X allein oben rechts.
+- Inhalte im Sheet 12 px vom Rand (gleiche Breite wie alles andere), Felder/Unterflächen in ground statt in einer zweiten Panel-Farbe.
+- Hauptaktion unten als `btn pri` volle Breite; Löschen als `btn danger` unten.
+
+### Produkt bearbeiten (Sheet)
+- Felder Name, Marke; Portionsgröße mit kleinem g/ml-Schalter rechts daneben (ersetzt den großen Umschalter); Portionsbeschreibung.
+- „Nährwerte“ + rechts „pro 100 ml“; Kohlenhydrate, Energie, Fett, Eiweiß als 2×2-Raster, Einheit rechts im Feld. „Fertig“ unten.
+
+### Übungsstatistiken
+- Vier Kennzahlen als ein Panel im 2×2-Raster mit 1-px-Trennlinien (Icon klein muted + Label, Wert 28/800).
+- Workouts pro Woche: schmale Balken (14 px, Radius 7), Wert über dem Balken, aktuelle Woche voll accent, ältere 55 %, Wochen ohne Workout als 3-px-Strich. Ø rechts im Abschnittskopf. Keine Y-Achse.
+- Routinen im Vergleich: Linien in accent / #C9A7FF / #2ED8B6, Punkte 3 px gefüllt (keine Kreise mit Loch), Legende oben, Chart beginnt links.
+- Pro Übung: ein Panel, Zeile mit Icon, Name, „80 Sätze, zuletzt …“, rechts Bestwert.
+
+### Alarmtöne
+- Einleitung auf einen Satz gekürzt, die Bedeutung der Töne als drei kurze Zeilen mit Symbol.
+- Ein Panel, je Alarm ein Block: Farbpunkt (low = niedrig, high = hoch, muted = Vorwarnung) + Name, darunter Segment-Schalter Lang/Kurz/Ping/Aus (Track ground, aktiv accent).
+
+### Mahlzeit-Detail (Sheet)
+- Kopf: Icon-Kreis (Besteck) 44 px, „Mahlzeit“ 20/800, darunter „Heute, 10:12“; Schließen rechts.
+- Drei Kennzahlen in einer Leiste (ground, Trennlinien): KH (Wert in accentText hervorgehoben), Glukose, Bolus – jeweils Icon + Label klein, Wert 22/800 mit Einheit. Dezimalkomma.
+- „Produkte“ mit Anzahl rechts; Liste in ground: Name, Marke + Portion, rechts „33 g KH“ + Chevron.
+- „Mahlzeit löschen“ als roter Textbutton zentriert ganz unten (keine Fläche).
 
 ### Google Health
 - Gerätekopf „Verbunden“, Panel „Letzte Werte“ (Schlüssel/Wert), darunter rote Zeile „Verbindung trennen“.
