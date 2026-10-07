@@ -37,9 +37,9 @@ class InsulinBarChart extends StatefulWidget {
   /// through this one.
   final bool showMeals;
 
-  /// The width of the axis label strip on the RIGHT of both charts. Must equal
-  /// the glucose chart's rightTitles `reservedSize`, which is what makes the two
-  /// x axes the same axis. The plot starts at the left edge.
+  /// The width of the axis label strip on the LEFT of both charts. Must equal
+  /// the glucose chart's leftTitles `reservedSize`, which is what makes the two
+  /// x axes the same axis. The plot starts after it and runs to the right edge.
   static const double axisInset = 30;
 
   /// A bolus is a moment, so it keeps a fixed width. Basal is not: it is drawn
@@ -109,10 +109,7 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
               : _plot(context),
         ),
         const SizedBox(height: 14),
-        Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: _legend(context),
-        ),
+        _legend(context),
       ],
     );
   }
@@ -149,7 +146,7 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
                     ),
                     gridColor: context.ink.line,
                     plotColor: context.ink.panel,
-                    rightInset: InsulinBarChart.axisInset,
+                    axisInset: InsulinBarChart.axisInset,
                     bolusWidth: InsulinBarChart.bolusWidth,
                     ticks: widget.sync.ticks,
                     mealFractions: _mealFractions(),
@@ -182,7 +179,7 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
     }
     final theme = Theme.of(context);
     final plotWidth = width - InsulinBarChart.axisInset;
-    final x = fraction * plotWidth;
+    final x = InsulinBarChart.axisInset + fraction * plotWidth;
     final flip = x > width - _tooltipWidth - 8;
     return [
       Positioned(
@@ -265,7 +262,8 @@ class _InsulinBarChartState extends State<InsulinBarChart> {
     if (width <= 0) {
       return;
     }
-    widget.sync.setScrub((localX / width).clamp(0.0, 1.0), mirrored: true);
+    final plotX = localX - InsulinBarChart.axisInset;
+    widget.sync.setScrub((plotX / width).clamp(0.0, 1.0), mirrored: true);
   }
 
   void _clear() => widget.sync.setScrub(null);

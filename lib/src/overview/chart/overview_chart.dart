@@ -135,13 +135,9 @@ class _OverviewChartState extends State<OverviewChart> {
   /// fraction across the plot and the zoom can hold that spot in place.
   final GlobalKey _plotKey = GlobalKey();
 
-  /// Width of the Y-axis label strip on the right (rightTitles reservedSize),
+  /// Width of the Y-axis label strip on the left (leftTitles reservedSize),
   /// excluded from the plotting area when mapping a focal point to time.
   static const _axisInset = InsulinBarChart.axisInset;
-
-  /// The range toggle keeps the page margin while the plot below it runs to
-  /// the screen's left edge.
-  static const double _controlsInset = 16;
 
   /// Index of the (transparent) bar carrying the tappable meal dots, or -1 when
   /// the meal overlay is off, and the markers behind it — so a tap on a dot can
@@ -339,7 +335,7 @@ class _OverviewChartState extends State<OverviewChart> {
     if (plotWidth <= 0) {
       return 1.0;
     }
-    return (focalX / plotWidth).clamp(0.0, 1.0);
+    return ((focalX - _axisInset) / plotWidth).clamp(0.0, 1.0);
   }
 
   void _onPinchPointerUp(PointerEvent event) {
@@ -471,19 +467,15 @@ class _OverviewChartState extends State<OverviewChart> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: _controlsInset),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              HourRangeSelector(
-                selected: _rangeHours.round(),
-                onChanged: _setRange,
-              ),
-              if (widget.navigable)
-                Flexible(child: _navigator(context, byTime)),
-            ],
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            HourRangeSelector(
+              selected: _rangeHours.round(),
+              onChanged: _setRange,
+            ),
+            if (widget.navigable) Flexible(child: _navigator(context, byTime)),
+          ],
         ),
         const SizedBox(height: 16),
         Expanded(
@@ -817,7 +809,7 @@ class _OverviewChartState extends State<OverviewChart> {
                   '${forecast ? '~' : ''}'
                   '${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
               time: _clockAt(axis, spot.x),
-              rightInset: _axisInset,
+              axisInset: _axisInset,
             ),
           ),
         ),

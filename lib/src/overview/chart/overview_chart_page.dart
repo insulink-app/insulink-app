@@ -196,7 +196,7 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
     if (plotWidth <= 0) {
       return 1;
     }
-    final localX = box.globalToLocal(focal).dx;
+    final localX = box.globalToLocal(focal).dx - InsulinBarChart.axisInset;
     return (localX / plotWidth).clamp(0.0, 1.0);
   }
 
@@ -245,10 +245,10 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
       ),
       // Glucose above, the insulin that moved it below, sharing one window.
       body: Padding(
-        // The plot runs to the left edge, its labels sit on the right; room
+        // The page margin on both sides, the labels inside it on the left; room
         // under the insulin chart so its legend is not pressed against the
         // bottom edge of the screen.
-        padding: const EdgeInsets.fromLTRB(0, 16, 12, 28),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         child: Listener(
           key: _pairKey,
           onPointerDown: _onPointerDown,

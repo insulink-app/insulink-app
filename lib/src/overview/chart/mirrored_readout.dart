@@ -21,7 +21,7 @@ class MirroredReadout extends StatelessWidget {
     required this.dotColor,
     required this.value,
     required this.time,
-    required this.rightInset,
+    required this.axisInset,
   });
 
   /// Where the scrub sits across the plot, 0 at the left edge and 1 at the right.
@@ -40,8 +40,8 @@ class MirroredReadout extends StatelessWidget {
 
   final String time;
 
-  /// The axis strip on the right, which is not part of the plotting area.
-  final double rightInset;
+  /// The axis strip on the left, which is not part of the plotting area.
+  final double axisInset;
 
   /// fl_chart's own tooltip geometry (its `LineTouchTooltipData` defaults), so
   /// the readout for a scrub below sits exactly where a touch here puts it:
@@ -57,8 +57,8 @@ class MirroredReadout extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final plotWidth = constraints.maxWidth - rightInset;
-        final x = fraction * plotWidth;
+        final plotWidth = constraints.maxWidth - axisInset;
+        final x = axisInset + fraction * plotWidth;
         final dotY = valueFraction * constraints.maxHeight;
         return Stack(
           clipBehavior: Clip.none,

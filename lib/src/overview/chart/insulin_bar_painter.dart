@@ -21,10 +21,11 @@ import 'package:insulink/src/overview/chart/insulin_chart_series.dart';
 /// stands ON the band it happened during rather than colliding with it or hiding
 /// it. Two equal bars fighting for the same pixels could only ever be read wrong.
 ///
-/// [rightInset] is the width of the axis strip on the right and must match the
-/// glucose chart's `reservedSize` exactly, or the two plot areas end at
+/// [axisInset] is the width of the axis strip on the left and must match the
+/// glucose chart's `reservedSize` exactly, or the two plot areas start at
 /// different x and every bar sits beside the glucose it belongs to rather than
-/// under it.
+/// under it. The plot is painted shifted right by it, so every x below is
+/// measured from the plot's own left edge.
 class InsulinBarPainter extends CustomPainter {
   const InsulinBarPainter({
     required this.series,
@@ -34,7 +35,7 @@ class InsulinBarPainter extends CustomPainter {
     required this.scrubColor,
     required this.gridColor,
     required this.plotColor,
-    required this.rightInset,
+    required this.axisInset,
     required this.bolusWidth,
     required this.mealColor,
     this.ticks = const [],
@@ -56,8 +57,8 @@ class InsulinBarPainter extends CustomPainter {
   /// The plot's own face, so the insulin reads as the lower part of one chart.
   final Color plotColor;
 
-  /// The axis label strip on the right, which is not part of the plot.
-  final double rightInset;
+  /// The axis label strip on the left, which is not part of the plot.
+  final double axisInset;
   final double bolusWidth;
   final Color mealColor;
 
@@ -97,10 +98,12 @@ class InsulinBarPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final plotWidth = size.width - rightInset;
+    final plotWidth = size.width - axisInset;
     if (plotWidth <= 0 || size.height <= 0) {
       return;
     }
+    canvas.save();
+    canvas.translate(axisInset, 0);
     _paintFace(canvas, size, plotWidth);
     _paintGrid(canvas, size, plotWidth);
     _paintMeals(canvas, size, plotWidth);
@@ -108,6 +111,7 @@ class InsulinBarPainter extends CustomPainter {
     _paintBoluses(canvas, size, plotWidth);
     _paintScrub(canvas, size, plotWidth);
     _paintTicks(canvas, size, plotWidth);
+    canvas.restore();
   }
 
   void _paintFace(Canvas canvas, Size size, double plotWidth) {
@@ -122,7 +126,7 @@ class InsulinBarPainter extends CustomPainter {
     );
   }
 
-  /// A solid line at every step of the unit scale, labelled on the right; the
+  /// A solid line at every step of the unit scale, labelled on the left; the
   /// zero line is the shared edge and goes unlabelled.
   void _paintGrid(Canvas canvas, Size size, double plotWidth) {
     final paint = Paint()
@@ -261,7 +265,7 @@ class InsulinBarPainter extends CustomPainter {
       text: TextSpan(text: _format(value), style: _labelStyle),
       textDirection: TextDirection.ltr,
     )..layout();
-    text.paint(canvas, Offset(plotWidth + 6, y - text.height / 2));
+    text.paint(canvas, Offset(-axisInset, y - text.height / 2));
   }
 
   TextStyle get _labelStyle => InkText.caption.copyWith(color: labelColor);

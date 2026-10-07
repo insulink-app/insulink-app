@@ -113,6 +113,7 @@ class GlucoseLineChart extends StatelessWidget {
                 stripWidth: InsulinBarChart.axisInset,
                 bottomInset: showBottomTitles ? 24 : 0,
                 format: _formatY,
+                leading: true,
               ),
             ),
           ),
@@ -164,7 +165,7 @@ class GlucoseLineChart extends StatelessWidget {
       topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       // Only reserves the strip; the labels are laid over it by GlucoseYLabels,
       // since 70 and 180 sit on no interval fl_chart could step through.
-      rightTitles: AxisTitles(
+      leftTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: !minimal,
           reservedSize: InsulinBarChart.axisInset,
@@ -172,7 +173,7 @@ class GlucoseLineChart extends StatelessWidget {
           getTitlesWidget: (_, _) => const SizedBox.shrink(),
         ),
       ),
-      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       bottomTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: showBottomTitles,

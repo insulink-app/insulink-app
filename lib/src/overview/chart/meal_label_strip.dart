@@ -21,7 +21,7 @@ class MealLabelStrip extends StatelessWidget {
 
   final List<MealLabel> labels;
 
-  /// Width of the y label strip at the right, which the plot does not cover.
+  /// Width of the y label strip at the left, which the plot does not cover.
   final double stripWidth;
 
   static const double _pillHeight = 24;
@@ -56,7 +56,7 @@ class MealLabelStrip extends StatelessWidget {
               for (var index = 0; index < labels.length; index++)
                 Positioned(
                   top: rows[index] * _rowHeight,
-                  left: spans[index].left,
+                  left: stripWidth + spans[index].left,
                   child: _pill(colors, labels[index].text, style),
                 ),
             ],
