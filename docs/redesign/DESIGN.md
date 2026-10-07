@@ -148,6 +148,9 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 | 37 | DialogName.dc.html | Dialog mit Eingabe (Name ändern) |
 | 38 | DialogLoeschen.dc.html | Dialog Bestätigung/Löschen |
 | 39 | MahlzeitDetail.dc.html | Mahlzeit-Detail (Sheet) |
+| 40 | SensorVerlauf.dc.html | Sensor-Verlauf |
+| 41 | PumpenVerlauf.dc.html | Pumpen-Verlauf |
+| 42 | InsulinAbgabe.dc.html | Abgegebenes Insulin |
 
 ### Bolusrechner (Sheet)
 - Sheet in panel, Radius 28 oben, Griff 40 × 5. Kopf: Titel 24/800 links, runder Schließen-Button rechts.
@@ -314,6 +317,15 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 - Drei Kennzahlen in einer Leiste (ground, Trennlinien): KH (Wert in accentText hervorgehoben), Glukose, Bolus – jeweils Icon + Label klein, Wert 22/800 mit Einheit. Dezimalkomma.
 - „Produkte“ mit Anzahl rechts; Liste in ground: Name, Marke + Portion, rechts „33 g KH“ + Chevron.
 - „Mahlzeit löschen“ als roter Textbutton zentriert ganz unten (keine Fläche).
+
+### Sensor-Verlauf / Pumpen-Verlauf (gleiches Muster)
+- Oben das aktive Gerät als Panel: Icon-Kreis, Name, grüne Statuszeile „Aktiv seit 30.09.“, darunter Tragezeit groß („6 d 21 h“ 26/800 + „von 10 d“ muted) und Fortschrittsbalken 8 px in accent. Weitere Angaben (Sensorcode) als kv-Zeile darunter.
+- „Frühere Sensoren“ / „Frühere Pods“ mit Anzahl rechts. EIN Panel, Zeile: Zeitraum 15/700 („26.08. – 05.09.“, Jahr nur wenn nicht aktuell), darunter Gerät + Code muted; rechts Tragezeit; darunter 4-px-Balken Tragezeit/Nenn-Laufzeit.
+- Unter 90 % der Nenn-Laufzeit: Balken in high + Hinweis „früh entfernt“. Die „Aktiv/Entfernt“-Badges entfallen.
+
+### Abgegebenes Insulin
+- Panel „Seit Pod-Start“: Summe 40/800 + „E“, darunter geteilter Balken Basal (accent) / Bolus (#2ED8B6) und Legende mit Werten.
+- „Verlauf“: EIN Panel, Zeile mit Farbpunkt, Typ + Zeit, Mengenbalken relativ zum größten Wert, Menge rechts. Einheit „E“ mit Dezimalkomma (statt „U“ und Punkt), Mengen nicht mehr gelb.
 
 ### Google Health
 - Gerätekopf „Verbunden“, Panel „Letzte Werte“ (Schlüssel/Wert), darunter rote Zeile „Verbindung trennen“.
