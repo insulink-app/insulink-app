@@ -233,10 +233,10 @@
     "avg": {
       "mean": "Avg. Glucose",
       "gmi": "GMI",
-      "cv": "Variability",
-      "sd": "Std. Dev.",
-      "max": "Highest",
-      "min": "Lowest"
+      "cv": "Variability (CV)",
+      "sd": "Standard deviation",
+      "max": "Highest value",
+      "min": "Lowest value"
     },
     "patterns": {
       "title": "Average by time of day",

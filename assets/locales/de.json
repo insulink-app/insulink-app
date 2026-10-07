@@ -233,10 +233,10 @@
     "avg": {
       "mean": "Ø Glukose",
       "gmi": "GMI",
-      "cv": "Variabilität",
-      "sd": "Std.-Abw.",
-      "max": "Höchster",
-      "min": "Niedrigster"
+      "cv": "Variabilität (CV)",
+      "sd": "Standardabweichung",
+      "max": "Höchster Wert",
+      "min": "Niedrigster Wert"
     },
     "patterns": {
       "title": "Ø nach Tageszeit",
@@ -261,7 +261,7 @@
       "very_low": "Sehr niedrig"
     },
     "forecast": {
-      "horizon": "# Min",
+      "horizon": "# min",
       "skill": "Skill-Score",
       "matched": "Bewertet",
       "points": "Punkte",

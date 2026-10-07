@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/analysis/averages/glucose_summary.dart';
 import 'package:insulink/src/analysis/forecast/forecast_accuracy.dart';
-import 'package:insulink/src/analysis/forecast/forecast_accuracy_chart.dart';
+import 'package:insulink/src/analysis/forecast/forecast_chart_panel.dart';
 import 'package:insulink/src/analysis/forecast/forecast_backtest.dart';
 import 'package:insulink/src/analysis/stat_tiles.dart';
 import 'package:insulink/src/base/empty_state.dart';
@@ -11,7 +11,6 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/base/segmented_toggle.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
@@ -176,7 +175,7 @@ class _ForecastAccuracyViewState extends State<ForecastAccuracyView> {
             children: [
               AnalysisStatTiles(stats: _stats(score, glucose)),
               const SizedBox(height: 10),
-              _chartPanel(context, score, glucose),
+              ForecastChartPanel(score: score, glucose: glucose),
               const SizedBox(height: 14),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -234,61 +233,6 @@ class _ForecastAccuracyViewState extends State<ForecastAccuracyView> {
     return LocaleText(
       'analysis.forecast.hint',
       style: InkText.caption.copyWith(color: context.ink.muted),
-    );
-  }
-
-  /// "Measured" against "forecast" in a panel, with a key above.
-  Widget _chartPanel(
-    BuildContext context,
-    ForecastScore score,
-    ProfileGlucoseState glucose,
-  ) {
-    final colors = context.ink;
-    return InkPanel(
-      padding: const EdgeInsets.fromLTRB(12, 18, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Row(
-              spacing: 18,
-              children: [
-                _key(context, colors.text, 'analysis.forecast.measured'),
-                _key(context, colors.accent, 'analysis.forecast.predicted'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            height: 220,
-            child: ForecastAccuracyChart(
-              outcomes: score.outcomes,
-              glucose: glucose,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _key(BuildContext context, Color color, String labelKey) {
-    return Row(
-      spacing: 8,
-      children: [
-        Container(
-          width: 16,
-          height: 3,
-          decoration: ShapeDecoration(
-            color: color,
-            shape: const StadiumBorder(),
-          ),
-        ),
-        LocaleText(
-          labelKey,
-          style: InkText.label.copyWith(color: context.ink.muted),
-        ),
-      ],
     );
   }
 }

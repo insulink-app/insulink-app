@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/analysis/chart_key_entry.dart';
 import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
@@ -65,25 +66,17 @@ class AnalysisChartSection extends StatelessWidget {
   }
 
   Widget _key(InsulinkColors colors) {
-    Widget swatch(Color color, double height) => Container(
-      width: 18,
-      height: height,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(height / 2),
-      ),
-    );
-    final style = InkText.label.copyWith(color: colors.muted);
     return Padding(
       padding: const EdgeInsets.only(left: 8),
       child: Row(
-        spacing: 10,
+        spacing: 18,
         children: [
-          swatch(colors.text, 3),
-          LocaleText('analysis.patterns.mean', style: style),
-          const SizedBox(width: 10),
-          swatch(colors.accent.withValues(alpha: 0.35), 10),
-          LocaleText('analysis.patterns.spread', style: style),
+          ChartKeyEntry(color: colors.text, labelKey: 'analysis.patterns.mean'),
+          ChartKeyEntry(
+            color: colors.accent.withValues(alpha: 0.3),
+            labelKey: 'analysis.patterns.spread',
+            thickness: 10,
+          ),
         ],
       ),
     );

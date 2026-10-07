@@ -79,7 +79,7 @@ class TimeInRangeView extends StatelessWidget {
       children: [
         Text(
           inRange.spacedPercent,
-          style: InkText.bigValue.copyWith(fontSize: 48),
+          style: InkText.bigValue.copyWith(fontSize: 44),
         ),
         Flexible(
           child: LocaleText(
@@ -126,8 +126,9 @@ class _StackedBar extends StatelessWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: band.color,
-                  borderRadius: BorderRadius.circular(5),
+                  borderRadius: BorderRadius.circular(4),
                 ),
+                child: const SizedBox.expand(),
               ),
             ),
         ],
@@ -188,7 +189,7 @@ class _Legend extends StatelessWidget {
           Text(
             band.spacedPercent,
             style: InkText.rowTitle.copyWith(
-              fontSize: 17,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
           ),

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../../profile/glucose/profile_glucose_state.dart';
+import '../../sport/sport_format.dart';
 
 /// One computed summary statistic, formatted for display as a tile.
 class GlucoseStat {
@@ -26,8 +27,8 @@ class GlucoseSummary {
     final unit = glucose.unit.label;
     return [
       GlucoseStat('analysis.avg.mean', glucose.format(mean.round()), unit),
-      GlucoseStat('analysis.avg.gmi', _gmi(mean).toStringAsFixed(1), '%'),
-      GlucoseStat('analysis.avg.cv', _cv(mean, sd).toStringAsFixed(1), '%'),
+      GlucoseStat('analysis.avg.gmi', sportDecimal(_gmi(mean), 1), '%'),
+      GlucoseStat('analysis.avg.cv', sportDecimal(_cv(mean, sd), 1), '%'),
       GlucoseStat('analysis.avg.sd', glucose.format(sd.round()), unit),
       GlucoseStat(
         'analysis.avg.max',

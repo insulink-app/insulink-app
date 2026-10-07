@@ -110,7 +110,7 @@ class _Counter extends StatelessWidget {
               ),
             ),
           ),
-          Text('$count', style: InkText.bigValue.copyWith(fontSize: 22)),
+          Text('$count', style: InkText.bigValue.copyWith(fontSize: 18)),
         ],
       ),
     );

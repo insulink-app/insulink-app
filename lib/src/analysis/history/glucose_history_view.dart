@@ -39,7 +39,7 @@ class GlucoseHistoryView extends StatelessWidget {
       _ => 'day',
     };
     final starts = series.starts;
-    final every = (starts.length / 7).ceil().clamp(1, starts.length);
+    final every = (starts.length / 8).ceil().clamp(1, starts.length);
     return AnalysisChartSection(
       titleKey: 'analysis.history_chart.title_$title',
       hintKey: 'analysis.history_chart.hint_$title',

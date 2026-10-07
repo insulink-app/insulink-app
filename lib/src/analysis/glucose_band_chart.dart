@@ -141,7 +141,6 @@ class GlucoseBandChart extends StatelessWidget {
             }
             return SideTitleWidget(
               meta: meta,
-              fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
               child: Text(
                 label,
                 style: InkText.axis.copyWith(fontSize: 13, color: ink.muted),
