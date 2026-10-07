@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/connections/connection_row.dart';
-import 'package:insulink/src/connections/device_attention.dart';
+import 'package:insulink/src/connections/connections_summary.dart';
+import 'package:insulink/src/connections/device_links.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/connections/history/device_history_page.dart';
 import 'package:insulink/src/connections/history/device_history_sync.dart';
 import 'package:insulink/src/google_health/google_health_body.dart';
@@ -71,25 +73,33 @@ class ConnectionsPage extends StatelessWidget {
   }
 }
 
+/// The overall state on top, then one plain card per connection.
 class ConnectionsBodyContent extends StatelessWidget {
   const ConnectionsBodyContent({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final attention = DeviceAttention.of(context);
+    final links = DeviceLinks.of(context);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      padding: const EdgeInsets.fromLTRB(
+        InkSpace.panelMargin,
+        18,
+        InkSpace.panelMargin,
+        24,
+      ),
       children: [
+        ConnectionsSummary(links: links),
+        const SizedBox(height: 22),
         ConnectionRow(
-          icon: PhosphorIconsFill.drop,
+          icon: PhosphorIconsBold.drop,
           labelKey: "sensor.label",
           page: const SensorBodyContent(),
           actions: const [DeviceHistoryButton(kind: DeviceHistoryKind.sensors)],
-          notify: attention.sensor,
+          link: links.sensor,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: InkSpace.tileGap),
         ConnectionRow(
-          icon: PhosphorIconsFill.syringe,
+          icon: PhosphorIconsBold.syringe,
           labelKey: "pump.label",
           page: const PumpBodyContent(),
           actions: const [
@@ -97,14 +107,14 @@ class ConnectionsBodyContent extends StatelessWidget {
             PodDeliveryLogButton(),
             DeviceHistoryButton(kind: DeviceHistoryKind.pumps),
           ],
-          notify: attention.pump,
+          link: links.pump,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: InkSpace.tileGap),
         ConnectionRow(
           icon: PhosphorIconsBold.watch,
           labelKey: "google_health.label",
           page: const GoogleHealthBodyContent(),
-          notify: attention.googleHealth,
+          link: links.googleHealth,
         ),
       ],
     );

@@ -735,6 +735,13 @@
   },
   "connections": {
     "label": "Verbindungen",
+    "not_paired": "Nicht gekoppelt",
+    "not_connected": "Nicht verbunden",
+    "band": "Fitbit Air",
+    "all_connected": "Alles verbunden",
+    "active_count": "# von ## Verbindungen aktiv",
+    "attention_one": "1 Verbindung braucht Aufmerksamkeit",
+    "attention_many": "# Verbindungen brauchen Aufmerksamkeit",
     "history": {
       "sensors": "Sensor-Verlauf",
       "pumps": "Pumpen-Verlauf",

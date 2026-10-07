@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/status_icon.dart';
+import 'package:insulink/src/connections/device_links.dart';
+import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// A large, card-styled device row: tinted icon badge, bold label, an attention
-/// dot when needed, and a chevron. Tapping opens [page] as a [ConnectionSubPage].
+/// One connection as a plain card: the device glyph in a [StatusIcon] whose
+/// dot carries the state, the name over the paired device, and a chevron.
+/// Tapping opens [page] as a [ConnectionSubPage].
 class ConnectionRow extends StatelessWidget {
   final IconData icon;
   final String labelKey;
   final Widget page;
-  final bool notify;
+  final DeviceLink link;
 
   /// Header controls the opened page should carry, e.g. the pump's delivery log.
   final List<Widget> actions;
@@ -18,72 +23,64 @@ class ConnectionRow extends StatelessWidget {
     required this.icon,
     required this.labelKey,
     required this.page,
-    this.notify = false,
+    required this.link,
     this.actions = const [],
   });
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.ink;
     final label = Locales.string(context, labelKey);
-    final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.onSurface.withValues(alpha: 0.04),
-      borderRadius: BorderRadius.circular(20),
+      color: colors.panel,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(InkRadius.tile),
+        side: BorderSide(color: colors.border),
+      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) =>
-                ConnectionSubPage(title: label, body: page, actions: actions),
-          ),
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: scheme.onSurface.withValues(alpha: 0.07)),
-          ),
-          padding: const EdgeInsets.all(18),
+        onTap: () => _open(context, label),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
           child: Row(
+            spacing: 14,
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: scheme.onSurfaceVariant, size: 26),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              if (notify) ...[
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: scheme.error,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 12),
-              ],
-              Icon(
-                PhosphorIconsBold.caretRight,
-                size: 18,
-                color: scheme.onSurface.withValues(alpha: 0.4),
-              ),
+              StatusIcon(icon: icon, statusColor: _dotColor(colors)),
+              Expanded(child: _texts(context, label)),
+              Icon(PhosphorIconsBold.caretRight, size: 18, color: colors.muted),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _open(BuildContext context, String label) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            ConnectionSubPage(title: label, body: page, actions: actions),
+      ),
+    );
+  }
+
+  Color _dotColor(InsulinkColors colors) => switch (link.state) {
+    LinkState.active => colors.range,
+    LinkState.attention => colors.low,
+    LinkState.idle => colors.muted,
+  };
+
+  Widget _texts(BuildContext context, String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 2,
+      children: [
+        Text(label, style: InkText.rowTitle.copyWith(fontSize: 17)),
+        LocaleText(
+          link.detailKey,
+          style: InkText.label.copyWith(color: context.ink.muted),
+        ),
+      ],
     );
   }
 }
