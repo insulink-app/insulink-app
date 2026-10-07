@@ -583,6 +583,7 @@
       "basal_total": "Basal total",
       "bolus_total": "Bolus total",
       "total": "Since pod start",
+      "history": "History",
       "hour_span": "# to #"
     },
     "bolus": {
@@ -756,13 +757,15 @@
       "pumps": "Pump history",
       "empty": "No devices recorded yet.",
       "failed": "The history could not be loaded.",
-      "active": "Active",
-      "discarded": "Removed",
-      "ended": "Finished",
-      "now": "now",
       "range": "# to ##",
-      "worn": "Worn # of ## d",
-      "sensor_code": "Sensor code #"
+      "code": "Code #",
+      "code_label": "Sensor code",
+      "active_since": "Active since #",
+      "of_days": "of # d",
+      "worn_label": "worn",
+      "early": "removed early",
+      "earlier_sensors": "Earlier sensors",
+      "earlier_pumps": "Earlier pods"
     },
     "status": {
       "title": "Reception",

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/pump/pod_delivery_summary.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:insulink/src/base/track_bar.dart';
+import 'package:insulink/src/base/section_header.dart';
+import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_log_entry.dart';
-import 'package:insulink/src/pump/pod_store.dart';
-import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -61,154 +64,112 @@ class PodDeliveryLogPage extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         title: LocaleText('pump.log._'),
       ),
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          InkSpace.panelMargin,
+          12,
+          InkSpace.panelMargin,
+          24,
+        ),
         children: [
           const PodDeliverySummary(),
-          Expanded(child: entries.isEmpty ? _empty() : _list(context, entries)),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: SectionHeader(titleKey: 'pump.log.history'),
+          ),
+          if (entries.isEmpty)
+            const EmptyState(
+              icon: PhosphorIconsBold.listBullets,
+              titleKey: 'pump.log.empty',
+            )
+          else
+            _list(entries),
         ],
       ),
     );
   }
 
-  Widget _empty() {
-    return const Center(
-      child: EmptyState(
-        icon: PhosphorIconsBold.listBullets,
-        titleKey: 'pump.log.empty',
-      ),
+  /// Every delivery as a row of one panel, its bar measured against the
+  /// largest amount in the list.
+  Widget _list(List<PodLogEntry> entries) {
+    final largest = entries.fold<double>(
+      0,
+      (max, entry) => entry.units > max ? entry.units : max,
     );
-  }
-
-  Widget _list(BuildContext context, List<PodLogEntry> entries) {
-    final scheme = Theme.of(context).colorScheme;
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      itemCount: entries.length,
-      separatorBuilder: (_, _) =>
-          Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.06)),
-      itemBuilder: (_, index) => _PodLogRow(entry: entries[index]),
-    );
-  }
-}
-
-/// What this pod has put out in total, split the way the pod itself splits it.
-///
-/// Basal is here as a TOTAL rather than as rows, because it is a continuous drip:
-/// listing every quarter hour would bury the doses the user actually chose. The
-/// figure is the one the background watch booked, so a stretch the pod spent
-/// suspended counts as the nothing it was.
-class PodDeliverySummary extends StatelessWidget {
-  const PodDeliverySummary({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final store = context.watch<PodController>().store;
-    final basal = store.basalDeliveredTotal;
-    final bolus = store.deliveryLog
-        .where((entry) => entry.kind == PodDeliveryKind.bolus)
-        .fold<double>(0, (sum, entry) => sum + entry.units);
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _line(scheme, 'pump.log.basal_total', basal, bold: false),
-          const SizedBox(height: 4),
-          _line(scheme, 'pump.log.bolus_total', bolus, bold: false),
-          Divider(height: 14, color: scheme.onSurface.withValues(alpha: 0.06)),
-          _line(scheme, 'pump.log.total', basal + bolus, bold: true),
-        ],
-      ),
-    );
-  }
-
-  Widget _line(
-    ColorScheme scheme,
-    String labelKey,
-    double units, {
-    required bool bold,
-  }) {
-    final weight = bold ? FontWeight.bold : FontWeight.normal;
-    return Row(
-      children: [
-        Expanded(
-          child: LocaleText(
-            labelKey,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: weight,
-              color: bold
-                  ? scheme.onSurface
-                  : scheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ),
-        Text(
-          '${units.toStringAsFixed(2)} U',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: bold ? FontWeight.bold : FontWeight.w600,
-            fontFeatures: const [FontFeature.tabularFigures()],
-            color: scheme.onSurface,
-          ),
-        ),
+    return InkPanel.list(
+      radius: InkRadius.tile,
+      rows: [
+        for (final entry in entries) _PodLogRow(entry: entry, largest: largest),
       ],
     );
   }
 }
 
-/// One line of the history: when, what for, and how much.
+/// One delivery: a dot in its kind's colour, the kind over its time, a bar
+/// against the largest amount, and the amount.
 class _PodLogRow extends StatelessWidget {
-  const _PodLogRow({required this.entry});
+  const _PodLogRow({required this.entry, required this.largest});
 
   final PodLogEntry entry;
+  final double largest;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final colors = context.ink;
+    final color = _color(colors);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 14,
         children: [
-          Text(
-            _clock(context),
-            style: TextStyle(
-              fontSize: 13,
-              fontFeatures: const [FontFeature.tabularFigures()],
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 10),
           Expanded(
-            child: LocaleText(
-              entry.labelKey,
-              style: TextStyle(
-                fontSize: 13,
-                color: scheme.onSurface.withValues(alpha: 0.6),
-              ),
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                LocaleText(entry.labelKey, style: InkText.rowTitle),
+                Text(
+                  _clock(context),
+                  style: InkText.label.copyWith(color: colors.muted),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 10),
-          Text(
-            '${entry.units.toStringAsFixed(2)} U',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              fontFeatures: const [FontFeature.tabularFigures()],
-              color: entry.isDose ? scheme.onSurface : context.warning,
+          Expanded(
+            flex: 4,
+            child: TrackBar(
+              startFraction: 0,
+              endFraction: largest <= 0 ? 0 : entry.units / largest,
+              color: color,
+              height: 6,
+            ),
+          ),
+          SizedBox(
+            width: 64,
+            child: Text(
+              podUnits(context, entry.units),
+              textAlign: TextAlign.end,
+              style: InkText.row,
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Basal in the accent, a bolus in the bolus colour, priming and cannula
+  /// (insulin that never reaches the user) muted.
+  Color _color(InsulinkColors colors) {
+    if (entry.labelKey == 'pump.log.kind.basal') {
+      return colors.accent;
+    }
+    return entry.isDose ? colors.pace : colors.muted;
   }
 
   /// The time, as a span for an hour of basal and as a moment for a dose. Older
