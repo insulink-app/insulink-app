@@ -29,4 +29,18 @@ void main() {
     expect(range.keep(20), greaterThan(70));
     expect(range.keep(130), 130);
   });
+
+  test('readings move smoothly from one five-minute step to the next', () {
+    final glucose = DemoGlucose(
+      now: DateTime(2026, 10, 4, 12),
+      random: Random(2026),
+    );
+    final values = glucose.readings.values.toList();
+    var turns = 0.0;
+    for (var index = 2; index < values.length; index++) {
+      turns += (values[index] - 2 * values[index - 1] + values[index - 2])
+          .abs();
+    }
+    expect(turns / (values.length - 2), lessThan(1.5));
+  });
 }

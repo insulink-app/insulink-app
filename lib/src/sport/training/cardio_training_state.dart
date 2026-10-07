@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:insulink/src/demo/demo_live_track.dart';
+import 'package:insulink/src/demo/demo_mode.dart';
 
 import '../sport_store.dart';
 import '../sport_sync.dart';
@@ -16,6 +18,12 @@ class CardioTrainingState extends ChangeNotifier {
   final List<CardioTraining> _trainings;
   List<CardioTraining> _pending;
   ActiveTraining? _active;
+
+  /// The browser demo's stand-in for the service's GPS sampler.
+  late final DemoLiveTrack _demoTrack = DemoLiveTrack(
+    store: _store,
+    active: () => _active,
+  );
 
   CardioTrainingState(
     this._store,
@@ -117,6 +125,10 @@ class CardioTrainingState extends ChangeNotifier {
     );
     notifyListeners();
     await _store.saveActiveTraining(_active!);
+    if (DemoMode.enabled) {
+      _demoTrack.start();
+      return;
+    }
     await _seedFirstPoint();
   }
 
@@ -171,6 +183,7 @@ class CardioTrainingState extends ChangeNotifier {
     final endMs = DateTime.now().millisecondsSinceEpoch;
     final track = await activeTrack();
     _active = null;
+    _demoTrack.stop();
     await _store.clearActiveTraining();
     await addTraining(
       CardioTraining(

@@ -67,6 +67,8 @@ visitor sees the same month:
 | `demo_loop.dart` | Automated delivery switched on, with two hours of cycles decided by the real `LoopAlgorithm` and `LoopSafety` from the demo glucose (meal boluses and the automation's own insulin as IOB) and the temporary rate of the newest one running. Each cycle is a pod contact; `demo_pump.dart` adds the background poll's 15-minute contacts for the rest of the day, so the connection page has a pod line. |
 | `demo_devices.dart` | The sensor and pod history (`/sensor/history/`, `/pump/history/`): a month of devices back from the running ones, one sensor discarded early, one Libre 3, one pod replaced after a day. |
 | `demo_live_sensor.dart` | Keeps the sensor delivering: every five minutes a reading that continues the newest archived one along `DemoGlucose.shapeAt`, written to the store and sent to `CgmController` as the service's `reading` and `update` messages. A tab that slept catches up on what it missed. |
+| `demo_drift.dart` | The sensor's wander off the curve, shared by the month and the live feed. Each five-minute step keeps most of the last step's direction: fresh noise on every reading made the line zigzag as if it were sampled far more often than every five minutes. |
+| `demo_live_track.dart` | The GPS of a live training. The browser has no service sampling the location, so the route stayed empty and the map had no current position. While a training records, a point every 3 s goes into the same location log, along a Bonn route at the pace of the demo trainings, looping at its end and standing still while paused. Started and stopped by `CardioTrainingState`. |
 | `demo_nutrition.dart` | Meals at the curve's meal times with a matching bolus, drinks, inventory. |
 | `demo_sport.dart`, `demo_activity.dart` | Exercises, routines, workouts; daily steps, distance, calories, weight. |
 | `demo_cardio.dart` | Walks, a jog and a ride with a GPS loop around the Rheinaue in Bonn. |
@@ -103,8 +105,13 @@ Kept to a handful of switches on `DemoMode.enabled` (`--dart-define=DEMO=true`):
 ## `web/index.html`
 
 - **Splash**: the native splash's colours and logo (`web/splash/`, downscaled from
-  `assets/images/splash-*.png`), light and dark, with a loading bar. It fades out on
-  `flutter-first-frame`, so it also covers the dummy data being generated.
+  `assets/images/splash-*.png`), light and dark, and no loader. It fades out on
+  `flutter-first-frame`, which the app holds back until its first page is ready
+  (`LaunchHold`, released by `AuthGate`), so it covers the dummy data being
+  generated and never hands over to a blank frame. The fade starts 0.15 s late
+  and the logo grows slightly as it goes, while the page rises in underneath
+  (`LaunchReveal`): one movement instead of a loader and a cut. The phone app
+  does the same with the native splash.
 - **Rounds itself when embedded**: with `?frame=<radius>` (the website passes
   its `--screen-radius`) the page clips its own body to that radius, with root
   and body transparent (with a transparent root the browser paints body's

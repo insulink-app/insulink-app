@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 import 'package:insulink/main.dart';
+import 'package:insulink/src/base/launch_hold.dart';
 import 'package:insulink/src/demo/demo_account.dart';
 import 'package:insulink/src/demo/demo_backend.dart';
 import 'package:insulink/src/demo/demo_launch.dart';
@@ -31,9 +32,12 @@ class DemoApp {
     () => DemoBackend(account: account, network: _network),
   );
 
-  /// Signs in, pulls the account and shows the app. Locales are initialised
-  /// after [DemoLaunch] has stored the language, since they read it once.
+  /// Signs in, pulls the account and shows the app, its first frame held until
+  /// the first page is ready ([LaunchHold]) so the splash in `web/index.html`
+  /// fades straight into it. Locales are initialised after [DemoLaunch] has
+  /// stored the language, since they read it once.
   Future<void> start() async {
+    const LaunchHold().hold();
     await DemoLaunch(account, language: language, theme: theme).prepare();
     await Locales.init(["de", "en"]);
     runApp(const InsulinkApp());
