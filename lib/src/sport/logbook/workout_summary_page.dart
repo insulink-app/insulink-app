@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/logbook/workout_metrics_chart.dart';
@@ -24,12 +25,17 @@ class WorkoutSummaryPage extends StatelessWidget {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+          padding: const EdgeInsets.fromLTRB(
+            InkSpace.panelMargin,
+            12,
+            InkSpace.panelMargin,
+            20,
+          ),
           children: [
             WorkoutSummaryCard(session: session),
             const SizedBox(height: 24),
             WorkoutMetricsChart(session: session),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
             WorkoutSetList(session: session),
           ],
         ),

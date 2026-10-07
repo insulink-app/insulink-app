@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// A circular progress ring with a [child] at its centre — the workout summary's
 /// headline. [fraction] (0..1) fills the arc clockwise from 12 o'clock in
@@ -11,7 +12,7 @@ class WorkoutProgressRing extends StatelessWidget {
     required this.fraction,
     required this.color,
     required this.child,
-    this.size = 148,
+    this.size = 120,
   });
 
   final double fraction;
@@ -21,9 +22,7 @@ class WorkoutProgressRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final track = Theme.of(
-      context,
-    ).colorScheme.onSurface.withValues(alpha: 0.08);
+    final track = context.ink.line;
     return SizedBox(
       width: size,
       height: size,

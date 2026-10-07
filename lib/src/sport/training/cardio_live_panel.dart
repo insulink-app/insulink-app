@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/action_buttons.dart';
 import 'package:insulink/src/localization/locale_text.dart';
-import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_vitals_bar.dart';
+import 'package:insulink/src/sport/training/cardio_metric.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -69,59 +69,11 @@ class CardioLivePanel extends StatelessWidget {
   }
 
   Widget _metrics(BuildContext context, InsulinkColors colors) {
-    final cells = [
-      (duration, 'sport.trainings.duration'),
-      (distance, 'sport.trainings.distance'),
-      (speed, 'sport.trainings.speed'),
-    ];
-    return IntrinsicHeight(
-      child: Row(
-        children: [
-          for (var index = 0; index < cells.length; index++) ...[
-            if (index > 0)
-              VerticalDivider(width: 1, thickness: 1, color: colors.line),
-            Expanded(
-              child: _metric(context, colors, cells[index].$1, cells[index].$2),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// "2,32 km" as a large number with its unit small and muted beside it.
-  Widget _metric(
-    BuildContext context,
-    InsulinkColors colors,
-    String formatted,
-    String labelKey,
-  ) {
-    final space = formatted.indexOf(' ');
-    final value = space < 0 ? formatted : formatted.substring(0, space);
-    final unit = space < 0 ? null : formatted.substring(space + 1);
-    return Column(
-      spacing: 4,
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text.rich(
-            TextSpan(
-              text: value,
-              style: InkText.bigValue.copyWith(fontSize: 30),
-              children: [
-                if (unit != null)
-                  TextSpan(
-                    text: ' $unit',
-                    style: InkText.unit.copyWith(color: colors.muted),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        Text(
-          Locales.string(context, labelKey),
-          style: InkText.label.copyWith(color: colors.muted),
-        ),
+    return CardioMetricRow(
+      metrics: [
+        CardioMetric(formatted: duration, labelKey: 'sport.trainings.duration'),
+        CardioMetric(formatted: distance, labelKey: 'sport.trainings.distance'),
+        CardioMetric(formatted: speed, labelKey: 'sport.trainings.speed'),
       ],
     );
   }

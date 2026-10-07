@@ -772,6 +772,7 @@
       "not_set_up": "nicht eingerichtet",
       "received": "Empfangen",
       "no_reception": "Kein Empfang",
+      "axis_start": "vor # h",
       "slice_covered": "# bis ##, Daten empfangen",
       "slice_gap": "# bis ##, keine Daten"
     }
@@ -957,7 +958,10 @@
       "edit": "Routine bearbeiten",
       "name": "Name",
       "count": "# Übungen",
-      "start": "Starten",
+      "start": "Routine starten",
+      "item_summary": "# Sätze × ##, ### s Pause",
+      "item_summary_one": "# Satz × ##, ### s Pause",
+      "remove_item": "Übung entfernen",
       "add_exercise": "Übung hinzufügen",
       "no_items": "Noch keine Übungen in dieser Routine.",
       "delete_confirm": "Diese Routine wirklich löschen?",
@@ -1037,6 +1041,7 @@
       "delete_confirm": "Dieses Protokoll wirklich löschen?",
       "edit_set": "Satz bearbeiten",
       "add_set": "Satz hinzufügen",
+      "delete_set": "Satz löschen",
       "delete_set_confirm": "Diesen Satz wirklich löschen?"
     },
     "calendar": {
@@ -1123,6 +1128,7 @@
   },
   "profile": {
     "label": "Profil",
+    "settings": "Einstellungen",
     "sport_goals": "Sportziele",
     "nutrition_goals": "Ernährungsziele",
     "sleep": "Schlaf",

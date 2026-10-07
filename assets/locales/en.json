@@ -772,6 +772,7 @@
       "not_set_up": "not set up",
       "received": "Received",
       "no_reception": "No reception",
+      "axis_start": "# h ago",
       "slice_covered": "# to ##, data received",
       "slice_gap": "# to ##, no data"
     }
@@ -957,7 +958,10 @@
       "edit": "Edit routine",
       "name": "Name",
       "count": "# exercises",
-      "start": "Start",
+      "start": "Start routine",
+      "item_summary": "# sets × ##, ### s rest",
+      "item_summary_one": "# set × ##, ### s rest",
+      "remove_item": "Remove exercise",
       "add_exercise": "Add exercise",
       "no_items": "No exercises in this routine yet.",
       "delete_confirm": "Delete this routine?",
@@ -1037,6 +1041,7 @@
       "delete_confirm": "Delete this log entry?",
       "edit_set": "Edit set",
       "add_set": "Add set",
+      "delete_set": "Delete set",
       "delete_set_confirm": "Delete this set?"
     },
     "calendar": {
@@ -1123,6 +1128,7 @@
   },
   "profile": {
     "label": "Profile",
+    "settings": "Settings",
     "sport_goals": "Sport goals",
     "nutrition_goals": "Nutrition goals",
     "sleep": "Sleep",
