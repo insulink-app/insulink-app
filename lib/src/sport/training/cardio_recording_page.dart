@@ -11,6 +11,7 @@ import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:insulink/src/sport/training/cardio_training_state.dart';
 import 'package:insulink/src/sport/training/active_training.dart';
 import 'package:insulink/src/sport/training/cardio_live_panel.dart';
+import 'package:insulink/src/sport/training/training_countdown.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
@@ -37,11 +38,21 @@ class CardioRecordingPage extends StatefulWidget {
   State<CardioRecordingPage> createState() => _CardioRecordingPageState();
 }
 
-class _CardioRecordingPageState extends State<CardioRecordingPage> {
+class _CardioRecordingPageState extends State<CardioRecordingPage>
+    with SingleTickerProviderStateMixin {
   late final CardioTrainingState _state = context.read<CardioTrainingState>();
   final MapController _map = MapController();
 
   _Phase _phase = _Phase.recording;
+
+  /// The countdown's camera move: from [_introFromZoom] in to [_liveZoom] over
+  /// the three seconds, so the start reads as arriving at the spot.
+  late final AnimationController _intro = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 3),
+  )..addListener(_zoomIn);
+  static const _introFromZoom = 14.0;
+  static const _liveZoom = 16.0;
   int _count = 3;
   Timer? _countdown;
   Timer? _ticker;
@@ -84,7 +95,10 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_points.isEmpty) {
           try {
-            _map.move(center, 16);
+            _map.move(
+              center,
+              _intro.isAnimating ? _map.camera.zoom : _liveZoom,
+            );
           } catch (_) {}
         }
       });
@@ -102,6 +116,20 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
       const Duration(seconds: 1),
       (_) => _countTick(),
     );
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _intro.value = 1;
+    } else {
+      _intro.forward();
+    }
+  }
+
+  /// One step of the countdown's zoom, around whatever the map is centred on.
+  void _zoomIn() {
+    final eased = Curves.easeInOutCubic.transform(_intro.value);
+    final zoom = _introFromZoom + (_liveZoom - _introFromZoom) * eased;
+    try {
+      _map.move(_map.camera.center, zoom);
+    } catch (_) {}
   }
 
   Future<void> _countTick() async {
@@ -254,6 +282,7 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
   void dispose() {
     _countdown?.cancel();
     _ticker?.cancel();
+    _intro.dispose();
     WakelockPlus.disable();
     super.dispose();
   }
@@ -272,6 +301,9 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
             points: _points,
             live: true,
             fallbackCenter: _fallbackCenter,
+            initialZoom: _phase == _Phase.countdown
+                ? _introFromZoom
+                : _liveZoom,
           ),
           if (_phase == _Phase.countdown) _countdownOverlay(context),
           SafeArea(child: _header(context, type, active)),
@@ -361,14 +393,6 @@ class _CardioRecordingPageState extends State<CardioRecordingPage> {
   }
 
   Widget _countdownOverlay(BuildContext context) {
-    final colors = context.ink;
-    return Container(
-      color: colors.ground.withValues(alpha: 0.6),
-      alignment: Alignment.center,
-      child: Text(
-        '$_count',
-        style: InkText.bigValue.copyWith(fontSize: 120, color: colors.text),
-      ),
-    );
+    return TrainingCountdown(count: _count);
   }
 }

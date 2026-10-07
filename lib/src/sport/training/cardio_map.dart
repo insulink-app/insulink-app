@@ -47,7 +47,12 @@ class CardioMap extends StatelessWidget {
     this.live = false,
     this.fallbackCenter,
     this.highlight,
+    this.initialZoom = 16,
   });
+
+  /// Where the camera starts; a live recording starts further out and zooms
+  /// in during its countdown.
+  final double initialZoom;
 
   final List<TrackPoint> points;
   final MapController? controller;
@@ -73,8 +78,9 @@ class CardioMap extends StatelessWidget {
     final map = FlutterMap(
       mapController: controller,
       options: MapOptions(
+        backgroundColor: context.ink.ground,
         initialCenter: center,
-        initialZoom: 16,
+        initialZoom: initialZoom,
         // Larger rotation threshold so a pinch-zoom doesn't tilt the map by
         // accident; programmatic moveAndRotate (live recenter) is unaffected.
         interactionOptions: const InteractionOptions(
