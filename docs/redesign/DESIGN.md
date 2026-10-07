@@ -97,6 +97,8 @@ Zahlen deutsch formatieren: `4.208`, `74,4`, `0,40 E/h`, `87 %` (mit Leerzeichen
 
 Referenz: `design/reference/*.dc.html` (Bolus, Sport, Ernaehrung, Sensor, Pumpe, Health) und `insulink-kit.css` (alle Klassen und Werte).
 
+- **Einheitliche Breite (Pflicht):** Alle Panels, Stat-Leisten, Charts, Eingabefelder und Suchfelder einer Seite haben **exakt dieselbe Breite**: 12 px Abstand zum Bildschirmrand, nie zusätzlich eingerückt (kein Panel in einem Container mit eigenem Rand-Padding). In Flutter: ein einziger horizontaler Seitenrand `InkSpace.page = 12` für alle Flächen; Texte/Überschriften außerhalb von Flächen 20 px.
+- **Charts:** Die Kurve beginnt **direkt am linken Innenrand** des Panels (kein reservierter Platz für Y-Achsen-Beschriftung). Gitterlinien über die volle Breite, Y-Werte weglassen oder rechts klein über der Linie.
 - **Abschnittskopf:** Titel 18/700 links, optionale Icon-Buttons rechts (44 px, ohne Hintergrund, Icon muted). Abstand 28 px nach oben. Keine Großbuchstaben-Überschriften (statt „STATUS“ → „Status“).
 - **Listen:** Einträge stehen **in einem gemeinsamen Panel** (Radius 20) und sind durch 1-px-Linien in line getrennt, nicht als einzelne Karten. Zeile min. 68 px: Icon-Kreis 40 px (accent auf 12 % accent) · Titel 16/700 + Untertitel 14 muted · rechts Meta (Datum 13 muted über Uhrzeit 15/700). Daten relativ: „Heute“, „Gestern“, sonst „So., 4. Okt.“.
 - **„Mehr anzeigen“:** Textbutton zentriert, 15/700 in accent.
@@ -134,6 +136,12 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 | 25 | Willkommen.dc.html | Onboarding: Willkommen + Bedingungen |
 | 26 | Berechtigungen.dc.html | Onboarding: Berechtigungen (seitenweise wie bisher, Beispiel Bluetooth) |
 | 27 | Login.dc.html | Anmelden |
+| 28 | RoutineDetail.dc.html | Routine-Detail (abgeschlossene Routine) |
+| 29 | AktivitaetDetail.dc.html | Aktivität-Detail (z. B. Radfahren, mit Karte) |
+| 30 | LiveTracking.dc.html | Training live (Gehen, Karte vollflächig) |
+| 31 | Empfang.dc.html | Empfang der letzten 24 h |
+| 32 | RoutineEdit.dc.html | Routine bearbeiten |
+| 33 | Profil.dc.html | Profil & Einstellungen |
 
 ### Bolusrechner (Sheet)
 - Sheet in panel, Radius 28 oben, Griff 40 × 5. Kopf: Titel 24/800 links, runder Schließen-Button rechts.
@@ -238,6 +246,35 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 - Vertikal mittig, Logo (64 px, accent), „Willkommen“ (34/800) und „Melde dich mit deinem Konto an.“ **zentriert**; Felder und Button volle Breite.
 - Felder mit Label darüber (panel, Radius 16, Höhe 56, Fokus-Rand accent), Passwort mit Auge-Icon.
 - Primärbutton „Anmelden“ Höhe 58. Ganz unten zentriert: „Noch kein Konto? **Registrieren**“ (Link in accentText, fett).
+
+### Routine-Detail
+- Datumszeile klein unter dem Header. Ein Panel: Leistungsring (+10 %, `range`) links, rechts Übungen/Sätze/Dauer als Zeilen.
+- „Zeitlicher Verlauf": Glukose-Linie in `accent`, Legende als Strich, keine Fläche.
+- Pro Übung eine Sektion: Sätze als Zeilen in EINEM Panel (Satz n, Dauer/Pause darunter, Wdh. rechts, × zum Löschen), letzte Zeile „+ Satz hinzufügen".
+
+### Aktivität-Detail (Radfahren)
+- Karte 340 px hoch, radius 24, runde Kartenbuttons (Zoom +/−, Vollbild) auf `rgba(15,27,38,.85)`.
+- Strecke: Linie in `accent`, Start = kleiner heller Punkt (Ø 14 px, text-Farbe, 3 px Rand in ground), kein Icon. Ziel = einziger Marker: heller Kreis (text-Farbe) mit dunkler Fahne, keine Farbe. Gilt für alle Karten der App.
+- Darunter Datum links, Zeitraum „16:21 – 16:40" rechts (ersetzt die Start/Ende-Tabelle).
+- Ein Panel mit drei Werten (Strecke, Dauer, Ø-Tempo), Trennlinien statt drei Boxen, Icons muted. Gleich breit wie das Chart-Panel.
+- Chart: Glukose `accent`, Herzfrequenz `#C9A7FF`, Tempo `#2ED8B6` (kein Rot/Grün).
+
+### Training live
+- Karte vollflächig, schwebender Header: Zurück, Pill „● Gehen", Pause.
+- Bottom-Sheet (`panel`, radius 28): zwei Chips Glukose (+Trendpfeil) und Puls, drei große Werte, darunter `btn danger` „Training beenden" (Funktion = Stopp).
+
+### Empfang
+- „Letzte 24 Stunden" + Legende Empfangen / Kein Empfang. Ein Panel, je Gerät ein Block mit Icon, Name, Gerätename, „vor x min" rechts.
+- 48 Zellen (30 min), empfangen `accent`, kein Empfang = neutrale Zelle in `line` (#26394B), keine Warnfarbe. Legende „Empfangen / Kein Empfang“. Zeitachse „vor 24 h … jetzt“.
+
+### Routine bearbeiten
+- Namensfeld mit Label. Sektion „Übungen" mit Gesamtdauer rechts („ca. 1 h 8 min").
+- Übungen als Zeilen in einem Panel: Griff (Drag), Name, „2 Sätze × 18, 120 s Pause", Mülleimer. Letzte Zeile „+ Übung hinzufügen" (Text-Button statt zweitem Primärbutton).
+- Unten fixiert ein Primärbutton „Routine starten".
+
+### Profil
+- Suchfeld oben. Konto als EIN Panel: oben Avatar 56 px (accent mit onAccent-Buchstabe), Label „Name“ muted + Name 20/800, Stift-Button rechts; darunter Trennlinie und die Zeilen „Passwort ändern“ (Chevron) und „Abmelden“ (rot), Icons ohne Kreis.
+- „Einstellungen": ein Panel mit Zeilen Sprache, Darstellung, Glukose, Bolus, Basalrate, Körpermaße (Icon, Titel, Chevron).
 
 ### Google Health
 - Gerätekopf „Verbunden“, Panel „Letzte Werte“ (Schlüssel/Wert), darunter rote Zeile „Verbindung trennen“.
