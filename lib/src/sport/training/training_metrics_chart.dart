@@ -421,7 +421,11 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
           _lastHapticMinute = minute;
           HapticFeedback.selectionClick();
         }
-        widget.onHoverMs(widget.startMs + (spot.x * 60000).round());
+        final minutes = (response?.touchChartCoordinate.dx ?? spot.x).clamp(
+          0.0,
+          _windowMaxX,
+        );
+        widget.onHoverMs(widget.startMs + (minutes * 60000).round());
       },
       getTouchedSpotIndicator: (barData, indexes) => [
         for (final _ in indexes)

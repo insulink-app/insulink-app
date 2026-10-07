@@ -114,34 +114,7 @@ class CardioMap extends StatelessWidget {
               _finishMarker(context.ink, route.last),
             ],
           ),
-        if (highlight != null)
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: highlight!,
-                width: 24,
-                height: 24,
-                child: Container(
-                  decoration: BoxDecoration(
-                    // Neutral hover point, not a series colour: white on dark,
-                    // black on light, ringed by its opposite to stay visible.
-                    color: isDark ? Colors.white : Colors.black,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark ? Colors.black : Colors.white,
-                      width: 3,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+        if (highlight != null) _HoverMarker(position: highlight!),
       ],
     );
     // Zoom + fit-route controls, mirroring the web route map. Only on the static
@@ -347,4 +320,57 @@ class MapOverlayButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The chart-hover position on the route. It glides to each new position
+/// instead of jumping, so sweeping a finger along the chart draws a smooth
+/// trace on the map. A light disc ringed in the page colour.
+class _HoverMarker extends StatelessWidget {
+  const _HoverMarker({required this.position});
+
+  final LatLng position;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.ink;
+    return TweenAnimationBuilder<LatLng>(
+      tween: _LatLngTween(begin: position, end: position),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (context, point, _) => MarkerLayer(
+        markers: [
+          Marker(
+            point: point,
+            width: 24,
+            height: 24,
+            child: Container(
+              decoration: BoxDecoration(
+                color: colors.text,
+                shape: BoxShape.circle,
+                border: Border.all(color: colors.ground, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.ground.withValues(alpha: 0.5),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Interpolates a map position, for [TweenAnimationBuilder].
+class _LatLngTween extends Tween<LatLng> {
+  _LatLngTween({required LatLng begin, required LatLng end})
+    : super(begin: begin, end: end);
+
+  @override
+  LatLng lerp(double t) => LatLng(
+    begin!.latitude + (end!.latitude - begin!.latitude) * t,
+    begin!.longitude + (end!.longitude - begin!.longitude) * t,
+  );
 }
