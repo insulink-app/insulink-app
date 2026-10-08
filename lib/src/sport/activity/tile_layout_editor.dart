@@ -139,33 +139,43 @@ class _TileLayoutEditorState<T extends Enum>
     );
   }
 
+  /// Each row brings its own [Material]: a bare `ListTile.tileColor` paints on
+  /// the page's Material, outside the list's clip, so scrolled rows showed
+  /// through the search field and hint above.
   Widget _row(BuildContext context, T tile, bool draggable) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       key: ValueKey(tile),
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        tileColor: scheme.onSurface.withValues(alpha: 0.04),
+      child: Material(
+        color: scheme.onSurface.withValues(alpha: 0.04),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: Icon(widget.icon(tile), color: context.accent),
-        title: LocaleText(widget.labelKey(tile)),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Switch(
-              value: widget.state.isVisible(tile),
-              onChanged: (value) => widget.state.setVisible(tile, value),
-            ),
-            const SizedBox(width: 4),
-            if (draggable)
-              Icon(
-                PhosphorIconsBold.dotsSixVertical,
-                color: scheme.onSurfaceVariant,
-              )
-            else
-              const SizedBox(width: 24),
-          ],
-        ),
+        child: _tile(context, tile, draggable),
+      ),
+    );
+  }
+
+  Widget _tile(BuildContext context, T tile, bool draggable) {
+    final scheme = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: Icon(widget.icon(tile), color: context.accent),
+      title: LocaleText(widget.labelKey(tile)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Switch(
+            value: widget.state.isVisible(tile),
+            onChanged: (value) => widget.state.setVisible(tile, value),
+          ),
+          const SizedBox(width: 4),
+          if (draggable)
+            Icon(
+              PhosphorIconsBold.dotsSixVertical,
+              color: scheme.onSurfaceVariant,
+            )
+          else
+            const SizedBox(width: 24),
+        ],
       ),
     );
   }

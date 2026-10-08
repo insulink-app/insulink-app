@@ -415,6 +415,7 @@
       "delivery": "Abgabe",
       "reservoir": "Reservoir",
       "reservoir_plenty": "Mehr als messbar",
+      "reservoir_plenty_short": "> 50 E",
       "age": "Laufzeit",
       "expires_in": "Läuft ab in",
       "alerts": "Aktive Warnungen",

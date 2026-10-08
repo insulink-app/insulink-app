@@ -415,6 +415,7 @@
       "delivery": "Delivery",
       "reservoir": "Reservoir",
       "reservoir_plenty": "More than it can measure",
+      "reservoir_plenty_short": "> 50 U",
       "age": "Running for",
       "expires_in": "Expires in",
       "alerts": "Active alerts",
