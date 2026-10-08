@@ -3,6 +3,7 @@ import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/base/restore_offer_card.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/loop/loop_switch.dart';
 import 'package:insulink/src/pump/pod_backup_restore.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
@@ -50,6 +51,8 @@ class _PodRestoreCardState extends State<PodRestoreCard> {
     }
   }
 
+  /// Adopts the pod, then sends it the current schedule and re-engages the
+  /// automation if it was on ([LoopSwitch.resumeAfterRestore]).
   Future<void> _use() async {
     final offer = _offer;
     if (offer == null || _adopting) {
@@ -59,6 +62,7 @@ class _PodRestoreCardState extends State<PodRestoreCard> {
     final controller = context.read<PodController>();
     await PodBackupRestore(controller.store).restoreFromBackend(offer);
     await controller.adoptRestoredPod();
+    await LoopSwitch(controller).resumeAfterRestore();
     if (mounted) {
       setState(() {
         _adopting = false;

@@ -31,6 +31,7 @@ import '../glucose_sync.dart';
 import '../protocol/connection.dart';
 import '../sensor_sync.dart';
 import '../cgm_store.dart';
+import '../../profile/profile_settings.dart';
 import '../../pump/pod_store.dart';
 import '../../pump/service/pod_alarms.dart';
 import '../../pump/service/pod_monitor.dart';
@@ -777,12 +778,21 @@ class CgmTaskHandler extends TaskHandler {
         readGlucose: _readLoopGlucose,
         readMealIob: _readMealIob,
         onLog: _log,
-        notifyStopped: PodAlarmManager(notifications).loopStopped,
+        notifyStopped: (cause) =>
+            _loopStopped(PodAlarmManager(notifications), cause),
       );
       await runner.tick();
     } on Exception catch (error) {
       _log('pod loop tick failed: $error');
     }
+  }
+
+  /// Tells the user the automation stopped by itself, and the account too, so a
+  /// pod restored after a reinstall does not come back engaged
+  /// ([LoopModeBackup]).
+  Future<void> _loopStopped(PodAlarmManager alarms, PodLoopStop cause) async {
+    unawaited(ProfileSettings().push(null));
+    await alarms.loopStopped(cause);
   }
 
   /// The sensor input the automation is allowed to decide on, or an unusable one

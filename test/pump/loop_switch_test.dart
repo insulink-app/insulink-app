@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/pump/loop/loop_limits.dart';
+import 'package:insulink/src/pump/loop/loop_mode_backup.dart';
 import 'package:insulink/src/pump/loop/loop_switch.dart';
 import 'package:insulink/src/pump/pod_basal_delivery.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_store.dart';
+import 'package:insulink/src/pump/protocol/pod_basal_program.dart';
 
 import '../support/secure_storage_mock.dart';
 import 'fake_secure_storage.dart';
@@ -14,6 +16,21 @@ class RecordingPodController extends PodController {
 
   int cancelled = 0;
   bool cancelFails = false;
+  int schedulesSent = 0;
+  bool suspended = false;
+  Duration? age = Duration.zero;
+
+  @override
+  Duration? get statusAge => age;
+
+  @override
+  bool get isSuspended => suspended;
+
+  @override
+  Future<void> applyBasalProfile(PodBasalProgram program) async {
+    schedulesSent++;
+    await store.saveBasalRates(PodController.hourlyRatesOf(program));
+  }
 
   @override
   Future<void> cancelTemporaryBasal() async {
@@ -144,6 +161,45 @@ void main() {
 
       expect(store.loopStop, isNull);
       expect(store.loopMode, PodLoopMode.engaged);
+    });
+  });
+
+  /// A restore brings back the key but not the schedule; it is sent at once, and
+  /// the automation comes back only if it was on when the pod was left.
+  group('a pod adopted from the account', () {
+    setUp(() async {
+      backing.remove('pod.basal_rates');
+      await store.reload();
+    });
+
+    test('gets the schedule and is re-engaged when it was on', () async {
+      platform[LoopModeBackup.key] = PodLoopMode.engaged.name;
+
+      await LoopSwitch(controller).resumeAfterRestore();
+
+      expect(controller.schedulesSent, 1);
+      expect(store.loopMode, PodLoopMode.engaged);
+    });
+
+    test('gets the schedule but stays off when it was off', () async {
+      await LoopSwitch(controller).resumeAfterRestore();
+
+      expect(controller.schedulesSent, 1);
+      expect(store.loopMode, PodLoopMode.off);
+    });
+
+    /// Programming a schedule IS resuming; a pause the user chose stays.
+    test('a suspended or unread pod is left alone', () async {
+      platform[LoopModeBackup.key] = PodLoopMode.engaged.name;
+      controller.suspended = true;
+      await LoopSwitch(controller).resumeAfterRestore();
+      controller
+        ..suspended = false
+        ..age = null;
+      await LoopSwitch(controller).resumeAfterRestore();
+
+      expect(controller.schedulesSent, 0);
+      expect(store.loopMode, PodLoopMode.off);
     });
   });
 
