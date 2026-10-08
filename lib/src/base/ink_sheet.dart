@@ -33,7 +33,9 @@ Future<T?> showInkSheet<T>({
 /// The chrome every sheet shares (`docs/redesign/DESIGN.md`, "Popups:
 /// Bottom-Sheets"): panel colour, radius 28 on top, the grab handle, the title
 /// on the left and a round close button on the right (alone, without a title),
-/// then the content 12 px from the edges, lifted above the keyboard.
+/// then the content 12 px from the edges, lifted above the keyboard. The title
+/// keeps 12 px clear of the close button, so a value or button at its right
+/// end never touches the X.
 class InkSheet extends StatelessWidget {
   const InkSheet({super.key, required this.child, this.titleKey, this.title});
 
@@ -87,6 +89,7 @@ class InkSheet extends StatelessWidget {
                 style: InkText.bigValue.copyWith(fontSize: 20),
               ));
     return Row(
+      spacing: 12,
       children: [
         Expanded(
           child: Padding(
