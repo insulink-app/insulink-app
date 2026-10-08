@@ -839,12 +839,6 @@
       "bolus": "Bolus",
       "meals": "Mahlzeiten"
     },
-    "detail": {
-      "latest": "Zuletzt",
-      "average": "Durchschnitt",
-      "total": "Gesamt",
-      "history": "Verlauf"
-    },
     "hydration": {
       "_": "Trinken",
       "settings": "Einstellungen",
@@ -871,11 +865,11 @@
       "serving_size": "Portionsgröße",
       "serving_label": "Portionsbeschreibung",
       "per_100": "pro 100 #",
-        "add_title": "Produkt anlegen",
-        "edit_title": "Produkt bearbeiten",
-        "nutrients": "Nährwerte",
-        "carbs_long": "Kohlenhydrate",
-        "energy": "Energie",
+      "add_title": "Produkt anlegen",
+      "edit_title": "Produkt bearbeiten",
+      "nutrients": "Nährwerte",
+      "carbs_long": "Kohlenhydrate",
+      "energy": "Energie",
       "carbs": "KH",
       "fat": "Fett",
       "protein": "Eiweiß",
@@ -894,9 +888,9 @@
       "empty_hint": "Sie erscheinen hier, sobald du einen Bolus abgibst.",
       "products": "Produkte",
       "products_count": "# Produkte",
-        "products_count_one": "1 Produkt",
-        "title": "Mahlzeit",
-        "glucose": "Glukose",
+      "products_count_one": "1 Produkt",
+      "title": "Mahlzeit",
+      "glucose": "Glukose",
       "bolus_value": "# E Bolus",
       "show_more": "Mehr anzeigen",
       "delete": "Mahlzeit löschen",
@@ -1609,5 +1603,13 @@
   "scan": {
     "torch_on": "Licht einschalten",
     "torch_off": "Licht ausschalten"
+  },
+  "daily_history": {
+    "of": "von #",
+    "percent": "# %",
+    "goal_reached": "Ziel erreicht",
+    "goal": "Ziel #",
+    "axis_today": "heute",
+    "empty_range": "Keine Daten in diesem Zeitraum"
   }
 }

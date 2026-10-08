@@ -839,12 +839,6 @@
       "bolus": "Bolus",
       "meals": "Meals"
     },
-    "detail": {
-      "latest": "Latest",
-      "average": "Average",
-      "total": "Total",
-      "history": "History"
-    },
     "hydration": {
       "_": "Hydration",
       "settings": "Settings",
@@ -871,11 +865,11 @@
       "serving_size": "Serving size",
       "serving_label": "Serving description",
       "per_100": "per 100 #",
-        "add_title": "Add product",
-        "edit_title": "Edit product",
-        "nutrients": "Nutrition",
-        "carbs_long": "Carbohydrates",
-        "energy": "Energy",
+      "add_title": "Add product",
+      "edit_title": "Edit product",
+      "nutrients": "Nutrition",
+      "carbs_long": "Carbohydrates",
+      "energy": "Energy",
       "carbs": "Carbs",
       "fat": "Fat",
       "protein": "Protein",
@@ -894,9 +888,9 @@
       "empty_hint": "They appear here once you deliver a bolus.",
       "products": "Products",
       "products_count": "# products",
-        "products_count_one": "1 product",
-        "title": "Meal",
-        "glucose": "Glucose",
+      "products_count_one": "1 product",
+      "title": "Meal",
+      "glucose": "Glucose",
       "bolus_value": "# U bolus",
       "show_more": "Show more",
       "delete": "Delete meal",
@@ -1609,5 +1603,13 @@
   "scan": {
     "torch_on": "Turn light on",
     "torch_off": "Turn light off"
+  },
+  "daily_history": {
+    "of": "of #",
+    "percent": "#%",
+    "goal_reached": "Goal reached",
+    "goal": "Goal #",
+    "axis_today": "today",
+    "empty_range": "No data in this period"
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:flutter/services.dart';
+import 'package:insulink/src/localization/locales.dart';
 
 /// Daily values of a metric as bars (X = day, ascending). Expects [days] already
 /// filtered by time window and sorted ascending. [date] pulls each entry's day,
@@ -21,6 +22,10 @@ import 'package:flutter/services.dart';
 ///
 /// [average] adds a dashed line at that value; [highlightLast] keeps only the
 /// latest bar in the full colour so today stands out from the history.
+///
+/// [goal] adds a dashed goal line and dims the days below it to 45 %. [bare] is
+/// the redesign's daily-history look: no Y axis and no grid, fully rounded bars,
+/// the running day only outlined in dashes and the last axis label "heute".
 class ActivityBarChart<T> extends StatefulWidget {
   const ActivityBarChart({
     super.key,
@@ -34,6 +39,8 @@ class ActivityBarChart<T> extends StatefulWidget {
     this.average,
     this.highlightLast = false,
     this.axisSuffix = '',
+    this.goal,
+    this.bare = false,
   });
 
   final List<T> days;
@@ -49,6 +56,9 @@ class ActivityBarChart<T> extends StatefulWidget {
   /// Appended to every y label, e.g. " h".
   final String axisSuffix;
 
+  final double? goal;
+  final bool bare;
+
   @override
   State<ActivityBarChart<T>> createState() => _ActivityBarChartState<T>();
 }
@@ -62,9 +72,10 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
   Widget build(BuildContext context) {
     final days = widget.days;
     final locale = MaterialLocalizations.of(context);
-    final maxY = days
-        .map(widget.value)
-        .fold<double>(0, (a, b) => a > b ? a : b);
+    final maxY = [
+      ...days.map(widget.value),
+      widget.goal ?? 0,
+    ].fold<double>(0, (a, b) => a > b ? a : b);
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
@@ -73,48 +84,71 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
             ? widget.baseline + 1
             : widget.baseline + (maxY - widget.baseline) * 1.15,
         gridData: FlGridData(
-          show: true,
+          show: !widget.bare,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) =>
               FlLine(color: context.ink.panelRaised, strokeWidth: 1),
         ),
-        extraLinesData: _averageLine(context),
+        extraLinesData: _referenceLines(context),
         borderData: FlBorderData(show: false),
         barTouchData: _touchData(context, locale),
         titlesData: _titles(locale),
         barGroups: [
           for (var index = 0; index < days.length; index++)
-            BarChartGroupData(
-              x: index,
-              barRods: [
-                BarChartRodData(
-                  fromY: widget.baseline,
-                  toY: widget.value(days[index]),
-                  color: _barColor(index),
-                  width: (260 / days.length).clamp(2, 14).toDouble(),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(3),
-                  ),
-                ),
-              ],
-            ),
+            BarChartGroupData(x: index, barRods: [_rod(index, maxY)]),
         ],
       ),
       duration: Duration.zero,
     );
   }
 
+  BarChartRodData _rod(int index, double maxY) {
+    final width = (260 / widget.days.length).clamp(2, 14).toDouble();
+    final value = widget.value(widget.days[index]);
+    final outlined = widget.bare && _isRunningDay(index);
+    return BarChartRodData(
+      fromY: widget.baseline,
+      toY: outlined ? value.clamp(maxY * 0.04, double.infinity) : value,
+      color: outlined ? Colors.transparent : _barColor(index),
+      width: width,
+      borderSide: outlined ? BorderSide(color: widget.color, width: 1.5) : null,
+      borderDashArray: outlined ? const [3, 3] : null,
+      borderRadius: widget.bare
+          ? BorderRadius.circular(width / 2)
+          : const BorderRadius.vertical(top: Radius.circular(3)),
+    );
+  }
+
+  /// The last bar while it is today, so its value is still growing.
+  bool _isRunningDay(int index) =>
+      index == widget.days.length - 1 &&
+      DateUtils.isSameDay(widget.date(widget.days[index]), DateTime.now());
+
   Color _barColor(int index) {
+    final goal = widget.goal;
+    if (goal != null) {
+      return widget.value(widget.days[index]) >= goal
+          ? widget.color
+          : widget.color.withValues(alpha: 0.45);
+    }
     final isLast = index == widget.days.length - 1;
     return !widget.highlightLast || isLast
         ? widget.color
         : widget.color.withValues(alpha: 0.45);
   }
 
-  ExtraLinesData _averageLine(BuildContext context) {
+  ExtraLinesData _referenceLines(BuildContext context) {
     final average = widget.average;
+    final goal = widget.goal;
     return ExtraLinesData(
       horizontalLines: [
+        if (goal != null)
+          HorizontalLine(
+            y: goal,
+            color: context.ink.text.withValues(alpha: 0.5),
+            strokeWidth: 1,
+            dashArray: const [4, 4],
+          ),
         if (average != null)
           HorizontalLine(
             y: average,
@@ -194,7 +228,7 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
       rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
-          showTitles: true,
+          showTitles: !widget.bare,
           reservedSize: 42,
           getTitlesWidget: (value, meta) => SideTitleWidget(
             meta: meta,
@@ -223,7 +257,13 @@ class _ActivityBarChartState<T> extends State<ActivityBarChart<T>> {
               meta: meta,
               fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
               child: Text(
-                _axisDate(context, locale, widget.date(widget.days[index])),
+                widget.bare && _isRunningDay(index)
+                    ? Locales.string(context, 'daily_history.axis_today')
+                    : _axisDate(
+                        context,
+                        locale,
+                        widget.date(widget.days[index]),
+                      ),
                 style: InkText.axis.copyWith(
                   fontSize: 12,
                   color: context.ink.muted,
