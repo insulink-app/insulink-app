@@ -278,7 +278,7 @@ jobs:
           cp -r build/screenshots build/web/screenshots
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: build/web
 
