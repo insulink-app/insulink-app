@@ -214,10 +214,10 @@ class BolusDelivery {
         );
       }
       if (response is! PodStatusResponse) {
-        return _unknown('The pod gave an unclear answer', amount);
+        return await _unknown('The pod gave an unclear answer', amount);
       }
       if (!_confirmsBolus(response)) {
-        return _unknown(
+        return await _unknown(
           'The pod answered but does not report a bolus running',
           amount,
         );

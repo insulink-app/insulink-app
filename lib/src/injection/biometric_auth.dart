@@ -68,6 +68,8 @@ class BiometricAuth {
   Future<bool> canAuthenticate() async {
     try {
       return await _auth.isDeviceSupported();
+    } on LocalAuthException {
+      return false;
     } on PlatformException {
       return false;
     }
@@ -83,11 +85,11 @@ class BiometricAuth {
     try {
       return await _auth.authenticate(
         localizedReason: reason,
-        options: AuthenticationOptions(
-          biometricOnly: !allowDeviceCredential,
-          stickyAuth: true,
-        ),
+        biometricOnly: !allowDeviceCredential,
+        persistAcrossBackgrounding: true,
       );
+    } on LocalAuthException {
+      return false;
     } on PlatformException {
       return false;
     }
