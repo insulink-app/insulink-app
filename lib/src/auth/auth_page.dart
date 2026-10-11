@@ -16,10 +16,14 @@ import 'package:insulink/src/base/button_loader.dart';
 /// Combined sign-in / sign-up screen. Toggles between the two modes; on success
 /// the tokens are stored by [AuthService] and [onAuthenticated] advances the
 /// gate into the app.
+///
+/// At the gate it also offers [onGuest], using the app without an account.
+/// Opened later from the profile it has no such offer, and a back arrow.
 class AuthPage extends StatefulWidget {
-  const AuthPage({super.key, required this.onAuthenticated});
+  const AuthPage({super.key, required this.onAuthenticated, this.onGuest});
 
   final VoidCallback onAuthenticated;
+  final VoidCallback? onGuest;
 
   @override
   State<AuthPage> createState() => _AuthPageState();
@@ -76,6 +80,9 @@ class _AuthPageState extends State<AuthPage> {
   Widget build(BuildContext context) {
     final typing = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
+      appBar: widget.onGuest == null
+          ? AppBar(surfaceTintColor: Colors.transparent)
+          : null,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
@@ -140,6 +147,13 @@ class _AuthPageState extends State<AuthPage> {
         _passwordField(),
         const SizedBox(height: 22),
         _submitButton(),
+        if (widget.onGuest != null) ...[
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: _busy ? null : widget.onGuest,
+            child: const LocaleText('auth.continue_offline'),
+          ),
+        ],
       ],
     );
   }

@@ -99,7 +99,8 @@
       "invalid": "Name or password is incorrect.",
       "signup_failed": "Could not create the account. Please check your details.",
       "network": "Connection failed. Please try again."
-    }
+    },
+    "continue_offline": "Continue without an account"
   },
   "connection": {
     "logout": "Your session has expired. Please sign in again."
@@ -1154,7 +1155,10 @@
       "password_changed": "Your password has been changed.",
       "password_error": "Could not change the password. Check your current password.",
       "show_password": "Show password",
-      "logout_keeps_pod": "A paired pod is kept. It belongs to the device, not the account, and keeps running until you deactivate it."
+      "logout_keeps_pod": "A paired pod is kept. It belongs to the device, not the account, and keeps running until you deactivate it.",
+      "guest_title": "No account",
+      "guest_body": "Your data stays on this device.",
+      "sign_in": "Sign in or sign up"
     },
     "language": {
       "_": "Language",

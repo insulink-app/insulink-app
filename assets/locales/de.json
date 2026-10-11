@@ -99,7 +99,8 @@
       "invalid": "Name oder Passwort ist falsch.",
       "signup_failed": "Konto konnte nicht erstellt werden. Bitte überprüfe deine Angaben.",
       "network": "Verbindung fehlgeschlagen. Bitte versuche es erneut."
-    }
+    },
+    "continue_offline": "Ohne Konto fortfahren"
   },
   "connection": {
     "logout": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
@@ -1154,7 +1155,10 @@
       "password_changed": "Dein Passwort wurde geändert.",
       "password_error": "Passwort konnte nicht geändert werden. Prüfe dein aktuelles Passwort.",
       "show_password": "Passwort anzeigen",
-      "logout_keeps_pod": "Ein gekoppelter Pod bleibt erhalten. Er gehört zum Gerät, nicht zum Konto, und läuft weiter, bis du ihn deaktivierst."
+      "logout_keeps_pod": "Ein gekoppelter Pod bleibt erhalten. Er gehört zum Gerät, nicht zum Konto, und läuft weiter, bis du ihn deaktivierst.",
+      "guest_title": "Ohne Konto",
+      "guest_body": "Deine Daten bleiben auf diesem Gerät.",
+      "sign_in": "Anmelden oder registrieren"
     },
     "language": {
       "_": "Sprache",

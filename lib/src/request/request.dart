@@ -15,6 +15,7 @@ import 'package:insulink/src/request/request_reset.dart';
 
 class Request {
   final String url;
+  final String path;
   final String method;
   final Map<String, String> headers;
   final Map<String, Object> body;
@@ -23,6 +24,11 @@ class Request {
   // handshake on the first request after idle often needs more than 5s.
   static const int _timeout = 10;
   static const int _maxRetries = 3;
+
+  /// The only endpoints that work without a session. Everything else is not even
+  /// attempted without one (guest mode): the reply would be a 403, and that
+  /// clears the session and sends the user back to the sign-in page.
+  static const _publicPaths = {"/signin/", "/signup/", "/refresh/"};
   int _retries = 0;
 
   /// The last transport-level exception (no HTTP response), so a caller logging
@@ -35,6 +41,7 @@ class Request {
     this.headers = const {},
     this.body = const {},
   }) : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
+       path = url,
        method = "GET";
 
   Request.post({
@@ -42,6 +49,7 @@ class Request {
     this.headers = const {},
     this.body = const {},
   }) : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
+       path = url,
        method = "POST";
 
   Future<Response?> send(BuildContext? context) async {
@@ -52,6 +60,9 @@ class Request {
         await storage.read(key: "authentication_token") ?? "";
     if (authenticationToken != "") {
       headers["Authorization"] = "Bearer $authenticationToken";
+    } else if (!_publicPaths.contains(path)) {
+      lastError = "no account";
+      return null;
     }
     var response = await generateResponse(headers);
     return processResponse(context, response, headers);

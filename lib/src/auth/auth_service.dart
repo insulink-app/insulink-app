@@ -7,6 +7,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' show Response;
 import 'package:insulink/src/auth/account_sync.dart';
+import 'package:insulink/src/auth/guest_mode.dart';
+import 'package:insulink/src/auth/offline_handover.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/request/response_json.dart';
@@ -28,7 +30,7 @@ class AuthService {
     ).send(context);
     final error = await _handle(response, "auth.error.invalid");
     if (error == null && context.mounted) {
-      await AccountSync().pullAll(context, withHistory: true);
+      await _adoptAccount(context);
     }
     return error;
   }
@@ -51,7 +53,30 @@ class AuthService {
         ...deviceFields,
       },
     ).send(context);
-    return _handle(response, "auth.error.signup_failed");
+    final error = await _handle(response, "auth.error.signup_failed");
+    if (error == null && context.mounted && await const GuestMode().active) {
+      if (context.mounted) {
+        await _adoptAccount(context);
+      }
+    }
+    return error;
+  }
+
+  /// Pulls the account into the local stores. Coming from [GuestMode], the
+  /// pull merges with what was recorded offline and pushes it all up
+  /// ([OfflineHandover]) instead of replacing it.
+  Future<void> _adoptAccount(BuildContext context) async {
+    final fromGuest = await const GuestMode().active;
+    if (fromGuest) {
+      await const OfflineHandover().prepare();
+    }
+    if (!context.mounted) {
+      return;
+    }
+    await AccountSync().pullAll(context, withHistory: true);
+    if (fromGuest) {
+      await const OfflineHandover().finish();
+    }
   }
 
   /// Stores the tokens on success and returns null; otherwise the error key.
