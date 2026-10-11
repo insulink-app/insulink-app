@@ -81,13 +81,38 @@ class _SleepPageState extends State<SleepPage> {
               icon: PhosphorIconsFill.moon,
               titleKey: 'google_health.detail.empty',
             )
-          : ListView(
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
-              children: _sections(nights),
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                  child: _pager(nights),
+                ),
+                Expanded(
+                  child: ListView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
+                    children: _sections(nights),
+                  ),
+                ),
+              ],
             ),
+    );
+  }
+
+  /// The night picker, pinned above the scrolling sections so it stays in
+  /// reach however far down the page is read.
+  Widget _pager(List<GoogleHealthDay> nights) {
+    final index = _nightIndex(nights);
+    return DayPager(
+      previousLabelKey: 'google_health.sleep_page.previous_night',
+      nextLabelKey: 'google_health.sleep_page.next_night',
+      date: nights[index].date,
+      onPrevious: index > 0 ? () => _select(nights[index - 1]) : null,
+      onNext: index < nights.length - 1
+          ? () => _select(nights[index + 1])
+          : null,
     );
   }
 
@@ -102,16 +127,6 @@ class _SleepPageState extends State<SleepPage> {
     final timeline = _timeline(night);
     final metrics = hasStages ? SleepMetrics.of(stages, timeline) : null;
     return [
-      DayPager(
-        previousLabelKey: 'google_health.sleep_page.previous_night',
-        nextLabelKey: 'google_health.sleep_page.next_night',
-        date: night.date,
-        onPrevious: index > 0 ? () => _select(nights[index - 1]) : null,
-        onNext: index < nights.length - 1
-            ? () => _select(nights[index + 1])
-            : null,
-      ),
-      const SizedBox(height: 14),
       SleepHeroCard(
         minutes: _minutes(night),
         averageMinutes: average,
