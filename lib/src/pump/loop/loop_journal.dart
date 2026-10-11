@@ -121,11 +121,15 @@ extension PodLoopJournal on PodStore {
   /// knows from which moment an hour without an entry is an hour the automation
   /// stayed out of. Hours before the first time it was ever engaged need no
   /// clearing: nothing could have been running.
+  ///
+  /// Every change, a stop included, is also written to [LoopModeBackup], so a
+  /// pod restored after a reinstall comes back engaged only if it was left so.
   Future<void> saveLoopMode(PodLoopMode mode) async {
     if (mode != PodLoopMode.off) {
       await startAutomationRecord();
     }
     await _set(PodStore._kLoopMode, mode.name);
+    await _set(LoopModeBackup.key, mode.name);
   }
 
   /// Why the automation stopped by itself, or null when the user stopped it or

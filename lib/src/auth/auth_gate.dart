@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/auth/auth_page.dart';
 import 'package:insulink/src/auth/biometric_lock.dart';
+import 'package:insulink/src/auth/guest_mode.dart';
 import 'package:insulink/src/auth/legal_page.dart';
 import 'package:insulink/src/auth/permissions/permission_onboarding.dart';
 import 'package:insulink/src/base/launch_hold.dart';
@@ -41,13 +42,14 @@ class _AuthGateState extends State<AuthGate> {
       final legal = await _storage.read(key: "legal_accepted") == "true";
       final done = await _storage.read(key: "onboarding_done") == "true";
       final token = await _storage.read(key: "authentication_token") ?? "";
+      final guest = await const GuestMode().active;
       if (!mounted) {
         return;
       }
       setState(() {
         _legalAccepted = legal;
         _onboardingDone = done;
-        _authenticated = token.isNotEmpty;
+        _authenticated = token.isNotEmpty || guest;
         _loading = false;
       });
     } finally {
@@ -82,6 +84,15 @@ class _AuthGateState extends State<AuthGate> {
     InsulinkApp.reload(context);
   }
 
+  /// "Continue without an account": the app runs on local data only
+  /// ([GuestMode]); signing in stays possible from the profile.
+  Future<void> _continueAsGuest() async {
+    await const GuestMode().enter();
+    if (mounted) {
+      _onAuthenticated();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -98,7 +109,10 @@ class _AuthGateState extends State<AuthGate> {
       return PermissionOnboarding(onDone: _finishOnboarding);
     }
     if (!_authenticated) {
-      return AuthPage(onAuthenticated: _onAuthenticated);
+      return AuthPage(
+        onAuthenticated: _onAuthenticated,
+        onGuest: _continueAsGuest,
+      );
     }
     return const BiometricLock(child: AppPage());
   }

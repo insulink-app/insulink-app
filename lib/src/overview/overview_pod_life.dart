@@ -137,7 +137,12 @@ class PodReservoirBar extends StatelessWidget {
       return Locales.string(context, 'pump.status.never_read');
     }
     if (level.isAboveRange) {
-      return Locales.string(context, 'pump.status.reservoir_plenty');
+      return Locales.string(
+        context,
+        overview
+            ? 'pump.status.reservoir_plenty_short'
+            : 'pump.status.reservoir_plenty',
+      );
     }
     return Locales.string(
       context,

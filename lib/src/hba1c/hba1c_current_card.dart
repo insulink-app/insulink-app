@@ -3,12 +3,12 @@ import 'package:insulink/src/base/measurement_row.dart';
 import 'package:insulink/src/hba1c/hba1c_entry.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_format.dart';
+import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:intl/intl.dart';
 
-/// Header of the HbA1c page: the newest result big, the change against the one
-/// before it, and the two figures every lab report prints next to it — the same
-/// value in IFCC mmol/mol and the estimated average glucose it corresponds to.
-/// Both are pure functions of the percentage (see [Hba1cEntry]), so they are
-/// derived here rather than stored or entered.
+/// The newest result at the top of the page, open without a card like the
+/// weight page: when it was measured, the value large and the change against
+/// the one before it on the right.
 class Hba1cCurrentCard extends StatelessWidget {
   const Hba1cCurrentCard({super.key, required this.latest, this.previous});
 
@@ -17,75 +17,44 @@ class Hba1cCurrentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final colors = context.ink;
     final delta = previous == null ? null : latest.percent - previous!.percent;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.06)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            _measuredAt(context),
+            style: InkText.label.copyWith(color: colors.muted),
+          ),
+          const SizedBox(height: 4),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '${sportDecimal(latest.percent, 1)} %',
-                style: const TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.bold,
-                  height: 1,
+                sportDecimal(latest.percent, 1),
+                style: InkText.bigValue.copyWith(
+                  fontSize: 56,
+                  letterSpacing: -2,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
+              Text('%', style: InkText.section.copyWith(color: colors.muted)),
+              const Spacer(),
               if (delta != null && delta != 0)
                 MeasurementDeltaChip(delta: delta, unit: '%'),
             ],
-          ),
-          const SizedBox(height: 10),
-          _fact(
-            context,
-            'hba1c.mmol_per_mol',
-            '${sportDecimal(latest.mmolPerMol, 0)} mmol/mol',
-          ),
-          _fact(
-            context,
-            'hba1c.average_glucose',
-            '${sportDecimal(latest.averageGlucoseMgDl, 0)} mg/dL',
-          ),
-          _fact(
-            context,
-            'hba1c.measured_at',
-            '${latest.time.day}.${latest.time.month}.${latest.time.year}',
           ),
         ],
       ),
     );
   }
 
-  Widget _fact(BuildContext context, String labelKey, String value) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: Row(
-        children: [
-          Text(
-            Locales.string(context, labelKey),
-            style: TextStyle(
-              fontSize: 13,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
+  String _measuredAt(BuildContext context) {
+    final tag = Localizations.localeOf(context).toLanguageTag();
+    return '${Locales.string(context, 'hba1c.measured_at')} '
+        '${DateFormat.yMMMd(tag).format(latest.time)}';
   }
 }

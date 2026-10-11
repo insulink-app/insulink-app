@@ -11,12 +11,15 @@ import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/account/profile_account.dart';
+import 'package:insulink/src/profile/account/profile_guest_box.dart';
 import 'package:insulink/src/profile/account/profile_password_dialog.dart';
+import 'package:insulink/src/auth/guest_mode.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 
 /// The signed-in account card shown at the top of the profile page: the stored
-/// name (editable) plus a confirm-guarded log-out button.
+/// name (editable) plus a confirm-guarded log-out button. In [GuestMode] the
+/// [ProfileGuestBox] stands in for it.
 class ProfileAccountBox extends StatefulWidget {
   const ProfileAccountBox({super.key});
 
@@ -26,9 +29,21 @@ class ProfileAccountBox extends StatefulWidget {
 
 class _ProfileAccountBoxState extends State<ProfileAccountBox> {
   static const _storage = FlutterSecureStorage();
+  final Future<bool> _guest = const GuestMode().active;
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _guest,
+      builder: (context, snapshot) => switch (snapshot.data) {
+        true => const ProfileGuestBox(),
+        false => _accountPanel(),
+        null => const SizedBox.shrink(),
+      },
+    );
+  }
+
+  Widget _accountPanel() {
     final theme = Theme.of(context);
     return InkPanel.list(
       radius: InkRadius.tile,

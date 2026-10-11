@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
+import 'package:insulink/src/profile/profile_settings.dart';
+import 'package:insulink/src/pump/loop/loop_mode_backup.dart';
 import 'package:insulink/src/pump/loop/loop_limits.dart';
 import 'package:insulink/src/pump/pod_basal_adapter.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
@@ -48,6 +52,7 @@ class LoopSwitch {
   Future<String?> setMode(PodLoopMode mode) async {
     if (mode == PodLoopMode.off) {
       await _turnOff();
+      unawaited(ProfileSettings().push(null));
       return null;
     }
     if (_store.hasPod && _store.isActivated && _store.basalRates == null) {
@@ -59,7 +64,28 @@ class LoopSwitch {
     }
     await _store.clearLoopStop();
     await _store.saveLoopMode(mode);
+    unawaited(ProfileSettings().push(null));
     return null;
+  }
+
+  /// Right after a pod is adopted from the account: puts the user's schedule on
+  /// it, because a restore brings back the key but no record of what the pod
+  /// runs, and switches the automation back on when it was on when the pod was
+  /// last in use.
+  ///
+  /// Left alone while the pod's state is unknown or it is suspended: programming
+  /// a schedule IS resuming, and a pause the user chose is not the app's to end.
+  /// Engaging goes through [setMode], so every [blockedReason] check still
+  /// applies. No second biometric: the user confirmed the automation when they
+  /// first engaged it, and asked for it to come back on by itself.
+  Future<void> resumeAfterRestore() async {
+    if (controller.statusAge == null || controller.isSuspended) {
+      return;
+    }
+    await _establishSchedule();
+    if (await const LoopModeBackup().wasEngaged()) {
+      await setMode(PodLoopMode.engaged);
+    }
   }
 
   /// Puts the user's own profile on the pod when the app has no record of what

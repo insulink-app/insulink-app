@@ -381,9 +381,18 @@ the glucose profile).
 | highest active insulin | 5 U | 1 to 15 |
 
 Whole units, because these are ceilings and not doses. They sync to the account
-like every other setting; **the mode does not**, because a pod belongs to the
+like every other setting; **the live mode does not**, because a pod belongs to the
 device that activated it, so which device is automating is not an account-wide
 fact.
+
+Only a copy of the mode rides along (`loop_mode_backup`, `LoopModeBackup`), written
+on every change, the automation's own stops included. A settings pull writes it
+under that key and nothing reads it there, except one moment: adopting a pod from
+the account after a reinstall (`LoopSwitch.resumeAfterRestore`). The user's
+schedule is then sent to the pod at once, since a restore brings back the key but
+not the schedule, and the automation is re-engaged if the copy says it was on,
+through `setMode`, so every block still applies. A pod that is suspended or has
+not answered yet is left alone: sending a schedule is resuming it.
 
 ## What is deliberately not here
 

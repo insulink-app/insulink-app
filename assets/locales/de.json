@@ -99,7 +99,8 @@
       "invalid": "Name oder Passwort ist falsch.",
       "signup_failed": "Konto konnte nicht erstellt werden. Bitte überprüfe deine Angaben.",
       "network": "Verbindung fehlgeschlagen. Bitte versuche es erneut."
-    }
+    },
+    "continue_offline": "Ohne Konto fortfahren"
   },
   "connection": {
     "logout": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
@@ -415,6 +416,7 @@
       "delivery": "Abgabe",
       "reservoir": "Reservoir",
       "reservoir_plenty": "Mehr als messbar",
+      "reservoir_plenty_short": "> 50 E",
       "age": "Laufzeit",
       "expires_in": "Läuft ab in",
       "alerts": "Aktive Warnungen",
@@ -728,7 +730,8 @@
       "previous_night": "Vorherige Nacht",
       "next_night": "Nächste Nacht",
       "fell_asleep": "Eingeschlafen #",
-      "woke_up": "Aufgewacht #"
+      "woke_up": "Aufgewacht #",
+      "no_vitals": "Keine Glukose- oder Pulsdaten für diese Nacht"
     },
     "hr_min": "Min",
     "hr_max": "Max",
@@ -838,12 +841,6 @@
       "bolus": "Bolus",
       "meals": "Mahlzeiten"
     },
-    "detail": {
-      "latest": "Zuletzt",
-      "average": "Durchschnitt",
-      "total": "Gesamt",
-      "history": "Verlauf"
-    },
     "hydration": {
       "_": "Trinken",
       "settings": "Einstellungen",
@@ -870,11 +867,11 @@
       "serving_size": "Portionsgröße",
       "serving_label": "Portionsbeschreibung",
       "per_100": "pro 100 #",
-        "add_title": "Produkt anlegen",
-        "edit_title": "Produkt bearbeiten",
-        "nutrients": "Nährwerte",
-        "carbs_long": "Kohlenhydrate",
-        "energy": "Energie",
+      "add_title": "Produkt anlegen",
+      "edit_title": "Produkt bearbeiten",
+      "nutrients": "Nährwerte",
+      "carbs_long": "Kohlenhydrate",
+      "energy": "Energie",
       "carbs": "KH",
       "fat": "Fett",
       "protein": "Eiweiß",
@@ -893,9 +890,9 @@
       "empty_hint": "Sie erscheinen hier, sobald du einen Bolus abgibst.",
       "products": "Produkte",
       "products_count": "# Produkte",
-        "products_count_one": "1 Produkt",
-        "title": "Mahlzeit",
-        "glucose": "Glukose",
+      "products_count_one": "1 Produkt",
+      "title": "Mahlzeit",
+      "glucose": "Glukose",
       "bolus_value": "# E Bolus",
       "show_more": "Mehr anzeigen",
       "delete": "Mahlzeit löschen",
@@ -1158,7 +1155,10 @@
       "password_changed": "Dein Passwort wurde geändert.",
       "password_error": "Passwort konnte nicht geändert werden. Prüfe dein aktuelles Passwort.",
       "show_password": "Passwort anzeigen",
-      "logout_keeps_pod": "Ein gekoppelter Pod bleibt erhalten. Er gehört zum Gerät, nicht zum Konto, und läuft weiter, bis du ihn deaktivierst."
+      "logout_keeps_pod": "Ein gekoppelter Pod bleibt erhalten. Er gehört zum Gerät, nicht zum Konto, und läuft weiter, bis du ihn deaktivierst.",
+      "guest_title": "Ohne Konto",
+      "guest_body": "Deine Daten bleiben auf diesem Gerät.",
+      "sign_in": "Anmelden oder registrieren"
     },
     "language": {
       "_": "Sprache",
@@ -1355,7 +1355,8 @@
       "sleep": "schlaf schlafqualität tiefschlaf einschlafen unterbrechung schlafindex zielbereich",
       "battery": "akku batterie energie sparen strom stromsparen gps ortung standort erkennung laufzeit",
       "loop": "automatische abgabe automatik loop closed loop insulin",
-      "security": "fingerabdruck biometrie biometrisch sperre sperren pin sicherheit entsperren gesichert app start"
+      "security": "fingerabdruck biometrie biometrisch sperre sperren pin sicherheit entsperren gesichert app start",
+      "backup": "backup sicherung datensicherung export speichern daten datei herunterladen wiederherstellen archiv kopie"
     },
     "prediction": {
       "_": "Vorhersage",
@@ -1421,6 +1422,21 @@
         "samples_inferred": "aus # Mahlzeiten erschlossen, nicht direkt gemessen"
       },
       "since_change": "Dein Basalprofil wurde kürzlich geändert. Der Vorschlag rechnet nur mit Stunden, in denen das laufende Profil auch lief, er braucht also erst ein paar Tage damit."
+    },
+    "backup": {
+      "_": "Datensicherung",
+      "intro": "Alle deine Daten in einer Datei, bereit zum Wiederherstellen.",
+      "contents": {
+        "glucose": "Kompletter Glukoseverlauf",
+        "insulin": "Insulin, Sensoren und Pods",
+        "life": "Mahlzeiten, Sport und Gesundheit",
+        "settings": "Einstellungen und Kopplungen"
+      },
+      "hint": "Nicht verschlüsselt. Bewahre die Datei sicher auf.",
+      "export": "Backup exportieren",
+      "saved": "Backup gespeichert",
+      "failed": "Das Backup konnte nicht erstellt werden. Prüfe deine Internetverbindung und versuche es erneut.",
+      "loading": "Daten werden geladen…"
     }
   },
   "injection": {
@@ -1608,5 +1624,13 @@
   "scan": {
     "torch_on": "Licht einschalten",
     "torch_off": "Licht ausschalten"
+  },
+  "daily_history": {
+    "of": "von #",
+    "percent": "# %",
+    "goal_reached": "Ziel erreicht",
+    "goal": "Ziel #",
+    "axis_today": "heute",
+    "empty_range": "Keine Daten in diesem Zeitraum"
   }
 }

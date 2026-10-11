@@ -50,6 +50,15 @@ class GlucoseChartSeries {
 
   final List<Color> _zoneColors = [];
 
+  /// Index into [spots] where each unbroken stretch of readings begins.
+  final List<int> _runStarts = [0];
+
+  /// Readings further apart than this are a data gap: the line breaks there
+  /// instead of bridging it. Above the G7's 5 min cadence with a couple of
+  /// missed readings, and above the ~15 min that thinning a dense Libre day can
+  /// leave between two kept points.
+  static const _maxGapSecs = 20 * 60;
+
   /// Whether to draw point dots — only sparse windows stay readable with them.
   bool get showDots => spots.length < 60;
 
@@ -69,10 +78,13 @@ class GlucoseChartSeries {
   void _collectSpots() {
     int? prevValue;
     double? prevX;
+    int? prevSecs;
     for (final entry in _downsample(_windowSlice())) {
       final x = (entry.key - latestSecs) / 3600.0 + shift;
       final value = entry.value;
-      if (prevValue != null) {
+      if (prevSecs != null && entry.key - prevSecs > _maxGapSecs) {
+        _runStarts.add(spots.length);
+      } else if (prevValue != null) {
         _addCrossings(prevValue, prevX!, value, x);
       }
       final spot = FlSpot(x, glucose.toDisplay(value));
@@ -81,6 +93,7 @@ class GlucoseChartSeries {
       _zoneColors.add(_zoneOf(value));
       prevValue = value;
       prevX = x;
+      prevSecs = entry.key;
     }
   }
 
@@ -185,17 +198,31 @@ class GlucoseChartSeries {
     return colors.inRange;
   }
 
-  /// Split the line into solid-colour segments by zone instead of blending a
+  /// The bars of every unbroken stretch: a data gap ends one and starts the
+  /// next, so no line (and no curve swinging out from a far neighbour) is drawn
+  /// across hours without readings.
+  List<LineChartBarData> _zoneBars() {
+    final ends = [..._runStarts.skip(1), spots.length];
+    return [
+      for (var run = 0; run < _runStarts.length; run++)
+        ..._runBars(
+          spots.sublist(_runStarts[run], ends[run]),
+          _zoneColors.sublist(_runStarts[run], ends[run]),
+        ),
+    ];
+  }
+
+  /// Split one stretch into solid-colour segments by zone instead of blending a
   /// gradient across it: on steep parts the blend showed green and red running
   /// side by side (looked like two parallel lines). Each contiguous run of
   /// same-zone segments becomes its own bar, meeting the next at a shared point.
-  List<LineChartBarData> _zoneBars() {
+  List<LineChartBarData> _runBars(List<FlSpot> spots, List<Color> zoneColors) {
     if (spots.length < 2) {
-      return [_zoneBar(spots, _zoneColors.first)];
+      return [_zoneBar(spots, zoneColors.first)];
     }
     final segColors = [
       for (var index = 0; index < spots.length - 1; index++)
-        _segColor(_zoneColors[index], _zoneColors[index + 1]),
+        _segColor(zoneColors[index], zoneColors[index + 1]),
     ];
     final bars = <LineChartBarData>[];
     var runStart = 0;
@@ -224,7 +251,8 @@ class GlucoseChartSeries {
   }
 
   /// A solid, single-colour line piece for one zone run. No fill below it: the
-  /// target band behind the chart says where the line should be.
+  /// target band behind the chart says where the line should be. A lone reading
+  /// between two gaps has no line to show it, so it always gets its dot.
   LineChartBarData _zoneBar(List<FlSpot> spots, Color color) {
     return LineChartBarData(
       spots: spots,
@@ -232,7 +260,7 @@ class GlucoseChartSeries {
       curveSmoothness: 0.2,
       barWidth: minimal ? 2.5 : 3,
       color: color,
-      dotData: FlDotData(show: showDots),
+      dotData: FlDotData(show: showDots || spots.length == 1),
     );
   }
 }

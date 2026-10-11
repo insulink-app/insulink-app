@@ -99,7 +99,8 @@
       "invalid": "Name or password is incorrect.",
       "signup_failed": "Could not create the account. Please check your details.",
       "network": "Connection failed. Please try again."
-    }
+    },
+    "continue_offline": "Continue without an account"
   },
   "connection": {
     "logout": "Your session has expired. Please sign in again."
@@ -415,6 +416,7 @@
       "delivery": "Delivery",
       "reservoir": "Reservoir",
       "reservoir_plenty": "More than it can measure",
+      "reservoir_plenty_short": "> 50 U",
       "age": "Running for",
       "expires_in": "Expires in",
       "alerts": "Active alerts",
@@ -728,7 +730,8 @@
       "previous_night": "Previous night",
       "next_night": "Next night",
       "fell_asleep": "Fell asleep #",
-      "woke_up": "Woke up #"
+      "woke_up": "Woke up #",
+      "no_vitals": "No glucose or heart-rate data for this night"
     },
     "hr_min": "Min",
     "hr_max": "Max",
@@ -838,12 +841,6 @@
       "bolus": "Bolus",
       "meals": "Meals"
     },
-    "detail": {
-      "latest": "Latest",
-      "average": "Average",
-      "total": "Total",
-      "history": "History"
-    },
     "hydration": {
       "_": "Hydration",
       "settings": "Settings",
@@ -870,11 +867,11 @@
       "serving_size": "Serving size",
       "serving_label": "Serving description",
       "per_100": "per 100 #",
-        "add_title": "Add product",
-        "edit_title": "Edit product",
-        "nutrients": "Nutrition",
-        "carbs_long": "Carbohydrates",
-        "energy": "Energy",
+      "add_title": "Add product",
+      "edit_title": "Edit product",
+      "nutrients": "Nutrition",
+      "carbs_long": "Carbohydrates",
+      "energy": "Energy",
       "carbs": "Carbs",
       "fat": "Fat",
       "protein": "Protein",
@@ -893,9 +890,9 @@
       "empty_hint": "They appear here once you deliver a bolus.",
       "products": "Products",
       "products_count": "# products",
-        "products_count_one": "1 product",
-        "title": "Meal",
-        "glucose": "Glucose",
+      "products_count_one": "1 product",
+      "title": "Meal",
+      "glucose": "Glucose",
       "bolus_value": "# U bolus",
       "show_more": "Show more",
       "delete": "Delete meal",
@@ -1158,7 +1155,10 @@
       "password_changed": "Your password has been changed.",
       "password_error": "Could not change the password. Check your current password.",
       "show_password": "Show password",
-      "logout_keeps_pod": "A paired pod is kept. It belongs to the device, not the account, and keeps running until you deactivate it."
+      "logout_keeps_pod": "A paired pod is kept. It belongs to the device, not the account, and keeps running until you deactivate it.",
+      "guest_title": "No account",
+      "guest_body": "Your data stays on this device.",
+      "sign_in": "Sign in or sign up"
     },
     "language": {
       "_": "Language",
@@ -1355,7 +1355,8 @@
       "sleep": "sleep quality deep sleep onset interruptions sleep index target range",
       "battery": "battery power energy saver save drain gps location tracking detection runtime",
       "loop": "automated delivery automation loop closed loop insulin",
-      "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start"
+      "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start",
+      "backup": "backup export save data file download restore archive copy"
     },
     "prediction": {
       "_": "Prediction",
@@ -1421,6 +1422,21 @@
         "samples_inferred": "inferred across # meals, not measured directly"
       },
       "since_change": "Your basal schedule changed recently. The suggestion only uses hours the running schedule actually ran, so it needs a few days under it before it can say anything."
+    },
+    "backup": {
+      "_": "Data backup",
+      "intro": "All your data in one file, ready to restore.",
+      "contents": {
+        "glucose": "Complete glucose history",
+        "insulin": "Insulin, sensors and pods",
+        "life": "Meals, sport and health",
+        "settings": "Settings and pairings"
+      },
+      "hint": "Not encrypted. Keep the file safe.",
+      "export": "Export backup",
+      "saved": "Backup saved",
+      "failed": "The backup could not be created. Check your internet connection and try again.",
+      "loading": "Loading your data…"
     }
   },
   "injection": {
@@ -1608,5 +1624,13 @@
   "scan": {
     "torch_on": "Turn light on",
     "torch_off": "Turn light off"
+  },
+  "daily_history": {
+    "of": "of #",
+    "percent": "#%",
+    "goal_reached": "Goal reached",
+    "goal": "Goal #",
+    "axis_today": "today",
+    "empty_range": "No data in this period"
   }
 }

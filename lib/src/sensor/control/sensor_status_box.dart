@@ -25,20 +25,6 @@ class SensorStatusBox extends StatelessWidget {
 
   bool get _connected => controller.connected;
 
-  /// Best-effort session length: the sensor's reported value, else its max
-  /// lifetime, else the active sensor's nominal lifetime (G7 ~10 d, Libre 3
-  /// 14 d) — so the life bar always renders with the right total.
-  int get _sessionLengthSec {
-    final info = controller.info;
-    if (info.sessionLengthSec != null) {
-      return info.sessionLengthSec!;
-    }
-    if (info.maxLifetimeDays != null) {
-      return info.maxLifetimeDays! * 86400;
-    }
-    return controller.sensorType.sessionLengthSec;
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = context.ink;
@@ -58,7 +44,7 @@ class SensorStatusBox extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: DeviceLifespanBar(
               start: controller.sensorStart!,
-              sessionLengthSec: _sessionLengthSec,
+              sessionLengthSec: controller.sessionLengthSec,
             ),
           ),
         ],

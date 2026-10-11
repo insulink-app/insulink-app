@@ -18,9 +18,8 @@ import 'package:insulink/src/sport/sport_format.dart';
 
 /// The insulin summary on the overview: the units still working from recent
 /// boluses as the headline, the IOB curve underneath as a sparkline, and one
-/// muted line naming the last dose and when the insulin runs out. Renders nothing
-/// while no dose is active, so the section only appears when it has something to
-/// say.
+/// muted line naming the last dose and when the insulin runs out. With no dose
+/// active it still shows, at 0 over a flat line, so the box keeps its place.
 ///
 /// The curve carries what two lines of grey text used to spell out — how fast it
 /// is falling and how much is left — which is why there is only one caption line
@@ -28,8 +27,7 @@ import 'package:insulink/src/sport/sport_format.dart';
 ///
 /// The value decays continuously, but [MealState] only notifies on a new meal —
 /// so this ticks itself once a minute to keep the number honest even when no
-/// reading arrives. It owns its section wrapper + trailing gap because it is
-/// conditional: hiding it must leave no empty card and no stray spacing.
+/// reading arrives. It owns its section wrapper + trailing gap.
 class OverviewActiveInsulin extends StatefulWidget {
   const OverviewActiveInsulin({super.key});
 
@@ -78,9 +76,6 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
     ).parts(meals, pod: context.watch<PodController>().store);
     final units = parts.total;
     _syncTicker(units > 0);
-    if (units <= 0) {
-      return const SizedBox.shrink();
-    }
     return Column(
       children: [
         GestureDetector(
@@ -121,11 +116,12 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
     final lastDose = doses.isEmpty ? null : doses.first.meal;
     // 10-minute sampling, not the detail page's 5: at 44 px tall the extra
     // vertices are invisible and this runs on every overview build.
-    final curve = insulin.curve(
+    final active = insulin.curve(
       meals,
       now: now,
       step: const Duration(minutes: 10),
     );
+    final curve = active.isEmpty ? _flatLine(insulin, now) : active;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -179,6 +175,13 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
       ],
     );
   }
+
+  /// Zero across one insulin duration up to [now], drawn while nothing is on
+  /// board so the box reads as "empty", not as broken.
+  List<({DateTime at, double units})> _flatLine(
+    ActiveInsulin insulin,
+    DateTime now,
+  ) => [(at: now.subtract(insulin.duration), units: 0), (at: now, units: 0)];
 
   String _units(BuildContext context, double units) => Locales.string(
     context,

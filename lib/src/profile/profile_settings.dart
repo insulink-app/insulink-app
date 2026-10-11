@@ -13,6 +13,7 @@ import 'package:insulink/src/profile/notifications/profile_live_notification_sta
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
+import 'package:insulink/src/pump/loop/loop_mode_backup.dart';
 import 'package:insulink/src/pump/loop/loop_settings.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
@@ -31,9 +32,9 @@ import 'package:insulink/src/sport/sport_store.dart';
 /// Syncs the user-tunable settings (glucose, bolus, every notification toggle
 /// and alarm tone, silent mode, prediction, developer, body metrics, the box
 /// layouts, the fingerprint gates, language and theme) with the account's
-/// `settings` JSON blob on the backend. Left out on purpose: the automation MODE
-/// (a pod belongs to the phone that activated it) and remembered view state
-/// such as the last chart range.
+/// `settings` JSON blob on the backend. Left out on purpose: the LIVE automation
+/// mode (a pod belongs to the phone that activated it; only a copy rides along,
+/// see [LoopModeBackup]) and remembered view state such as the last chart range.
 ///
 /// The blob is keyed by the same secure-storage keys the rest of the app reads,
 /// so [pull] can write the server's values straight back into storage. The
@@ -95,6 +96,9 @@ class ProfileSettings {
           "${await LoopSettings.suspendBelow.load()}",
       LoopSettings.maxRate.storageKey: "${await LoopSettings.maxRate.load()}",
       LoopSettings.maxIob.storageKey: "${await LoopSettings.maxIob.load()}",
+      // Only a copy of the mode, read solely when a pod is adopted after a
+      // reinstall, so it can come back engaged.
+      LoopModeBackup.key: await const LoopModeBackup().loadRaw(),
       // Two booleans, not one enum: the panel coerces `silent_mode` to a bool
       // and writes it back, so the tone-only mute needs a key of its own.
       "silent_mode": "${silent.mode == SilentMode.all}",

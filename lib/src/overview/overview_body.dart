@@ -112,16 +112,29 @@ class OverviewBodyContent extends StatelessWidget {
             BatterySaverBanner(battery),
             const SizedBox(height: 12),
           ],
-          Expanded(child: _view(controller)),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: _stateFade,
+              layoutBuilder: (current, previous) => Stack(
+                fit: StackFit.expand,
+                children: [...previous, ?current],
+              ),
+              child: _view(controller),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// Picks the body for the current state. Show the loader while we don't yet
-  /// know there's NO sensor: during initial store load, or when a sensor is
-  /// paired / connecting but no reading has arrived yet. Only fall through to
-  /// the "no sensor" view once we're sure.
+  /// A change of state (searching, no sensor, data) crossfades instead of cutting.
+  static const Duration _stateFade = Duration(milliseconds: 300);
+
+  /// Picks the body for the current state. Nothing while the store is still
+  /// loading at launch: that takes a moment and the page is fading in anyway
+  /// (LaunchReveal), and a loader there only flashed before the overview cut in.
+  /// The loader stays for a sensor that is paired / connecting but has not
+  /// delivered yet. Only fall through to the "no sensor" view once we're sure.
   Widget _view(CgmController controller) {
     // Known data (a live/cached value OR archived history) → show the chart
     // straight away, even before a fresh reading lands after a re-login/restore;
@@ -134,11 +147,11 @@ class OverviewBodyContent extends StatelessWidget {
     if (controller.currentMgdl != null || byTime.isNotEmpty) {
       return OverviewDataView(controller: controller, byTime: byTime);
     }
+    if (!controller.initialized) {
+      return const SizedBox.expand();
+    }
     final loading =
-        !controller.initialized ||
-        controller.hasSensor ||
-        controller.connected ||
-        controller.busy;
+        controller.hasSensor || controller.connected || controller.busy;
     if (loading) {
       return const SearchingView();
     }

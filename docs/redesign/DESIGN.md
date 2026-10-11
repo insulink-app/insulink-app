@@ -151,6 +151,7 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 | 40 | SensorVerlauf.dc.html | Sensor-Verlauf |
 | 41 | PumpenVerlauf.dc.html | Pumpen-Verlauf |
 | 42 | InsulinAbgabe.dc.html | Abgegebenes Insulin |
+| 43 | Schritte.dc.html | Schritte |
 
 ### Bolusrechner (Sheet)
 - Sheet in panel, Radius 28 oben, Griff 40 × 5. Kopf: Titel 24/800 links, runder Schließen-Button rechts.
@@ -326,6 +327,13 @@ Für jeden Screen gibt es einen Screenshot in `design/screens/` und den Quelltex
 ### Abgegebenes Insulin
 - Panel „Seit Pod-Start“: Summe 40/800 + „E“, darunter geteilter Balken Basal (accent) / Bolus (#2ED8B6) und Legende mit Werten.
 - „Verlauf“: EIN Panel, Zeile mit Farbpunkt, Typ + Zeit, Mengenbalken relativ zum größten Wert, Menge rechts. Einheit „E“ mit Dezimalkomma (statt „U“ und Punkt), Mengen nicht mehr gelb.
+
+### Schritte
+- Kopf wie Gewicht: „Heute“, Wert 56/800 „406“ + „von 10.000“, rechts der Prozentwert in accentText; darunter ein Fortschrittsbalken 8 px zum Tagesziel.
+- Kennzahlen-Leiste (statrow): Ø / Tag, Gesamt, Ziel erreicht („11 / 30“).
+- Zeitraum-Schalter 7 T / 30 T / 90 T / 1 J / Alle + Kalender-Button.
+- Diagramm: Säulen pro Tag über die volle Breite, Tage mit erreichtem Ziel accent, sonst accent 45 %, der laufende Tag nur gestrichelt umrandet. Gestrichelte Ziellinie (text 50 %). Keine Y-Achse; Achse nur Startdatum und „heute“. Legende „Ziel erreicht“ und „Ziel 10.000“.
+- Verlauf: EIN Panel, Zeile mit Datum (heute hervorgehoben), kleinem Fortschrittsbalken zum Ziel (64 px) und Schritten rechts; „Mehr anzeigen“ darunter.
 
 ### Google Health
 - Gerätekopf „Verbunden“, Panel „Letzte Werte“ (Schlüssel/Wert), darunter rote Zeile „Verbindung trennen“.

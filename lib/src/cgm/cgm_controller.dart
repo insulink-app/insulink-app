@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:insulink/src/cgm/service/service_presence.dart';
+import 'package:insulink/src/base/device_lifespan.dart';
 // NotificationVisibility is hidden here: both plugins define one, and the
 // foreground service's notification is configured with the foreground-task
 // package's version.
@@ -382,6 +383,43 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   G7DeviceInfo _info = G7DeviceInfo();
   G7DeviceInfo get info => _info;
 
+  /// Best-effort session length: the sensor's reported value, else its max
+  /// lifetime, else the active sensor's nominal lifetime (G7 ~10 d, Libre 3
+  /// 14 d), so the life bar and the expiry check always have a total.
+  int get sessionLengthSec {
+    if (_info.sessionLengthSec != null) {
+      return _info.sessionLengthSec!;
+    }
+    if (_info.maxLifetimeDays != null) {
+      return _info.maxLifetimeDays! * 86400;
+    }
+    return sensorType.sessionLengthSec;
+  }
+
+  bool _forgettingExpired = false;
+
+  /// Forgets the sensor once its session, grace included, is over: it delivers
+  /// nothing more, and a forgotten sensor frees the pairing for the next one.
+  /// Runs on launch, on resume and on every service update. Pods are never
+  /// touched here; they have their own lifecycle. True when it forgot.
+  Future<bool> _forgetIfExpired() async {
+    final start = _sensorStart;
+    if (start == null || DemoMode.enabled || _forgettingExpired) {
+      return false;
+    }
+    final life = DeviceLifespan(
+      start: start,
+      sessionLengthSec: sessionLengthSec,
+    );
+    if (!life.expired) {
+      return false;
+    }
+    _forgettingExpired = true;
+    _append('sensor session expired, forgetting the sensor');
+    await forgetSensor().whenComplete(() => _forgettingExpired = false);
+    return true;
+  }
+
   /// The current glucose forecast overlay, fetched from the backend when the
   /// prediction setting is on (null when off or unavailable). [predictionBase]
   /// is the reading time the curve is anchored to; each point is that many
@@ -554,6 +592,9 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       _append('showing ${_byTime.length} cached readings');
     }
     await _refreshServiceState();
+    if (await _forgetIfExpired()) {
+      return;
+    }
     // Start the read pipeline if it's down, or revive a frozen one that claims
     // to run but produced no data (see _recoverIfStale).
     await _recoverIfStale();
@@ -714,7 +755,7 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
       case 'prediction':
         unawaited(_adoptCachedPrediction());
       case 'update':
-        _reloadFromStore();
+        _reloadFromStore().then((_) => _forgetIfExpired());
     }
   }
 
@@ -1241,6 +1282,9 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _onResumed() async {
     await _refreshServiceState();
     await _reloadFromStore();
+    if (await _forgetIfExpired()) {
+      return;
+    }
     await _recoverIfStale();
   }
 

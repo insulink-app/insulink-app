@@ -17,22 +17,8 @@ class OverviewSensorLife extends StatelessWidget {
     }
     return DeviceLifespanBar(
       start: start,
-      sessionLengthSec: _sessionLength(controller),
+      sessionLengthSec: controller.sessionLengthSec,
       overview: true,
     );
-  }
-
-  /// Best-effort session length: the sensor's reported value, else its max
-  /// lifetime, else the active sensor's nominal lifetime (G7 ~10 d, Libre 3
-  /// 14 d) — so the bar always renders with the right total.
-  int _sessionLength(CgmController controller) {
-    final info = controller.info;
-    if (info.sessionLengthSec != null) {
-      return info.sessionLengthSec!;
-    }
-    if (info.maxLifetimeDays != null) {
-      return info.maxLifetimeDays! * 86400;
-    }
-    return controller.sensorType.sessionLengthSec;
   }
 }

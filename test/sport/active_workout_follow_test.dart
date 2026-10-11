@@ -15,7 +15,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    installSecureStorageMock();
+    installSecureStorageMock()['authentication_token'] = 'token';
     SportSync.cancelPending();
   });
   tearDown(SportSync.cancelPending);

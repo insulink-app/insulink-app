@@ -10,6 +10,7 @@ import 'package:insulink/src/profile/profile_topic_page.dart';
 import 'package:insulink/src/profile/notifications/profile_alarm_sound_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_alarm_tone_picker.dart';
 import 'package:insulink/src/profile/body/profile_body_selection.dart';
+import 'package:insulink/src/profile/backup/profile_backup_export.dart';
 import 'package:insulink/src/profile/basal/profile_basal_selection.dart';
 import 'package:insulink/src/profile/battery/profile_battery_selection.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_selection.dart';
@@ -229,6 +230,12 @@ class _ProfilePageState extends State<ProfilePage> {
       icon: PhosphorIconsBold.fingerprint,
       searchKey: "profile.search.security",
       children: () => const [ProfileSecuritySelection()],
+    ),
+    (
+      titleKey: "profile.backup",
+      icon: PhosphorIconsBold.downloadSimple,
+      searchKey: "profile.search.backup",
+      children: () => const [ProfileBackupExport()],
     ),
     (
       titleKey: "profile.developer",

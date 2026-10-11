@@ -123,6 +123,9 @@ class IntradayPulseStore {
     await _storage.write(key: _indexKey, value: jsonEncode(kept));
   }
 
+  /// Every day the archive holds a curve for (`yyyy-MM-dd`).
+  Future<List<String>> days() => _index();
+
   Future<List<String>> _index() async {
     final raw = await _storage.read(key: _indexKey);
     return raw == null ? [] : (jsonDecode(raw) as List).cast<String>();
