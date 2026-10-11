@@ -1350,7 +1350,8 @@
       "sleep": "schlaf schlafqualität tiefschlaf einschlafen unterbrechung schlafindex zielbereich",
       "battery": "akku batterie energie sparen strom stromsparen gps ortung standort erkennung laufzeit",
       "loop": "automatische abgabe automatik loop closed loop insulin",
-      "security": "fingerabdruck biometrie biometrisch sperre sperren pin sicherheit entsperren gesichert app start"
+      "security": "fingerabdruck biometrie biometrisch sperre sperren pin sicherheit entsperren gesichert app start",
+      "backup": "backup sicherung datensicherung export speichern daten datei herunterladen wiederherstellen archiv kopie"
     },
     "prediction": {
       "_": "Vorhersage",
@@ -1416,6 +1417,13 @@
         "samples_inferred": "aus # Mahlzeiten erschlossen, nicht direkt gemessen"
       },
       "since_change": "Dein Basalprofil wurde kürzlich geändert. Der Vorschlag rechnet nur mit Stunden, in denen das laufende Profil auch lief, er braucht also erst ein paar Tage damit."
+    },
+    "backup": {
+      "_": "Datensicherung",
+      "description": "Speichert alle deine Daten in einer Datei: den kompletten Glukoseverlauf aus deinem Konto, Insulin, Mahlzeiten, Sport, Gesundheitsdaten, Einstellungen sowie die Sensor- und Pod-Kopplung dieses Geräts. Benötigt eine Internetverbindung. Bewahre die Datei sicher auf, denn sie ist nicht verschlüsselt. Deine Anmeldung ist nicht enthalten.",
+      "export": "Backup exportieren",
+      "saved": "Backup gespeichert",
+      "failed": "Das Backup konnte nicht erstellt werden. Prüfe deine Internetverbindung und versuche es erneut."
     }
   },
   "injection": {

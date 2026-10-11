@@ -1350,7 +1350,8 @@
       "sleep": "sleep quality deep sleep onset interruptions sleep index target range",
       "battery": "battery power energy saver save drain gps location tracking detection runtime",
       "loop": "automated delivery automation loop closed loop insulin",
-      "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start"
+      "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start",
+      "backup": "backup export save data file download restore archive copy"
     },
     "prediction": {
       "_": "Prediction",
@@ -1416,6 +1417,13 @@
         "samples_inferred": "inferred across # meals, not measured directly"
       },
       "since_change": "Your basal schedule changed recently. The suggestion only uses hours the running schedule actually ran, so it needs a few days under it before it can say anything."
+    },
+    "backup": {
+      "_": "Data backup",
+      "description": "Saves all your data as one file: the complete glucose history from your account, insulin, meals, sport, health data, settings and the sensor and pod pairing of this device. Needs an internet connection. Keep the file somewhere safe, as it is not encrypted. Your login is not included.",
+      "export": "Export backup",
+      "saved": "Backup saved",
+      "failed": "The backup could not be created. Check your internet connection and try again."
     }
   },
   "injection": {
