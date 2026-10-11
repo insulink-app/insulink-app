@@ -75,7 +75,10 @@ class _SleepPageState extends State<SleepPage> {
   Widget build(BuildContext context) {
     final nights = _nights(context.watch<GoogleHealthState>().archive);
     return Scaffold(
-      appBar: AppBar(title: LocaleText('google_health.sleep')),
+      appBar: AppBar(
+        title: LocaleText('google_health.sleep'),
+        notificationPredicate: (_) => false,
+      ),
       body: nights.isEmpty
           ? const EmptyState(
               icon: PhosphorIconsFill.moon,
@@ -102,7 +105,9 @@ class _SleepPageState extends State<SleepPage> {
   }
 
   /// The night picker, pinned above the scrolling sections so it stays in
-  /// reach however far down the page is read.
+  /// reach however far down the page is read. The app bar ignores the list's
+  /// scrolling, so it keeps the ground colour the picker sits on instead of
+  /// tinting above it.
   Widget _pager(List<GoogleHealthDay> nights) {
     final index = _nightIndex(nights);
     return DayPager(
