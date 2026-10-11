@@ -1421,10 +1421,18 @@
     },
     "backup": {
       "_": "Datensicherung",
-      "description": "Speichert alle deine Daten in einer Datei: den kompletten Glukoseverlauf aus deinem Konto, Insulin, Mahlzeiten, Sport, Gesundheitsdaten, Einstellungen sowie die Sensor- und Pod-Kopplung dieses Geräts. Benötigt eine Internetverbindung. Bewahre die Datei sicher auf, denn sie ist nicht verschlüsselt. Deine Anmeldung ist nicht enthalten.",
+      "intro": "Alle deine Daten in einer Datei, bereit zum Wiederherstellen.",
+      "contents": {
+        "glucose": "Kompletter Glukoseverlauf",
+        "insulin": "Insulin, Sensoren und Pods",
+        "life": "Mahlzeiten, Sport und Gesundheit",
+        "settings": "Einstellungen und Kopplungen"
+      },
+      "hint": "Nicht verschlüsselt. Bewahre die Datei sicher auf.",
       "export": "Backup exportieren",
       "saved": "Backup gespeichert",
-      "failed": "Das Backup konnte nicht erstellt werden. Prüfe deine Internetverbindung und versuche es erneut."
+      "failed": "Das Backup konnte nicht erstellt werden. Prüfe deine Internetverbindung und versuche es erneut.",
+      "loading": "Daten werden geladen…"
     }
   },
   "injection": {
