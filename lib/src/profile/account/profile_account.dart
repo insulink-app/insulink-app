@@ -10,40 +10,55 @@ class ProfileAccount {
 
   /// Device-local flags that survive sign-out: not tied to the account and not
   /// held on the backend, so re-doing legal/onboarding or losing the chosen
-  /// language/theme on every logout would be wrong. Everything else is wiped.
+  /// language/theme on every logout would be wrong. The same goes for the
+  /// paired devices: the sensor and the Fitbit belong to the wearer, not the
+  /// account, so they stay connected. Everything else is wiped.
   static const _keepOnLogout = {
     "legal_accepted",
     "onboarding_done",
     "language",
     "theme",
+    "cgm.type",
+    "g7.serial",
+    "g7.pairing_code",
+    "g7.resolved_key",
+    "google_health.connected",
   };
 
-  /// A paired pod survives sign-out, and MUST.
+  /// Key prefixes that survive sign-out.
   ///
-  /// Everything else wiped here comes back: glucose from the account, settings
-  /// from the account, a sensor by re-pairing. A pod cannot. It answers only the
-  /// controller that activated it, once, for good, so its key is the single piece
-  /// of local state whose loss cannot be undone by any means — and a pod on the
-  /// body with no key is one that keeps delivering insulin with nothing able to
-  /// stop it.
+  /// A paired pod MUST. Everything else wiped here comes back: glucose and
+  /// settings from the account. A pod cannot. It answers only the controller
+  /// that activated it, once, for good, so its key is the single piece of local
+  /// state whose loss cannot be undone by any means, and a pod on the body with
+  /// no key is one that keeps delivering insulin with nothing able to stop it.
+  /// Deactivating it, which stops it first, is the only correct way to be rid
+  /// of it.
   ///
-  /// The pod belongs to the DEVICE, not the account: signing into another
-  /// account does not take the pod off the wearer's arm. Deactivating it, which
-  /// stops it first, is the only correct way to be rid of it.
-  static const _podPrefix = "pod.";
+  /// The sensor pairing (G7 session key, BLE id and metadata, Libre MAC, PIN
+  /// and auth key) is kept so the sensor reconnects without a new pairing. Its
+  /// readings are not: they would otherwise be uploaded into the next account.
+  static const _keepPrefixes = [
+    "pod.",
+    "g7.session_key.",
+    "g7.device_id.",
+    "g7.info.",
+    "g7.start.",
+    "libre3.",
+  ];
 
   /// Tells the backend to invalidate the session, then wipes the local data —
-  /// account secrets, cached glucose/sport/Google Health data, the G7 sensor
-  /// pairing and the synced settings — so the next account signs in clean.
-  /// Everything removed is either re-fetched from the backend (glucose,
-  /// settings) or re-paired on device; [_keepOnLogout] and a paired pod
-  /// ([_podPrefix]) remain. The network call is
+  /// account secrets, cached glucose/sport/Google Health data and the synced
+  /// settings — so the next account signs in clean.
+  /// Everything removed is re-fetched from the backend (glucose, settings);
+  /// [_keepOnLogout] and [_keepPrefixes] remain. The network call is
   /// best-effort — the local wipe runs regardless, so logout works offline.
   Future<void> logout(BuildContext context) async {
     await Request.get(url: "/logout/").send(context);
     final keys = (await _storage.readAll()).keys.toList();
     for (final key in keys) {
-      if (_keepOnLogout.contains(key) || key.startsWith(_podPrefix)) {
+      if (_keepOnLogout.contains(key) ||
+          _keepPrefixes.any((prefix) => key.startsWith(prefix))) {
         continue;
       }
       await _storage.delete(key: key);

@@ -123,15 +123,14 @@ class _AuthPageState extends State<AuthPage> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 24),
-        const BrandMark(size: 64),
-        const SizedBox(height: 26),
+        const BrandMark(size: 56),
+        const SizedBox(height: 18),
         LocaleText(
           'auth.title',
           textAlign: TextAlign.center,
           style: InkText.bigValue.copyWith(fontSize: 34),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         LocaleText(
           _signUp ? 'auth.subtitle_signup' : 'auth.subtitle_signin',
           textAlign: TextAlign.center,
@@ -141,15 +140,18 @@ class _AuthPageState extends State<AuthPage> {
             color: context.ink.muted,
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
         _nameField(),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         _passwordField(),
-        const SizedBox(height: 22),
+        const SizedBox(height: 18),
         _submitButton(),
         if (widget.onGuest != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           TextButton(
+            style: TextButton.styleFrom(
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             onPressed: _busy ? null : widget.onGuest,
             child: const LocaleText('auth.continue_offline'),
           ),
