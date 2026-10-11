@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/request/response_json.dart';
+import 'package:insulink/src/request/sync_ledger.dart';
 import 'package:insulink/src/sport/sport_models.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
@@ -21,6 +23,7 @@ import 'package:insulink/src/sport/workout/workout_snapshot.dart';
 /// keeps deletes/edits/reorders correct without per-item endpoints.
 class SportSync {
   static const _store = SportStore();
+  static const _ledger = SyncLedger();
   static const _activeWorkoutKey = 'active-workout';
 
   /// How long a snapshot waits before it goes up. Only enough to coalesce a
@@ -49,11 +52,24 @@ class SportSync {
 
   // ---- push (debounced per collection) ----
 
-  void pushMeasurements() => _debounce('measurements', _sendMeasurements);
-  void pushExercises() => _debounce('exercises', _sendExercises);
-  void pushRoutines() => _debounce('routines', _sendRoutines);
-  void pushWorkouts() => _debounce('workouts', _sendWorkouts);
-  void pushTrainings() => _debounce('trainings', _sendTrainings);
+  void pushMeasurements() => _pushCollection('measurements', _sendMeasurements);
+  void pushExercises() => _pushCollection('exercises', _sendExercises);
+  void pushRoutines() => _pushCollection('routines', _sendRoutines);
+  void pushWorkouts() => _pushCollection('workouts', _sendWorkouts);
+  void pushTrainings() => _pushCollection('trainings', _sendTrainings);
+
+  /// Marks [key] unsent in the [SyncLedger] until the account accepts the push,
+  /// so a failed one is merged on the next pull instead of reverted.
+  void _pushCollection(String key, Future<bool> Function() send) {
+    unawaited(_ledger.mark(_ledgerKey(key)));
+    _debounce(key, () async {
+      if (await send()) {
+        await _ledger.clear(_ledgerKey(key));
+      }
+    });
+  }
+
+  String _ledgerKey(String collection) => 'sport.$collection';
 
   void _debounce(
     String key,
@@ -108,7 +124,7 @@ class SportSync {
       Request.post(url: url, body: body).send(null);
 
   /// Weight plus the daily activity metrics, each as a typed value+time entry.
-  Future<void> _sendMeasurements() async {
+  Future<bool> _sendMeasurements() async {
     final weights = await _store.loadWeights();
     final activity = await _store.loadActivityArchive();
     final entries = <Map<String, Object>>[
@@ -128,7 +144,9 @@ class SportSync {
         },
       ],
     ];
-    await _post('/sport/measurements/sync/', {'entries': entries});
+    return (await _post('/sport/measurements/sync/', {
+      'entries': entries,
+    })).isApiSuccess;
   }
 
   /// Deletes a single weight from the account via the measurements delete
@@ -143,32 +161,36 @@ class SportSync {
     });
   }
 
-  Future<void> _sendExercises() async {
+  Future<bool> _sendExercises() async {
     final exercises = await _store.loadExercises();
-    await _post('/sport/exercises/sync/', {
+    final response = await _post('/sport/exercises/sync/', {
       'exercises': exercises.map((exercise) => exercise.toJson()).toList(),
     });
+    return response.isApiSuccess;
   }
 
-  Future<void> _sendRoutines() async {
+  Future<bool> _sendRoutines() async {
     final routines = await _store.loadRoutines();
-    await _post('/sport/routines/sync/', {
+    final response = await _post('/sport/routines/sync/', {
       'routines': routines.map((routine) => routine.toJson()).toList(),
     });
+    return response.isApiSuccess;
   }
 
-  Future<void> _sendWorkouts() async {
+  Future<bool> _sendWorkouts() async {
     final sessions = await _store.loadSessions();
-    await _post('/sport/workouts/sync/', {
+    final response = await _post('/sport/workouts/sync/', {
       'workouts': sessions.map((session) => session.toJson()).toList(),
     });
+    return response.isApiSuccess;
   }
 
-  Future<void> _sendTrainings() async {
+  Future<bool> _sendTrainings() async {
     final trainings = await _store.loadTrainings();
-    await _post('/sport/trainings/sync/', {
+    final response = await _post('/sport/trainings/sync/', {
       'trainings': trainings.map((training) => training.toJson()).toList(),
     });
+    return response.isApiSuccess;
   }
 
   // ---- active workout (the running workout, shared across devices) ----
@@ -365,8 +387,23 @@ class SportSync {
           calories[_dateKey(time)] = value;
       }
     }
-    await _store.saveWeights(weights);
-    await _store.saveActivityArchive(_activityDays(steps, distance, calories));
+    final mergedWeights = await _ledger.adopt(
+      collection: _ledgerKey('measurements'),
+      remote: weights,
+      local: _store.loadWeights,
+      save: _store.saveWeights,
+      keyOf: (weight) => weight.atEpochMs,
+    );
+    final mergedDays = await _ledger.adopt(
+      collection: _ledgerKey('measurements'),
+      remote: _activityDays(steps, distance, calories),
+      local: _store.loadActivityArchive,
+      save: _store.saveActivityArchive,
+      keyOf: (day) => day.dateKey,
+    );
+    if (mergedWeights || mergedDays) {
+      pushMeasurements();
+    }
   }
 
   List<DailyActivity> _activityDays(
@@ -400,7 +437,16 @@ class SportSync {
     if (list == null) {
       return;
     }
-    await _store.saveExercises(_decode(list, SportExercise.fromJson));
+    final merged = await _ledger.adopt(
+      collection: _ledgerKey('exercises'),
+      remote: _decode(list, SportExercise.fromJson),
+      local: _store.loadExercises,
+      save: _store.saveExercises,
+      keyOf: (item) => jsonEncode(item.toJson()),
+    );
+    if (merged) {
+      pushExercises();
+    }
   }
 
   Future<void> _pullRoutines(BuildContext? context) async {
@@ -413,7 +459,16 @@ class SportSync {
     if (list == null) {
       return;
     }
-    await _store.saveRoutines(_decode(list, SportRoutine.fromJson));
+    final merged = await _ledger.adopt(
+      collection: _ledgerKey('routines'),
+      remote: _decode(list, SportRoutine.fromJson),
+      local: _store.loadRoutines,
+      save: _store.saveRoutines,
+      keyOf: (item) => jsonEncode(item.toJson()),
+    );
+    if (merged) {
+      pushRoutines();
+    }
   }
 
   Future<void> _pullWorkouts(BuildContext? context) async {
@@ -426,7 +481,16 @@ class SportSync {
     if (list == null) {
       return;
     }
-    await _store.saveSessions(_decode(list, WorkoutSession.fromJson));
+    final merged = await _ledger.adopt(
+      collection: _ledgerKey('workouts'),
+      remote: _decode(list, WorkoutSession.fromJson),
+      local: _store.loadSessions,
+      save: _store.saveSessions,
+      keyOf: (item) => jsonEncode(item.toJson()),
+    );
+    if (merged) {
+      pushWorkouts();
+    }
   }
 
   Future<void> _pullTrainings(BuildContext? context) async {
@@ -439,7 +503,16 @@ class SportSync {
     if (list == null) {
       return;
     }
-    await _store.saveTrainings(_decode(list, CardioTraining.fromJson));
+    final merged = await _ledger.adopt(
+      collection: _ledgerKey('trainings'),
+      remote: _decode(list, CardioTraining.fromJson),
+      local: _store.loadTrainings,
+      save: _store.saveTrainings,
+      keyOf: (item) => jsonEncode(item.toJson()),
+    );
+    if (merged) {
+      pushTrainings();
+    }
   }
 
   List<T> _decode<T>(

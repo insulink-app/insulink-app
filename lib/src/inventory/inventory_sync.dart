@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:insulink/src/request/response_json.dart';
 
 import 'package:flutter/widgets.dart';
 
 import '../request/request.dart';
+import '../request/sync_ledger.dart';
 import 'inventory_item.dart';
 import 'inventory_store.dart';
 
@@ -17,31 +19,39 @@ import 'inventory_store.dart';
 /// each debounce their own writes.
 class InventorySync {
   static const _store = InventoryStore();
+  static const _ledger = SyncLedger();
+  static const _ledgerKey = 'inventory.items';
   static Timer? _timer;
 
   /// True while a local change has not reached the backend yet — the debounce is
   /// armed or its POST is in flight. Guards [pull] from clobbering it.
   static bool _unsent = false;
 
-  /// Queue a replace-all push of the current store (debounced 3 s).
+  /// Queue a replace-all push of the current store (debounced 3 s). The
+  /// [SyncLedger] mark stays until the account accepts it, so a failed push is
+  /// merged on the next pull instead of reverted.
   void push() {
     _timer?.cancel();
     _unsent = true;
+    unawaited(_ledger.mark(_ledgerKey));
     _timer = Timer(const Duration(seconds: 3), () async {
       try {
-        await _send();
+        if (await _send()) {
+          await _ledger.clear(_ledgerKey);
+        }
       } finally {
         _unsent = false;
       }
     });
   }
 
-  Future<void> _send() async {
+  Future<bool> _send() async {
     final items = await _store.load();
-    await Request.post(
+    final response = await Request.post(
       url: '/inventory/items/sync/',
       body: {'items': items.map((item) => item.toJson()).toList()},
     ).send(null);
+    return response.isApiSuccess;
   }
 
   /// Adopt the account's inventory into the local store (sign-in + cold start),
@@ -60,9 +70,18 @@ class InventorySync {
     if (body['success'] != true || body['items'] is! List) {
       return;
     }
-    await _store.save([
-      for (final item in body['items'] as List)
-        InventoryItem.fromJson((item as Map).cast()),
-    ]);
+    final merged = await _ledger.adopt(
+      collection: _ledgerKey,
+      remote: [
+        for (final item in body['items'] as List)
+          InventoryItem.fromJson((item as Map).cast()),
+      ],
+      local: _store.load,
+      save: _store.save,
+      keyOf: (item) => jsonEncode(item.toJson()),
+    );
+    if (merged) {
+      push();
+    }
   }
 }

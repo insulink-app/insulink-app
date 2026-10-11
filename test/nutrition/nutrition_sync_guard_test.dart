@@ -1,11 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/nutrition/nutrition_sync.dart';
 
+import '../support/secure_storage_mock.dart';
+
 /// The pulls REPLACE a collection with the account's copy, and the nutrition pull
 /// now runs on every entry to the tab. A meal logged seconds earlier is still
 /// queued behind its 3 s debounce, so the account's answer never saw it —
 /// adopting it would drop the meal.
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(installSecureStorageMock);
   tearDown(NutritionSync.cancelPending);
 
   test('an untouched collection adopts the account copy', () {
