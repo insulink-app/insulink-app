@@ -147,7 +147,8 @@ class GlucoseSync {
   }
 
   /// Caps the retry buffer during a long backend outage. The archive stays the
-  /// source of truth, so a returning device resyncs via [pullHistory] on login.
+  /// source of truth: whatever is dropped here, or lost with the isolate, is sent
+  /// again by `GlucoseBacklog`.
   static const int _retryCap = 5000;
 
   /// Report readings (epoch-minute → mg/dL) to the backend. Runs in the service

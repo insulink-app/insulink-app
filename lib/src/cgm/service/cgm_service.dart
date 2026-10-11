@@ -27,6 +27,7 @@ import 'alarms.dart';
 import '../cgm_connection.dart';
 import '../event_sync.dart';
 import '../glucose_prediction.dart';
+import '../glucose_backlog.dart';
 import '../glucose_sync.dart';
 import '../protocol/connection.dart';
 import '../sensor_sync.dart';
@@ -577,8 +578,15 @@ class CgmTaskHandler extends TaskHandler {
     }
   }
 
+  /// Re-sends what the account missed while offline or signed out.
+  final GlucoseBacklog _glucoseBacklog = GlucoseBacklog();
+
   Future<void> _watchdog() async {
     try {
+      final store = _store;
+      if (store != null) {
+        unawaited(_glucoseBacklog.drainIfDue(store, _log));
+      }
       // Recover a startup that threw before the pipeline existed.
       if (_conn == null) {
         if (await _ensureReady() && _sensorConfigured) {
