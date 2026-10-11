@@ -9,6 +9,7 @@ import 'package:insulink/src/google_health/sleep/sleep_index_panel.dart';
 import 'package:insulink/src/base/day_pager.dart';
 import 'package:insulink/src/google_health/sleep/sleep_phases_panel.dart';
 import 'package:insulink/src/google_health/sleep/sleep_trend_section.dart';
+import 'package:insulink/src/google_health/sleep/sleep_vitals_chart.dart';
 import 'package:insulink/src/google_health/sleep_metrics.dart';
 import 'package:insulink/src/google_health/sleep_targets_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -128,6 +129,8 @@ class _SleepPageState extends State<SleepPage> {
         _header('google_health.sleep_stage'),
         SleepPhasesPanel(stages: stages, timeline: timeline),
       ],
+      if (timeline != null && timeline.isNotEmpty)
+        SleepVitalsChart(timeline: timeline),
       _header('google_health.sleep_page.trend'),
       SleepTrendSection(
         range: _range,

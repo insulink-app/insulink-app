@@ -729,7 +729,8 @@
       "previous_night": "Vorherige Nacht",
       "next_night": "Nächste Nacht",
       "fell_asleep": "Eingeschlafen #",
-      "woke_up": "Aufgewacht #"
+      "woke_up": "Aufgewacht #",
+      "no_vitals": "Keine Glukose- oder Pulsdaten für diese Nacht"
     },
     "hr_min": "Min",
     "hr_max": "Max",

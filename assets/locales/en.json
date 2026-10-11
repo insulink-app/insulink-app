@@ -729,7 +729,8 @@
       "previous_night": "Previous night",
       "next_night": "Next night",
       "fell_asleep": "Fell asleep #",
-      "woke_up": "Woke up #"
+      "woke_up": "Woke up #",
+      "no_vitals": "No glucose or heart-rate data for this night"
     },
     "hr_min": "Min",
     "hr_max": "Max",

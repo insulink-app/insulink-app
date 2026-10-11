@@ -44,6 +44,7 @@ class TrainingMetricsChart extends StatefulWidget {
     required this.glucose,
     required this.track,
     required this.onHoverMs,
+    this.emptyKey = 'sport.trainings.no_metrics',
   });
 
   final int startMs;
@@ -55,6 +56,10 @@ class TrainingMetricsChart extends StatefulWidget {
   /// The training's GPS track — the speed series is derived from it.
   final List<TrackPoint> track;
   final void Function(int? ms) onHoverMs;
+
+  /// Shown when there is nothing to plot; a caller without a route (a night)
+  /// names only the metrics it can have.
+  final String emptyKey;
 
   @override
   State<TrainingMetricsChart> createState() => _TrainingMetricsChartState();
@@ -218,7 +223,7 @@ class _TrainingMetricsChartState extends State<TrainingMetricsChart>
           SizedBox(
             height: 210,
             child: (!_loading && empty)
-                ? Center(child: LocaleText('sport.trainings.no_metrics'))
+                ? Center(child: LocaleText(widget.emptyKey))
                 : LineChart(
                     _data(
                       scheme,
