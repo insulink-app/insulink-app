@@ -30,14 +30,14 @@ void main() {
       // 60 → 100 crosses targetLow (70) at frac 0.25 of the segment.
       final series = seriesFor([
         const MapEntry(0, 60),
-        const MapEntry(3600, 100),
+        const MapEntry(600, 100),
       ]);
       series.buildBars();
 
       expect(series.realSpots, hasLength(2));
       expect(series.spots, hasLength(3)); // two readings + one crossing
       final crossing = series.spots[1];
-      expect(crossing.x, closeTo(-0.75, 1e-9)); // -1.0 + 0.25
+      expect(crossing.x, closeTo(-0.125, 1e-9)); // -1/6 + 0.25 * 1/6
       expect(crossing.y, 70); // sits on the target line
     });
 
@@ -45,7 +45,7 @@ void main() {
       // 60 → 200 crosses targetLow (70) then targetHigh (180), sorted by x.
       final series = seriesFor([
         const MapEntry(0, 60),
-        const MapEntry(3600, 200),
+        const MapEntry(600, 200),
       ]);
       series.buildBars();
 
@@ -58,7 +58,7 @@ void main() {
     test('no crossing when both readings sit in the same zone', () {
       final series = seriesFor([
         const MapEntry(0, 100),
-        const MapEntry(3600, 120),
+        const MapEntry(600, 120),
       ]);
       series.buildBars();
       expect(series.spots, hasLength(2));
@@ -85,22 +85,28 @@ void main() {
       expect(series.realSpots.map((spot) => spot.y), [100, 110]);
     });
 
-    test('a window between two distant readings still renders a line', () {
-      // The visible window (cutoff..windowEnd) contains NO readings: the last
-      // before a gap sits left of it, the first after sits right of it. Both
-      // neighbours are kept so the spanning line crosses the empty viewport
-      // instead of leaving it blank.
-      final series = GlucoseChartSeries(
-        entries: const [MapEntry(0, 100), MapEntry(36000, 120)],
-        latestSecs: 36000,
-        cutoff: 10000,
-        windowEnd: 20000,
-        shift: 0,
-        glucose: glucoseState(),
-        colors: GlucoseColors.standard,
-      );
-      series.buildBars();
-      expect(series.realSpots.map((spot) => spot.y), [100, 120]);
+    test('a data gap breaks the line instead of bridging it', () {
+      // Two stretches seven hours apart: each draws its own bar, and nothing
+      // connects the last reading before the gap to the first one after it.
+      final series = seriesFor([
+        const MapEntry(0, 150),
+        const MapEntry(300, 155),
+        const MapEntry(25200, 160),
+        const MapEntry(25500, 165),
+      ]);
+      final bars = series.buildBars();
+      expect(bars, hasLength(2));
+      expect(bars.map((bar) => bar.spots.length), [2, 2]);
+      expect(series.realSpots, hasLength(4));
+    });
+
+    test('readings within the gap limit stay one line', () {
+      final series = seriesFor([
+        const MapEntry(0, 150),
+        const MapEntry(900, 155),
+        const MapEntry(1800, 160),
+      ]);
+      expect(series.buildBars(), hasLength(1));
     });
 
     test('a window under the cap is plotted untouched', () {
