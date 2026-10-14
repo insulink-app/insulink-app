@@ -14,6 +14,7 @@ import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/pump/loop/loop_mode_backup.dart';
+import 'package:insulink/src/pump/loop/loop_micro_bolus_settings.dart';
 import 'package:insulink/src/pump/loop/loop_settings.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
@@ -96,6 +97,10 @@ class ProfileSettings {
           "${await LoopSettings.suspendBelow.load()}",
       LoopSettings.maxRate.storageKey: "${await LoopSettings.maxRate.load()}",
       LoopSettings.maxIob.storageKey: "${await LoopSettings.maxIob.load()}",
+      for (final toggle in LoopMicroBolusSettings.toggles)
+        toggle.storageKey: "${await toggle.load()}",
+      for (final threshold in LoopMicroBolusSettings.thresholds)
+        threshold.storageKey: "${await threshold.load()}",
       // Only a copy of the mode, read solely when a pod is adopted after a
       // reinstall, so it can come back engaged.
       LoopModeBackup.key: await const LoopModeBackup().loadRaw(),

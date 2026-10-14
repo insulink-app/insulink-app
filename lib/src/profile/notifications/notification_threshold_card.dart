@@ -34,6 +34,7 @@ class _NotificationThresholdCardState extends State<NotificationThresholdCard> {
           min: threshold.min,
           max: threshold.max,
           step: threshold.step,
+          tenths: threshold.tenths,
           onChanged: _save,
         );
       },

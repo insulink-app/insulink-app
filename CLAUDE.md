@@ -695,9 +695,11 @@ the widget cannot drift away from the app on what is in range.
   analysis — including why there is no read-only mode and what each guard in
   `lib/src/pump/protocol/` defends against. Automated delivery is
   `docs/LOOP.md`.
-- `docs/LOOP.md` — **automated delivery**: why it is temp-basal-only, the pod's
+- `docs/LOOP.md` — **automated delivery**: why the temp basal is its backbone, the pod's
   own expiry as the fallback to basal, the trust boundary on sensor data, and
   the layered limits that bound how much insulin it can add.
+- `docs/LOOP_MICRO_BOLUS.md` — the opt-in **micro bolus**: why it exists, the
+  user's settings, and the ceilings that keep it inside the hypo headroom.
 - `docs/TUNING.md` — the weekly **basal suggestion**: how food and bolus insulin
   are measured out of an hour instead of disqualifying it (`TuningModel`), what
   that linear model costs, which hours are still thrown away, and why there is no

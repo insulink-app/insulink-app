@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
+import 'package:insulink/src/pump/loop/loop_micro_bolus_limits.dart';
 
 /// Everything the automated loop is allowed to do, in one value.
 ///
@@ -24,6 +25,7 @@ class LoopLimits {
     required this.insulinDuration,
     required this.maxUnitsPerHour,
     required this.maxIobUnits,
+    this.microBolus = LoopMicroBolusLimits.off,
   });
 
   /// Reads the current limits, filling in defaults for anything unset.
@@ -41,6 +43,7 @@ class LoopLimits {
       maxUnitsPerHour:
           double.tryParse(all[keyMaxRate] ?? '') ?? defaultMaxUnitsPerHour,
       maxIobUnits: double.tryParse(all[keyMaxIob] ?? '') ?? defaultMaxIobUnits,
+      microBolus: await LoopMicroBolusLimits.load(),
     );
   }
 
@@ -82,6 +85,9 @@ class LoopLimits {
   final double maxUnitsPerHour;
   final double maxIobUnits;
 
+  /// What a micro bolus is bounded by, on top of every ceiling above.
+  final LoopMicroBolusLimits microBolus;
+
   /// Whether these limits are internally consistent enough to dose against.
   bool get isUsable => problem == null;
 
@@ -105,7 +111,7 @@ class LoopLimits {
     if (insulinDuration <= Duration.zero) {
       return 'Insulin duration must be above zero';
     }
-    return null;
+    return microBolus.problem;
   }
 
   /// The lowest the suspend threshold may be set to. Below this the automation

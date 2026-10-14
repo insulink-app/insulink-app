@@ -9,7 +9,9 @@ per dose. `lib/src/pump/loop/`.
 
 ## The one structural decision
 
-**The automation only ever sets a temporary basal rate. It never gives a bolus.**
+**The automation's backbone is a temporary basal rate.** The one exception is
+the micro bolus, off by default and switched on by the user; it has its own file,
+`docs/LOOP_MICRO_BOLUS.md`, and is bounded so that everything below still holds.
 
 Everything else follows from that, and it is the reason the feature can bound its
 own worst case at all:
@@ -169,7 +171,8 @@ branch and every uncertainty resolves towards it.
 
 | Layer | What it does | Where |
 |-------|--------------|-------|
-| mechanism | temp basal only, never a bolus; every rate expires in 30 min | `loop_runner.dart`, `loop_pod_commands.dart` |
+| mechanism | temp basal, every rate expires in 30 min; micro bolus only when switched on | `loop_runner.dart`, `loop_pod_commands.dart` |
+| micro bolus | a capped share of the missing insulin, whole of it inside the hypo headroom | `LoopMicroBolusSafety` (`docs/LOOP_MICRO_BOLUS.md`) |
 | input | stale, implausible or too-sparse sensor data never reaches the maths | `loop_glucose.dart` |
 | hard floor | at or under the suspend threshold, rate 0. No arithmetic, no exceptions | `LoopSafety._suspensionFor` |
 | predicted floor | trend reaching under the threshold within the fuse, rate 0 | `LoopSafety._suspensionFor` |
@@ -380,6 +383,8 @@ the glucose profile).
 | highest basal rate | 3 U/h | 1 to 10 |
 | highest active insulin | 5 U | 1 to 15 |
 
+The micro-bolus settings are listed in `docs/LOOP_MICRO_BOLUS.md`.
+
 Whole units, because these are ceilings and not doses. They sync to the account
 like every other setting; **the live mode does not**, because a pod belongs to the
 device that activated it, so which device is automating is not an account-wide
@@ -396,8 +401,8 @@ not answered yet is left alone: sending a schedule is resuming it.
 
 ## What is deliberately not here
 
-- **No automated bolus, and no SMB.** See the top of this file. This costs
-  post-meal responsiveness, which is the intended trade.
+- **No automated bolus beyond the opt-in micro bolus.** Never a full
+  correction at once; see `docs/LOOP_MICRO_BOLUS.md`.
 - **No carbohydrate entry into the loop.** A meal is announced by dosing a bolus,
   which the loop sees as insulin on board. Meal announcement would be the next
   thing to add and needs its own decisions about how far ahead to look.
@@ -417,4 +422,7 @@ not answered yet is left alone: sending a schedule is resuming it.
 | `loop_journal_test.dart` | billing a cycle for the time it ran, the fuse cap, the loop's own insulin on board |
 | `loop_runner_test.dart` | mode behaviour, cancel-before-program, booking before replacing, standing down and announcing it, deferring to a user rate, re-reading the mode before acting |
 | `loop_switch_test.dart` | what blocks engaging, and that switching off leaves the automation off even when the pod cannot be reached |
+| `loop_micro_bolus_test.dart` | when a micro bolus is allowed at all; every ceiling binds it; the rate stays at schedule next to it |
+| `loop_micro_bolus_ledger_test.dart` | a micro bolus counts as insulin on board and toward the hourly ceiling; a refusal takes it back |
+| `loop_micro_bolus_runner_test.dart` | rate before bolus, booking, a refused bolus, OFF writing it down without giving it |
 | `loop_locale_keys_test.dart` | every key built from an enum at runtime exists in both languages |

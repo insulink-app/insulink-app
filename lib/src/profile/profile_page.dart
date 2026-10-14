@@ -24,6 +24,7 @@ import 'package:insulink/src/profile/notifications/notification_threshold.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold_card.dart';
 import 'package:insulink/src/profile/tuning/basal_tuning_card.dart';
 import 'package:insulink/src/profile/tuning/factor_tuning_card.dart';
+import 'package:insulink/src/pump/loop/loop_micro_bolus_section.dart';
 import 'package:insulink/src/pump/loop/loop_settings.dart';
 import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_toggle.dart';
@@ -200,6 +201,8 @@ class _ProfilePageState extends State<ProfilePage> {
         NotificationThresholdCard(LoopSettings.maxRate),
         SizedBox(height: 10),
         NotificationThresholdCard(LoopSettings.maxIob),
+        SizedBox(height: 16),
+        LoopMicroBolusSection(),
       ],
     ),
     (

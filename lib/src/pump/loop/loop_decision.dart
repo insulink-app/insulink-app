@@ -6,6 +6,10 @@ enum LoopReason {
   /// Above target, so the rate is above the schedule.
   correcting,
 
+  /// Above target and correcting with a micro bolus. The rate stays at or below
+  /// the schedule, so the correction is not given twice.
+  microBolusing,
+
   /// Heading below target, so the rate is below the schedule but not zero.
   easingOff,
 
@@ -50,6 +54,12 @@ enum LoopBound {
 
   /// What is left in the reservoir.
   reservoir,
+
+  /// The largest single micro bolus the user allows.
+  maxMicroBolus,
+
+  /// The micro-bolus insulin the user allows within one hour.
+  microBolusHourly,
 }
 
 /// One cycle's outcome: the rate to run, why, and what held it back.
@@ -67,6 +77,8 @@ class LoopDecision {
     this.trendPerMinute,
     this.iobUnits = 0,
     this.eventualMgdl,
+    this.microBolusUnits = 0,
+    this.microBolusBoundBy,
   });
 
   /// A cycle that could not decide anything. The rate is the schedule, because
@@ -79,7 +91,9 @@ class LoopDecision {
       mgdl = null,
       trendPerMinute = null,
       iobUnits = 0,
-      eventualMgdl = null;
+      eventualMgdl = null,
+      microBolusUnits = 0,
+      microBolusBoundBy = null;
 
   /// The temporary rate to program, in U/h.
   final double unitsPerHour;
@@ -98,6 +112,34 @@ class LoopDecision {
   /// Where glucose was predicted to land, counting the trend and the insulin
   /// already on board.
   final double? eventualMgdl;
+
+  /// The micro bolus to give this cycle, in units. Zero when none.
+  final double microBolusUnits;
+
+  /// Which ceiling held the micro bolus down, when one did.
+  final LoopBound? microBolusBoundBy;
+
+  /// This decision with [units] given as a micro bolus.
+  ///
+  /// The rate drops to the schedule at most: the micro bolus IS the correction,
+  /// and a rate above schedule next to it would deliver the same missing insulin
+  /// a second time.
+  LoopDecision withMicroBolus(double units, LoopBound? bound) {
+    return LoopDecision(
+      unitsPerHour: unitsPerHour < scheduledUnitsPerHour
+          ? unitsPerHour
+          : scheduledUnitsPerHour,
+      reason: LoopReason.microBolusing,
+      scheduledUnitsPerHour: scheduledUnitsPerHour,
+      boundBy: boundBy,
+      mgdl: mgdl,
+      trendPerMinute: trendPerMinute,
+      iobUnits: iobUnits,
+      eventualMgdl: eventualMgdl,
+      microBolusUnits: units,
+      microBolusBoundBy: bound,
+    );
+  }
 
   /// Whether this decision can be programmed on the pod at all.
   bool get isActionable => switch (reason) {

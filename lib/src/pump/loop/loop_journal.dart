@@ -44,6 +44,8 @@ class PodLoopCycle {
     this.mgdl,
     this.trendPerMinute,
     this.iobUnits = 0,
+    this.microBolusUnits = 0,
+    this.microBolusBoundBy,
   });
 
   factory PodLoopCycle.fromJson(Map<String, dynamic> json) => PodLoopCycle(
@@ -61,6 +63,10 @@ class PodLoopCycle {
     mgdl: (json['mgdl'] as num?)?.toInt(),
     trendPerMinute: (json['trend'] as num?)?.toDouble(),
     iobUnits: (json['iob'] as num?)?.toDouble() ?? 0,
+    microBolusUnits: (json['smb'] as num?)?.toDouble() ?? 0,
+    microBolusBoundBy: LoopBound.values
+        .where((entry) => entry.name == json['smb_bound'])
+        .firstOrNull,
   );
 
   final DateTime at;
@@ -78,6 +84,13 @@ class PodLoopCycle {
   final double? trendPerMinute;
   final double iobUnits;
 
+  /// The micro bolus this cycle gave, or would have given when not [delivered].
+  /// Shown, never counted: the insulin itself is in [LoopMicroBolusLedger].
+  final double microBolusUnits;
+
+  /// Which ceiling held the micro bolus down, when one did.
+  final LoopBound? microBolusBoundBy;
+
   Map<String, dynamic> toJson() => {
     'at': at.millisecondsSinceEpoch,
     'rate': unitsPerHour,
@@ -88,6 +101,8 @@ class PodLoopCycle {
     if (mgdl != null) 'mgdl': mgdl,
     if (trendPerMinute != null) 'trend': trendPerMinute,
     'iob': iobUnits,
+    if (microBolusUnits > 0) 'smb': microBolusUnits,
+    if (microBolusBoundBy != null) 'smb_bound': microBolusBoundBy!.name,
   };
 
   /// Insulin per hour this cycle added ON TOP of the user's schedule.
@@ -177,7 +192,8 @@ extension PodLoopJournal on PodStore {
     );
   }
 
-  /// Insulin the automation added above the schedule inside [window].
+  /// Insulin the automation added above the schedule inside [window], micro
+  /// boluses included.
   ///
   /// Each cycle ran until the next one replaced it, so its share is its excess
   /// rate over that stretch. The newest cycle is still running and is counted up
@@ -185,11 +201,13 @@ extension PodLoopJournal on PodStore {
   double automatedUnitsWithin(Duration window, {DateTime? now}) {
     final at = now ?? DateTime.now();
     final since = at.subtract(window);
-    return _excessUnits(from: since, to: at);
+    return _excessUnits(from: since, to: at) +
+        loopMicroBolusUnitsWithin(window, now: at);
   }
 
-  /// The automation's own contribution to insulin on board, decaying linearly
-  /// over [insulinDuration] exactly as [ActiveInsulin] decays a bolus.
+  /// The automation's own contribution to insulin on board, micro boluses
+  /// included, decaying linearly over [insulinDuration] exactly as
+  /// [ActiveInsulin] decays a bolus.
   ///
   /// Without this the loop would not see its own insulin. Its excess is real
   /// insulin in the body, so leaving it out would let each cycle add on top of
@@ -203,7 +221,7 @@ extension PodLoopJournal on PodStore {
       final ranTo = index == 0 ? at : cycles[index - 1].at;
       units += _remainingOf(cycles[index], ranFrom, ranTo, at, insulinDuration);
     }
-    return units;
+    return units + loopMicroBolusIobUnits(insulinDuration, now: at);
   }
 
   /// What is left of one cycle's excess, treating it as delivered evenly across

@@ -25,6 +25,7 @@ part 'pod_basal_ledger.dart';
 part 'pod_contact_log.dart';
 part 'pod_delivery_log.dart';
 part 'loop/loop_journal.dart';
+part 'loop/loop_micro_bolus_ledger.dart';
 part 'pod_status_cache.dart';
 part 'automation_record.dart';
 
@@ -69,6 +70,7 @@ class PodStore {
   static const _kLoopStop = 'pod.loop_stop';
   static const _kLoopCycles = 'pod.loop_cycles';
   static const _kUnconfirmedBoluses = 'pod.unconfirmed_boluses';
+  static const _kLoopMicroBoluses = 'pod.loop_micro_boluses';
   static const _kLastStatus = 'pod.last_status';
 
   // NOT cleared by [forgetPod]: it is the history of the LINK the reception page
@@ -270,6 +272,7 @@ class PodStore {
       _kLoopStop,
       _kLoopCycles,
       _kUnconfirmedBoluses,
+      _kLoopMicroBoluses,
       _kLastStatus,
     ]) {
       await _remove(key);

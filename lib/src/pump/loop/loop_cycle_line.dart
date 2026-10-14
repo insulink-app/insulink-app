@@ -36,10 +36,19 @@ class PodLoopCycleLine extends StatelessWidget {
           Locales.string(context, 'pump.loop.reason.${cycle.reason.localeKey}'),
         );
     final bound = cycle.boundBy;
-    if (bound == null) {
-      return line;
-    }
-    return '$line ${Locales.string(context, 'pump.loop.bound.${bound.localeKey}')}';
+    final bounded = bound == null
+        ? line
+        : '$line ${Locales.string(context, 'pump.loop.bound.${bound.localeKey}')}';
+    return cycle.microBolusUnits > 0
+        ? '$bounded · ${_microBolus(context, cycle)}'
+        : bounded;
+  }
+
+  String _microBolus(BuildContext context, PodLoopCycle cycle) {
+    return Locales.string(
+      context,
+      'pump.loop.micro_bolus',
+    ).replaceFirst('#', sportDecimal(cycle.microBolusUnits, 2));
   }
 
   String _clock(DateTime at) => '${_two(at.hour)}:${_two(at.minute)}';

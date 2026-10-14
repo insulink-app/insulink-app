@@ -3,6 +3,7 @@ import 'package:insulink/src/pump/loop/loop_algorithm.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
 import 'package:insulink/src/pump/loop/loop_glucose.dart';
 import 'package:insulink/src/pump/loop/loop_limits.dart';
+import 'package:insulink/src/pump/loop/loop_micro_bolus_safety.dart';
 import 'package:insulink/src/pump/loop/loop_pod_commands.dart';
 import 'package:insulink/src/pump/loop/loop_safety.dart';
 import 'package:insulink/src/pump/pod_basal_booking.dart';
@@ -15,12 +16,15 @@ import 'package:insulink/src/pump/protocol/pod_responses.dart';
 
 /// Runs one automated cycle: read the sensor, read the pod, decide, program.
 ///
-/// Delivers ONLY as a temporary basal rate, and never as a bolus. That is the
-/// structural safety decision the rest of the feature rests on, for two reasons:
+/// Delivers as a temporary basal rate, and as a micro bolus only when the user
+/// switched those on ([LoopMicroBolusSafety]). The rate stays the backbone, for
+/// two reasons:
 ///
 ///  * A temporary rate can be taken back. Five minutes of a rate that turns out
 ///    to be wrong is a fraction of a unit and the next cycle undoes it. A bolus
-///    is in the body the moment it is given and no later decision can retrieve it.
+///    is in the body the moment it is given and no later decision can retrieve it,
+///    which is why a micro bolus is only ever a capped share of what is missing
+///    and has to fit the hypo headroom whole.
 ///  * A temporary rate expires by itself. Every cycle programs a rate that lasts
 ///    [LoopLimits.fuse], so if this runner stops, whatever it programmed last runs
 ///    out and the pod returns to the user's stored basal schedule with no app
@@ -264,12 +268,13 @@ class PodLoopRunner {
           limits.insulinDuration,
         ).parts(const [], pod: store, now: at).beyondBoluses;
     final schedule = _scheduledRateAt(at);
-    final wanted = LoopAlgorithm(limits).wantedUnitsPerHour(
+    final algorithm = LoopAlgorithm(limits);
+    final wanted = algorithm.wantedUnitsPerHour(
       glucose: glucose,
       iobUnits: iob,
       scheduledUnitsPerHour: schedule,
     );
-    return LoopSafety(limits).decide(
+    final decision = LoopSafety(limits).decide(
       wantedUnitsPerHour: wanted,
       glucose: glucose,
       iobUnits: iob,
@@ -279,6 +284,22 @@ class PodLoopRunner {
         const Duration(hours: 1),
         now: at,
       ),
+      reservoirUnits: status.reservoirUnits,
+    );
+    return LoopMicroBolusSafety(limits).apply(
+      decision,
+      correctionUnits: algorithm.correctionUnits(
+        glucose: glucose,
+        iobUnits: iob,
+      ),
+      glucose: glucose,
+      iobUnits: iob,
+      microBolusUnitsLastHour: store.loopMicroBolusUnitsWithin(
+        const Duration(hours: 1),
+        now: at,
+      ),
+      lastMicroBolusAt: store.lastLoopMicroBolusAt,
+      now: at,
       reservoirUnits: status.reservoirUnits,
     );
   }
@@ -350,12 +371,41 @@ class PodLoopRunner {
       onLog('loop rate refused by the pod: ${refusal.reason}');
       return;
     }
-    await _record(decision, delivered: true);
+    final microBolus = await _giveMicroBolus(commands, decision);
+    await _record(decision, delivered: true, microBolusUnits: microBolus);
     onLog(
       'loop set ${decision.unitsPerHour} U/h for '
       '${LoopLimits.fuse.inMinutes} min: '
       '${decision.reason.name}${_boundNote(decision)}',
     );
+  }
+
+  /// Gives the decision's micro bolus, after the rate, and returns the units
+  /// that count as given.
+  ///
+  /// After the rate because the rate is the one that can only lower insulin in
+  /// a micro-bolus cycle: if the link drops between the two, the safe half is
+  /// the half that landed. An outcome nobody could confirm counts as given, as
+  /// the ledger already does; only a refusal counts as nothing.
+  Future<double> _giveMicroBolus(
+    LoopPodCommands commands,
+    LoopDecision decision,
+  ) async {
+    final units = decision.microBolusUnits;
+    if (units <= 0) {
+      return 0;
+    }
+    try {
+      await commands.deliverMicroBolus(units);
+      onLog('loop gave a micro bolus of $units U');
+      return units;
+    } on LoopCommandRefused catch (refusal) {
+      onLog('loop micro bolus refused by the pod: ${refusal.reason}');
+      return 0;
+    } catch (error) {
+      onLog('loop micro bolus outcome unknown, counted as given: $error');
+      return units;
+    }
   }
 
   /// Puts the pod back on its own schedule by ending any temporary rate.
@@ -379,7 +429,11 @@ class PodLoopRunner {
   double _scheduledRateAt(DateTime at) =>
       store.scheduledUnitsPerHourAt(at) ?? 0;
 
-  Future<void> _record(LoopDecision decision, {required bool delivered}) {
+  Future<void> _record(
+    LoopDecision decision, {
+    required bool delivered,
+    double? microBolusUnits,
+  }) {
     return store.recordLoopCycle(
       PodLoopCycle(
         at: now(),
@@ -391,6 +445,8 @@ class PodLoopRunner {
         mgdl: decision.mgdl,
         trendPerMinute: decision.trendPerMinute,
         iobUnits: decision.iobUnits,
+        microBolusUnits: microBolusUnits ?? decision.microBolusUnits,
+        microBolusBoundBy: decision.microBolusBoundBy,
       ),
     );
   }

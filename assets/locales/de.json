@@ -626,14 +626,17 @@
         "no_glucose": "keine verwertbaren Sensordaten",
         "pod_unavailable": "Pod nicht bereit",
         "limits_invalid": "Grenzwerte unstimmig",
-        "clock_unreliable": "Uhrzeit zurückgestellt"
+        "clock_unreliable": "Uhrzeit zurückgestellt",
+        "micro_bolusing": "korrigiert mit Mini-Bolus"
       },
       "bound": {
         "max_rate": "(durch die Ratenobergrenze begrenzt)",
         "max_iob": "(durch das aktive Insulin begrenzt)",
         "hypo_headroom": "(durch den Abstand zur Stoppschwelle begrenzt)",
         "hourly_ceiling": "(durch die Stundengrenze begrenzt)",
-        "reservoir": "(durch den Reservoirstand begrenzt)"
+        "reservoir": "(durch den Reservoirstand begrenzt)",
+        "max_micro_bolus": "(durch den größten Mini-Bolus begrenzt)",
+        "micro_bolus_hourly": "(durch die Stundengrenze für Mini-Boli begrenzt)"
       },
       "stopped": {
         "pod_unreachable": "Die Automatik wurde beendet, weil der Pod länger nicht erreichbar war. Der Pod läuft wieder auf deinem Basalprogramm.",
@@ -661,7 +664,9 @@
       "not_sent": "nicht gesendet",
       "at_glucose": "bei # mg/dL, # mg/dL pro Minute",
       "on_board": "# E aktiv",
-      "schedule_was": "Basalprogramm # E/h"
+      "schedule_was": "Basalprogramm # E/h",
+      "micro_bolus": "# E Mini-Bolus",
+      "micro_bolus_bound": "Mini-Bolus #"
     },
     "forget": {
       "_": "Diesen Pod vergessen?",
@@ -1396,6 +1401,32 @@
       "max_iob": {
         "_": "Höchstes aktives Insulin",
         "value": "# E"
+      },
+      "micro_bolus": {
+        "_": "Mini-Boli",
+        "description": "Gibt einen Teil des fehlenden Insulins sofort, statt es über eine temporäre Rate zu verteilen. Schneller bei steigendem Zucker, aber ein abgegebener Bolus lässt sich nicht zurücknehmen. Alle Grenzen oben gelten weiterhin.",
+        "enabled": "Mini-Boli erlauben",
+        "only_rising": "Nur bei steigender Glukose",
+        "max_units": {
+          "_": "Größter einzelner Mini-Bolus",
+          "value": "# E"
+        },
+        "share": {
+          "_": "Anteil des fehlenden Insulins",
+          "value": "# %"
+        },
+        "from": {
+          "_": "Mini-Boli ab",
+          "value": "# mg/dL"
+        },
+        "every": {
+          "_": "Höchstens alle",
+          "value": "# min"
+        },
+        "max_per_hour": {
+          "_": "Mini-Boli pro Stunde höchstens",
+          "value": "# E"
+        }
       }
     },
     "pod_temp_basal_beep": {
