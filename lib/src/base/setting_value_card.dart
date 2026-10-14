@@ -4,14 +4,23 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/base/setting_value_editor_sheet.dart';
 import 'package:insulink/src/base/setting_fill_bar.dart';
-import 'package:insulink/src/sport/sport_format.dart';
+import 'package:intl/intl.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// How a stored setting integer reads on screen.
 extension SettingValueText on int {
-  /// The value itself, or as tenths with one decimal ("5" reads "0,5").
-  String settingText({required bool tenths}) =>
-      tenths ? sportDecimal(this / 10, 1) : '$this';
+  /// The value itself, or as tenths with one decimal in the app's language
+  /// ("5" reads "0,5" in German and "0.5" in English).
+  String settingText(BuildContext context, {required bool tenths}) {
+    if (!tenths) {
+      return '$this';
+    }
+    final language = Localizations.localeOf(context).languageCode;
+    return NumberFormat.decimalPatternDigits(
+      locale: language,
+      decimalDigits: 1,
+    ).format(this / 10);
+  }
 }
 
 /// A tappable summary of one integer setting — label, current value and a fill
@@ -98,7 +107,11 @@ class SettingValueCard extends StatelessWidget {
           ),
         ),
         Text(
-          Locales.string(context, valueKey, params: [value.settingText(tenths: tenths)]),
+          Locales.string(
+            context,
+            valueKey,
+            params: [value.settingText(context, tenths: tenths)],
+          ),
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,

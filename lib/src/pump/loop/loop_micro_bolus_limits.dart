@@ -14,6 +14,7 @@ class LoopMicroBolusLimits {
     required this.fromMgdl,
     required this.minInterval,
     required this.maxUnitsPerHour,
+    required this.pauseAfterLow,
   });
 
   /// Micro boluses switched off, which is what a limit set built without them
@@ -26,6 +27,7 @@ class LoopMicroBolusLimits {
     fromMgdl: 0,
     minInterval: Duration.zero,
     maxUnitsPerHour: 0,
+    pauseAfterLow: Duration.zero,
   );
 
   /// Reads the user's settings.
@@ -41,6 +43,9 @@ class LoopMicroBolusLimits {
       ),
       maxUnitsPerHour: (await LoopMicroBolusSettings.maxUnitsPerHour.load())
           .toDouble(),
+      pauseAfterLow: Duration(
+        minutes: await LoopMicroBolusSettings.pauseAfterLow.load(),
+      ),
     );
   }
 
@@ -56,6 +61,10 @@ class LoopMicroBolusLimits {
   final int fromMgdl;
   final Duration minInterval;
   final double maxUnitsPerHour;
+
+  /// How long after a reading at or below the stop threshold no micro bolus is
+  /// given.
+  final Duration pauseAfterLow;
 
   /// What is wrong with these limits, or null when nothing is. Only checked
   /// while enabled: a switched-off feature cannot stop the rest of the loop.

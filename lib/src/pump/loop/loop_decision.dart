@@ -123,7 +123,8 @@ class LoopDecision {
   ///
   /// The rate drops to the schedule at most: the micro bolus IS the correction,
   /// and a rate above schedule next to it would deliver the same missing insulin
-  /// a second time.
+  /// a second time. A ceiling that held the rate stays recorded only when the
+  /// rate is actually below the schedule; otherwise it no longer shaped it.
   LoopDecision withMicroBolus(double units, LoopBound? bound) {
     return LoopDecision(
       unitsPerHour: unitsPerHour < scheduledUnitsPerHour
@@ -131,7 +132,7 @@ class LoopDecision {
           : scheduledUnitsPerHour,
       reason: LoopReason.microBolusing,
       scheduledUnitsPerHour: scheduledUnitsPerHour,
-      boundBy: boundBy,
+      boundBy: unitsPerHour < scheduledUnitsPerHour ? boundBy : null,
       mgdl: mgdl,
       trendPerMinute: trendPerMinute,
       iobUnits: iobUnits,

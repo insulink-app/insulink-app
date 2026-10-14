@@ -15,7 +15,7 @@ import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
 ///
 ///  * a share of the missing insulin, never all of it, so each cycle leaves the
 ///    rest for the next one to decide on a fresher reading;
-///  * the largest single micro bolus and the micro-bolus insulin per hour;
+///  * the largest single micro bolus, and the automated insulin per hour;
 ///  * the hypo headroom with NOTHING spread over the fuse. The rate may count on
 ///    the next cycle to undo it; a bolus may not, so the whole of it has to fit
 ///    between glucose now and the suspend threshold.
@@ -29,15 +29,16 @@ class LoopMicroBolusSafety {
   /// [decision] with the micro bolus this cycle may give, or unchanged when it
   /// may give none.
   ///
-  /// [correctionUnits] is the missing insulin from [LoopAlgorithm]; the two
-  /// insulin figures count delivered micro boluses: [microBolusUnitsLastHour]
-  /// only those, [iobUnits] everything on board.
+  /// [correctionUnits] is the missing insulin from [LoopAlgorithm].
+  /// [automatedUnitsLastHour] is everything the automation added within the
+  /// hour, the rate's excess AND micro boluses, so the hourly setting bounds
+  /// the automation as a whole and the two paths cannot add up past it.
   LoopDecision apply(
     LoopDecision decision, {
     required double correctionUnits,
     required LoopGlucose glucose,
     required double iobUnits,
-    required double microBolusUnitsLastHour,
+    required double automatedUnitsLastHour,
     required DateTime? lastMicroBolusAt,
     required DateTime now,
     double? reservoirUnits,
@@ -51,7 +52,7 @@ class LoopMicroBolusSafety {
     for (final ceiling in [
       (units: settings.maxUnits, bound: LoopBound.maxMicroBolus),
       (
-        units: settings.maxUnitsPerHour - microBolusUnitsLastHour,
+        units: settings.maxUnitsPerHour - automatedUnitsLastHour,
         bound: LoopBound.microBolusHourly,
       ),
       (
@@ -86,6 +87,12 @@ class LoopMicroBolusSafety {
       return false;
     }
     if (settings.onlyRising && glucose.trendPerMinute <= 0) {
+      return false;
+    }
+    if (glucose.wasAtOrBelow(
+      limits.suspendBelowMgdl,
+      within: settings.pauseAfterLow,
+    )) {
       return false;
     }
     return lastMicroBolusAt == null ||

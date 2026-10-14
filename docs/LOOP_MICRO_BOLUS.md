@@ -34,7 +34,7 @@ Each one only lowers the dose, never refuses outright, like the rate's:
 |---------|-------------------|
 | share of the missing insulin (setting) | (the request itself) |
 | largest single micro bolus (setting) | `maxMicroBolus` |
-| micro-bolus insulin per hour (setting) | `microBolusHourly` |
+| automated insulin per hour (setting): the rate's excess AND micro boluses within the hour, so the two paths cannot each fill an hour of their own | `microBolusHourly` |
 | hypo headroom, the WHOLE dose, nothing spread over the fuse | `hypoHeadroom` |
 | highest active insulin | `maxIob` |
 | reservoir | `reservoir` |
@@ -48,9 +48,15 @@ now and the stop threshold, after the insulin already on board.
 
 ## Gates
 
-No micro bolus at all when it is switched off, when the rate came out at zero,
-below the user's glucose threshold, on a level or falling trend while "only while
-rising" is set, or inside the user's minimum interval. The interval allows one
+No micro bolus at all when it is switched off, when the rate came out at zero
+(every suspension), below the user's glucose threshold, on a level or falling
+trend while "only while rising" is set, inside the user's minimum interval, or
+**within the pause after a low**: any reading at or below the stop threshold in
+the last 90 minutes (setting). The rise after treating a low is sugar eaten on
+purpose; read as a trend it would be corrected straight back into the next low.
+Readings under 30 that the trend ignores still count as a low here. For this the
+service hands `LoopGlucose` three hours of history (`LoopGlucose.lookback`), and
+the trend still uses only the last 20 minutes of it. The interval allows one
 minute of slack, because a micro bolus is booked a few seconds into its cycle and
 an interval of five minutes would otherwise skip every second cycle.
 
@@ -78,15 +84,64 @@ The journal cycle carries the units and the bound for display only.
 | share of the missing insulin | `loop_micro_bolus_share_percent` | 50 % | 10 to 100 % |
 | micro boluses from | `loop_micro_bolus_from_mgdl` | 140 mg/dL | 100 to 250 |
 | at most every | `loop_micro_bolus_every_minutes` | 5 min | 5 to 60 |
-| micro boluses per hour at most | `loop_micro_bolus_max_per_hour` | 3 U | 1 to 10 U |
+| pause after a low | `loop_micro_bolus_pause_after_low_minutes` | 90 min | 30 to 180 |
+| automated insulin per hour at most | `loop_micro_bolus_max_per_hour` | 2 U | 1 to 10 U |
 
 They sync with the account like the other loop limits. The single-dose ceiling is
 stored in tenths so it keeps the integer editor; `NotificationThreshold.tenths`
 shows it with one decimal.
+
+## What happens around a low
+
+A micro bolus cannot be taken back. Once given, the only lever left is the rate:
+suspending the schedule withholds about 0.5 U per half hour. So everything that
+protects against a low has to act BEFORE the dose:
+
+1. At or under the stop threshold, or heading under it within 30 minutes: rate
+   zero, and a zero rate rules out a micro bolus.
+2. Under "micro boluses from" (default 140 mg/dL): rate only.
+3. Within the pause after a low: rate only.
+4. Otherwise the whole micro bolus plus the insulin on board has to fit between
+   glucose now and the stop threshold, at the user's correction factor.
+
+What is left is a correction factor that is wrong, or a sensor that reads high.
+Neither is visible to the loop, and the micro bolus reaches the same ceiling
+faster than the rate did.
+
+## Measured
+
+A scratch simulation drove the real decision code (`LoopAlgorithm`,
+`LoopSafety`, `LoopMicroBolusSafety`, the journal and the ledger) against a
+simple body: oref0 exponential insulin action (peak 75 min, 5 h) while the loop
+assumes its linear 3 h, carbohydrates absorbed on a gamma curve, correction
+factor 35, carb factor 15 g/U, schedule 1 U/h, rate ceiling 3 U/h. Six hours per
+run. A model, not a patient: absolute numbers are not clinical, the differences
+between rows are the point.
+
+| Scenario | temp only | micro, 2 U/h (default) | micro, 3 U/h |
+|----------|-----------|------------------------|--------------|
+| 80 g unannounced: peak / time > 180 | 252 / 190 min | 243 / 168 min | 238 / 152 min |
+| 80 g, bolus for 50 g: peak / > 180 | 216 / 135 min | 213 / 121 min | 213 / 121 min |
+| 80 g, full bolus | 190 / 84 min | 190 / 84 min | 190 / 84 min |
+| 50 g unannounced: peak / > 180 | 182 / 34 min | 176 / 0 min | 175 / 0 min |
+| 80 g, insulin 50 % stronger than set: lowest after 1 h | 123 | 125 | 125 |
+| low at 65, overtreated with 40 g: lowest after 1 h | 114 | 114 | 114 (121 and +0.7 U without the pause) |
+| sensor 60 too high for 90 min: lowest / time < 70 | 73 / 0 | 76 / 0 | 67 / 66 min |
+
+Read: the gain is on large rises without a full bolus, roughly a tenth to a
+fifth less time above 180 and 10 to 15 mg/dL off the peak. With a correct bolus
+there is nothing to gain. A short spike only moves the same insulin earlier and
+takes it back as a suspended schedule later. The cost is a sensor reading high,
+and the hourly setting is what decides it: at 3 U/h the low is deeper than with
+the rate alone, at 2 U/h it is not.
 
 ## Not here
 
 - **No carbohydrate-dependent gating** (AAPS's "SMB after carbs" and friends).
   Add it once the journal shows micro boluses where nobody wanted one.
 - **Micro boluses are not synced to the account as insulin.** The rate's excess
-  is not either; both live in the pod store and the automation record.
+  reaches it through the basal booking; a micro bolus does not, so the panel,
+  the predictor and the delivery statistics do not see it yet.
+- **No running-bolus record.** The pod is busy for about 2 s per 0.05 U; a
+  manual bolus in that window is refused by the pod and shown as refused.
+- **No confirmation dialog** when switching it on, unlike the loop itself.

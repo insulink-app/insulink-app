@@ -38,7 +38,7 @@ class SettingValueEditorSheet extends StatefulWidget {
 class _SettingValueEditorSheetState extends State<SettingValueEditorSheet> {
   late int _value = widget.value;
 
-  String get _text => _value.settingText(tenths: widget.tenths);
+  String get _text => _value.settingText(context, tenths: widget.tenths);
 
   void _apply(int value) {
     final clamped = value.clamp(widget.min, widget.max);

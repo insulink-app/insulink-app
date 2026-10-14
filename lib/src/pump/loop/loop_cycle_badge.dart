@@ -10,6 +10,9 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// schedule that changes through the day, so the comparison is done here rather
 /// than left to the reader.
 ///
+/// A cycle that gave a micro bolus points up whatever its rate: it added
+/// insulin, and the rate sits at the schedule only so it is not added twice.
+///
 /// Neutral-faced like every other identity badge in the app. The colour that
 /// matters sits on the note under the row, which is the part worth acting on.
 class PodLoopCycleBadge extends StatelessWidget {
@@ -46,7 +49,9 @@ class PodLoopCycleBadge extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Icon(
-        iconFor(cycle.unitsPerHour, cycle.scheduledUnitsPerHour),
+        cycle.microBolusUnits > 0
+            ? PhosphorIconsBold.arrowUp
+            : iconFor(cycle.unitsPerHour, cycle.scheduledUnitsPerHour),
         size: 16,
         color: scheme.onSurfaceVariant,
       ),

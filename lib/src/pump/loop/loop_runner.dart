@@ -294,7 +294,7 @@ class PodLoopRunner {
       ),
       glucose: glucose,
       iobUnits: iob,
-      microBolusUnitsLastHour: store.loopMicroBolusUnitsWithin(
+      automatedUnitsLastHour: store.automatedUnitsWithin(
         const Duration(hours: 1),
         now: at,
       ),

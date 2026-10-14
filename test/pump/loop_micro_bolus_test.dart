@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/pump/loop/loop_algorithm.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
+import 'package:insulink/src/pump/loop/loop_glucose.dart';
 import 'package:insulink/src/pump/loop/loop_limits.dart';
 import 'package:insulink/src/pump/loop/loop_micro_bolus_limits.dart';
 import 'package:insulink/src/pump/loop/loop_micro_bolus_safety.dart';
@@ -22,6 +23,7 @@ void main() {
     int fromMgdl = 120,
     Duration minInterval = const Duration(minutes: 5),
     double maxUnitsPerHour = 10,
+    Duration pauseAfterLow = const Duration(minutes: 90),
   }) {
     return LoopMicroBolusLimits(
       enabled: enabled,
@@ -31,6 +33,7 @@ void main() {
       fromMgdl: fromMgdl,
       minInterval: minInterval,
       maxUnitsPerHour: maxUnitsPerHour,
+      pauseAfterLow: pauseAfterLow,
     );
   }
 
@@ -41,11 +44,12 @@ void main() {
     double trendPerMinute = 2,
     double iobUnits = 0,
     double maxIobUnits = 20,
-    double microBolusLastHour = 0,
+    double automatedLastHour = 0,
     DateTime? lastMicroBolusAt,
     double? reservoirUnits,
     PodStatusResponse? status,
     LoopMicroBolusLimits? microBolus,
+    LoopGlucose? reading,
   }) {
     final base = limitsWith(maxIobUnits: maxIobUnits);
     final limits = LoopLimits(
@@ -57,7 +61,8 @@ void main() {
       maxIobUnits: base.maxIobUnits,
       microBolus: microBolus ?? microBolusWith(),
     );
-    final glucose = glucoseAt(now, mgdl: mgdl, trendPerMinute: trendPerMinute);
+    final glucose =
+        reading ?? glucoseAt(now, mgdl: mgdl, trendPerMinute: trendPerMinute);
     final algorithm = LoopAlgorithm(limits);
     final decision = LoopSafety(limits).decide(
       wantedUnitsPerHour: algorithm.wantedUnitsPerHour(
@@ -79,7 +84,7 @@ void main() {
       ),
       glucose: glucose,
       iobUnits: iobUnits,
-      microBolusUnitsLastHour: microBolusLastHour,
+      automatedUnitsLastHour: automatedLastHour,
       lastMicroBolusAt: lastMicroBolusAt,
       now: now,
       reservoirUnits: reservoirUnits,
@@ -164,6 +169,52 @@ void main() {
     });
   });
 
+  group('the rise after a treated low is not corrected', () {
+    /// A low an hour ago, then 25 g of sugar: a steep rise to 160 that the
+    /// user caused on purpose.
+    LoopGlucose afterLow(Duration lowAgo) {
+      final archive = archiveEndingAt(now, mgdl: 160, trendPerMinute: 3);
+      final newest =
+          now.millisecondsSinceEpoch ~/ Duration.millisecondsPerMinute;
+      archive[newest - lowAgo.inMinutes] = 68;
+      return LoopGlucose.from(archive, now: now);
+    }
+
+    test('inside the pause no micro bolus is given', () {
+      final decision = decide(
+        mgdl: 160,
+        reading: afterLow(const Duration(minutes: 60)),
+      );
+
+      expect(decision.microBolusUnits, 0);
+      expect(decision.reason, LoopReason.correcting);
+    });
+
+    test('once the pause has passed, micro boluses return', () {
+      final decision = decide(
+        mgdl: 160,
+        reading: afterLow(const Duration(minutes: 120)),
+      );
+
+      expect(decision.microBolusUnits, greaterThan(0));
+    });
+
+    /// The trend skips implausible values; a low must not hide behind that.
+    test('a sensor reading under 30 counts as a low too', () {
+      final archive = archiveEndingAt(now, mgdl: 160, trendPerMinute: 3);
+      final newest =
+          now.millisecondsSinceEpoch ~/ Duration.millisecondsPerMinute;
+      archive[newest - 50] = 25;
+
+      final decision = decide(
+        mgdl: 160,
+        reading: LoopGlucose.from(archive, now: now),
+      );
+
+      expect(decision.microBolusUnits, 0);
+    });
+  });
+
   group('every ceiling holds the micro bolus down', () {
     /// 220 rising 2/min: 280 predicted, (280 - 110) / 35 = 4.857 U missing.
     test('only the share of the missing insulin is given', () {
@@ -180,10 +231,12 @@ void main() {
       expect(decision.microBolusBoundBy, LoopBound.maxMicroBolus);
     });
 
-    test('the micro-bolus insulin per hour', () {
+    /// Counted against everything automated, so rate and micro boluses cannot
+    /// each fill their own hour.
+    test('the automated insulin per hour', () {
       final decision = decide(
         mgdl: 220,
-        microBolusLastHour: 2.7,
+        automatedLastHour: 2.7,
         microBolus: microBolusWith(maxUnitsPerHour: 3),
       );
 
@@ -203,7 +256,7 @@ void main() {
     test('the whole micro bolus has to fit the hypo headroom', () {
       final decision = decide(
         mgdl: 125,
-        trendPerMinute: 3,
+        trendPerMinute: 1.5,
         microBolus: microBolusWith(fromMgdl: 100, share: 1),
       );
 

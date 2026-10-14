@@ -75,12 +75,32 @@ class LoopMicroBolusSettings {
     step: 5,
   );
 
-  /// The most insulin all micro boluses together may give within one hour.
+  /// How long micro boluses pause after glucose reached the stop threshold.
+  ///
+  /// The rise after treating a low is sugar the user ate on purpose. Read as a
+  /// rising trend it would be corrected straight back down into the next low.
+  /// The upper bound is [LoopGlucose.lookback], the history the loop is handed.
+  static const pauseAfterLow = NotificationThreshold(
+    storageKey: 'loop_micro_bolus_pause_after_low_minutes',
+    labelKey: 'profile.loop.micro_bolus.pause_after_low',
+    valueKey: 'profile.loop.micro_bolus.pause_after_low.value',
+    defaultValue: 90,
+    min: 30,
+    max: 180,
+    step: 15,
+  );
+
+  /// The most insulin the automation may add within one hour while micro
+  /// boluses are on, the rate's excess and the micro boluses together.
+  ///
+  /// Defaults to 2 U, below the rate ceiling, because this is the number that
+  /// decides how much a sensor reading falsely high can put in within the hour
+  /// (`docs/LOOP_MICRO_BOLUS.md`, "Measured").
   static const maxUnitsPerHour = NotificationThreshold(
     storageKey: 'loop_micro_bolus_max_per_hour',
     labelKey: 'profile.loop.micro_bolus.max_per_hour',
     valueKey: 'profile.loop.micro_bolus.max_per_hour.value',
-    defaultValue: 3,
+    defaultValue: 2,
     min: 1,
     max: 10,
   );
@@ -92,6 +112,7 @@ class LoopMicroBolusSettings {
     sharePercent,
     fromMgdl,
     everyMinutes,
+    pauseAfterLow,
     maxUnitsPerHour,
   ];
 }

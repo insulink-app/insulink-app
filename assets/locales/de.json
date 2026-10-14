@@ -1424,8 +1424,12 @@
           "value": "# min"
         },
         "max_per_hour": {
-          "_": "Mini-Boli pro Stunde höchstens",
+          "_": "Automatisches Insulin pro Stunde höchstens",
           "value": "# E"
+        },
+        "pause_after_low": {
+          "_": "Pause nach niedrigem Wert",
+          "value": "# min"
         }
       }
     },

@@ -1424,8 +1424,12 @@
           "value": "# min"
         },
         "max_per_hour": {
-          "_": "Micro boluses per hour at most",
+          "_": "Automated insulin per hour at most",
           "value": "# U"
+        },
+        "pause_after_low": {
+          "_": "Pause after a low",
+          "value": "# min"
         }
       }
     },
