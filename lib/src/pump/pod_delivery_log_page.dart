@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/pump/micro_bolus_color.dart';
 import 'package:insulink/src/pump/pod_delivery_summary.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/base/track_bar.dart';
@@ -163,16 +164,15 @@ class _PodLogRow extends StatelessWidget {
     );
   }
 
-  /// Basal in the accent, a bolus and a micro bolus in the bolus colour,
-  /// priming and cannula (insulin that never reaches the user) muted. A micro
-  /// bolus is not a dose the user chose, but it did go in, and muting it would
-  /// put it with the volumes that did not.
+  /// Basal in the accent, a bolus in the bolus colour, a micro bolus in the
+  /// lighter bolus colour the total under the bar uses, priming and cannula
+  /// (insulin that never reaches the user) muted.
   Color _color(InsulinkColors colors) {
-    if (entry.labelKey == 'pump.log.kind.basal') {
-      return colors.accent;
-    }
-    final wentIn = entry.isDose || entry.labelKey == 'pump.log.kind.micro_bolus';
-    return wentIn ? colors.pace : colors.muted;
+    return switch (entry.labelKey) {
+      'pump.log.kind.basal' => colors.accent,
+      'pump.log.kind.micro_bolus' => colors.microBolus,
+      _ => entry.isDose ? colors.pace : colors.muted,
+    };
   }
 
   /// The time, as a span for an hour of basal and as a moment for a dose. Older

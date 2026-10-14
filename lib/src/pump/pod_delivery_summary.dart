@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/injection/active_insulin_chart.dart';
+import 'package:insulink/src/pump/micro_bolus_color.dart';
 import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -78,7 +78,7 @@ class PodDeliverySummary extends StatelessWidget {
               if (microBoluses > 0)
                 _key(
                   context,
-                  _microBolusColor(colors),
+                  colors.microBolus,
                   'pump.log.kind.micro_bolus',
                   microBoluses,
                 ),
@@ -88,11 +88,6 @@ class PodDeliverySummary extends StatelessWidget {
       ),
     );
   }
-
-  /// A micro bolus is a bolus the automation gave: the bolus colour, lighter,
-  /// as on the active-insulin graph.
-  Color _microBolusColor(InsulinkColors colors) =>
-      colors.pace.withValues(alpha: ActiveInsulinChart.microBolusTint);
 
   /// Basal, bolus and micro boluses side by side, each as long as its share.
   Widget _split(
@@ -126,8 +121,7 @@ class PodDeliverySummary extends StatelessWidget {
       children: [
         if (basal > 0) part(colors.accent, basal / total),
         if (bolus > 0) part(colors.pace, bolus / total),
-        if (microBoluses > 0)
-          part(_microBolusColor(colors), microBoluses / total),
+        if (microBoluses > 0) part(colors.microBolus, microBoluses / total),
       ],
     );
   }
