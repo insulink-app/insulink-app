@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/active_insulin.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
+import 'package:insulink/src/injection/insulin_on_board_curve.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/injection/active_insulin_sparkline.dart';
@@ -16,8 +17,8 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 
-/// The insulin summary on the overview: the units still working from recent
-/// boluses as the headline, the IOB curve underneath as a sparkline, and one
+/// The insulin summary on the overview: the units still working, the pump's
+/// included, as the headline, the IOB curve underneath as a sparkline, and one
 /// muted line naming the last dose and when the insulin runs out. With no dose
 /// active it still shows, at 0 over a flat line, so the box keeps its place.
 ///
@@ -114,13 +115,7 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
     // injection — no separate scan of the meal log.
     final doses = insulin.activeDoses(meals, now: now);
     final lastDose = doses.isEmpty ? null : doses.first.meal;
-    // 10-minute sampling, not the detail page's 5: at 44 px tall the extra
-    // vertices are invisible and this runs on every overview build.
-    final active = insulin.curve(
-      meals,
-      now: now,
-      step: const Duration(minutes: 10),
-    );
+    final active = _totalCurve(context, insulin, meals, now);
     final curve = active.isEmpty ? _flatLine(insulin, now) : active;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -174,6 +169,29 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
         Text(_units(context, units), style: InkText.bigValue),
       ],
     );
+  }
+
+  /// The total on board over time, the pump's share included, so the curve
+  /// agrees with the number beside it and with the detail page's top edge.
+  ///
+  /// One line, not the detail page's stacked bands: at 44 px the bands would not
+  /// read. Sampled every 10 minutes rather than 5, because the extra vertices
+  /// are invisible at this size and this runs on every overview build.
+  List<({DateTime at, double units})> _totalCurve(
+    BuildContext context,
+    ActiveInsulin insulin,
+    List<Meal> meals,
+    DateTime now,
+  ) {
+    final samples = InsulinOnBoardCurve(insulin.duration).samples(
+      meals,
+      pod: context.read<PodController>().store,
+      now: now,
+      step: const Duration(minutes: 10),
+    );
+    return [
+      for (final sample in samples) (at: sample.at, units: sample.total),
+    ];
   }
 
   /// Zero across one insulin duration up to [now], drawn while nothing is on
