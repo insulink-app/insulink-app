@@ -187,7 +187,8 @@
       "layer": {
         "boluses": "Your boluses",
         "micro_boluses": "Micro boluses",
-        "rate": "Temporary rate"
+        "rate": "Temporary rate",
+        "total": "Total"
       }
     },
     "boxes": {

@@ -187,7 +187,8 @@
       "layer": {
         "boluses": "Deine Boli",
         "micro_boluses": "Mini-Boli",
-        "rate": "Temporäre Rate"
+        "rate": "Temporäre Rate",
+        "total": "Gesamt"
       }
     },
     "boxes": {

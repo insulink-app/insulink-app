@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/injection/active_insulin_touch.dart';
 import 'package:insulink/src/injection/insulin_on_board_curve.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_format.dart';
@@ -64,7 +65,7 @@ class ActiveInsulinChart extends StatelessWidget {
         borderData: FlBorderData(show: false),
         titlesData: _titles(context, scheme),
         extraLinesData: _nowLine(scheme),
-        lineTouchData: const LineTouchData(enabled: false),
+        lineTouchData: ActiveInsulinTouch(points).data(context),
         lineBarsData: [
           _layer(
             (point) => point.rate,
