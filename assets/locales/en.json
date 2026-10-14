@@ -580,7 +580,8 @@
         "bolus": "Bolus",
         "prime": "Priming",
         "cannula": "Cannula",
-        "basal": "Basal"
+        "basal": "Basal",
+        "micro_bolus": "Micro bolus"
       },
       "basal_total": "Basal total",
       "bolus_total": "Bolus total",

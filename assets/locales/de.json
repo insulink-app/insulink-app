@@ -580,7 +580,8 @@
         "bolus": "Bolus",
         "prime": "Vorbereitung",
         "cannula": "Kanüle",
-        "basal": "Basal"
+        "basal": "Basal",
+        "micro_bolus": "Mini-Bolus"
       },
       "basal_total": "Basal insgesamt",
       "bolus_total": "Bolus insgesamt",
