@@ -598,7 +598,11 @@
       "units": "# E",
       "not_delivered": "Der Bolus wurde nicht abgegeben. In der Mahlzeit ist deshalb kein Insulin eingetragen.",
       "stop_title": "Bolus stoppen?",
-      "stop_body": "Der Rest der Dosis wird nicht mehr abgegeben. Was bereits geflossen ist, bleibt im Körper."
+      "stop_body": "Der Rest der Dosis wird nicht mehr abgegeben. Was bereits geflossen ist, bleibt im Körper.",
+      "running_micro": "Mini-Bolus der Automatik",
+      "queued": "Dein Bolus folgt, sobald er fertig ist.",
+      "queue_too_long": "Die Automatik gibt noch # Sekunden lang einen Mini-Bolus. Versuche es danach noch einmal.",
+      "already_running": "Es läuft noch ein Bolus. Warte, bis er fertig ist."
     },
     "basal": {
       "out_of_date": "Dein Basalprofil wurde geändert. Der Pod läuft noch mit dem alten Zeitplan.",
@@ -1430,6 +1434,10 @@
         "pause_after_low": {
           "_": "Pause nach niedrigem Wert",
           "value": "# min"
+        },
+        "queue": {
+          "_": "Manuellen Bolus höchstens zurückstellen",
+          "value": "# s"
         }
       }
     },

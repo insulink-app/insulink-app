@@ -44,6 +44,16 @@ extension LoopMicroBolusLedger on PodStore {
       if (entry.at != at) entry,
   ]);
 
+  /// Corrects the entry booked at [at] to [units], for a micro bolus the user
+  /// stopped part-way.
+  Future<void> amendLoopMicroBolus(DateTime at, double units) =>
+      _saveLoopMicroBoluses([
+        for (final entry in loopMicroBoluses)
+          entry.at == at
+              ? PodDelivery(at: at, units: units, kind: entry.kind)
+              : entry,
+      ]);
+
   /// When the newest micro bolus was booked, or null when none was.
   DateTime? get lastLoopMicroBolusAt => loopMicroBoluses.firstOrNull?.at;
 

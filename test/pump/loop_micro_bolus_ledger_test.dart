@@ -79,6 +79,15 @@ void main() {
     expect(store.lastLoopMicroBolusAt, earlier);
   });
 
+  /// A micro bolus the user stopped part-way counts only what went in.
+  test('a stopped micro bolus is corrected to what was given', () async {
+    await store.bookLoopMicroBolus(0.5, now);
+
+    await store.amendLoopMicroBolus(now, 0.2);
+
+    expect(store.loopMicroBoluses.single.units, 0.2);
+  });
+
   test('the ledger survives a reload', () async {
     await store.bookLoopMicroBolus(0.5, now);
     await store.reload();

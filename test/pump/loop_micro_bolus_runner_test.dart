@@ -88,12 +88,26 @@ void main() {
     expect(store.loopCycles.single.microBolusBoundBy, LoopBound.maxMicroBolus);
   });
 
+  /// So the overview can show it with a stop button, and a manual bolus knows
+  /// how long the pod stays busy.
+  test('a given micro bolus is the running bolus of the pod', () async {
+    await store.saveLoopMode(PodLoopMode.engaged);
+
+    await cycle(sessionThat());
+
+    final running = store.runningBolus!;
+    expect(running.automated, isTrue);
+    expect(running.programmedUnits, closeTo(0.5, 1e-9));
+    expect(running.startedAt, store.loopMicroBoluses.single.at);
+  });
+
   test('a refused micro bolus is taken back out of the books', () async {
     await store.saveLoopMode(PodLoopMode.engaged);
 
     await cycle(sessionThat(refusesBolus: true));
 
     expect(store.loopMicroBoluses, isEmpty);
+    expect(store.runningBolus, isNull);
     expect(store.loopCycles.single.delivered, isTrue);
     expect(store.loopCycles.single.microBolusUnits, 0);
   });

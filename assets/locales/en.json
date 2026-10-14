@@ -598,7 +598,11 @@
       "units": "# U",
       "not_delivered": "The bolus was not delivered, so no insulin is recorded against the meal.",
       "stop_title": "Stop the bolus?",
-      "stop_body": "The rest of the dose will not be delivered. What has already gone in stays in."
+      "stop_body": "The rest of the dose will not be delivered. What has already gone in stays in.",
+      "running_micro": "Micro bolus from the automation",
+      "queued": "Your bolus follows as soon as it has finished.",
+      "queue_too_long": "The automation is still giving a micro bolus for # seconds. Try again then.",
+      "already_running": "A bolus is still running. Wait until it has finished."
     },
     "basal": {
       "out_of_date": "Your basal profile has changed. The pod is still running the old schedule.",
@@ -1430,6 +1434,10 @@
         "pause_after_low": {
           "_": "Pause after a low",
           "value": "# min"
+        },
+        "queue": {
+          "_": "Hold a manual bolus for at most",
+          "value": "# s"
         }
       }
     },

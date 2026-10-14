@@ -105,6 +105,21 @@ class LoopMicroBolusSettings {
     max: 10,
   );
 
+  /// The longest a manual bolus waits for a running micro bolus to finish
+  /// before it is sent, in seconds. Longer and it is refused with the time left,
+  /// so the user is never left wondering whether their dose went out.
+  ///
+  /// The default covers a micro bolus of up to 1.5 U (2 s per 0.05 U).
+  static const queueSeconds = NotificationThreshold(
+    storageKey: 'loop_micro_bolus_queue_seconds',
+    labelKey: 'profile.loop.micro_bolus.queue',
+    valueKey: 'profile.loop.micro_bolus.queue.value',
+    defaultValue: 60,
+    min: 15,
+    max: 180,
+    step: 15,
+  );
+
   static const toggles = [enabled, onlyRising];
 
   static const thresholds = [
@@ -114,5 +129,6 @@ class LoopMicroBolusSettings {
     everyMinutes,
     pauseAfterLow,
     maxUnitsPerHour,
+    queueSeconds,
   ];
 }

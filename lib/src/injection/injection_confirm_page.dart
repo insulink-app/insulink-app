@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/injection/bolus_delivery_text.dart';
 import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -398,10 +399,10 @@ class _InjectionConfirmPageState extends State<InjectionConfirmPage> {
             ),
           ],
         ),
-        if (outcome.detail != null) ...[
+        if (outcome.detailText(context) != null) ...[
           const SizedBox(height: 4),
           Text(
-            outcome.detail!,
+            outcome.detailText(context)!,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           ),

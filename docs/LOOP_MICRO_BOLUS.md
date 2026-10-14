@@ -86,10 +86,35 @@ The journal cycle carries the units and the bound for display only.
 | at most every | `loop_micro_bolus_every_minutes` | 5 min | 5 to 60 |
 | pause after a low | `loop_micro_bolus_pause_after_low_minutes` | 90 min | 30 to 180 |
 | automated insulin per hour at most | `loop_micro_bolus_max_per_hour` | 2 U | 1 to 10 U |
+| hold a manual bolus for at most | `loop_micro_bolus_queue_seconds` | 60 s | 15 to 180 |
 
 They sync with the account like the other loop limits. The single-dose ceiling is
 stored in tenths so it keeps the integer editor; `NotificationThreshold.tenths`
 shows it with one decimal.
+
+## A manual bolus while a micro bolus runs
+
+The pod runs one bolus at a time, about 2 s per 0.05 U, and refuses a second.
+So a micro bolus is also written as the pod's running bolus (`automated: true`),
+and a manual bolus queues behind it (`MicroBolusQueue`, called first thing in
+`BolusDelivery.deliver`):
+
+- The store is re-read, since the micro bolus was written by the service isolate.
+- Time left within the limit (setting, default 60 s): the dose waits that long
+  plus 3 s, then goes out as usual. The overview shows the micro bolus with
+  "your bolus follows" under it.
+- Time left past the limit: refused at once, telling the user how many seconds
+  are left, rather than leaving them unsure whether the dose went out.
+- A MANUAL bolus still running is never queued behind: that is a second tap, and
+  the guard refuses it as before, now in the user's language.
+
+The wait happens before the dose is marked pending, so an app killed while
+waiting leaves no trace of a dose that was never sent. If the pod is still busy
+after all (a micro bolus that started after the queue looked), the guard on the
+same link refuses it, so nothing is ever sent twice.
+
+Stopping a micro bolus from the overview corrects its ledger entry to what went
+in, and raises no "meal not corrected" notice, since no meal carries it.
 
 ## What happens around a low
 
@@ -142,6 +167,4 @@ the rate alone, at 2 U/h it is not.
 - **Micro boluses are not synced to the account as insulin.** The rate's excess
   reaches it through the basal booking; a micro bolus does not, so the panel,
   the predictor and the delivery statistics do not see it yet.
-- **No running-bolus record.** The pod is busy for about 2 s per 0.05 U; a
-  manual bolus in that window is refused by the pod and shown as refused.
 - **No confirmation dialog** when switching it on, unlike the loop itself.

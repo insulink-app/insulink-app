@@ -1,5 +1,6 @@
 import 'package:insulink/src/pump/loop/loop_limits.dart';
 import 'package:insulink/src/pump/pod_basal_delivery.dart';
+import 'package:insulink/src/pump/pod_running_bolus.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
 import 'package:insulink/src/pump/protocol/pod_command.dart';
@@ -145,6 +146,9 @@ class LoopPodCommands {
   /// The booking time is cut to the millisecond the store keeps, so the entry
   /// a refusal takes back is found again by it.
   ///
+  /// Also written as the pod's running bolus, so the overview shows it with a
+  /// stop button and a manual bolus knows how long the pod stays busy.
+  ///
   /// Booked BEFORE the command goes out and taken back only on a refusal, the
   /// same direction of failure as [programTempBasal]: an outcome nobody could
   /// confirm stays counted as insulin on board. The hour it ran in is noted for
@@ -155,6 +159,15 @@ class LoopPodCommands {
       now().millisecondsSinceEpoch,
     );
     await store.bookLoopMicroBolus(units, at);
+    await store.startRunningBolus(
+      PodRunningBolus(
+        startedAt: at,
+        pulses: amount.pulses,
+        eighthSecondsBetweenPulses:
+            PodProgramBolusCommand.defaultEighthSecondsBetweenPulses,
+        automated: true,
+      ),
+    );
     try {
       await _run(
         (sequence) => PodProgramBolusCommand(
@@ -166,6 +179,7 @@ class LoopPodCommands {
       );
     } on LoopCommandRefused {
       await store.unbookLoopMicroBolus(at);
+      await store.clearRunningBolus();
       rethrow;
     } catch (_) {
       await store.recordAutomationExcess(at, units);

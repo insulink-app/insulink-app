@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/injection/bolus_delivery_text.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/overview_notice.dart';
@@ -53,8 +54,9 @@ class StoppedBolusNotice extends StatelessWidget {
     if (failure == null) {
       return null;
     }
+    final reason = failure.detailText(context);
     return '${Locales.string(context, 'pump.bolus.not_delivered')}'
-        '${failure.detail == null ? '' : ' ${failure.detail}'}';
+        '${reason == null ? '' : ' $reason'}';
   }
 
   void _dismiss() {
