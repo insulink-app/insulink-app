@@ -34,8 +34,18 @@ extension LoopMicroBolusLedger on PodStore {
   /// A running sum rather than a sum over the entries, because the entries only
   /// reach back [kept] and a pod lives more than three days. Moved by the same
   /// calls that move the entries, and cleared with the pod.
-  double get loopMicroBolusTotal =>
-      double.tryParse(_cache[PodStore._kLoopMicroBolusTotal] ?? '') ?? 0;
+  ///
+  /// Until it is first written it starts from the entries themselves. A pod
+  /// already giving micro boluses when the sum was introduced has them in the
+  /// ledger but never had them added, and reading that as zero left them out of
+  /// the pod's total while they were listed right under it.
+  double get loopMicroBolusTotal {
+    final stored = double.tryParse(
+      _cache[PodStore._kLoopMicroBolusTotal] ?? '',
+    );
+    return stored ??
+        loopMicroBoluses.fold(0.0, (sum, entry) => sum + entry.units);
+  }
 
   Future<void> _addToLoopMicroBolusTotal(double units) => _set(
     PodStore._kLoopMicroBolusTotal,

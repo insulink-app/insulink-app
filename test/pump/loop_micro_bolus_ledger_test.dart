@@ -6,11 +6,12 @@ import 'fake_secure_storage.dart';
 
 void main() {
   late PodStore store;
+  late Map<String, String> backing;
   final now = DateTime(2026, 5, 4, 12, 0);
   const insulinDuration = Duration(hours: 3);
 
   setUp(() {
-    final backing = <String, String>{};
+    backing = <String, String>{};
     store = PodStore(FakeSecureStorage(backing), backing);
   });
 
@@ -107,6 +108,20 @@ void main() {
 
     expect(store.loopMicroBoluses, hasLength(1));
     expect(store.loopMicroBolusTotal, closeTo(1.0, 1e-9));
+  });
+
+  /// A pod that gave micro boluses before the running sum existed has them in
+  /// the ledger only. They must count, and the next one adds on top.
+  test('a total never written starts from the ledger', () async {
+    await store.bookLoopMicroBolus(0.5, now);
+    backing.remove('pod.loop_micro_bolus_total');
+    await store.reload();
+
+    expect(store.loopMicroBolusTotal, closeTo(0.5, 1e-9));
+
+    await store.bookLoopMicroBolus(0.3, now.add(const Duration(minutes: 5)));
+
+    expect(store.loopMicroBolusTotal, closeTo(0.8, 1e-9));
   });
 
   test('the ledger survives a reload', () async {
