@@ -71,6 +71,7 @@ class PodStore {
   static const _kLoopCycles = 'pod.loop_cycles';
   static const _kUnconfirmedBoluses = 'pod.unconfirmed_boluses';
   static const _kLoopMicroBoluses = 'pod.loop_micro_boluses';
+  static const _kLoopMicroBolusTotal = 'pod.loop_micro_bolus_total';
   static const _kLastStatus = 'pod.last_status';
 
   // NOT cleared by [forgetPod]: it is the history of the LINK the reception page
@@ -273,6 +274,7 @@ class PodStore {
       _kLoopCycles,
       _kUnconfirmedBoluses,
       _kLoopMicroBoluses,
+      _kLoopMicroBolusTotal,
       _kLastStatus,
     ]) {
       await _remove(key);

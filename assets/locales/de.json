@@ -183,7 +183,12 @@
       "of_bolus": "von # E Bolus",
       "empty": "Keine aktiven Insulindosen.",
       "no_doses": "Keine selbst gespritzte Dosis wirkt gerade.",
-      "from_pump": "Über dem Basalprogramm abgegeben"
+      "from_pump": "Über dem Basalprogramm abgegeben",
+      "layer": {
+        "boluses": "Deine Boli",
+        "micro_boluses": "Mini-Boli",
+        "rate": "Temporäre Rate"
+      }
     },
     "boxes": {
       "all": "Alle Werte",

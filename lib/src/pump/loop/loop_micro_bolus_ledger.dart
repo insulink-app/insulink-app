@@ -29,9 +29,23 @@ extension LoopMicroBolusLedger on PodStore {
     }
   }
 
+  /// Every micro bolus this pod has given, in units.
+  ///
+  /// A running sum rather than a sum over the entries, because the entries only
+  /// reach back [kept] and a pod lives more than three days. Moved by the same
+  /// calls that move the entries, and cleared with the pod.
+  double get loopMicroBolusTotal =>
+      double.tryParse(_cache[PodStore._kLoopMicroBolusTotal] ?? '') ?? 0;
+
+  Future<void> _addToLoopMicroBolusTotal(double units) => _set(
+    PodStore._kLoopMicroBolusTotal,
+    '${(loopMicroBolusTotal + units).clamp(0.0, double.infinity)}',
+  );
+
   /// Books [units] given at [at], dropping entries past [kept].
   Future<void> bookLoopMicroBolus(double units, DateTime at) async {
     final cutoff = at.subtract(kept);
+    await _addToLoopMicroBolusTotal(units);
     await _saveLoopMicroBoluses([
       PodDelivery(at: at, units: units, kind: PodDeliveryKind.microBolus),
       ...loopMicroBoluses.where((entry) => entry.at.isAfter(cutoff)),
@@ -39,20 +53,29 @@ extension LoopMicroBolusLedger on PodStore {
   }
 
   /// Takes back the entry booked at [at], for a micro bolus the pod refused.
-  Future<void> unbookLoopMicroBolus(DateTime at) => _saveLoopMicroBoluses([
-    for (final entry in loopMicroBoluses)
-      if (entry.at != at) entry,
-  ]);
+  Future<void> unbookLoopMicroBolus(DateTime at) async {
+    await _addToLoopMicroBolusTotal(-_unitsBookedAt(at));
+    await _saveLoopMicroBoluses([
+      for (final entry in loopMicroBoluses)
+        if (entry.at != at) entry,
+    ]);
+  }
+
+  double _unitsBookedAt(DateTime at) => loopMicroBoluses
+      .where((entry) => entry.at == at)
+      .fold(0.0, (sum, entry) => sum + entry.units);
 
   /// Corrects the entry booked at [at] to [units], for a micro bolus the user
   /// stopped part-way.
-  Future<void> amendLoopMicroBolus(DateTime at, double units) =>
-      _saveLoopMicroBoluses([
-        for (final entry in loopMicroBoluses)
-          entry.at == at
-              ? PodDelivery(at: at, units: units, kind: entry.kind)
-              : entry,
-      ]);
+  Future<void> amendLoopMicroBolus(DateTime at, double units) async {
+    await _addToLoopMicroBolusTotal(units - _unitsBookedAt(at));
+    await _saveLoopMicroBoluses([
+      for (final entry in loopMicroBoluses)
+        entry.at == at
+            ? PodDelivery(at: at, units: units, kind: entry.kind)
+            : entry,
+    ]);
+  }
 
   /// When the newest micro bolus was booked, or null when none was.
   DateTime? get lastLoopMicroBolusAt => loopMicroBoluses.firstOrNull?.at;
@@ -71,6 +94,22 @@ extension LoopMicroBolusLedger on PodStore {
     final at = now ?? DateTime.now();
     var units = 0.0;
     for (final entry in loopMicroBoluses) {
+      final elapsed = at.difference(entry.at).inSeconds;
+      final fraction = 1 - elapsed / insulinDuration.inSeconds;
+      units += entry.units * fraction.clamp(0.0, 1.0);
+    }
+    return units;
+  }
+
+  /// What is left at [at] of the micro boluses given by then, for a graph that
+  /// samples the past. Unlike [loopMicroBolusIobUnits], a micro bolus given
+  /// after [at] counts nothing rather than in full.
+  double loopMicroBolusIobAt(Duration insulinDuration, DateTime at) {
+    var units = 0.0;
+    for (final entry in loopMicroBoluses) {
+      if (entry.at.isAfter(at)) {
+        continue;
+      }
       final elapsed = at.difference(entry.at).inSeconds;
       final fraction = 1 - elapsed / insulinDuration.inSeconds;
       units += entry.units * fraction.clamp(0.0, 1.0);

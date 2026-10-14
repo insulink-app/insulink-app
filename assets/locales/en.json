@@ -183,7 +183,12 @@
       "of_bolus": "of # U bolus",
       "empty": "No active insulin doses.",
       "no_doses": "No dose you injected is working right now.",
-      "from_pump": "Delivered above the basal schedule"
+      "from_pump": "Delivered above the basal schedule",
+      "layer": {
+        "boluses": "Your boluses",
+        "micro_boluses": "Micro boluses",
+        "rate": "Temporary rate"
+      }
     },
     "boxes": {
       "all": "All values",

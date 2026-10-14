@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/injection/active_insulin_chart.dart';
 import 'package:insulink/src/injection/active_insulin_sparkline.dart';
+import 'package:insulink/src/injection/insulin_on_board_curve.dart';
 import 'package:insulink/src/theme/app_theme.dart';
 
 /// Both charts read `points.first` and `points.last`. An empty list threw during
@@ -10,11 +11,6 @@ import 'package:insulink/src/theme/app_theme.dart';
 /// the curve comes from the meal log, so it is empty while the total is not.
 void main() {
   final now = DateTime(2026, 5, 4, 21, 30);
-
-  List<({DateTime at, double units})> points(int count) => [
-        for (var index = 0; index < count; index++)
-          (at: now.add(Duration(minutes: index * 5)), units: 1.0),
-      ];
 
   /// The app's own theme, not a bare one: these charts read colour roles that
   /// only [AppTheme] registers, so a default theme fails on the render path this
@@ -37,7 +33,20 @@ void main() {
 
     /// One point is not a line either, and `_spanMin` would be zero.
     testWidgets('the full chart survives a single point', (tester) async {
-      await pump(tester, ActiveInsulinChart(points: points(1), now: now));
+      await pump(
+        tester,
+        ActiveInsulinChart(
+          points: [
+            InsulinOnBoardSample(
+              at: now,
+              boluses: 1,
+              microBoluses: 0.5,
+              rate: 0.3,
+            ),
+          ],
+          now: now,
+        ),
+      );
 
       expect(tester.takeException(), isNull);
     });

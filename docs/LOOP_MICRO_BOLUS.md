@@ -116,6 +116,17 @@ same link refuses it, so nothing is ever sent twice.
 Stopping a micro bolus from the overview corrects its ledger entry to what went
 in, and raises no "meal not corrected" notice, since no meal carries it.
 
+## Where a micro bolus shows
+
+- **Pod delivery log** ("Abgegebenes Insulin"): one row per micro bolus of the
+  last day, in a lighter bolus colour, and its own figure in the pod total. The
+  rows come from the ledger (24 h); the total is a running sum per pod
+  (`loopMicroBolusTotal`), because a pod outlives the ledger.
+- **Active insulin page**: the graph stacks the rate's excess, the micro boluses
+  and the user's boluses (`InsulinOnBoardCurve`). Each part is sampled as it was
+  at that moment, and ahead of now only what is already in decays.
+- **Automation journal**: the cycle with the units and the ceiling that held it.
+
 ## What happens around a low
 
 A micro bolus cannot be taken back. Once given, the only lever left is the rate:
@@ -165,6 +176,6 @@ the rate alone, at 2 U/h it is not.
 - **No carbohydrate-dependent gating** (AAPS's "SMB after carbs" and friends).
   Add it once the journal shows micro boluses where nobody wanted one.
 - **Micro boluses are not synced to the account as insulin.** The rate's excess
-  reaches it through the basal booking; a micro bolus does not, so the panel,
-  the predictor and the delivery statistics do not see it yet.
+  reaches it through the basal booking; a micro bolus does not, so the panel
+  and the predictor do not see it yet.
 - **No confirmation dialog** when switching it on, unlike the loop itself.

@@ -214,14 +214,31 @@ extension PodLoopJournal on PodStore {
   /// the last, which is the way an automated system stacks a dose nobody chose.
   double loopIobUnits(Duration insulinDuration, {DateTime? now}) {
     final at = now ?? DateTime.now();
+    return loopRateIobUnits(insulinDuration, at: at, deliveredUntil: at) +
+        loopMicroBolusIobUnits(insulinDuration, now: at);
+  }
+
+  /// What is left at [at] of the rate's excess, counting delivery only up to
+  /// [deliveredUntil].
+  ///
+  /// The two differ only for a moment ahead of now, as the active-insulin graph
+  /// asks: the rate running now must not be projected into insulin that has not
+  /// been delivered yet, only the insulin already in has to decay. For a moment
+  /// in the past every cycle is clipped to it, so the answer is what was on
+  /// board then.
+  double loopRateIobUnits(
+    Duration insulinDuration, {
+    required DateTime at,
+    required DateTime deliveredUntil,
+  }) {
     final cycles = loopCycles;
     var units = 0.0;
     for (var index = 0; index < cycles.length; index++) {
       final ranFrom = cycles[index].at;
-      final ranTo = index == 0 ? at : cycles[index - 1].at;
+      final ranTo = index == 0 ? deliveredUntil : cycles[index - 1].at;
       units += _remainingOf(cycles[index], ranFrom, ranTo, at, insulinDuration);
     }
-    return units + loopMicroBolusIobUnits(insulinDuration, now: at);
+    return units;
   }
 
   /// What is left of one cycle's excess, treating it as delivered evenly across

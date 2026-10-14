@@ -18,8 +18,8 @@ class PodLogEntry {
   });
 
   /// A discrete delivery: a bolus, a micro bolus, or one of the two activation
-  /// volumes. A micro bolus is not a dose the user chose, so it is drawn muted
-  /// like the rest of what the pod did on its own.
+  /// volumes. A micro bolus is not a dose the user chose, so it is not
+  /// [isDose].
   factory PodLogEntry.fromDelivery(PodDelivery delivery) => PodLogEntry._(
     at: delivery.at,
     units: delivery.units,

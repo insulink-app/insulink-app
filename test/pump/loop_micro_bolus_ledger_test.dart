@@ -88,6 +88,27 @@ void main() {
     expect(store.loopMicroBoluses.single.units, 0.2);
   });
 
+  /// The entries only reach back a day; a pod lives longer, so its total is
+  /// kept as a running sum that follows every booking, refusal and stop.
+  test('the pod total follows bookings, refusals and stops', () async {
+    final earlier = now.subtract(const Duration(minutes: 5));
+    await store.bookLoopMicroBolus(0.5, earlier);
+    await store.bookLoopMicroBolus(0.4, now);
+
+    await store.unbookLoopMicroBolus(now);
+    await store.amendLoopMicroBolus(earlier, 0.2);
+
+    expect(store.loopMicroBolusTotal, closeTo(0.2, 1e-9));
+  });
+
+  test('the pod total outlives the entries', () async {
+    await store.bookLoopMicroBolus(0.5, now.subtract(const Duration(days: 2)));
+    await store.bookLoopMicroBolus(0.5, now);
+
+    expect(store.loopMicroBoluses, hasLength(1));
+    expect(store.loopMicroBolusTotal, closeTo(1.0, 1e-9));
+  });
+
   test('the ledger survives a reload', () async {
     await store.bookLoopMicroBolus(0.5, now);
     await store.reload();

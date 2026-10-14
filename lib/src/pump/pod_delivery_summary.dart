@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/injection/active_insulin_chart.dart';
 import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -16,8 +17,9 @@ String podUnits(BuildContext context, double units) => Locales.string(
 );
 
 /// What this pod has put out in total, split the way the pod itself splits it:
-/// the sum large, a bar parted into basal and bolus, and both with their
-/// figures under it.
+/// the sum large, a bar parted into basal, bolus and the automation's micro
+/// boluses, each with its figure under it. Micro boluses are a bolus, but kept
+/// apart so "bolus" stays what the user gave.
 ///
 /// Basal is here as a TOTAL rather than as rows, because it is a continuous drip:
 /// listing every quarter hour would bury the doses the user actually chose. The
@@ -34,7 +36,8 @@ class PodDeliverySummary extends StatelessWidget {
     final bolus = store.deliveryLog
         .where((entry) => entry.kind == PodDeliveryKind.bolus)
         .fold<double>(0, (sum, entry) => sum + entry.units);
-    final total = basal + bolus;
+    final microBoluses = store.loopMicroBolusTotal;
+    final total = basal + bolus + microBoluses;
     final unit = Locales.string(
       context,
       'injection.bolus.value',
@@ -64,13 +67,21 @@ class PodDeliverySummary extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _split(colors, basal, bolus),
+          _split(colors, basal, bolus, microBoluses),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
             spacing: 22,
+            runSpacing: 6,
             children: [
               _key(context, colors.accent, 'pump.log.kind.basal', basal),
               _key(context, colors.pace, 'pump.log.kind.bolus', bolus),
+              if (microBoluses > 0)
+                _key(
+                  context,
+                  _microBolusColor(colors),
+                  'pump.log.kind.micro_bolus',
+                  microBoluses,
+                ),
             ],
           ),
         ],
@@ -78,9 +89,19 @@ class PodDeliverySummary extends StatelessWidget {
     );
   }
 
-  /// Basal and bolus side by side, each as long as its share.
-  Widget _split(InsulinkColors colors, double basal, double bolus) {
-    final total = basal + bolus;
+  /// A micro bolus is a bolus the automation gave: the bolus colour, lighter,
+  /// as on the active-insulin graph.
+  Color _microBolusColor(InsulinkColors colors) =>
+      colors.pace.withValues(alpha: ActiveInsulinChart.microBolusTint);
+
+  /// Basal, bolus and micro boluses side by side, each as long as its share.
+  Widget _split(
+    InsulinkColors colors,
+    double basal,
+    double bolus,
+    double microBoluses,
+  ) {
+    final total = basal + bolus + microBoluses;
     Widget part(Color color, double share) => Expanded(
       flex: (share * 1000).round().clamp(1, 1000),
       child: Container(
@@ -105,6 +126,8 @@ class PodDeliverySummary extends StatelessWidget {
       children: [
         if (basal > 0) part(colors.accent, basal / total),
         if (bolus > 0) part(colors.pace, bolus / total),
+        if (microBoluses > 0)
+          part(_microBolusColor(colors), microBoluses / total),
       ],
     );
   }
