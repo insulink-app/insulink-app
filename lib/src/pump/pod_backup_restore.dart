@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:insulink/src/pump/pod_history_sync.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 
@@ -9,7 +10,11 @@ import 'package:insulink/src/pump/pump_sync.dart';
 /// Kept apart from [PodController] because these are the pump operations that do
 /// not talk to a pod at all.
 class PodBackupRestore {
-  const PodBackupRestore(this.store, {this.sync = const PumpSync()});
+  const PodBackupRestore(
+    this.store, {
+    this.sync = const PumpSync(),
+    this.history,
+  });
 
   final PodStore store;
 
@@ -17,6 +22,10 @@ class PodBackupRestore {
   /// be checked without a server, which is what matters here: the id is read
   /// before it is cleared.
   final PumpSync sync;
+
+  /// How the pod's delivery and contact logs reach the account before
+  /// [letGo] clears them; a fresh [PodHistorySync] when not injected.
+  final PodHistorySync? history;
 
   /// The pod the account is holding for us, or null if there is none, one is
   /// already paired locally, or it has expired.
@@ -73,7 +82,19 @@ class PodBackupRestore {
     if (pumpId != null) {
       await _tellTheAccount(pumpId);
     }
+    await _pushHistory();
     await store.forgetPod();
+  }
+
+  /// Hands the delivery log to the account while it still exists: the forget
+  /// clears it, and a bolus given since the last pod poll would be gone for
+  /// good. Best-effort for the same reason as [_tellTheAccount].
+  Future<void> _pushHistory() async {
+    try {
+      await (history ?? PodHistorySync()).push(store);
+    } catch (error) {
+      debugPrint('pod history push THREW, letting go anyway: $error');
+    }
   }
 
   /// Best-effort, and it swallows even a thrown error.
