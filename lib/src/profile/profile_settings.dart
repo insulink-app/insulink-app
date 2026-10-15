@@ -15,6 +15,7 @@ import 'package:insulink/src/profile/notifications/notification_threshold.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
 import 'package:insulink/src/pump/loop/loop_mode_backup.dart';
 import 'package:insulink/src/pump/loop/loop_settings.dart';
+import 'package:insulink/src/activity_mode/activity_mode_settings.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/overview/overview_layout.dart';
 import 'package:insulink/src/request/request.dart';
@@ -96,6 +97,10 @@ class ProfileSettings {
           "${await LoopSettings.suspendBelow.load()}",
       LoopSettings.maxRate.storageKey: "${await LoopSettings.maxRate.load()}",
       LoopSettings.maxIob.storageKey: "${await LoopSettings.maxIob.load()}",
+      // What the activity mode changes. The mode itself stays on the phone,
+      // like the automation mode above.
+      for (final setting in ActivityModeSettings.all)
+        setting.storageKey: "${await setting.load()}",
       // Only a copy of the mode, read solely when a pod is adopted after a
       // reinstall, so it can come back engaged.
       LoopModeBackup.key: await const LoopModeBackup().loadRaw(),

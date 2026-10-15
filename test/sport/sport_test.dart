@@ -428,6 +428,7 @@ void main() {
         );
         expect(mid.detected, isEmpty);
         expect(mid.watermark, 0);
+        expect(mid.ongoing, isTrue);
 
         // 6 min after the jog ended: the full ride finalises as ONE training.
         final afterNow = endMs + 6 * minute;
@@ -441,6 +442,7 @@ void main() {
         expect(done.detected.single.type, CardioType.walk);
         expect(done.detected.single.startMs, base);
         expect(done.detected.single.endMs, endMs);
+        expect(done.ongoing, isFalse);
 
         // A later tick does not re-detect it (watermark advanced past it).
         final again = runner.selectDetections(

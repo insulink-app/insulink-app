@@ -44,6 +44,7 @@ class PodLoopCycle {
     this.mgdl,
     this.trendPerMinute,
     this.iobUnits = 0,
+    this.activity = ActivityMode.normal,
   });
 
   factory PodLoopCycle.fromJson(Map<String, dynamic> json) => PodLoopCycle(
@@ -61,6 +62,11 @@ class PodLoopCycle {
     mgdl: (json['mgdl'] as num?)?.toInt(),
     trendPerMinute: (json['trend'] as num?)?.toDouble(),
     iobUnits: (json['iob'] as num?)?.toDouble() ?? 0,
+    activity:
+        ActivityMode.values
+            .where((entry) => entry.name == json['activity'])
+            .firstOrNull ??
+        ActivityMode.normal,
   );
 
   final DateTime at;
@@ -78,6 +84,10 @@ class PodLoopCycle {
   final double? trendPerMinute;
   final double iobUnits;
 
+  /// The activity mode the cycle decided under. Kept so a lower rate during a
+  /// walk reads as the mode working, not as the loop holding back for no reason.
+  final ActivityMode activity;
+
   Map<String, dynamic> toJson() => {
     'at': at.millisecondsSinceEpoch,
     'rate': unitsPerHour,
@@ -88,6 +98,7 @@ class PodLoopCycle {
     if (mgdl != null) 'mgdl': mgdl,
     if (trendPerMinute != null) 'trend': trendPerMinute,
     'iob': iobUnits,
+    if (activity != ActivityMode.normal) 'activity': activity.name,
   };
 
   /// Insulin per hour this cycle added ON TOP of the user's schedule.

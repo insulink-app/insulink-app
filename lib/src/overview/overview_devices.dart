@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/activity_mode/activity_mode_selector.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/connections/connections_body.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -69,6 +70,10 @@ class OverviewDevices extends StatelessWidget {
       children: [
         Divider(height: 1, thickness: 1, color: context.ink.line),
         const PodLoopOverviewLine(),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(4, 4, 4, 14),
+          child: ActivityModeSelector(),
+        ),
       ],
     );
   }

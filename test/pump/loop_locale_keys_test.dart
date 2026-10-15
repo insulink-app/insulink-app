@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/activity_mode/activity_mode.dart';
+import 'package:insulink/src/activity_mode/activity_mode_settings.dart';
 import 'package:insulink/src/localization/enum_locale_key.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
 import 'package:insulink/src/pump/loop/loop_settings.dart';
@@ -62,6 +64,18 @@ void main() {
         for (final stop in PodLoopStop.values)
           'pump.loop.stopped.${stop.localeKey}',
         for (final setting in LoopSettings.all) ...[
+          setting.labelKey,
+          setting.valueKey,
+        ],
+        'pump.loop.activity',
+        'activity_mode',
+        'activity_mode.auto',
+        'profile.activity_mode',
+        'profile.activity_mode.description',
+        for (final mode in ActivityMode.values) 'activity_mode.${mode.name}',
+        for (final source in ActivityModeSource.values)
+          'activity_mode.source.${source.name}',
+        for (final setting in ActivityModeSettings.all) ...[
           setting.labelKey,
           setting.valueKey,
         ],
