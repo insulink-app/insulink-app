@@ -24,8 +24,9 @@ at one coarse point per minute, fixes over 50 m were dropped, and the gaps broke
 each ride before it reached 8 minutes.
 
 Now the activity recognition opens the stream: while it reports walk, run, bike
-or vehicle, every tick marks the user as moving (`isMoving`). The same mark keeps
-the stream open across a long red light, where GNSS speed is 0.
+or vehicle (`_movingActivities` in the sampler), every tick marks the user as
+moving. The same mark keeps the stream open across a long red light, where GNSS
+speed is 0.
 
 Cost: a car, bus or train ride opens the stream too. `VehicleStandDown` keeps
 that short: three GNSS fixes at 50 km/h or more under a vehicle label confirm
