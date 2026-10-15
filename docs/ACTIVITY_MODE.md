@@ -82,7 +82,9 @@ overview or the pump page to brush past. The pump page's last-cycle line still
 names the mode a cycle ran under. A second switch there, "show the choice on the
 overview" (`activity_mode_on_overview`, off by default), puts the same selector
 back under the automation row on the overview for someone who switches modes
-often (`ActivityModeOverviewSelector`). The selector re-reads storage every 30 s,
+often (`ActivityModeOverviewSelector`). Both switches live in
+`ActivityModeSwitchState`, a provider above the page tree: the overview is not
+rebuilt when the user comes back from the profile, so it has to be told. The selector re-reads storage every 30 s,
 since the detection runs in the other isolate.
 
 ## Not built
