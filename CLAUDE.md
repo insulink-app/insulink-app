@@ -740,6 +740,9 @@ the widget cannot drift away from the app on what is in range.
 - `docs/SCREENSHOTS.md` — the **screenshots** published with the web demo on every
   main push: the URLs, the integration test that takes them, and what the test
   binding changes (start in the body, frame-by-frame pumps, no start errors).
+- `docs/TRAINING_DETECTION.md` — cardio auto-detection: why the activity
+  recognition (not GNSS speed) opens the detect stream, and why a vehicle label
+  only discards a segment that also reaches vehicle speed.
 - `docs/BATTERY.md` — the two-level battery saver: what each level pauses, why the
   gate sits in `BackgroundLocationSampler.tick()`, and why a manual cardio
   recording must force the detection service up.

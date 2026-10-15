@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/pump/pod_backup_restore.dart';
+import 'package:insulink/src/pump/pod_history_sync.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 
@@ -18,11 +19,13 @@ void main() {
   late Map<String, String> backing;
   late PodStore store;
   late RecordingPumpSync sync;
+  late RecordingHistorySync history;
 
   setUp(() async {
     backing = <String, String>{};
     store = PodStore(FakeSecureStorage(backing), backing);
     sync = RecordingPumpSync();
+    history = RecordingHistorySync();
     await store.savePairing(
       uniqueId: 4242,
       longTermKey: Uint8List(16),
@@ -32,7 +35,8 @@ void main() {
     );
   });
 
-  Future<void> letGo() => PodBackupRestore(store, sync: sync).letGo();
+  Future<void> letGo() =>
+      PodBackupRestore(store, sync: sync, history: history).letGo();
 
   test('the account is told the pod is gone', () async {
     await store.saveBackendPumpId('pump-1');
@@ -56,6 +60,32 @@ void main() {
     await letGo();
 
     expect(sync.discarded, isEmpty);
+    expect(store.hasPod, isFalse);
+  });
+
+  /// The forget clears the delivery log, so a bolus given since the last pod
+  /// poll would never reach the account if the push came after it.
+  test('the delivery log is pushed before it is cleared', () async {
+    await store.recordDelivery(
+      PodDelivery(
+        at: DateTime.now(),
+        units: 2,
+        kind: PodDeliveryKind.bolus,
+        source: PodDeliverySource.app,
+      ),
+    );
+
+    await letGo();
+
+    expect(history.pushedDeliveries, 1);
+    expect(store.deliveryLog, isEmpty);
+  });
+
+  test('a throwing history push still forgets the pod', () async {
+    history.throwOnPush = true;
+
+    await letGo();
+
     expect(store.hasPod, isFalse);
   });
 
@@ -103,4 +133,18 @@ class RecordingPumpSync implements PumpSync {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       super.noSuchMethod(invocation);
+}
+
+/// A [PodHistorySync] that notes how much of the log was still there to push.
+class RecordingHistorySync extends PodHistorySync {
+  int? pushedDeliveries;
+  bool throwOnPush = false;
+
+  @override
+  Future<void> push(PodStore store) async {
+    if (throwOnPush) {
+      throw Exception('no route to host');
+    }
+    pushedDeliveries = store.deliveryLog.length;
+  }
 }

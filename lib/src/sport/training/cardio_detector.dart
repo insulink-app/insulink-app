@@ -11,7 +11,8 @@ import 'cardio_models.dart';
 /// [_minDuration] or [_minDistanceM] are dropped. Each surviving segment is typed
 /// by [CardioActivityClassifier] — the recognised activity (from the optional
 /// `activityLog`) when available, else average speed — which also discards
-/// segments recognised as a vehicle (bus/train).
+/// vehicle rides (bus/train/car: recognised as a vehicle AND reaching vehicle
+/// speed, see [_topKmh]).
 class CardioDetector {
   static const _walkMinKmh = 3.0;
   static const _maxGap = Duration(minutes: 5);
@@ -40,6 +41,7 @@ class CardioDetector {
         startMs: segment.first.tMs,
         endMs: segment.last.tMs,
         avgKmh: _avgKmh(segment),
+        topKmh: _topKmh(segment),
         activityLog: activityLog,
       );
       if (type == null) {
@@ -120,6 +122,21 @@ class CardioDetector {
       return 0;
     }
     return _distanceM(segment) / seconds * 3.6;
+  }
+
+  /// The 90th-percentile speed between consecutive points: the pace the segment
+  /// actually reaches, robust to a single GPS jump. Tells a bike from a bus that
+  /// averages the same but speeds up between stops.
+  double _topKmh(List<TrackPoint> segment) {
+    final speeds = [
+      for (var index = 1; index < segment.length; index++)
+        _speedKmh(
+          segment[index - 1],
+          segment[index],
+          Duration(milliseconds: segment[index].tMs - segment[index - 1].tMs),
+        ),
+    ]..sort();
+    return speeds[((speeds.length - 1) * 0.9).round()];
   }
 
   Duration _duration(List<TrackPoint> segment) =>

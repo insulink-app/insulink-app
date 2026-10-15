@@ -6,7 +6,10 @@ import 'cardio_models.dart';
 /// speed — the ground truth for what is *impossible on foot* — always wins when
 /// the two disagree: a segment faster than any human-powered mode is discarded
 /// as a vehicle, and an on-foot label over a too-fast segment is upgraded to the
-/// speed-based type (a "walk" at 20 km/h is a vehicle, not a walk). Pure and
+/// speed-based type (a "walk" at 20 km/h is a vehicle, not a walk). The reverse
+/// misread is just as common: a bike ride reported as in-vehicle. So a vehicle
+/// label alone discards nothing; only a segment that also REACHES vehicle speed
+/// ([_vehicleTopKmh]) is dropped, and a slower one is a bike ride. Pure and
 /// plugin-free so it stays unit-testable.
 ///
 /// It emits only [CardioType.walk] and [CardioType.bike] — never a jog, which is
@@ -20,16 +23,24 @@ class CardioActivityClassifier {
   /// under it; a train/car easily clears it.
   static const _humanPoweredMaxKmh = 30.0;
 
+  /// A vehicle-labelled segment whose top speed (90th percentile between fixes)
+  /// stays at or below this (km/h) is a bike ride the recognition misread. A
+  /// city bus or car averages bike speed between stops but reaches 45 to 50 on
+  /// the way; a commuter on a bike or pedelec doesn't sustain this.
+  static const _vehicleTopKmh = 35.0;
+
   /// The training type for a segment, or null to DISCARD it (a vehicle — either
-  /// recognised as one, or too fast to be human-powered).
+  /// recognised as one and reaching vehicle speed, or too fast to be
+  /// human-powered).
   CardioType? classify({
     required int startMs,
     required int endMs,
     required double avgKmh,
+    required double topKmh,
     required List<ActivitySample> activityLog,
   }) {
     final dominant = _dominant(startMs, endMs, activityLog);
-    if (dominant == ActivityKind.vehicle || avgKmh > _humanPoweredMaxKmh) {
+    if (avgKmh > _humanPoweredMaxKmh || _isVehicle(dominant, topKmh)) {
       return null;
     }
     final bySpeed = _bySpeed(avgKmh);
@@ -43,14 +54,18 @@ class CardioActivityClassifier {
     return byActivity.index >= bySpeed.index ? byActivity : bySpeed;
   }
 
+  /// Whether a segment is a real vehicle ride: labelled one AND fast enough.
+  bool _isVehicle(ActivityKind? dominant, double topKmh) =>
+      dominant == ActivityKind.vehicle && topKmh > _vehicleTopKmh;
+
   /// The on-foot/bike [CardioType] for an activity kind, or null when the kind
-  /// gives no usable signal (still/unknown/none) so speed decides. Vehicle is
-  /// handled earlier (discard) and never reaches here.
+  /// gives no usable signal (still/unknown/none) so speed decides. A vehicle
+  /// label reaching here moved at human speed, so it is a misread bike ride.
   ///
   /// A recognised RUN maps to [CardioType.walk], not [CardioType.jog] — see
   /// [_bySpeed] for why auto-detection never emits a jog.
   CardioType? _onFootType(ActivityKind? kind) => switch (kind) {
-    ActivityKind.bike => CardioType.bike,
+    ActivityKind.bike || ActivityKind.vehicle => CardioType.bike,
     ActivityKind.run || ActivityKind.walk => CardioType.walk,
     _ => null,
   };

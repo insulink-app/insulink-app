@@ -125,6 +125,7 @@ class AdvisoryActionRunner {
       ),
       maxBolusUnits: bolus.maxBolus.toDouble(),
       maxUnitsPerHour: bolus.maxBolus.toDouble(),
+      source: PodDeliverySource.notification,
     );
   }
 

@@ -322,16 +322,44 @@ void main() {
       expect(detected.length, 2);
     });
 
-    test(
-      'a vehicle-tagged fast segment is discarded (bus/train, not bike)',
-      () {
-        final points = ride(12, 0, 12);
-        final log = [
-          ActivitySample(tMs: points.first.tMs, kind: ActivityKind.vehicle),
-        ];
-        expect(const CardioDetector().detect(points, log), isEmpty);
-      },
-    );
+    test('a vehicle-tagged ride at bike speed is a misread bike ride', () {
+      final points = ride(12, 0, 12);
+      final log = [
+        ActivitySample(tMs: points.first.tMs, kind: ActivityKind.vehicle),
+      ];
+      final detected = const CardioDetector().detect(points, log);
+      expect(detected.length, 1);
+      expect(detected.single.type, CardioType.bike);
+    });
+
+    // Builds a stop-and-go bus: [stops] times one minute standing at a stop,
+    // then one minute at ~45 km/h (750 m/min), averaging ~22 km/h.
+    List<TrackPoint> bus(int stops) {
+      final points = <TrackPoint>[];
+      var time = 1000000000000;
+      var lat = 52.0;
+      for (var stop = 0; stop < stops; stop++) {
+        points.add(TrackPoint(lat: lat, lng: 13.0, tMs: time));
+        time += 60000;
+        points.add(TrackPoint(lat: lat, lng: 13.0, tMs: time));
+        time += 60000;
+        lat += 750 / 111320;
+      }
+      points.add(TrackPoint(lat: lat, lng: 13.0, tMs: time));
+      return points;
+    }
+
+    test('a vehicle-tagged stop-and-go bus is discarded despite its avg', () {
+      final points = bus(8);
+      final log = [
+        ActivitySample(tMs: points.first.tMs, kind: ActivityKind.vehicle),
+      ];
+      expect(const CardioDetector().detect(points, log), isEmpty);
+    });
+
+    test('the same stop-and-go without a vehicle tag stays a training', () {
+      expect(const CardioDetector().detect(bus(8)).length, 1);
+    });
 
     test('a bike-tagged fast segment stays a bike ride', () {
       final points = ride(12, 0, 12);
