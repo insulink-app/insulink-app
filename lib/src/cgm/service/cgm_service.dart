@@ -102,6 +102,7 @@ class CgmTaskHandler extends TaskHandler {
       BackgroundLocationSampler(
         onLog: _log,
         isStill: () => _activitySampler.isStill,
+        isMoving: () => _activitySampler.isMoving,
         isDetectionPaused: () => _batteryMode.pausesDetection,
       );
 

@@ -101,6 +101,14 @@ class BackgroundLocationSampler {
   /// before) when no recognizer is wired up or permitted.
   final bool Function() _isStill;
 
+  /// Reports whether the OS activity recognition currently says the user is on
+  /// the move. That alone opens the detect stream: the at-rest poll can't, because
+  /// its balanced-power fix (Wi-Fi/cell) carries no speed, so [_record] never saw
+  /// one as moving and a ride or walk was logged at one coarse point per minute.
+  /// Re-read every tick, it also keeps the stream open across a long red light.
+  /// Defaults to never-moving (only GNSS speed decides) without a recognizer.
+  final bool Function() _isMoving;
+
   /// Reports whether the battery saver has paused the cardio auto-detection (see
   /// `BatteryMode.pausesDetection`). While it does, this sampler does nothing
   /// unless a training is actually recording — which is the whole saving: no
@@ -113,12 +121,15 @@ class BackgroundLocationSampler {
     this._store = const SportStore(),
     void Function(String)? onLog,
     this._isStill = _neverStill,
+    this._isMoving = _neverMoving,
     this._isDetectionPaused = _neverPaused,
   }) : _onLog = (onLog ?? _noLog);
 
   static void _noLog(String _) {}
 
   static bool _neverStill() => false;
+
+  static bool _neverMoving() => false;
 
   static bool _neverPaused() => false;
 
@@ -128,6 +139,9 @@ class BackgroundLocationSampler {
   Future<void> tick() async {
     try {
       final active = await _store.loadActiveTraining();
+      if (_isMoving()) {
+        _markMoving();
+      }
       if (!_recentlyMoving) {
         _movingSince = null;
       }
@@ -257,8 +271,7 @@ class BackgroundLocationSampler {
   /// the strict cardio outlier filter.
   Future<void> _record(Position fix, int tMs) async {
     if (fix.speed * 3.6 >= _movingKmh) {
-      _lastMovingAt = DateTime.now();
-      _movingSince ??= DateTime.now();
+      _markMoving();
     }
     LocationSync().queue(fix.latitude, fix.longitude, tMs, _onLog);
     if (!_accept(fix)) {
@@ -268,6 +281,12 @@ class BackgroundLocationSampler {
     await _store.appendLocationSample(
       TrackPoint(lat: fix.latitude, lng: fix.longitude, tMs: tMs),
     );
+  }
+
+  /// Stamps the user as moving now, starting a moving streak if none is open.
+  void _markMoving() {
+    _lastMovingAt = DateTime.now();
+    _movingSince ??= DateTime.now();
   }
 
   /// Location permitted AND device location services on.

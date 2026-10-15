@@ -25,6 +25,16 @@ class ActivityRecognitionSampler {
   /// fall back to their own polling.
   bool get isStill => _last == ActivityKind.still;
 
+  /// Whether the most recent OS activity change says the user is on the move:
+  /// on foot, on a bike, or in a vehicle (a bike ride is often reported as one).
+  /// False while unknown.
+  bool get isMoving => const {
+    ActivityKind.walk,
+    ActivityKind.run,
+    ActivityKind.bike,
+    ActivityKind.vehicle,
+  }.contains(_last);
+
   /// Idempotent: subscribe once. We do NOT call the plugin's `checkPermission()`
   /// here — it needs an attached Activity, which this foreground-service isolate
   /// lacks, so it throws `ACTIVITY_NOT_ATTACHED` and used to abort sampling
@@ -70,5 +80,6 @@ class ActivityRecognitionSampler {
   void dispose() {
     _subscription?.cancel();
     _subscription = null;
+    _last = null;
   }
 }
