@@ -20,20 +20,9 @@ class ActivityRecognitionSampler {
 
   ActivityRecognitionSampler([this._store = const SportStore()]);
 
-  /// Whether the most recent OS activity change says the device is still.
-  /// False while unknown (no sample yet / permission missing), so consumers
-  /// fall back to their own polling.
-  bool get isStill => _last == ActivityKind.still;
-
-  /// Whether the most recent OS activity change says the user is on the move:
-  /// on foot, on a bike, or in a vehicle (a bike ride is often reported as one).
-  /// False while unknown.
-  bool get isMoving => const {
-    ActivityKind.walk,
-    ActivityKind.run,
-    ActivityKind.bike,
-    ActivityKind.vehicle,
-  }.contains(_last);
+  /// The most recent OS activity, or null while unknown (no sample yet /
+  /// permission missing), so consumers fall back to their own polling.
+  ActivityKind? get current => _last;
 
   /// Idempotent: subscribe once. We do NOT call the plugin's `checkPermission()`
   /// here — it needs an attached Activity, which this foreground-service isolate
