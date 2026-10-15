@@ -6,6 +6,7 @@ import '../sport_store.dart';
 import 'active_training.dart';
 import 'cardio_models.dart';
 import 'location_sync.dart';
+import 'vehicle_stand_down.dart';
 
 /// Which cadence the open GPS stream is running at. A tier change reopens the
 /// stream with the matching settings; the pure [gpsTierFor] picks it.
@@ -93,13 +94,32 @@ class BackgroundLocationSampler {
   /// At or above this speed (km/h) a fix counts as "moving" → keep streaming.
   static const _movingKmh = 3.0;
 
-  /// Reports whether the OS activity recognition currently says "still". While
-  /// it does, the idle one-shot GPS poll is skipped entirely: the recognition
-  /// stream is hardware-batched and near-free, and it flips off "still" before
-  /// the next tick, so movement is still noticed promptly — without a GPS fix
-  /// every [_idleInterval] around the clock. Defaults to never-still (poll as
-  /// before) when no recognizer is wired up or permitted.
-  final bool Function() _isStill;
+  /// Activity labels that open the detect stream by themselves (vehicle too:
+  /// a bike ride is often reported as one).
+  static const _movingActivities = {
+    ActivityKind.walk,
+    ActivityKind.run,
+    ActivityKind.bike,
+    ActivityKind.vehicle,
+  };
+
+  /// Reports the OS activity recognition's current label, null while unknown.
+  ///
+  /// **Still** skips the idle one-shot GPS poll entirely: the recognition stream
+  /// is hardware-batched and near-free, and it flips off "still" before the next
+  /// tick, so movement is still noticed promptly — without a GPS fix every
+  /// [_idleInterval] around the clock.
+  ///
+  /// **On the move** ([_movingActivities]) alone opens the detect stream: the
+  /// at-rest poll can't, because its balanced-power fix (Wi-Fi/cell) carries no
+  /// speed, so [_record] never saw one as moving and a ride or walk was logged at
+  /// one coarse point per minute. Re-read every tick, it also keeps the stream
+  /// open across a long red light — until [_vehicleStandDown] confirms a
+  /// motorised ride. Defaults to unknown (poll as before, only GNSS speed decides)
+  /// when no recognizer is wired up or permitted.
+  final ActivityKind? Function() _activity;
+
+  final _vehicleStandDown = VehicleStandDown();
 
   /// Reports whether the battery saver has paused the cardio auto-detection (see
   /// `BatteryMode.pausesDetection`). While it does, this sampler does nothing
@@ -112,13 +132,13 @@ class BackgroundLocationSampler {
   BackgroundLocationSampler({
     this._store = const SportStore(),
     void Function(String)? onLog,
-    this._isStill = _neverStill,
+    this._activity = _unknownActivity,
     this._isDetectionPaused = _neverPaused,
   }) : _onLog = (onLog ?? _noLog);
 
   static void _noLog(String _) {}
 
-  static bool _neverStill() => false;
+  static ActivityKind? _unknownActivity() => null;
 
   static bool _neverPaused() => false;
 
@@ -128,6 +148,10 @@ class BackgroundLocationSampler {
   Future<void> tick() async {
     try {
       final active = await _store.loadActiveTraining();
+      _vehicleStandDown.observe(_activity(), 0);
+      if (_movingActivities.contains(_activity())) {
+        _markMoving();
+      }
       if (!_recentlyMoving) {
         _movingSince = null;
       }
@@ -152,7 +176,7 @@ class BackgroundLocationSampler {
       if (last != null && DateTime.now().difference(last) < _idleInterval) {
         return;
       }
-      if (_isStill()) {
+      if (_activity() == ActivityKind.still) {
         return;
       }
       _lastSampledAt = DateTime.now();
@@ -256,9 +280,9 @@ class BackgroundLocationSampler {
   /// fine for a position log), then appends to the local route only if it passes
   /// the strict cardio outlier filter.
   Future<void> _record(Position fix, int tMs) async {
+    _vehicleStandDown.observe(_activity(), fix.speed * 3.6);
     if (fix.speed * 3.6 >= _movingKmh) {
-      _lastMovingAt = DateTime.now();
-      _movingSince ??= DateTime.now();
+      _markMoving();
     }
     LocationSync().queue(fix.latitude, fix.longitude, tMs, _onLog);
     if (!_accept(fix)) {
@@ -268,6 +292,17 @@ class BackgroundLocationSampler {
     await _store.appendLocationSample(
       TrackPoint(lat: fix.latitude, lng: fix.longitude, tMs: tMs),
     );
+  }
+
+  /// Stamps the user as moving now, starting a moving streak if none is open —
+  /// unless the ride is confirmed motorised, so the stream lingers out and stays
+  /// closed until the activity label changes.
+  void _markMoving() {
+    if (_vehicleStandDown.confirmed) {
+      return;
+    }
+    _lastMovingAt = DateTime.now();
+    _movingSince ??= DateTime.now();
   }
 
   /// Location permitted AND device location services on.
