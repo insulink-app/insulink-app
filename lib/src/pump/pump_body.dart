@@ -11,7 +11,6 @@ import 'package:insulink/src/pump/pump_actions.dart';
 import 'package:insulink/src/pump/pump_notice.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:insulink/src/activity_mode/activity_mode_selector.dart';
 import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/base/key_value_row.dart';
 import 'package:insulink/src/base/section_header.dart';
@@ -101,11 +100,6 @@ class _PumpBodyContentState extends State<PumpBodyContent> {
   List<Widget> _delivery(BuildContext context, PodController controller) {
     return [
       const PodLoopModeCard(),
-      const SizedBox(height: InkSpace.tileGap),
-      const InkPanel(
-        padding: EdgeInsets.fromLTRB(16, 14, 14, 14),
-        child: ActivityModeSelector(),
-      ),
       const SizedBox(height: InkSpace.tileGap),
       const PodTempBasalButton(),
       const SizedBox(height: InkSpace.tileGap),

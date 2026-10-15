@@ -99,6 +99,8 @@ class ProfileSettings {
       LoopSettings.maxIob.storageKey: "${await LoopSettings.maxIob.load()}",
       // What the activity mode changes. The mode itself stays on the phone,
       // like the automation mode above.
+      ActivityModeSettings.enabled.storageKey:
+          "${await ActivityModeSettings.enabled.load()}",
       for (final setting in ActivityModeSettings.all)
         setting.storageKey: "${await setting.load()}",
       // Only a copy of the mode, read solely when a pod is adopted after a

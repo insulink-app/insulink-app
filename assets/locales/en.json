@@ -1442,7 +1442,7 @@
     },
     "activity_mode": {
       "_": "Activity mode",
-      "description": "How the automation adjusts delivery while an activity mode runs. Every limit of automated delivery still applies.",
+      "description": "How the automation adjusts delivery while an activity mode runs. Switched off, it always keeps to your normal values. Every limit of automated delivery still applies.",
       "endurance_target": {
         "_": "Target during endurance",
         "value": "# mg/dL"
@@ -1454,7 +1454,8 @@
       "strength_basal": {
         "_": "Basal during strength",
         "value": "# %"
-      }
+      },
+      "enabled": "Use activity mode"
     }
   },
   "injection": {

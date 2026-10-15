@@ -7,8 +7,10 @@ import 'package:insulink/src/base/segmented_toggle.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
-/// The activity mode, one tap from wherever the automation shows.
+/// The activity mode chosen by hand, in the profile's activity section.
 ///
+/// Kept off the overview and the pump page on purpose: a mode that changes how
+/// insulin is dosed is a setting to reach for, not a control to brush past.
 /// Auto follows the training detection and running workouts; the other three
 /// pin a mode for [ActivityModeStore.manualFor]. Under the toggle one line says
 /// which mode is in force and why, because under Auto the toggle cannot.

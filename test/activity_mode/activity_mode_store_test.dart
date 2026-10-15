@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/activity_mode/activity_mode.dart';
+import 'package:insulink/src/activity_mode/activity_mode_settings.dart';
 import 'package:insulink/src/activity_mode/activity_mode_store.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 import 'package:insulink/src/sport/training/active_training.dart';
@@ -41,6 +42,24 @@ void main() {
     final reading = await store.current(at);
     return (reading.mode, reading.source);
   }
+
+  /// Switched off in the profile, nothing moves the loop: not a hand choice,
+  /// not a workout, not a detected ride.
+  test('switched off, every source is ignored', () async {
+    await ActivityModeSettings.enabled.save(false);
+    await store.choose(ActivityMode.strength, now);
+    await startWorkout(now);
+    await store.markDetected(true, now);
+
+    expect(await modeAt(now), (ActivityMode.normal, ActivityModeSource.none));
+
+    await ActivityModeSettings.enabled.save(true);
+
+    expect(await modeAt(now), (
+      ActivityMode.strength,
+      ActivityModeSource.manual,
+    ));
+  });
 
   test('nothing going on is normal', () async {
     expect(await modeAt(now), (ActivityMode.normal, ActivityModeSource.none));

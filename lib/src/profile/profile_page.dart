@@ -25,7 +25,7 @@ import 'package:insulink/src/profile/notifications/notification_threshold_card.d
 import 'package:insulink/src/profile/tuning/basal_tuning_card.dart';
 import 'package:insulink/src/profile/tuning/factor_tuning_card.dart';
 import 'package:insulink/src/pump/loop/loop_settings.dart';
-import 'package:insulink/src/activity_mode/activity_mode_settings.dart';
+import 'package:insulink/src/activity_mode/activity_mode_section.dart';
 import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_lockscreen_toggle.dart';
@@ -207,18 +207,7 @@ class _ProfilePageState extends State<ProfilePage> {
       titleKey: "profile.activity_mode",
       icon: PhosphorIconsBold.personSimpleRun,
       searchKey: "profile.search.activity_mode",
-      children: () => const [
-        LocaleText(
-          "profile.activity_mode.description",
-          style: TextStyle(fontSize: 15),
-        ),
-        SizedBox(height: 12),
-        NotificationThresholdCard(ActivityModeSettings.enduranceTarget),
-        SizedBox(height: 10),
-        NotificationThresholdCard(ActivityModeSettings.enduranceBasal),
-        SizedBox(height: 10),
-        NotificationThresholdCard(ActivityModeSettings.strengthBasal),
-      ],
+      children: () => const [ActivityModeSection()],
     ),
     (
       titleKey: "profile.prediction",

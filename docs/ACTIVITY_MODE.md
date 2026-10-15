@@ -14,7 +14,10 @@ How exercise changes what the automation doses. `lib/src/activity_mode/`.
 | Strength | the user's own | 120 % | stress hormones push glucose up during the set |
 
 All three numbers are settings (`ActivityModeSettings`, profile → Sportmodus)
-and ride the account blob. The **live** mode does not, like `pod.loop_mode`.
+and ride the account blob. So does the switch that turns the whole feature off
+(`activity_mode_enabled`, on by default): switched off, `ActivityModeStore.current`
+always answers normal, whatever was chosen, recorded or detected. The **live**
+mode does not ride the blob, like `pod.loop_mode`.
 
 ## What it changes, and what it cannot
 
@@ -72,9 +75,12 @@ service. So endurance starts about **8 minutes into** a walk or ride, and ends
 ## The selector
 
 `ActivityModeSelector`: Auto / Normal / Ausdauer / Kraft, with one line under it
-saying which mode is in force and why. On the overview's devices panel (under
-the automation row) and on the pump page, both only with a pod. It re-reads
-storage every 30 s, since the detection runs in the other isolate.
+saying which mode is in force and why. Only in the profile's activity section
+(`ActivityModeSection`), under the switch and only while it is on: a mode that
+changes how insulin is dosed is a setting to reach for, not a control on the
+overview or the pump page to brush past. The pump page's last-cycle line still
+names the mode a cycle ran under. The selector re-reads storage every 30 s,
+since the detection runs in the other isolate.
 
 ## Not built
 

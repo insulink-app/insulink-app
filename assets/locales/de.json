@@ -1442,7 +1442,7 @@
     },
     "activity_mode": {
       "_": "Sportmodus",
-      "description": "So passt die Automatik die Abgabe an, solange ein Sportmodus läuft. Alle Grenzen der automatischen Abgabe gelten weiter.",
+      "description": "So passt die Automatik die Abgabe an, solange ein Sportmodus läuft. Ausgeschaltet bleibt sie immer bei deinen normalen Werten. Alle Grenzen der automatischen Abgabe gelten weiter.",
       "endurance_target": {
         "_": "Zielwert bei Ausdauer",
         "value": "# mg/dL"
@@ -1454,7 +1454,8 @@
       "strength_basal": {
         "_": "Basal bei Kraftsport",
         "value": "# %"
-      }
+      },
+      "enabled": "Sportmodus verwenden"
     }
   },
   "injection": {

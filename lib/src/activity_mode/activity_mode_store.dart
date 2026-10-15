@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/activity_mode/activity_mode.dart';
+import 'package:insulink/src/activity_mode/activity_mode_settings.dart';
 import 'package:insulink/src/sport/sport_store.dart';
 
 /// Where the activity mode is kept, and how the one in force is worked out.
@@ -59,8 +60,12 @@ class ActivityModeStore {
     );
   }
 
-  /// The mode in force at [now].
+  /// The mode in force at [now]: always normal while the user has switched the
+  /// activity mode off, whatever was chosen or detected.
   Future<ActivityModeReading> current(DateTime now) async {
+    if (!await ActivityModeSettings.enabled.load()) {
+      return ActivityModeReading.normal;
+    }
     return await _manual(now) ?? await _followed(now);
   }
 

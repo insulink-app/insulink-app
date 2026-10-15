@@ -1,3 +1,4 @@
+import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold.dart';
 
 /// The three numbers behind the activity mode, as editable settings.
@@ -48,6 +49,16 @@ class ActivityModeSettings {
     min: 80,
     max: 150,
     step: 10,
+  );
+
+  /// Whether the activity mode is used at all. Off, the mode is always normal:
+  /// no detection, workout or manual choice moves the loop.
+  ///
+  /// On by default, because switching it on is what the feature was built for;
+  /// someone who finds the automatic change unsettling turns it off here.
+  static const enabled = NotificationSetting(
+    'activity_mode_enabled',
+    'profile.activity_mode.enabled',
   );
 
   static const all = [enduranceTarget, enduranceBasal, strengthBasal];
