@@ -61,5 +61,14 @@ class ActivityModeSettings {
     'profile.activity_mode.enabled',
   );
 
+  /// Whether the hand choice also sits on the overview, one tap away, for
+  /// someone who switches modes often. Off by default: the profile is where a
+  /// change to dosing is made, and the overview stays calm.
+  static const onOverview = NotificationSetting(
+    'activity_mode_on_overview',
+    'profile.activity_mode.on_overview',
+    defaultValue: false,
+  );
+
   static const all = [enduranceTarget, enduranceBasal, strengthBasal];
 }

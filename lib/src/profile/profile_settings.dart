@@ -101,6 +101,8 @@ class ProfileSettings {
       // like the automation mode above.
       ActivityModeSettings.enabled.storageKey:
           "${await ActivityModeSettings.enabled.load()}",
+      ActivityModeSettings.onOverview.storageKey:
+          "${await ActivityModeSettings.onOverview.load()}",
       for (final setting in ActivityModeSettings.all)
         setting.storageKey: "${await setting.load()}",
       // Only a copy of the mode, read solely when a pod is adopted after a

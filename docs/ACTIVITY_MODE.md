@@ -79,7 +79,10 @@ saying which mode is in force and why. Only in the profile's activity section
 (`ActivityModeSection`), under the switch and only while it is on: a mode that
 changes how insulin is dosed is a setting to reach for, not a control on the
 overview or the pump page to brush past. The pump page's last-cycle line still
-names the mode a cycle ran under. The selector re-reads storage every 30 s,
+names the mode a cycle ran under. A second switch there, "show the choice on the
+overview" (`activity_mode_on_overview`, off by default), puts the same selector
+back under the automation row on the overview for someone who switches modes
+often (`ActivityModeOverviewSelector`). The selector re-reads storage every 30 s,
 since the detection runs in the other isolate.
 
 ## Not built

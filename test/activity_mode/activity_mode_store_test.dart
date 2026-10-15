@@ -61,6 +61,15 @@ void main() {
     ));
   });
 
+  /// The overview stays calm unless the user asks for the choice there.
+  test('the choice is off the overview until switched on', () async {
+    expect(await ActivityModeSettings.onOverview.load(), isFalse);
+
+    await ActivityModeSettings.onOverview.save(true);
+
+    expect(await ActivityModeSettings.onOverview.load(), isTrue);
+  });
+
   test('nothing going on is normal', () async {
     expect(await modeAt(now), (ActivityMode.normal, ActivityModeSource.none));
   });

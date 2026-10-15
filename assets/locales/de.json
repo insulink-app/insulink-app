@@ -1455,7 +1455,8 @@
         "_": "Basal bei Kraftsport",
         "value": "# %"
       },
-      "enabled": "Sportmodus verwenden"
+      "enabled": "Sportmodus verwenden",
+      "on_overview": "Auswahl auf der Übersicht zeigen"
     }
   },
   "injection": {

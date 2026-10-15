@@ -4,6 +4,7 @@ import 'package:insulink/src/activity_mode/activity_mode_settings.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold_card.dart';
+import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/profile/profile_toggle_row.dart';
 
 /// The profile's activity section: the switch, the mode chosen by hand, and
@@ -57,6 +58,8 @@ class _ActivityModeSectionState extends State<ActivityModeSection> {
           onChanged: _switch,
         ),
         if (_enabled) ...[
+          const SizedBox(height: 4),
+          const NotificationToggle(ActivityModeSettings.onOverview),
           const SizedBox(height: 12),
           const ActivityModeSelector(),
         ],

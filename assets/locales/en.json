@@ -1455,7 +1455,8 @@
         "_": "Basal during strength",
         "value": "# %"
       },
-      "enabled": "Use activity mode"
+      "enabled": "Use activity mode",
+      "on_overview": "Show the choice on the overview"
     }
   },
   "injection": {
