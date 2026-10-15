@@ -698,6 +698,9 @@ the widget cannot drift away from the app on what is in range.
 - `docs/LOOP.md` — **automated delivery**: why it is temp-basal-only, the pod's
   own expiry as the fallback to basal, the trust boundary on sensor data, and
   the layered limits that bound how much insulin it can add.
+- `docs/ACTIVITY_MODE.md` — the **activity mode**: endurance and strength move
+  only the loop's target and basal anchor, never a ceiling; where the mode comes
+  from (manual, routine, recording, the detection's ongoing segment).
 - `docs/TUNING.md` — the weekly **basal suggestion**: how food and bolus insulin
   are measured out of an hour instead of disqualifying it (`TuningModel`), what
   that linear model costs, which hours are still thrown away, and why there is no

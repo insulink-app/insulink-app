@@ -10,10 +10,18 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// storage key and label. Default ON: all of these are safety/lifecycle
 /// relevant.
 class NotificationSetting {
-  const NotificationSetting(this.storageKey, this.labelKey);
+  const NotificationSetting(
+    this.storageKey,
+    this.labelKey, {
+    this.defaultValue = true,
+  });
 
   final String storageKey;
   final String labelKey;
+
+  /// What an unset key reads as. ON for every notification; OFF for a setting
+  /// that makes something riskier and so must be chosen, never inherited.
+  final bool defaultValue;
 
   static const expiry = NotificationSetting(
     'sensor_expiry_alert',
@@ -73,8 +81,13 @@ class NotificationSetting {
     'profile.pod_temp_basal_beep.description',
   );
 
-  Future<bool> load() async =>
-      (await const FlutterSecureStorage().read(key: storageKey)) != 'false';
+  Future<bool> load() async {
+    final raw = await const FlutterSecureStorage().read(key: storageKey);
+    if (raw == null) {
+      return defaultValue;
+    }
+    return raw != 'false';
+  }
 
   Future<void> save(bool value) =>
       const FlutterSecureStorage().write(key: storageKey, value: '$value');

@@ -19,7 +19,7 @@ class NotificationToggle extends StatefulWidget {
 }
 
 class _NotificationToggleState extends State<NotificationToggle> {
-  bool _enabled = true;
+  late bool _enabled = widget.setting.defaultValue;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class _NotificationToggleState extends State<NotificationToggle> {
       future: widget.setting.load(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          _enabled = snapshot.data ?? true;
+          _enabled = snapshot.data ?? widget.setting.defaultValue;
         }
         return ProfileToggleRow(
           labelKey: widget.setting.labelKey,

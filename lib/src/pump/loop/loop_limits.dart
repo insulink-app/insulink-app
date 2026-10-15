@@ -82,6 +82,16 @@ class LoopLimits {
   final double maxUnitsPerHour;
   final double maxIobUnits;
 
+  /// The same limits aiming at [target] instead, for the activity mode.
+  LoopLimits withTarget(int target) => LoopLimits(
+    targetMgdl: target,
+    suspendBelowMgdl: suspendBelowMgdl,
+    correctionFactorMgdl: correctionFactorMgdl,
+    insulinDuration: insulinDuration,
+    maxUnitsPerHour: maxUnitsPerHour,
+    maxIobUnits: maxIobUnits,
+  );
+
   /// Whether these limits are internally consistent enough to dose against.
   bool get isUsable => problem == null;
 

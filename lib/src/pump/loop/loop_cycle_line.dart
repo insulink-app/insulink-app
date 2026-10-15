@@ -1,3 +1,4 @@
+import 'package:insulink/src/activity_mode/activity_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/enum_locale_key.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -36,10 +37,20 @@ class PodLoopCycleLine extends StatelessWidget {
           Locales.string(context, 'pump.loop.reason.${cycle.reason.localeKey}'),
         );
     final bound = cycle.boundBy;
-    if (bound == null) {
-      return line;
+    final held = bound == null
+        ? line
+        : '$line ${Locales.string(context, 'pump.loop.bound.${bound.localeKey}')}';
+    return '$held${_activity(context, cycle.activity)}';
+  }
+
+  /// The activity mode the cycle ran under, so a rate below the schedule during
+  /// a walk reads as the mode working. Nothing for normal.
+  String _activity(BuildContext context, ActivityMode mode) {
+    if (mode == ActivityMode.normal) {
+      return '';
     }
-    return '$line ${Locales.string(context, 'pump.loop.bound.${bound.localeKey}')}';
+    final name = Locales.string(context, 'activity_mode.${mode.name}');
+    return ' ${Locales.string(context, 'pump.loop.activity').replaceFirst('#', name)}';
   }
 
   String _clock(DateTime at) => '${_two(at.hour)}:${_two(at.minute)}';

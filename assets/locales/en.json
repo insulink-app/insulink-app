@@ -661,7 +661,8 @@
       "not_sent": "not sent",
       "at_glucose": "at # mg/dL, # mg/dL per minute",
       "on_board": "# U active",
-      "schedule_was": "schedule # U/h"
+      "schedule_was": "schedule # U/h",
+      "activity": "(activity mode #)"
     },
     "forget": {
       "_": "Forget this pod?",
@@ -1356,7 +1357,8 @@
       "battery": "battery power energy saver save drain gps location tracking detection runtime",
       "loop": "automated delivery automation loop closed loop insulin",
       "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start",
-      "backup": "backup export save data file download restore archive copy"
+      "backup": "backup export save data file download restore archive copy",
+      "activity_mode": "sport activity mode training endurance strength weights running cycling walking routine workout basal target"
     },
     "prediction": {
       "_": "Prediction",
@@ -1437,6 +1439,24 @@
       "saved": "Backup saved",
       "failed": "The backup could not be created. Check your internet connection and try again.",
       "loading": "Loading your data…"
+    },
+    "activity_mode": {
+      "_": "Activity mode",
+      "description": "How the automation adjusts delivery while an activity mode runs. Switched off, it always keeps to your normal values. Every limit of automated delivery still applies.",
+      "endurance_target": {
+        "_": "Target during endurance",
+        "value": "# mg/dL"
+      },
+      "endurance_basal": {
+        "_": "Basal during endurance",
+        "value": "# %"
+      },
+      "strength_basal": {
+        "_": "Basal during strength",
+        "value": "# %"
+      },
+      "enabled": "Use activity mode",
+      "on_overview": "Show the choice on the overview"
     }
   },
   "injection": {
@@ -1632,5 +1652,19 @@
     "goal": "Goal #",
     "axis_today": "today",
     "empty_range": "No data in this period"
+  },
+  "activity_mode": {
+    "_": "Activity mode",
+    "auto": "Auto",
+    "normal": "Normal",
+    "endurance": "Endurance",
+    "strength": "Strength",
+    "source": {
+      "none": "no training detected",
+      "manual": "picked by hand until #",
+      "workout": "routine running",
+      "recording": "training being recorded",
+      "detected": "training detected"
+    }
   }
 }
