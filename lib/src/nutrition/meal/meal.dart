@@ -87,6 +87,7 @@ class MealEntry {
     required this.protein,
     this.barcode = '',
     this.servingSize,
+    this.photoId,
   });
 
   /// The source product's barcode, so a logged entry can reopen its product.
@@ -102,6 +103,10 @@ class MealEntry {
   /// serving). Lets the detail view show how many servings this portion is.
   final double? servingSize;
 
+  /// The server's id of the meal photo this entry was estimated from, so the
+  /// meal log can show the photo again. Null for every other entry.
+  final String? photoId;
+
   /// Number of servings this portion represents, or null when the product has
   /// no declared serving size.
   double? get servings => (servingSize ?? 0) > 0 ? amount / servingSize! : null;
@@ -114,6 +119,7 @@ class MealEntry {
     carbs: (json['carbs'] as num).toDouble(),
     protein: (json['protein'] as num?)?.toDouble() ?? 0,
     servingSize: (json['serving'] as num?)?.toDouble(),
+    photoId: json['photo_id'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -124,5 +130,6 @@ class MealEntry {
     'carbs': carbs,
     'protein': protein,
     'serving': servingSize,
+    'photo_id': ?photoId,
   };
 }

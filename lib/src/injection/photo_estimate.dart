@@ -21,6 +21,7 @@ class PhotoEstimate {
     required this.fat,
     required this.protein,
     required this.kcal,
+    this.photoId,
   });
 
   /// The model waits on the server for up to 45 s, plus the upload; well above
@@ -34,6 +35,9 @@ class PhotoEstimate {
   final double protein;
   final double kcal;
 
+  /// The id the server stored the photo under; travels on the meal entry.
+  final String? photoId;
+
   factory PhotoEstimate.fromJson(Map<String, dynamic> json) => PhotoEstimate(
     name: json['name'] as String? ?? '',
     grams: (json['grams'] as num?)?.toDouble() ?? 0,
@@ -41,6 +45,7 @@ class PhotoEstimate {
     fat: (json['fat'] as num?)?.toDouble() ?? 0,
     protein: (json['protein'] as num?)?.toDouble() ?? 0,
     kcal: (json['kcal'] as num?)?.toDouble() ?? 0,
+    photoId: json['photo_id'] as String?,
   );
 
   /// Sends the [jpeg] to the server and reads its estimate. Null when the
@@ -73,5 +78,6 @@ class PhotoEstimate {
     amount: grams,
     carbs: carbs,
     protein: protein,
+    photoId: photoId,
   );
 }

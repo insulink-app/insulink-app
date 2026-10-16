@@ -897,7 +897,8 @@
       "bolus_value": "# U bolus",
       "show_more": "Show more",
       "delete": "Delete meal",
-      "delete_confirm": "Delete this meal?"
+      "delete_confirm": "Delete this meal?",
+      "photo_failed": "The photo could not be loaded."
     }
   },
   "sport": {

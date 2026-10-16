@@ -10,6 +10,7 @@ import 'package:insulink/src/nutrition/food/food_editor_sheet.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:insulink/src/nutrition/meal/meal_photo_page.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:provider/provider.dart';
@@ -338,7 +339,8 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     );
   }
 
-  /// Name over brand and portion, "33 g KH" on the right; a saved product
+  /// Name over brand and portion, "33 g KH" on the right. An entry estimated
+  /// from a photo opens that photo (a camera icon says so); a saved product
   /// opens its editor.
   Widget _entryRow(InsulinkColors colors, MealEntry entry) {
     final product = _findProduct(context, entry);
@@ -346,9 +348,7 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     final subtitle = _entrySubtitle(context, entry);
     final carbsUnit = Locales.string(context, 'nutrition.food.carbs');
     return InkWell(
-      onTap: product == null
-          ? null
-          : () => showFoodEditor(context, product: product),
+      onTap: _entryTap(entry, product),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
         child: Row(
@@ -384,7 +384,9 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
                 ],
               ),
             ),
-            if (product != null)
+            if (entry.photoId != null)
+              Icon(PhosphorIconsRegular.camera, size: 18, color: colors.muted)
+            else if (product != null)
               Icon(PhosphorIconsBold.caretRight, size: 18, color: colors.muted),
           ],
         ),
@@ -410,6 +412,17 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
         style: InkText.button.copyWith(color: context.danger),
       ),
     );
+  }
+
+  VoidCallback? _entryTap(MealEntry entry, FoodProduct? product) {
+    final photoId = entry.photoId;
+    if (photoId != null) {
+      return () => openMealPhoto(context, photoId);
+    }
+    if (product != null) {
+      return () => showFoodEditor(context, product: product);
+    }
+    return null;
   }
 
   /// The still-saved product an [entry] came from (matched by barcode), or null
