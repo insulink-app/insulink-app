@@ -12,8 +12,8 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 class MealPhotoHeader extends SliverPersistentHeaderDelegate {
   const MealPhotoHeader({required this.photo, required this.onTap});
 
-  static const _expandedHeight = 420.0;
-  static const _collapsedHeight = 160.0;
+  static const _expandedHeight = 510.0;
+  static const _collapsedHeight = 250.0;
   static const _gap = 14.0;
 
   final Uint8List? photo;
