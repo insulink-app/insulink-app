@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/request/response_json.dart';
 
@@ -11,8 +10,8 @@ import 'package:insulink/src/request/response_json.dart';
 /// the WHOLE pictured portion in grams with its nutrients as totals, not per
 /// 100 g (`insulink-api` `docs/MEAL_PHOTO_ESTIMATE.md`).
 ///
-/// A guess, never a dose input on its own: [product] turns it into a product
-/// for the editor, where the user checks it first.
+/// A guess, never a dose input on its own: the bolus calculator puts its
+/// carbohydrates into the editable carbs field with a note to check them.
 class PhotoEstimate {
   const PhotoEstimate({
     required this.name,
@@ -63,23 +62,4 @@ class PhotoEstimate {
 
   /// A model that saw no food answers with a zero portion.
   bool get hasFood => grams > 0;
-
-  /// The estimate as a product whose one serving IS the photographed portion,
-  /// so the portion sheet offers "1 serving" and the carb math stays the one
-  /// every other product uses. Per-100 values are rounded to one decimal for
-  /// the editor fields.
-  FoodProduct product(String servingLabel) => FoodProduct(
-    barcode: '',
-    name: name,
-    brand: '',
-    unit: 'g',
-    servingSize: grams,
-    servingLabel: servingLabel,
-    carbs100g: _per100(carbs),
-    fat100g: _per100(fat),
-    protein100g: _per100(protein),
-    kcal100g: _per100(kcal),
-  );
-
-  double _per100(double total) => (total / grams * 1000).round() / 10;
 }

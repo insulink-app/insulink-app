@@ -882,14 +882,7 @@
       "action": {
         "create": "Produkt anlegen",
         "search": "In der Produktdatenbank suchen",
-        "scan": "Barcode scannen",
-        "photo": "Mahlzeit fotografieren"
-      },
-      "photo": {
-        "check": "Geschätzt aus dem Foto. Prüfe alle Werte, bevor du danach dosierst.",
-        "failed": "Das Foto konnte nicht ausgewertet werden. Versuche es noch einmal oder trage die Werte selbst ein.",
-        "no_food": "Auf dem Foto wurde kein Essen erkannt.",
-        "serving": "Portion vom Foto"
+        "scan": "Barcode scannen"
       }
     },
     "meals": {
@@ -1511,7 +1504,13 @@
       "pump_unknown": "Unklar, ob die Pumpe abgegeben hat. Prüfe den Pod, bevor du erneut dosierst."
     },
     "next": "Weiter",
-    "active_insulin_pump": "davon # E aus der Pumpe, nicht selbst gespritzt"
+    "active_insulin_pump": "davon # E aus der Pumpe, nicht selbst gespritzt",
+    "photo": {
+      "take": "Mahlzeit fotografieren",
+      "estimated": "Geschätzt aus dem Foto: # (etwa # g). Prüfe den Wert, bevor du dosierst.",
+      "failed": "Das Foto konnte nicht ausgewertet werden. Versuche es noch einmal oder trage die Kohlenhydrate selbst ein.",
+      "no_food": "Auf dem Foto wurde kein Essen erkannt."
+    }
   },
   "service": {
     "connecting": "Verbinde…",

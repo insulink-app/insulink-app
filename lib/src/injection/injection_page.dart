@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/injection/carbs_on_board.dart';
+import 'package:insulink/src/injection/photo_carbs.dart';
+import 'package:insulink/src/injection/photo_estimate.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
@@ -45,6 +47,12 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// Products picked from the food database; their carbs add to the manual
   /// [_carbsController] amount.
   List<MealEntry> _productEntries = const [];
+
+  /// The last photo estimate and the carbs text it wrote into the field. Its
+  /// note shows only while the field still holds exactly that text, so a value
+  /// the user typed over is no longer labelled as coming from the photo.
+  PhotoEstimate? _photoEstimate;
+  String? _photoCarbsText;
 
   /// Once the user types in the bolus field we stop overwriting it with the
   /// suggestion; [_settingBolus] guards our own programmatic writes.
@@ -292,14 +300,28 @@ class _InjectionSheetState extends State<InjectionSheet> {
     );
   }
 
-  /// The meal group: carbs typed by hand plus any products picked from the food
-  /// database, whose carbs add to the manual amount.
+  /// The meal group: carbs typed by hand or estimated from a photo, plus any
+  /// products picked from the food database, whose carbs add to that amount.
   Widget _mealCard() {
+    final estimate = _photoEstimate;
     return InjectionCard(
       icon: PhosphorIconsBold.forkKnife,
       titleKey: 'injection.carbs',
       children: [
-        InjectionNumberField(controller: _carbsController, suffix: 'g'),
+        Row(
+          spacing: 10,
+          children: [
+            Expanded(
+              child: InjectionNumberField(
+                controller: _carbsController,
+                suffix: 'g',
+              ),
+            ),
+            PhotoCarbsButton(onEstimate: _applyPhotoEstimate),
+          ],
+        ),
+        if (estimate != null && _carbsController.text == _photoCarbsText)
+          PhotoCarbsNotice(estimate: estimate),
         const SizedBox(height: 10),
         InjectionProductsTab(
           onItemsChanged: _onProductItems,
@@ -307,6 +329,18 @@ class _InjectionSheetState extends State<InjectionSheet> {
         ),
       ],
     );
+  }
+
+  /// Writes the estimated carbs, rounded to whole grams, into the carbs field,
+  /// replacing what was typed there. The field stays editable, and the listener
+  /// recomputes the suggestion as for any typed value.
+  void _applyPhotoEstimate(PhotoEstimate estimate) {
+    final text = estimate.carbs.round().toString();
+    setState(() {
+      _photoEstimate = estimate;
+      _photoCarbsText = text;
+    });
+    _carbsController.text = text;
   }
 
   /// The current glucose group, prefilled from the latest reading.
