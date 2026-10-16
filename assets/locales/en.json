@@ -897,7 +897,8 @@
       "bolus_value": "# U bolus",
       "show_more": "Show more",
       "delete": "Delete meal",
-      "delete_confirm": "Delete this meal?"
+      "delete_confirm": "Delete this meal?",
+      "photo_failed": "The photo could not be loaded."
     }
   },
   "sport": {
@@ -1504,7 +1505,17 @@
       "pump_unknown": "Unclear whether the pump delivered. Check the pod before dosing again."
     },
     "next": "Next",
-    "active_insulin_pump": "of which # U from the pump, not injected by you"
+    "active_insulin_pump": "of which # U from the pump, not injected by you",
+    "photo": {
+      "take": "Photograph the meal",
+      "failed": "The photo could not be analysed. Try again or enter the carbohydrates yourself.",
+      "no_food": "No food was recognised in the photo.",
+      "hint": "Photograph the meal from above. Swipe up or down to zoom.",
+      "shutter": "Take photo",
+      "analysing": "Analysing",
+      "no_camera": "The camera could not be opened.",
+      "other": "Other"
+    }
   },
   "service": {
     "connecting": "Connecting…",

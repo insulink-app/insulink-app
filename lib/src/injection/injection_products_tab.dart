@@ -25,6 +25,8 @@ class _Item {
     amount: grams,
     carbs: carbs,
     protein: product.protein100g * grams / 100,
+    fat: product.fat100g * grams / 100,
+    kcal: product.kcal100g * grams / 100,
     servingSize: product.servingSize,
   );
 }

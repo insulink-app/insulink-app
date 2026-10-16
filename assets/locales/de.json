@@ -897,7 +897,8 @@
       "bolus_value": "# E Bolus",
       "show_more": "Mehr anzeigen",
       "delete": "Mahlzeit löschen",
-      "delete_confirm": "Diese Mahlzeit löschen?"
+      "delete_confirm": "Diese Mahlzeit löschen?",
+      "photo_failed": "Das Foto konnte nicht geladen werden."
     }
   },
   "sport": {
@@ -1504,7 +1505,17 @@
       "pump_unknown": "Unklar, ob die Pumpe abgegeben hat. Prüfe den Pod, bevor du erneut dosierst."
     },
     "next": "Weiter",
-    "active_insulin_pump": "davon # E aus der Pumpe, nicht selbst gespritzt"
+    "active_insulin_pump": "davon # E aus der Pumpe, nicht selbst gespritzt",
+    "photo": {
+      "take": "Mahlzeit fotografieren",
+      "failed": "Das Foto konnte nicht ausgewertet werden. Versuche es noch einmal oder trage die Kohlenhydrate selbst ein.",
+      "no_food": "Auf dem Foto wurde kein Essen erkannt.",
+      "hint": "Mahlzeit von oben fotografieren. Zum Zoomen hoch oder runter wischen.",
+      "shutter": "Foto aufnehmen",
+      "analysing": "Wird analysiert",
+      "no_camera": "Die Kamera konnte nicht geöffnet werden.",
+      "other": "Sonstiges"
+    }
   },
   "service": {
     "connecting": "Verbinde…",

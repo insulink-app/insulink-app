@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/sport/sport_format.dart';
@@ -10,6 +12,9 @@ import 'package:insulink/src/nutrition/food/food_editor_sheet.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:insulink/src/nutrition/meal/meal_nutrients_strip.dart';
+import 'package:insulink/src/nutrition/meal/meal_photo_header.dart';
+import 'package:insulink/src/nutrition/meal/meal_photo_page.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +43,13 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
   /// The live meal shown, replaced in place on every inline edit so the sheet
   /// reflects the change without reopening.
   late Meal meal = widget.meal;
+
+  /// The meal's photo, downloaded once for the header and the full screen
+  /// view; null for a meal that was not estimated from one.
+  late final Future<Uint8List?>? _photo = switch (widget.meal.photoId) {
+    final photoId? => fetchMealPhoto(context, photoId),
+    null => null,
+  };
 
   /// Persists an edit through [MealState] (matched by identity) and adopts the
   /// new instance so subsequent edits build on it.
@@ -71,29 +83,59 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     );
   }
 
-  /// Header with the meal's time, the carbs / glucose / bolus strip, the
-  /// products, and "Mahlzeit löschen" at the foot
+  /// Header with the meal's time, the photo when the meal was estimated from
+  /// one, the carbs / glucose / bolus strip, the nutrients the entries know,
+  /// the products, and "Mahlzeit löschen" at the foot
   /// (`docs/redesign/screens/39-mahlzeit-detail.png`).
   @override
   Widget build(BuildContext context) {
     final colors = context.ink;
     return InkSheet(
       title: _header(colors),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _stats(colors),
-            if (meal.entries.isNotEmpty) ...[
-              _productsHeader(colors),
-              _products(colors),
-            ],
-            const SizedBox(height: 16),
-            Center(child: _deleteButton(context)),
+      child: FutureBuilder<Uint8List?>(
+        future: _photo,
+        builder: (context, snapshot) => CustomScrollView(
+          shrinkWrap: true,
+          slivers: [
+            if (_showsPhoto(snapshot))
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: MealPhotoHeader(
+                  photo: snapshot.data,
+                  onTap: () => openMealPhoto(context, _photo!),
+                ),
+              ),
+            SliverToBoxAdapter(child: _details(colors)),
           ],
         ),
       ),
+    );
+  }
+
+  /// The photo header shows while the photo loads and once it has; a meal
+  /// without one, or a download that failed, starts with the stats.
+  bool _showsPhoto(AsyncSnapshot<Uint8List?> snapshot) {
+    if (_photo == null) {
+      return false;
+    }
+    return snapshot.connectionState != ConnectionState.done ||
+        snapshot.data != null;
+  }
+
+  Widget _details(InsulinkColors colors) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _stats(colors),
+        if (meal.entries.isNotEmpty) MealNutrientsStrip(meal: meal),
+        if (meal.entries.isNotEmpty) ...[
+          _productsHeader(colors),
+          _products(colors),
+        ],
+        const SizedBox(height: 16),
+        Center(child: _deleteButton(context)),
+      ],
     );
   }
 
@@ -338,7 +380,8 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     );
   }
 
-  /// Name over brand and portion, "33 g KH" on the right; a saved product
+  /// Name over brand and portion, "33 g KH" on the right. An entry estimated
+  /// from a photo opens that photo (a camera icon says so); a saved product
   /// opens its editor.
   Widget _entryRow(InsulinkColors colors, MealEntry entry) {
     final product = _findProduct(context, entry);
@@ -346,9 +389,7 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     final subtitle = _entrySubtitle(context, entry);
     final carbsUnit = Locales.string(context, 'nutrition.food.carbs');
     return InkWell(
-      onTap: product == null
-          ? null
-          : () => showFoodEditor(context, product: product),
+      onTap: _entryTap(entry, product),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
         child: Row(
@@ -384,7 +425,9 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
                 ],
               ),
             ),
-            if (product != null)
+            if (entry.photoId != null)
+              Icon(PhosphorIconsRegular.camera, size: 18, color: colors.muted)
+            else if (product != null)
               Icon(PhosphorIconsBold.caretRight, size: 18, color: colors.muted),
           ],
         ),
@@ -410,6 +453,17 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
         style: InkText.button.copyWith(color: context.danger),
       ),
     );
+  }
+
+  VoidCallback? _entryTap(MealEntry entry, FoodProduct? product) {
+    final photoId = entry.photoId;
+    if (photoId != null) {
+      return () => openMealPhoto(context, fetchMealPhoto(context, photoId));
+    }
+    if (product != null) {
+      return () => showFoodEditor(context, product: product);
+    }
+    return null;
   }
 
   /// The still-saved product an [entry] came from (matched by barcode), or null

@@ -659,15 +659,15 @@ the widget cannot drift away from the app on what is in range.
 - `flutter_blue_plus` 2.x: `device.connect(license: License.nonprofit)` is required.
 - Auth char uses **indications**; control/backfill are subscribed only AFTER
   auth (subscribing them early makes the sensor drop the connection).
-- **Do not re-add the `camera` package.** It was a direct dependency that nothing
-  imported, and it pulls `camera_android_camerax`, whose CameraX 1.6.0 does not put
-  `androidx.concurrent:concurrent-futures` on the compile classpath — javac then
+- **The `camera` package needs `concurrent-futures` on its classpath.** It is used
+  by the meal camera (`injection/meal_camera_page.dart`) and pulls
+  `camera_android_camerax`, whose CameraX 1.6.0 does not put
+  `androidx.concurrent:concurrent-futures` on the compile classpath. javac then
   fails reading the type annotations on `SurfaceRequest`
   (`Klassendatei für androidx.concurrent.futures.CallbackToFutureAdapter nicht
-  gefunden`). **Release only**; `flutter test`/`analyze` never see it. `mobile_scanner`
-  brings its own CameraX and compiles fine, so scanning is unaffected. If `camera` is
-  ever genuinely needed, add `androidx.concurrent:concurrent-futures` to that module's
-  compile classpath rather than reverting this.
+  gefunden`). **Release only**; `flutter test`/`analyze` never see it.
+  `android/build.gradle.kts` adds the dependency to that one module; keep it while
+  `camera` is a dependency, and re-check a release build after bumping `camera`.
 - **QR/DataMatrix scan (mobile_scanner) needs R8 keep rules** in
   `android/app/proguard-rules.pro` (wired via `proguardFiles` in the release
   buildType). Flutter enables R8 for release; mobile_scanner's bundled keep
