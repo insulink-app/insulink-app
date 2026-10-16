@@ -67,7 +67,7 @@ dependencies:
   pointycastle: ^4.0.0
   local_auth: ^3.0.2
   phosphoricons_flutter: ^1.0.0
-  image_picker: ^1.2.4
+  camera: ^0.12.1
 dependency_overrides:
   device_info_plus: ^13.2.0
 

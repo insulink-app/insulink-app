@@ -1508,7 +1508,11 @@
     "photo": {
       "take": "Photograph the meal",
       "failed": "The photo could not be analysed. Try again or enter the carbohydrates yourself.",
-      "no_food": "No food was recognised in the photo."
+      "no_food": "No food was recognised in the photo.",
+      "hint": "Photograph the meal from above",
+      "shutter": "Take photo",
+      "analysing": "Analysing",
+      "no_camera": "The camera could not be opened."
     }
   },
   "service": {

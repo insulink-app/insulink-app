@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/request/response_json.dart';
 
@@ -62,4 +63,15 @@ class PhotoEstimate {
 
   /// A model that saw no food answers with a zero portion.
   bool get hasFood => grams > 0;
+
+  /// The estimate as a meal entry, like a product picked from the database, so
+  /// its protein reaches the day's nutrition totals. [carbs] is the number the
+  /// user confirmed in the field (the estimate rounded to whole grams).
+  MealEntry toEntry(double carbs) => MealEntry(
+    name: name,
+    unit: 'g',
+    amount: grams,
+    carbs: carbs,
+    protein: protein,
+  );
 }
