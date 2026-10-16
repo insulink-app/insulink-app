@@ -15,12 +15,16 @@ class InjectionCard extends StatelessWidget {
     required this.titleKey,
     required this.children,
     this.emphasised = false,
+    this.trailing,
   });
 
   final IconData icon;
   final String titleKey;
   final List<Widget> children;
   final bool emphasised;
+
+  /// A small action at the top right corner, level with the title.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +43,8 @@ class InjectionCard extends StatelessWidget {
             spacing: 10,
             children: [
               _tile(colors),
-              LocaleText(titleKey, style: InkText.rowTitle),
+              Expanded(child: LocaleText(titleKey, style: InkText.rowTitle)),
+              ?trailing,
             ],
           ),
           const SizedBox(height: 12),

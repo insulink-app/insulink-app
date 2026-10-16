@@ -1507,7 +1507,6 @@
     "active_insulin_pump": "of which # U from the pump, not injected by you",
     "photo": {
       "take": "Photograph the meal",
-      "estimated": "Estimated from the photo: # (about # g). Check the value before you dose.",
       "failed": "The photo could not be analysed. Try again or enter the carbohydrates yourself.",
       "no_food": "No food was recognised in the photo."
     }

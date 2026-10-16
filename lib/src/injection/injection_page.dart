@@ -307,19 +307,9 @@ class _InjectionSheetState extends State<InjectionSheet> {
     return InjectionCard(
       icon: PhosphorIconsBold.forkKnife,
       titleKey: 'injection.carbs',
+      trailing: PhotoCarbsButton(onEstimate: _applyPhotoEstimate),
       children: [
-        Row(
-          spacing: 10,
-          children: [
-            Expanded(
-              child: InjectionNumberField(
-                controller: _carbsController,
-                suffix: 'g',
-              ),
-            ),
-            PhotoCarbsButton(onEstimate: _applyPhotoEstimate),
-          ],
-        ),
+        InjectionNumberField(controller: _carbsController, suffix: 'g'),
         if (estimate != null && _carbsController.text == _photoCarbsText)
           PhotoCarbsNotice(estimate: estimate),
         const SizedBox(height: 10),

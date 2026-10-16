@@ -4,11 +4,11 @@ import 'package:insulink/src/alert/alert.dart';
 import 'package:insulink/src/alert/loader_alert.dart';
 import 'package:insulink/src/injection/photo_estimate.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// The camera button beside the bolus calculator's carbs field.
+/// The camera button in the top right corner of the bolus calculator's carbs
+/// card.
 ///
 /// Takes a meal photo, scaled to 1024 px and JPEG-compressed (what the server
 /// estimates and keeps), and reports the estimate through [onEstimate]. A
@@ -21,10 +21,14 @@ class PhotoCarbsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton.filledTonal(
+    return IconButton(
       tooltip: Locales.string(context, 'injection.photo.take'),
-      constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
-      icon: const Icon(PhosphorIconsBold.camera, size: 24),
+      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+      padding: EdgeInsets.zero,
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      icon: const Icon(PhosphorIconsBold.camera, size: 22),
       onPressed: () => _photograph(context),
     );
   }
@@ -77,8 +81,8 @@ class PhotoCarbsButton extends StatelessWidget {
   }
 }
 
-/// Says under the carbs field that its value came from a photo: what the model
-/// saw and how big it judged the portion, and that the number is to be checked.
+/// Says under the carbs field that its value came from a photo, by naming the
+/// dish the model saw.
 class PhotoCarbsNotice extends StatelessWidget {
   const PhotoCarbsNotice({super.key, required this.estimate});
 
@@ -86,22 +90,18 @@ class PhotoCarbsNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final warning = context.ink.high;
+    final colors = context.ink;
     return Padding(
       padding: const EdgeInsets.only(top: 10, left: 4),
       child: Row(
         spacing: 8,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(PhosphorIconsBold.camera, size: 16, color: warning),
+          Icon(PhosphorIconsRegular.camera, size: 16, color: colors.muted),
           Expanded(
             child: Text(
-              Locales.string(
-                context,
-                'injection.photo.estimated',
-                params: [estimate.name, sportDecimal(estimate.grams, 0)],
-              ),
-              style: InkText.label.copyWith(color: context.ink.text),
+              estimate.name,
+              style: InkText.label.copyWith(color: colors.muted),
             ),
           ),
         ],

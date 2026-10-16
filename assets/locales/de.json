@@ -1507,7 +1507,6 @@
     "active_insulin_pump": "davon # E aus der Pumpe, nicht selbst gespritzt",
     "photo": {
       "take": "Mahlzeit fotografieren",
-      "estimated": "Geschätzt aus dem Foto: # (etwa # g). Prüfe den Wert, bevor du dosierst.",
       "failed": "Das Foto konnte nicht ausgewertet werden. Versuche es noch einmal oder trage die Kohlenhydrate selbst ein.",
       "no_food": "Auf dem Foto wurde kein Essen erkannt."
     }
