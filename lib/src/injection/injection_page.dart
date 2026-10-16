@@ -61,7 +61,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// What the meal is logged with: the photo estimate (while applied) and the
   /// picked products, so protein reaches the day's totals either way.
   List<MealEntry> get _mealEntries => [
-    if (_photoApplied) _photoEstimate!.toEntry(_manualCarbs),
+    if (_photoApplied) ..._photoEstimate!.entries(),
     ..._productEntries,
   ];
 

@@ -2,30 +2,33 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/injection/photo_estimate.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 
-/// The server's reply is read as it stands: totals for the whole plate. A reply
-/// without a portion (the demo backend, a photo without food) must not pass as
-/// an estimate of zero carbohydrates.
+/// The server's reply is read as it stands: totals for the whole plate plus one
+/// item per food. A reply without a portion (the demo backend, a photo without
+/// food) must not pass as an estimate of zero carbohydrates.
 void main() {
   final estimate = PhotoEstimate.fromJson({
-    'name': 'Spaghetti Bolognese',
-    'grams': 350,
-    'carbs': 72.4,
-    'fat': 14,
-    'protein': 18,
-    'kcal': 490,
+    'name': 'Brot mit Banane',
+    'grams': 165,
+    'carbs': 44,
+    'items': [
+      {'name': 'Mischbrot', 'grams': 45, 'carbs': 19, 'protein': 3},
+      {'name': 'Banane', 'grams': 120, 'carbs': 25, 'protein': 1.3},
+    ],
     'photo_id': 'abc',
   });
-  test('the reply is read as totals for the plate', () {
-    expect(estimate.name, 'Spaghetti Bolognese');
-    expect(estimate.carbs, 72.4);
+
+  test('the reply is read as totals plus one item per food', () {
+    expect(estimate.carbs, 44);
+    expect(estimate.items.map((item) => item.name), ['Mischbrot', 'Banane']);
     expect(estimate.hasFood, isTrue);
   });
 
-  test('the meal entry keeps the photo id and round-trips it', () {
-    final entry = estimate.toEntry(72);
-    expect(entry.photoId, 'abc');
-    expect(entry.protein, 18);
-    expect(MealEntry.fromJson(entry.toJson()).photoId, 'abc');
+  test('every food becomes a meal entry that keeps the photo id', () {
+    final entries = estimate.entries();
+    expect(entries.map((entry) => entry.carbs), [19, 25]);
+    expect(entries.map((entry) => entry.protein), [3, 1.3]);
+    expect(entries.every((entry) => entry.photoId == 'abc'), isTrue);
+    expect(MealEntry.fromJson(entries.first.toJson()).photoId, 'abc');
   });
 
   test('a zero portion means the model saw no food', () {

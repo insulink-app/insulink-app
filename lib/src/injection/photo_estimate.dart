@@ -7,20 +7,20 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/request/response_json.dart';
 
-/// What the server's model reckons is on a photographed plate: a dish name and
-/// the WHOLE pictured portion in grams with its nutrients as totals, not per
-/// 100 g (`insulink-api` `docs/MEAL_PHOTO_ESTIMATE.md`).
+/// What the server's model reckons is on a photographed plate: a short meal
+/// name, every food on it as a [PhotoEstimateItem], and the whole plate's
+/// weight and carbohydrates as totals (`insulink-api`
+/// `docs/MEAL_PHOTO_ESTIMATE.md`).
 ///
-/// A guess, never a dose input on its own: the bolus calculator puts its
-/// carbohydrates into the editable carbs field with a note to check them.
+/// A guess, never a dose input on its own: the bolus calculator puts the
+/// carbohydrates into the editable carbs field and lists the foods under it, so
+/// an oversized portion shows at a glance.
 class PhotoEstimate {
   const PhotoEstimate({
     required this.name,
     required this.grams,
     required this.carbs,
-    required this.fat,
-    required this.protein,
-    required this.kcal,
+    required this.items,
     this.photoId,
   });
 
@@ -31,20 +31,19 @@ class PhotoEstimate {
   final String name;
   final double grams;
   final double carbs;
-  final double fat;
-  final double protein;
-  final double kcal;
+  final List<PhotoEstimateItem> items;
 
-  /// The id the server stored the photo under; travels on the meal entry.
+  /// The id the server stored the photo under; travels on the meal entries.
   final String? photoId;
 
   factory PhotoEstimate.fromJson(Map<String, dynamic> json) => PhotoEstimate(
     name: json['name'] as String? ?? '',
     grams: (json['grams'] as num?)?.toDouble() ?? 0,
     carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
-    fat: (json['fat'] as num?)?.toDouble() ?? 0,
-    protein: (json['protein'] as num?)?.toDouble() ?? 0,
-    kcal: (json['kcal'] as num?)?.toDouble() ?? 0,
+    items: [
+      for (final item in json['items'] as List? ?? const [])
+        PhotoEstimateItem.fromJson(item as Map<String, dynamic>),
+    ],
     photoId: json['photo_id'] as String?,
   );
 
@@ -66,18 +65,45 @@ class PhotoEstimate {
     return PhotoEstimate.fromJson(json);
   }
 
-  /// A model that saw no food answers with a zero portion.
+  /// A model that saw no food answers with no items and a zero portion.
   bool get hasFood => grams > 0;
 
-  /// The estimate as a meal entry, like a product picked from the database, so
-  /// its protein reaches the day's nutrition totals. [carbs] is the number the
-  /// user confirmed in the field (the estimate rounded to whole grams).
-  MealEntry toEntry(double carbs) => MealEntry(
-    name: name,
-    unit: 'g',
-    amount: grams,
-    carbs: carbs,
-    protein: protein,
-    photoId: photoId,
-  );
+  /// One meal entry per food, like products picked from the database, so their
+  /// protein reaches the day's nutrition totals and the meal log lists them.
+  /// Each carries [photoId], so any of them opens the photo again.
+  List<MealEntry> entries() => [
+    for (final item in items)
+      MealEntry(
+        name: item.name,
+        unit: 'g',
+        amount: item.grams,
+        carbs: item.carbs,
+        protein: item.protein,
+        photoId: photoId,
+      ),
+  ];
+}
+
+/// One food on the photographed plate: its edible weight and the
+/// carbohydrates and protein of that weight, in grams.
+class PhotoEstimateItem {
+  const PhotoEstimateItem({
+    required this.name,
+    required this.grams,
+    required this.carbs,
+    required this.protein,
+  });
+
+  final String name;
+  final double grams;
+  final double carbs;
+  final double protein;
+
+  factory PhotoEstimateItem.fromJson(Map<String, dynamic> json) =>
+      PhotoEstimateItem(
+        name: json['name'] as String? ?? '',
+        grams: (json['grams'] as num?)?.toDouble() ?? 0,
+        carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
+        protein: (json['protein'] as num?)?.toDouble() ?? 0,
+      );
 }
