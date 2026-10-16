@@ -5,6 +5,7 @@ import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_search_page.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/food/off_client.dart';
+import 'package:insulink/src/nutrition/food/photo_estimate_flow.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -71,9 +72,9 @@ Future<FoodProduct?> openFoodSearch(BuildContext context) {
   );
 }
 
-/// The three ways to add a product — manual, database search, barcode scan —
-/// shared by the nutrition page header and the bolus product picker so both
-/// offer the same options. Each action saves into the product list, so a picker
+/// The four ways to add a product (manual, database search, barcode scan, meal
+/// photo), shared by the nutrition page header and the bolus product picker so
+/// both offer the same options. Each action saves into the product list, so a picker
 /// watching that list sees the new entry immediately.
 class FoodAddActions extends StatelessWidget {
   const FoodAddActions({super.key, this.onScanRequested, this.onCreated});
@@ -111,6 +112,12 @@ class FoodAddActions extends StatelessWidget {
           tooltip: Locales.string(context, 'nutrition.food.action.search'),
           icon: const Icon(PhosphorIconsBold.magnifyingGlass, size: 24),
           onPressed: () => _report(openFoodSearch(context)),
+        ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          tooltip: Locales.string(context, 'nutrition.food.action.photo'),
+          icon: const Icon(PhosphorIconsBold.camera, size: 24),
+          onPressed: () => _report(photographAndEditProduct(context)),
         ),
         IconButton(
           visualDensity: VisualDensity.compact,

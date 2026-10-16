@@ -3,6 +3,8 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/base/segmented_toggle.dart';
 import 'package:insulink/src/base/labeled_field.dart';
 import 'package:insulink/src/base/ink_sheet.dart';
+import 'package:insulink/src/base/notice_banner.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
@@ -17,20 +19,28 @@ import 'package:provider/provider.dart';
 /// saving. The bolus product picker needs it: a product created there is the one
 /// the user is about to dose for, so it goes straight on to the portion instead
 /// of having to be found again in the list.
+///
+/// [noticeKey] puts a warning strip above the fields, for values the user has to
+/// check before trusting them (a photo estimate).
 Future<FoodProduct?> showFoodEditor(
   BuildContext context, {
   FoodProduct? product,
+  String? noticeKey,
 }) {
   return showInkSheet<FoodProduct>(
     context: context,
-    builder: (_) => _FoodEditorSheet(product: product ?? FoodProduct.blank()),
+    builder: (_) => _FoodEditorSheet(
+      product: product ?? FoodProduct.blank(),
+      noticeKey: noticeKey,
+    ),
   );
 }
 
 class _FoodEditorSheet extends StatefulWidget {
-  const _FoodEditorSheet({required this.product});
+  const _FoodEditorSheet({required this.product, this.noticeKey});
 
   final FoodProduct product;
+  final String? noticeKey;
 
   @override
   State<_FoodEditorSheet> createState() => _FoodEditorSheetState();
@@ -115,6 +125,12 @@ class _FoodEditorSheetState extends State<_FoodEditorSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 14,
           children: [
+            if (widget.noticeKey case final noticeKey?)
+              NoticeBanner(
+                icon: PhosphorIconsBold.camera,
+                tone: NoticeTone.warning,
+                child: LocaleText(noticeKey),
+              ),
             _field('nutrition.food.name', _name),
             _field('nutrition.food.brand', _brand),
             _servingRow(),

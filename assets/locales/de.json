@@ -882,7 +882,14 @@
       "action": {
         "create": "Produkt anlegen",
         "search": "In der Produktdatenbank suchen",
-        "scan": "Barcode scannen"
+        "scan": "Barcode scannen",
+        "photo": "Mahlzeit fotografieren"
+      },
+      "photo": {
+        "check": "Geschätzt aus dem Foto. Prüfe alle Werte, bevor du danach dosierst.",
+        "failed": "Das Foto konnte nicht ausgewertet werden. Versuche es noch einmal oder trage die Werte selbst ein.",
+        "no_food": "Auf dem Foto wurde kein Essen erkannt.",
+        "serving": "Portion vom Foto"
       }
     },
     "meals": {
