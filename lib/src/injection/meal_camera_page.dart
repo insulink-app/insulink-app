@@ -17,7 +17,7 @@ Future<PhotoEstimate?> photographMeal(BuildContext context) {
 }
 
 /// Full-screen camera for the bolus calculator, in the barcode scanner's look:
-/// the live picture, close and torch at the top, a hint and a round shutter at
+/// the live picture, close and torch at the top, a round shutter at
 /// the foot.
 ///
 /// The picture is shown whole at the top and starts at 0.8x where the lens

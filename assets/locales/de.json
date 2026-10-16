@@ -1502,12 +1502,12 @@
       "take": "Mahlzeit fotografieren",
       "failed": "Das Foto konnte nicht ausgewertet werden. Versuche es noch einmal oder trage die Kohlenhydrate selbst ein.",
       "no_food": "Auf dem Foto wurde kein Essen erkannt.",
-      "hint": "Mahlzeit von oben fotografieren. Zum Zoomen hoch oder runter wischen.",
       "shutter": "Foto aufnehmen",
       "analysing": "Wird analysiert",
       "no_camera": "Die Kamera konnte nicht geöffnet werden.",
       "other": "Sonstiges",
-      "manual": "Kohlenhydrate manuell eingeben"
+      "manual": "Manuell",
+      "light": "Licht"
     }
   },
   "service": {
