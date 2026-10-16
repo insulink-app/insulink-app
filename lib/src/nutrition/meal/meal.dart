@@ -28,6 +28,24 @@ class Meal {
   /// carries no product breakdown).
   double get protein => entries.fold(0, (sum, entry) => sum + entry.protein);
 
+  /// Total fat and energy across the entries, or null when no entry knows its
+  /// own (a manual carb entry, or entries logged before they were kept).
+  double? get fat => _knownTotal((entry) => entry.fat);
+  double? get kcal => _knownTotal((entry) => entry.kcal);
+
+  double? _knownTotal(double? Function(MealEntry entry) nutrient) {
+    final known = entries.map(nutrient).whereType<double>();
+    return known.isEmpty
+        ? null
+        : known.fold<double>(0, (sum, value) => sum + value);
+  }
+
+  /// The photo this meal was estimated from, when one was: every entry of a
+  /// photo estimate carries the same id.
+  String? get photoId => entries
+      .map((entry) => entry.photoId)
+      .firstWhere((photoId) => photoId != null, orElse: () => null);
+
   /// Stable identity of this logged meal: the millisecond it was logged at.
   ///
   /// Object identity cannot serve as one. A sync pull rebuilds the entire log
@@ -85,6 +103,8 @@ class MealEntry {
     required this.amount,
     required this.carbs,
     required this.protein,
+    this.fat,
+    this.kcal,
     this.barcode = '',
     this.servingSize,
     this.photoId,
@@ -98,6 +118,11 @@ class MealEntry {
   final double amount;
   final double carbs;
   final double protein;
+
+  /// Fat in grams and energy in kcal of this portion. Null for entries logged
+  /// before they were kept.
+  final double? fat;
+  final double? kcal;
 
   /// The product's serving size in [unit] (absent when the product declares no
   /// serving). Lets the detail view show how many servings this portion is.
@@ -118,6 +143,8 @@ class MealEntry {
     amount: (json['amount'] as num).toDouble(),
     carbs: (json['carbs'] as num).toDouble(),
     protein: (json['protein'] as num?)?.toDouble() ?? 0,
+    fat: (json['fat'] as num?)?.toDouble(),
+    kcal: (json['kcal'] as num?)?.toDouble(),
     servingSize: (json['serving'] as num?)?.toDouble(),
     photoId: json['photo_id'] as String?,
   );
@@ -129,6 +156,8 @@ class MealEntry {
     'amount': amount,
     'carbs': carbs,
     'protein': protein,
+    'fat': ?fat,
+    'kcal': ?kcal,
     'serving': servingSize,
     'photo_id': ?photoId,
   };

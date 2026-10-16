@@ -10,6 +10,8 @@ import 'package:insulink/src/nutrition/food/food_editor_sheet.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:insulink/src/nutrition/meal/meal_nutrients_strip.dart';
+import 'package:insulink/src/nutrition/meal/meal_photo_banner.dart';
 import 'package:insulink/src/nutrition/meal/meal_photo_page.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
@@ -72,8 +74,9 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     );
   }
 
-  /// Header with the meal's time, the carbs / glucose / bolus strip, the
-  /// products, and "Mahlzeit löschen" at the foot
+  /// Header with the meal's time, the photo when the meal was estimated from
+  /// one, the carbs / glucose / bolus strip, the nutrients the entries know,
+  /// the products, and "Mahlzeit löschen" at the foot
   /// (`docs/redesign/screens/39-mahlzeit-detail.png`).
   @override
   Widget build(BuildContext context) {
@@ -85,7 +88,10 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (meal.photoId case final photoId?)
+              MealPhotoBanner(photoId: photoId),
             _stats(colors),
+            if (meal.entries.isNotEmpty) MealNutrientsStrip(meal: meal),
             if (meal.entries.isNotEmpty) ...[
               _productsHeader(colors),
               _products(colors),
@@ -417,7 +423,7 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
   VoidCallback? _entryTap(MealEntry entry, FoodProduct? product) {
     final photoId = entry.photoId;
     if (photoId != null) {
-      return () => openMealPhoto(context, photoId);
+      return () => openMealPhoto(context, fetchMealPhoto(context, photoId));
     }
     if (product != null) {
       return () => showFoodEditor(context, product: product);

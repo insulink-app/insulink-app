@@ -6,39 +6,35 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/request/response_json.dart';
 
-/// Opens the photo a meal entry was estimated from.
-Future<void> openMealPhoto(BuildContext context, String photoId) {
+/// Fetches a stored meal photo from the server (`/nutrition/photos/find/`).
+/// Null offline, or when the server has no such photo for this user.
+Future<Uint8List?> fetchMealPhoto(BuildContext context, String photoId) async {
+  final response = await Request.post(
+    url: '/nutrition/photos/find/',
+    body: {'id': photoId},
+  ).send(context);
+  final image = response?.jsonObject?['image'];
+  if (response == null || !response.isApiSuccess || image is! String) {
+    return null;
+  }
+  return base64Decode(image);
+}
+
+/// Opens a meal photo full screen. [photo] is a fetch already running (or
+/// done), so a photo the meal sheet has shown is not downloaded twice.
+Future<void> openMealPhoto(BuildContext context, Future<Uint8List?> photo) {
   return Navigator.of(
     context,
-  ).push(MaterialPageRoute(builder: (_) => MealPhotoPage(photoId: photoId)));
+  ).push(MaterialPageRoute(builder: (_) => MealPhotoPage(photo: photo)));
 }
 
 /// A meal photo full screen, black like the camera it came from, pinch to
-/// zoom. The photo lives only on the server (`/nutrition/photos/find/`), so it
-/// is fetched each time; offline it says it could not be loaded.
-class MealPhotoPage extends StatefulWidget {
-  const MealPhotoPage({super.key, required this.photoId});
+/// zoom. The photo lives only on the server, so offline it says it could not
+/// be loaded.
+class MealPhotoPage extends StatelessWidget {
+  const MealPhotoPage({super.key, required this.photo});
 
-  final String photoId;
-
-  @override
-  State<MealPhotoPage> createState() => _MealPhotoPageState();
-}
-
-class _MealPhotoPageState extends State<MealPhotoPage> {
-  late final Future<Uint8List?> _photo = _load();
-
-  Future<Uint8List?> _load() async {
-    final response = await Request.post(
-      url: '/nutrition/photos/find/',
-      body: {'id': widget.photoId},
-    ).send(context);
-    final image = response?.jsonObject?['image'];
-    if (response == null || !response.isApiSuccess || image is! String) {
-      return null;
-    }
-    return base64Decode(image);
-  }
+  final Future<Uint8List?> photo;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +48,7 @@ class _MealPhotoPageState extends State<MealPhotoPage> {
         leading: const CloseButton(),
       ),
       body: FutureBuilder<Uint8List?>(
-        future: _photo,
+        future: photo,
         builder: (context, snapshot) => Center(child: _body(snapshot)),
       ),
     );

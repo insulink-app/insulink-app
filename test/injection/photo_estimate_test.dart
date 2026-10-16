@@ -11,8 +11,22 @@ void main() {
     'grams': 165,
     'carbs': 44,
     'items': [
-      {'name': 'Mischbrot', 'grams': 45, 'carbs': 19, 'protein': 3},
-      {'name': 'Banane', 'grams': 120, 'carbs': 25, 'protein': 1.3},
+      {
+        'name': 'Mischbrot',
+        'grams': 45,
+        'carbs': 19,
+        'protein': 3,
+        'fat': 0.5,
+        'kcal': 95,
+      },
+      {
+        'name': 'Banane',
+        'grams': 120,
+        'carbs': 25,
+        'protein': 1.3,
+        'fat': 0.2,
+        'kcal': 107,
+      },
     ],
     'photo_id': 'abc',
   });
@@ -29,6 +43,28 @@ void main() {
     expect(entries.map((entry) => entry.protein), [3, 1.3]);
     expect(entries.every((entry) => entry.photoId == 'abc'), isTrue);
     expect(MealEntry.fromJson(entries.first.toJson()).photoId, 'abc');
+  });
+
+  test('a meal from the photo knows its fat, energy and photo', () {
+    final meal = Meal(
+      time: DateTime(2026, 10, 16, 12),
+      carbs: 44,
+      glucoseMgdl: 120,
+      bolus: 4,
+      entries: estimate.entries(),
+    );
+    expect(meal.kcal, 202);
+    expect(meal.fat, closeTo(0.7, 0.001));
+    expect(meal.photoId, 'abc');
+    final typed = Meal(
+      time: DateTime(2026, 10, 16, 12),
+      carbs: 44,
+      glucoseMgdl: 120,
+      bolus: 4,
+      entries: const [],
+    );
+    expect(typed.kcal, isNull);
+    expect(typed.photoId, isNull);
   });
 
   test('a zero portion means the model saw no food', () {

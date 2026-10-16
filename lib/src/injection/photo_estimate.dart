@@ -101,25 +101,31 @@ class PhotoEstimate {
         amount: item.grams,
         carbs: item.carbs,
         protein: item.protein,
+        fat: item.fat,
+        kcal: item.kcal,
         photoId: photoId,
       ),
   ];
 }
 
-/// One food on the photographed plate: its edible weight and the
-/// carbohydrates and protein of that weight, in grams.
+/// One food on the photographed plate: its edible weight, the carbohydrates,
+/// protein and fat of that weight in grams, and its energy in kcal.
 class PhotoEstimateItem {
   const PhotoEstimateItem({
     required this.name,
     required this.grams,
     required this.carbs,
     required this.protein,
+    required this.fat,
+    required this.kcal,
   });
 
   final String name;
   final double grams;
   final double carbs;
   final double protein;
+  final double fat;
+  final double kcal;
 
   /// Several foods as one, their weights and nutrients summed.
   factory PhotoEstimateItem.combined(
@@ -130,6 +136,8 @@ class PhotoEstimateItem {
     grams: parts.fold(0, (sum, part) => sum + part.grams),
     carbs: parts.fold(0, (sum, part) => sum + part.carbs),
     protein: parts.fold(0, (sum, part) => sum + part.protein),
+    fat: parts.fold(0, (sum, part) => sum + part.fat),
+    kcal: parts.fold(0, (sum, part) => sum + part.kcal),
   );
 
   factory PhotoEstimateItem.fromJson(Map<String, dynamic> json) =>
@@ -138,5 +146,7 @@ class PhotoEstimateItem {
         grams: (json['grams'] as num?)?.toDouble() ?? 0,
         carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
         protein: (json['protein'] as num?)?.toDouble() ?? 0,
+        fat: (json['fat'] as num?)?.toDouble() ?? 0,
+        kcal: (json['kcal'] as num?)?.toDouble() ?? 0,
       );
 }
