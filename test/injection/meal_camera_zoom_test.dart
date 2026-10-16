@@ -17,6 +17,11 @@ void main() {
     expect(widest.swiped(-5000).level, 8);
   });
 
+  test('the camera opens at 0.8x, or the nearest the lens can do', () {
+    expect(CameraZoom.start(min: 0.5, max: 10).level, 0.8);
+    expect(CameraZoom.start(min: 1, max: 10).level, 1);
+  });
+
   test('the label drops a whole number decimal', () {
     expect(widest.label, '0,5×');
     expect(widest.swiped(-400).label, '2×');

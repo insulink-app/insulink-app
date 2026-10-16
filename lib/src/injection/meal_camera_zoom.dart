@@ -10,6 +10,15 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 class CameraZoom {
   const CameraZoom({required this.min, required this.max, required this.level});
 
+  /// Where the camera opens: [_startLevel], or the nearest the lens can do (1x
+  /// on a phone without a wide angle lens).
+  factory CameraZoom.start({required double min, required double max}) =>
+      CameraZoom(min: min, max: max, level: _startLevel.clamp(min, max));
+
+  /// Slightly wider than the main lens: a plate fits without leaning over it,
+  /// and the wide angle's edge distortion stays small.
+  static const _startLevel = 0.8;
+
   /// A digital zoom past this only blurs the plate.
   static const _ceiling = 8.0;
 

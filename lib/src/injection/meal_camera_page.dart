@@ -20,8 +20,8 @@ Future<PhotoEstimate?> photographMeal(BuildContext context) {
 /// the live picture, close and torch at the top, a hint and a round shutter at
 /// the foot.
 ///
-/// The picture is shown whole and starts at the widest zoom the camera has; a
-/// swipe up or down zooms in or out ([CameraZoom]).
+/// The picture is shown whole at the top and starts at 0.8x where the lens
+/// allows; a swipe up or down zooms in or out ([CameraZoom]).
 ///
 /// After the shutter the photo stays on screen under [MealAnalysingOverlay]
 /// while the server estimates it, instead of a spinner popup over a page the
@@ -55,9 +55,9 @@ class _MealCameraPageState extends State<MealCameraPage> {
     super.dispose();
   }
 
-  /// Starts the back camera zoomed all the way out: on a phone with a wide
-  /// angle lens that is below 1x, so a plate fits without leaning over it. No
-  /// camera, or the permission refused, says so and leaves the page.
+  /// Starts the back camera slightly zoomed out ([CameraZoom.start]), so a
+  /// plate fits without leaning over it. No camera, or the permission refused,
+  /// says so and leaves the page.
   Future<void> _openCamera() async {
     try {
       final camera = CameraController(
@@ -67,7 +67,7 @@ class _MealCameraPageState extends State<MealCameraPage> {
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
       await camera.initialize();
-      final zoom = await _widestZoom(camera);
+      final zoom = await _startZoom(camera);
       if (!mounted) {
         return await camera.dispose();
       }
@@ -80,12 +80,14 @@ class _MealCameraPageState extends State<MealCameraPage> {
     }
   }
 
-  /// Moves [camera] to its minimum zoom and returns the range it can swipe in.
-  Future<CameraZoom> _widestZoom(CameraController camera) async {
-    final min = await camera.getMinZoomLevel();
-    final max = await camera.getMaxZoomLevel();
-    await camera.setZoomLevel(min);
-    return CameraZoom(min: min, max: max, level: min);
+  /// Moves [camera] to [CameraZoom.start] and returns the range it can swipe in.
+  Future<CameraZoom> _startZoom(CameraController camera) async {
+    final zoom = CameraZoom.start(
+      min: await camera.getMinZoomLevel(),
+      max: await camera.getMaxZoomLevel(),
+    );
+    await camera.setZoomLevel(zoom.level);
+    return zoom;
   }
 
   /// A swipe up zooms in, down zooms out. The camera is not awaited: drag

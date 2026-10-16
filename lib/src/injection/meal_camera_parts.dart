@@ -88,9 +88,9 @@ class MealCameraFrame extends StatelessWidget {
   }
 }
 
-/// The live picture, whole: centred and not cropped, so the frame on screen is
-/// the frame of the photo. Filling the screen used to cut off its sides, which
-/// made the user step closer than the photo needed.
+/// The live picture, whole and not cropped, so the frame on screen is the frame
+/// of the photo. It sits at the top like a camera app's viewfinder, with the
+/// controls on the black below it.
 class MealCameraPreview extends StatelessWidget {
   const MealCameraPreview({super.key, required this.camera});
 
@@ -98,7 +98,23 @@ class MealCameraPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: CameraPreview(camera));
+    return _TopPicture(child: CameraPreview(camera));
+  }
+}
+
+/// Full width at the top, under the status bar: the one place the live picture
+/// and the frozen photo both sit, so the shot does not jump when it freezes.
+class _TopPicture extends StatelessWidget {
+  const _TopPicture({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SafeArea(bottom: false, child: child),
+    );
   }
 }
 
@@ -135,8 +151,8 @@ class _ShutterButton extends StatelessWidget {
   }
 }
 
-/// The photo just taken, held still while the server looks at it: darkened, a
-/// soft accent line sweeping down over it like a scanner, and "Analysing" with
+/// The photo just taken, held still where the live picture was while the server
+/// looks at it: darkened, a soft accent line sweeping over it like a scanner, and "Analysing" with
 /// a small spinner at the foot.
 class MealAnalysingOverlay extends StatefulWidget {
   const MealAnalysingOverlay({super.key, required this.photo});
@@ -165,11 +181,26 @@ class _MealAnalysingOverlayState extends State<MealAnalysingOverlay>
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.memory(widget.photo, fit: BoxFit.contain, gaplessPlayback: true),
-        const ColoredBox(color: Colors.black38),
-        AnimatedBuilder(
-          animation: _sweep,
-          builder: (context, _) => _scanLine(context, _sweep.value),
+        _TopPicture(
+          child: Stack(
+            children: [
+              Image.memory(
+                widget.photo,
+                width: double.infinity,
+                fit: BoxFit.fitWidth,
+                gaplessPlayback: true,
+              ),
+              const Positioned.fill(child: ColoredBox(color: Colors.black38)),
+              Positioned.fill(
+                child: ClipRect(
+                  child: AnimatedBuilder(
+                    animation: _sweep,
+                    builder: (context, _) => _scanLine(context, _sweep.value),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         _label(context),
       ],
