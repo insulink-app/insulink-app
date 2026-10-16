@@ -19,6 +19,8 @@ Future<PhotoEstimate?> photographMeal(BuildContext context) {
 /// the live picture, close and torch at the top, a hint and a round shutter at
 /// the foot.
 ///
+/// The picture is shown whole and starts at the widest zoom the camera has.
+///
 /// After the shutter the photo stays on screen under [MealAnalysingOverlay]
 /// while the server estimates it, instead of a spinner popup over a page the
 /// user no longer looks at. A failed estimate, or one that saw no food, says so
@@ -50,8 +52,9 @@ class _MealCameraPageState extends State<MealCameraPage> {
     super.dispose();
   }
 
-  /// Starts the back camera. No camera, or the permission refused, says so and
-  /// leaves the page.
+  /// Starts the back camera zoomed all the way out: on a phone with a wide
+  /// angle lens that is below 1x, so a plate fits without leaning over it. No
+  /// camera, or the permission refused, says so and leaves the page.
   Future<void> _openCamera() async {
     try {
       final camera = CameraController(
@@ -61,6 +64,7 @@ class _MealCameraPageState extends State<MealCameraPage> {
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
       await camera.initialize();
+      await camera.setZoomLevel(await camera.getMinZoomLevel());
       if (!mounted) {
         return await camera.dispose();
       }

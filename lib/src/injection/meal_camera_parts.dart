@@ -81,7 +81,9 @@ class MealCameraFrame extends StatelessWidget {
   }
 }
 
-/// The live picture, cropped to fill the screen instead of letterboxed.
+/// The live picture, whole: centred and not cropped, so the frame on screen is
+/// the frame of the photo. Filling the screen used to cut off its sides, which
+/// made the user step closer than the photo needed.
 class MealCameraPreview extends StatelessWidget {
   const MealCameraPreview({super.key, required this.camera});
 
@@ -89,19 +91,7 @@ class MealCameraPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = camera.value.previewSize;
-    if (size == null) {
-      return const SizedBox.shrink();
-    }
-    return FittedBox(
-      fit: BoxFit.cover,
-      clipBehavior: Clip.hardEdge,
-      child: SizedBox(
-        width: size.height,
-        height: size.width,
-        child: CameraPreview(camera),
-      ),
-    );
+    return Center(child: CameraPreview(camera));
   }
 }
 
@@ -168,7 +158,7 @@ class _MealAnalysingOverlayState extends State<MealAnalysingOverlay>
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.memory(widget.photo, fit: BoxFit.cover, gaplessPlayback: true),
+        Image.memory(widget.photo, fit: BoxFit.contain, gaplessPlayback: true),
         const ColoredBox(color: Colors.black38),
         AnimatedBuilder(
           animation: _sweep,
