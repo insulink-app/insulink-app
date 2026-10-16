@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/ink_dialog.dart';
 import 'package:insulink/src/injection/meal_camera_parts.dart';
+import 'package:insulink/src/injection/meal_camera_zoom.dart';
 import 'package:insulink/src/injection/photo_estimate.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -19,7 +20,8 @@ Future<PhotoEstimate?> photographMeal(BuildContext context) {
 /// the live picture, close and torch at the top, a hint and a round shutter at
 /// the foot.
 ///
-/// The picture is shown whole and starts at the widest zoom the camera has.
+/// The picture is shown whole and starts at the widest zoom the camera has; a
+/// swipe up or down zooms in or out ([CameraZoom]).
 ///
 /// After the shutter the photo stays on screen under [MealAnalysingOverlay]
 /// while the server estimates it, instead of a spinner popup over a page the
@@ -37,6 +39,7 @@ class MealCameraPage extends StatefulWidget {
 
 class _MealCameraPageState extends State<MealCameraPage> {
   CameraController? _camera;
+  CameraZoom? _zoom;
   Uint8List? _photo;
   bool _torch = false;
 
@@ -64,14 +67,36 @@ class _MealCameraPageState extends State<MealCameraPage> {
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
       await camera.initialize();
-      await camera.setZoomLevel(await camera.getMinZoomLevel());
+      final zoom = await _widestZoom(camera);
       if (!mounted) {
         return await camera.dispose();
       }
-      setState(() => _camera = camera);
+      setState(() {
+        _camera = camera;
+        _zoom = zoom;
+      });
     } catch (_) {
       await _fail('injection.photo.no_camera', leave: true);
     }
+  }
+
+  /// Moves [camera] to its minimum zoom and returns the range it can swipe in.
+  Future<CameraZoom> _widestZoom(CameraController camera) async {
+    final min = await camera.getMinZoomLevel();
+    final max = await camera.getMaxZoomLevel();
+    await camera.setZoomLevel(min);
+    return CameraZoom(min: min, max: max, level: min);
+  }
+
+  /// A swipe up zooms in, down zooms out. The camera is not awaited: drag
+  /// updates arrive faster than it answers, and the next one supersedes it.
+  void _swipeZoom(DragUpdateDetails details) {
+    final zoom = _zoom?.swiped(details.delta.dy);
+    if (zoom == null) {
+      return;
+    }
+    setState(() => _zoom = zoom);
+    _camera?.setZoomLevel(zoom.level).ignore();
   }
 
   /// The back camera, else whichever there is. Throws when there is none.
@@ -136,6 +161,7 @@ class _MealCameraPageState extends State<MealCameraPage> {
   Widget build(BuildContext context) {
     final photo = _photo;
     return MealCameraFrame(
+      zoomLabel: photo == null ? _zoom?.label : null,
       torch: _torch,
       onTorch: _camera == null || photo != null ? null : _toggleTorch,
       onShutter: _camera == null || photo != null ? null : _capture,
@@ -143,7 +169,11 @@ class _MealCameraPageState extends State<MealCameraPage> {
           ? MealAnalysingOverlay(photo: photo)
           : _camera == null
           ? const SizedBox.shrink()
-          : MealCameraPreview(camera: _camera!),
+          : GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onVerticalDragUpdate: _swipeZoom,
+              child: MealCameraPreview(camera: _camera!),
+            ),
     );
   }
 }

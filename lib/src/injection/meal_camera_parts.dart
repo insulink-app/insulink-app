@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/injection/meal_camera_zoom.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
@@ -15,12 +16,16 @@ class MealCameraFrame extends StatelessWidget {
   const MealCameraFrame({
     super.key,
     required this.picture,
+    required this.zoomLabel,
     required this.torch,
     required this.onTorch,
     required this.onShutter,
   });
 
   final Widget picture;
+
+  /// The current zoom ("0,5×") over the hint; null hides it.
+  final String? zoomLabel;
   final bool torch;
   final VoidCallback? onTorch;
   final VoidCallback? onShutter;
@@ -65,13 +70,15 @@ class MealCameraFrame extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            spacing: 24,
+            spacing: 16,
             children: [
+              if (zoomLabel case final label?) CameraZoomPill(label: label),
               const LocaleText(
                 'injection.photo.hint',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white, fontSize: 15),
               ),
+              const SizedBox(height: 4),
               _ShutterButton(onPressed: onShutter!),
             ],
           ),
