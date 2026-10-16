@@ -1513,7 +1513,8 @@
       "hint": "Mahlzeit von oben fotografieren. Zum Zoomen hoch oder runter wischen.",
       "shutter": "Foto aufnehmen",
       "analysing": "Wird analysiert",
-      "no_camera": "Die Kamera konnte nicht geöffnet werden."
+      "no_camera": "Die Kamera konnte nicht geöffnet werden.",
+      "other": "Sonstiges"
     }
   },
   "service": {

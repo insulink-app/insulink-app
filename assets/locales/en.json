@@ -1513,7 +1513,8 @@
       "hint": "Photograph the meal from above. Swipe up or down to zoom.",
       "shutter": "Take photo",
       "analysing": "Analysing",
-      "no_camera": "The camera could not be opened."
+      "no_camera": "The camera could not be opened.",
+      "other": "Other"
     }
   },
   "service": {

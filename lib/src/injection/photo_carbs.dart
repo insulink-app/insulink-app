@@ -37,9 +37,10 @@ class PhotoCarbsButton extends StatelessWidget {
   }
 }
 
-/// Lists under the carbs field the foods the photo estimate saw, one row each:
-/// "Banane · 120 g" on the left, its "25 g KH" on the right, a muted camera
-/// icon in front of the first. An oversized portion of one food shows here at a
+/// Lists under the carbs field the foods the photo estimate saw, most
+/// carbohydrates first and the small ones folded into "Sonstiges"
+/// ([PhotoEstimate.summary]): "Banane · 120 g" on the left, its "25 g KH" on
+/// the right, a muted camera icon in front of the first. An oversized portion of one food shows here at a
 /// glance instead of hiding in the total.
 class PhotoCarbsNotice extends StatelessWidget {
   const PhotoCarbsNotice({super.key, required this.estimate});
@@ -69,7 +70,9 @@ class PhotoCarbsNotice extends StatelessWidget {
             child: Column(
               spacing: 4,
               children: [
-                for (final item in estimate.items)
+                for (final item in estimate.summary(
+                  Locales.string(context, 'injection.photo.other'),
+                ))
                   _itemRow(item, style, carbsUnit),
               ],
             ),

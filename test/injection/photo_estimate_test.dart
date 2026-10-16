@@ -34,4 +34,32 @@ void main() {
   test('a zero portion means the model saw no food', () {
     expect(PhotoEstimate.fromJson({'success': true}).hasFood, isFalse);
   });
+
+  test('the list puts most carbohydrates first and folds small ones', () {
+    final plate = PhotoEstimate.fromJson({
+      'grams': 400,
+      'items': [
+        {'name': 'Salat', 'grams': 80, 'carbs': 2, 'protein': 1},
+        {'name': 'Mischbrot', 'grams': 45, 'carbs': 19, 'protein': 3},
+        {'name': 'Butter', 'grams': 10, 'carbs': 0, 'protein': 0},
+        {'name': 'Banane', 'grams': 120, 'carbs': 25, 'protein': 1.3},
+      ],
+    });
+    final summary = plate.summary('Sonstiges');
+    expect(summary.map((item) => item.name), [
+      'Banane',
+      'Mischbrot',
+      'Sonstiges',
+    ]);
+    expect(summary.last.carbs, 2);
+    expect(summary.last.grams, 90);
+    expect(plate.entries(), hasLength(4));
+  });
+
+  test('without small foods there is no "Sonstiges" row', () {
+    expect(estimate.summary('Sonstiges').map((item) => item.name), [
+      'Banane',
+      'Mischbrot',
+    ]);
+  });
 }

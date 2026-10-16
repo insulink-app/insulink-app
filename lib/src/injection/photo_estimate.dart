@@ -68,6 +68,28 @@ class PhotoEstimate {
   /// A model that saw no food answers with no items and a zero portion.
   bool get hasFood => grams > 0;
 
+  /// Below this many grams of carbohydrates a food is not worth its own row.
+  static const _minorCarbs = 5.0;
+
+  /// The foods as the calculator lists them: most carbohydrates first, and
+  /// everything under [_minorCarbs] folded into one row named [otherName] at
+  /// the end, weights and carbohydrates summed. Only the list is shortened; the
+  /// meal still logs every food on its own ([entries]).
+  List<PhotoEstimateItem> summary(String otherName) {
+    final major = [
+      for (final item in items)
+        if (item.carbs >= _minorCarbs) item,
+    ]..sort((first, second) => second.carbs.compareTo(first.carbs));
+    final minor = [
+      for (final item in items)
+        if (item.carbs < _minorCarbs) item,
+    ];
+    if (minor.isEmpty) {
+      return major;
+    }
+    return [...major, PhotoEstimateItem.combined(otherName, minor)];
+  }
+
   /// One meal entry per food, like products picked from the database, so their
   /// protein reaches the day's nutrition totals and the meal log lists them.
   /// Each carries [photoId], so any of them opens the photo again.
@@ -98,6 +120,17 @@ class PhotoEstimateItem {
   final double grams;
   final double carbs;
   final double protein;
+
+  /// Several foods as one, their weights and nutrients summed.
+  factory PhotoEstimateItem.combined(
+    String name,
+    List<PhotoEstimateItem> parts,
+  ) => PhotoEstimateItem(
+    name: name,
+    grams: parts.fold(0, (sum, part) => sum + part.grams),
+    carbs: parts.fold(0, (sum, part) => sum + part.carbs),
+    protein: parts.fold(0, (sum, part) => sum + part.protein),
+  );
 
   factory PhotoEstimateItem.fromJson(Map<String, dynamic> json) =>
       PhotoEstimateItem(
