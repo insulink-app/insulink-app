@@ -95,7 +95,6 @@ class PhotoCarbsNotice extends StatelessWidget {
       padding: const EdgeInsets.only(top: 10, left: 4),
       child: Row(
         spacing: 8,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(PhosphorIconsRegular.camera, size: 16, color: colors.muted),
           Expanded(
