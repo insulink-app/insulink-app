@@ -12,9 +12,9 @@ void main() {
   final now = DateTime(2026, 5, 4, 21, 30);
 
   List<({DateTime at, double units})> points(int count) => [
-        for (var index = 0; index < count; index++)
-          (at: now.add(Duration(minutes: index * 5)), units: 1.0),
-      ];
+    for (var index = 0; index < count; index++)
+      (at: now.add(Duration(minutes: index * 5)), units: 1.0),
+  ];
 
   /// The app's own theme, not a bare one: these charts read colour roles that
   /// only [AppTheme] registers, so a default theme fails on the render path this

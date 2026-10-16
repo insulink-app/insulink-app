@@ -42,7 +42,7 @@ typedef ScreenshotScene = ({String name, void Function(BuildContext) open});
 /// it, so the shots need no taps on localized text.
 final List<ScreenshotScene> screenshotScenes = [
   _page('glucose', const OverviewChartPage()),
-  (name: 'bolus-calculator', open: showInjectionSheet),
+  _page('bolus-calculator', const InjectionPage()),
   (name: 'sensor', open: openSensorPage),
   (name: 'sensor-history', open: _history(DeviceHistoryKind.sensors)),
   (name: 'pump', open: openPumpPage),

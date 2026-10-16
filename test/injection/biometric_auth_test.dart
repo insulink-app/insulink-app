@@ -72,16 +72,19 @@ void main() {
     expect(auth.prompts, 2);
   });
 
-  test('a rejection that arrives with the app already away is retried', () async {
-    await lifecycle(AppLifecycleState.paused);
-    final auth = _ScriptedAuth([false, true]);
-    final confirmed = auth.confirm('reason');
-    await settle();
-    expect(auth.prompts, 1);
-    await lifecycle(AppLifecycleState.resumed);
-    expect(await confirmed, isTrue);
-    expect(auth.prompts, 2);
-  });
+  test(
+    'a rejection that arrives with the app already away is retried',
+    () async {
+      await lifecycle(AppLifecycleState.paused);
+      final auth = _ScriptedAuth([false, true]);
+      final confirmed = auth.confirm('reason');
+      await settle();
+      expect(auth.prompts, 1);
+      await lifecycle(AppLifecycleState.resumed);
+      expect(await confirmed, isTrue);
+      expect(auth.prompts, 2);
+    },
+  );
 
   test('the retry asks for the same thing the first prompt did', () async {
     final auth = _ScriptedAuth([false, true]);

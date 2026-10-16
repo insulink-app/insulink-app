@@ -10,8 +10,9 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The meal camera's chrome around [picture], black and white like the barcode
 /// scanner: close and torch at the top, the hint and the round shutter at the
-/// foot. A null [onShutter] or [onTorch] hides that control (camera starting,
-/// or a photo being analysed).
+/// foot, and in the bolus flow the manual entry under it. A null [onShutter],
+/// [onTorch] or [onManual] hides that control (camera starting, a photo being
+/// analysed, or the camera opened just for a photo).
 class MealCameraFrame extends StatelessWidget {
   const MealCameraFrame({
     super.key,
@@ -20,6 +21,7 @@ class MealCameraFrame extends StatelessWidget {
     required this.torch,
     required this.onTorch,
     required this.onShutter,
+    this.onManual,
   });
 
   final Widget picture;
@@ -29,6 +31,7 @@ class MealCameraFrame extends StatelessWidget {
   final bool torch;
   final VoidCallback? onTorch;
   final VoidCallback? onShutter;
+  final VoidCallback? onManual;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +47,7 @@ class MealCameraFrame extends StatelessWidget {
       ),
       body: Stack(
         fit: StackFit.expand,
-        children: [picture, if (onShutter != null) _foot()],
+        children: [picture, if (onShutter != null || onManual != null) _foot()],
       ),
     );
   }
@@ -73,17 +76,30 @@ class MealCameraFrame extends StatelessWidget {
             spacing: 16,
             children: [
               if (zoomLabel case final label?) CameraZoomPill(label: label),
-              const LocaleText(
-                'injection.photo.hint',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 15),
-              ),
-              const SizedBox(height: 4),
-              _ShutterButton(onPressed: onShutter!),
+              if (onShutter case final shutter?) ...[
+                const LocaleText(
+                  'injection.photo.hint',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 15),
+                ),
+                const SizedBox(height: 4),
+                _ShutterButton(onPressed: shutter),
+              ],
+              if (onManual case final manual?) _manualButton(manual),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// "Enter carbohydrates manually": skips the photo and goes straight on.
+  Widget _manualButton(VoidCallback onPressed) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(foregroundColor: Colors.white),
+      icon: const Icon(PhosphorIconsBold.keyboard, size: 20),
+      label: const LocaleText('injection.photo.manual'),
     );
   }
 }

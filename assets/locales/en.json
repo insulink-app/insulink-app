@@ -1491,20 +1491,12 @@
       "pick": "Choose product"
     },
     "confirm": {
-      "title": "Confirm bolus",
       "to_pump": "to #",
-      "active": "Active insulin",
-      "active_subtracted": "# U subtracted",
       "button": "Confirm",
       "reason": "Confirm your bolus",
-      "success": "Bolus confirmed",
       "failed": "Authentication failed",
-      "button_pump": "Send bolus to pump",
-      "log_without_bolus": "Log without bolus",
-      "pump_refused": "The pump did not deliver the bolus.",
-      "pump_unknown": "Unclear whether the pump delivered. Check the pod before dosing again."
+      "button_pump": "Send bolus to pump"
     },
-    "next": "Next",
     "active_insulin_pump": "of which # U from the pump, not injected by you",
     "photo": {
       "take": "Photograph the meal",
@@ -1514,7 +1506,8 @@
       "shutter": "Take photo",
       "analysing": "Analysing",
       "no_camera": "The camera could not be opened.",
-      "other": "Other"
+      "other": "Other",
+      "manual": "Enter carbohydrates manually"
     }
   },
   "service": {
