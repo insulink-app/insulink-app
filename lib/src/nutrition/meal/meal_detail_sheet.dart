@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/sport/sport_format.dart';
@@ -11,7 +13,7 @@ import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_nutrients_strip.dart';
-import 'package:insulink/src/nutrition/meal/meal_photo_banner.dart';
+import 'package:insulink/src/nutrition/meal/meal_photo_header.dart';
 import 'package:insulink/src/nutrition/meal/meal_photo_page.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
@@ -41,6 +43,13 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
   /// The live meal shown, replaced in place on every inline edit so the sheet
   /// reflects the change without reopening.
   late Meal meal = widget.meal;
+
+  /// The meal's photo, downloaded once for the header and the full screen
+  /// view; null for a meal that was not estimated from one.
+  late final Future<Uint8List?>? _photo = switch (widget.meal.photoId) {
+    final photoId? => fetchMealPhoto(context, photoId),
+    null => null,
+  };
 
   /// Persists an edit through [MealState] (matched by identity) and adopts the
   /// new instance so subsequent edits build on it.
@@ -83,24 +92,50 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     final colors = context.ink;
     return InkSheet(
       title: _header(colors),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (meal.photoId case final photoId?)
-              MealPhotoBanner(photoId: photoId),
-            _stats(colors),
-            if (meal.entries.isNotEmpty) MealNutrientsStrip(meal: meal),
-            if (meal.entries.isNotEmpty) ...[
-              _productsHeader(colors),
-              _products(colors),
-            ],
-            const SizedBox(height: 16),
-            Center(child: _deleteButton(context)),
+      child: FutureBuilder<Uint8List?>(
+        future: _photo,
+        builder: (context, snapshot) => CustomScrollView(
+          shrinkWrap: true,
+          slivers: [
+            if (_showsPhoto(snapshot))
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: MealPhotoHeader(
+                  photo: snapshot.data,
+                  onTap: () => openMealPhoto(context, _photo!),
+                ),
+              ),
+            SliverToBoxAdapter(child: _details(colors)),
           ],
         ),
       ),
+    );
+  }
+
+  /// The photo header shows while the photo loads and once it has; a meal
+  /// without one, or a download that failed, starts with the stats.
+  bool _showsPhoto(AsyncSnapshot<Uint8List?> snapshot) {
+    if (_photo == null) {
+      return false;
+    }
+    return snapshot.connectionState != ConnectionState.done ||
+        snapshot.data != null;
+  }
+
+  Widget _details(InsulinkColors colors) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _stats(colors),
+        if (meal.entries.isNotEmpty) MealNutrientsStrip(meal: meal),
+        if (meal.entries.isNotEmpty) ...[
+          _productsHeader(colors),
+          _products(colors),
+        ],
+        const SizedBox(height: 16),
+        Center(child: _deleteButton(context)),
+      ],
     );
   }
 
