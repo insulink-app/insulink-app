@@ -124,7 +124,8 @@ class _MealCameraPageState extends State<MealCameraPage> {
     setState(() => _torch = next);
   }
 
-  /// Freezes the shot on screen and asks the server about it.
+  /// Freezes the shot on screen, switches the torch off (the live picture it lit
+  /// is gone) and asks the server about it.
   Future<void> _capture() async {
     final camera = _camera;
     if (camera == null || _photo != null) {
@@ -134,7 +135,11 @@ class _MealCameraPageState extends State<MealCameraPage> {
     if (!mounted) {
       return;
     }
-    setState(() => _photo = photo);
+    setState(() {
+      _photo = photo;
+      _torch = false;
+    });
+    camera.setFlashMode(FlashMode.off).ignore();
     final estimate = await PhotoEstimate.request(context, photo);
     if (!mounted) {
       return;
