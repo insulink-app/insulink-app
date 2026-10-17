@@ -1491,30 +1491,23 @@
       "pick": "Produkt wählen"
     },
     "confirm": {
-      "title": "Bolus bestätigen",
       "to_pump": "an #",
-      "active": "Aktives Insulin",
-      "active_subtracted": "# E abgezogen",
       "button": "Bestätigen",
       "reason": "Bolus mit Fingerabdruck bestätigen",
-      "success": "Bolus bestätigt",
       "failed": "Authentifizierung fehlgeschlagen",
-      "button_pump": "Bolus an Pumpe senden",
-      "log_without_bolus": "Ohne Bolus protokollieren",
-      "pump_refused": "Die Pumpe hat den Bolus nicht abgegeben.",
-      "pump_unknown": "Unklar, ob die Pumpe abgegeben hat. Prüfe den Pod, bevor du erneut dosierst."
+      "button_pump": "Bolus an Pumpe senden"
     },
-    "next": "Weiter",
     "active_insulin_pump": "davon # E aus der Pumpe, nicht selbst gespritzt",
     "photo": {
       "take": "Mahlzeit fotografieren",
       "failed": "Das Foto konnte nicht ausgewertet werden. Versuche es noch einmal oder trage die Kohlenhydrate selbst ein.",
       "no_food": "Auf dem Foto wurde kein Essen erkannt.",
-      "hint": "Mahlzeit von oben fotografieren. Zum Zoomen hoch oder runter wischen.",
       "shutter": "Foto aufnehmen",
       "analysing": "Wird analysiert",
       "no_camera": "Die Kamera konnte nicht geöffnet werden.",
-      "other": "Sonstiges"
+      "other": "Sonstiges",
+      "manual": "Manuell",
+      "light": "Licht"
     }
   },
   "service": {

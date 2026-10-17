@@ -25,12 +25,12 @@ void main() {
   });
 
   Meal bolusAt(DateTime time, double units) => Meal(
-        time: time,
-        carbs: 0,
-        glucoseMgdl: 0,
-        bolus: units,
-        entries: const [],
-      );
+    time: time,
+    carbs: 0,
+    glucoseMgdl: 0,
+    bolus: units,
+    entries: const [],
+  );
 
   /// An hour of the automation running [rate] against a [schedule].
   Future<void> automationRan({
@@ -40,20 +40,24 @@ void main() {
     required int lastedMinutes,
   }) async {
     final start = now.subtract(Duration(minutes: minutesAgo));
-    await store.recordLoopCycle(PodLoopCycle(
-      at: start,
-      unitsPerHour: rate,
-      scheduledUnitsPerHour: schedule,
-      reason: LoopReason.correcting,
-      delivered: true,
-    ));
-    await store.recordLoopCycle(PodLoopCycle(
-      at: start.add(Duration(minutes: lastedMinutes)),
-      unitsPerHour: schedule,
-      scheduledUnitsPerHour: schedule,
-      reason: LoopReason.holdingSchedule,
-      delivered: true,
-    ));
+    await store.recordLoopCycle(
+      PodLoopCycle(
+        at: start,
+        unitsPerHour: rate,
+        scheduledUnitsPerHour: schedule,
+        reason: LoopReason.correcting,
+        delivered: true,
+      ),
+    );
+    await store.recordLoopCycle(
+      PodLoopCycle(
+        at: start.add(Duration(minutes: lastedMinutes)),
+        unitsPerHour: schedule,
+        scheduledUnitsPerHour: schedule,
+        reason: LoopReason.holdingSchedule,
+        delivered: true,
+      ),
+    );
   }
 
   group('what the calculator was blind to', () {
@@ -65,7 +69,9 @@ void main() {
         lastedMinutes: 30,
       );
 
-      final parts = InsulinOnBoard(duration).parts(const [], pod: store, now: now);
+      final parts = InsulinOnBoard(
+        duration,
+      ).parts(const [], pod: store, now: now);
 
       expect(parts.boluses, 0);
       expect(parts.automation, greaterThan(0.5));
@@ -76,26 +82,35 @@ void main() {
     /// minutes, each replacing the last, for an hour at 3 U/h against a 1 U/h
     /// schedule. Two units of excess went in, and the calculator used to
     /// subtract none of it.
-    test('an hour of elevated basal is on board, and the meal log misses it',
-        () async {
-      final meals = [bolusAt(now.subtract(const Duration(minutes: 30)), 2.0)];
-      for (var minutesAgo = 60; minutesAgo > 0; minutesAgo -= 5) {
-        await store.recordLoopCycle(PodLoopCycle(
-          at: now.subtract(Duration(minutes: minutesAgo)),
-          unitsPerHour: 3.0,
-          scheduledUnitsPerHour: 1.0,
-          reason: LoopReason.correcting,
-          delivered: true,
-        ));
-      }
+    test(
+      'an hour of elevated basal is on board, and the meal log misses it',
+      () async {
+        final meals = [bolusAt(now.subtract(const Duration(minutes: 30)), 2.0)];
+        for (var minutesAgo = 60; minutesAgo > 0; minutesAgo -= 5) {
+          await store.recordLoopCycle(
+            PodLoopCycle(
+              at: now.subtract(Duration(minutes: minutesAgo)),
+              unitsPerHour: 3.0,
+              scheduledUnitsPerHour: 1.0,
+              reason: LoopReason.correcting,
+              delivered: true,
+            ),
+          );
+        }
 
-      final parts = InsulinOnBoard(duration).parts(meals, pod: store, now: now);
+        final parts = InsulinOnBoard(
+          duration,
+        ).parts(meals, pod: store, now: now);
 
-      expect(parts.boluses, closeTo(1.667, 0.01));
-      expect(parts.automation, greaterThan(1.5),
-          reason: 'two units went in over the hour, most of it still active');
-      expect(parts.total, greaterThan(parts.boluses + 1.5));
-    });
+        expect(parts.boluses, closeTo(1.667, 0.01));
+        expect(
+          parts.automation,
+          greaterThan(1.5),
+          reason: 'two units went in over the hour, most of it still active',
+        );
+        expect(parts.total, greaterThan(parts.boluses + 1.5));
+      },
+    );
 
     /// A cycle nothing replaced stops counting at the fuse: past it the pod has
     /// returned to its schedule on its own, so an hour-old lone cycle carries
@@ -108,7 +123,9 @@ void main() {
         lastedMinutes: 60,
       );
 
-      final parts = InsulinOnBoard(duration).parts(const [], pod: store, now: now);
+      final parts = InsulinOnBoard(
+        duration,
+      ).parts(const [], pod: store, now: now);
 
       expect(parts.automation, closeTo(0.583, 0.01));
     });
@@ -116,13 +133,17 @@ void main() {
     /// A dose the pod never confirmed may be in the body, and no correction
     /// should be stacked on top of one.
     test('an unconfirmed dose counts too', () async {
-      await store.recordUnconfirmedBolus(PodDelivery(
-        at: now.subtract(const Duration(minutes: 30)),
-        units: 6,
-        kind: PodDeliveryKind.bolus,
-      ));
+      await store.recordUnconfirmedBolus(
+        PodDelivery(
+          at: now.subtract(const Duration(minutes: 30)),
+          units: 6,
+          kind: PodDeliveryKind.bolus,
+        ),
+      );
 
-      final parts = InsulinOnBoard(duration).parts(const [], pod: store, now: now);
+      final parts = InsulinOnBoard(
+        duration,
+      ).parts(const [], pod: store, now: now);
 
       expect(parts.unconfirmed, closeTo(5.0, 0.01));
       expect(parts.beyondBoluses, closeTo(5.0, 0.01));
@@ -136,11 +157,13 @@ void main() {
       final meals = [bolusAt(now.subtract(const Duration(minutes: 30)), 4.0)];
       // What the pod's own delivery log holds for that same dose. It feeds the
       // hourly ceiling, never insulin on board.
-      await store.recordDelivery(PodDelivery(
-        at: now.subtract(const Duration(minutes: 30)),
-        units: 4.0,
-        kind: PodDeliveryKind.bolus,
-      ));
+      await store.recordDelivery(
+        PodDelivery(
+          at: now.subtract(const Duration(minutes: 30)),
+          units: 4.0,
+          kind: PodDeliveryKind.bolus,
+        ),
+      );
 
       final parts = InsulinOnBoard(duration).parts(meals, pod: store, now: now);
 
@@ -151,11 +174,13 @@ void main() {
     /// Priming and cannula volumes never reach the user.
     test('activation volumes are not insulin on board', () async {
       for (final kind in [PodDeliveryKind.prime, PodDeliveryKind.cannula]) {
-        await store.recordDelivery(PodDelivery(
-          at: now.subtract(const Duration(minutes: 20)),
-          units: 2.6,
-          kind: kind,
-        ));
+        await store.recordDelivery(
+          PodDelivery(
+            at: now.subtract(const Duration(minutes: 20)),
+            units: 2.6,
+            kind: kind,
+          ),
+        );
       }
 
       expect(
@@ -178,7 +203,9 @@ void main() {
       );
 
       expect(
-        InsulinOnBoard(duration).parts(const [], pod: store, now: now).automation,
+        InsulinOnBoard(
+          duration,
+        ).parts(const [], pod: store, now: now).automation,
         0,
       );
     });
@@ -195,7 +222,9 @@ void main() {
       );
 
       expect(
-        InsulinOnBoard(duration).parts(const [], pod: store, now: now).automation,
+        InsulinOnBoard(
+          duration,
+        ).parts(const [], pod: store, now: now).automation,
         0,
       );
     });
@@ -240,7 +269,8 @@ void main() {
     /// Two units of unseen insulin at a correction factor of 35 is 70 mg/dL of
     /// correction that should never have been given.
     test('what being blind to two units was worth', () {
-      final overdose = profile.suggestedBolus(
+      final overdose =
+          profile.suggestedBolus(
             carbs: 0,
             glucoseMgdl: 200,
             targetMgdl: 110,

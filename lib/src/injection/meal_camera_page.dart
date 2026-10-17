@@ -17,7 +17,7 @@ Future<PhotoEstimate?> photographMeal(BuildContext context) {
 }
 
 /// Full-screen camera for the bolus calculator, in the barcode scanner's look:
-/// the live picture, close and torch at the top, a hint and a round shutter at
+/// the live picture, close and torch at the top, a round shutter at
 /// the foot.
 ///
 /// The picture is shown whole at the top and starts at 0.8x where the lens
@@ -30,8 +30,16 @@ Future<PhotoEstimate?> photographMeal(BuildContext context) {
 ///
 /// The capture runs at [ResolutionPreset.high] (720p): a JPEG of a few hundred
 /// kB, well under the server's 2 MB cap, and plenty for the model.
+///
+/// With [next] it is the first step of the bolus flow: a "manual" button sits
+/// under the shutter, and the estimate, or null for the manual choice or a
+/// camera that would not open, replaces the camera with the page [next] builds.
 class MealCameraPage extends StatefulWidget {
-  const MealCameraPage({super.key});
+  const MealCameraPage({super.key, this.next});
+
+  /// The page a photo or the manual choice leads to. Null pops the estimate
+  /// back to whoever pushed the camera instead.
+  final Widget Function(PhotoEstimate? estimate)? next;
 
   @override
   State<MealCameraPage> createState() => _MealCameraPageState();
@@ -136,7 +144,20 @@ class _MealCameraPageState extends State<MealCameraPage> {
         estimate == null ? 'injection.photo.failed' : 'injection.photo.no_food',
       );
     }
-    Navigator.of(context).pop(estimate);
+    _finish(estimate);
+  }
+
+  /// Hands [estimate] on: to the [MealCameraPage.next] page in place of the
+  /// camera, else back to the caller.
+  void _finish(PhotoEstimate? estimate) {
+    final next = widget.next;
+    if (next == null) {
+      Navigator.of(context).pop(estimate);
+      return;
+    }
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => next(estimate)));
   }
 
   /// Says what went wrong, then either leaves or goes back to the live picture
@@ -154,7 +175,7 @@ class _MealCameraPageState extends State<MealCameraPage> {
       return;
     }
     if (leave) {
-      return Navigator.of(context).pop();
+      return _finish(null);
     }
     setState(() => _photo = null);
   }
@@ -167,6 +188,9 @@ class _MealCameraPageState extends State<MealCameraPage> {
       torch: _torch,
       onTorch: _camera == null || photo != null ? null : _toggleTorch,
       onShutter: _camera == null || photo != null ? null : _capture,
+      onManual: widget.next == null || photo != null
+          ? null
+          : () => _finish(null),
       picture: photo != null
           ? MealAnalysingOverlay(photo: photo)
           : _camera == null
