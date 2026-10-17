@@ -56,7 +56,7 @@ dependencies:
   # over BLE like the G7. Only used by the Libre 3 pairing flow. flutter_nfc_kit
   # (not nfc_manager 3.x) because it targets a recent compileSdk and exposes raw
   # ISO 15693 transceive for the Abbott custom commands.
-  flutter_nfc_kit: ^3.6.0
+  flutter_nfc_kit: ^3.7.0
   pedometer: ^4.2.0
   flutter_activity_recognition: ^4.0.0
   health: ^13.3.2
