@@ -113,6 +113,7 @@
       "now": "Jetzt",
       "axis_now": "jetzt",
       "show_meals": "Mahlzeiten anzeigen",
+      "show_slope": "Steigung statt Glukose zeigen",
       "insulin": {
         "_": "Insulin",
         "basal": "Basal",

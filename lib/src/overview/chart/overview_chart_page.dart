@@ -41,6 +41,9 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
 
   bool _showMeals = false;
 
+  /// The slope view is a quick look, so unlike the meals it is not stored.
+  bool _showSlope = false;
+
   /// What the two charts share so they behave as one: the window, the axis
   /// labels, the scrub, and where a pinch is applied.
   final ChartSync _sync = ChartSync();
@@ -235,6 +238,13 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
         title: LocaleText('overview.glucose'),
         actions: [
           IconButton(
+            isSelected: _showSlope,
+            tooltip: Locales.string(context, 'overview.chart.show_slope'),
+            icon: const Icon(PhosphorIconsRegular.trendUp),
+            selectedIcon: const Icon(PhosphorIconsFill.trendUp),
+            onPressed: () => setState(() => _showSlope = !_showSlope),
+          ),
+          IconButton(
             isSelected: _showMeals,
             tooltip: Locales.string(context, 'overview.chart.show_meals'),
             icon: const Icon(PhosphorIconsRegular.forkKnife),
@@ -268,6 +278,7 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
                   sensorStart: controller.sensorStart,
                   navigable: true,
                   showMeals: _showMeals,
+                  showSlope: _showSlope,
                   meals: meals,
                   sync: _sync,
                   // The same fit the overview uses, rather than a fixed 0 to 300
