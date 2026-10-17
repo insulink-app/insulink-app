@@ -113,6 +113,7 @@
       "now": "Now",
       "axis_now": "now",
       "show_meals": "Show meals",
+      "show_slope": "Show rate of change instead",
       "insulin": {
         "_": "Insulin",
         "basal": "Basal",
