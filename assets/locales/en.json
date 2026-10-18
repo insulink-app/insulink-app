@@ -1510,7 +1510,8 @@
       "manual": "Manual",
       "light": "Light",
       "fewer": "One piece fewer",
-      "more": "One piece more"
+      "more": "One piece more",
+      "carbs": "On the photo: # g carbs"
     }
   },
   "service": {

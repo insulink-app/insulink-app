@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/injection/carbs_on_board.dart';
 import 'package:insulink/src/injection/photo_carbs.dart';
+import 'package:insulink/src/injection/photo_carbs_notice.dart';
 import 'package:insulink/src/injection/photo_estimate.dart';
+import 'package:insulink/src/injection/photo_estimate_item.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
@@ -59,20 +61,15 @@ class _InjectionPageState extends State<InjectionPage> {
   /// [_carbsController] amount.
   List<MealEntry> _productEntries = const [];
 
-  /// The last photo estimate and the carbs text it wrote into the field.
+  /// The last photo estimate. It stays when the user types over the carbs
+  /// field: a corrected total is still that plate, so its foods and its photo
+  /// stay on the meal. Only another photo replaces it.
   PhotoEstimate? _photoEstimate;
-  String? _photoCarbsText;
 
-  /// The photo counts only while the field still holds exactly the text it
-  /// wrote: then its note shows and the meal gets its entry. A value the user
-  /// typed over is a manual amount again, so neither applies.
-  bool get _photoApplied =>
-      _photoEstimate != null && _carbsController.text == _photoCarbsText;
-
-  /// What the meal is logged with: the photo estimate (while applied) and the
-  /// picked products, so protein reaches the day's totals either way.
+  /// What the meal is logged with: the photo's foods and the picked products,
+  /// so protein reaches the day's totals either way.
   List<MealEntry> get _mealEntries => [
-    if (_photoApplied) ..._photoEstimate!.entries(),
+    ...?_photoEstimate?.entries(),
     ..._productEntries,
   ];
 
@@ -341,13 +338,8 @@ class _InjectionPageState extends State<InjectionPage> {
           suffix: 'g',
           autofocus: widget.estimate == null,
         ),
-        if (_photoApplied)
-          PhotoCarbsNotice(
-            estimate: _photoEstimate!,
-            onRecount: (item, count) => setState(
-              () => _takeEstimate(_photoEstimate!.recounted(item, count)),
-            ),
-          ),
+        if (_photoEstimate case final estimate?)
+          PhotoCarbsNotice(estimate: estimate, onRecount: _recount),
         const SizedBox(height: 10),
         InjectionProductsTab(
           onItemsChanged: _onProductItems,
@@ -361,10 +353,23 @@ class _InjectionPageState extends State<InjectionPage> {
   /// replacing what was typed there. The field stays editable, and the listener
   /// recomputes the suggestion as for any typed value.
   void _takeEstimate(PhotoEstimate estimate) {
-    final text = estimate.carbs.round().toString();
     _photoEstimate = estimate;
-    _photoCarbsText = text;
-    _carbsController.text = text;
+    _carbsController.text = estimate.carbs.round().toString();
+  }
+
+  /// A corrected piece count moves the carbs field by the difference it makes,
+  /// so a total the user typed over keeps its own correction: 70 typed, one
+  /// macaroon of 12 g fewer, 58. Never below zero.
+  void _recount(PhotoEstimateItem item, int count) {
+    final recounted = _photoEstimate!.recounted(item, count);
+    final corrected = _manualCarbs + recounted.carbs - _photoEstimate!.carbs;
+    setState(() {
+      _photoEstimate = recounted;
+      _carbsController.text = corrected
+          .clamp(0, double.infinity)
+          .round()
+          .toString();
+    });
   }
 
   /// The current glucose group, prefilled from the latest reading.
