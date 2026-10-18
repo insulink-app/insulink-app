@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
+import 'package:insulink/src/injection/photo_estimate_item.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/request/request.dart';
@@ -24,9 +25,9 @@ class PhotoEstimate {
     this.photoId,
   });
 
-  /// The model waits on the server for up to 45 s, plus the upload; well above
+  /// The model waits on the server for up to 60 s, plus the upload; well above
   /// the 10 s every other request gets.
-  static const _timeout = Duration(seconds: 60);
+  static const _timeout = Duration(seconds: 75);
 
   final String name;
   final double grams;
@@ -65,25 +66,45 @@ class PhotoEstimate {
     return PhotoEstimate.fromJson(json);
   }
 
+  /// The estimate with [item] counted as [count] pieces instead, the totals
+  /// following, so the carbs field and the logged entries match the corrected
+  /// plate.
+  PhotoEstimate recounted(PhotoEstimateItem item, int count) {
+    final recountedItems = [
+      for (final each in items)
+        identical(each, item) ? each.recounted(count) : each,
+    ];
+    return PhotoEstimate(
+      name: name,
+      grams: recountedItems.fold(0, (sum, each) => sum + each.grams),
+      carbs: recountedItems.fold(0, (sum, each) => sum + each.carbs),
+      items: recountedItems,
+      photoId: photoId,
+    );
+  }
+
   /// A model that saw no food answers with no items and a zero portion.
   bool get hasFood => grams > 0;
 
   /// Below this many grams of carbohydrates a food is not worth its own row.
   static const _minorCarbs = 5.0;
 
-  /// The foods as the calculator lists them: most carbohydrates first, and
-  /// everything under [_minorCarbs] folded into one row named [otherName] at
-  /// the end, weights and carbohydrates summed. Only the list is shortened; the
-  /// meal still logs every food on its own ([entries]).
+  /// The foods worth a row of their own, most carbohydrates first.
+  List<PhotoEstimateItem> get major => [
+    for (final item in items)
+      if (item.carbs >= _minorCarbs) item,
+  ]..sort((first, second) => second.carbs.compareTo(first.carbs));
+
+  /// The foods under [_minorCarbs], folded into "Sonstiges" by the calculator.
+  List<PhotoEstimateItem> get minor => [
+    for (final item in items)
+      if (item.carbs < _minorCarbs) item,
+  ];
+
+  /// The foods as one list: [major], then [minor] folded into one row named
+  /// [otherName] at the end, weights and carbohydrates summed. Only the list is
+  /// shortened; the meal still logs every food on its own ([entries]).
   List<PhotoEstimateItem> summary(String otherName) {
-    final major = [
-      for (final item in items)
-        if (item.carbs >= _minorCarbs) item,
-    ]..sort((first, second) => second.carbs.compareTo(first.carbs));
-    final minor = [
-      for (final item in items)
-        if (item.carbs < _minorCarbs) item,
-    ];
     if (minor.isEmpty) {
       return major;
     }
@@ -106,47 +127,4 @@ class PhotoEstimate {
         photoId: photoId,
       ),
   ];
-}
-
-/// One food on the photographed plate: its edible weight, the carbohydrates,
-/// protein and fat of that weight in grams, and its energy in kcal.
-class PhotoEstimateItem {
-  const PhotoEstimateItem({
-    required this.name,
-    required this.grams,
-    required this.carbs,
-    required this.protein,
-    required this.fat,
-    required this.kcal,
-  });
-
-  final String name;
-  final double grams;
-  final double carbs;
-  final double protein;
-  final double fat;
-  final double kcal;
-
-  /// Several foods as one, their weights and nutrients summed.
-  factory PhotoEstimateItem.combined(
-    String name,
-    List<PhotoEstimateItem> parts,
-  ) => PhotoEstimateItem(
-    name: name,
-    grams: parts.fold(0, (sum, part) => sum + part.grams),
-    carbs: parts.fold(0, (sum, part) => sum + part.carbs),
-    protein: parts.fold(0, (sum, part) => sum + part.protein),
-    fat: parts.fold(0, (sum, part) => sum + part.fat),
-    kcal: parts.fold(0, (sum, part) => sum + part.kcal),
-  );
-
-  factory PhotoEstimateItem.fromJson(Map<String, dynamic> json) =>
-      PhotoEstimateItem(
-        name: json['name'] as String? ?? '',
-        grams: (json['grams'] as num?)?.toDouble() ?? 0,
-        carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
-        protein: (json['protein'] as num?)?.toDouble() ?? 0,
-        fat: (json['fat'] as num?)?.toDouble() ?? 0,
-        kcal: (json['kcal'] as num?)?.toDouble() ?? 0,
-      );
 }

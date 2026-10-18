@@ -1508,7 +1508,11 @@
       "no_camera": "Die Kamera konnte nicht geöffnet werden.",
       "other": "Sonstiges",
       "manual": "Manuell",
-      "light": "Licht"
+      "light": "Licht",
+      "fewer": "Ein Stück weniger",
+      "more": "Ein Stück mehr",
+      "other_open": "Weitere Lebensmittel zeigen",
+      "other_close": "Weitere Lebensmittel ausblenden"
     }
   },
   "service": {

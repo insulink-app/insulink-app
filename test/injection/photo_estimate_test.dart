@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/injection/photo_estimate.dart';
+import 'package:insulink/src/injection/photo_estimate_item.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 
 /// The server's reply is read as it stands: totals for the whole plate plus one
@@ -97,5 +98,32 @@ void main() {
       'Banane',
       'Mischbrot',
     ]);
+  });
+
+  test('recounting a food scales it and the totals, other foods stay', () {
+    final toast = PhotoEstimate.fromJson({
+      'name': 'Toast mit Makronen',
+      'grams': 90,
+      'carbs': 48,
+      'items': [
+        {'name': 'Toast', 'count': 2, 'grams': 50, 'carbs': 24, 'kcal': 130},
+        {'name': 'Kokosmakrone', 'count': 2, 'grams': 40, 'carbs': 24},
+      ],
+    });
+    final corrected = toast.recounted(toast.items.first, 4);
+    expect(corrected.items.first.count, 4);
+    expect(corrected.items.first.grams, 100);
+    expect(corrected.items.first.kcal, 260);
+    expect(corrected.items.last.carbs, 24);
+    expect(corrected.carbs, 72);
+    expect(corrected.grams, 140);
+  });
+
+  test('a reply without a count offers no counter', () {
+    expect(estimate.items.any((item) => item.countable), isFalse);
+    expect(
+      PhotoEstimateItem.combined('Sonstiges', estimate.items).countable,
+      isFalse,
+    );
   });
 }

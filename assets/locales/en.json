@@ -1508,7 +1508,11 @@
       "no_camera": "The camera could not be opened.",
       "other": "Other",
       "manual": "Manual",
-      "light": "Light"
+      "light": "Light",
+      "fewer": "One piece fewer",
+      "more": "One piece more",
+      "other_open": "Show the other foods",
+      "other_close": "Hide the other foods"
     }
   },
   "service": {
