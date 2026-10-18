@@ -17,6 +17,7 @@ import 'package:insulink/src/overview/chart/chart_window.dart';
 import 'package:insulink/src/overview/chart/chart_x_axis.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_series.dart';
 import 'package:insulink/src/overview/chart/glucose_line_chart.dart';
+import 'package:insulink/src/overview/chart/glucose_slope_series.dart';
 import 'package:insulink/src/overview/chart/insulin_bar_chart.dart';
 import 'package:insulink/src/overview/chart/mirrored_readout.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -40,6 +41,7 @@ class OverviewChart extends StatefulWidget {
     this.minYmgdl = 0,
     this.maxYmgdl = 300,
     this.showMeals = false,
+    this.showSlope = false,
     this.meals = const [],
     this.sync,
   });
@@ -50,6 +52,9 @@ class OverviewChart extends StatefulWidget {
   /// the meal's details). Off by default; the detail page's toggle turns it on.
   final bool showMeals;
   final List<Meal> meals;
+
+  /// Draw the glucose rate of change ([GlucoseSlopeSeries]) instead of glucose.
+  final bool showSlope;
 
   /// Preview mode (on the overview): hide the range selector and disable touch,
   /// so an outer tap handler can open the full-screen detail page.
@@ -693,25 +698,36 @@ class _OverviewChartState extends State<OverviewChart> {
       colors: colors,
       minimal: widget.preview,
     );
-    final bars = series.buildBars();
+    final glucoseBars = series.buildBars();
+    final slope = widget.showSlope
+        ? GlucoseSlopeSeries(
+            realSpots: series.realSpots,
+            glucose: glucose,
+            color: context.ink.accent,
+          )
+        : null;
+    final bars = slope == null ? glucoseBars : [slope.bar()];
     // Dashed forecast line past the latest reading. Always built (anchored at the
     // latest reading, not the scroll position) and clipped by fl_chart once
     // scrolled out — the window width is constant, so nothing jumps.
     final showBand = context.watch<ProfilePredictionState>().band;
-    final prediction = _addPredictionBar(
-      bars,
-      controller,
-      entries,
-      latestSecs,
-      shift,
-      glucose,
-      showBand,
-    );
+    final prediction = slope != null
+        ? (futureHours: 0.0, touchSpots: const <FlSpot>[], band: null)
+        : _addPredictionBar(
+            bars,
+            controller,
+            entries,
+            latestSecs,
+            shift,
+            glucose,
+            showBand,
+          );
     // Transparent overlay owning touch — over the REAL readings AND the forecast
     // points, so scrubbing snaps to a single value in either region (not to the
     // zone bars, which share boundary points, or the interpolated crossings).
     _touchBarIndex = bars.length;
-    final touchSpots = [...series.realSpots, ...prediction.touchSpots];
+    final touchSpots =
+        slope?.touchSpots ?? [...series.realSpots, ...prediction.touchSpots];
     bars.add(_touchBar(touchSpots));
     // Which spot a scrub on the chart below is pointing at, drawn as an overlay
     // rather than handed to fl_chart. See [MirroredReadout] for why.
@@ -730,7 +746,7 @@ class _OverviewChartState extends State<OverviewChart> {
       _mealBarIndex = -1;
     } else {
       _mealBarIndex = bars.length;
-      bars.add(_mealBar(mealMarkers, glucose));
+      bars.add(_mealBar(mealMarkers, glucose, onZeroLine: slope != null));
     }
     final highlightSpot = series.realSpots.isEmpty
         ? null
@@ -743,7 +759,8 @@ class _OverviewChartState extends State<OverviewChart> {
     // to take part in the key or fl_chart tweens between mismatched lists.
     final key = ValueKey(
       '$latestSecs-${entries.length}-$effectiveRange-$panSecs'
-      '-$predictionCount-${prediction.band != null}-${mealMarkers.length}',
+      '-$predictionCount-${prediction.band != null}-${mealMarkers.length}'
+      '-${widget.showSlope}',
     );
     final chart = GlucoseLineChart(
       key: key,
@@ -763,12 +780,13 @@ class _OverviewChartState extends State<OverviewChart> {
       // so the two plots touch and read as one picture with one axis.
       showBottomTitles: widget.sync == null,
       mealMarkers: mealMarkers,
+      slope: slope,
     );
     if (widget.preview) {
       return chart;
     }
     _buzzForMirror(mirrored);
-    return _withMirror(chart, touchSpots, mirrored, axis, glucose);
+    return _withMirror(chart, touchSpots, mirrored, axis, glucose, slope);
   }
 
   /// Lays the readout for a scrub on the chart below over this one.
@@ -782,6 +800,7 @@ class _OverviewChartState extends State<OverviewChart> {
     int? mirrored,
     ChartXAxis axis,
     ProfileGlucoseState glucose,
+    GlucoseSlopeSeries? slope,
   ) {
     final fraction = widget.sync?.scrub;
     if (mirrored == null || fraction == null || mirrored >= touchSpots.length) {
@@ -792,8 +811,8 @@ class _OverviewChartState extends State<OverviewChart> {
     // Past the latest reading is the forecast, marked as an estimate exactly as
     // this chart's own tooltip marks it.
     final forecast = spot.x > axis.shift;
-    final top = glucose.toDisplay(widget.maxYmgdl);
-    final bottom = glucose.toDisplay(widget.minYmgdl);
+    final top = slope?.maxY ?? glucose.toDisplay(widget.maxYmgdl);
+    final bottom = slope?.minY ?? glucose.toDisplay(widget.minYmgdl);
     return Stack(
       children: [
         Positioned.fill(child: chart),
@@ -804,10 +823,13 @@ class _OverviewChartState extends State<OverviewChart> {
               valueFraction: top == bottom
                   ? 0.5
                   : ((top - spot.y) / (top - bottom)).clamp(0.0, 1.0),
-              dotColor: forecast ? _predictionGrey() : _zoneColorFor(spot.y),
+              dotColor:
+                  slope?.color ??
+                  (forecast ? _predictionGrey() : _zoneColorFor(spot.y)),
               value:
+                  slope?.formatReading(spot.y) ??
                   '${forecast ? '~' : ''}'
-                  '${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
+                      '${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
               time: _clockAt(axis, spot.x),
               axisInset: _axisInset,
             ),
@@ -1027,17 +1049,22 @@ class _OverviewChartState extends State<OverviewChart> {
   }
 
   /// Transparent bar carrying one visible dot per meal at the glucose it was
-  /// logged with. Its non-zero barWidth (with a transparent colour) keeps the
+  /// logged with, or on the zero line when the slope replaces the glucose line.
+  /// Its non-zero barWidth (with a transparent colour) keeps the
   /// scrub indicator off it while leaving the dots hoverable for taps.
   LineChartBarData _mealBar(
     List<({double x, Meal meal})> markers,
-    ProfileGlucoseState glucose,
-  ) {
+    ProfileGlucoseState glucose, {
+    required bool onZeroLine,
+  }) {
     final ink = context.ink;
     return LineChartBarData(
       spots: [
         for (final marker in markers)
-          FlSpot(marker.x, glucose.toDisplay(marker.meal.glucoseMgdl)),
+          FlSpot(
+            marker.x,
+            onZeroLine ? 0 : glucose.toDisplay(marker.meal.glucoseMgdl),
+          ),
       ],
       barWidth: 2,
       color: Colors.transparent,
