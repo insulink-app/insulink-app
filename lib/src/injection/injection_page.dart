@@ -341,7 +341,13 @@ class _InjectionPageState extends State<InjectionPage> {
           suffix: 'g',
           autofocus: widget.estimate == null,
         ),
-        if (_photoApplied) PhotoCarbsNotice(estimate: _photoEstimate!),
+        if (_photoApplied)
+          PhotoCarbsNotice(
+            estimate: _photoEstimate!,
+            onRecount: (item, count) => setState(
+              () => _takeEstimate(_photoEstimate!.recounted(item, count)),
+            ),
+          ),
         const SizedBox(height: 10),
         InjectionProductsTab(
           onItemsChanged: _onProductItems,

@@ -28,8 +28,9 @@ Future<PhotoEstimate?> photographMeal(BuildContext context) {
 /// user no longer looks at. A failed estimate, or one that saw no food, says so
 /// and hands back the live picture for another try.
 ///
-/// The capture runs at [ResolutionPreset.high] (720p): a JPEG of a few hundred
-/// kB, well under the server's 2 MB cap, and plenty for the model.
+/// The capture runs at [ResolutionPreset.veryHigh] (1080p): at 720p the crust
+/// edges of stacked toast blurred into one and the model counted too few
+/// slices. The JPEG stays well under the server's 2 MB cap.
 ///
 /// With [next] it is the first step of the bolus flow: a "manual" button sits
 /// under the shutter, and the estimate, or null for the manual choice or a
@@ -70,7 +71,7 @@ class _MealCameraPageState extends State<MealCameraPage> {
     try {
       final camera = CameraController(
         await _backCamera(),
-        ResolutionPreset.high,
+        ResolutionPreset.veryHigh,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.jpeg,
       );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/stepper_pill.dart';
 import 'package:insulink/src/injection/meal_camera_page.dart';
 import 'package:insulink/src/injection/photo_estimate.dart';
+import 'package:insulink/src/injection/photo_estimate_item.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
@@ -40,12 +42,22 @@ class PhotoCarbsButton extends StatelessWidget {
 /// Lists under the carbs field the foods the photo estimate saw, most
 /// carbohydrates first and the small ones folded into "Sonstiges"
 /// ([PhotoEstimate.summary]): "Banane · 120 g" on the left, its "25 g KH" on
-/// the right, a muted camera icon in front of the first. An oversized portion of one food shows here at a
-/// glance instead of hiding in the total.
+/// the right, a muted camera icon in front of the first. An oversized portion
+/// of one food shows here at a glance instead of hiding in the total.
+///
+/// A food the model counted in pieces carries a "− 4 +" counter between the
+/// two: a miscounted plate is corrected through [onRecount] with one tap
+/// instead of another photo. It never goes below one piece; a food that is not
+/// there at all is typed over in the carbs field like any wrong estimate.
 class PhotoCarbsNotice extends StatelessWidget {
-  const PhotoCarbsNotice({super.key, required this.estimate});
+  const PhotoCarbsNotice({
+    super.key,
+    required this.estimate,
+    required this.onRecount,
+  });
 
   final PhotoEstimate estimate;
+  final void Function(PhotoEstimateItem item, int count) onRecount;
 
   @override
   Widget build(BuildContext context) {
@@ -92,8 +104,19 @@ class PhotoCarbsNotice extends StatelessWidget {
             style: style,
           ),
         ),
+        if (item.countable) _counter(item),
         Text('${sportDecimal(item.carbs, 0)} g $carbsUnit', style: style),
       ],
+    );
+  }
+
+  Widget _counter(PhotoEstimateItem item) {
+    return StepperPill(
+      value: '${item.count}',
+      onMinus: item.count > 1 ? () => onRecount(item, item.count - 1) : null,
+      onPlus: () => onRecount(item, item.count + 1),
+      minusLabelKey: 'injection.photo.fewer',
+      plusLabelKey: 'injection.photo.more',
     );
   }
 }
