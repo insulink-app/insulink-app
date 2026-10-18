@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/ink_dialog.dart';
+import 'package:insulink/src/injection/meal_analysing_overlay.dart';
 import 'package:insulink/src/injection/meal_camera_parts.dart';
 import 'package:insulink/src/injection/meal_camera_zoom.dart';
 import 'package:insulink/src/injection/photo_estimate.dart';
