@@ -89,19 +89,22 @@ class PhotoEstimate {
   /// Below this many grams of carbohydrates a food is not worth its own row.
   static const _minorCarbs = 5.0;
 
-  /// The foods as the calculator lists them: most carbohydrates first, and
-  /// everything under [_minorCarbs] folded into one row named [otherName] at
-  /// the end, weights and carbohydrates summed. Only the list is shortened; the
-  /// meal still logs every food on its own ([entries]).
+  /// The foods worth a row of their own, most carbohydrates first.
+  List<PhotoEstimateItem> get major => [
+    for (final item in items)
+      if (item.carbs >= _minorCarbs) item,
+  ]..sort((first, second) => second.carbs.compareTo(first.carbs));
+
+  /// The foods under [_minorCarbs], folded into "Sonstiges" by the calculator.
+  List<PhotoEstimateItem> get minor => [
+    for (final item in items)
+      if (item.carbs < _minorCarbs) item,
+  ];
+
+  /// The foods as one list: [major], then [minor] folded into one row named
+  /// [otherName] at the end, weights and carbohydrates summed. Only the list is
+  /// shortened; the meal still logs every food on its own ([entries]).
   List<PhotoEstimateItem> summary(String otherName) {
-    final major = [
-      for (final item in items)
-        if (item.carbs >= _minorCarbs) item,
-    ]..sort((first, second) => second.carbs.compareTo(first.carbs));
-    final minor = [
-      for (final item in items)
-        if (item.carbs < _minorCarbs) item,
-    ];
     if (minor.isEmpty) {
       return major;
     }

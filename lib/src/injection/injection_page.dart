@@ -340,20 +340,25 @@ class _InjectionPageState extends State<InjectionPage> {
         ),
         if (_photoEstimate case final estimate?)
           PhotoCarbsNotice(estimate: estimate, onRecount: _recount),
-        const SizedBox(height: 10),
-        InjectionProductsTab(
-          onItemsChanged: _onProductItems,
-          manualCarbs: _manualCarbs,
-        ),
+        if (_photoEstimate == null) ...[
+          const SizedBox(height: 10),
+          InjectionProductsTab(
+            onItemsChanged: _onProductItems,
+            manualCarbs: _manualCarbs,
+          ),
+        ],
       ],
     );
   }
 
   /// Writes the estimated carbs, rounded to whole grams, into the carbs field,
   /// replacing what was typed there. The field stays editable, and the listener
-  /// recomputes the suggestion as for any typed value.
+  /// recomputes the suggestion as for any typed value. The photo's foods take
+  /// the place of the product picker, which is hidden from now on, so products
+  /// picked before are dropped rather than counted on out of sight.
   void _takeEstimate(PhotoEstimate estimate) {
     _photoEstimate = estimate;
+    _productEntries = const [];
     _carbsController.text = estimate.carbs.round().toString();
   }
 

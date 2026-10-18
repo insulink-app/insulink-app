@@ -1511,7 +1511,8 @@
       "light": "Licht",
       "fewer": "Ein Stück weniger",
       "more": "Ein Stück mehr",
-      "carbs": "Auf dem Foto: # g KH"
+      "other_open": "Weitere Lebensmittel zeigen",
+      "other_close": "Weitere Lebensmittel ausblenden"
     }
   },
   "service": {

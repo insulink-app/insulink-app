@@ -1511,7 +1511,8 @@
       "light": "Light",
       "fewer": "One piece fewer",
       "more": "One piece more",
-      "carbs": "On the photo: # g carbs"
+      "other_open": "Show the other foods",
+      "other_close": "Hide the other foods"
     }
   },
   "service": {
