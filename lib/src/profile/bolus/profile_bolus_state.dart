@@ -191,15 +191,20 @@ class ProfileBolusState extends ChangeNotifier {
   static int _readInt(String? raw, int fallback) =>
       raw == null ? fallback : (int.tryParse(raw) ?? fallback);
 
-  /// Read all persisted settings (defaults applied per field).
+  /// Read all persisted settings (defaults applied per field), held to the
+  /// same bounds the editors allow. The values also arrive from the account,
+  /// and a correction factor of 1 or a maximum bolus of 500 must not reach the
+  /// calculator or the automation just because they were stored.
   static Future<ProfileBolusState> load() async {
     final all = await _storage.readAll();
-    final fixed = _readInt(all[_kCorrection], defCorrection);
     return ProfileBolusState(
-      correctionFactor: fixed,
-      carbFactor: _readInt(all[_kCarb], defCarb),
-      maxBolus: _readInt(all[_kMaxBolus], defMaxBolus),
-      insulinDurationH: _readInt(all[_kInsulinDuration], defInsulinDuration),
+      correctionFactor: _readInt(all[_kCorrection], defCorrection)
+          .clamp(minCorrection, maxCorrection),
+      carbFactor: _readInt(all[_kCarb], defCarb).clamp(minCarb, maxCarb),
+      maxBolus: _readInt(all[_kMaxBolus], defMaxBolus)
+          .clamp(minMaxBolus, maxMaxBolus),
+      insulinDurationH: _readInt(all[_kInsulinDuration], defInsulinDuration)
+          .clamp(minInsulinDuration, maxInsulinDuration),
     );
   }
 }

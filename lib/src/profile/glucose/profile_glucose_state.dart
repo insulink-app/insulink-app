@@ -142,10 +142,13 @@ class ProfileGlucoseState extends ChangeNotifier {
   /// Read all persisted settings (defaults applied per field).
   static Future<ProfileGlucoseState> load() async {
     final all = await _storage.readAll();
+    final targetLow = _readInt(all[_kTargetLow], defTargetLow)
+        .clamp(minMgdl, maxMgdl);
     return ProfileGlucoseState(
       unit: _readUnit(all[_kUnit]),
-      targetLow: _readInt(all[_kTargetLow], defTargetLow),
-      targetHigh: _readInt(all[_kTargetHigh], defTargetHigh),
+      targetLow: targetLow,
+      targetHigh: _readInt(all[_kTargetHigh], defTargetHigh)
+          .clamp(targetLow, maxMgdl),
       urgentLow: _readInt(all[_kUrgentLow], defUrgentLow),
       low: _readInt(all[_kLow], defLow),
       high: _readInt(all[_kHigh], defHigh),

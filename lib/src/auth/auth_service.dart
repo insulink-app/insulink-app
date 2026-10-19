@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' show Response;
 import 'package:insulink/src/auth/account_sync.dart';
+import 'package:insulink/src/auth/data_key/data_key_sync.dart';
 import 'package:insulink/src/auth/guest_mode.dart';
 import 'package:insulink/src/auth/offline_handover.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
@@ -19,6 +20,17 @@ import 'package:insulink/src/request/response_json.dart';
 class AuthService {
   static const _storage = FlutterSecureStorage();
 
+  /// The shortest password the api accepts for a new account (its
+  /// `User.MINIMUM_PASSWORD_LENGTH`), checked here first so the user hears it
+  /// before a round trip.
+  static const int minimumPasswordLength = 10;
+
+  /// The api's error codes that mean something the user can act on.
+  static const Map<int, String> _errorKeys = {
+    1003: "auth.error.throttled",
+    1005: "auth.error.password_short",
+  };
+
   Future<String?> signIn(
     BuildContext context,
     String name,
@@ -30,6 +42,9 @@ class AuthService {
     ).send(context);
     final error = await _handle(response, "auth.error.invalid");
     if (error == null && context.mounted) {
+      await const DataKeySync().adopt(context, password);
+    }
+    if (error == null && context.mounted) {
       await _adoptAccount(context);
     }
     return error;
@@ -40,6 +55,9 @@ class AuthService {
     String name,
     String password,
   ) async {
+    if (password.length < minimumPasswordLength) {
+      return "auth.error.password_short";
+    }
     final deviceFields = await _deviceFields();
     if (!context.mounted) {
       return "auth.error.network";
@@ -54,6 +72,9 @@ class AuthService {
       },
     ).send(context);
     final error = await _handle(response, "auth.error.signup_failed");
+    if (error == null && context.mounted) {
+      await const DataKeySync().adopt(context, password);
+    }
     if (error == null && context.mounted && await const GuestMode().active) {
       if (context.mounted) {
         await _adoptAccount(context);
@@ -89,7 +110,7 @@ class AuthService {
       return "auth.error.network";
     }
     if (body["success"] != true) {
-      return invalidKey;
+      return _errorKeys[response.apiErrorCode] ?? invalidKey;
     }
     await _storage.write(key: "user", value: "${body["user"]}");
     await _storage.write(key: "name", value: "${body["name"]}");

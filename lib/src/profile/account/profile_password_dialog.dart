@@ -32,7 +32,7 @@ class ProfilePasswordDialog {
       return;
     }
     LoaderAlert().show(context);
-    final changed = await ProfileAccount().changePassword(
+    final error = await ProfileAccount().changePassword(
       context,
       current,
       next,
@@ -42,10 +42,8 @@ class ProfilePasswordDialog {
     }
     Navigator.pop(context);
     Alert(
-      type: changed ? AlertType.success : AlertType.error,
-      description: changed
-          ? "profile.account.password_changed"
-          : "profile.account.password_error",
+      type: error == null ? AlertType.success : AlertType.error,
+      description: error ?? "profile.account.password_changed",
     ).show(context);
   }
 }

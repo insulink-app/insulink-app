@@ -13,6 +13,7 @@ import 'package:insulink/src/overview/overview_time_in_range.dart';
 import 'package:insulink/src/overview/range_scale.dart';
 import 'package:insulink/src/overview/sensor_restore_offer.dart';
 import 'package:insulink/src/pump/pod_restore_card.dart';
+import 'package:insulink/src/profile/remote_review/remote_settings_card.dart';
 import 'package:provider/provider.dart';
 
 /// The overview's last scroll offset, held at module scope so it survives a full
@@ -77,6 +78,7 @@ class _OverviewDataViewState extends State<OverviewDataView> {
       scrollCacheExtent: const ScrollCacheExtent.viewport(1.5),
       padding: const EdgeInsets.only(bottom: 52),
       children: [
+        const RemoteSettingsCard(),
         const SensorRestoreOffer(),
         const PodRestoreCard(),
         _glucoseArea(),

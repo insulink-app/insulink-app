@@ -24,12 +24,13 @@ class _LegalPageState extends State<LegalPage> {
 
   String get _domain => EnvironmentOptions.environment.domain;
 
+  /// The website's pages (insulink-website); the paths used before answered 404.
   void _openTerms() {
-    launchUrl(Uri.parse("https://$_domain/terms-of-service/"));
+    launchUrl(Uri.parse("https://$_domain/terms.html"));
   }
 
   void _openPrivacyPolicy() {
-    launchUrl(Uri.parse("https://$_domain/privacy-policy/"));
+    launchUrl(Uri.parse("https://$_domain/privacy.html"));
   }
 
   /// Logo, title and subtitle centred in the free height, the consent card

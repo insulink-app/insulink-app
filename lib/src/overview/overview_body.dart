@@ -14,6 +14,7 @@ import 'package:insulink/src/overview/overview_header_glucose.dart';
 import 'package:insulink/src/overview/overview_states.dart';
 import 'package:insulink/src/overview/sensor_restore_offer.dart';
 import 'package:insulink/src/pump/pod_restore_card.dart';
+import 'package:insulink/src/profile/remote_review/remote_settings_card.dart';
 import 'package:insulink/src/profile/battery/profile_battery_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -161,6 +162,7 @@ class OverviewBodyContent extends StatelessWidget {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        RemoteSettingsCard(),
         SensorRestoreOffer(),
         PodRestoreCard(),
         Expanded(child: EmptyView()),

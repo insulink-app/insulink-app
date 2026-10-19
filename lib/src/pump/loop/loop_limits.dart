@@ -1,4 +1,4 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/pump/loop/loop_settings.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 
@@ -26,21 +26,20 @@ class LoopLimits {
     required this.maxIobUnits,
   });
 
-  /// Reads the current limits, filling in defaults for anything unset.
+  /// Reads the current limits, filling in defaults for anything unset and
+  /// holding each to the bounds its editor allows ([LoopSettings]). The values
+  /// also arrive from the account, and a stored insulin-on-board ceiling of
+  /// 1000 units must never become the one the automation runs against.
   static Future<LoopLimits> load() async {
-    const storage = FlutterSecureStorage();
-    final all = await storage.readAll();
     final bolus = await ProfileBolusState.load();
     final glucose = await ProfileGlucoseState.load();
     return LoopLimits(
       targetMgdl: glucose.targetMid,
-      suspendBelowMgdl:
-          int.tryParse(all[keySuspendBelow] ?? '') ?? defaultSuspendBelowMgdl,
+      suspendBelowMgdl: await LoopSettings.suspendBelow.load(),
       correctionFactorMgdl: bolus.correctionFactor,
       insulinDuration: Duration(hours: bolus.insulinDurationH),
-      maxUnitsPerHour:
-          double.tryParse(all[keyMaxRate] ?? '') ?? defaultMaxUnitsPerHour,
-      maxIobUnits: double.tryParse(all[keyMaxIob] ?? '') ?? defaultMaxIobUnits,
+      maxUnitsPerHour: (await LoopSettings.maxRate.load()).toDouble(),
+      maxIobUnits: (await LoopSettings.maxIob.load()).toDouble(),
     );
   }
 

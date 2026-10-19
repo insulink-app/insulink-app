@@ -24,7 +24,7 @@ import 'package:insulink/src/google_health/sleep_targets_state.dart';
 import 'package:insulink/src/google_health/heart_rate_zones.dart';
 import 'package:insulink/src/profile/notifications/profile_alarm_tone_state.dart';
 import 'package:insulink/src/profile/security/profile_security_state.dart';
-import 'package:insulink/src/inventory/inventory_store.dart';
+import 'package:insulink/src/profile/remote_review/remote_settings_review.dart';
 import 'package:insulink/src/nutrition/hydration/nutrition_store.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_layout_state.dart';
 import 'package:insulink/src/sport/activity/today_layout.dart';
@@ -201,6 +201,12 @@ class ProfileSettings {
   /// Loads the account's saved settings and writes them into local storage so a
   /// returning user adopts the settings stored against their account. Caller
   /// must rebuild the app afterwards for the in-memory state to pick them up.
+  ///
+  /// Only keys this app itself would push are taken: the blob can be written
+  /// from outside the app, and the storage it lands in also holds the pod key,
+  /// the session tokens and the live automation mode. A setting that changes a
+  /// dose or silences an alarm is held for confirmation on the phone
+  /// ([RemoteSettingsReview]) when it differs from what is in use.
   Future<void> pull(BuildContext? context) async {
     final response = await Request.get(
       url: "/user/settings/find/",
@@ -216,13 +222,40 @@ class ProfileSettings {
     if (settings is! Map) {
       return;
     }
+    await adopt({
+      for (final entry in settings.entries) "${entry.key}": "${entry.value}",
+    });
+  }
+
+  /// Writes the account's [settings] that are safe to take as they are, and
+  /// holds the reviewed ones that differ from the values in use.
+  @visibleForTesting
+  Future<void> adopt(
+    Map<String, String> settings, {
+    RemoteSettingsReview review = const RemoteSettingsReview(),
+  }) async {
+    final current = await collect();
+    final held = <String, String>{};
     for (final entry in settings.entries) {
-      // Inventory moved to its own backend section (InventorySync); ignore a
-      // stale copy still riding an old settings blob so it can't clobber it.
-      if (entry.key == InventoryStore.itemsKey) {
+      if (!_adoptable(current, entry.key)) {
         continue;
       }
-      await _storage.write(key: "${entry.key}", value: "${entry.value}");
+      if (review.isReviewed(entry.key)) {
+        if (current[entry.key] != entry.value) {
+          held[entry.key] = entry.value;
+        }
+        continue;
+      }
+      await _storage.write(key: entry.key, value: entry.value);
+    }
+    if (held.isNotEmpty) {
+      await review.hold(held);
     }
   }
+
+  /// A key [collect] would push, plus language and theme, which it leaves out
+  /// until the user picks one. Inventory rode the blob once and has its own
+  /// sync now (InventorySync), so a stale copy is not in [collect] either.
+  bool _adoptable(Map<String, String> current, String key) =>
+      current.containsKey(key) || key == "language" || key == "theme";
 }
