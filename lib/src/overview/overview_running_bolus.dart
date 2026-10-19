@@ -68,7 +68,11 @@ class _OverviewRunningBolusState extends State<OverviewRunningBolus> {
     }
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: RunningBolusCard(controller: controller, bolus: bolus),
+      child: RunningBolusCard(
+        controller: controller,
+        bolus: bolus,
+        queued: bolus.automated && dispatcher.isSending,
+      ),
     );
   }
 }

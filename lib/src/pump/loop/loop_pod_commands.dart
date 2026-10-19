@@ -1,6 +1,8 @@
 import 'package:insulink/src/pump/loop/loop_limits.dart';
 import 'package:insulink/src/pump/pod_basal_delivery.dart';
+import 'package:insulink/src/pump/pod_running_bolus.dart';
 import 'package:insulink/src/pump/pod_store.dart';
+import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
 import 'package:insulink/src/pump/protocol/pod_command.dart';
 import 'package:insulink/src/pump/protocol/pod_control_commands.dart';
 import 'package:insulink/src/pump/protocol/pod_definitions.dart';
@@ -9,7 +11,7 @@ import 'package:insulink/src/pump/protocol/pod_session.dart';
 import 'package:insulink/src/pump/protocol/pod_stop_delivery_command.dart';
 import 'package:insulink/src/pump/protocol/pod_temp_basal_command.dart';
 
-/// The four things the automation ever asks a pod to do, and the counter
+/// The five things the automation ever asks a pod to do, and the counter
 /// bookkeeping each of them needs.
 ///
 /// Split from the runner so that file is only policy: what to deliver and when
@@ -136,6 +138,54 @@ class LoopPodCommands {
     if (running != null) {
       await store.saveTemporaryBasal(running.endedAt(now()));
     }
+  }
+
+  /// Gives [units] at once as a micro bolus. Silent: like the rate, it may
+  /// repeat every five minutes.
+  ///
+  /// The booking time is cut to the millisecond the store keeps, so the entry
+  /// a refusal takes back is found again by it.
+  ///
+  /// Also written as the pod's running bolus, so the overview shows it with a
+  /// stop button and a manual bolus knows how long the pod stays busy.
+  ///
+  /// Booked BEFORE the command goes out and taken back only on a refusal, the
+  /// same direction of failure as [programTempBasal]: an outcome nobody could
+  /// confirm stays counted as insulin on board. The hour it ran in is noted for
+  /// the basal analysis unless the pod refused it.
+  Future<void> deliverMicroBolus(double units) async {
+    final amount = PodBolusAmount.fromUnits(units);
+    final at = DateTime.fromMillisecondsSinceEpoch(
+      now().millisecondsSinceEpoch,
+    );
+    await store.bookLoopMicroBolus(units, at);
+    await store.startRunningBolus(
+      PodRunningBolus(
+        startedAt: at,
+        pulses: amount.pulses,
+        eighthSecondsBetweenPulses:
+            PodProgramBolusCommand.defaultEighthSecondsBetweenPulses,
+        automated: true,
+      ),
+    );
+    try {
+      await _run(
+        (sequence) => PodProgramBolusCommand(
+          uniqueId: store.uniqueId!,
+          sequenceNumber: sequence,
+          nonce: podFixedNonce,
+          amount: amount,
+        ),
+      );
+    } on LoopCommandRefused {
+      await store.unbookLoopMicroBolus(at);
+      await store.clearRunningBolus();
+      rethrow;
+    } catch (_) {
+      await store.recordAutomationExcess(at, units);
+      rethrow;
+    }
+    await store.recordAutomationExcess(at, units);
   }
 
   /// Sends one command and refuses to treat a rejection as success.

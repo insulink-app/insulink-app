@@ -40,7 +40,10 @@ class PodLoopCycleLine extends StatelessWidget {
     final held = bound == null
         ? line
         : '$line ${Locales.string(context, 'pump.loop.bound.${bound.localeKey}')}';
-    return '$held${_activity(context, cycle.activity)}';
+    final withActivity = '$held${_activity(context, cycle.activity)}';
+    return cycle.microBolusUnits > 0
+        ? '$withActivity · ${_microBolus(context, cycle)}'
+        : withActivity;
   }
 
   /// The activity mode the cycle ran under, so a rate below the schedule during
@@ -51,6 +54,13 @@ class PodLoopCycleLine extends StatelessWidget {
     }
     final name = Locales.string(context, 'activity_mode.${mode.name}');
     return ' ${Locales.string(context, 'pump.loop.activity').replaceFirst('#', name)}';
+  }
+
+  String _microBolus(BuildContext context, PodLoopCycle cycle) {
+    return Locales.string(
+      context,
+      'pump.loop.micro_bolus',
+    ).replaceFirst('#', sportDecimal(cycle.microBolusUnits, 2));
   }
 
   String _clock(DateTime at) => '${_two(at.hour)}:${_two(at.minute)}';

@@ -15,6 +15,7 @@ class PodRunningBolus {
     required this.startedAt,
     required this.pulses,
     required this.eighthSecondsBetweenPulses,
+    this.automated = false,
   });
 
   factory PodRunningBolus.fromJson(Map<String, dynamic> json) =>
@@ -25,6 +26,7 @@ class PodRunningBolus {
         pulses: (json['pulses'] as num).toInt(),
         eighthSecondsBetweenPulses:
             (json['eighth_seconds_between_pulses'] as num).toInt(),
+        automated: json['automated'] == true,
       );
 
   /// When the pod confirmed it had taken the bolus.
@@ -36,10 +38,16 @@ class PodRunningBolus {
   /// The gap between pulses the pod was given, in eighths of a second.
   final int eighthSecondsBetweenPulses;
 
+  /// Whether the automation gave this as a micro bolus. A manual bolus may wait
+  /// one of these out ([MicroBolusQueue]); it never waits out another manual one,
+  /// because that is a repeated tap.
+  final bool automated;
+
   Map<String, dynamic> toJson() => {
     'started_at': startedAt.millisecondsSinceEpoch,
     'pulses': pulses,
     'eighth_seconds_between_pulses': eighthSecondsBetweenPulses,
+    if (automated) 'automated': true,
   };
 
   /// Total units this bolus was programmed for.

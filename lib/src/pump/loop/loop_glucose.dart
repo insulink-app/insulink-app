@@ -30,6 +30,7 @@ class LoopGlucose {
     required this.at,
     required this.trendPerMinute,
     required this.problem,
+    this.history = const [],
   });
 
   /// Reads the newest usable input out of [archive], keyed by epoch minute as
@@ -72,6 +73,10 @@ class LoopGlucose {
       at: at,
       trendPerMinute: trend,
       problem: null,
+      history: [
+        for (final entry in archive.entries)
+          (minute: entry.key, mgdl: entry.value),
+      ],
     );
   }
 
@@ -104,6 +109,25 @@ class LoopGlucose {
   final double trendPerMinute;
 
   final LoopGlucoseProblem? problem;
+
+  /// Every reading handed in, implausible ones included, for [wasAtOrBelow].
+  final List<({int minute, int mgdl})> history;
+
+  /// How far back the caller should hand in readings, so [wasAtOrBelow] can see
+  /// the longest pause the micro-bolus settings allow.
+  static const Duration lookback = Duration(hours: 3);
+
+  /// Whether any reading [within] the newest one was at or below [mgdl].
+  ///
+  /// Readings the trend ignores as implausible count here: a sensor that read
+  /// under 30 was reporting a low, and a low is what this is asked about.
+  bool wasAtOrBelow(int mgdl, {required Duration within}) {
+    final newest = at.millisecondsSinceEpoch ~/ Duration.millisecondsPerMinute;
+    final earliest = newest - within.inMinutes;
+    return history.any(
+      (point) => point.minute >= earliest && point.mgdl <= mgdl,
+    );
+  }
 
   bool get isUsable => problem == null;
 

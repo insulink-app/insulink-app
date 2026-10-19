@@ -6,6 +6,8 @@ import 'package:insulink/src/injection/active_insulin.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/injection/active_insulin_chart.dart';
+import 'package:insulink/src/injection/active_insulin_legend.dart';
+import 'package:insulink/src/injection/insulin_on_board_curve.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
@@ -78,7 +80,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
               children: [
                 _totalHeader(context, insulin, meals, parts),
                 const SizedBox(height: 24),
-                ..._curve(insulin, meals),
+                ..._curve(context, meals),
                 LocaleText(
                   'overview.active_insulin.doses',
                   style: const TextStyle(
@@ -104,23 +106,27 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
     ).parts(meals, pod: context.watch<PodController>().store);
   }
 
-  /// The decay curve, drawn only when there is one.
+  /// The decay curve, drawn only when there is one, with the pump's share
+  /// stacked in so the graph adds up to the total above it.
   ///
-  /// It is built from the meal log, so an insulin-on-board made up ENTIRELY of
-  /// pump insulin leaves it empty. [ActiveInsulinChart] reads `points.first` and
-  /// `points.last`, so an empty list threw during layout and left the grey
-  /// 180-pixel box its failed render was sitting in. Two points are also the
-  /// least that can be a line.
-  List<Widget> _curve(ActiveInsulin insulin, List<Meal> meals) {
-    final points = insulin.curve(meals);
+  /// [ActiveInsulinChart] reads `points.first` and `points.last`, so an empty
+  /// list threw during layout and left the grey 180-pixel box its failed render
+  /// was sitting in. Two points are also the least that can be a line.
+  List<Widget> _curve(BuildContext context, List<Meal> meals) {
+    final now = DateTime.now();
+    final points = InsulinOnBoardCurve(
+      context.watch<ProfileBolusState>().insulinDuration,
+    ).samples(meals, pod: context.watch<PodController>().store, now: now);
     if (points.length < 2) {
       return const [];
     }
     return [
       SizedBox(
         height: 180,
-        child: ActiveInsulinChart(points: points, now: DateTime.now()),
+        child: ActiveInsulinChart(points: points, now: now),
       ),
+      const SizedBox(height: 8),
+      ActiveInsulinLegend(points: points),
       const SizedBox(height: 24),
     ];
   }

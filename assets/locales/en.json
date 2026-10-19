@@ -186,7 +186,13 @@
       "of_bolus": "of # U bolus",
       "empty": "No active insulin doses.",
       "no_doses": "No dose you injected is working right now.",
-      "from_pump": "Delivered above the basal schedule"
+      "from_pump": "Delivered above the basal schedule",
+      "layer": {
+        "boluses": "Your boluses",
+        "micro_boluses": "Micro boluses",
+        "rate": "Temporary rate",
+        "total": "Total"
+      }
     },
     "boxes": {
       "all": "All values",
@@ -583,7 +589,8 @@
         "bolus": "Bolus",
         "prime": "Priming",
         "cannula": "Cannula",
-        "basal": "Basal"
+        "basal": "Basal",
+        "micro_bolus": "Micro bolus"
       },
       "basal_total": "Basal total",
       "bolus_total": "Bolus total",
@@ -601,7 +608,11 @@
       "units": "# U",
       "not_delivered": "The bolus was not delivered, so no insulin is recorded against the meal.",
       "stop_title": "Stop the bolus?",
-      "stop_body": "The rest of the dose will not be delivered. What has already gone in stays in."
+      "stop_body": "The rest of the dose will not be delivered. What has already gone in stays in.",
+      "running_micro": "Micro bolus from the automation",
+      "queued": "Your bolus follows as soon as it has finished.",
+      "queue_too_long": "The automation is still giving a micro bolus for # seconds. Try again then.",
+      "already_running": "A bolus is still running. Wait until it has finished."
     },
     "basal": {
       "out_of_date": "Your basal profile has changed. The pod is still running the old schedule.",
@@ -629,14 +640,17 @@
         "no_glucose": "no usable sensor data",
         "pod_unavailable": "pod not ready",
         "limits_invalid": "limits inconsistent",
-        "clock_unreliable": "clock moved backwards"
+        "clock_unreliable": "clock moved backwards",
+        "micro_bolusing": "correcting with a micro bolus"
       },
       "bound": {
         "max_rate": "(held by the rate ceiling)",
         "max_iob": "(held by active insulin)",
         "hypo_headroom": "(held by the room left above the stop threshold)",
         "hourly_ceiling": "(held by the hourly ceiling)",
-        "reservoir": "(held by the reservoir level)"
+        "reservoir": "(held by the reservoir level)",
+        "max_micro_bolus": "(held by the largest micro bolus)",
+        "micro_bolus_hourly": "(held by the micro bolus hourly limit)"
       },
       "stopped": {
         "pod_unreachable": "The automation stopped because the pod was out of reach for a while. The pod is back on your basal schedule.",
@@ -665,6 +679,8 @@
       "at_glucose": "at # mg/dL, # mg/dL per minute",
       "on_board": "# U active",
       "schedule_was": "schedule # U/h",
+      "micro_bolus": "# U micro bolus",
+      "micro_bolus_bound": "Micro bolus #",
       "activity": "(activity mode #)"
     },
     "forget": {
@@ -1407,6 +1423,40 @@
       "max_iob": {
         "_": "Highest active insulin",
         "value": "# U"
+      },
+      "micro_bolus": {
+        "_": "Micro boluses",
+        "description": "Gives part of the missing insulin at once instead of spreading it over a temporary rate. Faster on a rising glucose, and a given bolus cannot be taken back. Every limit above still applies.",
+        "enabled": "Allow micro boluses",
+        "only_rising": "Only while glucose is rising",
+        "max_units": {
+          "_": "Largest single micro bolus",
+          "value": "# U"
+        },
+        "share": {
+          "_": "Share of the missing insulin",
+          "value": "# %"
+        },
+        "from": {
+          "_": "Micro boluses from",
+          "value": "# mg/dL"
+        },
+        "every": {
+          "_": "At most every",
+          "value": "# min"
+        },
+        "max_per_hour": {
+          "_": "Automated insulin per hour at most",
+          "value": "# U"
+        },
+        "pause_after_low": {
+          "_": "Pause after a low",
+          "value": "# min"
+        },
+        "queue": {
+          "_": "Hold a manual bolus for at most",
+          "value": "# s"
+        }
       }
     },
     "pod_temp_basal_beep": {

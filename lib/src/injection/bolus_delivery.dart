@@ -1,3 +1,4 @@
+import 'package:insulink/src/injection/micro_bolus_queue.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_running_bolus.dart';
 import 'package:insulink/src/pump/pod_store.dart';
@@ -28,7 +29,13 @@ enum BolusDeliveryStatus {
 
 /// The outcome of a bolus, and how many units may be recorded because of it.
 class BolusDeliveryResult {
-  const BolusDeliveryResult._(this.status, this.recordedUnits, this.detail);
+  const BolusDeliveryResult._(
+    this.status,
+    this.recordedUnits,
+    this.detail, {
+    this.detailKey,
+    this.detailParam,
+  });
 
   const BolusDeliveryResult.loggedOnly(double units)
     : this._(BolusDeliveryStatus.loggedOnly, units, null);
@@ -39,6 +46,17 @@ class BolusDeliveryResult {
   /// Nothing was delivered, so nothing is recorded as insulin.
   const BolusDeliveryResult.refused(String detail)
     : this._(BolusDeliveryStatus.refused, 0, detail);
+
+  /// Refused for a reason the user is told in their own language: [key] is a
+  /// locale key, [param] fills its placeholder.
+  const BolusDeliveryResult.refusedBecause(String key, {String? param})
+    : this._(
+        BolusDeliveryStatus.refused,
+        0,
+        null,
+        detailKey: key,
+        detailParam: param,
+      );
 
   /// The outcome is genuinely unknown. Zero units are recorded — understating
   /// insulin is recoverable by logging it afterwards, whereas overstating it
@@ -58,6 +76,10 @@ class BolusDeliveryResult {
 
   /// Why it failed, for the message shown next to the retry.
   final String? detail;
+
+  /// Why it failed as a locale key, preferred over [detail] when set.
+  final String? detailKey;
+  final String? detailParam;
 
   bool get isDelivered => status == BolusDeliveryStatus.delivered;
 
@@ -91,10 +113,14 @@ class BolusDelivery {
     required this.controller,
     required this.maxBolusUnits,
     required this.maxUnitsPerHour,
+    this.queue = const MicroBolusQueue(),
     this.source = PodDeliverySource.app,
   });
 
   final PodController controller;
+
+  /// Holds the dose back while the automation finishes a micro bolus.
+  final MicroBolusQueue queue;
 
   /// The user's configured single-bolus ceiling (`ProfileBolusState.maxBolus`).
   final double maxBolusUnits;
@@ -122,6 +148,13 @@ class BolusDelivery {
       amount = PodBolusAmount.fromUnits(units);
     } on PodDoseException catch (error) {
       return BolusDeliveryResult.refused(error.message);
+    }
+    final busyFor = await queue.waitFor(controller);
+    if (busyFor != null) {
+      return BolusDeliveryResult.refusedBecause(
+        'pump.bolus.queue_too_long',
+        param: '${busyFor.inSeconds}',
+      );
     }
 
     // Recorded before anything is sent, so a process that dies between here and
@@ -200,8 +233,17 @@ class BolusDelivery {
     if (decision.isAllowed) {
       return null;
     }
+    if (decision.refusal == PodDeliveryRefusal.alreadyBolusing) {
+      return _alreadyRunning;
+    }
     return decision.detail ?? decision.refusal!.name;
   }
+
+  /// The refusal for a pod still bolusing, carried through the controller as a
+  /// locale key so the user reads it in their language. Reached only when the
+  /// queue could not see the bolus: a manual one still running, or a micro bolus
+  /// started after the queue looked.
+  static const String _alreadyRunning = 'pump.bolus.already_running';
 
   /// Sends the programmed bolus and maps the pod's answer onto an outcome.
   Future<BolusDeliveryResult> _send(
@@ -251,6 +293,9 @@ class BolusDelivery {
       controller.notifyRunningBolusChanged();
       return BolusDeliveryResult.delivered(amount.units);
     } on PodBolusRefused catch (refusal) {
+      if (refusal.reason == _alreadyRunning) {
+        return const BolusDeliveryResult.refusedBecause(_alreadyRunning);
+      }
       return BolusDeliveryResult.refused(refusal.reason);
     } on PodCommandOutcomeUnknown catch (error) {
       return _unknown(error.message, amount);

@@ -19,10 +19,14 @@ class RunningBolusCard extends StatelessWidget {
     super.key,
     required this.controller,
     required this.bolus,
+    this.queued = false,
   });
 
   final PodController controller;
   final PodRunningBolus bolus;
+
+  /// Whether the user's own bolus is waiting for this one to finish.
+  final bool queued;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +47,11 @@ class RunningBolusCard extends StatelessWidget {
           _bar(context, scheme, bolus.progress(now)),
           const SizedBox(height: 4),
           _footer(context, scheme, now),
+          if (queued)
+            LocaleText(
+              'pump.bolus.queued',
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
         ],
       ),
     );
@@ -58,7 +67,7 @@ class RunningBolusCard extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: LocaleText(
-            'pump.bolus.running',
+            bolus.automated ? 'pump.bolus.running_micro' : 'pump.bolus.running',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,

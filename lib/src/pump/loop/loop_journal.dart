@@ -44,6 +44,8 @@ class PodLoopCycle {
     this.mgdl,
     this.trendPerMinute,
     this.iobUnits = 0,
+    this.microBolusUnits = 0,
+    this.microBolusBoundBy,
     this.activity = ActivityMode.normal,
   });
 
@@ -62,6 +64,10 @@ class PodLoopCycle {
     mgdl: (json['mgdl'] as num?)?.toInt(),
     trendPerMinute: (json['trend'] as num?)?.toDouble(),
     iobUnits: (json['iob'] as num?)?.toDouble() ?? 0,
+    microBolusUnits: (json['smb'] as num?)?.toDouble() ?? 0,
+    microBolusBoundBy: LoopBound.values
+        .where((entry) => entry.name == json['smb_bound'])
+        .firstOrNull,
     activity:
         ActivityMode.values
             .where((entry) => entry.name == json['activity'])
@@ -84,6 +90,12 @@ class PodLoopCycle {
   final double? trendPerMinute;
   final double iobUnits;
 
+  /// The micro bolus this cycle gave, or would have given when not [delivered].
+  /// Shown, never counted: the insulin itself is in [LoopMicroBolusLedger].
+  final double microBolusUnits;
+
+  /// Which ceiling held the micro bolus down, when one did.
+  final LoopBound? microBolusBoundBy;
   /// The activity mode the cycle decided under. Kept so a lower rate during a
   /// walk reads as the mode working, not as the loop holding back for no reason.
   final ActivityMode activity;
@@ -98,6 +110,8 @@ class PodLoopCycle {
     if (mgdl != null) 'mgdl': mgdl,
     if (trendPerMinute != null) 'trend': trendPerMinute,
     'iob': iobUnits,
+    if (microBolusUnits > 0) 'smb': microBolusUnits,
+    if (microBolusBoundBy != null) 'smb_bound': microBolusBoundBy!.name,
     if (activity != ActivityMode.normal) 'activity': activity.name,
   };
 
@@ -188,7 +202,8 @@ extension PodLoopJournal on PodStore {
     );
   }
 
-  /// Insulin the automation added above the schedule inside [window].
+  /// Insulin the automation added above the schedule inside [window], micro
+  /// boluses included.
   ///
   /// Each cycle ran until the next one replaced it, so its share is its excess
   /// rate over that stretch. The newest cycle is still running and is counted up
@@ -196,22 +211,41 @@ extension PodLoopJournal on PodStore {
   double automatedUnitsWithin(Duration window, {DateTime? now}) {
     final at = now ?? DateTime.now();
     final since = at.subtract(window);
-    return _excessUnits(from: since, to: at);
+    return _excessUnits(from: since, to: at) +
+        loopMicroBolusUnitsWithin(window, now: at);
   }
 
-  /// The automation's own contribution to insulin on board, decaying linearly
-  /// over [insulinDuration] exactly as [ActiveInsulin] decays a bolus.
+  /// The automation's own contribution to insulin on board, micro boluses
+  /// included, decaying linearly over [insulinDuration] exactly as
+  /// [ActiveInsulin] decays a bolus.
   ///
   /// Without this the loop would not see its own insulin. Its excess is real
   /// insulin in the body, so leaving it out would let each cycle add on top of
   /// the last, which is the way an automated system stacks a dose nobody chose.
   double loopIobUnits(Duration insulinDuration, {DateTime? now}) {
     final at = now ?? DateTime.now();
+    return loopRateIobUnits(insulinDuration, at: at, deliveredUntil: at) +
+        loopMicroBolusIobUnits(insulinDuration, now: at);
+  }
+
+  /// What is left at [at] of the rate's excess, counting delivery only up to
+  /// [deliveredUntil].
+  ///
+  /// The two differ only for a moment ahead of now, as the active-insulin graph
+  /// asks: the rate running now must not be projected into insulin that has not
+  /// been delivered yet, only the insulin already in has to decay. For a moment
+  /// in the past every cycle is clipped to it, so the answer is what was on
+  /// board then.
+  double loopRateIobUnits(
+    Duration insulinDuration, {
+    required DateTime at,
+    required DateTime deliveredUntil,
+  }) {
     final cycles = loopCycles;
     var units = 0.0;
     for (var index = 0; index < cycles.length; index++) {
       final ranFrom = cycles[index].at;
-      final ranTo = index == 0 ? at : cycles[index - 1].at;
+      final ranTo = index == 0 ? deliveredUntil : cycles[index - 1].at;
       units += _remainingOf(cycles[index], ranFrom, ranTo, at, insulinDuration);
     }
     return units;

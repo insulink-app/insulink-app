@@ -97,6 +97,7 @@ void main() {
         kind: PodDeliveryKind.bolus,
       ));
       await bookBasal(DateTime(2026, 3, 1, 14), 0.8);
+      await store.bookLoopMicroBolus(0.5, DateTime(2026, 3, 1, 14, 20));
 
       final byLabel = {
         for (final entry in PodLogEntry.timeline(store))
@@ -106,6 +107,7 @@ void main() {
       expect(byLabel['pump.log.kind.bolus'], isTrue);
       expect(byLabel['pump.log.kind.prime'], isFalse);
       expect(byLabel['pump.log.kind.basal'], isFalse);
+      expect(byLabel['pump.log.kind.micro_bolus'], isFalse);
     });
 
     test('an hour of basal is marked as spanning one', () async {
