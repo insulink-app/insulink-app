@@ -16,10 +16,10 @@ class CardioDetectionRunner {
   static const _tail = Duration(minutes: 5);
 
   /// Diagnostic counts so the caller can log where the pipeline stands (are GPS
-  /// points even being recorded? did anything qualify?).
-  Future<({int logPoints, int consideredPoints, int detected})> run(
-    Future<void> Function(CardioTraining) onDetected,
-  ) async {
+  /// points even being recorded? did anything qualify?), plus whether a
+  /// training is going on right now, which drives the activity mode.
+  Future<({int logPoints, int consideredPoints, int detected, bool ongoing})>
+  run(Future<void> Function(CardioTraining) onDetected) async {
     final log = await _store.loadLocationLog();
     final watermark = await _store.loadDetectWatermark() ?? 0;
     final result = selectDetections(
@@ -37,6 +37,7 @@ class CardioDetectionRunner {
       logPoints: log.length,
       consideredPoints: considered,
       detected: result.detected.length,
+      ongoing: result.ongoing,
     );
   }
 
@@ -50,7 +51,12 @@ class CardioDetectionRunner {
   ///    past a FINALISED training, never into the middle of an open segment.
   /// 2. It finalises only segments that ended at least [_tail] ago, so an
   ///    in-progress ride is deferred and later recorded with its full duration.
-  ({List<CardioTraining> detected, int watermark}) selectDetections(
+  ///
+  /// A qualifying segment inside the tail is that in-progress training, and
+  /// is reported as [ongoing]: already 8 minutes and 500 m in, typed as human
+  /// powered, with its last moving point less than [_tail] ago.
+  ({List<CardioTraining> detected, int watermark, bool ongoing})
+  selectDetections(
     List<TrackPoint> log,
     List<ActivitySample> activityLog,
     int watermark,
@@ -61,14 +67,12 @@ class CardioDetectionRunner {
         if (point.tMs >= watermark) point,
     ];
     if (considered.length < 2) {
-      return (detected: const [], watermark: watermark);
+      return (detected: const [], watermark: watermark, ongoing: false);
     }
     final cutoff = now.subtract(_tail).millisecondsSinceEpoch;
+    final all = const CardioDetector().detect(considered, activityLog);
     final detected = [
-      for (final training in const CardioDetector().detect(
-        considered,
-        activityLog,
-      ))
+      for (final training in all)
         if (training.endMs <= cutoff) training,
     ];
     var newWatermark = watermark;
@@ -77,7 +81,11 @@ class CardioDetectionRunner {
         newWatermark = training.endMs;
       }
     }
-    return (detected: detected, watermark: newWatermark);
+    return (
+      detected: detected,
+      watermark: newWatermark,
+      ongoing: all.any((training) => training.endMs > cutoff),
+    );
   }
 
   Future<void> _addPending(

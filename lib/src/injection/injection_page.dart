@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/injection/carbs_on_board.dart';
+import 'package:insulink/src/injection/photo_carbs.dart';
+import 'package:insulink/src/injection/photo_carbs_notice.dart';
+import 'package:insulink/src/injection/photo_estimate.dart';
+import 'package:insulink/src/injection/photo_estimate_item.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
-import 'package:insulink/src/injection/injection_confirm_page.dart';
+import 'package:insulink/src/injection/injection_confirm_button.dart';
+import 'package:insulink/src/injection/meal_camera_page.dart';
 import 'package:insulink/src/injection/injection_products_tab.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -21,23 +25,34 @@ import 'package:insulink/src/injection/injection_sheet_parts.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
-/// Opens the bolus-calculator as a modal bottom sheet. The glucose field is
-/// prefilled with the latest reading from [CgmController] when available.
-Future<void> showInjectionSheet(BuildContext context) {
-  return showInkSheet(context: context, builder: (_) => const InjectionSheet());
+/// Starts the bolus flow on the meal camera; the photo, or the manual choice,
+/// replaces it with [InjectionPage].
+Future<void> startInjection(BuildContext context) {
+  return Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) =>
+          MealCameraPage(next: (estimate) => InjectionPage(estimate: estimate)),
+    ),
+  );
 }
 
-/// Carbs (a manual amount PLUS the ones summed from picked products) + current
-/// glucose → the suggested, still-editable bolus. Glucose is handled in mg/dL
+/// Calculator and confirmation on one page: carbs (a manual amount PLUS the
+/// ones summed from picked products) + current glucose → the suggested,
+/// still-editable bolus, confirmed right here. Glucose is handled in mg/dL
 /// throughout to match the configured factors.
-class InjectionSheet extends StatefulWidget {
-  const InjectionSheet({super.key});
+///
+/// Opened with the camera's [estimate], the carbs are already filled in; opened
+/// without one, the carbs field takes the focus for typing.
+class InjectionPage extends StatefulWidget {
+  const InjectionPage({super.key, this.estimate});
+
+  final PhotoEstimate? estimate;
 
   @override
-  State<InjectionSheet> createState() => _InjectionSheetState();
+  State<InjectionPage> createState() => _InjectionPageState();
 }
 
-class _InjectionSheetState extends State<InjectionSheet> {
+class _InjectionPageState extends State<InjectionPage> {
   final _carbsController = TextEditingController();
   final _bolusController = TextEditingController();
   late final TextEditingController _glucoseController;
@@ -45,6 +60,18 @@ class _InjectionSheetState extends State<InjectionSheet> {
   /// Products picked from the food database; their carbs add to the manual
   /// [_carbsController] amount.
   List<MealEntry> _productEntries = const [];
+
+  /// The last photo estimate. It stays when the user types over the carbs
+  /// field: a corrected total is still that plate, so its foods and its photo
+  /// stay on the meal. Only another photo replaces it.
+  PhotoEstimate? _photoEstimate;
+
+  /// What the meal is logged with: the photo's foods and the picked products,
+  /// so protein reaches the day's totals either way.
+  List<MealEntry> get _mealEntries => [
+    ...?_photoEstimate?.entries(),
+    ..._productEntries,
+  ];
 
   /// Once the user types in the bolus field we stop overwriting it with the
   /// suggestion; [_settingBolus] guards our own programmatic writes.
@@ -58,6 +85,9 @@ class _InjectionSheetState extends State<InjectionSheet> {
     _glucoseController = TextEditingController(
       text: current != null ? '$current' : '',
     );
+    if (widget.estimate case final estimate?) {
+      _takeEstimate(estimate);
+    }
     _carbsController.addListener(_recompute);
     _glucoseController.addListener(_recompute);
     _bolusController.addListener(_onBolusEdited);
@@ -201,33 +231,23 @@ class _InjectionSheetState extends State<InjectionSheet> {
     );
   }
 
-  Future<void> _next() async {
+  /// The bolus the confirm button may hand on: null while glucose is missing
+  /// or the bolus is invalid or above the maximum, which disables it.
+  double? get _confirmableBolus =>
+      _glucose == null || _exceedsMax ? null : _bolus;
+
+  /// Logs the confirmed meal, hands a pump dose to the dispatcher and closes.
+  /// A handed over dose is not delivered yet: the dispatcher carries it from
+  /// here and writes the insulin onto this exact meal once the pod names it.
+  Future<void> _confirmed(BolusDeliveryResult outcome) async {
     final bolus = _bolus;
     final glucose = _glucose;
-    if (bolus == null || glucose == null || bolus > _maxBolus) {
+    if (bolus == null || glucose == null) {
       return;
     }
     final navigator = Navigator.of(context);
-    final meals = context.read<MealState>();
-    final outcome = await navigator.push<BolusDeliveryResult>(
-      MaterialPageRoute<BolusDeliveryResult>(
-        builder: (_) => InjectionConfirmPage(
-          carbs: _carbs,
-          glucoseMgdl: glucose,
-          bolus: bolus,
-          delivery: _delivery,
-          deliveredLastHour: _deliveredLastHour,
-          activeInsulin: _activeInsulin,
-        ),
-      ),
-    );
-    if (outcome == null || !mounted) {
-      return;
-    }
-    final meal = await _record(meals, glucose, outcome);
+    final meal = await _record(context.read<MealState>(), glucose, outcome);
     if (outcome.isPending && mounted) {
-      // Handed over, not delivered: the dispatcher carries it from here and
-      // writes the insulin onto this exact meal once the pod names it back.
       context.read<BolusDispatcher>().submit(
         delivery: _delivery,
         units: bolus,
@@ -258,7 +278,7 @@ class _InjectionSheetState extends State<InjectionSheet> {
       carbs: _carbs,
       glucoseMgdl: glucose,
       bolus: outcome.recordedUnits,
-      entries: _productEntries,
+      entries: _mealEntries,
       deliveredByPump: outcome.byPump,
     );
     await meals.addMeal(meal);
@@ -267,24 +287,35 @@ class _InjectionSheetState extends State<InjectionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return InkSheet(
-      titleKey: 'injection.title',
-      child: SingleChildScrollView(
+    final usesPump = _delivery.usesPump;
+    return Scaffold(
+      appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
+        title: LocaleText('injection.title'),
+      ),
+      body: SafeArea(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _mealCard(),
-            const SizedBox(height: 12),
-            _glucoseCard(),
-            const SizedBox(height: 12),
-            _bolusCard(context),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: (_bolus == null || _glucose == null || _exceedsMax)
-                  ? null
-                  : _next,
-              child: LocaleText('injection.next'),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                children: [
+                  _mealCard(),
+                  const SizedBox(height: 12),
+                  _glucoseCard(),
+                  const SizedBox(height: 12),
+                  _bolusCard(context, usesPump),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+              child: InjectionConfirmButton(
+                bolus: _confirmableBolus,
+                usesPump: usesPump,
+                onConfirmed: _confirmed,
+              ),
             ),
           ],
         ),
@@ -292,21 +323,58 @@ class _InjectionSheetState extends State<InjectionSheet> {
     );
   }
 
-  /// The meal group: carbs typed by hand plus any products picked from the food
-  /// database, whose carbs add to the manual amount.
+  /// The meal group: carbs typed by hand or estimated from a photo, plus any
+  /// products picked from the food database, whose carbs add to that amount.
   Widget _mealCard() {
     return InjectionCard(
       icon: PhosphorIconsBold.forkKnife,
       titleKey: 'injection.carbs',
+      trailing: PhotoCarbsButton(
+        onEstimate: (estimate) => setState(() => _takeEstimate(estimate)),
+      ),
       children: [
-        InjectionNumberField(controller: _carbsController, suffix: 'g'),
-        const SizedBox(height: 10),
-        InjectionProductsTab(
-          onItemsChanged: _onProductItems,
-          manualCarbs: _manualCarbs,
+        InjectionNumberField(
+          controller: _carbsController,
+          suffix: 'g',
+          autofocus: widget.estimate == null,
         ),
+        if (_photoEstimate case final estimate?)
+          PhotoCarbsNotice(estimate: estimate, onRecount: _recount),
+        if (_photoEstimate == null) ...[
+          const SizedBox(height: 10),
+          InjectionProductsTab(
+            onItemsChanged: _onProductItems,
+            manualCarbs: _manualCarbs,
+          ),
+        ],
       ],
     );
+  }
+
+  /// Writes the estimated carbs, rounded to whole grams, into the carbs field,
+  /// replacing what was typed there. The field stays editable, and the listener
+  /// recomputes the suggestion as for any typed value. The photo's foods take
+  /// the place of the product picker, which is hidden from now on, so products
+  /// picked before are dropped rather than counted on out of sight.
+  void _takeEstimate(PhotoEstimate estimate) {
+    _photoEstimate = estimate;
+    _productEntries = const [];
+    _carbsController.text = estimate.carbs.round().toString();
+  }
+
+  /// A corrected piece count moves the carbs field by the difference it makes,
+  /// so a total the user typed over keeps its own correction: 70 typed, one
+  /// macaroon of 12 g fewer, 58. Never below zero.
+  void _recount(PhotoEstimateItem item, int count) {
+    final recounted = _photoEstimate!.recounted(item, count);
+    final corrected = _manualCarbs + recounted.carbs - _photoEstimate!.carbs;
+    setState(() {
+      _photoEstimate = recounted;
+      _carbsController.text = corrected
+          .clamp(0, double.infinity)
+          .round()
+          .toString();
+    });
   }
 
   /// The current glucose group, prefilled from the latest reading.
@@ -321,12 +389,13 @@ class _InjectionSheetState extends State<InjectionSheet> {
   }
 
   /// The suggested (still editable) bolus, followed by the active-insulin note
-  /// that explains why the number was reduced.
-  Widget _bolusCard(BuildContext context) {
+  /// that explains why the number was reduced; with a pod, where it goes.
+  Widget _bolusCard(BuildContext context, bool usesPump) {
     return InjectionCard(
       icon: PhosphorIconsBold.syringe,
       titleKey: 'injection.bolus',
       emphasised: true,
+      trailing: usesPump ? const InjectionPumpTag() : null,
       children: [
         InjectionNumberField(
           controller: _bolusController,

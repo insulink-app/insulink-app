@@ -113,6 +113,7 @@
       "now": "Now",
       "axis_now": "now",
       "show_meals": "Show meals",
+      "show_slope": "Show rate of change instead",
       "insulin": {
         "_": "Insulin",
         "basal": "Basal",
@@ -677,7 +678,8 @@
       "on_board": "# U active",
       "schedule_was": "schedule # U/h",
       "micro_bolus": "# U micro bolus",
-      "micro_bolus_bound": "Micro bolus #"
+      "micro_bolus_bound": "Micro bolus #",
+      "activity": "(activity mode #)"
     },
     "forget": {
       "_": "Forget this pod?",
@@ -912,7 +914,8 @@
       "bolus_value": "# U bolus",
       "show_more": "Show more",
       "delete": "Delete meal",
-      "delete_confirm": "Delete this meal?"
+      "delete_confirm": "Delete this meal?",
+      "photo_failed": "The photo could not be loaded."
     }
   },
   "sport": {
@@ -1372,7 +1375,8 @@
       "battery": "battery power energy saver save drain gps location tracking detection runtime",
       "loop": "automated delivery automation loop closed loop insulin",
       "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start",
-      "backup": "backup export save data file download restore archive copy"
+      "backup": "backup export save data file download restore archive copy",
+      "activity_mode": "sport activity mode training endurance strength weights running cycling walking routine workout basal target"
     },
     "prediction": {
       "_": "Prediction",
@@ -1487,6 +1491,24 @@
       "saved": "Backup saved",
       "failed": "The backup could not be created. Check your internet connection and try again.",
       "loading": "Loading your data…"
+    },
+    "activity_mode": {
+      "_": "Activity mode",
+      "description": "How the automation adjusts delivery while an activity mode runs. Switched off, it always keeps to your normal values. Every limit of automated delivery still applies.",
+      "endurance_target": {
+        "_": "Target during endurance",
+        "value": "# mg/dL"
+      },
+      "endurance_basal": {
+        "_": "Basal during endurance",
+        "value": "# %"
+      },
+      "strength_basal": {
+        "_": "Basal during strength",
+        "value": "# %"
+      },
+      "enabled": "Use activity mode",
+      "on_overview": "Show the choice on the overview"
     }
   },
   "injection": {
@@ -1520,21 +1542,28 @@
       "pick": "Choose product"
     },
     "confirm": {
-      "title": "Confirm bolus",
       "to_pump": "to #",
-      "active": "Active insulin",
-      "active_subtracted": "# U subtracted",
       "button": "Confirm",
       "reason": "Confirm your bolus",
-      "success": "Bolus confirmed",
       "failed": "Authentication failed",
-      "button_pump": "Send bolus to pump",
-      "log_without_bolus": "Log without bolus",
-      "pump_refused": "The pump did not deliver the bolus.",
-      "pump_unknown": "Unclear whether the pump delivered. Check the pod before dosing again."
+      "button_pump": "Send bolus to pump"
     },
-    "next": "Next",
-    "active_insulin_pump": "of which # U from the pump, not injected by you"
+    "active_insulin_pump": "of which # U from the pump, not injected by you",
+    "photo": {
+      "take": "Photograph the meal",
+      "failed": "The photo could not be analysed. Try again or enter the carbohydrates yourself.",
+      "no_food": "No food was recognised in the photo.",
+      "shutter": "Take photo",
+      "analysing": "Analysing",
+      "no_camera": "The camera could not be opened.",
+      "other": "Other",
+      "manual": "Manual",
+      "light": "Light",
+      "fewer": "One piece fewer",
+      "more": "One piece more",
+      "other_open": "Show the other foods",
+      "other_close": "Hide the other foods"
+    }
   },
   "service": {
     "connecting": "Connecting…",
@@ -1682,5 +1711,19 @@
     "goal": "Goal #",
     "axis_today": "today",
     "empty_range": "No data in this period"
+  },
+  "activity_mode": {
+    "_": "Activity mode",
+    "auto": "Auto",
+    "normal": "Normal",
+    "endurance": "Endurance",
+    "strength": "Strength",
+    "source": {
+      "none": "no training detected",
+      "manual": "picked by hand until #",
+      "workout": "routine running",
+      "recording": "training being recorded",
+      "detected": "training detected"
+    }
   }
 }

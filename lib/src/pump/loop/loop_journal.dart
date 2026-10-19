@@ -46,6 +46,7 @@ class PodLoopCycle {
     this.iobUnits = 0,
     this.microBolusUnits = 0,
     this.microBolusBoundBy,
+    this.activity = ActivityMode.normal,
   });
 
   factory PodLoopCycle.fromJson(Map<String, dynamic> json) => PodLoopCycle(
@@ -67,6 +68,11 @@ class PodLoopCycle {
     microBolusBoundBy: LoopBound.values
         .where((entry) => entry.name == json['smb_bound'])
         .firstOrNull,
+    activity:
+        ActivityMode.values
+            .where((entry) => entry.name == json['activity'])
+            .firstOrNull ??
+        ActivityMode.normal,
   );
 
   final DateTime at;
@@ -90,6 +96,9 @@ class PodLoopCycle {
 
   /// Which ceiling held the micro bolus down, when one did.
   final LoopBound? microBolusBoundBy;
+  /// The activity mode the cycle decided under. Kept so a lower rate during a
+  /// walk reads as the mode working, not as the loop holding back for no reason.
+  final ActivityMode activity;
 
   Map<String, dynamic> toJson() => {
     'at': at.millisecondsSinceEpoch,
@@ -103,6 +112,7 @@ class PodLoopCycle {
     'iob': iobUnits,
     if (microBolusUnits > 0) 'smb': microBolusUnits,
     if (microBolusBoundBy != null) 'smb_bound': microBolusBoundBy!.name,
+    if (activity != ActivityMode.normal) 'activity': activity.name,
   };
 
   /// Insulin per hour this cycle added ON TOP of the user's schedule.

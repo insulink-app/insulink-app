@@ -6,6 +6,7 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/overview/chart/chart_x_axis.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/theme/glucose_colors.dart';
+import 'package:insulink/src/overview/chart/glucose_slope_series.dart';
 import 'package:insulink/src/overview/chart/glucose_y_labels.dart';
 import 'package:insulink/src/overview/chart/insulin_bar_chart.dart';
 
@@ -29,7 +30,13 @@ class GlucoseLineChart extends StatelessWidget {
     this.showBottomTitles = true,
     this.betweenBars = const [],
     this.mealMarkers = const [],
+    this.slope,
   });
+
+  /// When set, [bars] hold the glucose rate of change instead of glucose, and
+  /// the y scale, labels, guide line and readout follow it: no target band, a
+  /// zero line instead of the target bounds.
+  final GlucoseSlopeSeries? slope;
 
   /// Logged meals to mark on the chart, each at its x (shifted hours). Drawn as
   /// dashed vertical lines with the carb amount; the tappable dots that open a
@@ -82,17 +89,19 @@ class GlucoseLineChart extends StatelessWidget {
   /// with one axis instead of two charts that happen to be adjacent.
   final bool showBottomTitles;
 
-  double get _minY => glucose.toDisplay(minYmgdl);
+  double get _minY => slope?.minY ?? glucose.toDisplay(minYmgdl);
 
-  double get _maxY => glucose.toDisplay(maxYmgdl);
+  double get _maxY => slope?.maxY ?? glucose.toDisplay(maxYmgdl);
 
   /// The y values the detail chart labels: both target bounds and a reference
   /// line at 250 mg/dL above them.
-  List<double> get _yLabels => [
-    glucose.toDisplay(glucose.targetLow),
-    glucose.toDisplay(glucose.targetHigh),
-    glucose.toDisplay(250),
-  ];
+  List<double> get _yLabels =>
+      slope?.axisLabels ??
+      [
+        glucose.toDisplay(glucose.targetLow),
+        glucose.toDisplay(glucose.targetHigh),
+        glucose.toDisplay(250),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +121,7 @@ class GlucoseLineChart extends StatelessWidget {
                 maxY: _maxY,
                 stripWidth: InsulinBarChart.axisInset,
                 bottomInset: showBottomTitles ? 24 : 0,
-                format: _formatY,
+                format: slope?.formatAxis ?? _formatY,
                 leading: true,
               ),
             ),
@@ -228,10 +237,12 @@ class GlucoseLineChart extends StatelessWidget {
   ExtraLinesData _extraLines(BuildContext context) {
     final mealColor = Theme.of(context).colorScheme.onSurfaceVariant;
     return ExtraLinesData(
-      horizontalLines: [
-        _boundLine(glucose.targetLow, colors.low),
-        _boundLine(glucose.targetHigh, colors.high),
-      ],
+      horizontalLines: slope != null
+          ? [_zeroLine(mealColor)]
+          : [
+              _boundLine(glucose.targetLow, colors.low),
+              _boundLine(glucose.targetHigh, colors.high),
+            ],
       verticalLines: _mealLines(mealColor),
     );
   }
@@ -257,13 +268,22 @@ class GlucoseLineChart extends StatelessWidget {
   RangeAnnotations _targetBand() {
     return RangeAnnotations(
       horizontalRangeAnnotations: [
-        if (!minimal)
+        if (!minimal && slope == null)
           HorizontalRangeAnnotation(
             y1: glucose.toDisplay(glucose.targetLow),
             y2: glucose.toDisplay(glucose.targetHigh),
             color: colors.inRange.withValues(alpha: 0.05),
           ),
       ],
+    );
+  }
+
+  HorizontalLine _zeroLine(Color color) {
+    return HorizontalLine(
+      y: 0,
+      color: color.withValues(alpha: 0.5),
+      strokeWidth: 1,
+      dashArray: const [2, 4],
     );
   }
 
@@ -334,7 +354,8 @@ class GlucoseLineChart extends StatelessWidget {
     // value as an estimate with a leading "~".
     final prefix = spot.x > axis.shift ? '~' : '';
     return LineTooltipItem(
-      '$prefix${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
+      slope?.formatReading(spot.y) ??
+          '$prefix${spot.y.toStringAsFixed(digits)} ${glucose.unit.label}',
       TextStyle(
         color: theme.colorScheme.onInverseSurface,
         fontWeight: FontWeight.bold,
@@ -395,9 +416,9 @@ class GlucoseLineChart extends StatelessWidget {
         // glucose-zone colour — the estimate isn't a measured value.
         getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
           radius: 4,
-          color: spot.x > axis.shift
-              ? predictionColor
-              : _zoneForDisplay(spot.y),
+          color:
+              slope?.color ??
+              (spot.x > axis.shift ? predictionColor : _zoneForDisplay(spot.y)),
           strokeColor: ringColor,
           strokeWidth: 1.5,
         ),

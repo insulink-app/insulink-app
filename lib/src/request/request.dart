@@ -19,6 +19,10 @@ class Request {
   final String method;
   final Map<String, String> headers;
   final Map<String, Object> body;
+
+  /// How long one attempt may take. Most requests keep the default; a meal
+  /// photo estimate waits on the model and gets longer.
+  final Duration timeout;
   static final RequestRefresh _refresh = RequestRefresh();
   // 10s, not 5: a backgrounded device's radio is asleep, so a cold DNS+TLS
   // handshake on the first request after idle often needs more than 5s.
@@ -40,6 +44,7 @@ class Request {
     required String url,
     this.headers = const {},
     this.body = const {},
+    this.timeout = const Duration(seconds: _timeout),
   }) : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
        path = url,
        method = "GET";
@@ -48,6 +53,7 @@ class Request {
     required String url,
     this.headers = const {},
     this.body = const {},
+    this.timeout = const Duration(seconds: _timeout),
   }) : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
        path = url,
        method = "POST";
@@ -99,7 +105,7 @@ class Request {
         final response = await get(
           Uri.parse(url),
           headers: headers,
-        ).timeout(const Duration(seconds: _timeout));
+        ).timeout(timeout);
         _logRequest(method: method, headers: headers, response: response);
         lastError = null;
         return response;
@@ -115,7 +121,7 @@ class Request {
           Uri.parse(url),
           headers: headers,
           body: jsonEncode(body),
-        ).timeout(const Duration(seconds: _timeout));
+        ).timeout(timeout);
         _logRequest(
           method: method,
           headers: headers,

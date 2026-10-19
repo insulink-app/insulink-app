@@ -659,15 +659,15 @@ the widget cannot drift away from the app on what is in range.
 - `flutter_blue_plus` 2.x: `device.connect(license: License.nonprofit)` is required.
 - Auth char uses **indications**; control/backfill are subscribed only AFTER
   auth (subscribing them early makes the sensor drop the connection).
-- **Do not re-add the `camera` package.** It was a direct dependency that nothing
-  imported, and it pulls `camera_android_camerax`, whose CameraX 1.6.0 does not put
-  `androidx.concurrent:concurrent-futures` on the compile classpath — javac then
+- **The `camera` package needs `concurrent-futures` on its classpath.** It is used
+  by the meal camera (`injection/meal_camera_page.dart`) and pulls
+  `camera_android_camerax`, whose CameraX 1.6.0 does not put
+  `androidx.concurrent:concurrent-futures` on the compile classpath. javac then
   fails reading the type annotations on `SurfaceRequest`
   (`Klassendatei für androidx.concurrent.futures.CallbackToFutureAdapter nicht
-  gefunden`). **Release only**; `flutter test`/`analyze` never see it. `mobile_scanner`
-  brings its own CameraX and compiles fine, so scanning is unaffected. If `camera` is
-  ever genuinely needed, add `androidx.concurrent:concurrent-futures` to that module's
-  compile classpath rather than reverting this.
+  gefunden`). **Release only**; `flutter test`/`analyze` never see it.
+  `android/build.gradle.kts` adds the dependency to that one module; keep it while
+  `camera` is a dependency, and re-check a release build after bumping `camera`.
 - **QR/DataMatrix scan (mobile_scanner) needs R8 keep rules** in
   `android/app/proguard-rules.pro` (wired via `proguardFiles` in the release
   buildType). Flutter enables R8 for release; mobile_scanner's bundled keep
@@ -700,6 +700,9 @@ the widget cannot drift away from the app on what is in range.
   the layered limits that bound how much insulin it can add.
 - `docs/LOOP_MICRO_BOLUS.md` — the opt-in **micro bolus**: why it exists, the
   user's settings, and the ceilings that keep it inside the hypo headroom.
+- `docs/ACTIVITY_MODE.md` — the **activity mode**: endurance and strength move
+  only the loop's target and basal anchor, never a ceiling; where the mode comes
+  from (manual, routine, recording, the detection's ongoing segment).
 - `docs/TUNING.md` — the weekly **basal suggestion**: how food and bolus insulin
   are measured out of an hour instead of disqualifying it (`TuningModel`), what
   that linear model costs, which hours are still thrown away, and why there is no
@@ -739,6 +742,9 @@ the widget cannot drift away from the app on what is in range.
 - `docs/SCREENSHOTS.md` — the **screenshots** published with the web demo on every
   main push: the URLs, the integration test that takes them, and what the test
   binding changes (start in the body, frame-by-frame pumps, no start errors).
+- `docs/TRAINING_DETECTION.md` — cardio auto-detection: why the activity
+  recognition (not GNSS speed) opens the detect stream, and why a vehicle label
+  only discards a segment that also reaches vehicle speed.
 - `docs/BATTERY.md` — the two-level battery saver: what each level pauses, why the
   gate sits in `BackgroundLocationSampler.tick()`, and why a manual cardio
   recording must force the detection service up.

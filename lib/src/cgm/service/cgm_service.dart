@@ -6,6 +6,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../activity_mode/activity_mode_store.dart';
 import '../../google_health/fitbit_heart_rate_monitor.dart';
 import '../../google_health/google_health_importer.dart';
 import '../../google_health/intraday_pulse_store.dart';
@@ -101,7 +102,7 @@ class CgmTaskHandler extends TaskHandler {
   late final BackgroundLocationSampler _locationSampler =
       BackgroundLocationSampler(
         onLog: _log,
-        isStill: () => _activitySampler.isStill,
+        activity: () => _activitySampler.current,
         isDetectionPaused: () => _batteryMode.pausesDetection,
       );
 
@@ -518,6 +519,10 @@ class CgmTaskHandler extends TaskHandler {
     try {
       final counts = await _detectionRunner.run(
         (training) async => _alarms?.notifyTrainingDetected(training),
+      );
+      await const ActivityModeStore().markDetected(
+        counts.ongoing,
+        DateTime.now(),
       );
       _log(
         'training detection: ${counts.logPoints} gps points '

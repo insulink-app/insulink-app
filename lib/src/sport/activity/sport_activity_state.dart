@@ -26,10 +26,14 @@ class SportActivityState extends ChangeNotifier {
   List<DailyActivity> _archive = const [];
 
   SportActivityState([this._store = const SportStore()]) {
-    _loadArchive();
+    reloadArchive();
   }
 
-  Future<void> _loadArchive() async {
+  /// Re-reads the archive from storage. This state lives above the app's reload
+  /// point and outlives every account pull, so `main.dart` calls this on each
+  /// reload; otherwise the history pulled after a reinstall never reaches the
+  /// screen.
+  Future<void> reloadArchive() async {
     _archive = await _store.loadActivityArchive()
       ..sort((first, second) => first.dateKey.compareTo(second.dateKey));
     notifyListeners();
@@ -91,8 +95,13 @@ class SportActivityState extends ChangeNotifier {
   }
 
   /// Upsert imported days (by [DailyActivity.dateKey]) and persist.
+  ///
+  /// Merges onto the archive in STORAGE, not the in-memory copy: an account pull
+  /// writes storage behind this state's back, and saving a stale copy over it
+  /// wiped the whole pulled history after a reinstall, on every start.
   Future<void> mergeArchive(List<DailyActivity> days) async {
-    final byDate = {for (final day in _archive) day.dateKey: day};
+    final stored = await _store.loadActivityArchive();
+    final byDate = {for (final day in stored) day.dateKey: day};
     for (final day in days) {
       byDate[day.dateKey] = day;
     }

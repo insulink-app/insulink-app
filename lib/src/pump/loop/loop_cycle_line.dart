@@ -1,3 +1,4 @@
+import 'package:insulink/src/activity_mode/activity_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/localization/enum_locale_key.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -36,12 +37,23 @@ class PodLoopCycleLine extends StatelessWidget {
           Locales.string(context, 'pump.loop.reason.${cycle.reason.localeKey}'),
         );
     final bound = cycle.boundBy;
-    final bounded = bound == null
+    final held = bound == null
         ? line
         : '$line ${Locales.string(context, 'pump.loop.bound.${bound.localeKey}')}';
+    final withActivity = '$held${_activity(context, cycle.activity)}';
     return cycle.microBolusUnits > 0
-        ? '$bounded · ${_microBolus(context, cycle)}'
-        : bounded;
+        ? '$withActivity · ${_microBolus(context, cycle)}'
+        : withActivity;
+  }
+
+  /// The activity mode the cycle ran under, so a rate below the schedule during
+  /// a walk reads as the mode working. Nothing for normal.
+  String _activity(BuildContext context, ActivityMode mode) {
+    if (mode == ActivityMode.normal) {
+      return '';
+    }
+    final name = Locales.string(context, 'activity_mode.${mode.name}');
+    return ' ${Locales.string(context, 'pump.loop.activity').replaceFirst('#', name)}';
   }
 
   String _microBolus(BuildContext context, PodLoopCycle cycle) {

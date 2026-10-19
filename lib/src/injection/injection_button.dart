@@ -28,7 +28,7 @@ class InjectionButton extends StatelessWidget {
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () => showInjectionSheet(context),
+            onTap: () => startInjection(context),
             child: Icon(
               PhosphorIconsRegular.syringe,
               size: 26,

@@ -114,6 +114,7 @@ class BolusDelivery {
     required this.maxBolusUnits,
     required this.maxUnitsPerHour,
     this.queue = const MicroBolusQueue(),
+    this.source = PodDeliverySource.app,
   });
 
   final PodController controller;
@@ -126,6 +127,9 @@ class BolusDelivery {
 
   /// The rolling one-hour ceiling, so repeated taps cannot stack doses.
   final double maxUnitsPerHour;
+
+  /// Where the bolus was asked for, stamped on its delivery log entry.
+  final PodDeliverySource source;
 
   /// Whether this bolus will be sent to a pod rather than only logged.
   bool get usesPump => controller.hasPod;
@@ -187,6 +191,7 @@ class BolusDelivery {
         at: DateTime.now(),
         units: amount.units,
         kind: PodDeliveryKind.bolus,
+        source: source,
       ),
     );
     return BolusDeliveryResult.unknown(message);
@@ -272,6 +277,7 @@ class BolusDelivery {
           at: startedAt,
           units: amount.units,
           kind: PodDeliveryKind.bolus,
+          source: source,
         ),
       );
       // The pod takes about two seconds per 0.05 U pulse, so this dose is still

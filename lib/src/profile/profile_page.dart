@@ -26,6 +26,7 @@ import 'package:insulink/src/profile/tuning/basal_tuning_card.dart';
 import 'package:insulink/src/profile/tuning/factor_tuning_card.dart';
 import 'package:insulink/src/pump/loop/loop_micro_bolus_section.dart';
 import 'package:insulink/src/pump/loop/loop_settings.dart';
+import 'package:insulink/src/activity_mode/activity_mode_section.dart';
 import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_live_notification_toggle.dart';
 import 'package:insulink/src/profile/notifications/profile_lockscreen_toggle.dart';
@@ -204,6 +205,12 @@ class _ProfilePageState extends State<ProfilePage> {
         SizedBox(height: 16),
         LoopMicroBolusSection(),
       ],
+    ),
+    (
+      titleKey: "profile.activity_mode",
+      icon: PhosphorIconsBold.personSimpleRun,
+      searchKey: "profile.search.activity_mode",
+      children: () => const [ActivityModeSection()],
     ),
     (
       titleKey: "profile.prediction",

@@ -1,3 +1,5 @@
+import 'package:insulink/src/activity_mode/activity_mode.dart';
+import 'package:insulink/src/activity_mode/activity_mode_adjustment.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/pump/loop/loop_algorithm.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
@@ -46,6 +48,7 @@ class PodLoopRunner {
     PodConnection? connection,
     this.retry = const PodRetry(),
     this.now = DateTime.now,
+    this.readActivity = ActivityModeAdjustment.load,
   }) : _connection =
            connection ??
            PodConnection(store: store, lease: PodMonitor.serviceLease);
@@ -87,7 +90,15 @@ class PodLoopRunner {
 
   final DateTime Function() now;
 
+  /// What the activity mode changes about this cycle. Injectable so tests pin a
+  /// mode without seeding the sport store.
+  final Future<ActivityModeAdjustment> Function(DateTime now) readActivity;
+
   final PodConnection _connection;
+
+  /// The mode the current cycle decided under, for its journal entry. Reset
+  /// every tick, so a cycle that never reached a decision records normal.
+  ActivityMode _activity = ActivityMode.normal;
 
   DateTime? _lastCycleAt;
   bool _running = false;
@@ -111,6 +122,7 @@ class PodLoopRunner {
     }
     _running = true;
     _lastCycleAt = now();
+    _activity = ActivityMode.normal;
     try {
       // The mode is toggled in the UI isolate and the store's cache is per
       // isolate, so this one only ever sees the switch by re-reading. Without
@@ -256,12 +268,19 @@ class PodLoopRunner {
   ///  * boluses whose outcome nobody could confirm, which are recorded nowhere
   ///    the user's calculator reads. Here they count as delivered, because a dose
   ///    that may be in the body is one the automation must not add on top of.
+  ///
+  /// The activity mode moves only the target and the anchor the arithmetic
+  /// works from. The safety layer is handed the real schedule, so every ceiling
+  /// and the dose accounting stay where they were.
   Future<LoopDecision> _decide(
-    LoopLimits limits,
+    LoopLimits base,
     LoopGlucose glucose,
     PodStatusResponse status,
   ) async {
     final at = now();
+    final activity = await readActivity(at);
+    _activity = activity.mode;
+    final limits = activity.limits(base);
     final iob =
         await readMealIob(limits.insulinDuration) +
         InsulinOnBoard(
@@ -272,7 +291,7 @@ class PodLoopRunner {
     final wanted = algorithm.wantedUnitsPerHour(
       glucose: glucose,
       iobUnits: iob,
-      scheduledUnitsPerHour: schedule,
+      scheduledUnitsPerHour: activity.anchor(schedule),
     );
     final decision = LoopSafety(limits).decide(
       wantedUnitsPerHour: wanted,
@@ -447,6 +466,7 @@ class PodLoopRunner {
         iobUnits: decision.iobUnits,
         microBolusUnits: microBolusUnits ?? decision.microBolusUnits,
         microBolusBoundBy: decision.microBolusBoundBy,
+        activity: _activity,
       ),
     );
   }

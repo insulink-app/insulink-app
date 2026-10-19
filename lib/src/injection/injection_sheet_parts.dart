@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// One group of the bolus calculator: a 32 px icon tile and a title over the
@@ -15,12 +16,16 @@ class InjectionCard extends StatelessWidget {
     required this.titleKey,
     required this.children,
     this.emphasised = false,
+    this.trailing,
   });
 
   final IconData icon;
   final String titleKey;
   final List<Widget> children;
   final bool emphasised;
+
+  /// A small action at the top right corner, level with the title.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +44,8 @@ class InjectionCard extends StatelessWidget {
             spacing: 10,
             children: [
               _tile(colors),
-              LocaleText(titleKey, style: InkText.rowTitle),
+              Expanded(child: LocaleText(titleKey, style: InkText.rowTitle)),
+              ?trailing,
             ],
           ),
           const SizedBox(height: 12),
@@ -77,12 +83,14 @@ class InjectionNumberField extends StatelessWidget {
     required this.controller,
     required this.suffix,
     this.large = false,
+    this.autofocus = false,
     this.errorText,
   });
 
   final TextEditingController controller;
   final String suffix;
   final bool large;
+  final bool autofocus;
   final String? errorText;
 
   @override
@@ -90,6 +98,7 @@ class InjectionNumberField extends StatelessWidget {
     final colors = context.ink;
     return TextField(
       controller: controller,
+      autofocus: autofocus,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
       style: InkText.bigValue.copyWith(
@@ -121,6 +130,45 @@ class InjectionNumberField extends StatelessWidget {
         ),
         suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
         errorText: errorText,
+      ),
+    );
+  }
+}
+
+/// "● to Omnipod DASH": where the dose is going, when a pod delivers it.
+class InjectionPumpTag extends StatelessWidget {
+  const InjectionPumpTag({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.ink;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: colors.ground,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 8,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: colors.range,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Text(
+            Locales.string(
+              context,
+              'injection.confirm.to_pump',
+              params: [Locales.string(context, 'pump.type.dash')],
+            ),
+            style: InkText.label.copyWith(color: colors.muted),
+          ),
+        ],
       ),
     );
   }

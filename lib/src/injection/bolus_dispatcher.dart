@@ -122,6 +122,7 @@ class BolusDispatcher extends ChangeNotifier {
         at: DateTime.now(),
         units: units,
         kind: PodDeliveryKind.bolus,
+        source: PodDeliverySource.app,
       ),
     );
   }

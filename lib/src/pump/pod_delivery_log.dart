@@ -11,6 +11,7 @@ class PodDelivery {
     required this.at,
     required this.units,
     required this.kind,
+    this.source,
   });
 
   factory PodDelivery.fromJson(Map<String, dynamic> json) => PodDelivery(
@@ -20,17 +21,35 @@ class PodDelivery {
       (entry) => entry.name == json['kind'],
       orElse: () => PodDeliveryKind.bolus,
     ),
+    source: PodDeliverySource.values
+        .where((entry) => entry.name == json['source'])
+        .firstOrNull,
   );
 
   final DateTime at;
   final double units;
   final PodDeliveryKind kind;
 
+  /// Who asked for a bolus; null for the activation volumes, and for a bolus
+  /// logged before the source was recorded.
+  final PodDeliverySource? source;
+
   Map<String, dynamic> toJson() => {
     'at': at.millisecondsSinceEpoch,
     'units': units,
     'kind': kind.name,
+    if (source != null) 'source': source!.name,
   };
+}
+
+/// Where a bolus was asked for, so the account's delivery log can tell a dose
+/// from the injection page apart from one confirmed on a notification.
+enum PodDeliverySource {
+  /// The injection page.
+  app,
+
+  /// The "deliver the correction" button on an alarm or pre-warning.
+  notification,
 }
 
 /// What a recorded delivery was for. Named rather than a bare number, because
@@ -153,7 +172,12 @@ extension PodDeliveryLog on PodStore {
     final amended = [
       for (final entry in entries)
         if (entry.at == at)
-          PodDelivery(at: entry.at, units: units, kind: entry.kind)
+          PodDelivery(
+            at: entry.at,
+            units: units,
+            kind: entry.kind,
+            source: entry.source,
+          )
         else
           entry,
     ];

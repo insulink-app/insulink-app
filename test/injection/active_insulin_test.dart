@@ -80,10 +80,11 @@ void main() {
     // A later dose contributes nothing before its time, then its full units at it.
     final later = bolusAt(now, 4);
     final earlier = bolusAt(now.subtract(const Duration(hours: 1)), 6);
-    final curve = iob.curve([
-      earlier,
-      later,
-    ], now: now, step: const Duration(minutes: 30));
+    final curve = iob.curve(
+      [earlier, later],
+      now: now,
+      step: const Duration(minutes: 30),
+    );
     expect(curve.first.units, closeTo(6, 0.001));
     final atNow = curve.firstWhere((point) => point.at == now);
     expect(atNow.units, closeTo(8, 0.001));

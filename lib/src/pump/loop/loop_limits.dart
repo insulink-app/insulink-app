@@ -88,6 +88,17 @@ class LoopLimits {
   /// What a micro bolus is bounded by, on top of every ceiling above.
   final LoopMicroBolusLimits microBolus;
 
+  /// The same limits aiming at [target] instead, for the activity mode.
+  LoopLimits withTarget(int target) => LoopLimits(
+    targetMgdl: target,
+    suspendBelowMgdl: suspendBelowMgdl,
+    correctionFactorMgdl: correctionFactorMgdl,
+    insulinDuration: insulinDuration,
+    maxUnitsPerHour: maxUnitsPerHour,
+    maxIobUnits: maxIobUnits,
+    microBolus: microBolus,
+  );
+
   /// Whether these limits are internally consistent enough to dose against.
   bool get isUsable => problem == null;
 

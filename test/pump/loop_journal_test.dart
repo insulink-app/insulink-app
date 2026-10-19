@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/activity_mode/activity_mode.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
 import 'package:insulink/src/pump/loop/loop_limits.dart';
 import 'package:insulink/src/pump/pod_store.dart';
@@ -220,5 +221,23 @@ void main() {
     }
 
     expect(store.loopCycles, hasLength(PodLoopJournal.maxCycles));
+  });
+
+  test('a cycle keeps the activity mode it decided under', () async {
+    await store.recordLoopCycle(PodLoopCycle(
+      at: now,
+      unitsPerHour: 0.5,
+      scheduledUnitsPerHour: 1.0,
+      reason: LoopReason.easingOff,
+      delivered: true,
+      activity: ActivityMode.endurance,
+    ));
+    await cycleAt(now.add(const Duration(minutes: 5)), rate: 1.0);
+    await store.reload();
+
+    expect(store.loopCycles.map((cycle) => cycle.activity), [
+      ActivityMode.normal,
+      ActivityMode.endurance,
+    ]);
   });
 }

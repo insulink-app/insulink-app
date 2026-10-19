@@ -9,6 +9,7 @@ import 'package:insulink/src/pump/protocol/pod_session.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 import 'package:insulink/src/pump/service/pod_alarms.dart';
 import 'package:insulink/src/pump/insulin_sync.dart';
+import 'package:insulink/src/pump/pod_history_sync.dart';
 import 'package:insulink/src/pump/pod_basal_booking.dart';
 import 'package:insulink/src/pump/pod_retry.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
@@ -70,6 +71,10 @@ class PodMonitor {
   final DateTime Function() now;
 
   final PodConnection _connection;
+
+  /// Kept for the life of the service, so an unchanged log is not resent on
+  /// every poll.
+  final PodHistorySync _historySync = PodHistorySync();
 
   /// Consecutive polls that never reached the pod. Reset the moment one does.
   int _failedPolls = 0;
@@ -214,6 +219,7 @@ class PodMonitor {
       () => PumpSync().sync(store, status: status),
     );
     await _runQuietly('insulin push', () => InsulinSync().push(store));
+    await _runQuietly('history push', () => _historySync.push(store));
     onLog('pod status: $status, alarm: $alarm');
   }
 

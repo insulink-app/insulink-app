@@ -113,6 +113,7 @@
       "now": "Jetzt",
       "axis_now": "jetzt",
       "show_meals": "Mahlzeiten anzeigen",
+      "show_slope": "Steigung statt Glukose zeigen",
       "insulin": {
         "_": "Insulin",
         "basal": "Basal",
@@ -677,7 +678,8 @@
       "on_board": "# E aktiv",
       "schedule_was": "Basalprogramm # E/h",
       "micro_bolus": "# E Mini-Bolus",
-      "micro_bolus_bound": "Mini-Bolus #"
+      "micro_bolus_bound": "Mini-Bolus #",
+      "activity": "(Sportmodus #)"
     },
     "forget": {
       "_": "Diesen Pod vergessen?",
@@ -912,7 +914,8 @@
       "bolus_value": "# E Bolus",
       "show_more": "Mehr anzeigen",
       "delete": "Mahlzeit löschen",
-      "delete_confirm": "Diese Mahlzeit löschen?"
+      "delete_confirm": "Diese Mahlzeit löschen?",
+      "photo_failed": "Das Foto konnte nicht geladen werden."
     }
   },
   "sport": {
@@ -1372,7 +1375,8 @@
       "battery": "akku batterie energie sparen strom stromsparen gps ortung standort erkennung laufzeit",
       "loop": "automatische abgabe automatik loop closed loop insulin",
       "security": "fingerabdruck biometrie biometrisch sperre sperren pin sicherheit entsperren gesichert app start",
-      "backup": "backup sicherung datensicherung export speichern daten datei herunterladen wiederherstellen archiv kopie"
+      "backup": "backup sicherung datensicherung export speichern daten datei herunterladen wiederherstellen archiv kopie",
+      "activity_mode": "sport sportmodus training ausdauer kraft kraftsport laufen radfahren gehen routine workout basal zielwert"
     },
     "prediction": {
       "_": "Vorhersage",
@@ -1487,6 +1491,24 @@
       "saved": "Backup gespeichert",
       "failed": "Das Backup konnte nicht erstellt werden. Prüfe deine Internetverbindung und versuche es erneut.",
       "loading": "Daten werden geladen…"
+    },
+    "activity_mode": {
+      "_": "Sportmodus",
+      "description": "So passt die Automatik die Abgabe an, solange ein Sportmodus läuft. Ausgeschaltet bleibt sie immer bei deinen normalen Werten. Alle Grenzen der automatischen Abgabe gelten weiter.",
+      "endurance_target": {
+        "_": "Zielwert bei Ausdauer",
+        "value": "# mg/dL"
+      },
+      "endurance_basal": {
+        "_": "Basal bei Ausdauer",
+        "value": "# %"
+      },
+      "strength_basal": {
+        "_": "Basal bei Kraftsport",
+        "value": "# %"
+      },
+      "enabled": "Sportmodus verwenden",
+      "on_overview": "Auswahl auf der Übersicht zeigen"
     }
   },
   "injection": {
@@ -1520,21 +1542,28 @@
       "pick": "Produkt wählen"
     },
     "confirm": {
-      "title": "Bolus bestätigen",
       "to_pump": "an #",
-      "active": "Aktives Insulin",
-      "active_subtracted": "# E abgezogen",
       "button": "Bestätigen",
       "reason": "Bolus mit Fingerabdruck bestätigen",
-      "success": "Bolus bestätigt",
       "failed": "Authentifizierung fehlgeschlagen",
-      "button_pump": "Bolus an Pumpe senden",
-      "log_without_bolus": "Ohne Bolus protokollieren",
-      "pump_refused": "Die Pumpe hat den Bolus nicht abgegeben.",
-      "pump_unknown": "Unklar, ob die Pumpe abgegeben hat. Prüfe den Pod, bevor du erneut dosierst."
+      "button_pump": "Bolus an Pumpe senden"
     },
-    "next": "Weiter",
-    "active_insulin_pump": "davon # E aus der Pumpe, nicht selbst gespritzt"
+    "active_insulin_pump": "davon # E aus der Pumpe, nicht selbst gespritzt",
+    "photo": {
+      "take": "Mahlzeit fotografieren",
+      "failed": "Das Foto konnte nicht ausgewertet werden. Versuche es noch einmal oder trage die Kohlenhydrate selbst ein.",
+      "no_food": "Auf dem Foto wurde kein Essen erkannt.",
+      "shutter": "Foto aufnehmen",
+      "analysing": "Wird analysiert",
+      "no_camera": "Die Kamera konnte nicht geöffnet werden.",
+      "other": "Sonstiges",
+      "manual": "Manuell",
+      "light": "Licht",
+      "fewer": "Ein Stück weniger",
+      "more": "Ein Stück mehr",
+      "other_open": "Weitere Lebensmittel zeigen",
+      "other_close": "Weitere Lebensmittel ausblenden"
+    }
   },
   "service": {
     "connecting": "Verbinde…",
@@ -1682,5 +1711,19 @@
     "goal": "Ziel #",
     "axis_today": "heute",
     "empty_range": "Keine Daten in diesem Zeitraum"
+  },
+  "activity_mode": {
+    "_": "Sportmodus",
+    "auto": "Auto",
+    "normal": "Normal",
+    "endurance": "Ausdauer",
+    "strength": "Kraft",
+    "source": {
+      "none": "kein Training erkannt",
+      "manual": "von Hand gewählt bis #",
+      "workout": "Routine läuft",
+      "recording": "Training wird aufgezeichnet",
+      "detected": "Training erkannt"
+    }
   }
 }

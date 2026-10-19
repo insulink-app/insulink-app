@@ -28,6 +28,7 @@ import 'package:insulink/src/profile/developer/profile_developer_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 import 'package:insulink/src/profile/language/profile_language_state.dart';
 import 'package:insulink/src/profile/prediction/profile_prediction_state.dart';
+import 'package:insulink/src/activity_mode/activity_mode_switch_state.dart';
 import 'package:insulink/src/profile/silent/profile_silent_state.dart';
 import 'package:insulink/src/profile/theme/profile_theme_state.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
@@ -58,6 +59,7 @@ typedef AppPreferences = ({
   ProfileSilentState silent,
   ProfileBatteryState battery,
   ProfilePredictionState prediction,
+  ActivityModeSwitchState activityMode,
   SportState sport,
   TrainingState training,
   CardioTrainingState cardio,
@@ -123,6 +125,11 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
   /// being recreated per generation.
   ProfileThemeState? _themeState;
 
+  /// Held here rather than created by its provider, so [_reload] can hand it
+  /// the archive an account pull just wrote: it lives above the reload point
+  /// (the step stream must not restart) and would otherwise never see it.
+  final SportActivityState _activityState = SportActivityState();
+
   /// Reaches the app's [Navigator] from OUTSIDE it: [_AppLifecycle] sits above
   /// the Navigator (it wraps the [MaterialApp]'s child), so it cannot look one
   /// up, and a notification tap has to be able to push a page.
@@ -164,11 +171,13 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       _preferences = preferences;
       _generation++;
     });
+    await _activityState.reloadArchive();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _activityState.dispose();
     super.dispose();
   }
 
@@ -186,7 +195,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         // Step counter — only started when the Sport tab is opened
         // (ensureStarted), not here, to avoid forcing the permission/stream at
         // app start.
-        ChangeNotifierProvider(create: (_) => SportActivityState()),
+        ChangeNotifierProvider.value(value: _activityState),
         // Shared G7 read pipeline + service control, observed by the overview
         // and sensor pages.
         ChangeNotifierProvider(create: (_) => CgmController()..init()),
@@ -252,6 +261,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.silent),
         ChangeNotifierProvider(create: (_) => prefs.battery),
         ChangeNotifierProvider(create: (_) => prefs.prediction),
+        ChangeNotifierProvider(create: (_) => prefs.activityMode),
         ChangeNotifierProvider(create: (_) => prefs.sport),
         ChangeNotifierProvider(create: (_) => prefs.training),
         ChangeNotifierProvider(create: (_) => prefs.cardio),
@@ -365,6 +375,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
       silent: await _silentState(),
       battery: await ProfileBatteryState.load(),
       prediction: await ProfilePredictionState.load(),
+      activityMode: await ActivityModeSwitchState.load(),
       sport: await SportState.load(),
       training: await TrainingState.load(),
       cardio: await CardioTrainingState.load(),
