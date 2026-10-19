@@ -180,7 +180,12 @@ class LoopSafety {
   /// allowance would have the loop withhold the user's own background insulin
   /// and let them run high for the sake of a hypo that the schedule alone does
   /// not cause.
-  double _hypoHeadroom(LoopGlucose glucose, double iobUnits) {
+  double _hypoHeadroom(LoopGlucose glucose, double iobUnits) =>
+      _excessRateFor(hypoHeadroomUnits(glucose, iobUnits));
+
+  /// The same allowance in units, for a dose given at once rather than as a
+  /// rate. Zero or below means nothing more fits.
+  double hypoHeadroomUnits(LoopGlucose glucose, double iobUnits) {
     final projected = glucose.projected(LoopLimits.fuse.inMinutes);
     final reference = projected < glucose.mgdl
         ? projected
@@ -189,8 +194,7 @@ class LoopSafety {
     if (headroomMgdl <= 0) {
       return 0;
     }
-    final affordableUnits = headroomMgdl / limits.correctionFactorMgdl;
-    return _excessRateFor(affordableUnits - iobUnits);
+    return headroomMgdl / limits.correctionFactorMgdl - iobUnits;
   }
 
   /// Turns a budget of extra units into the rate that would deliver exactly that

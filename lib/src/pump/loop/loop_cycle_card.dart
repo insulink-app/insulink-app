@@ -98,6 +98,11 @@ class PodLoopCycleCard extends StatelessWidget {
   /// nobody can check.
   String _inputs(BuildContext context) {
     return [
+      if (cycle.microBolusUnits > 0)
+        Locales.string(
+          context,
+          'pump.loop.micro_bolus',
+        ).replaceFirst('#', cycle.microBolusUnits.toStringAsFixed(2)),
       if (cycle.mgdl != null)
         Locales.string(
           context,
@@ -123,6 +128,17 @@ class PodLoopCycleCard extends StatelessWidget {
       if (!cycle.delivered) Locales.string(context, 'pump.loop.not_sent'),
       if (cycle.boundBy != null)
         Locales.string(context, 'pump.loop.bound.${cycle.boundBy!.localeKey}'),
+      if (cycle.microBolusBoundBy != null)
+        Locales.string(
+          context,
+          'pump.loop.micro_bolus_bound',
+        ).replaceFirst(
+          '#',
+          Locales.string(
+            context,
+            'pump.loop.bound.${cycle.microBolusBoundBy!.localeKey}',
+          ),
+        ),
     ];
     return parts.isEmpty ? null : parts.join(' · ');
   }

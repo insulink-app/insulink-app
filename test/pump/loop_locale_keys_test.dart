@@ -6,6 +6,7 @@ import 'package:insulink/src/activity_mode/activity_mode.dart';
 import 'package:insulink/src/activity_mode/activity_mode_settings.dart';
 import 'package:insulink/src/localization/enum_locale_key.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
+import 'package:insulink/src/pump/loop/loop_micro_bolus_settings.dart';
 import 'package:insulink/src/pump/loop/loop_settings.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 
@@ -66,6 +67,15 @@ void main() {
         for (final setting in LoopSettings.all) ...[
           setting.labelKey,
           setting.valueKey,
+        ],
+        'profile.loop.micro_bolus',
+        'profile.loop.micro_bolus.description',
+        'pump.loop.micro_bolus',
+        'pump.loop.micro_bolus_bound',
+        for (final toggle in LoopMicroBolusSettings.toggles) toggle.labelKey,
+        for (final threshold in LoopMicroBolusSettings.thresholds) ...[
+          threshold.labelKey,
+          threshold.valueKey,
         ],
         'pump.loop.activity',
         'activity_mode',

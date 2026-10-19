@@ -810,7 +810,7 @@ class CgmTaskHandler extends TaskHandler {
 
   /// The sensor input the automation is allowed to decide on, or an unusable one
   /// when there is no store yet. Validation lives in [LoopGlucose]; this only
-  /// hands it the window it measures over.
+  /// hands it the window it measures over, long enough to see a recent low.
   Future<LoopGlucose> _readLoopGlucose() async {
     final store = _store;
     final now = DateTime.now();
@@ -818,7 +818,7 @@ class CgmTaskHandler extends TaskHandler {
       return LoopGlucose.from(SplayTreeMap<int, int>(), now: now);
     }
     return LoopGlucose.from(
-      store.archiveRange(now.subtract(LoopGlucose.trendWindow), now),
+      store.archiveRange(now.subtract(LoopGlucose.lookback), now),
       now: now,
     );
   }

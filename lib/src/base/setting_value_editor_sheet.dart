@@ -4,6 +4,7 @@ import 'package:insulink/src/base/circle_icon_button.dart';
 import 'package:insulink/src/base/editor_sheet.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/base/setting_fill_bar.dart';
+import 'package:insulink/src/base/setting_value_card.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Focused editor for one integer setting: a fill preview, a [Slider] for quick
@@ -19,10 +20,14 @@ class SettingValueEditorSheet extends StatefulWidget {
     required this.max,
     required this.step,
     required this.onChanged,
+    this.tenths = false,
   });
 
   final String labelKey, valueKey;
   final int value, min, max, step;
+
+  /// Whether [value] counts tenths and is shown with one decimal.
+  final bool tenths;
   final void Function(int) onChanged;
 
   @override
@@ -32,6 +37,8 @@ class SettingValueEditorSheet extends StatefulWidget {
 
 class _SettingValueEditorSheetState extends State<SettingValueEditorSheet> {
   late int _value = widget.value;
+
+  String get _text => _value.settingText(context, tenths: widget.tenths);
 
   void _apply(int value) {
     final clamped = value.clamp(widget.min, widget.max);
@@ -44,7 +51,7 @@ class _SettingValueEditorSheetState extends State<SettingValueEditorSheet> {
     final accent = Theme.of(context).colorScheme.primary;
     return EditorSheet(
       titleKey: widget.labelKey,
-      valueText: Locales.string(context, widget.valueKey, params: ['$_value']),
+      valueText: Locales.string(context, widget.valueKey, params: [_text]),
       accent: accent,
       children: [
         SettingFillBar(
@@ -99,7 +106,7 @@ class _SettingValueEditorSheetState extends State<SettingValueEditorSheet> {
         SizedBox(
           width: 96,
           child: Text(
-            '$_value',
+            _text,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
           ),

@@ -41,6 +41,19 @@ class LoopAlgorithm {
     return projected - iobUnits * limits.correctionFactorMgdl;
   }
 
+  /// The insulin still missing to bring the predicted glucose to target, in
+  /// units. Negative when glucose is heading below target.
+  ///
+  /// The one figure both delivery paths start from: the rate spreads it over the
+  /// fuse, a micro bolus gives a share of it at once.
+  double correctionUnits({
+    required LoopGlucose glucose,
+    required double iobUnits,
+  }) {
+    final eventual = eventualMgdl(glucose: glucose, iobUnits: iobUnits);
+    return (eventual - limits.targetMgdl) / limits.correctionFactorMgdl;
+  }
+
   /// The rate the arithmetic wants, in U/h, before any limit is applied.
   ///
   /// Anchored on the user's own scheduled rate rather than on zero. The pod's
@@ -52,10 +65,8 @@ class LoopAlgorithm {
     required double iobUnits,
     required double scheduledUnitsPerHour,
   }) {
-    final eventual = eventualMgdl(glucose: glucose, iobUnits: iobUnits);
-    final correctionUnits =
-        (eventual - limits.targetMgdl) / limits.correctionFactorMgdl;
-    final wanted = scheduledUnitsPerHour + correctionUnits / _fuseHours;
+    final correction = correctionUnits(glucose: glucose, iobUnits: iobUnits);
+    final wanted = scheduledUnitsPerHour + correction / _fuseHours;
     return wanted.isFinite && wanted > 0 ? wanted : 0;
   }
 

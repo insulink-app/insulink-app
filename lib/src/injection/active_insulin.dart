@@ -79,14 +79,14 @@ class ActiveInsulin {
     final end = activeUntil(meals, now: at)!;
     final points = <({DateTime at, double units})>[];
     for (var sample = start; !sample.isAfter(end); sample = sample.add(step)) {
-      points.add((at: sample, units: _iobAt(meals, sample)));
+      points.add((at: sample, units: unitsAt(meals, sample)));
     }
     return points;
   }
 
   /// Total IOB at [sample], counting only doses already given by then — a future
   /// dose contributes nothing, unlike [units] (which is only ever read at "now").
-  double _iobAt(List<Meal> meals, DateTime sample) {
+  double unitsAt(List<Meal> meals, DateTime sample) {
     return meals
         .where((meal) => !meal.time.isAfter(sample))
         .fold(0.0, (sum, meal) => sum + _remaining(meal, sample));

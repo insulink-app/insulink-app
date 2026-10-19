@@ -184,7 +184,13 @@
       "of_bolus": "von # E Bolus",
       "empty": "Keine aktiven Insulindosen.",
       "no_doses": "Keine selbst gespritzte Dosis wirkt gerade.",
-      "from_pump": "Über dem Basalprogramm abgegeben"
+      "from_pump": "Über dem Basalprogramm abgegeben",
+      "layer": {
+        "boluses": "Deine Boli",
+        "micro_boluses": "Mini-Boli",
+        "rate": "Temporäre Rate",
+        "total": "Gesamt"
+      }
     },
     "boxes": {
       "all": "Alle Werte",
@@ -581,7 +587,8 @@
         "bolus": "Bolus",
         "prime": "Vorbereitung",
         "cannula": "Kanüle",
-        "basal": "Basal"
+        "basal": "Basal",
+        "micro_bolus": "Mini-Bolus"
       },
       "basal_total": "Basal insgesamt",
       "bolus_total": "Bolus insgesamt",
@@ -599,7 +606,11 @@
       "units": "# E",
       "not_delivered": "Der Bolus wurde nicht abgegeben. In der Mahlzeit ist deshalb kein Insulin eingetragen.",
       "stop_title": "Bolus stoppen?",
-      "stop_body": "Der Rest der Dosis wird nicht mehr abgegeben. Was bereits geflossen ist, bleibt im Körper."
+      "stop_body": "Der Rest der Dosis wird nicht mehr abgegeben. Was bereits geflossen ist, bleibt im Körper.",
+      "running_micro": "Mini-Bolus der Automatik",
+      "queued": "Dein Bolus folgt, sobald er fertig ist.",
+      "queue_too_long": "Die Automatik gibt noch # Sekunden lang einen Mini-Bolus. Versuche es danach noch einmal.",
+      "already_running": "Es läuft noch ein Bolus. Warte, bis er fertig ist."
     },
     "basal": {
       "out_of_date": "Dein Basalprofil wurde geändert. Der Pod läuft noch mit dem alten Zeitplan.",
@@ -627,14 +638,17 @@
         "no_glucose": "keine verwertbaren Sensordaten",
         "pod_unavailable": "Pod nicht bereit",
         "limits_invalid": "Grenzwerte unstimmig",
-        "clock_unreliable": "Uhrzeit zurückgestellt"
+        "clock_unreliable": "Uhrzeit zurückgestellt",
+        "micro_bolusing": "korrigiert mit Mini-Bolus"
       },
       "bound": {
         "max_rate": "(durch die Ratenobergrenze begrenzt)",
         "max_iob": "(durch das aktive Insulin begrenzt)",
         "hypo_headroom": "(durch den Abstand zur Stoppschwelle begrenzt)",
         "hourly_ceiling": "(durch die Stundengrenze begrenzt)",
-        "reservoir": "(durch den Reservoirstand begrenzt)"
+        "reservoir": "(durch den Reservoirstand begrenzt)",
+        "max_micro_bolus": "(durch den größten Mini-Bolus begrenzt)",
+        "micro_bolus_hourly": "(durch die Stundengrenze für Mini-Boli begrenzt)"
       },
       "stopped": {
         "pod_unreachable": "Die Automatik wurde beendet, weil der Pod länger nicht erreichbar war. Der Pod läuft wieder auf deinem Basalprogramm.",
@@ -663,6 +677,8 @@
       "at_glucose": "bei # mg/dL, # mg/dL pro Minute",
       "on_board": "# E aktiv",
       "schedule_was": "Basalprogramm # E/h",
+      "micro_bolus": "# E Mini-Bolus",
+      "micro_bolus_bound": "Mini-Bolus #",
       "activity": "(Sportmodus #)"
     },
     "forget": {
@@ -1400,6 +1416,40 @@
       "max_iob": {
         "_": "Höchstes aktives Insulin",
         "value": "# E"
+      },
+      "micro_bolus": {
+        "_": "Mini-Boli",
+        "description": "Gibt einen Teil des fehlenden Insulins sofort, statt es über eine temporäre Rate zu verteilen. Schneller bei steigendem Zucker, aber ein abgegebener Bolus lässt sich nicht zurücknehmen. Alle Grenzen oben gelten weiterhin.",
+        "enabled": "Mini-Boli erlauben",
+        "only_rising": "Nur bei steigender Glukose",
+        "max_units": {
+          "_": "Größter einzelner Mini-Bolus",
+          "value": "# E"
+        },
+        "share": {
+          "_": "Anteil des fehlenden Insulins",
+          "value": "# %"
+        },
+        "from": {
+          "_": "Mini-Boli ab",
+          "value": "# mg/dL"
+        },
+        "every": {
+          "_": "Höchstens alle",
+          "value": "# min"
+        },
+        "max_per_hour": {
+          "_": "Automatisches Insulin pro Stunde höchstens",
+          "value": "# E"
+        },
+        "pause_after_low": {
+          "_": "Pause nach niedrigem Wert",
+          "value": "# min"
+        },
+        "queue": {
+          "_": "Manuellen Bolus höchstens zurückstellen",
+          "value": "# s"
+        }
       }
     },
     "pod_temp_basal_beep": {

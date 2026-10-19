@@ -412,6 +412,9 @@ class PodController extends ChangeNotifier {
   /// that is no longer flowing.
   ///
   /// Does nothing when no bolus was running, so the callers need no condition.
+  ///
+  /// A stopped micro bolus is corrected in the automation's ledger instead, and
+  /// raises no notice: the notice is about a meal, and no meal carries it.
   Future<void> _endRunningBolus() async {
     final bolus = runningBolus;
     if (bolus == null) {
@@ -419,8 +422,12 @@ class PodController extends ChangeNotifier {
       return;
     }
     final given = bolus.deliveredUnits(DateTime.now());
-    await store.amendDelivery(bolus.startedAt, given);
     await store.clearRunningBolus();
+    if (bolus.automated) {
+      await store.amendLoopMicroBolus(bolus.startedAt, given);
+      return;
+    }
+    await store.amendDelivery(bolus.startedAt, given);
     _cancelledBolus = (programmed: bolus.programmedUnits, given: given);
   }
 

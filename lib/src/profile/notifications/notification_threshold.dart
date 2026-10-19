@@ -18,6 +18,7 @@ class NotificationThreshold {
     required this.min,
     required this.max,
     this.step = 1,
+    this.tenths = false,
   });
 
   final String storageKey;
@@ -27,6 +28,10 @@ class NotificationThreshold {
   final int min;
   final int max;
   final int step;
+
+  /// Whether the stored integer counts tenths, for a setting that needs a
+  /// decimal (0.5 U) but should keep the integer editor and storage.
+  final bool tenths;
 
   /// Hours before the pod runs out at which to warn.
   static const podExpiry = NotificationThreshold(

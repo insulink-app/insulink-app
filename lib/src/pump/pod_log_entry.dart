@@ -1,7 +1,8 @@
+import 'package:insulink/src/localization/enum_locale_key.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 
-/// One line of the pod's history: a dose the user chose, a volume the activation
-/// consumed, or an hour of basal.
+/// One line of the pod's history: a dose the user chose, a micro bolus the
+/// automation gave, a volume the activation consumed, or an hour of basal.
 ///
 /// Basal and doses are stored apart — one is a running drip booked by the
 /// background watch, the other a set of discrete events — and are only brought
@@ -16,11 +17,13 @@ class PodLogEntry {
     this.spansAnHour = false,
   });
 
-  /// A discrete delivery: the bolus, or one of the two activation volumes.
+  /// A discrete delivery: a bolus, a micro bolus, or one of the two activation
+  /// volumes. A micro bolus is not a dose the user chose, so it is not
+  /// [isDose].
   factory PodLogEntry.fromDelivery(PodDelivery delivery) => PodLogEntry._(
     at: delivery.at,
     units: delivery.units,
-    labelKey: 'pump.log.kind.${delivery.kind.name}',
+    labelKey: 'pump.log.kind.${delivery.kind.localeKey}',
     isDose: delivery.kind == PodDeliveryKind.bolus,
   );
 
@@ -47,11 +50,13 @@ class PodLogEntry {
   /// Everything the pod has delivered, newest first.
   ///
   /// An hour of basal sorts by the hour it started, so it sits with the doses
-  /// given during it rather than at the end of the list.
+  /// given during it rather than at the end of the list. Micro boluses come from
+  /// the automation's own ledger, which keeps the last day of them.
   static List<PodLogEntry> timeline(PodStore store) {
     final entries = <PodLogEntry>[
       for (final delivery in store.deliveryLog)
         PodLogEntry.fromDelivery(delivery),
+      for (final dose in store.loopMicroBoluses) PodLogEntry.fromDelivery(dose),
       for (final hour in store.basalHours) PodLogEntry.fromBasalHour(hour),
     ]..sort((left, right) => right.at.compareTo(left.at));
     return entries;

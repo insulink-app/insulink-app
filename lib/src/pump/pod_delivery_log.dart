@@ -64,6 +64,11 @@ enum PodDeliveryKind {
 
   /// The volume used to drive the cannula in.
   cannula,
+
+  /// A dose the automation gave on its own. Kept in the loop's own ledger, never
+  /// in this log, so a day of five-minute doses cannot push the user's boluses
+  /// out of it.
+  microBolus,
 }
 
 /// The log of everything the pod has delivered, newest first.

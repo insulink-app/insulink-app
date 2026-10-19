@@ -695,9 +695,11 @@ the widget cannot drift away from the app on what is in range.
   analysis — including why there is no read-only mode and what each guard in
   `lib/src/pump/protocol/` defends against. Automated delivery is
   `docs/LOOP.md`.
-- `docs/LOOP.md` — **automated delivery**: why it is temp-basal-only, the pod's
+- `docs/LOOP.md` — **automated delivery**: why the temp basal is its backbone, the pod's
   own expiry as the fallback to basal, the trust boundary on sensor data, and
   the layered limits that bound how much insulin it can add.
+- `docs/LOOP_MICRO_BOLUS.md` — the opt-in **micro bolus**: why it exists, the
+  user's settings, and the ceilings that keep it inside the hypo headroom.
 - `docs/ACTIVITY_MODE.md` — the **activity mode**: endurance and strength move
   only the loop's target and basal anchor, never a ceiling; where the mode comes
   from (manual, routine, recording, the detection's ongoing segment).
