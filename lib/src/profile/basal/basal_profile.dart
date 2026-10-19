@@ -113,7 +113,8 @@ class BasalProfile {
     final stored = json['rates'];
     if (stored is List) {
       for (var hour = 0; hour < 24 && hour < stored.length; hour++) {
-        rates[hour] = (stored[hour] as num?)?.toDouble() ?? 0;
+        rates[hour] = ((stored[hour] as num?)?.toDouble() ?? 0)
+            .clamp(0.0, maxRate);
       }
     }
     final peaks = (json['peaks'] as List?)

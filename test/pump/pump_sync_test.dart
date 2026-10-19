@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/auth/data_key/data_key.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/pump_sync.dart';
 
@@ -111,6 +113,48 @@ void main() {
         'last_lifecycle': 'runningAboveMinimumVolume',
       }));
       expect(restore.uniqueId, 4241);
+    });
+  });
+
+  /// See docs/POD_KEY_ENCRYPTION.md: the key reaches the account sealed with
+  /// the data key when the device has one, and the old plain blobs stay
+  /// readable.
+  group('the pod key on the account', () {
+    final dataKey = DataKey.generate();
+    final podKey = Uint8List.fromList(List<int>.filled(16, 7));
+
+    Map<String, dynamic> sealedBlob(DataKey? key) => blob()
+      ..remove('long_term_key')
+      ..addAll(PumpSync.longTermKeyField(podKey, key));
+
+    test('goes sealed, never in plain, when there is a data key', () {
+      final field = PumpSync.longTermKeyField(podKey, dataKey);
+      expect(field.keys, ['long_term_key_enc']);
+      expect(field.values.single, isNot(contains(base64Encode(podKey))));
+    });
+
+    test('goes in plain, as before, when there is none', () {
+      expect(PumpSync.longTermKeyField(podKey, null),
+          {'long_term_key': base64Encode(podKey)});
+    });
+
+    test('a sealed key restores with the data key', () {
+      final restore = PodRestore.fromBlob('pump-1', sealedBlob(dataKey), dataKey);
+      expect(restore.longTermKey, podKey);
+    });
+
+    test('an old plain blob still restores, with or without a data key', () {
+      expect(PodRestore.fromBlob('pump-1', blob(), dataKey).longTermKey, podKey);
+      expect(PodRestore.fromBlob('pump-1', blob()).longTermKey, podKey);
+    });
+
+    test('a sealed key is refused without the data key that sealed it', () {
+      expect(() => PodRestore.fromBlob('pump-1', sealedBlob(dataKey)),
+          throwsA(anything));
+      expect(
+          () => PodRestore.fromBlob(
+              'pump-1', sealedBlob(dataKey), DataKey.generate()),
+          throwsA(anything));
     });
   });
 

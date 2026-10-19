@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
+import 'package:insulink/src/auth/data_key/data_key.dart';
 import 'package:insulink/src/inventory/inventory_item.dart';
 import 'package:insulink/src/inventory/inventory_store.dart';
 import 'package:insulink/src/inventory/inventory_sync.dart';
@@ -24,7 +25,9 @@ import 'package:insulink/src/request/response_json.dart';
 /// blob the server never interprets, same best-effort behaviour (a failed sync
 /// is retried on the next call and never blocks pump operation).
 class PumpSync {
-  const PumpSync();
+  const PumpSync([this._keys = const DataKeyStore()]);
+
+  final DataKeyStore _keys;
 
   /// The pump type key the backend's `PumpType` enum expects.
   static const String _backendType = 'OMNIPOD_DASH';
@@ -39,7 +42,7 @@ class PumpSync {
   /// cannot be renegotiated, and a silent failure here is the difference between
   /// a recoverable app reset and a pod nobody can ever stop.
   Future<bool> sync(PodStore store, {PodStatusResponse? status}) async {
-    final data = _data(store, status);
+    final data = _data(store, status, await _keys.load());
     if (data == null) {
       debugPrint('pump sync: nothing to mirror, no pod fully paired');
       return false;
@@ -64,7 +67,11 @@ class PumpSync {
   /// All three counters are included so a restored app resumes near where it left
   /// off. They are only as fresh as the last sync — see [PodStore.adoptFromBackend]
   /// for why being behind is recoverable and being keyless is not.
-  String? _data(PodStore store, PodStatusResponse? status) {
+  ///
+  /// The long-term key goes sealed with the account's [DataKey] when this device
+  /// has one, in plain form otherwise, as it always did; [PodRestore.fromBlob]
+  /// reads both (docs/POD_KEY_ENCRYPTION.md).
+  String? _data(PodStore store, PodStatusResponse? status, DataKey? key) {
     final uniqueId = store.uniqueId;
     final longTermKey = store.longTermKey;
     final activatedAt = store.activatedAt;
@@ -74,7 +81,7 @@ class PumpSync {
     return jsonEncode({
       'pump_type': _backendType,
       'unique_id': uniqueId,
-      'long_term_key': base64Encode(longTermKey),
+      ...longTermKeyField(longTermKey, key),
       'lot_number': store.lotNumber,
       'pod_sequence_number': store.podSequenceNumber,
       'activated_at': activatedAt.millisecondsSinceEpoch,
@@ -91,6 +98,17 @@ class PumpSync {
         'total_delivered_units': status.totalUnitsDelivered,
       },
     });
+  }
+
+  /// The blob field carrying the pod's key: sealed under its own name when there
+  /// is a [DataKey], so an older app reading the blob finds no key rather than
+  /// a sealed one it would take for plain.
+  @visibleForTesting
+  static Map<String, String> longTermKeyField(Uint8List longTermKey, DataKey? key) {
+    if (key == null) {
+      return {'long_term_key': base64Encode(longTermKey)};
+    }
+    return {'long_term_key_enc': key.seal(longTermKey)};
   }
 
   /// Epoch-ms the pod expires, so the stored record ages out with the pod it
@@ -225,6 +243,7 @@ class PumpSync {
       return PodRestore.fromBlob(
         '$id',
         jsonDecode(data) as Map<String, dynamic>,
+        await _keys.load(),
       );
     } catch (_) {
       return null;
@@ -263,13 +282,17 @@ class PodRestore {
 
   /// Reads a stored blob. Throws if a field the reconnect cannot do without is
   /// missing, so a malformed record is refused rather than adopted half-way.
-  factory PodRestore.fromBlob(String pumpId, Map<String, dynamic> blob) {
+  /// A sealed key needs this device's [DataKey]; without it, or with another
+  /// account's, the blob is refused like one without a key.
+  factory PodRestore.fromBlob(
+    String pumpId,
+    Map<String, dynamic> blob, [
+    DataKey? key,
+  ]) {
     return PodRestore(
       pumpId: pumpId,
       uniqueId: (blob['unique_id'] as num).toInt(),
-      longTermKey: Uint8List.fromList(
-        base64Decode(blob['long_term_key'] as String),
-      ),
+      longTermKey: _longTermKey(blob, key),
       lotNumber: (blob['lot_number'] as num?)?.toInt() ?? 0,
       podSequenceNumber: (blob['pod_sequence_number'] as num?)?.toInt() ?? 0,
       activatedAt: DateTime.fromMillisecondsSinceEpoch(
@@ -281,6 +304,19 @@ class PodRestore {
       messageSequence: (blob['message_sequence'] as num?)?.toInt() ?? 0,
       bleAddress: blob['ble_address'] as String?,
     );
+  }
+
+  /// The plain key of an older blob, or the opened sealed one.
+  static Uint8List _longTermKey(Map<String, dynamic> blob, DataKey? key) {
+    final sealed = blob['long_term_key_enc'] as String?;
+    if (sealed == null) {
+      return Uint8List.fromList(base64Decode(blob['long_term_key'] as String));
+    }
+    final opened = key?.open(sealed);
+    if (opened == null) {
+      throw StateError('pod key sealed with a data key this device lacks');
+    }
+    return opened;
   }
 
   final String pumpId;

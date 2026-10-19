@@ -98,7 +98,9 @@
     "error": {
       "invalid": "Name oder Passwort ist falsch.",
       "signup_failed": "Konto konnte nicht erstellt werden. Bitte überprüfe deine Angaben.",
-      "network": "Verbindung fehlgeschlagen. Bitte versuche es erneut."
+      "network": "Verbindung fehlgeschlagen. Bitte versuche es erneut.",
+      "throttled": "Zu viele Versuche. Bitte warte ein paar Minuten und versuche es dann erneut.",
+      "password_short": "Das Passwort muss mindestens 10 Zeichen lang sein."
     },
     "continue_offline": "Ohne Konto fortfahren"
   },
@@ -1177,7 +1179,12 @@
       "logout_keeps_pod": "Ein gekoppelter Pod bleibt erhalten. Er gehört zum Gerät, nicht zum Konto, und läuft weiter, bis du ihn deaktivierst.",
       "guest_title": "Ohne Konto",
       "guest_body": "Deine Daten bleiben auf diesem Gerät.",
-      "sign_in": "Anmelden oder registrieren"
+      "sign_in": "Anmelden oder registrieren",
+      "password_short": "Das neue Passwort muss mindestens 10 Zeichen lang sein.",
+      "delete": "Konto löschen",
+      "delete_button": "Löschen",
+      "delete_confirm": "Dein Konto und alle Daten darauf werden endgültig gelöscht. Ein Pod am Körper bleibt verbunden und muss weiterhin deaktiviert werden. Gib zur Bestätigung dein Passwort ein.",
+      "delete_error": "Konto konnte nicht gelöscht werden. Prüfe dein Passwort."
     },
     "language": {
       "_": "Sprache",
@@ -1724,6 +1731,20 @@
       "workout": "Routine läuft",
       "recording": "Training wird aufgezeichnet",
       "detected": "Training erkannt"
+    }
+  },
+  "settings_review": {
+    "title": "Geänderte Einstellungen aus deinem Konto",
+    "hint": "Diese Werte wurden außerhalb dieses Handys geändert, zum Beispiel im Web Panel. Sie gelten erst, wenn du sie hier übernimmst.",
+    "discard": "Verwerfen",
+    "apply": "Übernehmen",
+    "reason": "Geänderte Einstellungen übernehmen",
+    "group": {
+      "dosing": "Bolus und Basal",
+      "targets": "Zielbereich",
+      "automation": "Automatik",
+      "alarms": "Alarme",
+      "locks": "Fingerabdruck-Abfragen"
     }
   }
 }

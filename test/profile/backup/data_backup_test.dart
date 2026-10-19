@@ -30,4 +30,19 @@ void main() {
       expect(storage, contains('refresh_token'));
     },
   );
+
+  /// The file lands unencrypted wherever the user saves it; the keys come back
+  /// from the account at sign-in instead.
+  test('backup leaves out the pod, sensor and data keys', () async {
+    installSecureStorageMock().addAll({
+      'pod.ltk': 'pod key',
+      'pod.unique_id': '4241',
+      'g7.session_key.ABC123': 'session key',
+      'libre3.pin': 'pin',
+      'libre3.auth': 'auth',
+      'account.data_key': 'data key',
+    });
+    final backup = await const DataBackup().collect(DateTime(2026), {});
+    expect(backup['device'], {'pod.unique_id': '4241'});
+  });
 }

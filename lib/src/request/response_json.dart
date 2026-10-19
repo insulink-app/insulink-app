@@ -27,4 +27,11 @@ extension ApiResponseJson on Response? {
   /// Whether the API reported success. False for anything unreadable, which is
   /// the safe reading: a caller that cannot tell must not assume it worked.
   bool get isApiSuccess => jsonObject?['success'] == true;
+
+  /// The API's own error code (`error.code`), or null when the reply carries
+  /// none: a success, or no readable reply at all.
+  int? get apiErrorCode {
+    final error = jsonObject?['error'];
+    return error is Map ? error['code'] as int? : null;
+  }
 }

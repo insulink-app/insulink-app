@@ -98,7 +98,9 @@
     "error": {
       "invalid": "Name or password is incorrect.",
       "signup_failed": "Could not create the account. Please check your details.",
-      "network": "Connection failed. Please try again."
+      "network": "Connection failed. Please try again.",
+      "throttled": "Too many attempts. Please wait a few minutes and try again.",
+      "password_short": "The password must be at least 10 characters long."
     },
     "continue_offline": "Continue without an account"
   },
@@ -1177,7 +1179,12 @@
       "logout_keeps_pod": "A paired pod is kept. It belongs to the device, not the account, and keeps running until you deactivate it.",
       "guest_title": "No account",
       "guest_body": "Your data stays on this device.",
-      "sign_in": "Sign in or sign up"
+      "sign_in": "Sign in or sign up",
+      "password_short": "The new password must be at least 10 characters long.",
+      "delete": "Delete account",
+      "delete_button": "Delete",
+      "delete_confirm": "Your account and all data on it will be deleted for good. A pod on your body stays paired and still has to be deactivated. Enter your password to confirm.",
+      "delete_error": "Could not delete the account. Check your password."
     },
     "language": {
       "_": "Language",
@@ -1724,6 +1731,20 @@
       "workout": "routine running",
       "recording": "training being recorded",
       "detected": "training detected"
+    }
+  },
+  "settings_review": {
+    "title": "Changed settings from your account",
+    "hint": "These values were changed outside this phone, for example in the web panel. They only apply once you take them over here.",
+    "discard": "Discard",
+    "apply": "Apply",
+    "reason": "Apply changed settings",
+    "group": {
+      "dosing": "Bolus and basal",
+      "targets": "Target range",
+      "automation": "Automation",
+      "alarms": "Alarms",
+      "locks": "Fingerprint prompts"
     }
   }
 }

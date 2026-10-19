@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
+import 'package:insulink/src/auth/data_key/data_key.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/inventory/inventory_item.dart';
@@ -19,7 +20,9 @@ import 'package:insulink/src/request/response_json.dart';
 /// changes (e.g. a re-pair rotates the session key). [fetchCurrent] runs in the
 /// UI isolate, where [Request] can refresh an expired token.
 class SensorSync {
-  const SensorSync();
+  const SensorSync([this._keys = const DataKeyStore()]);
+
+  final DataKeyStore _keys;
 
   /// Register or update the current sensor. Idempotent and cheap: it only POSTs
   /// on the first complete identity and whenever that identity changes.
@@ -28,7 +31,7 @@ class SensorSync {
     if (key == null || key.isEmpty) {
       return;
     }
-    final data = _data(store, key);
+    final data = _data(store, key, await _keys.load());
     if (data == null) {
       return;
     }
@@ -46,15 +49,18 @@ class SensorSync {
   // ponytail: the dedup keys on the whole blob, so a slowly-drifting field
   // (battery voltage) can trigger an update each reconnect — fine, it's one
   // small POST; split static vs volatile fields only if it proves chatty.
-  String? _data(CgmStore store, String key) {
+  String? _data(CgmStore store, String key, DataKey? dataKey) {
     return store.sensorType == SensorType.abbottLibre3
         ? _libreData(store, key)
-        : _g7Data(store, key);
+        : _g7Data(store, key, dataKey);
   }
 
   /// G7 identity: pairing code + BLE id + J-PAKE session key, plus the full
-  /// [G7DeviceInfo] the sensor page shows.
-  String? _g7Data(CgmStore store, String key) {
+  /// [G7DeviceInfo] the sensor page shows. The session key goes sealed with the
+  /// account's [DataKey] when this device has one (see [sessionKeyField]); the
+  /// pairing code stays readable, it is printed on the applicator and the panel
+  /// shows it.
+  String? _g7Data(CgmStore store, String key, DataKey? dataKey) {
     final pairingCode = store.pairingCode;
     final deviceId = store.deviceId(key);
     final sessionKey = store.sessionKeyHex(key);
@@ -72,11 +78,33 @@ class SensorSync {
       'resolved_key': key,
       'pairing_code': pairingCode,
       'device_id': deviceId,
-      'session_key': sessionKey,
+      ...sessionKeyField(sessionKey, dataKey),
       if (start != null) 'sensor_start': start.millisecondsSinceEpoch,
       if (info != null) 'info': info.toJson(),
       if (latest != null) 'state': latest['state'],
     });
+  }
+
+  /// The blob field carrying the G7 session key, sealed under its own name when
+  /// there is a [DataKey] and plain, as it always was, when there is none.
+  @visibleForTesting
+  static Map<String, String> sessionKeyField(String sessionKeyHex, DataKey? key) {
+    if (key == null) {
+      return {'session_key': sessionKeyHex};
+    }
+    return {'session_key_enc': key.seal(utf8.encode(sessionKeyHex))};
+  }
+
+  /// The session key of a stored blob: the plain one of an older blob, or the
+  /// opened sealed one; null when it is sealed with a key this device lacks,
+  /// which leaves the sensor to pair afresh.
+  static String? _sessionKey(Map<String, dynamic> blob, DataKey? key) {
+    final sealed = blob['session_key_enc'] as String?;
+    if (sealed == null) {
+      return blob['session_key'] as String?;
+    }
+    final opened = key?.open(sealed);
+    return opened == null ? null : utf8.decode(opened);
   }
 
   /// Libre 3 identity: only the NFC-derived MAC + session info, so a fresh
@@ -211,7 +239,7 @@ class SensorSync {
         resolvedKey: blob['resolved_key'] as String,
         pairingCode: blob['pairing_code'] as String?,
         deviceId: blob['device_id'] as String?,
-        sessionKeyHex: blob['session_key'] as String?,
+        sessionKeyHex: _sessionKey(blob, await _keys.load()),
         libreMac: blob['libre_mac'] as String?,
         infoJson: blob['info'] as Map<String, dynamic>?,
         sensorStartMs: (blob['sensor_start'] as num?)?.toInt(),

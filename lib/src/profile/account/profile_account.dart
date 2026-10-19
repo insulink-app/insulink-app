@@ -1,10 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/auth/auth_service.dart';
+import 'package:insulink/src/auth/data_key/data_key_sync.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/request/response_json.dart';
 
-/// Account-management calls for the signed-in user: backend log-out and rename,
-/// each keeping local secure storage in step with the server.
+/// Account-management calls for the signed-in user: backend log-out, rename,
+/// password change and deletion, each keeping local secure storage in step
+/// with the server.
 class ProfileAccount {
   static const _storage = FlutterSecureStorage();
 
@@ -55,6 +58,10 @@ class ProfileAccount {
   /// best-effort — the local wipe runs regardless, so logout works offline.
   Future<void> logout(BuildContext context) async {
     await Request.get(url: "/logout/").send(context);
+    await _wipeLocal();
+  }
+
+  Future<void> _wipeLocal() async {
     final keys = (await _storage.readAll()).keys.toList();
     for (final key in keys) {
       if (_keepOnLogout.contains(key) ||
@@ -69,7 +76,7 @@ class ProfileAccount {
   /// Returns true when the change was accepted.
   Future<bool> rename(BuildContext context, String name) async {
     final response = await Request.post(
-      url: "/name/change/",
+      url: "/user/name/change/",
       body: {"name": name},
     ).send(context);
     final body = response.jsonObject;
@@ -84,17 +91,51 @@ class ProfileAccount {
   }
 
   /// Changes the account password on the backend, verifying [current] against
-  /// the stored hash server-side. Nothing is persisted locally — the password is
-  /// never stored on device. Returns true when the change was accepted.
-  Future<bool> changePassword(
+  /// the stored hash server-side. The password is never stored on device; the
+  /// account's data key travels along, wrapped for [next], so a reinstalled
+  /// app still opens the pod key with the new password. Returns null when the
+  /// change was accepted, else the localization key of what went wrong.
+  Future<String?> changePassword(
     BuildContext context,
     String current,
     String next,
   ) async {
+    if (next.length < AuthService.minimumPasswordLength) {
+      return "profile.account.password_short";
+    }
+    final rewrapped = await const DataKeySync().rewrap(context, current, next);
+    if (rewrapped == null || !context.mounted) {
+      return "profile.account.password_error";
+    }
     final response = await Request.post(
       url: "/user/password/change/",
-      body: {"password": current, "new_password": next},
+      body: {
+        "password": current,
+        "new_password": next,
+        "key": rewrapped.envelope,
+      },
     ).send(context);
-    return response.isApiSuccess;
+    if (!response.isApiSuccess) {
+      return response.apiErrorCode == 1005
+          ? "profile.account.password_short"
+          : "profile.account.password_error";
+    }
+    await const DataKeySync().store.save(rewrapped.key);
+    return null;
+  }
+
+  /// Deletes the account and everything on it from the backend, then signs out
+  /// locally the same way [logout] does: a pod on the body stays paired, it
+  /// still has to be stopped. Returns whether the account is gone.
+  Future<bool> delete(BuildContext context, String password) async {
+    final response = await Request.post(
+      url: "/user/delete/",
+      body: {"password": password},
+    ).send(context);
+    if (!response.isApiSuccess) {
+      return false;
+    }
+    await _wipeLocal();
+    return true;
   }
 }

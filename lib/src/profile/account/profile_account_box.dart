@@ -11,6 +11,7 @@ import 'package:insulink/src/auth/auth_gate.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/account/profile_account.dart';
+import 'package:insulink/src/profile/account/profile_delete_dialog.dart';
 import 'package:insulink/src/profile/account/profile_guest_box.dart';
 import 'package:insulink/src/profile/account/profile_password_dialog.dart';
 import 'package:insulink/src/auth/guest_mode.dart';
@@ -59,6 +60,13 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
           icon: PhosphorIconsBold.signOut,
           labelKey: "profile.account.logout",
           onPressed: _confirmLogout,
+          color: context.danger,
+        ),
+        _actionButton(
+          icon: PhosphorIconsBold.trash,
+          labelKey: "profile.account.delete",
+          onPressed: () =>
+              const ProfileDeleteDialog().show(context, _leaveDeletedAccount),
           color: context.danger,
         ),
       ],
@@ -224,6 +232,16 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
     ).show(context);
   }
 
+  /// The account is already gone and the local data wiped: stop the sensor
+  /// link and return to the auth gate, as a sign-out does.
+  Future<void> _leaveDeletedAccount() async {
+    await context.read<CgmController>().disconnect();
+    if (!mounted) {
+      return;
+    }
+    _openAuthGate();
+  }
+
   /// Logs out on the backend, clears the session, then returns to the auth gate
   /// (which shows the sign-in page).
   Future<void> _logout() async {
@@ -236,6 +254,10 @@ class _ProfileAccountBoxState extends State<ProfileAccountBox> {
     if (!mounted) {
       return;
     }
+    _openAuthGate();
+  }
+
+  void _openAuthGate() {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const AuthGate()),
       (route) => false,

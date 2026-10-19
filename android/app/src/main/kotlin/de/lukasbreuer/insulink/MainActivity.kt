@@ -19,5 +19,7 @@ class MainActivity : FlutterFragmentActivity() {
         GlucoseWidgetPlugin(applicationContext).register(flutterEngine)
         // Saves the data backup via the system "save as" dialog.
         backupExport.register(flutterEngine)
+        // Derives the key that wraps the account's data key from the password.
+        PasswordKeyPlugin().register(flutterEngine)
     }
 }
