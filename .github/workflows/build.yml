@@ -268,13 +268,16 @@ jobs:
           merge-multiple: true
 
       # Served from https://insulink-app.github.io/insulink-app/, hence the base
-      # href. canvaskit/ is dropped: the engine loads CanvasKit from gstatic by
-      # default, so the 37 MB local copy would never be fetched.
+      # href. CanvasKit is served from here rather than gstatic: the website
+      # embeds this demo, and loading the engine from Google's CDN sent every
+      # visitor's address to Google. The browser fetches only the one variant
+      # it needs from the local copy.
       - name: Build web demo
         run: |
           flutter build web --release -t lib/main_demo.dart \
-            --dart-define=DEMO=true --base-href /insulink-app/
-          rm -rf build/web/canvaskit build/web/.last_build_id
+            --dart-define=DEMO=true --base-href /insulink-app/ \
+            --no-web-resources-cdn
+          rm -rf build/web/.last_build_id
           cp -r build/screenshots build/web/screenshots
 
       - name: Upload Pages artifact
