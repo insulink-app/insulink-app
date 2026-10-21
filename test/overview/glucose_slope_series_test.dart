@@ -9,7 +9,7 @@ import 'glucose_chart_series_test.dart' show glucoseState;
 FlSpot reading(int minute, double mgdl) => FlSpot(minute / 60, mgdl);
 
 void main() {
-  test('central difference in mg/dL per minute, broken at a gap', () {
+  test('slope in mg/dL per minute for every reading, broken at a gap', () {
     final slope = GlucoseSlopeSeries(
       realSpots: [
         reading(0, 100),
@@ -22,10 +22,16 @@ void main() {
       glucose: glucoseState(),
       color: Colors.blue,
     );
-    expect(slope.spots[0].y, closeTo(2, 1e-9));
-    expect(slope.spots[1].isNull(), isTrue);
+    expect(slope.spots.first.y, closeTo(2, 1e-9));
+    expect(slope.spots[1].y, closeTo(2, 1e-9));
+    expect(slope.spots[2].x, closeTo(10 / 60, 1e-9));
+    expect(slope.spots[2].y, closeTo(2, 1e-9));
+    expect(slope.spots[3].isNull(), isTrue);
+    expect(slope.spots[4].x, closeTo(1, 1e-9));
+    expect(slope.spots[4].y, closeTo(-4, 1e-9));
+    expect(slope.spots.last.x, closeTo(70 / 60, 1e-9));
     expect(slope.spots.last.y, closeTo(-4, 1e-9));
-    expect(slope.touchSpots.length, 2);
+    expect(slope.touchSpots.length, 6);
     expect(slope.formatReading(2), '+2.0 mg/dL/min');
   });
 }
