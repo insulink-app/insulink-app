@@ -858,6 +858,8 @@
     "stats": {
       "carbs": "Carbs",
       "protein": "Protein",
+      "fat": "Fat",
+      "kcal": "Calories",
       "bolus": "Bolus",
       "meals": "Meals"
     },

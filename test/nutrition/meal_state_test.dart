@@ -15,7 +15,15 @@ void main() {
     glucoseMgdl: 110,
     bolus: bolus,
     entries: const [
-      MealEntry(name: 'Bread', unit: 'g', amount: 100, carbs: 30, protein: 5),
+      MealEntry(
+        name: 'Bread',
+        unit: 'g',
+        amount: 100,
+        carbs: 30,
+        protein: 5,
+        fat: 2,
+        kcal: 250,
+      ),
     ],
   );
 
@@ -46,6 +54,8 @@ void main() {
     expect(state.todayCarbs, 60);
     expect(state.todayBolus, 6);
     expect(state.todayProtein, 10);
+    expect(state.todayFat, 4);
+    expect(state.todayKcal, 500);
   });
 
   test('an edit replaces the exact instance and survives a reload', () async {
@@ -74,19 +84,25 @@ void main() {
     expect(state.meals, isEmpty);
   });
 
-  test('a confirmed bolus still lands after a sync pull replaced the log', () async {
-    final state = await MealState.load();
-    final logged = mealAt(DateTime.now(), bolus: 0);
-    await state.addMeal(logged);
+  test(
+    'a confirmed bolus still lands after a sync pull replaced the log',
+    () async {
+      final state = await MealState.load();
+      final logged = mealAt(DateTime.now(), bolus: 0);
+      await state.addMeal(logged);
 
-    // What the bolus dispatcher lives through: the pod is still answering while
-    // a pull rebuilds every meal in the list from storage.
-    await state.reload();
+      // What the bolus dispatcher lives through: the pod is still answering while
+      // a pull rebuilds every meal in the list from storage.
+      await state.reload();
 
-    expect(await state.updateMeal(logged, logged.copyWith(bolus: 2.2)), isTrue);
-    await state.reload();
-    expect(state.meals.single.bolus, 2.2);
-  });
+      expect(
+        await state.updateMeal(logged, logged.copyWith(bolus: 2.2)),
+        isTrue,
+      );
+      await state.reload();
+      expect(state.meals.single.bolus, 2.2);
+    },
+  );
 
   test('updating a meal that is gone reports that it did not land', () async {
     final state = await MealState.load();
@@ -94,14 +110,19 @@ void main() {
     await state.addMeal(logged);
     await state.removeMeal(logged);
 
-    expect(await state.updateMeal(logged, logged.copyWith(bolus: 2.2)), isFalse);
+    expect(
+      await state.updateMeal(logged, logged.copyWith(bolus: 2.2)),
+      isFalse,
+    );
   });
 
   test('the log is capped, dropping the oldest meals', () async {
     final state = await MealState.load();
 
     for (var index = 0; index < 205; index++) {
-      await state.addMeal(mealAt(DateTime(2026, 1, 1).add(Duration(hours: index))));
+      await state.addMeal(
+        mealAt(DateTime(2026, 1, 1).add(Duration(hours: index))),
+      );
     }
 
     expect(state.meals.length, 200);

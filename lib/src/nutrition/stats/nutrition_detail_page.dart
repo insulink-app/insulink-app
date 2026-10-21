@@ -11,7 +11,7 @@ import 'package:insulink/src/sport/daily_history/daily_metric.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// History of a nutrition box (carbs, protein, bolus, water, meals) in the
+/// History of a nutrition box (carbs, protein, fat, kcal, bolus, water, meals) in the
 /// shared daily-history layout. Carbs, protein and water are measured against
 /// their goals from the nutrition settings; bolus and meals have none. Reached
 /// by tapping a stat box.
@@ -44,6 +44,8 @@ class NutritionDetailPage extends StatelessWidget {
   double _mealValue(Meal meal) => switch (tile) {
     NutritionTile.carbs => meal.carbs,
     NutritionTile.protein => meal.protein,
+    NutritionTile.fat => meal.fat ?? 0,
+    NutritionTile.kcal => meal.kcal ?? 0,
     NutritionTile.bolus => meal.bolus,
     NutritionTile.meals => 1.0,
     NutritionTile.water => 0.0,
@@ -56,7 +58,8 @@ class NutritionDetailPage extends StatelessWidget {
       _ => value.toStringAsFixed(0),
     },
     unit: switch (tile) {
-      NutritionTile.carbs || NutritionTile.protein => 'g',
+      NutritionTile.carbs || NutritionTile.protein || NutritionTile.fat => 'g',
+      NutritionTile.kcal => 'kcal',
       NutritionTile.bolus => 'E',
       NutritionTile.water => 'L',
       NutritionTile.meals => null,
@@ -65,7 +68,10 @@ class NutritionDetailPage extends StatelessWidget {
       NutritionTile.carbs => goals.carbsGoalG.toDouble(),
       NutritionTile.protein => goals.proteinGoalG.toDouble(),
       NutritionTile.water => goals.goalLitres,
-      NutritionTile.bolus || NutritionTile.meals => null,
+      NutritionTile.bolus ||
+      NutritionTile.meals ||
+      NutritionTile.kcal ||
+      NutritionTile.fat => null,
     },
   );
 

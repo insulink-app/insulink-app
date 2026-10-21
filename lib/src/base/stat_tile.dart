@@ -109,6 +109,8 @@ class StatTile extends StatelessWidget {
     return glyph;
   }
 
+  /// Label over value. The value shrinks to fit instead of being cut off, so a
+  /// wide number with its unit ("2.345 kcal") stays readable in a narrow box.
   Widget _text(BuildContext context, InsulinkColors colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,22 +123,20 @@ class StatTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: InkText.caption.copyWith(color: colors.muted),
         ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          spacing: 4,
-          children: [
-            Flexible(
-              child: Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: InkText.bigValue,
-              ),
-            ),
-            if (unit != null)
-              Text(unit!, style: InkText.unit.copyWith(color: colors.muted)),
-          ],
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            spacing: 4,
+            children: [
+              Text(value, maxLines: 1, style: InkText.bigValue),
+              if (unit != null)
+                Text(unit!, style: InkText.unit.copyWith(color: colors.muted)),
+            ],
+          ),
         ),
       ],
     );

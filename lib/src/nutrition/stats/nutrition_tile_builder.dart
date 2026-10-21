@@ -59,6 +59,22 @@ class NutritionTileBuilder {
           progress: hydration.todayFraction,
           onTap: openDetail,
         );
+      case NutritionTile.kcal:
+        return StatTile(
+          icon: icon,
+          labelKey: labelKey,
+          value: sportDecimal(meals.todayKcal, 0),
+          unit: 'kcal',
+          onTap: openDetail,
+        );
+      case NutritionTile.fat:
+        return StatTile(
+          icon: icon,
+          labelKey: labelKey,
+          value: sportDecimal(meals.todayFat, 0),
+          unit: 'g',
+          onTap: openDetail,
+        );
       case NutritionTile.meals:
         return StatTile(
           icon: icon,
