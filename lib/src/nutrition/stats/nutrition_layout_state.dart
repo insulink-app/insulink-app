@@ -2,11 +2,11 @@ import 'package:insulink/src/nutrition/stats/nutrition_tile.dart';
 import 'package:insulink/src/sport/activity/tile_layout_state.dart';
 
 /// Box layout of the nutrition stats grid: which boxes are shown and their order.
-/// All boxes visible by default. Same persistence + settings-sync machinery as
+/// Fat and kcal are opt-in, every other box is visible by default. Same persistence + settings-sync machinery as
 /// the Sport "Today" grid ([TileLayoutState]).
 class NutritionLayoutState extends TileLayoutState<NutritionTile> {
   static const key = 'nutrition.stats_layout';
-  static const _defaultHidden = <NutritionTile>{};
+  static const _defaultHidden = {NutritionTile.kcal, NutritionTile.fat};
 
   NutritionLayoutState(super.order, super.hidden);
 

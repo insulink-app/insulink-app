@@ -858,6 +858,8 @@
     "stats": {
       "carbs": "Kohlenhydrate",
       "protein": "Eiweiß",
+      "fat": "Fett",
+      "kcal": "Kalorien",
       "bolus": "Bolus",
       "meals": "Mahlzeiten"
     },

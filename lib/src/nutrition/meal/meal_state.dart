@@ -50,6 +50,13 @@ class MealState extends ChangeNotifier {
   double get todayProtein =>
       todayMeals.fold(0, (sum, meal) => sum + meal.protein);
 
+  /// Today's fat and energy, counting a meal without known values as 0.
+  double get todayFat =>
+      todayMeals.fold(0, (sum, meal) => sum + (meal.fat ?? 0));
+
+  double get todayKcal =>
+      todayMeals.fold(0, (sum, meal) => sum + (meal.kcal ?? 0));
+
   Future<void> addMeal(Meal meal) async {
     _meals.add(meal);
     if (_meals.length > _cap) {
