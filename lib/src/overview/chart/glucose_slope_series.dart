@@ -8,8 +8,9 @@ import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
 /// a slope.
 ///
 /// Each point is the central difference between its two neighbours, which
-/// halves the sensor noise a plain neighbour-to-neighbour difference shows. A
-/// data gap breaks the line, as it breaks the glucose line.
+/// halves the sensor noise a plain neighbour-to-neighbour difference shows. At
+/// the ends of the data and of each gap it falls back to the one neighbour
+/// there is. A data gap breaks the line, as it breaks the glucose line.
 class GlucoseSlopeSeries {
   GlucoseSlopeSeries({
     required List<FlSpot> realSpots,
@@ -62,19 +63,40 @@ class GlucoseSlopeSeries {
     return value > 0 ? '+$text' : text;
   }
 
+  /// Each reading takes the difference between its neighbours that lie within
+  /// [_maxGapHours]: central with both, one-sided with one. So the newest
+  /// reading and the last one before a gap get a slope too. A reading with no
+  /// near neighbour has none, and a gap breaks the line.
   void _collect(List<FlSpot> realSpots) {
-    for (var index = 1; index < realSpots.length - 1; index++) {
-      final before = realSpots[index - 1];
-      final after = realSpots[index + 1];
-      final span = after.x - before.x;
-      if (span <= 0 || span > 2 * _maxGapHours) {
-        if (spots.isNotEmpty && !spots.last.isNull()) {
-          spots.add(FlSpot.nullSpot);
-        }
-        continue;
+    for (var index = 0; index < realSpots.length; index++) {
+      final before = _neighbour(realSpots, index, index - 1);
+      final after = _neighbour(realSpots, index, index + 1);
+      if (before == realSpots[index]) {
+        _breakLine();
       }
-      final perMinute = (after.y - before.y) / (span * 60);
-      spots.add(FlSpot(realSpots[index].x, perMinute.clamp(minY, maxY)));
+      if (after.x > before.x) {
+        final perMinute = (after.y - before.y) / ((after.x - before.x) * 60);
+        spots.add(FlSpot(realSpots[index].x, perMinute.clamp(minY, maxY)));
+      }
+    }
+  }
+
+  /// The reading at [neighbourIndex] when it exists and is near the one at
+  /// [index], else the reading at [index] itself.
+  FlSpot _neighbour(List<FlSpot> realSpots, int index, int neighbourIndex) {
+    if (neighbourIndex < 0 || neighbourIndex >= realSpots.length) {
+      return realSpots[index];
+    }
+    final neighbour = realSpots[neighbourIndex];
+    final distance = (neighbour.x - realSpots[index].x).abs();
+    return distance > 0 && distance <= _maxGapHours
+        ? neighbour
+        : realSpots[index];
+  }
+
+  void _breakLine() {
+    if (spots.isNotEmpty && !spots.last.isNull()) {
+      spots.add(FlSpot.nullSpot);
     }
   }
 
