@@ -7,13 +7,17 @@ import 'package:insulink/src/request/response_json.dart';
 ///
 /// Every read endpoint returns all of the user's rows, so the archive is each
 /// reply body (minus `success`) keyed by its path: a restore can post them
-/// straight back through the matching `sync`/`report` endpoint.
+/// straight back through the matching `sync`/`report` endpoint. The settings
+/// history is the one read-only part: the server records it on every settings
+/// change, so it is exported for the record and never posted back.
 class AccountArchive {
   static const paths = [
     '/glucose/history/',
     '/event/history/',
     '/sensor/history/',
     '/pump/history/',
+    '/pump/contact/find/',
+    '/insulin/delivery/find/',
     '/nutrition/meals/find/',
     '/nutrition/drinks/find/',
     '/nutrition/products/find/',
@@ -27,6 +31,7 @@ class AccountArchive {
     '/health/pulse/find/',
     '/health/hba1c/find/',
     '/user/settings/find/',
+    '/user/settings/history/',
   ];
 
   const AccountArchive();
