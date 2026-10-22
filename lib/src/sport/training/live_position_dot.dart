@@ -19,7 +19,7 @@ class _LivePositionDotState extends State<LivePositionDot>
 
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1800),
+    duration: const Duration(milliseconds: 1200),
   )..repeat();
 
   @override
