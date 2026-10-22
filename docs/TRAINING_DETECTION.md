@@ -55,6 +55,26 @@ pending training.
 Unchanged: an average above 30 km/h is never human-powered, whatever the label
 (a train misread as walking).
 
+## The heart rate settles what speed cannot
+
+`CardioDetectionRunner` hands the stored pulse curve (`IntradayPulseStore`, fed
+by the band and Health Connect) to the classifier as `HeartRateEvidence`. Each
+segment gets a `HeartEffort`: the median pulse during it against the 10th
+percentile of the 24 h before it. That baseline includes sleep, so it sits below
+an awake resting pulse; the cut-offs are set with that in mind.
+
+| Lift over baseline | Effort | Effect |
+|---|---|---|
+| < 20 bpm | resting | a bike-speed segment is discarded as a passive ride (bus, tram, the car in a jam from trap 2), unless the recognition saw cycling |
+| 20 to 59 bpm | light | nothing changes |
+| ≥ 60 bpm | hard | a walk-speed segment averaging ≥ 7 km/h becomes a jog |
+
+Fewer samples than half the segment's minutes, or fewer than 60 for the
+baseline, read `unknown` and leave the rules above exactly as they were. So a
+user without a band sees no change. A pedelec rider whose pulse stays near rest
+and whose phone calls it a vehicle is discarded; the recognition saying `bike`
+protects the ordinary case.
+
 ## Checking it on the device
 
 The log pane prints `training detection: N gps points (M new) → K detected`

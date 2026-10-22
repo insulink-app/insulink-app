@@ -1,6 +1,8 @@
+import '../../google_health/intraday_pulse_store.dart';
 import '../sport_store.dart';
 import 'cardio_detector.dart';
 import 'cardio_models.dart';
+import 'heart_effort.dart';
 
 /// Scans the background GPS + activity logs for finished endurance trainings and
 /// adds new ones to the pending list (awaiting the user's confirm/reject),
@@ -27,6 +29,7 @@ class CardioDetectionRunner {
       await _store.loadActivityLog(),
       watermark,
       DateTime.now(),
+      heart: await _heartSince(log, watermark),
     );
     if (result.detected.isNotEmpty) {
       await _store.saveDetectWatermark(result.watermark);
@@ -39,6 +42,26 @@ class CardioDetectionRunner {
       detected: result.detected.length,
       ongoing: result.ongoing,
     );
+  }
+
+  /// The stored pulse from a day before the first unscanned GPS point, so each
+  /// segment has its baseline. Empty when there is nothing to scan.
+  Future<HeartRateEvidence> _heartSince(
+    List<TrackPoint> log,
+    int watermark,
+  ) async {
+    final firstUnscanned = log.where((point) => point.tMs >= watermark);
+    if (firstUnscanned.isEmpty) {
+      return HeartRateEvidence.none;
+    }
+    final from = DateTime.fromMillisecondsSinceEpoch(
+      firstUnscanned.first.tMs,
+    ).subtract(const Duration(hours: 24));
+    final samples = await const IntradayPulseStore().rangeCurve(
+      from,
+      DateTime.now(),
+    );
+    return HeartRateEvidence(samples);
   }
 
   /// Pure windowing: the finalised trainings the [log] yields given the last
@@ -60,8 +83,9 @@ class CardioDetectionRunner {
     List<TrackPoint> log,
     List<ActivitySample> activityLog,
     int watermark,
-    DateTime now,
-  ) {
+    DateTime now, {
+    HeartRateEvidence heart = HeartRateEvidence.none,
+  }) {
     final considered = [
       for (final point in log)
         if (point.tMs >= watermark) point,
@@ -70,7 +94,7 @@ class CardioDetectionRunner {
       return (detected: const [], watermark: watermark, ongoing: false);
     }
     final cutoff = now.subtract(_tail).millisecondsSinceEpoch;
-    final all = const CardioDetector().detect(considered, activityLog);
+    final all = const CardioDetector().detect(considered, activityLog, heart);
     final detected = [
       for (final training in all)
         if (training.endMs <= cutoff) training,

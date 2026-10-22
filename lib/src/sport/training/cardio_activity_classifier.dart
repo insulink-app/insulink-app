@@ -1,4 +1,5 @@
 import 'cardio_models.dart';
+import 'heart_effort.dart';
 
 /// Maps a detected GPS segment to a [CardioType], cross-checking the recognised
 /// activity against speed. The OS activity recognition routinely mislabels a
@@ -12,8 +13,11 @@ import 'cardio_models.dart';
 /// ([_vehicleTopKmh]) is dropped, and a slower one is a bike ride. Pure and
 /// plugin-free so it stays unit-testable.
 ///
-/// It emits only [CardioType.walk] and [CardioType.bike] — never a jog, which is
-/// reserved for a manually started training (see [_bySpeed]).
+/// The heart rate, when the band recorded it, settles what speed cannot: a
+/// bike-speed segment with the pulse at rest is a passive ride (bus, tram, car)
+/// and is discarded unless the recognition saw cycling, and a walk-speed
+/// segment at jogging pace with a hard-working heart is a jog. Without pulse
+/// data it emits only [CardioType.walk] and [CardioType.bike] (see [_bySpeed]).
 class CardioActivityClassifier {
   const CardioActivityClassifier();
 
@@ -29,20 +33,41 @@ class CardioActivityClassifier {
   /// the way; a commuter on a bike or pedelec doesn't sustain this.
   static const _vehicleTopKmh = 35.0;
 
+  /// The slowest average (km/h) a hard-effort segment is called a jog at;
+  /// below it a hard-working heart is an uphill or brisk walk.
+  static const _jogMinKmh = 7.0;
+
   /// The training type for a segment, or null to DISCARD it (a vehicle — either
-  /// recognised as one and reaching vehicle speed, or too fast to be
-  /// human-powered).
+  /// recognised as one and reaching vehicle speed, too fast to be
+  /// human-powered, or a ride the heart rate shows was passive).
   CardioType? classify({
     required int startMs,
     required int endMs,
     required double avgKmh,
     required double topKmh,
     required List<ActivitySample> activityLog,
+    HeartEffort effort = HeartEffort.unknown,
   }) {
     final dominant = _dominant(startMs, endMs, activityLog);
     if (avgKmh > _humanPoweredMaxKmh || _isVehicle(dominant, topKmh)) {
       return null;
     }
+    final type = _byActivityAndSpeed(dominant, avgKmh);
+    if (type == CardioType.bike &&
+        effort == HeartEffort.resting &&
+        dominant != ActivityKind.bike) {
+      return null;
+    }
+    if (type == CardioType.walk &&
+        effort == HeartEffort.hard &&
+        avgKmh >= _jogMinKmh) {
+      return CardioType.jog;
+    }
+    return type;
+  }
+
+  /// The type from speed and the recognised activity alone.
+  CardioType _byActivityAndSpeed(ActivityKind? dominant, double avgKmh) {
     final bySpeed = _bySpeed(avgKmh);
     final byActivity = _onFootType(dominant);
     if (byActivity == null) {
@@ -63,18 +88,18 @@ class CardioActivityClassifier {
   /// label reaching here moved at human speed, so it is a misread bike ride.
   ///
   /// A recognised RUN maps to [CardioType.walk], not [CardioType.jog] — see
-  /// [_bySpeed] for why auto-detection never emits a jog.
+  /// [_bySpeed] for why only the heart rate makes a jog.
   CardioType? _onFootType(ActivityKind? kind) => switch (kind) {
     ActivityKind.bike || ActivityKind.vehicle => CardioType.bike,
     ActivityKind.run || ActivityKind.walk => CardioType.walk,
     _ => null,
   };
 
-  /// Auto-detection only ever emits walk or bike: [CardioType.jog] stays in the
-  /// enum for a MANUALLY started training, but a GPS track can't tell a jog from
-  /// a brisk walk or a slow ride reliably enough to label it unasked, and a wrong
-  /// label is worse than a coarse one (the user confirms the training either
-  /// way). So everything below the bike threshold is a walk.
+  /// Speed alone only ever gives walk or bike: a GPS track can't tell a jog
+  /// from a brisk walk or a slow ride reliably enough to label it unasked, and
+  /// a wrong label is worse than a coarse one (the user confirms the training
+  /// either way). So everything below the bike threshold is a walk; only the
+  /// heart rate upgrades one to a jog (see [classify]).
   CardioType _bySpeed(double avgKmh) {
     return avgKmh > 15 ? CardioType.bike : CardioType.walk;
   }
