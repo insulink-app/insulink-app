@@ -62,8 +62,8 @@ class LoopMicroBolusLimits {
   final Duration minInterval;
   final double maxUnitsPerHour;
 
-  /// How long after a reading at or below the stop threshold no micro bolus is
-  /// given.
+  /// How long after a reading at or below [LoopLimits.minSuspendBelowMgdl] no
+  /// micro bolus is given.
   final Duration pauseAfterLow;
 
   /// What is wrong with these limits, or null when nothing is. Only checked

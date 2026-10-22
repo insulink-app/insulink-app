@@ -155,6 +155,23 @@ partly that same insulin already working. Subtracting both counts some of it
 twice and predicts a lower glucose than is likely. **That bias is deliberate.**
 Every uncertainty in the arithmetic resolves towards asking for less.
 
+### Insulin a meal still needs is not correction
+
+`iob` in the prediction and in the hypo headroom is the insulin on board LESS
+what logged carbs still cover: the grams not yet absorbed divided by the carb
+factor (`LoopSafety.uncoveredIob`). The carbs are spread over the same insulin
+duration as the insulin, so a meal bolus that fits its carbs nets to zero for
+its whole action and only the part above or below them counts.
+
+Without this every meal bolus read as pure correction insulin. On a real day
+four meal boluses (5.3 U for 133 g) had glucose rising from 90 to 206 mg/dL
+while the loop predicted values far below target, wanted 0 U/h in every cycle
+and found the hypo headroom negative throughout.
+
+The insulin-on-board ceiling (`maxIob`) still counts ALL insulin on board. A
+meal logged and then not eaten makes the loop overestimate the glucose to come,
+and that ceiling is what keeps the result bounded.
+
 ### Refuse versus clamp
 
 The rest of the pump code refuses rather than trimming: delivering less than a
@@ -403,9 +420,9 @@ not answered yet is left alone: sending a schedule is resuming it.
 
 - **No automated bolus beyond the opt-in micro bolus.** Never a full
   correction at once; see `docs/LOOP_MICRO_BOLUS.md`.
-- **No carbohydrate entry into the loop.** A meal is announced by dosing a bolus,
-  which the loop sees as insulin on board. Meal announcement would be the next
-  thing to add and needs its own decisions about how far ahead to look.
+- **No carbohydrate entry into the loop.** A meal is announced by logging it
+  with its bolus; the loop takes the carbs only to tell meal insulin from
+  correction insulin (see above), never to dose for carbs on its own.
 - **No exponential insulin curve.** Linear, matching `ActiveInsulin`, so the two
   cannot disagree. Upgrade path if it proves too coarse: one curve shared by
   both, never two.
