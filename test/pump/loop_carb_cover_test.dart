@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/pump/loop/loop_algorithm.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
-import 'package:insulink/src/pump/loop/loop_limits.dart';
 import 'package:insulink/src/pump/loop/loop_safety.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
 
