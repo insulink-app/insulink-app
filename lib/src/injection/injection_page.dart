@@ -14,6 +14,7 @@ import 'package:insulink/src/injection/injection_products_tab.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:insulink/src/nutrition/meal/meal_nutrients_strip.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
 import 'package:insulink/src/profile/bolus/profile_bolus_state.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -325,6 +326,8 @@ class _InjectionPageState extends State<InjectionPage> {
 
   /// The meal group: carbs typed by hand or estimated from a photo, plus any
   /// products picked from the food database, whose carbs add to that amount.
+  /// With foods on the meal, their protein, fat and energy show below, since
+  /// a fatty meal may call for a split bolus.
   Widget _mealCard() {
     return InjectionCard(
       icon: PhosphorIconsBold.forkKnife,
@@ -347,9 +350,20 @@ class _InjectionPageState extends State<InjectionPage> {
             manualCarbs: _manualCarbs,
           ),
         ],
+        if (_mealEntries.isNotEmpty) MealNutrientsStrip(meal: _draftMeal),
       ],
     );
   }
+
+  /// The meal as it would be logged now, so the nutrient strip reads the same
+  /// totals the meal log shows afterwards. Glucose and bolus play no part there.
+  Meal get _draftMeal => Meal(
+    time: DateTime.now(),
+    carbs: _carbs,
+    glucoseMgdl: 0,
+    bolus: 0,
+    entries: _mealEntries,
+  );
 
   /// Writes the estimated carbs, rounded to whole grams, into the carbs field,
   /// replacing what was typed there. The field stays editable, and the listener
