@@ -23,9 +23,13 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// and, at the bottom, a glucose + heart-rate chart over the training. Scrubbing
 /// the chart spotlights the matching position on the route.
 class CardioDetailPage extends StatefulWidget {
-  const CardioDetailPage({super.key, required this.training});
+  const CardioDetailPage({super.key, required this.training, this.onRestore});
 
   final CardioTraining training;
+
+  /// Set when the page shows an entry from the trash: everything is read
+  /// only and a restore action, calling this, takes the place of delete.
+  final VoidCallback? onRestore;
 
   @override
   State<CardioDetailPage> createState() => _CardioDetailPageState();
@@ -91,38 +95,50 @@ class _CardioDetailPageState extends State<CardioDetailPage> {
         surfaceTintColor: Colors.transparent,
         title: LocaleText(training.type.labelKey),
         actions: [
-          PopupMenuButton<CardioType>(
-            icon: const Icon(PhosphorIconsBold.pencilSimple),
-            tooltip: Locales.string(context, 'sport.trainings.change_type'),
-            onSelected: (type) => state.changeTrainingType(training.id, type),
-            itemBuilder: (context) => [
-              for (final type in CardioType.values)
-                PopupMenuItem<CardioType>(
-                  value: type,
-                  child: Row(
-                    children: [
-                      Icon(type.icon, size: 20),
-                      const SizedBox(width: 12),
-                      Text(Locales.string(context, type.labelKey)),
-                    ],
+          if (widget.onRestore case final onRestore?)
+            IconButton(
+              icon: const Icon(PhosphorIconsBold.arrowCounterClockwise),
+              tooltip: Locales.string(context, 'trash.restore'),
+              onPressed: onRestore,
+            )
+          else ...[
+            PopupMenuButton<CardioType>(
+              icon: const Icon(PhosphorIconsBold.pencilSimple),
+              tooltip: Locales.string(context, 'sport.trainings.change_type'),
+              onSelected: (type) => state.changeTrainingType(training.id, type),
+              itemBuilder: (context) => [
+                for (final type in CardioType.values)
+                  PopupMenuItem<CardioType>(
+                    value: type,
+                    child: Row(
+                      children: [
+                        Icon(type.icon, size: 20),
+                        const SizedBox(width: 12),
+                        Text(Locales.string(context, type.labelKey)),
+                      ],
+                    ),
                   ),
-                ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(PhosphorIconsBold.trash),
-            onPressed: () => confirmDelete(
-              context,
-              messageKey: 'sport.trainings.delete_confirm',
-              onConfirm: () {
-                context.read<CardioTrainingState>().removeTraining(training.id);
-                Navigator.of(context).pop();
-              },
+              ],
             ),
-          ),
+            IconButton(
+              icon: const Icon(PhosphorIconsBold.trash),
+              onPressed: () => confirmDelete(
+                context,
+                messageKey: 'sport.trainings.delete_confirm',
+                onConfirm: () {
+                  context.read<CardioTrainingState>().removeTraining(
+                    training.id,
+                  );
+                  Navigator.of(context).pop();
+                },
+              ),
+            ),
+          ],
         ],
       ),
-      bottomNavigationBar: _pendingBar(state, training),
+      bottomNavigationBar: widget.onRestore == null
+          ? _pendingBar(state, training)
+          : null,
       body: CustomScrollView(
         controller: _scroll,
         slivers: [

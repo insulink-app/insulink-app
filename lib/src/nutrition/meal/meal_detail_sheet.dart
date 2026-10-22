@@ -23,17 +23,25 @@ import 'package:insulink/src/theme/status_colors.dart';
 
 /// Opens the details of a logged [meal]: carbs / glucose / bolus, and — when the
 /// bolus was dosed over the food database — the products that made it up.
-Future<void> showMealDetail(BuildContext context, Meal meal) {
+Future<void> showMealDetail(
+  BuildContext context,
+  Meal meal, {
+  VoidCallback? onRestore,
+}) {
   return showInkSheet(
     context: context,
-    builder: (_) => MealDetailSheet(meal: meal),
+    builder: (_) => MealDetailSheet(meal: meal, onRestore: onRestore),
   );
 }
 
 class MealDetailSheet extends StatefulWidget {
-  const MealDetailSheet({super.key, required this.meal});
+  const MealDetailSheet({super.key, required this.meal, this.onRestore});
 
   final Meal meal;
+
+  /// Set when the page shows an entry from the trash: everything is read
+  /// only and a restore action, calling this, takes the place of delete.
+  final VoidCallback? onRestore;
 
   @override
   State<MealDetailSheet> createState() => _MealDetailSheetState();
@@ -134,7 +142,11 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
           _products(colors),
         ],
         const SizedBox(height: 16),
-        Center(child: _deleteButton(context)),
+        Center(
+          child: widget.onRestore == null
+              ? _deleteButton(context)
+              : _restoreButton(widget.onRestore!),
+        ),
       ],
     );
   }
@@ -164,7 +176,7 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
         ),
         Expanded(
           child: InkWell(
-            onTap: _editTime,
+            onTap: widget.onRestore == null ? _editTime : null,
             borderRadius: BorderRadius.circular(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,6 +291,9 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     bool decimal = false,
     Color? color,
   }) {
+    if (widget.onRestore != null) {
+      return Text(text, style: _valueStyle.copyWith(color: color));
+    }
     return SportEditableNumber(
       valueText: text,
       initial: initial,
@@ -452,6 +467,14 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
         'nutrition.meals.delete',
         style: InkText.button.copyWith(color: context.danger),
       ),
+    );
+  }
+
+  Widget _restoreButton(VoidCallback onRestore) {
+    return TextButton.icon(
+      onPressed: onRestore,
+      icon: const Icon(PhosphorIconsBold.arrowCounterClockwise, size: 20),
+      label: LocaleText('trash.restore', style: InkText.button),
     );
   }
 

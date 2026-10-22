@@ -5,6 +5,12 @@ import 'package:insulink/src/base/list_row.dart';
 import 'package:insulink/src/base/relative_day.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:insulink/src/nutrition/meal/meal_detail_sheet.dart';
+import 'package:insulink/src/sport/logbook/workout_session_detail_page.dart';
+import 'package:insulink/src/sport/sport_models.dart';
+import 'package:insulink/src/sport/training/cardio_detail_page.dart';
+import 'package:insulink/src/sport/training/cardio_models.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import 'trash_detail_sheet.dart';
@@ -46,12 +52,42 @@ class _TrashListState extends State<TrashList> {
     await _reload();
   }
 
+  /// Opens the entry in the same view it has outside the trash, read only
+  /// with a restore action; kinds without such a view get the plain
+  /// [TrashDetailSheet].
   Future<void> _showDetail(TrashEntry entry) async {
-    final restore = await showTrashDetail(context, entry);
-    if (restore == true && mounted) {
-      await _restore(entry);
+    void restore() {
+      Navigator.of(context).pop();
+      _restore(entry);
+    }
+
+    final data = entry.data;
+    switch (entry.kind) {
+      case TrashKind.meal:
+        await showMealDetail(context, Meal.fromJson(data), onRestore: restore);
+      case TrashKind.cardio:
+        await _push(
+          CardioDetailPage(
+            training: CardioTraining.fromJson(data),
+            onRestore: restore,
+          ),
+        );
+      case TrashKind.workout:
+        await _push(
+          WorkoutSessionDetailPage(
+            session: WorkoutSession.fromJson(data),
+            onRestore: restore,
+          ),
+        );
+      default:
+        if (await showTrashDetail(context, entry) == true && mounted) {
+          await _restore(entry);
+        }
     }
   }
+
+  Future<void> _push(Widget page) =>
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
 
   @override
   Widget build(BuildContext context) {
