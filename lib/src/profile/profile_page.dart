@@ -249,12 +249,6 @@ class _ProfilePageState extends State<ProfilePage> {
       children: () => const [ProfileBackupExport()],
     ),
     (
-      titleKey: "profile.trash",
-      icon: PhosphorIconsBold.trash,
-      searchKey: "profile.search.trash",
-      children: () => const [TrashList()],
-    ),
-    (
       titleKey: "profile.developer",
       icon: PhosphorIconsBold.code,
       searchKey: "profile.search.developer",
@@ -304,6 +298,14 @@ class _ProfilePageState extends State<ProfilePage> {
             onPressed: _leave,
           ),
           title: LocaleText("profile.label"),
+          actions: [
+            IconButton(
+              icon: const Icon(PhosphorIconsBold.trash),
+              tooltip: Locales.string(context, "profile.trash"),
+              onPressed: () =>
+                  _open("profile.trash", () => const [TrashList()]),
+            ),
+          ],
         ),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -363,13 +365,16 @@ class _ProfilePageState extends State<ProfilePage> {
         size: 18,
         color: context.ink.muted,
       ),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => ProfileTopicPage(
-            titleKey: topic.titleKey,
-            children: topic.children(),
-          ),
-        ),
+      onTap: () => _open(topic.titleKey, topic.children),
+    );
+  }
+
+  /// Pushes the [ProfileTopicPage] titled [titleKey] with the given settings.
+  void _open(String titleKey, List<Widget> Function() children) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            ProfileTopicPage(titleKey: titleKey, children: children()),
       ),
     );
   }

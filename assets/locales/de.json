@@ -1385,8 +1385,7 @@
       "loop": "automatische abgabe automatik loop closed loop insulin",
       "security": "fingerabdruck biometrie biometrisch sperre sperren pin sicherheit entsperren gesichert app start",
       "backup": "backup sicherung datensicherung export speichern daten datei herunterladen wiederherstellen archiv kopie",
-      "activity_mode": "sport sportmodus training ausdauer kraft kraftsport laufen radfahren gehen routine workout basal zielwert",
-      "trash": "papierkorb mülltonne mülleimer gelöscht löschen wiederherstellen rückgängig"
+      "activity_mode": "sport sportmodus training ausdauer kraft kraftsport laufen radfahren gehen routine workout basal zielwert"
     },
     "prediction": {
       "_": "Vorhersage",

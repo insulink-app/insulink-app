@@ -1385,8 +1385,7 @@
       "loop": "automated delivery automation loop closed loop insulin",
       "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start",
       "backup": "backup export save data file download restore archive copy",
-      "activity_mode": "sport activity mode training endurance strength weights running cycling walking routine workout basal target",
-      "trash": "trash bin deleted delete restore undo recycle"
+      "activity_mode": "sport activity mode training endurance strength weights running cycling walking routine workout basal target"
     },
     "prediction": {
       "_": "Prediction",
