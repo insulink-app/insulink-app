@@ -1385,7 +1385,8 @@
       "loop": "automatische abgabe automatik loop closed loop insulin",
       "security": "fingerabdruck biometrie biometrisch sperre sperren pin sicherheit entsperren gesichert app start",
       "backup": "backup sicherung datensicherung export speichern daten datei herunterladen wiederherstellen archiv kopie",
-      "activity_mode": "sport sportmodus training ausdauer kraft kraftsport laufen radfahren gehen routine workout basal zielwert"
+      "activity_mode": "sport sportmodus training ausdauer kraft kraftsport laufen radfahren gehen routine workout basal zielwert",
+      "trash": "papierkorb mülltonne mülleimer gelöscht löschen wiederherstellen rückgängig"
     },
     "prediction": {
       "_": "Vorhersage",
@@ -1518,7 +1519,8 @@
       },
       "enabled": "Sportmodus verwenden",
       "on_overview": "Auswahl auf der Übersicht zeigen"
-    }
+    },
+    "trash": "Papierkorb"
   },
   "injection": {
     "title": "Bolusrechner",
@@ -1747,6 +1749,22 @@
       "automation": "Automatik",
       "alarms": "Alarme",
       "locks": "Fingerabdruck-Abfragen"
+    }
+  },
+  "trash": {
+    "intro": "Gelöschte Einträge bleiben 30 Tage hier. Ein Tipp auf den Pfeil holt einen zurück.",
+    "empty": "Der Papierkorb ist leer",
+    "restore": "Wiederherstellen",
+    "kind": {
+      "meal": "Mahlzeit",
+      "drink": "Getränk",
+      "weight": "Gewicht",
+      "hba1c": "HbA1c",
+      "cardio": "Ausdauertraining",
+      "workout": "Workout",
+      "routine": "Routine",
+      "exercise": "Übung",
+      "product": "Lebensmittel"
     }
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:insulink/src/trash/trash_entry.dart';
+import 'package:insulink/src/trash/trash_store.dart';
 import 'sport_models.dart';
 import 'sport_store.dart';
 import 'sport_sync.dart';
@@ -149,6 +151,7 @@ class SportState extends ChangeNotifier {
 
   Future<void> removeWeight(WeightEntry entry) async {
     _weights.remove(entry);
+    await const TrashStore().keep(TrashKind.weight, entry.toJson());
     notifyListeners();
     await _store.saveWeights(_weights);
     await SportSync().deleteWeight(entry);

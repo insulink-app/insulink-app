@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:insulink/src/trash/trash_entry.dart';
+import 'package:insulink/src/trash/trash_store.dart';
 import '../nutrition_sync.dart';
 import 'food_product.dart';
 import 'food_store.dart';
@@ -57,6 +59,7 @@ class FoodState extends ChangeNotifier {
 
   Future<void> removeProduct(FoodProduct product) async {
     _products.removeWhere((existing) => existing.barcode == product.barcode);
+    await const TrashStore().keep(TrashKind.product, product.toJson());
     notifyListeners();
     await _store.saveProducts(_products);
     NutritionSync().pushProducts();

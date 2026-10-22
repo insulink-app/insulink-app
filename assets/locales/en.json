@@ -1385,7 +1385,8 @@
       "loop": "automated delivery automation loop closed loop insulin",
       "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start",
       "backup": "backup export save data file download restore archive copy",
-      "activity_mode": "sport activity mode training endurance strength weights running cycling walking routine workout basal target"
+      "activity_mode": "sport activity mode training endurance strength weights running cycling walking routine workout basal target",
+      "trash": "trash bin deleted delete restore undo recycle"
     },
     "prediction": {
       "_": "Prediction",
@@ -1518,7 +1519,8 @@
       },
       "enabled": "Use activity mode",
       "on_overview": "Show the choice on the overview"
-    }
+    },
+    "trash": "Trash"
   },
   "injection": {
     "title": "Bolus calculator",
@@ -1747,6 +1749,22 @@
       "automation": "Automation",
       "alarms": "Alarms",
       "locks": "Fingerprint prompts"
+    }
+  },
+  "trash": {
+    "intro": "Deleted entries stay here for 30 days. Tap the arrow to bring one back.",
+    "empty": "The trash is empty",
+    "restore": "Restore",
+    "kind": {
+      "meal": "Meal",
+      "drink": "Drink",
+      "weight": "Weight",
+      "hba1c": "HbA1c",
+      "cardio": "Cardio training",
+      "workout": "Workout",
+      "routine": "Routine",
+      "exercise": "Exercise",
+      "product": "Food product"
     }
   }
 }

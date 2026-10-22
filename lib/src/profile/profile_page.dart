@@ -41,6 +41,7 @@ import 'package:insulink/src/google_health/profile_sleep_targets_editor.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_goals_editor.dart';
 import 'package:insulink/src/sport/activity/sport_goals_editor.dart';
 import 'package:insulink/src/profile/theme/profile_theme_selection.dart';
+import 'package:insulink/src/trash/trash_list.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
@@ -246,6 +247,12 @@ class _ProfilePageState extends State<ProfilePage> {
       icon: PhosphorIconsBold.downloadSimple,
       searchKey: "profile.search.backup",
       children: () => const [ProfileBackupExport()],
+    ),
+    (
+      titleKey: "profile.trash",
+      icon: PhosphorIconsBold.trash,
+      searchKey: "profile.search.trash",
+      children: () => const [TrashList()],
     ),
     (
       titleKey: "profile.developer",

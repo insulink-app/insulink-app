@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:insulink/src/trash/trash_entry.dart';
+import 'package:insulink/src/trash/trash_store.dart';
 import '../nutrition_sync.dart';
 import 'nutrition_models.dart';
 import 'nutrition_store.dart';
@@ -91,6 +93,17 @@ class NutritionState extends ChangeNotifier {
 
   Future<void> removeEntry(DrinkEntry entry) async {
     _entries.remove(entry);
+    await const TrashStore().keep(TrashKind.drink, entry.toJson());
+    notifyListeners();
+    await _store.saveEntries(_entries);
+    NutritionSync().pushDrinks();
+  }
+
+  /// Puts a drink back from the trash, at its own time.
+  Future<void> restoreEntry(DrinkEntry entry) async {
+    _entries
+      ..add(entry)
+      ..sort((first, second) => first.atEpochMs.compareTo(second.atEpochMs));
     notifyListeners();
     await _store.saveEntries(_entries);
     NutritionSync().pushDrinks();
