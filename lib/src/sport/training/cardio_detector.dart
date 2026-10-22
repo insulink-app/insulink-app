@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'cardio_activity_classifier.dart';
 import 'cardio_models.dart';
+import 'heart_effort.dart';
 
 /// Segments a GPS log into endurance trainings. Pure and plugin-free (local
 /// haversine) so it is unit-testable. Consecutive points moving faster than
@@ -12,7 +13,8 @@ import 'cardio_models.dart';
 /// by [CardioActivityClassifier] — the recognised activity (from the optional
 /// `activityLog`) when available, else average speed — which also discards
 /// vehicle rides (bus/train/car: recognised as a vehicle AND reaching vehicle
-/// speed, see [_topKmh]).
+/// speed, see [_topKmh]). The optional [HeartRateEvidence] adds the effort the
+/// band measured over each segment.
 class CardioDetector {
   static const _walkMinKmh = 3.0;
   static const _maxGap = Duration(minutes: 5);
@@ -27,10 +29,12 @@ class CardioDetector {
 
   /// Detects trainings in [log]. The optional [activityLog] (empty by default,
   /// preserving the pure speed behaviour) lets the classifier reject vehicles and
-  /// confirm a real ride via the OS activity recognition.
+  /// confirm a real ride via the OS activity recognition; the optional [heart]
+  /// lets the pulse reject a passive ride and recognise a jog.
   List<CardioTraining> detect(
     List<TrackPoint> log, [
     List<ActivitySample> activityLog = const [],
+    HeartRateEvidence heart = HeartRateEvidence.none,
   ]) {
     final trainings = <CardioTraining>[];
     for (final segment in _segment(log)) {
@@ -43,6 +47,7 @@ class CardioDetector {
         avgKmh: _avgKmh(segment),
         topKmh: _topKmh(segment),
         activityLog: activityLog,
+        effort: heart.effort(segment.first.tMs, segment.last.tMs),
       );
       if (type == null) {
         continue;
