@@ -96,6 +96,7 @@ class PodLoopCycle {
 
   /// Which ceiling held the micro bolus down, when one did.
   final LoopBound? microBolusBoundBy;
+
   /// The activity mode the cycle decided under. Kept so a lower rate during a
   /// walk reads as the mode working, not as the loop holding back for no reason.
   final ActivityMode activity;

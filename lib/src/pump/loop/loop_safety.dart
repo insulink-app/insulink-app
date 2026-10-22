@@ -46,6 +46,12 @@ class LoopSafety {
   /// [automatedUnitsLastHour] is the insulin the loop itself added above the
   /// schedule within the past hour, and [reservoirUnits] is what the pod says it
   /// has left, or null when it will not say.
+  ///
+  /// [carbCoveredUnits] is the part of [iobUnits] still matched by logged carbs
+  /// that have not been absorbed yet. It is left out of the prediction and the
+  /// hypo headroom, since that insulin is spoken for by glucose still on its
+  /// way up, but the insulin-on-board ceiling keeps counting all of it, so a
+  /// meal logged and not eaten can never push the total past that ceiling.
   LoopDecision decide({
     required double wantedUnitsPerHour,
     required LoopGlucose glucose,
@@ -54,7 +60,9 @@ class LoopSafety {
     required PodStatusResponse status,
     required double automatedUnitsLastHour,
     double? reservoirUnits,
+    double carbCoveredUnits = 0,
   }) {
+    final uncovered = uncoveredIob(iobUnits, carbCoveredUnits);
     if (!limits.isUsable) {
       return const LoopDecision.cannotDecide(LoopReason.limitsInvalid);
     }
@@ -69,11 +77,12 @@ class LoopSafety {
         : 0.0;
     final suspension = _suspensionFor(glucose);
     if (suspension != null) {
-      return _at(0, suspension, glucose, iobUnits, schedule, null);
+      return _at(0, suspension, glucose, iobUnits, uncovered, schedule, null);
     }
     final ceilings = _ceilings(
       glucose: glucose,
       iobUnits: iobUnits,
+      uncoveredIobUnits: uncovered,
       schedule: schedule,
       automatedUnitsLastHour: automatedUnitsLastHour,
       reservoirUnits: reservoirUnits,
@@ -94,9 +103,16 @@ class LoopSafety {
       _reasonFor(snapped, schedule),
       glucose,
       iobUnits,
+      uncovered,
       schedule,
       boundBy,
     );
+  }
+
+  /// Insulin on board less what logged carbs still cover, never below zero.
+  static double uncoveredIob(double iobUnits, double carbCoveredUnits) {
+    final uncovered = iobUnits - carbCoveredUnits;
+    return uncovered > 0 ? uncovered : 0;
   }
 
   /// The pod meters basal in 0.05 U/h steps.
@@ -143,6 +159,7 @@ class LoopSafety {
   List<({double unitsPerHour, LoopBound bound})> _ceilings({
     required LoopGlucose glucose,
     required double iobUnits,
+    required double uncoveredIobUnits,
     required double schedule,
     required double automatedUnitsLastHour,
     double? reservoirUnits,
@@ -150,7 +167,7 @@ class LoopSafety {
     return [
       (unitsPerHour: limits.maxUnitsPerHour, bound: LoopBound.maxRate),
       (
-        unitsPerHour: schedule + _hypoHeadroom(glucose, iobUnits),
+        unitsPerHour: schedule + _hypoHeadroom(glucose, uncoveredIobUnits),
         bound: LoopBound.hypoHeadroom,
       ),
       (
@@ -225,6 +242,7 @@ class LoopSafety {
     LoopReason reason,
     LoopGlucose glucose,
     double iobUnits,
+    double uncoveredIobUnits,
     double schedule,
     LoopBound? boundBy,
   ) {
@@ -238,7 +256,7 @@ class LoopSafety {
       iobUnits: iobUnits,
       eventualMgdl: _algorithm.eventualMgdl(
         glucose: glucose,
-        iobUnits: iobUnits,
+        iobUnits: uncoveredIobUnits,
       ),
     );
   }

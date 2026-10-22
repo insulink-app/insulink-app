@@ -41,6 +41,8 @@ import '../../pump/loop/loop_glucose.dart';
 import '../../pump/loop/loop_runner.dart';
 import '../../nutrition/meal/meal_store.dart';
 import '../../injection/active_insulin.dart';
+import '../../injection/carbs_on_board.dart';
+import '../../profile/bolus/profile_bolus_state.dart';
 import '../../libre3/libre3_connection.dart';
 import '../../libre3/libre3_crypto.dart';
 import '../../vendor_keys/vendor_keys.dart';
@@ -790,6 +792,7 @@ class CgmTaskHandler extends TaskHandler {
         store: store,
         readGlucose: _readLoopGlucose,
         readMealIob: _readMealIob,
+        readCarbCover: _readCarbCover,
         onLog: _log,
         notifyStopped: (cause) =>
             _loopStopped(PodAlarmManager(notifications), cause),
@@ -828,6 +831,15 @@ class CgmTaskHandler extends TaskHandler {
   Future<double> _readMealIob(Duration insulinDuration) async {
     final meals = await const MealStore().loadMeals();
     return ActiveInsulin(insulinDuration).units(meals);
+  }
+
+  /// The insulin logged carbs still call for, their grams on board over the
+  /// insulin duration divided by the carb factor.
+  Future<double> _readCarbCover(Duration insulinDuration) async {
+    final meals = await const MealStore().loadMeals();
+    final bolus = await ProfileBolusState.load();
+    final grams = CarbsOnBoard(absorption: insulinDuration).grams(meals);
+    return grams / bolus.carbFactor;
   }
 
   /// Runs the pod watch, building it on first use.

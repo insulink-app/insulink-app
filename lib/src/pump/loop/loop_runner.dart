@@ -44,6 +44,7 @@ class PodLoopRunner {
     required this.readGlucose,
     required this.readMealIob,
     required this.onLog,
+    this.readCarbCover = _noCarbCover,
     required this.notifyStopped,
     PodConnection? connection,
     this.retry = const PodRetry(),
@@ -76,6 +77,15 @@ class PodLoopRunner {
   /// should not own; everything else on board comes from [InsulinOnBoard], the
   /// same answer the bolus calculator uses.
   final Future<double> Function(Duration insulinDuration) readMealIob;
+
+  /// The insulin still matched by logged carbs not yet absorbed, in units
+  /// ([LoopSafety.decide]'s `carbCoveredUnits`). The carbs are spread over the
+  /// same [insulinDuration] as the insulin, so a meal bolus that fits its
+  /// carbs nets to nothing for its whole action and only the part above or
+  /// below them counts as correction.
+  final Future<double> Function(Duration insulinDuration) readCarbCover;
+
+  static Future<double> _noCarbCover(Duration insulinDuration) async => 0;
 
   final void Function(String line) onLog;
 
@@ -286,11 +296,13 @@ class PodLoopRunner {
         InsulinOnBoard(
           limits.insulinDuration,
         ).parts(const [], pod: store, now: at).beyondBoluses;
+    final carbCover = await readCarbCover(limits.insulinDuration);
+    final uncovered = LoopSafety.uncoveredIob(iob, carbCover);
     final schedule = _scheduledRateAt(at);
     final algorithm = LoopAlgorithm(limits);
     final wanted = algorithm.wantedUnitsPerHour(
       glucose: glucose,
-      iobUnits: iob,
+      iobUnits: uncovered,
       scheduledUnitsPerHour: activity.anchor(schedule),
     );
     final decision = LoopSafety(limits).decide(
@@ -304,12 +316,13 @@ class PodLoopRunner {
         now: at,
       ),
       reservoirUnits: status.reservoirUnits,
+      carbCoveredUnits: carbCover,
     );
     return LoopMicroBolusSafety(limits).apply(
       decision,
       correctionUnits: algorithm.correctionUnits(
         glucose: glucose,
-        iobUnits: iob,
+        iobUnits: uncovered,
       ),
       glucose: glucose,
       iobUnits: iob,
@@ -320,6 +333,7 @@ class PodLoopRunner {
       lastMicroBolusAt: store.lastLoopMicroBolusAt,
       now: at,
       reservoirUnits: status.reservoirUnits,
+      carbCoveredUnits: carbCover,
     );
   }
 

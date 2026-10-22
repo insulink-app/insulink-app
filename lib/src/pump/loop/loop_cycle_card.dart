@@ -129,10 +129,7 @@ class PodLoopCycleCard extends StatelessWidget {
       if (cycle.boundBy != null)
         Locales.string(context, 'pump.loop.bound.${cycle.boundBy!.localeKey}'),
       if (cycle.microBolusBoundBy != null)
-        Locales.string(
-          context,
-          'pump.loop.micro_bolus_bound',
-        ).replaceFirst(
+        Locales.string(context, 'pump.loop.micro_bolus_bound').replaceFirst(
           '#',
           Locales.string(
             context,

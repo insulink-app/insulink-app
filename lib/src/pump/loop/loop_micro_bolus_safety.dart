@@ -42,6 +42,7 @@ class LoopMicroBolusSafety {
     required DateTime? lastMicroBolusAt,
     required DateTime now,
     double? reservoirUnits,
+    double carbCoveredUnits = 0,
   }) {
     if (!_allowed(decision, glucose, lastMicroBolusAt, now)) {
       return decision;
@@ -56,7 +57,10 @@ class LoopMicroBolusSafety {
         bound: LoopBound.microBolusHourly,
       ),
       (
-        units: LoopSafety(limits).hypoHeadroomUnits(glucose, iobUnits),
+        units: LoopSafety(limits).hypoHeadroomUnits(
+          glucose,
+          LoopSafety.uncoveredIob(iobUnits, carbCoveredUnits),
+        ),
         bound: LoopBound.hypoHeadroom,
       ),
       (units: limits.maxIobUnits - iobUnits, bound: LoopBound.maxIob),
@@ -90,7 +94,7 @@ class LoopMicroBolusSafety {
       return false;
     }
     if (glucose.wasAtOrBelow(
-      limits.suspendBelowMgdl,
+      LoopLimits.minSuspendBelowMgdl,
       within: settings.pauseAfterLow,
     )) {
       return false;

@@ -12,10 +12,10 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 /// is off errs toward FEWER pending carbs, which only ever lowers a dose. Upgrade
 /// path if it proves too coarse: a per-meal absorption speed on [Meal].
 class CarbsOnBoard {
-  const CarbsOnBoard();
+  const CarbsOnBoard({this.absorption = const Duration(hours: 2)});
 
   /// How long a logged meal is assumed to take to be absorbed.
-  static const Duration absorption = Duration(hours: 2);
+  final Duration absorption;
 
   /// Grams across [meals] still to be absorbed at [now] (defaults to the
   /// current time).
