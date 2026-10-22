@@ -3,6 +3,7 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sport/training/cardio_models.dart';
+import 'package:insulink/src/sport/training/live_position_dot.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -109,7 +110,7 @@ class CardioMap extends StatelessWidget {
                 point: route.last,
                 width: 44,
                 height: 44,
-                child: _liveMarker(context.ink),
+                child: const LivePositionDot(),
               ),
             ],
           ),
@@ -153,28 +154,6 @@ class CardioMap extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  /// Where the recording is now: an accent dot ringed in the page colour, in
-  /// an accent-tinted halo so it stays findable on the tinted map
-  /// (`docs/redesign/screens/30-training-live.png`).
-  Widget _liveMarker(InsulinkColors colors) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.accentSoft,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Container(
-        width: 21,
-        height: 21,
-        decoration: BoxDecoration(
-          color: colors.accent,
-          shape: BoxShape.circle,
-          border: Border.all(color: colors.ground, width: 3),
-        ),
-      ),
     );
   }
 
