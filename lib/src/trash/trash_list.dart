@@ -7,12 +7,14 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
+import 'trash_detail_sheet.dart';
 import 'trash_entry.dart';
 import 'trash_restorer.dart';
 import 'trash_store.dart';
 
 /// The trash in the profile: what was deleted in the last 30 days, newest
-/// first, each with a button that puts it back where it came from.
+/// first, each with a button that puts it back where it came from. A tap on
+/// a row shows what the entry held.
 class TrashList extends StatefulWidget {
   const TrashList({super.key});
 
@@ -44,6 +46,13 @@ class _TrashListState extends State<TrashList> {
     await _reload();
   }
 
+  Future<void> _showDetail(TrashEntry entry) async {
+    final restore = await showTrashDetail(context, entry);
+    if (restore == true && mounted) {
+      await _restore(entry);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final entries = _entries;
@@ -73,6 +82,7 @@ class _TrashListState extends State<TrashList> {
       icon: entry.kind.icon,
       title: Locales.string(context, entry.kind.titleKey),
       subtitle: summary == null ? day : '$summary, $day',
+      onTap: () => _showDetail(entry),
       trailing: IconButton(
         icon: const Icon(PhosphorIconsBold.arrowCounterClockwise),
         tooltip: Locales.string(context, 'trash.restore'),

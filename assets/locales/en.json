@@ -1751,7 +1751,7 @@
     }
   },
   "trash": {
-    "intro": "Deleted entries stay here for 30 days. Tap the arrow to bring one back.",
+    "intro": "Deleted entries stay here for 30 days. Tap an entry for details, the arrow brings it back.",
     "empty": "The trash is empty",
     "restore": "Restore",
     "kind": {
@@ -1764,6 +1764,26 @@
       "routine": "Routine",
       "exercise": "Exercise",
       "product": "Food product"
+    },
+    "detail": {
+      "time": "Time",
+      "deleted": "Deleted",
+      "carbs": "Carbs",
+      "glucose": "Glucose",
+      "bolus": "Bolus",
+      "foods": "Foods",
+      "volume": "Amount",
+      "weight": "Weight",
+      "hba1c": "HbA1c",
+      "distance": "Distance",
+      "duration": "Duration",
+      "sets": "Sets",
+      "name": "Name",
+      "items": "Exercises",
+      "brand": "Brand",
+      "protein": "Protein",
+      "fat": "Fat",
+      "kcal": "Energy"
     }
   }
 }

@@ -1751,7 +1751,7 @@
     }
   },
   "trash": {
-    "intro": "Gelöschte Einträge bleiben 30 Tage hier. Ein Tipp auf den Pfeil holt einen zurück.",
+    "intro": "Gelöschte Einträge bleiben 30 Tage hier. Ein Tipp auf einen Eintrag zeigt Details, der Pfeil holt ihn zurück.",
     "empty": "Der Papierkorb ist leer",
     "restore": "Wiederherstellen",
     "kind": {
@@ -1764,6 +1764,26 @@
       "routine": "Routine",
       "exercise": "Übung",
       "product": "Lebensmittel"
+    },
+    "detail": {
+      "time": "Zeitpunkt",
+      "deleted": "Gelöscht",
+      "carbs": "Kohlenhydrate",
+      "glucose": "Glukose",
+      "bolus": "Bolus",
+      "foods": "Lebensmittel",
+      "volume": "Menge",
+      "weight": "Gewicht",
+      "hba1c": "HbA1c",
+      "distance": "Distanz",
+      "duration": "Dauer",
+      "sets": "Sätze",
+      "name": "Name",
+      "items": "Übungen",
+      "brand": "Marke",
+      "protein": "Eiweiß",
+      "fat": "Fett",
+      "kcal": "Energie"
     }
   }
 }
