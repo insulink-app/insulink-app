@@ -17,9 +17,16 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// from [TrainingState] by id so in-place edits reflect immediately (the passed
 /// [session] is a snapshot from the log list).
 class WorkoutSetList extends StatelessWidget {
-  const WorkoutSetList({super.key, required this.session});
+  const WorkoutSetList({
+    super.key,
+    required this.session,
+    this.editable = true,
+  });
 
   final WorkoutSession session;
+
+  /// False for a session shown from the trash: no taps, no delete, no add.
+  final bool editable;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +54,9 @@ class WorkoutSetList extends StatelessWidget {
     String? exerciseId;
     var setNumber = 0;
     void close(int lastIndex) {
-      rows.add(_addSetRow(context, training, session, lastIndex));
+      if (editable) {
+        rows.add(_addSetRow(context, training, session, lastIndex));
+      }
       groups.add(_group(context, training, exerciseId!, rows, groups.isEmpty));
       rows = <Widget>[];
     }
@@ -106,12 +115,15 @@ class WorkoutSetList extends StatelessWidget {
     final kind =
         training.exerciseById(set.exerciseId)?.kind ?? ExerciseKind.reps;
     return InkWell(
-      onTap: () => showSetEditorSheet(
-        context,
-        set: set,
-        kind: kind,
-        onChanged: (edited) => _replaceSet(training, session, index, edited),
-      ),
+      onTap: editable
+          ? () => showSetEditorSheet(
+              context,
+              set: set,
+              kind: kind,
+              onChanged: (edited) =>
+                  _replaceSet(training, session, index, edited),
+            )
+          : null,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 6, 12),
         child: Row(
@@ -139,15 +151,16 @@ class WorkoutSetList extends StatelessWidget {
               ),
             ),
             _value(context, set),
-            IconButton(
-              icon: Icon(PhosphorIconsBold.x, size: 18, color: colors.muted),
-              tooltip: Locales.string(context, 'sport.logbook.delete_set'),
-              onPressed: () => confirmDelete(
-                context,
-                messageKey: 'sport.logbook.delete_set_confirm',
-                onConfirm: () => _deleteSet(training, session, index),
+            if (editable)
+              IconButton(
+                icon: Icon(PhosphorIconsBold.x, size: 18, color: colors.muted),
+                tooltip: Locales.string(context, 'sport.logbook.delete_set'),
+                onPressed: () => confirmDelete(
+                  context,
+                  messageKey: 'sport.logbook.delete_set_confirm',
+                  onConfirm: () => _deleteSet(training, session, index),
+                ),
               ),
-            ),
           ],
         ),
       ),

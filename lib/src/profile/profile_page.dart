@@ -41,6 +41,7 @@ import 'package:insulink/src/google_health/profile_sleep_targets_editor.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_goals_editor.dart';
 import 'package:insulink/src/sport/activity/sport_goals_editor.dart';
 import 'package:insulink/src/profile/theme/profile_theme_selection.dart';
+import 'package:insulink/src/trash/trash_list.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
@@ -297,6 +298,14 @@ class _ProfilePageState extends State<ProfilePage> {
             onPressed: _leave,
           ),
           title: LocaleText("profile.label"),
+          actions: [
+            IconButton(
+              icon: const Icon(PhosphorIconsBold.trash),
+              tooltip: Locales.string(context, "profile.trash"),
+              onPressed: () =>
+                  _open("profile.trash", () => const [TrashList()]),
+            ),
+          ],
         ),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -356,13 +365,16 @@ class _ProfilePageState extends State<ProfilePage> {
         size: 18,
         color: context.ink.muted,
       ),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => ProfileTopicPage(
-            titleKey: topic.titleKey,
-            children: topic.children(),
-          ),
-        ),
+      onTap: () => _open(topic.titleKey, topic.children),
+    );
+  }
+
+  /// Pushes the [ProfileTopicPage] titled [titleKey] with the given settings.
+  void _open(String titleKey, List<Widget> Function() children) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            ProfileTopicPage(titleKey: titleKey, children: children()),
       ),
     );
   }

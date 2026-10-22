@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:insulink/src/trash/trash_entry.dart';
+import 'package:insulink/src/trash/trash_store.dart';
 import 'sport_models.dart';
 import 'sport_store.dart';
 import 'sport_sync.dart';
@@ -322,9 +324,27 @@ class TrainingState extends ChangeNotifier {
   }
 
   Future<void> removeExercise(String id) async {
+    await _trash(TrashKind.exercise, exerciseById(id)?.toJson());
     _exercises.removeWhere((exercise) => exercise.id == id);
     notifyListeners();
     await _saveExercises();
+  }
+
+  /// Puts an exercise back from the trash, under its own id so the routines
+  /// that still name it find it again.
+  Future<void> restoreExercise(SportExercise exercise) async {
+    _exercises
+      ..removeWhere((other) => other.id == exercise.id)
+      ..add(exercise);
+    notifyListeners();
+    await _saveExercises();
+  }
+
+  /// Keeps a copy of something about to be deleted in the trash.
+  Future<void> _trash(TrashKind kind, Map<String, dynamic>? data) async {
+    if (data != null) {
+      await const TrashStore().keep(kind, data);
+    }
   }
 
   /// Reorders the exercise library. [newIndex] is already corrected for the
@@ -363,7 +383,17 @@ class TrainingState extends ChangeNotifier {
   }
 
   Future<void> removeRoutine(String id) async {
+    await _trash(TrashKind.routine, routineById(id)?.toJson());
     _routines.removeWhere((routine) => routine.id == id);
+    notifyListeners();
+    await _saveRoutines();
+  }
+
+  /// Puts a routine back from the trash, under its own id.
+  Future<void> restoreRoutine(SportRoutine routine) async {
+    _routines
+      ..removeWhere((other) => other.id == routine.id)
+      ..add(routine);
     notifyListeners();
     await _saveRoutines();
   }
@@ -482,6 +512,10 @@ class TrainingState extends ChangeNotifier {
   }
 
   Future<void> removeSession(String id) async {
+    await _trash(
+      TrashKind.workout,
+      _sessions.where((session) => session.id == id).firstOrNull?.toJson(),
+    );
     _sessions.removeWhere((session) => session.id == id);
     notifyListeners();
     await _saveSessions();

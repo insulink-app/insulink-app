@@ -3,6 +3,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:insulink/src/demo/demo_live_track.dart';
 import 'package:insulink/src/demo/demo_mode.dart';
 
+import 'package:insulink/src/trash/trash_entry.dart';
+import 'package:insulink/src/trash/trash_store.dart';
 import '../sport_store.dart';
 import '../sport_sync.dart';
 import 'active_training.dart';
@@ -241,6 +243,9 @@ class CardioTrainingState extends ChangeNotifier {
   }
 
   Future<void> removeTraining(String id) async {
+    for (final training in _trainings.where((training) => training.id == id)) {
+      await const TrashStore().keep(TrashKind.cardio, training.toJson());
+    }
     _trainings.removeWhere((training) => training.id == id);
     notifyListeners();
     await _saveTrainings();

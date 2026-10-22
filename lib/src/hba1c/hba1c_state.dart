@@ -4,6 +4,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:insulink/src/hba1c/hba1c_entry.dart';
 import 'package:insulink/src/hba1c/hba1c_sync.dart';
+import 'package:insulink/src/trash/trash_entry.dart';
+import 'package:insulink/src/trash/trash_store.dart';
 
 /// The user's HbA1c readings, kept sorted oldest-first. Self-persists to secure
 /// storage (like the Profile*State classes) and mirrors every change to the
@@ -55,6 +57,7 @@ class Hba1cState extends ChangeNotifier {
 
   Future<void> remove(Hba1cEntry entry) async {
     _entries.remove(entry);
+    await const TrashStore().keep(TrashKind.hba1c, entry.toJson());
     await _persist();
     await Hba1cSync().remove(entry);
     Hba1cSync().push(_entries);

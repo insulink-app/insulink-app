@@ -1518,7 +1518,8 @@
       },
       "enabled": "Use activity mode",
       "on_overview": "Show the choice on the overview"
-    }
+    },
+    "trash": "Trash"
   },
   "injection": {
     "title": "Bolus calculator",
@@ -1747,6 +1748,42 @@
       "automation": "Automation",
       "alarms": "Alarms",
       "locks": "Fingerprint prompts"
+    }
+  },
+  "trash": {
+    "intro": "Deleted entries stay here for 30 days. Tap an entry for details, the arrow brings it back.",
+    "empty": "The trash is empty",
+    "restore": "Restore",
+    "kind": {
+      "meal": "Meal",
+      "drink": "Drink",
+      "weight": "Weight",
+      "hba1c": "HbA1c",
+      "cardio": "Cardio training",
+      "workout": "Workout",
+      "routine": "Routine",
+      "exercise": "Exercise",
+      "product": "Food product"
+    },
+    "detail": {
+      "time": "Time",
+      "deleted": "Deleted",
+      "carbs": "Carbs",
+      "glucose": "Glucose",
+      "bolus": "Bolus",
+      "foods": "Foods",
+      "volume": "Amount",
+      "weight": "Weight",
+      "hba1c": "HbA1c",
+      "distance": "Distance",
+      "duration": "Duration",
+      "sets": "Sets",
+      "name": "Name",
+      "items": "Exercises",
+      "brand": "Brand",
+      "protein": "Protein",
+      "fat": "Fat",
+      "kcal": "Energy"
     }
   }
 }

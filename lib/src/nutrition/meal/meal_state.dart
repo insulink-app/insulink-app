@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:insulink/src/trash/trash_entry.dart';
+import 'package:insulink/src/trash/trash_store.dart';
 import '../nutrition_sync.dart';
 import 'meal.dart';
 import 'meal_store.dart';
@@ -57,8 +59,12 @@ class MealState extends ChangeNotifier {
   double get todayKcal =>
       todayMeals.fold(0, (sum, meal) => sum + (meal.kcal ?? 0));
 
+  /// Logs a meal, kept in time order so a meal restored from the trash lands
+  /// where it belongs rather than as the newest.
   Future<void> addMeal(Meal meal) async {
-    _meals.add(meal);
+    _meals
+      ..add(meal)
+      ..sort((first, second) => first.time.compareTo(second.time));
     if (_meals.length > _cap) {
       _meals.removeRange(0, _meals.length - _cap);
     }
@@ -95,6 +101,7 @@ class MealState extends ChangeNotifier {
   /// otherwise leave the meal on screen and in storage.
   Future<void> removeMeal(Meal meal) async {
     _meals.removeWhere((logged) => logged.logKey == meal.logKey);
+    await const TrashStore().keep(TrashKind.meal, meal.toJson());
     notifyListeners();
     await _store.saveMeals(_meals);
     NutritionSync().pushMeals();
