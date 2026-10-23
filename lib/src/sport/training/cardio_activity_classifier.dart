@@ -9,8 +9,9 @@ import 'heart_effort.dart';
 /// as a vehicle, and an on-foot label over a too-fast segment is upgraded to the
 /// speed-based type (a "walk" at 20 km/h is a vehicle, not a walk). The reverse
 /// misread is just as common: a bike ride reported as in-vehicle. So a vehicle
-/// label alone discards nothing; only a segment that also REACHES vehicle speed
-/// ([_vehicleTopKmh]) is dropped, and a slower one is a bike ride. Pure and
+/// label alone discards nothing; a segment that REACHES vehicle speed
+/// ([_vehicleTopKmh]) is dropped whatever the label says, unless the
+/// recognition saw cycling, and a slower one is a bike ride. Pure and
 /// plugin-free so it stays unit-testable.
 ///
 /// The heart rate, when the band recorded it, settles what speed cannot: a
@@ -27,10 +28,10 @@ class CardioActivityClassifier {
   /// under it; a train/car easily clears it.
   static const _humanPoweredMaxKmh = 30.0;
 
-  /// A vehicle-labelled segment whose top speed (90th percentile between fixes)
-  /// stays at or below this (km/h) is a bike ride the recognition misread. A
-  /// city bus or car averages bike speed between stops but reaches 45 to 50 on
-  /// the way; a commuter on a bike or pedelec doesn't sustain this.
+  /// A segment whose top speed (90th percentile between fixes) passes this
+  /// (km/h) is a vehicle unless the recognition saw cycling. A city bus or car
+  /// averages bike speed between stops but reaches 45 to 50 on the way; a
+  /// commuter on a bike or pedelec doesn't sustain this (real rides: 22 to 26).
   static const _vehicleTopKmh = 35.0;
 
   /// The slowest average (km/h) a hard-effort segment is called a jog at;
@@ -79,9 +80,10 @@ class CardioActivityClassifier {
     return byActivity.index >= bySpeed.index ? byActivity : bySpeed;
   }
 
-  /// Whether a segment is a real vehicle ride: labelled one AND fast enough.
+  /// Whether a segment is a vehicle ride: fast enough and not recognised as
+  /// cycling. The label is not required, since a bus is often called walking.
   bool _isVehicle(ActivityKind? dominant, double topKmh) =>
-      dominant == ActivityKind.vehicle && topKmh > _vehicleTopKmh;
+      dominant != ActivityKind.bike && topKmh > _vehicleTopKmh;
 
   /// The on-foot/bike [CardioType] for an activity kind, or null when the kind
   /// gives no usable signal (still/unknown/none) so speed decides. A vehicle

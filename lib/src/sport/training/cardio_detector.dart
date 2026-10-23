@@ -8,7 +8,9 @@ import 'heart_effort.dart';
 /// haversine) so it is unit-testable. Consecutive points moving faster than
 /// [_walkMinKmh] with gaps up to [_maxGap] form a segment; brief stops (a
 /// traffic light / crossing) up to [_maxPause] are tolerated inside a segment so
-/// a short standstill does not split one ride into two. Segments below
+/// a short standstill does not split one ride into two. A segment that changes
+/// between riding and going on foot is cut there ([_splitAtRides]), so stepping
+/// off a bus and walking on yields a walk without the bus. Segments below
 /// [_minDuration] or [_minDistanceM] are dropped. Each surviving segment is typed
 /// by [CardioActivityClassifier] — the recognised activity (from the optional
 /// `activityLog`) when available, else average speed — which also discards
@@ -25,6 +27,19 @@ class CardioDetector {
   static const _minDuration = Duration(minutes: 8);
   static const _minDistanceM = 500.0;
 
+  /// Speed between two fixes (km/h) nobody reaches on foot: a stretch with it
+  /// is a ride, on a bike or in a vehicle.
+  static const _ridingKmh = 20.0;
+
+  /// The fastest average (km/h) a calm stretch is cut off at: walking or an
+  /// easy jog. A slower stretch of a bike ride (12 km/h uphill) stays put.
+  static const _onFootMaxKmh = 10.0;
+
+  /// Riding fixes a segment needs before it is cut at all. A GPS jump inside a
+  /// walk makes two (out and back), so two jumps never split it; a real ride
+  /// makes dozens at the 5 to 10 s detect cadence.
+  static const _minRidingFixes = 6;
+
   const CardioDetector();
 
   /// Detects trainings in [log]. The optional [activityLog] (empty by default,
@@ -37,7 +52,7 @@ class CardioDetector {
     HeartRateEvidence heart = HeartRateEvidence.none,
   ]) {
     final trainings = <CardioTraining>[];
-    for (final segment in _segment(log)) {
+    for (final segment in _segment(log).expand(_splitAtRides)) {
       if (!_qualifies(segment)) {
         continue;
       }
@@ -104,6 +119,46 @@ class CardioDetector {
     return segments;
   }
 
+  /// Cuts [segment] around every stretch at walking pace, without a riding fix,
+  /// that qualifies as a training by itself. Shorter calm stretches (the walk to the stop, a
+  /// slow climb on a bike) stay with the ride. The pair across each cut is
+  /// dropped, so no two pieces share a point and both survive the runner's
+  /// overlap check.
+  List<List<TrackPoint>> _splitAtRides(List<TrackPoint> segment) {
+    final riding = [
+      for (var index = 1; index < segment.length; index++)
+        _pairKmh(segment, index) > _ridingKmh,
+    ];
+    if (riding.where((fast) => fast).length < _minRidingFixes) {
+      return [segment];
+    }
+    final starts = <int>{0};
+    var calmFrom = 0;
+    for (var pair = 0; pair <= riding.length; pair++) {
+      if (pair < riding.length && !riding[pair]) {
+        continue;
+      }
+      if (_isOnFoot(segment.sublist(calmFrom, pair + 1))) {
+        starts
+          ..add(calmFrom)
+          ..add(pair + 1);
+      }
+      calmFrom = pair + 1;
+    }
+    final cuts = starts.where((start) => start < segment.length).toList()
+      ..sort();
+    return [
+      for (var index = 0; index < cuts.length; index++)
+        segment.sublist(
+          cuts[index],
+          index + 1 < cuts.length ? cuts[index + 1] : segment.length,
+        ),
+    ];
+  }
+
+  bool _isOnFoot(List<TrackPoint> stretch) =>
+      _qualifies(stretch) && _avgKmh(stretch) <= _onFootMaxKmh;
+
   bool _qualifies(List<TrackPoint> segment) {
     return _duration(segment) >= _minDuration &&
         _distanceM(segment) >= _minDistanceM;
@@ -135,11 +190,7 @@ class CardioDetector {
   double _topKmh(List<TrackPoint> segment) {
     final speeds = [
       for (var index = 1; index < segment.length; index++)
-        _speedKmh(
-          segment[index - 1],
-          segment[index],
-          Duration(milliseconds: segment[index].tMs - segment[index - 1].tMs),
-        ),
+        _pairKmh(segment, index),
     ]..sort();
     return speeds[((speeds.length - 1) * 0.9).round()];
   }
@@ -154,6 +205,13 @@ class CardioDetector {
     }
     return total;
   }
+
+  /// The speed from the point before [index] to the one at it.
+  double _pairKmh(List<TrackPoint> segment, int index) => _speedKmh(
+    segment[index - 1],
+    segment[index],
+    Duration(milliseconds: segment[index].tMs - segment[index - 1].tMs),
+  );
 
   double _speedKmh(TrackPoint from, TrackPoint to, Duration gap) =>
       _haversineM(from, to) / gap.inSeconds * 3.6;
