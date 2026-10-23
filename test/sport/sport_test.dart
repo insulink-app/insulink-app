@@ -357,8 +357,26 @@ void main() {
       expect(const CardioDetector().detect(points, log), isEmpty);
     });
 
-    test('the same stop-and-go without a vehicle tag stays a training', () {
-      expect(const CardioDetector().detect(bus(8)).length, 1);
+    test('the same stop-and-go without a vehicle tag is discarded too', () {
+      expect(const CardioDetector().detect(bus(8)), isEmpty);
+    });
+
+    test('a bus ride walked on from is cut off the walk', () {
+      final points = bus(8);
+      final busEnd = points.last.tMs;
+      var lat = points.last.lat;
+      for (var minute = 1; minute <= 20; minute++) {
+        lat += 83 / 111320;
+        points.add(
+          TrackPoint(lat: lat, lng: 13.0, tMs: busEnd + minute * 60000),
+        );
+      }
+
+      final detected = const CardioDetector().detect(points);
+
+      expect(detected.length, 1);
+      expect(detected.single.type, CardioType.walk);
+      expect(detected.single.startMs, greaterThanOrEqualTo(busEnd));
     });
 
     test('a bike-tagged fast segment stays a bike ride', () {
@@ -404,6 +422,24 @@ void main() {
       final detected = const CardioDetector().detect(walk.points, walk.log);
       expect(detected.length, 1);
       expect(detected.single.type, CardioType.walk);
+    });
+
+    test('two GPS jumps never cut a walk', () {
+      final walk = segment(30, 83, ActivityKind.walk);
+      final points = [...walk.points];
+      for (final index in [10, 20]) {
+        final jumped = points[index];
+        points[index] = TrackPoint(
+          lat: jumped.lat + 500 / 111320,
+          lng: 13.0,
+          tMs: jumped.tMs,
+        );
+      }
+
+      final detected = const CardioDetector().detect(points, walk.log);
+
+      expect(detected.length, 1);
+      expect(detected.single.startMs, walk.points.first.tMs);
     });
 
     test(

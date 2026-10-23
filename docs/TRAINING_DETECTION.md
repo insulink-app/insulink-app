@@ -55,6 +55,24 @@ pending training.
 Unchanged: an average above 30 km/h is never human-powered, whatever the label
 (a train misread as walking).
 
+## Trap 3: getting off the bus and walking on
+
+Bus stops and the step off take under the 3-minute pause, so bus and walk used
+to form one segment. Typed as a whole it averaged walking pace and the bus rode
+along inside a "walk" (a real morning: 14 min of bus at up to 47 km/h, then
+26 min on foot, one 40-minute walk).
+
+`CardioDetector._splitAtRides` now cuts a segment around every stretch with no
+fix-to-fix speed over 20 km/h, averaging walking pace (10 km/h at most), that
+qualifies as a training by itself (8 min, 500 m). Shorter calm stretches, like the walk to the stop or a slow climb on a
+bike, stay with the ride. A segment needs at least six such riding fixes before
+it is cut at all, so a GPS jump or two inside a walk changes nothing.
+
+The bus piece is then typed on its own, and the 35 km/h top-speed rule from
+trap 2 no longer needs a vehicle label: a piece reaching it is discarded
+unless the recognition saw cycling, because a bus is just as often called
+walking. Real bike rides in the same data stayed at 22 to 26 km/h.
+
 ## The heart rate settles what speed cannot
 
 `CardioDetectionRunner` hands the stored pulse curve (`IntradayPulseStore`, fed
