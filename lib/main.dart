@@ -47,6 +47,7 @@ import 'package:insulink/src/theme/app_theme.dart';
 import 'package:insulink/src/vendor_keys/vendor_keys.dart';
 import 'package:insulink/src/vendor_keys/vendor_keys_warning.dart';
 import 'package:provider/provider.dart';
+import 'package:insulink/src/base/release_log_gate.dart';
 
 /// The persisted settings the app needs before its first frame can render.
 typedef AppPreferences = ({
@@ -79,6 +80,7 @@ typedef AppPreferences = ({
 /// ([LaunchHold]), so the launch hands over straight to that page.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  const ReleaseLogGate().apply();
   const LaunchHold().hold();
   await Locales.init(["de", "en"]);
   await VendorKeys.ensureLoaded();

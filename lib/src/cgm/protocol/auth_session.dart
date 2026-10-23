@@ -58,13 +58,13 @@ class G7AuthSession {
         .map((event) => Uint8List.fromList(event))
         .firstWhere((frame) => frame.isNotEmpty && frame.first == op.value)
         .timeout(stepTimeout);
-    log('<- ${op.name}: ${_hex(message)}');
+    log('<- ${op.name}');
     return message;
   }
 
   Future<void> _sendAuth(G7AuthOpCode op, [List<int> extra = const []]) async {
     final frame = _frame(op, extra);
-    log('-> ${op.name}: ${_hex(frame)}');
+    log('-> ${op.name}');
     await transport.writeAuth(frame);
   }
 
@@ -74,7 +74,7 @@ class G7AuthSession {
   Future<Uint8List> _recvRound(int idx) async {
     await _sendAuth(G7AuthOpCode.exchangePakePayload, [idx]);
     final received = await transport.takeJpake(160, timeout: stepTimeout);
-    log('<- jpake round $idx (${received.length} B): ${_hexHead(received)}');
+    log('<- jpake round $idx (${received.length} B)');
     return received;
   }
 
@@ -108,7 +108,7 @@ class G7AuthSession {
     final sensorPayload2 = await _recvRound(2);
     await transport.writeJpake(_jpake.round3Payload());
     final sessionKey = _jpake.setSensorRound3(payload: sensorPayload2);
-    log('derived session key: ${_hex(sessionKey)}');
+    log('session key derived');
 
     // AES key confirmation, signing with the freshly-derived J-PAKE key.
     final reconnect = await _aesConfirm((data) => _jpake.aes8(data8: data));
@@ -274,9 +274,4 @@ class G7AuthSession {
 
   String _hex(List<int> bytes) =>
       bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ');
-
-  String _hexHead(List<int> bytes) {
-    final head = bytes.length > 12 ? bytes.sublist(0, 12) : bytes;
-    return '${_hex(head)}…';
-  }
 }

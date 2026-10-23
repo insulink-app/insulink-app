@@ -46,7 +46,6 @@ class PodMessageIo {
   /// Announces our controller id. Written once per connection, before anything
   /// else — the pod ignores traffic from a controller that has not said hello.
   Future<void> sayHello(int controllerId) {
-    _log('hello from controller $controllerId');
     return link.write(
       PodCharacteristic.command,
       PodControlWord.helloFrom(controllerId),
@@ -67,7 +66,6 @@ class PodMessageIo {
       PodCharacteristic.command,
       PodControlWord.requestToSend.frame,
     );
-    _log('waiting for clearToSend');
     await _expectControl(PodControlWord.clearToSend);
 
     final fragments = PodFragmenter(message.toBytes()).fragments;
@@ -121,10 +119,6 @@ class PodMessageIo {
     try {
       final payload = await _readFragments();
       await link.write(PodCharacteristic.command, PodControlWord.success.frame);
-      _log(
-        'received ${payload.length} bytes: '
-        '${payload.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}',
-      );
       return MessagePacket.parse(payload);
     } on PodFragmentException catch (error) {
       final word = error.message.contains('CRC')

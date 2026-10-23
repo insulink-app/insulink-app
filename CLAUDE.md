@@ -56,7 +56,8 @@ To bump: change both manifests, install the matching codegen CLI
 then `cargo test` to confirm the KATs still pass. Never bump pubspec alone.
 
 Note: on-device build/install/run is typically driven by the developer (watch
-`adb logcat | grep -i flutter`); the in-app log pane mirrors each handshake step
+`adb logcat | grep -i flutter`, profile/debug only: a release build writes
+nothing to logcat, `docs/LOGGING.md`); the in-app log pane mirrors each handshake step
 and is copyable via the "Kopieren" button. **Test on-device with profile/release,
 not debug** — a debug build (JIT + Dart VM service) often hangs on the splash
 screen when run standalone/unplugged; release/profile (AOT) run fine.
@@ -723,6 +724,8 @@ the widget cannot drift away from the app on what is in range.
   setting behind them, the app lock, and why a prompt the system cancels is not a
   refusal.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
+- `docs/LOGGING.md` — where log lines go, why a release build writes nothing
+  to logcat, and what may never be logged.
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
 - `docs/MAP.md` — the route map's tiles: why Esri Gray Canvas and not a keyed
   provider (CARTO now stamps "API KEY REQUIRED" across the tiles it still

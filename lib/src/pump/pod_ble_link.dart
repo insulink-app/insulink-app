@@ -32,9 +32,6 @@ class PodBleLink implements PodLink {
     sink(line);
   }
 
-  static String _hex(Uint8List frame) =>
-      frame.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ');
-
   final Map<PodCharacteristic, Queue<Uint8List>> _queues = {
     PodCharacteristic.command: Queue<Uint8List>(),
     PodCharacteristic.data: Queue<Uint8List>(),
@@ -135,7 +132,6 @@ class PodBleLink implements PodLink {
   }
 
   void _enqueue(PodCharacteristic characteristic, Uint8List frame) {
-    _log('<- ${characteristic.name} ${_hex(frame)}');
     _queues[characteristic]!.add(frame);
     final waiter = _waiters.remove(characteristic);
     if (waiter != null && !waiter.isCompleted) {
@@ -149,7 +145,6 @@ class PodBleLink implements PodLink {
     if (target == null) {
       throw PodLinkException('Link not open');
     }
-    _log('-> ${characteristic.name} ${_hex(frame)}');
     await target.write(frame, withoutResponse: false);
   }
 

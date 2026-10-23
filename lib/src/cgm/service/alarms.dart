@@ -26,6 +26,7 @@ import '../../sport/training/cardio_models.dart';
 import '../cgm_store.dart';
 import '../glucose_prediction.dart';
 import 'advisory_action.dart';
+import 'package:insulink/src/base/release_log_gate.dart';
 
 /// Notification-action ids for the "training detected" confirm prompt.
 const String _trainingConfirmAction = 'training_confirm';
@@ -41,6 +42,7 @@ const String _trainingRejectAction = 'training_reject';
 /// watchdog tick, and the UI re-reads pending on its next resume.
 @pragma('vm:entry-point')
 void trainingNotificationAction(NotificationResponse response) {
+  const ReleaseLogGate().apply();
   final payload = response.payload;
   if (payload == null || payload.isEmpty) {
     return;
@@ -66,6 +68,7 @@ void trainingNotificationAction(NotificationResponse response) {
 /// `flutter_local_notifications` takes exactly one callback per isolate.
 @pragma('vm:entry-point')
 void serviceNotificationAction(NotificationResponse response) {
+  const ReleaseLogGate().apply();
   final actionId = response.actionId;
   if (actionId == advisoryCarbsAction || actionId == advisoryBolusAction) {
     _advisoryNotificationAction(actionId!, response.payload);
