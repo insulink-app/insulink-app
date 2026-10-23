@@ -833,13 +833,16 @@ class CgmTaskHandler extends TaskHandler {
     return ActiveInsulin(insulinDuration).units(meals);
   }
 
-  /// The insulin logged carbs still call for, their grams on board over the
-  /// insulin duration divided by the carb factor.
+  /// The insulin logged carbs still call for, each meal capped at its own
+  /// remaining bolus (`CarbsOnBoard.coverUnits`).
   Future<double> _readCarbCover(Duration insulinDuration) async {
     final meals = await const MealStore().loadMeals();
     final bolus = await ProfileBolusState.load();
-    final grams = CarbsOnBoard(absorption: insulinDuration).grams(meals);
-    return grams / bolus.carbFactor;
+    return const CarbsOnBoard().coverUnits(
+      meals,
+      carbFactor: bolus.carbFactor,
+      insulin: ActiveInsulin(insulinDuration),
+    );
   }
 
   /// Runs the pod watch, building it on first use.

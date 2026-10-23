@@ -159,9 +159,18 @@ Every uncertainty in the arithmetic resolves towards asking for less.
 
 `iob` in the prediction and in the hypo headroom is the insulin on board LESS
 what logged carbs still cover: the grams not yet absorbed divided by the carb
-factor (`LoopSafety.uncoveredIob`). The carbs are spread over the same insulin
-duration as the insulin, so a meal bolus that fits its carbs nets to zero for
-its whole action and only the part above or below them counts.
+factor (`LoopSafety.uncoveredIob`, `CarbsOnBoard.coverUnits`). Each meal
+covers at most what is left of its OWN bolus, so a meal bolus that fits its
+carbs nets to zero while they absorb, and carbs logged with little or no bolus
+(a snack treating a low) can never cancel insulin the loop added itself.
+
+The carbs absorb over `CarbsOnBoard.absorption` (2 h), shorter than the insulin
+duration, because real carbs are in the blood well before a bolus has finished
+acting. A first version spread them over the insulin duration: the meal bolus
+then vanished for its whole action, the excess of a low-treating snack hid the
+loop's own insulin, and the late tail of a meal bolus, which still lowers
+glucose after the carbs are gone, never counted. Once the carbs are absorbed
+the rest of the bolus counts as correction again, the side that asks for less.
 
 Without this every meal bolus read as pure correction insulin. On a real day
 four meal boluses (5.3 U for 133 g) had glucose rising from 90 to 206 mg/dL

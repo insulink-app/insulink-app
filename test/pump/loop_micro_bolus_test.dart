@@ -172,11 +172,11 @@ void main() {
   group('the rise after a treated low is not corrected', () {
     /// A low an hour ago, then 25 g of sugar: a steep rise to 160 that the
     /// user caused on purpose.
-    LoopGlucose afterLow(Duration lowAgo) {
+    LoopGlucose afterLow(Duration lowAgo, {int lowMgdl = 68}) {
       final archive = archiveEndingAt(now, mgdl: 160, trendPerMinute: 3);
       final newest =
           now.millisecondsSinceEpoch ~/ Duration.millisecondsPerMinute;
-      archive[newest - lowAgo.inMinutes] = 68;
+      archive[newest - lowAgo.inMinutes] = lowMgdl;
       return LoopGlucose.from(archive, now: now);
     }
 
@@ -188,6 +188,17 @@ void main() {
 
       expect(decision.microBolusUnits, 0);
       expect(decision.reason, LoopReason.correcting);
+    });
+
+    /// The user's stop threshold (85 here) decides what a low is, not the
+    /// 70 floor below it.
+    test('a reading at the stop threshold above 70 pauses too', () {
+      final decision = decide(
+        mgdl: 160,
+        reading: afterLow(const Duration(minutes: 60), lowMgdl: 80),
+      );
+
+      expect(decision.microBolusUnits, 0);
     });
 
     test('once the pause has passed, micro boluses return', () {

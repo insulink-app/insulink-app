@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:insulink/src/injection/active_insulin.dart';
+import 'package:insulink/src/injection/carbs_on_board.dart';
+import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/pump/loop/loop_algorithm.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
 import 'package:insulink/src/pump/loop/loop_safety.dart';
@@ -60,6 +63,47 @@ void main() {
 
     expect(decision.unitsPerHour, closeTo(schedule, 1e-9));
     expect(decision.boundBy, LoopBound.maxIob);
+  });
+
+  group('carb cover per meal', () {
+    const insulin = ActiveInsulin(Duration(hours: 4));
+    Meal mealAt(Duration ago, {required double carbs, required double bolus}) {
+      return Meal(
+        time: now.subtract(ago),
+        carbs: carbs,
+        glucoseMgdl: 100,
+        bolus: bolus,
+        entries: const [],
+      );
+    }
+
+    double cover(List<Meal> meals) => const CarbsOnBoard().coverUnits(
+      meals,
+      carbFactor: 20,
+      insulin: insulin,
+      now: now,
+    );
+
+    test('a snack treating a low covers nothing it was not dosed with', () {
+      expect(cover([mealAt(Duration.zero, carbs: 20, bolus: 0)]), 0);
+    });
+
+    test('a matched meal covers its bolus while the carbs absorb', () {
+      final meal = mealAt(const Duration(hours: 1), carbs: 80, bolus: 4);
+
+      expect(cover([meal]), closeTo(2, 1e-9));
+    });
+
+    test('once the carbs are absorbed the rest of the bolus counts', () {
+      final meal = mealAt(
+        const Duration(hours: 2, minutes: 30),
+        carbs: 80,
+        bolus: 4,
+      );
+
+      expect(cover([meal]), 0);
+      expect(insulin.units([meal], now: now), greaterThan(0));
+    });
   });
 
   test('covered insulin never goes below zero', () {
