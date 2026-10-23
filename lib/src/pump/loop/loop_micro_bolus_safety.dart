@@ -94,7 +94,7 @@ class LoopMicroBolusSafety {
       return false;
     }
     if (glucose.wasAtOrBelow(
-      LoopLimits.minSuspendBelowMgdl,
+      limits.suspendBelowMgdl,
       within: settings.pauseAfterLow,
     )) {
       return false;

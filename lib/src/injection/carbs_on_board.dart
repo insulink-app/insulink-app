@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:insulink/src/injection/active_insulin.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 
 /// Carbohydrate from logged meals that has not reached the blood yet — "carbs on
@@ -12,16 +15,37 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 /// is off errs toward FEWER pending carbs, which only ever lowers a dose. Upgrade
 /// path if it proves too coarse: a per-meal absorption speed on [Meal].
 class CarbsOnBoard {
-  const CarbsOnBoard({this.absorption = const Duration(hours: 2)});
+  const CarbsOnBoard();
 
   /// How long a logged meal is assumed to take to be absorbed.
-  final Duration absorption;
+  static const Duration absorption = Duration(hours: 2);
 
   /// Grams across [meals] still to be absorbed at [now] (defaults to the
   /// current time).
   double grams(List<Meal> meals, {DateTime? now}) {
     final at = now ?? DateTime.now();
     return meals.fold(0, (sum, meal) => sum + _remaining(meal, at));
+  }
+
+  /// The insulin the unabsorbed carbs of [meals] still call for at
+  /// [carbFactor] grams per unit — what the loop must not read as correction.
+  ///
+  /// Each meal is capped at what is left of its OWN bolus under [insulin], so
+  /// carbs eaten with less bolus than they call for (a snack treating a low)
+  /// can never cancel insulin they were not dosed with, such as what the loop
+  /// added itself. Carbs gone after [absorption] while the bolus still acts
+  /// leave that rest counted as correction, the side that asks for less.
+  double coverUnits(
+    List<Meal> meals, {
+    required int carbFactor,
+    required ActiveInsulin insulin,
+    DateTime? now,
+  }) {
+    final at = now ?? DateTime.now();
+    return meals.fold(0, (sum, meal) {
+      final carbUnits = _remaining(meal, at) / carbFactor;
+      return sum + min(carbUnits, insulin.units([meal], now: at));
+    });
   }
 
   double _remaining(Meal meal, DateTime at) {

@@ -79,10 +79,9 @@ class PodLoopRunner {
   final Future<double> Function(Duration insulinDuration) readMealIob;
 
   /// The insulin still matched by logged carbs not yet absorbed, in units
-  /// ([LoopSafety.decide]'s `carbCoveredUnits`). The carbs are spread over the
-  /// same [insulinDuration] as the insulin, so a meal bolus that fits its
-  /// carbs nets to nothing for its whole action and only the part above or
-  /// below them counts as correction.
+  /// ([LoopSafety.decide]'s `carbCoveredUnits`). Each meal covers at most its
+  /// own remaining bolus, so a meal bolus that fits its carbs nets to nothing
+  /// while they absorb, and carbs never hide insulin the loop added itself.
   final Future<double> Function(Duration insulinDuration) readCarbCover;
 
   static Future<double> _noCarbCover(Duration insulinDuration) async => 0;

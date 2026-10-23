@@ -51,10 +51,11 @@ now and the stop threshold, after the insulin already on board.
 No micro bolus at all when it is switched off, when the rate came out at zero
 (every suspension), below the user's glucose threshold, on a level or falling
 trend while "only while rising" is set, inside the user's minimum interval, or
-**within the pause after a low**: any reading at or below 70 mg/dL in the
-last 90 minutes (setting). It used to be the stop threshold, but that sits as
-high as 100 to 120 for some users, and an ordinary value before a meal then
-blocked micro boluses for the whole rise after it. The rise after treating a low is sugar eaten on
+**within the pause after a low**: any reading at or below the stop threshold
+in the last 90 minutes (setting). An ordinary value before a meal at a high
+stop threshold then blocks micro boluses for the rise after it; that is the
+accepted price. A fixed 70 mg/dL was tried and let micro boluses resume after
+readings the user's own threshold calls low. The rise after treating a low is sugar eaten on
 purpose; read as a trend it would be corrected straight back into the next low.
 Readings under 30 that the trend ignores still count as a low here. For this the
 service hands `LoopGlucose` three hours of history (`LoopGlucose.lookback`), and
