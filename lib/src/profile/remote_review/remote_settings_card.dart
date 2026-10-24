@@ -66,9 +66,22 @@ class _RemoteSettingsCardState extends State<RemoteSettingsCard> {
       return;
     }
     await _review.apply();
-    if (mounted) {
-      InsulinkApp.reload(context);
+    if (!mounted) {
+      return;
     }
+    _clear();
+    InsulinkApp.reload(context);
+  }
+
+  /// Takes the card away once the held settings are dealt with. The reload
+  /// after applying rebuilds the data providers but NOT this page (the
+  /// navigator survives it on purpose), so the card has to clear itself or it
+  /// stays on screen, greyed out, for good.
+  void _clear() {
+    setState(() {
+      _busy = false;
+      _groups = const [];
+    });
   }
 
   Future<bool> _confirmed() async {
@@ -90,10 +103,7 @@ class _RemoteSettingsCardState extends State<RemoteSettingsCard> {
     }
     await ProfileSettings().push(context);
     if (mounted) {
-      setState(() {
-        _busy = false;
-        _groups = const [];
-      });
+      _clear();
     }
   }
 }
