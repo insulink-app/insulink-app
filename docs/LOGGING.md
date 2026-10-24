@@ -17,6 +17,11 @@ own `debugPrint`, so the gate is applied at every entry point: `main`,
 `startCallback` (the foreground service) and the two notification action
 callbacks in `alarms.dart`. A new `@pragma('vm:entry-point')` needs it too.
 
+**flutter_blue_plus has its own outlet**, not `debugPrint`: it logs every scan,
+connect, write and notification by default, with device ids and characteristic
+payloads in the lines. `ReleaseLogGate` switches it off too
+(`FlutterBluePlus.setLogLevel`), so a release build is quiet on both outlets.
+
 Debug and profile builds keep printing, so `adb logcat | grep -i flutter`
 works while developing. The panel works in every build.
 

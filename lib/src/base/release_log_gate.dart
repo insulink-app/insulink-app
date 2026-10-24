@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 /// Keeps a release build from writing to the system log.
 ///
@@ -10,12 +11,18 @@ import 'package:flutter/foundation.dart';
 ///
 /// Each isolate has its own `debugPrint`, so every entry point applies this:
 /// `main`, the foreground service and the notification action callbacks.
+///
+/// flutter_blue_plus does not go through `debugPrint`: it logs every scan,
+/// connect, write and notification through its own channel, on by default, so
+/// it is switched off here as well. Its lines carry device ids and
+/// characteristic payloads of the sensor, the pod and the band.
 class ReleaseLogGate {
   const ReleaseLogGate();
 
   void apply() {
     if (kReleaseMode) {
       debugPrint = _discard;
+      FlutterBluePlus.setLogLevel(LogLevel.none);
     }
   }
 
