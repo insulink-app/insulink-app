@@ -81,6 +81,12 @@ class NotificationSetting {
     'profile.pod_temp_basal_beep.description',
   );
 
+  /// Whether the app warns when the Fitbit Air's battery runs low.
+  static const bandBatteryLow = NotificationSetting(
+    'band_battery_low_alert',
+    'profile.band_battery.description',
+  );
+
   Future<bool> load() async {
     final raw = await const FlutterSecureStorage().read(key: storageKey);
     if (raw == null) {

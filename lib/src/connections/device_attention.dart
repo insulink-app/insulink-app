@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
+import 'package:insulink/src/google_health/band/band_battery_state.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:provider/provider.dart';
@@ -11,14 +12,17 @@ import 'package:provider/provider.dart';
 /// - **Sensor:** none is paired.
 /// - **Pump:** the paired pod reports active alerts (the same ones the
 ///   overview's pod warnings show).
-/// - **Google Health:** connecting failed and is still unresolved.
+/// - **Google Health:** connecting failed and is still unresolved, or the
+///   Fitbit Air's battery is low.
 class DeviceAttention {
   /// Watches the device states, so the caller rebuilds when one changes.
   DeviceAttention.of(BuildContext context) {
     final pod = context.watch<PodController>();
     sensor = !context.watch<CgmController>().hasSensor;
     pump = pod.hasPod && (pod.status?.activeAlerts.isNotEmpty ?? false);
-    googleHealth = context.watch<GoogleHealthState>().connectFailure != null;
+    googleHealth =
+        context.watch<GoogleHealthState>().connectFailure != null ||
+        context.watch<BandBatteryState>().low;
   }
 
   late final bool sensor;

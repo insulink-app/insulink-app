@@ -5,6 +5,7 @@ import 'package:insulink/src/connections/device_links.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/connections/history/device_history_page.dart';
 import 'package:insulink/src/connections/history/device_history_sync.dart';
+import 'package:insulink/src/google_health/band/band_test_button.dart';
 import 'package:insulink/src/google_health/google_health_body.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -114,6 +115,7 @@ class ConnectionsBodyContent extends StatelessWidget {
           icon: PhosphorIconsBold.watch,
           labelKey: "google_health.label",
           page: const GoogleHealthBodyContent(),
+          actions: const [BandTestButton()],
           link: links.googleHealth,
         ),
       ],

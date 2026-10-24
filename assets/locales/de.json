@@ -771,6 +771,11 @@
       "high": "Hoch ab",
       "note": "Ab „Erhöht ab“ hebt das Puls-Diagramm die Werte violett hervor.",
       "save": "Speichern"
+    },
+    "band": {
+      "battery": "Akku",
+      "charging": "(lädt)",
+      "test": "Vibration testen"
     }
   },
   "connections": {
@@ -1167,7 +1172,6 @@
   },
   "profile": {
     "label": "Profil",
-    "settings": "Einstellungen",
     "sport_goals": "Sportziele",
     "nutrition_goals": "Ernährungsziele",
     "sleep": "Schlaf",
@@ -1373,13 +1377,11 @@
     "search": {
       "_": "Einstellungen suchen",
       "empty": "Keine Einstellung gefunden",
-      "language": "sprache deutsch englisch flagge",
-      "theme": "design darstellung hell dunkel farbe modus erscheinungsbild",
       "glucose": "glukose zucker einheit zielbereich grenzwerte alarm mmol mgdl",
       "bolus": "bolus insulin korrektur kohlenhydrate faktor maximum maximaler grenze dauer wirkdauer aktives",
       "basal": "basalrate basal profil kurve omnipod pod insulin stunde",
       "body": "körpermaße schrittlänge körpergröße größe bmi gewicht schritte distanz",
-      "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose ablauf halbzeit halbwertszeit sensor training pod pumpe insulin restmenge",
+      "notification": "benachrichtigung mitteilung ton alarm verbindung live glukose ablauf halbzeit halbwertszeit sensor training pod pumpe insulin restmenge fitbit armband vibration akku",
       "alarmtone": "alarmton ton töne klang melodie klingelton kurz niedrig hoch dringend vorwarnung aus stumm lautlos",
       "silent": "stumm lautlos ruhe stören nicht dnd ton töne vibration",
       "developer": "entwickler debug logs erweitert protokoll",
@@ -1392,7 +1394,9 @@
       "loop": "automatische abgabe automatik loop closed loop insulin",
       "security": "fingerabdruck biometrie biometrisch sperre sperren pin sicherheit entsperren gesichert app start",
       "backup": "backup sicherung datensicherung export speichern daten datei herunterladen wiederherstellen archiv kopie",
-      "activity_mode": "sport sportmodus training ausdauer kraft kraftsport laufen radfahren gehen routine workout basal zielwert"
+      "activity_mode": "sport sportmodus training ausdauer kraft kraftsport laufen radfahren gehen routine workout basal zielwert",
+      "appearance": "sprache deutsch englisch flagge design darstellung hell dunkel farbe modus erscheinungsbild",
+      "night": "nacht nachtmodus schlaf puls armband vibration partner"
     },
     "prediction": {
       "_": "Vorhersage",
@@ -1526,7 +1530,47 @@
       "enabled": "Sportmodus verwenden",
       "on_overview": "Auswahl auf der Übersicht zeigen"
     },
-    "trash": "Papierkorb"
+    "trash": "Papierkorb",
+    "band_vibration": {
+      "legend": "Doppelpuls heißt Unterzucker, Einzelpuls Überzucker. Vorwarnung einmal, Warnung zweimal, dringend dreimal. Die Pulse kommen einige Sekunden auseinander.",
+      "preview": "Muster am Armband abspielen"
+    },
+    "band_battery": {
+      "description": "Warnen, wenn der Akku der Fitbit Air schwach ist"
+    },
+    "group": {
+      "therapy": "Therapie",
+      "alerts": "Alarme",
+      "body": "Körper und Ziele",
+      "app": "App"
+    },
+    "appearance": "Sprache und Darstellung",
+    "notification_group": {
+      "display": "Anzeige",
+      "glucose": "Glukose",
+      "sensor": "Sensor",
+      "pump": "Pumpe",
+      "band": "Fitbit Air",
+      "training": "Training"
+    },
+    "night": {
+      "_": "Nachtmodus",
+      "description": "Nachts vibrieren Warnungen und Vorwarnungen nur am Armband, das Handy bleibt still. Dringende Alarme klingeln immer. Erreicht die Vibration das Armband nicht, klingelt das Handy doch.",
+      "mode": {
+        "off": "Aus",
+        "on": "An",
+        "auto": "Automatisch"
+      },
+      "threshold": {
+        "_": "Puls, unter dem du schläfst",
+        "value": "unter # bpm"
+      },
+      "auto_hint": "Aktiv, wenn dein Puls 20 Minuten lang darunter liegt. Endet, sobald er deutlich steigt oder das Armband keinen Puls mehr liefert.",
+      "status": {
+        "asleep": "Gerade erkannt: Nacht",
+        "awake": "Gerade erkannt: wach"
+      }
+    }
   },
   "injection": {
     "title": "Bolusrechner",
@@ -1701,6 +1745,10 @@
       "loop_stopped": {
         "title": "Automatik beendet"
       }
+    },
+    "band_battery": {
+      "title": "Akku der Fitbit Air schwach",
+      "body": "Deine Fitbit Air hat noch #%. Lade sie, damit Alarme weiter am Handgelenk ankommen."
     }
   },
   "hba1c": {
