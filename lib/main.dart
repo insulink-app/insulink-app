@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:insulink/src/base/release_logging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -79,6 +80,7 @@ typedef AppPreferences = ({
 /// ([LaunchHold]), so the launch hands over straight to that page.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  silenceLogsInRelease();
   const LaunchHold().hold();
   await Locales.init(["de", "en"]);
   await VendorKeys.ensureLoaded();

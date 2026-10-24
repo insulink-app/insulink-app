@@ -46,12 +46,14 @@ import '../../profile/bolus/profile_bolus_state.dart';
 import '../../libre3/libre3_connection.dart';
 import '../../libre3/libre3_crypto.dart';
 import '../../vendor_keys/vendor_keys.dart';
+import '../../base/release_logging.dart';
 
 /// Entry point for the foreground-service isolate. Must be a top-level function
 /// annotated `vm:entry-point` so it survives tree-shaking and can be invoked by
 /// the native service after the UI/activity (and its isolate) are gone.
 @pragma('vm:entry-point')
 void startCallback() {
+  silenceLogsInRelease();
   FlutterForegroundTask.setTaskHandler(CgmTaskHandler());
 }
 

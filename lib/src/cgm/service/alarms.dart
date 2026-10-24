@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'audio_output.dart';
+import '../../base/release_logging.dart';
 import '../../injection/insulin_on_board.dart';
 import '../../localization/service_strings.dart';
 import '../../nutrition/meal/meal_store.dart';
@@ -41,6 +42,7 @@ const String _trainingRejectAction = 'training_reject';
 /// watchdog tick, and the UI re-reads pending on its next resume.
 @pragma('vm:entry-point')
 void trainingNotificationAction(NotificationResponse response) {
+  silenceLogsInRelease();
   final payload = response.payload;
   if (payload == null || payload.isEmpty) {
     return;
@@ -66,6 +68,7 @@ void trainingNotificationAction(NotificationResponse response) {
 /// `flutter_local_notifications` takes exactly one callback per isolate.
 @pragma('vm:entry-point')
 void serviceNotificationAction(NotificationResponse response) {
+  silenceLogsInRelease();
   final actionId = response.actionId;
   if (actionId == advisoryCarbsAction || actionId == advisoryBolusAction) {
     _advisoryNotificationAction(actionId!, response.payload);
