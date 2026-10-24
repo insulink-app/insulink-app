@@ -52,6 +52,11 @@ class GoogleHealthStatusBox extends StatelessWidget {
           ),
           _row(
             context,
+            'google_health.signal_strength',
+            _unit(health.bandRssi, 'dBm'),
+          ),
+          _row(
+            context,
             'google_health.sleep',
             formatSleepMinutes(health.lastSleepMinutes),
           ),

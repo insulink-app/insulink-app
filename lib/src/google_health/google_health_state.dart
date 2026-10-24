@@ -43,6 +43,7 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
   List<GoogleHealthDay> _archive;
   int? _latestHr;
   int? _latestHrAtMs;
+  int? _bandRssi;
   Timer? _liveTimer;
   Timer? _metricsTimer;
 
@@ -123,6 +124,7 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
     if (_bleMonitor.isRunning) {
       unawaited(_bleMonitor.stop());
     }
+    _bandRssi = data['rssi'] as int?;
     _applyLiveHr(data['v'] as int?, data['at'] as int?);
   }
 
@@ -148,6 +150,7 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
   /// monitor change (bpm AND status) so the tile's pulse tracks the live/idle
   /// state, not just fresh values.
   void _onBleHr() {
+    _bandRssi = _bleMonitor.rssi;
     _applyLiveHr(
       _bleMonitor.bpm,
       _bleMonitor.lastUpdate?.millisecondsSinceEpoch,
@@ -245,6 +248,10 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
   bool get busy => _busy;
   List<GoogleHealthDay> get archive => _archive;
   int? get latestHr => _latestHr;
+
+  /// The band link's signal strength in dBm, only while its pulse is live: an
+  /// RSSI from a link that has since dropped would read as a current one.
+  int? get bandRssi => hasLiveHr ? _bandRssi : null;
   int? get todayRestingHr => _latestOf((day) => day.restingHr);
   int? get lastSleepMinutes => _latestOf((day) => day.sleepMinutes);
   int? get latestRespiratoryRate => _latestOf((day) => day.respiratoryRate);

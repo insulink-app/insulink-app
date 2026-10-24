@@ -926,9 +926,10 @@ class CgmTaskHandler extends TaskHandler {
       't': 'hr',
       'v': bpm,
       'at': at.millisecondsSinceEpoch,
+      'rssi': monitor!.rssi,
     });
     PulseSync().pushLive(bpm);
-    unawaited(_flushBackgroundPulse(monitor!));
+    unawaited(_flushBackgroundPulse(monitor));
   }
 
   /// Persist + sync the band samples buffered since the last flush — once a

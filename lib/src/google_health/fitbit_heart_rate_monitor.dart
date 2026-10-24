@@ -41,6 +41,12 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
 
   int? bpm;
   DateTime? lastUpdate;
+
+  /// Signal strength of the band link in dBm, re-read at most every
+  /// [_rssiEvery] while frames arrive. Null until the first read lands.
+  int? rssi;
+  DateTime? _rssiReadAt;
+  static const _rssiEvery = Duration(seconds: 10);
   FitbitHrStatus status = FitbitHrStatus.idle;
   String message = '';
 
@@ -397,7 +403,26 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
     bpm = sample.bpm;
     lastUpdate = now;
     _recordLive(sample.bpm, now);
+    unawaited(_refreshRssi(now));
     _set(FitbitHrStatus.streaming, 'Live heart rate.');
+  }
+
+  /// Reads the link's RSSI, throttled to [_rssiEvery] so the ~1 Hz frames do
+  /// not each cost a GATT round trip. Best-effort: a failed read keeps the last
+  /// value.
+  Future<void> _refreshRssi(DateTime now) async {
+    final device = _device;
+    final readAt = _rssiReadAt;
+    if (device == null ||
+        (readAt != null && now.difference(readAt) < _rssiEvery)) {
+      return;
+    }
+    _rssiReadAt = now;
+    try {
+      rssi = await device.readRssi();
+    } catch (error) {
+      debugPrint('[fitbit-hr] readRssi failed: $error');
+    }
   }
 
   /// Appends to [liveHistory], thinned to one point per 15 s and pruned to the
@@ -437,6 +462,8 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
       await _device?.disconnect();
     } catch (_) {}
     _device = null;
+    rssi = null;
+    _rssiReadAt = null;
     status = FitbitHrStatus.idle;
   }
 

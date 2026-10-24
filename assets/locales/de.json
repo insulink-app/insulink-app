@@ -702,6 +702,7 @@
     "sleep": "Schlaf",
     "heart_rate": "Herzfrequenz",
     "respiratory_rate": "Atemfrequenz",
+    "signal_strength": "Signalstärke",
     "status": {
       "connected": "Verbunden",
       "disconnected": "Nicht verbunden",
