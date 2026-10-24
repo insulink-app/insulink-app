@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'band_device_info.dart';
 import 'heart_rate_measurement.dart';
 
 /// Where the live-BLE reader is in its scan → connect → stream flow. Surfaced in
@@ -47,6 +48,9 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
   int? rssi;
   DateTime? _rssiReadAt;
   static const _rssiEvery = Duration(seconds: 10);
+
+  /// Model, serial and firmware of the band, read once per connect.
+  BandDeviceInfo? deviceInfo;
   FitbitHrStatus status = FitbitHrStatus.idle;
   String message = '';
 
@@ -345,6 +349,7 @@ class FitbitHeartRateMonitor extends ChangeNotifier {
       _valueSub = characteristic.onValueReceived.listen(_onValue);
       device.cancelWhenDisconnected(_valueSub!);
       _lastEmptyScanAt = null;
+      deviceInfo = await BandDeviceInfo.read(device) ?? deviceInfo;
       _set(FitbitHrStatus.connected, 'Connected — put the band on your wrist.');
     } catch (error) {
       // Stand down instead of hammering: an unreachable band (out of range, or

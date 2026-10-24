@@ -703,6 +703,12 @@
     "heart_rate": "Herzfrequenz",
     "respiratory_rate": "Atemfrequenz",
     "signal_strength": "Signalstärke",
+    "band": {
+      "_": "Armband",
+      "model": "Modell",
+      "serial": "Seriennummer",
+      "firmware": "Firmware"
+    },
     "status": {
       "connected": "Verbunden",
       "disconnected": "Nicht verbunden",

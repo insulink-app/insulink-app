@@ -703,6 +703,12 @@
     "heart_rate": "Heart rate",
     "respiratory_rate": "Respiratory rate",
     "signal_strength": "Signal strength",
+    "band": {
+      "_": "Band",
+      "model": "Model",
+      "serial": "Serial number",
+      "firmware": "Firmware"
+    },
     "status": {
       "connected": "Connected",
       "disconnected": "Not connected",

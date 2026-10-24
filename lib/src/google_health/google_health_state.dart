@@ -6,6 +6,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:insulink/src/cgm/service/service_presence.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'band_device_info.dart';
 import 'fitbit_heart_rate_monitor.dart';
 import 'google_health_importer.dart';
 import 'google_health_models.dart';
@@ -44,6 +45,7 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
   int? _latestHr;
   int? _latestHrAtMs;
   int? _bandRssi;
+  BandDeviceInfo? _bandInfo;
   Timer? _liveTimer;
   Timer? _metricsTimer;
 
@@ -125,6 +127,7 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
       unawaited(_bleMonitor.stop());
     }
     _bandRssi = data['rssi'] as int?;
+    _adoptBandInfo(BandDeviceInfo.fromJson(data['info']));
     _applyLiveHr(data['v'] as int?, data['at'] as int?);
   }
 
@@ -151,6 +154,7 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
   /// state, not just fresh values.
   void _onBleHr() {
     _bandRssi = _bleMonitor.rssi;
+    _adoptBandInfo(_bleMonitor.deviceInfo);
     _applyLiveHr(
       _bleMonitor.bpm,
       _bleMonitor.lastUpdate?.millisecondsSinceEpoch,
@@ -252,6 +256,21 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
   /// The band link's signal strength in dBm, only while its pulse is live: an
   /// RSSI from a link that has since dropped would read as a current one.
   int? get bandRssi => hasLiveHr ? _bandRssi : null;
+
+  /// The band's model, serial and firmware as last read off it. Kept across
+  /// disconnects and restarts: none of it changes while the band is away.
+  BandDeviceInfo? get bandInfo => _bandInfo;
+
+  /// Takes a freshly read [info] and persists it, if it is new.
+  void _adoptBandInfo(BandDeviceInfo? info) {
+    if (info == null || jsonEncode(info) == jsonEncode(_bandInfo)) {
+      return;
+    }
+    _bandInfo = info;
+    notifyListeners();
+    unawaited(_persist());
+  }
+
   int? get todayRestingHr => _latestOf((day) => day.restingHr);
   int? get lastSleepMinutes => _latestOf((day) => day.sleepMinutes);
   int? get latestRespiratoryRate => _latestOf((day) => day.respiratoryRate);
@@ -380,6 +399,7 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
         'days': [for (final day in _archive) day.toJson()],
         'hr': _latestHr,
         'hrAt': _latestHrAtMs,
+        'band': _bandInfo?.toJson(),
       }),
     );
   }
@@ -414,6 +434,7 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
     var archive = <GoogleHealthDay>[];
     int? latestHr;
     int? latestHrAtMs;
+    BandDeviceInfo? bandInfo;
     if (raw != null) {
       final map = jsonDecode(raw) as Map<String, dynamic>;
       archive = [
@@ -422,7 +443,9 @@ class GoogleHealthState extends ChangeNotifier with WidgetsBindingObserver {
       ];
       latestHr = map['hr'] as int?;
       latestHrAtMs = map['hrAt'] as int?;
+      bandInfo = BandDeviceInfo.fromJson(map['band']);
     }
-    return GoogleHealthState(connected, archive, latestHr, latestHrAtMs);
+    return GoogleHealthState(connected, archive, latestHr, latestHrAtMs)
+      .._bandInfo = bandInfo;
   }
 }

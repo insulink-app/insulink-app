@@ -927,6 +927,7 @@ class CgmTaskHandler extends TaskHandler {
       'v': bpm,
       'at': at.millisecondsSinceEpoch,
       'rssi': monitor!.rssi,
+      'info': monitor.deviceInfo?.toJson(),
     });
     PulseSync().pushLive(bpm);
     unawaited(_flushBackgroundPulse(monitor));
