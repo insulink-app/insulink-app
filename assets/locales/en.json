@@ -704,10 +704,13 @@
     "respiratory_rate": "Respiratory rate",
     "signal_strength": "Signal strength",
     "band": {
-      "_": "Band",
+      "_": "Fitbit Air",
       "model": "Model",
       "serial": "Serial number",
-      "firmware": "Firmware"
+      "firmware": "Firmware",
+      "battery": "Battery",
+      "charging": "(charging)",
+      "test": "Test vibration"
     },
     "status": {
       "connected": "Connected",
@@ -771,11 +774,6 @@
       "high": "High from",
       "note": "From \"Elevated from\" on, the pulse chart highlights values in violet.",
       "save": "Save"
-    },
-    "band": {
-      "battery": "Battery",
-      "charging": "(charging)",
-      "test": "Test vibration"
     }
   },
   "connections": {

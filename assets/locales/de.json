@@ -704,10 +704,13 @@
     "respiratory_rate": "Atemfrequenz",
     "signal_strength": "Signalstärke",
     "band": {
-      "_": "Armband",
+      "_": "Fitbit Air",
       "model": "Modell",
       "serial": "Seriennummer",
-      "firmware": "Firmware"
+      "firmware": "Firmware",
+      "battery": "Akku",
+      "charging": "(lädt)",
+      "test": "Vibration testen"
     },
     "status": {
       "connected": "Verbunden",
@@ -771,11 +774,6 @@
       "high": "Hoch ab",
       "note": "Ab „Erhöht ab“ hebt das Puls-Diagramm die Werte violett hervor.",
       "save": "Speichern"
-    },
-    "band": {
-      "battery": "Akku",
-      "charging": "(lädt)",
-      "test": "Vibration testen"
     }
   },
   "connections": {
