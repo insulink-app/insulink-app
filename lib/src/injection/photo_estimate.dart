@@ -25,9 +25,10 @@ class PhotoEstimate {
     this.photoId,
   });
 
-  /// The model waits on the server for up to 60 s, plus the upload; well above
-  /// the 10 s every other request gets.
-  static const _timeout = Duration(seconds: 75);
+  /// The model runs on the server for up to 120 s (a branded product is looked
+  /// up on the web), behind a 150 s proxy, plus the upload; well above the 10 s
+  /// every other request gets.
+  static const _timeout = Duration(seconds: 160);
 
   final String name;
   final double grams;
