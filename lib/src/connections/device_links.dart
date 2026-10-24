@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/connections/device_attention.dart';
+import 'package:insulink/src/google_health/band/band_battery_state.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:provider/provider.dart';
@@ -12,10 +13,13 @@ enum LinkState { active, attention, idle }
 /// One connection as the connections page shows it: its state (the dot) and
 /// the line under its name, the device or that none is paired.
 class DeviceLink {
-  const DeviceLink(this.state, this.detailKey);
+  const DeviceLink(this.state, this.detailKey, {this.detailSuffix = ''});
 
   final LinkState state;
   final String detailKey;
+
+  /// Appended to the line as it is, e.g. the band's battery (" · 62 %").
+  final String detailSuffix;
 
   /// Counted in "x von y aktiv": set up, or asking for the user.
   bool get counted => state != LinkState.idle;
@@ -41,11 +45,16 @@ class DeviceLinks {
       'pump.type.dash',
       'connections.not_paired',
     );
-    googleHealth = _link(
+    final healthLink = _link(
       health,
       attention.googleHealth,
       'connections.band',
       'connections.not_connected',
+    );
+    googleHealth = DeviceLink(
+      healthLink.state,
+      healthLink.detailKey,
+      detailSuffix: _batterySuffix(context.watch<BandBatteryState>()),
     );
   }
 
@@ -60,6 +69,12 @@ class DeviceLinks {
   int get attentionCount =>
       all.where((link) => link.state == LinkState.attention).length;
   int get countedCount => all.where((link) => link.counted).length;
+
+  /// The band's battery after the device name, once one has been read.
+  String _batterySuffix(BandBatteryState band) {
+    final percent = band.battery?.percent;
+    return band.paired && percent != null ? ' · $percent %' : '';
+  }
 
   String _sensorKey(SensorType type) =>
       type == SensorType.abbottLibre3 ? 'sensor.type.libre3' : 'sensor.type.g7';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/device_head.dart';
+import 'package:insulink/src/google_health/band/band_battery_bar.dart';
 import 'package:insulink/src/google_health/google_health_state.dart';
 import 'package:insulink/src/google_health/google_health_status_box.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -29,6 +30,7 @@ class GoogleHealthBodyContent extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: _head(context, health),
         ),
+        const BandBatteryBar(),
         GoogleHealthStatusBox(health: health),
       ],
     );

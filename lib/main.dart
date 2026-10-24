@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:fitbit_air/fitbit_air.dart';
+import 'package:insulink/src/google_health/band/band_battery_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -87,6 +89,7 @@ Future<void> main() async {
   // Required so the UI isolate can exchange data with the foreground-service
   // isolate that owns the BLE connection.
   FlutterForegroundTask.initCommunicationPort();
+  FitbitAir.registerLicenses();
   runApp(const InsulinkApp());
 }
 
@@ -268,6 +271,7 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.training),
         ChangeNotifierProvider(create: (_) => prefs.cardio),
         ChangeNotifierProvider(create: (_) => prefs.health..init()),
+        ChangeNotifierProvider(create: (_) => BandBatteryState()..load()),
         ChangeNotifierProvider(create: (_) => prefs.hba1c),
         ChangeNotifierProvider(create: (_) => prefs.todayLayout),
         ChangeNotifierProvider(create: (_) => prefs.overviewLayout),

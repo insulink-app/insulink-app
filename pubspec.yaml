@@ -68,6 +68,7 @@ dependencies:
   local_auth: ^3.0.2
   phosphoricons_flutter: ^1.0.0
   camera: ^0.12.1
+  fitbit_air: ^0.2.0
 dependency_overrides:
   device_info_plus: ^13.2.0
 
