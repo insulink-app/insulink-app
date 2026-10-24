@@ -1064,10 +1064,10 @@ packages:
     dependency: "direct main"
     description:
       name: phosphoricons_flutter
-      sha256: "34e4a00cc1a4be87c60edfcfcd5de23c005dc69945a5d77e08d33e6d23c0e793"
+      sha256: "44e70a09de3027e40484d900089a8ee20ceade0b3cb9d39b9f3be649a9eadb20"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.1.1"
   platform:
     dependency: transitive
     description:
