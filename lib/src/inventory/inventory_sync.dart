@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:insulink/src/request/response_json.dart';
 
 import 'package:flutter/widgets.dart';
@@ -56,6 +55,11 @@ class InventorySync {
 
   /// Adopt the account's inventory into the local store (sign-in + cold start),
   /// unless a local change is still queued ([_unsent] — the server never saw it).
+  ///
+  /// Merged by id, never by content: keyed by the whole JSON, an item edited
+  /// locally (stock 5) and its older account copy (stock 4) counted as two
+  /// items, and the stale copy was appended as a duplicate whose +/- buttons
+  /// changed the first item with that id instead of itself.
   Future<void> pull(BuildContext? context) async {
     final response = await Request.get(
       url: '/inventory/items/find/',
@@ -78,7 +82,7 @@ class InventorySync {
       ],
       local: _store.load,
       save: _store.save,
-      keyOf: (item) => jsonEncode(item.toJson()),
+      keyOf: (item) => item.id,
     );
     if (merged) {
       push();

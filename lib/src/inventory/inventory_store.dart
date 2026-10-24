@@ -19,10 +19,21 @@ class InventoryStore {
     if (raw == null || raw.isEmpty) {
       return [];
     }
-    return (jsonDecode(raw) as List)
+    final items = (jsonDecode(raw) as List)
         .cast<Map<String, dynamic>>()
-        .map(InventoryItem.fromJson)
-        .toList();
+        .map(InventoryItem.fromJson);
+    return _withoutDuplicateIds(items);
+  }
+
+  /// One item per id, the first one kept. Repairs inventories that an earlier
+  /// content-keyed sync merge left with a stale copy appended at the end
+  /// ([InventorySync.pull]); the first is the local, newer one.
+  List<InventoryItem> _withoutDuplicateIds(Iterable<InventoryItem> items) {
+    final seen = <String>{};
+    return [
+      for (final item in items)
+        if (seen.add(item.id)) item,
+    ];
   }
 
   Future<void> save(List<InventoryItem> items) => _storage.write(

@@ -13,6 +13,9 @@ class InventoryState extends ChangeNotifier {
 
   InventoryState(this._store, this._items);
 
+  /// Counts local changes, so [refresh] can tell one happened while it read.
+  int _edits = 0;
+
   static Future<InventoryState> load() async {
     const store = InventoryStore();
     final state = InventoryState(store, await store.load());
@@ -24,8 +27,17 @@ class InventoryState extends ChangeNotifier {
   /// stock in the background (a new sensor auto-consumes one), which the UI's
   /// in-memory list can't see; the inventory page calls this on open so it
   /// shows the current stock. Elapsed-time consumption is applied here too.
+  ///
+  /// A change made while the store is being read wins over what was read: the
+  /// read began before it, so adopting it would undo the user's tap (the "+"
+  /// that sometimes did nothing right after opening the page). That change has
+  /// already saved the whole list, so the store matches what is shown.
   Future<void> refresh() async {
+    final editsBefore = _edits;
     final fresh = await _store.load();
+    if (_edits != editsBefore) {
+      return;
+    }
     _items
       ..clear()
       ..addAll(fresh);
@@ -102,6 +114,7 @@ class InventoryState extends ChangeNotifier {
   }
 
   Future<void> _persist() async {
+    _edits++;
     notifyListeners();
     await _store.save(_items);
     InventorySync().push();
