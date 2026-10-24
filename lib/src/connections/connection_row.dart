@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/status_icon.dart';
 import 'package:insulink/src/connections/device_links.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -76,8 +75,8 @@ class ConnectionRow extends StatelessWidget {
       spacing: 2,
       children: [
         Text(label, style: InkText.rowTitle.copyWith(fontSize: 17)),
-        LocaleText(
-          link.detailKey,
+        Text(
+          '${Locales.string(context, link.detailKey)}${link.detailSuffix}',
           style: InkText.label.copyWith(color: context.ink.muted),
         ),
       ],

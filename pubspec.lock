@@ -337,6 +337,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
+  fitbit_air:
+    dependency: "direct main"
+    description:
+      name: fitbit_air
+      sha256: "9f94683b44bd09612761b3be88f99b700926f379b3b7a812862cd9728ead59fa"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
   fixnum:
     dependency: transitive
     description:

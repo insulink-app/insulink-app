@@ -704,10 +704,13 @@
     "respiratory_rate": "Respiratory rate",
     "signal_strength": "Signal strength",
     "band": {
-      "_": "Band",
+      "_": "Fitbit Air",
       "model": "Model",
       "serial": "Serial number",
-      "firmware": "Firmware"
+      "firmware": "Firmware",
+      "battery": "Battery",
+      "charging": "(charging)",
+      "test": "Test vibration"
     },
     "status": {
       "connected": "Connected",
@@ -1167,7 +1170,6 @@
   },
   "profile": {
     "label": "Profile",
-    "settings": "Settings",
     "sport_goals": "Sport goals",
     "nutrition_goals": "Nutrition goals",
     "sleep": "Sleep",
@@ -1373,13 +1375,11 @@
     "search": {
       "_": "Search settings",
       "empty": "No setting found",
-      "language": "language german english flag",
-      "theme": "theme appearance light dark color mode display",
       "glucose": "glucose sugar unit target thresholds alarm mmol mgdl",
       "bolus": "bolus insulin correction carbs factor maximum limit cap duration active on board iob",
       "basal": "basal rate profile curve omnipod pod insulin hour",
       "body": "body metrics stride length height bmi weight steps distance",
-      "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training pod pump insulin reservoir",
+      "notification": "notification alert sound alarm connection live glucose expiry halftime half life sensor training pod pump insulin reservoir fitbit band vibration battery",
       "alarmtone": "alarm tone sound melody ring ringtone short low high urgent pre-warning off mute silent",
       "silent": "silent mute quiet do not disturb dnd tone sound vibration",
       "developer": "developer debug logs advanced",
@@ -1392,7 +1392,9 @@
       "loop": "automated delivery automation loop closed loop insulin",
       "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start",
       "backup": "backup export save data file download restore archive copy",
-      "activity_mode": "sport activity mode training endurance strength weights running cycling walking routine workout basal target"
+      "activity_mode": "sport activity mode training endurance strength weights running cycling walking routine workout basal target",
+      "appearance": "language german english flag theme appearance light dark color mode display",
+      "night": "night night mode sleep pulse band vibration partner"
     },
     "prediction": {
       "_": "Prediction",
@@ -1526,7 +1528,47 @@
       "enabled": "Use activity mode",
       "on_overview": "Show the choice on the overview"
     },
-    "trash": "Trash"
+    "trash": "Trash",
+    "band_vibration": {
+      "legend": "A double pulse means low, a single pulse high. Pre-warning once, warning twice, urgent three times. The pulses arrive a few seconds apart.",
+      "preview": "Play the pattern on the band"
+    },
+    "band_battery": {
+      "description": "Warn when the Fitbit Air battery is low"
+    },
+    "group": {
+      "therapy": "Therapy",
+      "alerts": "Alerts",
+      "body": "Body and goals",
+      "app": "App"
+    },
+    "appearance": "Language and appearance",
+    "notification_group": {
+      "display": "Display",
+      "glucose": "Glucose",
+      "sensor": "Sensor",
+      "pump": "Pump",
+      "band": "Fitbit Air",
+      "training": "Training"
+    },
+    "night": {
+      "_": "Night mode",
+      "description": "At night, warnings and pre-warnings only vibrate the band and the phone stays quiet. Urgent alarms always ring. If the vibration does not reach the band, the phone rings after all.",
+      "mode": {
+        "off": "Off",
+        "on": "On",
+        "auto": "Automatic"
+      },
+      "threshold": {
+        "_": "Pulse below which you sleep",
+        "value": "below # bpm"
+      },
+      "auto_hint": "On once your pulse has stayed below it for 20 minutes. Ends as soon as it clearly rises or the band stops sending a pulse.",
+      "status": {
+        "asleep": "Detected right now: night",
+        "awake": "Detected right now: awake"
+      }
+    }
   },
   "injection": {
     "title": "Bolus calculator",
@@ -1701,6 +1743,10 @@
       "loop_stopped": {
         "title": "Automation stopped"
       }
+    },
+    "band_battery": {
+      "title": "Fitbit Air battery low",
+      "body": "Your Fitbit Air is at #%. Charge it so alarms still reach your wrist."
     }
   },
   "hba1c": {

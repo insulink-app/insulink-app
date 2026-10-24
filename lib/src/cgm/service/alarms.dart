@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'audio_output.dart';
+import '../../google_health/band/band_haptics.dart';
+import '../../google_health/band/band_vibration_pattern.dart';
+import '../../profile/night/night_mode.dart';
 import '../../injection/insulin_on_board.dart';
 import '../../localization/service_strings.dart';
 import '../../nutrition/meal/meal_store.dart';
@@ -190,6 +193,7 @@ class G7AlarmManager {
   // its store so glucose/signal events are recorded.
   final CgmStore? _store;
   final ServiceStrings _strings = ServiceStrings();
+  final BandHaptics _bandHaptics = BandHaptics();
   G7AlarmLevel _last = G7AlarmLevel.none;
   bool _lowAdvisoryArmed = true;
   bool _highAdvisoryArmed = true;
@@ -215,6 +219,9 @@ class G7AlarmManager {
   /// Notification id for the report on a countermeasure accepted from it. Its
   /// own id so it does not replace an advisory that is still relevant.
   static const _advisoryOutcomeId = 105;
+
+  /// Notification id for the "Fitbit Air battery low" warning.
+  static const _bandBatteryId = 106;
 
   /// How often the shade is checked while a tone plays, to notice the alarm
   /// notification being swiped away ([_silenceWhenDismissed]). Short enough that
@@ -368,9 +375,11 @@ class G7AlarmManager {
       correctionUnits: _isHigh(level) ? await _correctionUnits(mgdl) : 0,
       mgdl: mgdl,
     );
-    if (!silent.mutesSound) {
-      await _playSound(level);
-    }
+    await _alert(
+      slotFor(level),
+      () => _playSound(level),
+      mutesSound: silent.mutesSound,
+    );
   }
 
   /// Take the glucose alarms out of the shade once glucose is back in range.
@@ -509,9 +518,11 @@ class G7AlarmManager {
       glucose,
     );
     await _showAdvisory(level, mgdl, advisory);
-    if (!silent.mutesSound) {
-      await _playAdvisorySound(level);
-    }
+    await _alert(
+      level == AdvisoryLevel.low ? AlarmSlot.advisoryLow : AlarmSlot.advisoryHigh,
+      () => _playAdvisorySound(level),
+      mutesSound: silent.mutesSound,
+    );
     if (level == AdvisoryLevel.low) {
       _lowAdvisoryArmed = false;
     } else {
@@ -816,7 +827,7 @@ class G7AlarmManager {
   }
 
   /// Fire a test alarm on demand from the settings UI: the low/high glucose
-  /// notification plus its tone, with a sample value. Bypasses the edge-trigger
+  /// notification plus its tone and the band buzz, with a sample value. Bypasses the edge-trigger
   /// and the silent gating so the user can preview exactly what an alarm looks
   /// and sounds like; the tone still respects the alarm-sound toggle.
   Future<void> fireTest({required bool high}) async {
@@ -825,6 +836,7 @@ class G7AlarmManager {
     final sampleMgdl = high ? 260 : 60;
     final trendPerMin = high ? 1.5 : -1.5;
     await _show(level, _formatValue(sampleMgdl, unit, trendPerMin));
+    unawaited(_bandHaptics.play(slotFor(level)));
     await _playSound(level);
   }
 
@@ -873,6 +885,24 @@ class G7AlarmManager {
         android: await _warningChannel(),
       ),
     );
+  }
+
+  /// Warn that the Fitbit Air's battery is low. Returns false while silent
+  /// mode holds notifications back, so the caller does not count it as given
+  /// and it still fires once silent mode ends (same rule as [checkExpiry]).
+  Future<bool> notifyBandBatteryLow(int percent) async {
+    if ((await ProfileSilentState.load()).mutesNotifications) {
+      return false;
+    }
+    await _plugin.show(
+      id: _bandBatteryId,
+      title: await _strings.get('alarm.band_battery.title'),
+      body: await _strings.format('alarm.band_battery.body', percent),
+      notificationDetails: NotificationDetails(
+        android: await _warningChannel(),
+      ),
+    );
+    return true;
   }
 
   /// Fire a one-shot "sensor expires soon" warning once less than 24 h of the
@@ -1197,6 +1227,38 @@ class G7AlarmManager {
         ),
       ],
     );
+  }
+
+  /// The band buzz and the phone tone for one alarm. The buzz always starts
+  /// (if that alarm's vibration is on); the tone follows the silent mode and
+  /// night mode. In night mode a non-urgent alarm rings only when its buzz did
+  /// not reach the band (switched off, band away, Bluetooth off), so night mode
+  /// can quiet an alarm but never swallow it.
+  Future<void> _alert(
+    AlarmSlot slot,
+    Future<void> Function() playTone, {
+    required bool mutesSound,
+  }) async {
+    final felt = _bandHaptics.play(slot);
+    if (mutesSound) {
+      unawaited(felt);
+      return;
+    }
+    if (!slot.urgent && await const NightMode().isActive()) {
+      unawaited(_toneUnlessFelt(felt, playTone));
+      return;
+    }
+    unawaited(felt);
+    await playTone();
+  }
+
+  Future<void> _toneUnlessFelt(
+    Future<bool> felt,
+    Future<void> Function() playTone,
+  ) async {
+    if (!await felt) {
+      await playTone();
+    }
   }
 
   /// Play the tone the user picked for this alarm through the ALARM stream,

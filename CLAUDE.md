@@ -726,6 +726,9 @@ the widget cannot drift away from the app on what is in range.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
 - `docs/LOGGING.md` — where log lines go, why a release build writes nothing
   to logcat, and what may never be logged.
+- `docs/FITBIT_AIR.md` — the Fitbit Air: one vibration pattern per alarm, its
+  battery warning (both through the third-party `fitbit_air` plugin), and the
+  night mode that moves non-urgent alarms from the phone to the band.
 - `docs/LOCALIZATION.md` — locale files, key naming, and `ServiceStrings`.
 - `docs/MAP.md` — the route map's tiles: why Esri Gray Canvas and not a keyed
   provider (CARTO now stamps "API KEY REQUIRED" across the tiles it still

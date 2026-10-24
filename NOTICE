@@ -32,6 +32,15 @@ Parts under AGPL-3.0
 | `lib/src/pump/` — the whole Omnipod DASH driver: protocol layout, magic constants, and the known-answer test vectors under `test/pump/` | [AndroidAPS](https://github.com/nightscout/AndroidAPS) (`pump/omnipod/common/bledriver`) | AGPL-3.0 |
 | `rust/src/api/x25519.rs` — X25519 for the pod pairing handshake | AndroidAPS (`X25519KeyGenerator.kt`, `KeyExchange.kt`) | AGPL-3.0 |
 
+Third-party library with its own notices
+----------------------------------------
+
+The `fitbit_air` plugin (Fitbit Air vibration and battery,
+`lib/src/google_health/band/`) is a dependency, not derived code. It is
+Apache-2.0 and bundles Golden Gate (Apache-2.0), Mbed TLS (Apache-2.0) and lwIP
+(BSD-3-Clause). lwIP requires its notice to be reproduced: `main.dart` calls
+`FitbitAir.registerLicenses()`, which adds all three to the app's licence page.
+
 Everything else is original Insulink code, licensed AGPL-3.0.
 
 What section 13 means in practice

@@ -7,53 +7,11 @@ import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/account/profile_account_box.dart';
 import 'package:insulink/src/profile/profile_settings.dart';
 import 'package:insulink/src/profile/profile_topic_page.dart';
-import 'package:insulink/src/profile/notifications/profile_alarm_sound_toggle.dart';
-import 'package:insulink/src/profile/notifications/profile_alarm_tone_picker.dart';
-import 'package:insulink/src/profile/body/profile_body_selection.dart';
-import 'package:insulink/src/profile/backup/profile_backup_export.dart';
-import 'package:insulink/src/profile/basal/profile_basal_selection.dart';
-import 'package:insulink/src/profile/battery/profile_battery_selection.dart';
-import 'package:insulink/src/profile/bolus/profile_bolus_selection.dart';
-import 'package:insulink/src/profile/notifications/profile_connection_toggle.dart';
-import 'package:insulink/src/profile/developer/developer_log_panel.dart';
-import 'package:insulink/src/profile/developer/profile_developer_toggle.dart';
-import 'package:insulink/src/profile/glucose/profile_glucose_selection.dart';
-import 'package:insulink/src/profile/language/profile_language_selection.dart';
-import 'package:insulink/src/profile/notifications/notification_setting.dart';
-import 'package:insulink/src/profile/notifications/notification_threshold.dart';
-import 'package:insulink/src/profile/notifications/notification_threshold_card.dart';
-import 'package:insulink/src/profile/tuning/basal_tuning_card.dart';
-import 'package:insulink/src/profile/tuning/factor_tuning_card.dart';
-import 'package:insulink/src/pump/loop/loop_micro_bolus_section.dart';
-import 'package:insulink/src/pump/loop/loop_settings.dart';
-import 'package:insulink/src/activity_mode/activity_mode_section.dart';
-import 'package:insulink/src/profile/notifications/notification_toggle.dart';
-import 'package:insulink/src/profile/notifications/profile_live_notification_toggle.dart';
-import 'package:insulink/src/profile/notifications/profile_lockscreen_toggle.dart';
-import 'package:insulink/src/profile/notifications/profile_notification_toggle.dart';
-import 'package:insulink/src/profile/prediction/profile_prediction_band_toggle.dart';
-import 'package:insulink/src/profile/prediction/profile_prediction_horizon.dart';
-import 'package:insulink/src/profile/prediction/profile_prediction_toggle.dart';
-import 'package:insulink/src/profile/security/profile_security_selection.dart';
-import 'package:insulink/src/profile/silent/profile_silent_selection.dart';
-import 'package:insulink/src/google_health/heart_rate_zones_editor.dart';
-import 'package:insulink/src/google_health/profile_sleep_targets_editor.dart';
-import 'package:insulink/src/nutrition/stats/nutrition_goals_editor.dart';
-import 'package:insulink/src/sport/activity/sport_goals_editor.dart';
-import 'package:insulink/src/profile/theme/profile_theme_selection.dart';
+import 'package:insulink/src/profile/profile_topics.dart';
 import 'package:insulink/src/trash/trash_list.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
-
-/// One profile topic in the overview: title, icon, search synonyms and the
-/// settings widgets shown on its sub-page.
-typedef ProfileTopic = ({
-  String titleKey,
-  IconData icon,
-  String searchKey,
-  List<Widget> Function() children,
-});
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -80,186 +38,6 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
-  /// The overview topics. Each links to a [ProfileTopicPage] with its settings.
-  List<ProfileTopic> get _topics => [
-    (
-      titleKey: "profile.language",
-      icon: PhosphorIconsBold.translate,
-      searchKey: "profile.search.language",
-      children: () => const [ProfileLanguageSelection()],
-    ),
-    (
-      titleKey: "profile.theme",
-      icon: PhosphorIconsBold.palette,
-      searchKey: "profile.search.theme",
-      children: () => const [ProfileThemeSelection()],
-    ),
-    (
-      titleKey: "profile.glucose",
-      icon: PhosphorIconsBold.drop,
-      searchKey: "profile.search.glucose",
-      children: () => const [ProfileGlucoseSelection()],
-    ),
-    (
-      titleKey: "profile.bolus",
-      icon: PhosphorIconsBold.pill,
-      searchKey: "profile.search.bolus",
-      children: () => const [
-        ProfileBolusSelection(),
-        SizedBox(height: 20),
-        FactorTuningCard(),
-      ],
-    ),
-    (
-      titleKey: "profile.basal",
-      icon: PhosphorIconsBold.chartLine,
-      searchKey: "profile.search.basal",
-      children: () => const [
-        ProfileBasalSelection(),
-        SizedBox(height: 20),
-        BasalTuningCard(),
-      ],
-    ),
-    (
-      titleKey: "profile.body",
-      icon: PhosphorIconsBold.ruler,
-      searchKey: "profile.search.body",
-      children: () => const [ProfileBodySelection()],
-    ),
-    (
-      titleKey: "profile.sport_goals",
-      icon: PhosphorIconsBold.flag,
-      searchKey: "profile.search.sport_goals",
-      children: () => const [SportGoalsEditor()],
-    ),
-    (
-      titleKey: "profile.nutrition_goals",
-      icon: PhosphorIconsBold.forkKnife,
-      searchKey: "profile.search.nutrition_goals",
-      children: () => const [NutritionGoalsEditor()],
-    ),
-    (
-      titleKey: "google_health.hr_zones.title",
-      icon: PhosphorIconsBold.heartbeat,
-      searchKey: "profile.search.hr_zones",
-      children: () => const [HeartRateZonesEditor()],
-    ),
-    (
-      titleKey: "profile.sleep",
-      icon: PhosphorIconsBold.moon,
-      searchKey: "profile.search.sleep",
-      children: () => const [ProfileSleepTargetsEditor()],
-    ),
-    (
-      titleKey: "profile.notification",
-      icon: PhosphorIconsBold.bell,
-      searchKey: "profile.search.notification",
-      children: () => const [
-        ProfileNotificationToggle(),
-        SizedBox(height: 10),
-        ProfileLiveNotificationToggle(),
-        SizedBox(height: 10),
-        ProfileLockscreenToggle(),
-        SizedBox(height: 10),
-        ProfileConnectionToggle(),
-        SizedBox(height: 10),
-        NotificationToggle(NotificationSetting.expiry),
-        SizedBox(height: 10),
-        NotificationToggle(NotificationSetting.halftime),
-        SizedBox(height: 10),
-        NotificationToggle(NotificationSetting.training),
-        SizedBox(height: 10),
-        NotificationToggle(NotificationSetting.advisory),
-        SizedBox(height: 10),
-        ProfileAlarmSoundToggle(),
-        SizedBox(height: 10),
-        NotificationToggle(NotificationSetting.podExpiry),
-        SizedBox(height: 10),
-        NotificationThresholdCard(NotificationThreshold.podExpiry),
-        SizedBox(height: 10),
-        NotificationToggle(NotificationSetting.podInsulin),
-        SizedBox(height: 10),
-        NotificationThresholdCard(NotificationThreshold.podInsulin),
-        NotificationToggle(NotificationSetting.podBolusBeep),
-        SizedBox(height: 10),
-        NotificationToggle(NotificationSetting.podTempBasalBeep),
-      ],
-    ),
-    (
-      titleKey: "profile.alarmtone",
-      icon: PhosphorIconsBold.speakerHigh,
-      searchKey: "profile.search.alarmtone",
-      children: () => const [ProfileAlarmTonePicker()],
-    ),
-    (
-      titleKey: "profile.loop",
-      icon: PhosphorIconsBold.repeat,
-      searchKey: "profile.search.loop",
-      children: () => const [
-        LocaleText("profile.loop.description", style: TextStyle(fontSize: 15)),
-        SizedBox(height: 12),
-        NotificationThresholdCard(LoopSettings.suspendBelow),
-        SizedBox(height: 10),
-        NotificationThresholdCard(LoopSettings.maxRate),
-        SizedBox(height: 10),
-        NotificationThresholdCard(LoopSettings.maxIob),
-        SizedBox(height: 16),
-        LoopMicroBolusSection(),
-      ],
-    ),
-    (
-      titleKey: "profile.activity_mode",
-      icon: PhosphorIconsBold.personSimpleRun,
-      searchKey: "profile.search.activity_mode",
-      children: () => const [ActivityModeSection()],
-    ),
-    (
-      titleKey: "profile.prediction",
-      icon: PhosphorIconsBold.chartLine,
-      searchKey: "profile.search.prediction",
-      children: () => const [
-        ProfilePredictionToggle(),
-        ProfilePredictionBandToggle(),
-        SizedBox(height: 10),
-        ProfilePredictionHorizon(),
-      ],
-    ),
-    (
-      titleKey: "profile.silent",
-      icon: PhosphorIconsBold.bellSlash,
-      searchKey: "profile.search.silent",
-      children: () => const [ProfileSilentSelection()],
-    ),
-    (
-      titleKey: "profile.battery",
-      icon: PhosphorIconsBold.batteryLow,
-      searchKey: "profile.search.battery",
-      children: () => const [ProfileBatterySelection()],
-    ),
-    (
-      titleKey: "profile.security",
-      icon: PhosphorIconsBold.fingerprint,
-      searchKey: "profile.search.security",
-      children: () => const [ProfileSecuritySelection()],
-    ),
-    (
-      titleKey: "profile.backup",
-      icon: PhosphorIconsBold.downloadSimple,
-      searchKey: "profile.search.backup",
-      children: () => const [ProfileBackupExport()],
-    ),
-    (
-      titleKey: "profile.developer",
-      icon: PhosphorIconsBold.code,
-      searchKey: "profile.search.developer",
-      children: () => const [
-        ProfileDeveloperToggle(),
-        Spacer(),
-        DeveloperLogPanel(),
-      ],
-    ),
-  ];
-
   bool _matches(ProfileTopic topic) {
     if (_query.isEmpty) {
       return true;
@@ -282,7 +60,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final searching = _query.isNotEmpty;
-    final visible = _topics.where(_matches).toList();
+    final visible = const ProfileTopicCatalog().all.where(_matches).toList();
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -319,16 +97,10 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 16),
             if (!searching) ...[
               const ProfileAccountBox(),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: SectionHeader(titleKey: 'profile.settings'),
-              ),
+              for (final group in const ProfileTopicCatalog().groups)
+                ..._groupPanel(group.titleKey, group.topics),
             ],
-            if (visible.isNotEmpty)
-              InkPanel.list(
-                radius: InkRadius.tile,
-                rows: [for (final topic in visible) _topicRow(topic)],
-              ),
+            if (searching && visible.isNotEmpty) _topicPanel(visible),
             if (searching && visible.isEmpty) _noResults(),
             if (!searching) _footer(),
           ],
@@ -351,6 +123,24 @@ class _ProfilePageState extends State<ProfilePage> {
                 onPressed: _search.clear,
               ),
       ),
+    );
+  }
+
+  /// A group of the overview: its header, then its topics in one panel.
+  List<Widget> _groupPanel(String titleKey, List<ProfileTopic> topics) {
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: SectionHeader(titleKey: titleKey),
+      ),
+      _topicPanel(topics),
+    ];
+  }
+
+  Widget _topicPanel(List<ProfileTopic> topics) {
+    return InkPanel.list(
+      radius: InkRadius.tile,
+      rows: [for (final topic in topics) _topicRow(topic)],
     );
   }
 

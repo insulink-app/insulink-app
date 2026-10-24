@@ -36,6 +36,8 @@ import '../cgm_store.dart';
 import '../../profile/profile_settings.dart';
 import '../../pump/pod_store.dart';
 import '../../pump/service/pod_alarms.dart';
+import '../../google_health/band/band_battery_watch.dart';
+import '../../profile/night/night_mode_detector.dart';
 import '../../pump/service/pod_monitor.dart';
 import '../../pump/loop/loop_glucose.dart';
 import '../../pump/loop/loop_runner.dart';
@@ -70,6 +72,8 @@ void startCallback() {
 class CgmTaskHandler extends TaskHandler {
   CgmConnection? _conn;
   G7AlarmManager? _alarms;
+  BandBatteryWatch? _bandBattery;
+  final NightModeDetector _nightDetector = NightModeDetector();
   CgmStore? _store;
   FlutterLocalNotificationsPlugin? _notifications;
   PodMonitor? _podMonitor;
@@ -450,6 +454,19 @@ class CgmTaskHandler extends TaskHandler {
     // which can't reach secure storage itself (see SportStore.recordTrainingDecision).
     unawaited(_applyTrainingDecisions());
     unawaited(_applyAdvisoryActions());
+    unawaited(_watchBandBattery());
+    unawaited(_nightDetector.refresh(DateTime.now()));
+  }
+
+  /// The Fitbit Air's hourly battery read and its low warning. Stands down with
+  /// the band while the battery saver pauses it.
+  Future<void> _watchBandBattery() async {
+    final alarms = _alarms;
+    if (alarms == null || _batteryMode.pausesBand) {
+      return;
+    }
+    final watch = _bandBattery ??= BandBatteryWatch(alarms.notifyBandBatteryLow);
+    await watch.tick();
   }
 
   /// Carry out the countermeasures accepted from a pre-warning notification.
@@ -922,6 +939,7 @@ class CgmTaskHandler extends TaskHandler {
     if (DateTime.now().difference(at) > _liveRelayMaxAge) {
       return;
     }
+    _nightDetector.onPulse(bpm, at);
     FlutterForegroundTask.sendDataToMain({
       't': 'hr',
       'v': bpm,
