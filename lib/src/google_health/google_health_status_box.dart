@@ -52,11 +52,17 @@ class GoogleHealthStatusBox extends StatelessWidget {
           ),
           _row(
             context,
+            'google_health.signal_strength',
+            _unit(health.bandRssi, 'dBm'),
+          ),
+          _row(
+            context,
             'google_health.sleep',
             formatSleepMinutes(health.lastSleepMinutes),
           ),
         ],
       ),
+      ..._band(context),
       const SizedBox(height: InkSpace.tileGap * 2),
       InkPanel.list(
         rows: [
@@ -103,6 +109,27 @@ class GoogleHealthStatusBox extends StatelessWidget {
         onPressed: health.busy ? null : () => health.connect(),
         icon: const Icon(PhosphorIconsBold.link, size: 20),
         label: LocaleText('google_health.connect'),
+      ),
+    ];
+  }
+
+  /// The band's own identity, under a header of its own, once it was read.
+  List<Widget> _band(BuildContext context) {
+    final info = health.bandInfo;
+    if (info == null) {
+      return const [];
+    }
+    return [
+      const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8),
+        child: SectionHeader(titleKey: 'google_health.band._'),
+      ),
+      InkPanel.list(
+        rows: [
+          _row(context, 'google_health.band.model', info.model ?? '–'),
+          _row(context, 'google_health.band.serial', info.serial ?? '–'),
+          _row(context, 'google_health.band.firmware', info.firmware ?? '–'),
+        ],
       ),
     ];
   }
