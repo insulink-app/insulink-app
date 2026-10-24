@@ -52,6 +52,30 @@ void main() {
     expect(state.items.first.stock, 8);
   });
 
+  test('a tap while the page re-reads the store is not overwritten', () async {
+    final state = await InventoryState.load();
+    await state.addOrUpdate(item('pods', stock: 5));
+
+    final reading = state.refresh();
+    await state.setStock('pods', 6);
+    await reading;
+
+    expect(state.items.single.stock, 6);
+    expect((await const InventoryStore().load()).single.stock, 6);
+  });
+
+  test('a duplicate id left by an old sync merge is dropped on load', () async {
+    final fresh = item('pods', stock: 5);
+    final stale = item('pods', stock: 4);
+    await const InventoryStore().save([fresh, item('sensors'), stale]);
+
+    final state = await InventoryState.load();
+    await state.setStock('pods', 6);
+
+    expect(state.items.map((entry) => entry.id), ['pods', 'sensors']);
+    expect(state.items.first.stock, 6);
+  });
+
   test('setStock clamps at zero and resets the decay anchor', () async {
     final state = await InventoryState.load();
     await state.addOrUpdate(item('pods', stock: 5, anchorMs: 0));
