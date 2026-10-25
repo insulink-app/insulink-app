@@ -11,8 +11,12 @@ import 'package:insulink/src/profile/notifications/notification_setting.dart';
 /// countable on the wrist.
 extension BandVibrationPattern on AlarmSlot {
   bool get doublePulse => switch (this) {
-    AlarmSlot.lowWarning || AlarmSlot.lowUrgent || AlarmSlot.advisoryLow => true,
-    AlarmSlot.highWarning || AlarmSlot.highUrgent || AlarmSlot.advisoryHigh => false,
+    AlarmSlot.lowWarning ||
+    AlarmSlot.lowUrgent ||
+    AlarmSlot.advisoryLow => true,
+    AlarmSlot.highWarning ||
+    AlarmSlot.highUrgent ||
+    AlarmSlot.advisoryHigh => false,
   };
 
   int get pulseGroups => switch (this) {
@@ -22,7 +26,8 @@ extension BandVibrationPattern on AlarmSlot {
   };
 
   /// Urgent alarms always ring the phone too, night mode or not.
-  bool get urgent => this == AlarmSlot.lowUrgent || this == AlarmSlot.highUrgent;
+  bool get urgent =>
+      this == AlarmSlot.lowUrgent || this == AlarmSlot.highUrgent;
 
   /// Whether this alarm buzzes the band at all; each one on its own, default
   /// ON. Labelled like its tone slot.

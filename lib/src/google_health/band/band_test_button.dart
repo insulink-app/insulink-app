@@ -37,14 +37,25 @@ class _BandTestButtonState extends State<BandTestButton> {
     return IconButton(
       tooltip: Locales.string(
         context,
-        widget.slot == null ? 'google_health.band.test' : 'profile.band_vibration.preview',
+        widget.slot == null
+            ? 'google_health.band.test'
+            : 'profile.band_vibration.preview',
       ),
       onPressed: _state == _PreviewState.busy ? null : _preview,
       icon: switch (_state) {
         _PreviewState.idle => const Icon(PhosphorIconsBold.vibrate),
-        _PreviewState.busy => const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-        _PreviewState.felt => Icon(PhosphorIconsBold.check, color: context.positive),
-        _PreviewState.failed => Icon(PhosphorIconsBold.warning, color: context.danger),
+        _PreviewState.busy => const SizedBox.square(
+          dimension: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        _PreviewState.felt => Icon(
+          PhosphorIconsBold.check,
+          color: context.positive,
+        ),
+        _PreviewState.failed => Icon(
+          PhosphorIconsBold.warning,
+          color: context.danger,
+        ),
       },
     );
   }
@@ -54,11 +65,16 @@ class _BandTestButtonState extends State<BandTestButton> {
     setState(() => _state = _PreviewState.busy);
     final slot = widget.slot;
     final haptics = BandHaptics();
-    final felt = await (slot == null ? haptics.vibrate() : haptics.preview(slot));
+    final felt = await (slot == null
+        ? haptics.vibrate()
+        : haptics.preview(slot));
     if (!mounted) {
       return;
     }
     setState(() => _state = felt ? _PreviewState.felt : _PreviewState.failed);
-    _reset = Timer(const Duration(seconds: 3), () => setState(() => _state = _PreviewState.idle));
+    _reset = Timer(
+      const Duration(seconds: 3),
+      () => setState(() => _state = _PreviewState.idle),
+    );
   }
 }
