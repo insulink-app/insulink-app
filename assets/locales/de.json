@@ -1526,7 +1526,23 @@
         "value": "# %"
       },
       "enabled": "Sportmodus verwenden",
-      "on_overview": "Auswahl auf der Übersicht zeigen"
+      "on_overview": "Auswahl auf der Übersicht zeigen",
+      "pulse_threshold": {
+        "_": "Puls für Ausdauer",
+        "value": "ab # bpm"
+      },
+      "recovery_target": {
+        "_": "Zielwert in der Erholung",
+        "value": "# mg/dL"
+      },
+      "recovery_basal": {
+        "_": "Basal in der Erholung",
+        "value": "# %"
+      },
+      "recovery_hours": {
+        "_": "Erholung nach Ausdauer",
+        "value": "# Std."
+      }
     },
     "trash": "Papierkorb",
     "band_vibration": {
@@ -1791,8 +1807,11 @@
       "manual": "von Hand gewählt bis #",
       "workout": "Routine läuft",
       "recording": "Training wird aufgezeichnet",
-      "detected": "Training erkannt"
-    }
+      "detected": "Training erkannt",
+      "pulse": "Puls über der Aktivitätsschwelle",
+      "recovery": "nach dem Training bis #"
+    },
+    "recovery": "Erholung"
   },
   "settings_review": {
     "title": "Geänderte Einstellungen aus deinem Konto",

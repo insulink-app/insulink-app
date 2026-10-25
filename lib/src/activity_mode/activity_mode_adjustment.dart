@@ -36,6 +36,11 @@ class ActivityModeAdjustment {
         mode: ActivityMode.strength,
         basalPercent: await ActivityModeSettings.strengthBasal.load(),
       ),
+      ActivityMode.recovery => ActivityModeAdjustment(
+        mode: ActivityMode.recovery,
+        targetMgdl: await ActivityModeSettings.recoveryTarget.load(),
+        basalPercent: await ActivityModeSettings.recoveryBasal.load(),
+      ),
     };
   }
 

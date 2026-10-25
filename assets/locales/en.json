@@ -1526,7 +1526,23 @@
         "value": "# %"
       },
       "enabled": "Use activity mode",
-      "on_overview": "Show the choice on the overview"
+      "on_overview": "Show the choice on the overview",
+      "pulse_threshold": {
+        "_": "Pulse for endurance",
+        "value": "from # bpm"
+      },
+      "recovery_target": {
+        "_": "Target during recovery",
+        "value": "# mg/dL"
+      },
+      "recovery_basal": {
+        "_": "Basal during recovery",
+        "value": "# %"
+      },
+      "recovery_hours": {
+        "_": "Recovery after endurance",
+        "value": "# h"
+      }
     },
     "trash": "Trash",
     "band_vibration": {
@@ -1791,8 +1807,11 @@
       "manual": "picked by hand until #",
       "workout": "routine running",
       "recording": "training being recorded",
-      "detected": "training detected"
-    }
+      "detected": "training detected",
+      "pulse": "pulse above the activity threshold",
+      "recovery": "after training until #"
+    },
+    "recovery": "Recovery"
   },
   "settings_review": {
     "title": "Changed settings from your account",

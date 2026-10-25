@@ -12,7 +12,8 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 /// Kept off the overview and the pump page on purpose: a mode that changes how
 /// insulin is dosed is a setting to reach for, not a control to brush past.
 /// Auto follows the training detection and running workouts; the other three
-/// pin a mode for [ActivityModeStore.manualFor]. Under the toggle one line says
+/// pin a mode for [ActivityModeStore.manualFor]. Recovery is not offered: it
+/// follows an endurance bout by itself, and Normal ends it early. Under the toggle one line says
 /// which mode is in force and why, because under Auto the toggle cannot.
 ///
 /// Re-reads storage every [_refreshEvery]: the detection that moves the mode
@@ -74,7 +75,8 @@ class _ActivityModeSelectorState extends State<ActivityModeSelector> {
           options: [
             (value: null, label: Locales.string(context, 'activity_mode.auto')),
             for (final mode in ActivityMode.values)
-              (value: mode, label: _modeName(context, mode)),
+              if (mode != ActivityMode.recovery)
+                (value: mode, label: _modeName(context, mode)),
           ],
         ),
         Text(
