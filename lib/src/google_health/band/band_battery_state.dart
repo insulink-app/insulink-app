@@ -1,6 +1,7 @@
 import 'package:fitbit_air/fitbit_air.dart';
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/google_health/band/band_battery.dart';
+import 'package:insulink/src/google_health/band/band_battery_forecast.dart';
 import 'package:insulink/src/google_health/band/band_battery_watch.dart';
 
 /// The Fitbit Air's battery as the UI shows it, provided app-wide so the
@@ -17,6 +18,14 @@ class BandBatteryState extends ChangeNotifier with WidgetsBindingObserver {
 
   bool paired = false;
   BandBattery? battery;
+  BandBatteryForecast? _forecast;
+
+  /// How long the battery should still last, null while it cannot be told.
+  Duration? get remaining {
+    final level = battery;
+    return level == null ? null : _forecast?.remaining(level);
+  }
+
   bool _disposed = false;
 
   /// At or below the warning line and not on the charger.
@@ -45,6 +54,7 @@ class BandBatteryState extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> load() async {
     paired = await _airPaired();
     battery = paired ? await BandBattery.load() : null;
+    _forecast = await BandBatteryForecast.load();
     _notify();
   }
 
@@ -54,6 +64,7 @@ class BandBatteryState extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     battery = await BandBattery.readFresh() ?? battery;
+    _forecast = await BandBatteryForecast.load();
     _notify();
   }
 

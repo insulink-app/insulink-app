@@ -1,6 +1,7 @@
 import 'package:fitbit_air/fitbit_air.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/google_health/band/band_battery_forecast.dart';
 
 /// The Fitbit Air's last known battery level, kept in secure storage so the
 /// service isolate's hourly read and the device page share one value.
@@ -35,8 +36,13 @@ class BandBattery {
   static Future<BandBattery?> readFresh() async {
     try {
       final reading = await FitbitAir.readBattery();
-      final battery = BandBattery(reading.percent, reading.onCharger, DateTime.now());
+      final battery = BandBattery(
+        reading.percent,
+        reading.onCharger,
+        DateTime.now(),
+      );
       await battery._save();
+      await BandBatteryForecast.record(battery);
       return battery;
     } catch (error) {
       debugPrint('[band] battery read failed: $error');
