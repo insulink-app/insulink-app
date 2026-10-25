@@ -546,7 +546,9 @@
         "lifecycle_alerts_set": "Ablauf- und Erinnerungsalarme gesetzt",
         "inserting_cannula": "Kanüle wird gesetzt …",
         "running": "Pod gibt Insulin ab"
-      }
+      },
+      "countdown_title": "Kanüle wird gesetzt in",
+      "countdown_body": "Halte still. Der Pod setzt die Kanüle, wenn der Zähler bei null ist."
     },
     "life": {
       "title": "Pod-Laufzeit"
