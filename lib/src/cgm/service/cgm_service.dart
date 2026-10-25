@@ -38,6 +38,7 @@ import '../../pump/pod_store.dart';
 import '../../pump/service/pod_alarms.dart';
 import '../../google_health/band/band_battery_watch.dart';
 import '../../profile/night/night_mode_detector.dart';
+import '../../activity_mode/activity_pulse_detector.dart';
 import '../../pump/service/pod_monitor.dart';
 import '../../pump/loop/loop_glucose.dart';
 import '../../pump/loop/loop_runner.dart';
@@ -74,6 +75,7 @@ class CgmTaskHandler extends TaskHandler {
   G7AlarmManager? _alarms;
   BandBatteryWatch? _bandBattery;
   final NightModeDetector _nightDetector = NightModeDetector();
+  final ActivityPulseDetector _activityPulse = ActivityPulseDetector();
   CgmStore? _store;
   FlutterLocalNotificationsPlugin? _notifications;
   PodMonitor? _podMonitor;
@@ -456,6 +458,7 @@ class CgmTaskHandler extends TaskHandler {
     unawaited(_applyAdvisoryActions());
     unawaited(_watchBandBattery());
     unawaited(_nightDetector.refresh(DateTime.now()));
+    unawaited(_activityPulse.refresh());
   }
 
   /// The Fitbit Air's hourly battery read and its low warning. Stands down with
@@ -940,6 +943,7 @@ class CgmTaskHandler extends TaskHandler {
       return;
     }
     _nightDetector.onPulse(bpm, at);
+    _activityPulse.onPulse(bpm, at);
     FlutterForegroundTask.sendDataToMain({
       't': 'hr',
       'v': bpm,
