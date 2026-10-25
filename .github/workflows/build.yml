@@ -59,8 +59,13 @@ jobs:
         working-directory: rust
         run: cargo build
 
+      # A zone with daylight saving, not the runner's UTC: the autumn night that
+      # repeats an hour once froze the app (docs/DAYLIGHT_SAVING.md), and only a
+      # DST zone lets the tests see that night at all.
       - name: Test (with coverage)
         run: flutter test --coverage
+        env:
+          TZ: Europe/Berlin
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
