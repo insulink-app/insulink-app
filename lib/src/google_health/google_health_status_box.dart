@@ -14,9 +14,9 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/theme/status_colors.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// Everything under the Google Health device head. Connected: "Letzte Werte"
-/// as key/value rows in one panel, then "Verbindung trennen" as a red row in
-/// a panel of its own. Not connected: what connecting does, or why it failed,
+/// Everything under the device head and its bars. Connected: "Letzte Werte"
+/// as key/value rows in one panel, the band's details with its vibration test,
+/// then "Verbindung trennen" as a red row in a panel of its own. Not connected: what connecting does, or why it failed,
 /// and the primary button that connects.
 class GoogleHealthStatusBox extends StatelessWidget {
   const GoogleHealthStatusBox({super.key, required this.health});
@@ -33,7 +33,6 @@ class GoogleHealthStatusBox extends StatelessWidget {
 
   List<Widget> _connected(BuildContext context) {
     return [
-      ..._band(context),
       const Padding(
         padding: EdgeInsets.symmetric(horizontal: 8),
         child: SectionHeader(titleKey: 'google_health.latest'),
@@ -58,6 +57,7 @@ class GoogleHealthStatusBox extends StatelessWidget {
           ),
         ],
       ),
+      ..._band(context),
       const SizedBox(height: InkSpace.tileGap * 2),
       InkPanel.list(
         rows: [
@@ -108,34 +108,24 @@ class GoogleHealthStatusBox extends StatelessWidget {
     ];
   }
 
-  /// What the band says about itself: its identity and how well it is heard.
-  ///
-  /// Sits directly under the battery bar, ahead of the body metrics, so
-  /// everything about the band is in one place; "Letzte Werte" keeps only
-  /// what was measured on the wearer. Shown as soon as either reading
-  /// arrived, since the signal is there before the identity is.
+  /// What the band says about itself: model, serial and firmware. After the
+  /// body metrics, because they are what the page is opened for; its
+  /// reception sits in the device head's status line.
   List<Widget> _band(BuildContext context) {
     final info = health.bandInfo;
-    if (info == null && health.bandRssi == null) {
+    if (info == null) {
       return const [];
     }
     return [
       const Padding(
         padding: EdgeInsets.symmetric(horizontal: 8),
-        child: SectionHeader(titleKey: 'google_health.band._', topGap: 0),
+        child: SectionHeader(titleKey: 'google_health.band.details'),
       ),
       InkPanel.list(
         rows: [
-          if (info != null) ...[
-            _row(context, 'google_health.band.model', info.model ?? '–'),
-            _row(context, 'google_health.band.serial', info.serial ?? '–'),
-            _row(context, 'google_health.band.firmware', info.firmware ?? '–'),
-          ],
-          _row(
-            context,
-            'google_health.signal_strength',
-            _unit(health.bandRssi, 'dBm'),
-          ),
+          _row(context, 'google_health.band.model', info.model ?? '–'),
+          _row(context, 'google_health.band.serial', info.serial ?? '–'),
+          _row(context, 'google_health.band.firmware', info.firmware ?? '–'),
         ],
       ),
     ];

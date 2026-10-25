@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/google_health/band/band_battery_state.dart';
+import 'package:insulink/src/google_health/band/band_level_bar.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/theme/insulink_theme.dart';
-import 'package:insulink/src/theme/status_colors.dart';
 import 'package:provider/provider.dart';
 
-/// The band's battery under the device head, drawn like the pod's reservoir
-/// bar: muted title, value on the right, a 6 px bar that turns red once the
-/// battery is low. Reads a fresh level when the page opens.
+/// The band's battery under the device head, beside the time it should still
+/// last; amber once it is low. Reads a fresh level when the page opens.
 class BandBatteryBar extends StatefulWidget {
   const BandBatteryBar({super.key});
 
@@ -28,46 +26,28 @@ class _BandBatteryBarState extends State<BandBatteryBar> {
     if (!state.paired) {
       return const SizedBox.shrink();
     }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 24, 8, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _header(context, state),
-          const SizedBox(height: 8),
-          _bar(context, state),
-        ],
-      ),
+    return BandLevelBar(
+      labelKey: 'google_health.band.battery',
+      value: _value(context, state),
+      note: _remaining(context, state),
+      fraction: (state.battery?.percent ?? 0) / 100,
+      warn: state.low,
     );
   }
 
-  Widget _header(BuildContext context, BandBatteryState state) {
-    return Row(
-      children: [
-        Text(
-          Locales.string(context, 'google_health.band.battery'),
-          style: InkText.label.copyWith(color: context.ink.muted),
-        ),
-        const Spacer(),
-        Text(
-          _value(context, state),
-          style: InkText.row.copyWith(
-            fontWeight: FontWeight.w700,
-            color: state.low ? context.danger : context.ink.text,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _bar(BuildContext context, BandBatteryState state) {
-    final colors = context.ink;
-    return LinearProgressIndicator(
-      value: (state.battery?.percent ?? 0) / 100,
-      minHeight: 6,
-      borderRadius: BorderRadius.circular(3),
-      color: state.low ? colors.low : colors.accent,
-      backgroundColor: colors.line,
+  /// The estimate in days, or in hours for the last two days.
+  String? _remaining(BuildContext context, BandBatteryState state) {
+    final remaining = state.remaining;
+    if (remaining == null) {
+      return null;
+    }
+    final inDays = remaining.inHours >= 48;
+    return Locales.string(
+      context,
+      inDays
+          ? 'google_health.band.remaining_days'
+          : 'google_health.band.remaining_hours',
+      params: ['${inDays ? remaining.inDays : remaining.inHours}'],
     );
   }
 

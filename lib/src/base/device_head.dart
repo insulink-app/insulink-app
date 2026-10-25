@@ -12,6 +12,7 @@ class DeviceHead extends StatelessWidget {
     required this.status,
     required this.statusColor,
     this.busy = false,
+    this.statusLeading,
   });
 
   final IconData icon;
@@ -21,6 +22,10 @@ class DeviceHead extends StatelessWidget {
 
   /// Replaces the glyph with a spinner while the device is being searched for.
   final bool busy;
+
+  /// Takes the dot's place at the head of the status line, for a device whose
+  /// status is better shown than coloured, such as the band's signal bars.
+  final Widget? statusLeading;
 
   @override
   Widget build(BuildContext context) {
@@ -70,12 +75,17 @@ class DeviceHead extends StatelessWidget {
   Widget _status(InsulinkColors colors) {
     return Row(
       spacing: 7,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: statusColor),
-        ),
+        statusLeading ??
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: statusColor,
+              ),
+            ),
         Flexible(
           child: Text(
             status,

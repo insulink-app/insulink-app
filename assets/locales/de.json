@@ -702,7 +702,6 @@
     "sleep": "Schlaf",
     "heart_rate": "Herzfrequenz",
     "respiratory_rate": "Atemfrequenz",
-    "signal_strength": "Signalstärke",
     "band": {
       "_": "Fitbit Air",
       "model": "Modell",
@@ -710,7 +709,15 @@
       "firmware": "Firmware",
       "battery": "Akku",
       "charging": "(lädt)",
-      "test": "Vibration testen"
+      "test": "Vibration testen",
+      "remaining_days": "noch etwa # Tage",
+      "remaining_hours": "noch etwa # Std.",
+      "details": "Armband",
+      "signal": {
+        "good": "Verbindung gut",
+        "medium": "Verbindung mittel",
+        "poor": "Verbindung schlecht"
+      }
     },
     "status": {
       "connected": "Verbunden",

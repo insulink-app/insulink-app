@@ -6,7 +6,9 @@ import 'package:insulink/src/profile/notifications/alarm_tone.dart';
 /// double pulse = low, single = high, groups = severity.
 void main() {
   test('no two alarms share a vibration pattern', () {
-    final patterns = {for (final slot in AlarmSlot.values) (slot.doublePulse, slot.pulseGroups)};
+    final patterns = {
+      for (final slot in AlarmSlot.values) (slot.doublePulse, slot.pulseGroups),
+    };
     expect(patterns.length, AlarmSlot.values.length);
   });
 
@@ -23,7 +25,9 @@ void main() {
   });
 
   test('each alarm has its own switch', () {
-    final keys = {for (final slot in AlarmSlot.values) slot.bandSetting.storageKey};
+    final keys = {
+      for (final slot in AlarmSlot.values) slot.bandSetting.storageKey,
+    };
     expect(keys.length, AlarmSlot.values.length);
   });
 }

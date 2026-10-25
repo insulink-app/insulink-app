@@ -27,7 +27,8 @@ class BandBatteryWatch {
   /// One watchdog tick: a read when one is due, then the warning if needed.
   Future<void> tick() async {
     final last = _lastReadAt;
-    if (_reading || (last != null && DateTime.now().difference(last) < _readEvery)) {
+    if (_reading ||
+        (last != null && DateTime.now().difference(last) < _readEvery)) {
       return;
     }
     _reading = true;
@@ -52,7 +53,8 @@ class BandBatteryWatch {
       await storage.delete(key: _warnedKey);
       return;
     }
-    if (await storage.read(key: _warnedKey) != null || !await NotificationSetting.bandBatteryLow.load()) {
+    if (await storage.read(key: _warnedKey) != null ||
+        !await NotificationSetting.bandBatteryLow.load()) {
       return;
     }
     if (await _notifyLow(battery.percent)) {

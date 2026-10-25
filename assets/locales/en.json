@@ -702,7 +702,6 @@
     "sleep": "Sleep",
     "heart_rate": "Heart rate",
     "respiratory_rate": "Respiratory rate",
-    "signal_strength": "Signal strength",
     "band": {
       "_": "Fitbit Air",
       "model": "Model",
@@ -710,7 +709,15 @@
       "firmware": "Firmware",
       "battery": "Battery",
       "charging": "(charging)",
-      "test": "Test vibration"
+      "test": "Test vibration",
+      "remaining_days": "about # days left",
+      "remaining_hours": "about # h left",
+      "details": "Band",
+      "signal": {
+        "good": "Connection good",
+        "medium": "Connection fair",
+        "poor": "Connection poor"
+      }
     },
     "status": {
       "connected": "Connected",
