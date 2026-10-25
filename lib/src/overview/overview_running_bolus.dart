@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
 import 'package:insulink/src/overview/overview_stopped_bolus.dart';
 import 'package:insulink/src/overview/sending_bolus_card.dart';
@@ -29,6 +30,9 @@ class _OverviewRunningBolusState extends State<OverviewRunningBolus> {
   /// something to show.
   Timer? _tick;
 
+  /// Pulses of the running bolus already felt, so each new one buzzes once.
+  int _feltPulses = 0;
+
   @override
   void dispose() {
     _tick?.cancel();
@@ -37,14 +41,35 @@ class _OverviewRunningBolusState extends State<OverviewRunningBolus> {
 
   void _keepTicking(bool running) {
     if (running && _tick == null) {
-      _tick = Timer.periodic(
-        const Duration(seconds: 1),
-        (_) => setState(() {}),
-      );
+      _feltPulses = 0;
+      _tick = Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
     } else if (!running && _tick != null) {
       _tick!.cancel();
       _tick = null;
     }
+  }
+
+  void _onTick() {
+    _buzzOnPulse();
+    setState(() {});
+  }
+
+  /// A short buzz for every pulse a bolus the user gave puts out, so the dose
+  /// can be followed without looking. Only while the app is in the foreground
+  /// (this timer cannot run otherwise, the check covers a locked screen), and
+  /// never for a micro bolus the loop gave by itself.
+  void _buzzOnPulse() {
+    final bolus = context.read<PodController>().runningBolus;
+    if (bolus == null || bolus.automated) {
+      return;
+    }
+    final pulses = bolus.deliveredPulses(DateTime.now());
+    final foreground =
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    if (pulses > _feltPulses && foreground) {
+      HapticFeedback.mediumImpact();
+    }
+    _feltPulses = pulses;
   }
 
   @override
