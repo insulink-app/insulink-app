@@ -99,4 +99,6 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    // Same RxJava 2 that fitbit_air bundles, only to install its global error handler.
+    implementation("io.reactivex.rxjava2:rxjava:2.2.21")
 }

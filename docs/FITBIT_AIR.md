@@ -82,3 +82,15 @@ restart overwrites a stale one. Pulse only, no clock window yet.
   hourly read) can collide; the plugin answers the second one with `BUSY`,
   which the alarm path retries.
 - Verified by the plugin author on Pixel 7 Pro / firmware 67.20001.253.2 only.
+
+## RxJava errors after a command ends
+
+The plugin's Golden Gate transport runs on RxJava 2 and disposes its
+subscriptions when a command finishes or times out. An error that arrives after
+that (a timeout racing the teardown, the band busy with Google Health) has no
+subscriber left, and RxJava's default handler sends it to the thread's uncaught
+handler, which kills the whole process, CGM service included. The plugin sets no
+handler of its own, so `InsulinkApplication.onCreate` installs one that drops
+`UndeliverableException` and lets anything else crash as before. Introduced with
+the band alarms (every alarm buzz is up to three plugin sessions), which is when
+the app started dying every few minutes.
