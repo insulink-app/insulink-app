@@ -12,6 +12,10 @@ import 'package:insulink/src/request/response_json.dart';
 /// repeat is harmless, and a log unchanged since its last accepted push is not
 /// sent at all. Best-effort: a failed push is retried on the next pod poll.
 ///
+/// The loop's micro boluses ride along (kind `microBolus`), so the account
+/// keeps bolus, micro bolus and basal apart and the pump's list can be rebuilt
+/// after a reinstall ([PodAccountHistory]).
+///
 /// The delivery log is a record of the PUMP, never an insulin source. Boluses
 /// reach insulin on board and the forecast as meal records, basal through
 /// [InsulinSync]; reading this back as insulin would count every dose twice.
@@ -24,7 +28,7 @@ class PodHistorySync {
       '/insulin/delivery/sync/',
       {
         'deliveries': deliveryEntries(
-          store.deliveryLog,
+          [...store.deliveryLog, ...store.loopMicroBoluses],
           store.unconfirmedBoluses,
         ),
       },
