@@ -36,7 +36,8 @@ class PodBasalDelivery {
     var units = 0.0;
     var cursor = from;
     while (cursor.isBefore(to)) {
-      final segmentEnd = _nextBoundary(cursor, to);
+      final boundary = _nextBoundary(cursor, to);
+      final segmentEnd = boundary.isAfter(cursor) ? boundary : to;
       final minutes =
           segmentEnd.difference(cursor).inMicroseconds /
           Duration.microsecondsPerMinute;
@@ -75,17 +76,24 @@ class PodBasalDelivery {
     return boundary.isBefore(windowEnd) ? boundary : windowEnd;
   }
 
-  /// The start of the next wall-clock hour. Wall-clock, not a fixed 60 minutes,
-  /// so a daylight-saving change shifts the schedule with the clock the user
-  /// reads — which is the same clock the pod runs its slots on.
+  /// The start of the next wall-clock hour, so a daylight-saving change shifts
+  /// the schedule with the clock the user reads, which is the same clock the
+  /// pod runs its slots on.
+  ///
+  /// Measured as the time left to the top of the hour, NOT rebuilt with
+  /// `DateTime(year, month, day, hour)`: in the autumn night the hour from 2 to
+  /// 3 happens twice, that constructor picks the first one, and from inside the
+  /// second the "next" boundary lay behind the cursor. [unitsBetween] then never
+  /// advanced and froze the app (the pod tick runs on the main thread) every
+  /// time it booked basal across that night.
   DateTime _nextHourBoundary(DateTime moment) {
-    final hourStart = DateTime(
-      moment.year,
-      moment.month,
-      moment.day,
-      moment.hour,
+    final intoHour = Duration(
+      minutes: moment.minute,
+      seconds: moment.second,
+      milliseconds: moment.millisecond,
+      microseconds: moment.microsecond,
     );
-    return hourStart.add(const Duration(hours: 1));
+    return moment.add(const Duration(hours: 1) - intoHour);
   }
 
   /// The whole day's basal, for cross-checking a schedule against the pod's own
