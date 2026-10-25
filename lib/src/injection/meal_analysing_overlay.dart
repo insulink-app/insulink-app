@@ -5,14 +5,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/food_contour_painter.dart';
 import 'package:insulink/src/injection/food_contours.dart';
+import 'package:insulink/src/injection/meal_analysing_label.dart';
 import 'package:insulink/src/injection/meal_camera_parts.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The photo just taken, held still where the live picture was while the server
 /// looks at it: darkened, a soft accent line sweeping over it like a scanner,
 /// the food's own outlines ([FoodContours]) lighting up wherever the line
-/// passes, and "Analysing" with a small spinner at the foot. The line eases
+/// passes, and [MealAnalysingLabel] at the foot. The line eases
 /// into each turn, and both it and the glow fade just before the top and
 /// bottom, so the turns stay quiet while the rest of the plate lights fully. Reduced motion
 /// stops the line and keeps the outlines softly lit.
@@ -99,7 +99,7 @@ class _MealAnalysingOverlayState extends State<MealAnalysingOverlay>
             ],
           ),
         ),
-        _label(),
+        const MealAnalysingLabel(),
       ],
     );
   }
@@ -155,34 +155,6 @@ class _MealAnalysingOverlayState extends State<MealAnalysingOverlay>
             accent.withValues(alpha: alpha),
             accent.withValues(alpha: 0),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _label() {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 56),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 12,
-            children: [
-              const SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Colors.white,
-                ),
-              ),
-              LocaleText(
-                'injection.photo.analysing',
-                style: InkText.rowTitle.copyWith(color: Colors.white),
-              ),
-            ],
-          ),
         ),
       ),
     );

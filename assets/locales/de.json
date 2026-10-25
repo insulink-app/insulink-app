@@ -1621,7 +1621,12 @@
       "fewer": "Ein Stück weniger",
       "more": "Ein Stück mehr",
       "other_open": "Weitere Lebensmittel zeigen",
-      "other_close": "Weitere Lebensmittel ausblenden"
+      "other_close": "Weitere Lebensmittel ausblenden",
+      "step": {
+        "looking": "Schaue mir das Foto an",
+        "searching": "Suche online: #",
+        "estimating": "Schaue mir # an"
+      }
     }
   },
   "service": {
