@@ -1,4 +1,5 @@
 import 'package:insulink/src/localization/enum_locale_key.dart';
+import 'package:insulink/src/pump/pod_account_history.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 
 /// One line of the pod's history: a dose the user chose, a micro bolus the
@@ -50,14 +51,18 @@ class PodLogEntry {
   /// Everything the pod has delivered, newest first.
   ///
   /// An hour of basal sorts by the hour it started, so it sits with the doses
-  /// given during it rather than at the end of the list. Micro boluses come from
-  /// the automation's own ledger, which keeps the last day of them.
-  static List<PodLogEntry> timeline(PodStore store) {
+  /// given during it rather than at the end of the list. The account's copy
+  /// ([PodAccountHistory]) fills in what the phone lost to a reinstall and the
+  /// micro boluses older than the loop ledger's last day.
+  static List<PodLogEntry> timeline(
+    PodStore store, [
+    PodAccountHistory account = const PodAccountHistory(),
+  ]) {
     final entries = <PodLogEntry>[
-      for (final delivery in store.deliveryLog)
+      for (final delivery in account.mergedDeliveries(store))
         PodLogEntry.fromDelivery(delivery),
-      for (final dose in store.loopMicroBoluses) PodLogEntry.fromDelivery(dose),
-      for (final hour in store.basalHours) PodLogEntry.fromBasalHour(hour),
+      for (final hour in account.mergedBasalHours(store))
+        PodLogEntry.fromBasalHour(hour),
     ]..sort((left, right) => right.at.compareTo(left.at));
     return entries;
   }

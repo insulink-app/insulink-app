@@ -8,6 +8,7 @@ import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
+import 'package:insulink/src/pump/pod_account_history.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
 import 'package:insulink/src/pump/pod_log_entry.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -53,13 +54,33 @@ class PodDeliveryLogButton extends StatelessWidget {
 /// Deliberately the POD's log, not the meal log: it lists what the pump actually
 /// put out, including the priming and cannula volumes that never reach the user
 /// and that no meal record will ever mention. That is what makes the reservoir
-/// add up.
-class PodDeliveryLogPage extends StatelessWidget {
+/// add up. Shows the phone's log at once and folds in the account's copy
+/// ([PodAccountHistory]) once it arrives, so a reinstall does not empty it.
+class PodDeliveryLogPage extends StatefulWidget {
   const PodDeliveryLogPage({super.key});
 
   @override
+  State<PodDeliveryLogPage> createState() => _PodDeliveryLogPageState();
+}
+
+class _PodDeliveryLogPageState extends State<PodDeliveryLogPage> {
+  PodAccountHistory _account = const PodAccountHistory();
+
+  @override
+  void initState() {
+    super.initState();
+    final store = context.read<PodController>().store;
+    PodAccountHistory.load(store.activatedAt).then((account) {
+      if (mounted) {
+        setState(() => _account = account);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final entries = PodLogEntry.timeline(context.watch<PodController>().store);
+    final store = context.watch<PodController>().store;
+    final entries = PodLogEntry.timeline(store, _account);
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
@@ -73,7 +94,7 @@ class PodDeliveryLogPage extends StatelessWidget {
           24,
         ),
         children: [
-          const PodDeliverySummary(),
+          PodDeliverySummary(account: _account),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8),
             child: SectionHeader(titleKey: 'pump.log.history'),
