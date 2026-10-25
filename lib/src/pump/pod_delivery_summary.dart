@@ -4,6 +4,7 @@ import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pod_account_history.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
@@ -26,17 +27,24 @@ String podUnits(BuildContext context, double units) => Locales.string(
 /// figure is the one the background watch booked, so a stretch the pod spent
 /// suspended counts as the nothing it was.
 class PodDeliverySummary extends StatelessWidget {
-  const PodDeliverySummary({super.key});
+  const PodDeliverySummary({
+    super.key,
+    this.account = const PodAccountHistory(),
+  });
+
+  /// The account's copy, so the totals survive a reinstall.
+  final PodAccountHistory account;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.ink;
     final store = context.watch<PodController>().store;
-    final basal = store.basalDeliveredTotal;
-    final bolus = store.deliveryLog
+    final basal = account.basalTotal(store);
+    final bolus = account
+        .mergedDeliveries(store)
         .where((entry) => entry.kind == PodDeliveryKind.bolus)
         .fold<double>(0, (sum, entry) => sum + entry.units);
-    final microBoluses = store.loopMicroBolusTotal;
+    final microBoluses = account.microBolusTotal(store);
     final total = basal + bolus + microBoluses;
     final unit = Locales.string(
       context,
