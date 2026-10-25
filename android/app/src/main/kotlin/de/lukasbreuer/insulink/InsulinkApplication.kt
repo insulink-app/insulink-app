@@ -1,10 +1,13 @@
 package de.insulink
 
 import android.app.Application
+import android.util.Log
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskLifecycleListener
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskPlugin
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskStarter
 import io.flutter.embedding.engine.FlutterEngine
+import io.reactivex.exceptions.UndeliverableException
+import io.reactivex.plugins.RxJavaPlugins
 
 /**
  * Registers the app's own MethodChannels on the foreground-service isolate.
@@ -38,5 +41,22 @@ class InsulinkApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         FlutterForegroundTaskPlugin.addTaskLifecycleListener(libre3ServiceListener)
+        RxJavaPlugins.setErrorHandler(::onUndeliverable)
+    }
+
+    /**
+     * The fitbit_air plugin's Golden Gate transport runs on RxJava 2 and
+     * disposes its subscriptions when a band command ends; a timeout or
+     * session error arriving after that has no subscriber left, and RxJava's
+     * default sends it to the thread's uncaught handler, killing the app (and
+     * the CGM service with it). Such errors are expected noise: drop them.
+     * Anything else is a real bug and still crashes as before.
+     */
+    private fun onUndeliverable(error: Throwable) {
+        if (error !is UndeliverableException) {
+            Thread.currentThread().uncaughtExceptionHandler?.uncaughtException(Thread.currentThread(), error)
+            return
+        }
+        Log.w("Insulink", "Dropped undeliverable RxJava error: ${error.cause}")
     }
 }
