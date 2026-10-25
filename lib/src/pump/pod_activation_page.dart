@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:insulink/src/profile/security/profile_security_state.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/profile/basal/profile_basal_state.dart';
+import 'package:insulink/src/pump/cannula_countdown_view.dart';
 import 'package:insulink/src/pump/pod_activation_actions.dart';
 import 'package:insulink/src/pump/pod_activation_controller.dart';
 import 'package:insulink/src/pump/pod_activation_exit.dart';
@@ -26,7 +28,7 @@ Future<void> openPodActivation(BuildContext context) async {
   );
   await Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => Provider<CannulaConfirmation>.value(
+      builder: (_) => ChangeNotifierProvider<CannulaConfirmation>.value(
         value: confirmation,
         child: ChangeNotifierProvider(
           create: (_) => PodActivationController(
@@ -114,9 +116,11 @@ class _PodActivationPageState extends State<PodActivationPage> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  child: PodActivationStageView(
-                    controller: controller,
-                    basalProblem: basal.problem,
+                  child: CannulaCountdownView(
+                    orElse: PodActivationStageView(
+                      controller: controller,
+                      basalProblem: basal.problem,
+                    ),
                   ),
                 ),
               ),
@@ -160,7 +164,11 @@ class _PodActivationPageState extends State<PodActivationPage> {
 /// requires a confirmation callback and still refuses to move the needle without
 /// one, so no path can reach the insertion unasked — and the answer is SINGLE
 /// USE, so a confirmation given for one attempt cannot carry a later one.
-class CannulaConfirmation {
+///
+/// A given answer is followed by a countdown of [countdownSeconds], one buzz a
+/// second and a strong one as the command goes out, so the wearer knows the
+/// exact moment the needle fires instead of bracing for an unknown few seconds.
+class CannulaConfirmation extends ChangeNotifier {
   CannulaConfirmation({required this.reason, ProfileSecurityState? security})
     : _security = security ?? ProfileSecurityState();
 
@@ -171,6 +179,11 @@ class CannulaConfirmation {
 
   bool _armed = false;
 
+  static const countdownSeconds = 5;
+
+  /// Seconds until the insertion command is sent, null outside the countdown.
+  int? secondsLeft;
+
   /// Prompts now. Biometric only, no PIN fallback: driving a needle into the body
   /// is not something a pocket-tap should be able to do.
   Future<bool> ask() async {
@@ -178,10 +191,26 @@ class CannulaConfirmation {
     return _armed;
   }
 
-  /// Hands the answer to the one command that needs it, and forgets it.
+  /// Hands the answer to the one command that needs it, and forgets it. A yes
+  /// returns only once the countdown has run out.
   Future<bool> consume() async {
     final armed = _armed;
     _armed = false;
+    if (armed) {
+      await _countDown();
+    }
     return armed;
+  }
+
+  Future<void> _countDown() async {
+    for (var left = countdownSeconds; left > 0; left--) {
+      secondsLeft = left;
+      notifyListeners();
+      await HapticFeedback.selectionClick();
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
+    secondsLeft = null;
+    notifyListeners();
+    await HapticFeedback.heavyImpact();
   }
 }

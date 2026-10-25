@@ -546,7 +546,9 @@
         "lifecycle_alerts_set": "Expiry and reminder alerts set",
         "inserting_cannula": "Cannula is going in …",
         "running": "Pod is delivering"
-      }
+      },
+      "countdown_title": "Cannula goes in in",
+      "countdown_body": "Hold still. The pod inserts the cannula when the count reaches zero."
     },
     "life": {
       "title": "Pod life"
