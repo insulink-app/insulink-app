@@ -51,6 +51,52 @@ class ActivityModeSettings {
     step: 10,
   );
 
+  /// The target during the recovery after endurance. Only ever raises.
+  static const recoveryTarget = NotificationThreshold(
+    storageKey: 'activity_recovery_target_mgdl',
+    labelKey: 'profile.activity_mode.recovery_target',
+    valueKey: 'profile.activity_mode.recovery_target.value',
+    defaultValue: 130,
+    min: 100,
+    max: 180,
+    step: 10,
+  );
+
+  /// The share of the scheduled basal during the recovery. Never above 100 %:
+  /// the recovery only ever takes insulin away.
+  static const recoveryBasal = NotificationThreshold(
+    storageKey: 'activity_recovery_basal_percent',
+    labelKey: 'profile.activity_mode.recovery_basal',
+    valueKey: 'profile.activity_mode.recovery_basal.value',
+    defaultValue: 80,
+    min: 50,
+    max: 100,
+    step: 10,
+  );
+
+  /// How long the recovery lasts after an endurance bout; 0 switches it off.
+  static const recoveryHours = NotificationThreshold(
+    storageKey: 'activity_recovery_hours',
+    labelKey: 'profile.activity_mode.recovery_hours',
+    valueKey: 'profile.activity_mode.recovery_hours.value',
+    defaultValue: 6,
+    min: 0,
+    max: 12,
+  );
+
+  /// The pulse that, held for [ActivityPulseDetector.sustain], counts as
+  /// endurance even when no walk or ride is detected (housework, a gym, a
+  /// dance floor).
+  static const pulseThreshold = NotificationThreshold(
+    storageKey: 'activity_pulse_threshold_bpm',
+    labelKey: 'profile.activity_mode.pulse_threshold',
+    valueKey: 'profile.activity_mode.pulse_threshold.value',
+    defaultValue: 110,
+    min: 80,
+    max: 160,
+    step: 5,
+  );
+
   /// Whether the activity mode is used at all. Off, the mode is always normal:
   /// no detection, workout or manual choice moves the loop.
   ///
@@ -70,5 +116,13 @@ class ActivityModeSettings {
     defaultValue: false,
   );
 
-  static const all = [enduranceTarget, enduranceBasal, strengthBasal];
+  static const all = [
+    enduranceTarget,
+    enduranceBasal,
+    strengthBasal,
+    pulseThreshold,
+    recoveryTarget,
+    recoveryBasal,
+    recoveryHours,
+  ];
 }

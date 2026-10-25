@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/activity_mode/activity_bout.dart';
 import 'package:insulink/src/activity_mode/activity_mode.dart';
 import 'package:insulink/src/activity_mode/activity_mode_settings.dart';
 import 'package:insulink/src/sport/sport_store.dart';
@@ -8,7 +9,9 @@ import 'package:insulink/src/sport/sport_store.dart';
 /// A manual choice wins and lapses after [manualFor]. Without one the mode
 /// follows what the user is doing: a running routine is strength, a cardio
 /// recording or a walk or ride the training detection sees going on is
-/// endurance. Everything is read from storage, so the service isolate and the
+/// endurance, and so is a pulse held above the activity threshold. The hours
+/// after an endurance bout are recovery ([ActivityBout]). Everything is read
+/// from storage, so the service isolate and the
 /// UI reach the same answer without a message between them.
 ///
 /// Not part of the account blob, like `pod.loop_mode`: the mode is about this
@@ -23,6 +26,7 @@ class ActivityModeStore {
   static const String keyManual = 'activity_mode_manual';
   static const String keyManualUntil = 'activity_mode_manual_until';
   static const String keyDetectedAt = 'activity_mode_detected_at';
+  static const String keyPulseAt = 'activity_mode_pulse_at';
 
   /// How long a manual choice holds. A forgotten strength mode keeps adding
   /// basal, so no choice may hold forever.
@@ -60,13 +64,22 @@ class ActivityModeStore {
     );
   }
 
+  /// Records that the band's pulse is above the activity threshold.
+  Future<void> markPulse(DateTime now) =>
+      _storage.write(key: keyPulseAt, value: '${now.millisecondsSinceEpoch}');
+
   /// The mode in force at [now]: always normal while the user has switched the
-  /// activity mode off, whatever was chosen or detected.
+  /// activity mode off, whatever was chosen or detected. An endurance reading
+  /// is also booked as part of a bout, which is what a recovery follows.
   Future<ActivityModeReading> current(DateTime now) async {
     if (!await ActivityModeSettings.enabled.load()) {
       return ActivityModeReading.normal;
     }
-    return await _manual(now) ?? await _followed(now);
+    final reading = await _manual(now) ?? await _followed(now);
+    if (reading.mode == ActivityMode.endurance) {
+      await const ActivityBout().sawEndurance(now);
+    }
+    return reading;
   }
 
   /// The manual choice, or null when there is none or it has lapsed.
@@ -96,13 +109,30 @@ class ActivityModeStore {
         ActivityModeSource.recording,
       );
     }
-    if (await _detectedSince(now.subtract(detectedFor))) {
+    if (await _seenSince(keyDetectedAt, now.subtract(detectedFor))) {
       return const ActivityModeReading(
         ActivityMode.endurance,
         ActivityModeSource.detected,
       );
     }
-    return ActivityModeReading.normal;
+    if (await _seenSince(keyPulseAt, now.subtract(detectedFor))) {
+      return const ActivityModeReading(
+        ActivityMode.endurance,
+        ActivityModeSource.pulse,
+      );
+    }
+    return await _recovery(now) ?? ActivityModeReading.normal;
+  }
+
+  Future<ActivityModeReading?> _recovery(DateTime now) async {
+    final until = await const ActivityBout().recoveryUntil(now);
+    return until == null
+        ? null
+        : ActivityModeReading(
+            ActivityMode.recovery,
+            ActivityModeSource.recovery,
+            until: until,
+          );
   }
 
   Future<bool> _workoutRuns(DateTime now) async {
@@ -114,8 +144,8 @@ class ActivityModeStore {
     return now.difference(started) < workoutFor;
   }
 
-  Future<bool> _detectedSince(DateTime since) async {
-    final seen = await _time(keyDetectedAt);
+  Future<bool> _seenSince(String key, DateTime since) async {
+    final seen = await _time(key);
     return seen != null && seen.isAfter(since);
   }
 

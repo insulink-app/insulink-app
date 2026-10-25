@@ -12,6 +12,7 @@ How exercise changes what the automation doses. `lib/src/activity_mode/`.
 | Normal | the user's own | 100 % | no exercise |
 | Endurance | 150 mg/dL (raises only) | 50 % | muscle takes up glucose without insulin, glucose falls |
 | Strength | the user's own | 120 % | stress hormones push glucose up during the set |
+| Recovery | 130 mg/dL (raises only) | 80 % | after endurance, muscle refills glycogen and stays insulin sensitive for hours |
 
 All three numbers are settings (`ActivityModeSettings`, profile → Sportmodus)
 and ride the account blob. So does the switch that turns the whole feature off
@@ -56,7 +57,17 @@ the UI agree without a message:
    older than 4 hours counts as abandoned.
 3. **A cardio recording runs** (`sport.active_training`) → endurance.
 4. **The training detection sees an ongoing training** → endurance.
-5. Otherwise normal.
+5. **The band's pulse held at or above the activity threshold** (110 bpm, a
+   setting) for 10 minutes → endurance (`ActivityPulseDetector`, service
+   isolate). Catches what GPS cannot: a gym, housework, a dance floor. A dip
+   just under the line does not restart the clock, one 10 bpm below does.
+   Each sample above renews the sighting, which counts for `detectedFor`.
+6. **An endurance bout of at least 20 minutes ended less than 6 hours ago**
+   (a setting, 0 switches it off) → recovery (`ActivityBout`). Every endurance
+   reading, whatever its source, is booked into a bout; readings under 15
+   minutes apart belong to the same one. Not offered as a manual choice (the
+   toggle stays at four segments); Normal by hand ends it early.
+7. Otherwise normal.
 
 ### "Ongoing" from the training detection
 
@@ -89,8 +100,8 @@ since the detection runs in the other isolate.
 
 ## Not built
 
-- Post-exercise sensitivity (glucose keeps falling for hours after endurance):
-  the mode ends with the activity.
+- Recovery after strength: lifting tends to raise glucose, the evidence for
+  late lows after it is weaker. Add it when the journal shows them.
 - A higher suspend threshold during endurance: the falling trend already
   suspends through `suspendedFalling`.
 - Setting a temporary rate when the automation is off.
