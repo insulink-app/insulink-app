@@ -1621,7 +1621,12 @@
       "fewer": "One piece fewer",
       "more": "One piece more",
       "other_open": "Show the other foods",
-      "other_close": "Hide the other foods"
+      "other_close": "Hide the other foods",
+      "step": {
+        "looking": "Looking at the photo",
+        "searching": "Searching online: #",
+        "estimating": "Looking at #"
+      }
     }
   },
   "service": {
