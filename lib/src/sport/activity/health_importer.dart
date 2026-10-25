@@ -55,7 +55,7 @@ class HealthImporter {
     final start = now.subtract(const Duration(days: _historyDays));
     final archive = await _dailyArchive(start, now);
     await activity.mergeArchive(archive);
-    _applyToday(activity, archive, now);
+    _applyToday(activity, archive, now, await _todayStepsOfBusiestSource(now));
     await sport.mergeWeights(await _weights(start, now));
     return HealthImportResult.success;
   }
@@ -65,17 +65,46 @@ class HealthImporter {
     SportActivityState activity,
     List<DailyActivity> archive,
     DateTime now,
+    int busiestSourceSteps,
   ) {
     final today = _dateKey(now);
     for (final day in archive) {
       if (day.dateKey == today) {
         activity.setImported(
-          steps: day.steps,
+          steps: day.steps > busiestSourceSteps
+              ? day.steps
+              : busiestSourceSteps,
           distanceKm: day.distanceKm,
           calories: day.calories,
         );
         return;
       }
+    }
+  }
+
+  /// Today's steps of the one app that counted the most (the band, when it was
+  /// worn). The aggregation keeps only the source Health Connect ranks first,
+  /// and with the phone ranked above Google Health the band's steps were thrown
+  /// away. Summing all sources instead would count every step twice.
+  Future<int> _todayStepsOfBusiestSource(DateTime now) async {
+    try {
+      final points = await _health.getHealthDataFromTypes(
+        types: [HealthDataType.STEPS],
+        startTime: DateTime(now.year, now.month, now.day),
+        endTime: now,
+      );
+      final perSource = <String, num>{};
+      for (final point in _health.removeDuplicates(points)) {
+        if (point.value case final NumericHealthValue value) {
+          perSource[point.sourceId] =
+              (perSource[point.sourceId] ?? 0) + value.numericValue;
+        }
+      }
+      return perSource.values
+          .fold<num>(0, (max, steps) => steps > max ? steps : max)
+          .round();
+    } catch (_) {
+      return 0;
     }
   }
 
