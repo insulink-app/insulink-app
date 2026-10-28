@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/ink_dialog.dart';
+import 'package:insulink/src/injection/meal_analysing_label.dart';
 import 'package:insulink/src/injection/meal_analysing_overlay.dart';
 import 'package:insulink/src/injection/meal_camera_parts.dart';
 import 'package:insulink/src/injection/meal_camera_zoom.dart';
@@ -28,8 +29,9 @@ Future<PhotoEstimate?> photographMeal(BuildContext context) {
 /// After the shutter the photo stays on screen under [MealAnalysingOverlay]
 /// while the server estimates it, instead of a spinner popup over a page the
 /// user no longer looks at. A failed estimate, or one that saw no food, says so
-/// and hands back the live picture for another try. "New photo" under it calls
-/// the estimate off and hands the live picture back at once; leaving the page,
+/// and hands back the live picture for another try. The shutter turns into
+/// "New photo" meanwhile, which calls the estimate off and hands the live
+/// picture back at once; leaving the page,
 /// by the close button or the back gesture, calls it off too
 /// ([PhotoEstimateRun]), so the server stops the model.
 ///
@@ -216,8 +218,10 @@ class _MealCameraPageState extends State<MealCameraPage> {
       onManual: widget.next == null || photo != null
           ? null
           : () => _finish(null),
+      onRetake: photo != null ? _retake : null,
+      status: photo != null ? const MealAnalysingLabel() : null,
       picture: photo != null
-          ? MealAnalysingOverlay(photo: photo, onRetake: _retake)
+          ? MealAnalysingOverlay(photo: photo)
           : _camera == null
           ? const SizedBox.shrink()
           : GestureDetector(

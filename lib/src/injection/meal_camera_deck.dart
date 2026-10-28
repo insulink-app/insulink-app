@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:insulink/src/injection/meal_retake_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
@@ -9,8 +10,9 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// The meal camera's controls in one row at thumb height, laid out like a
 /// camera app's: manual entry on the left, the shutter in the middle, the light
 /// on the right. A null callback leaves its slot empty (no manual entry outside
-/// the bolus flow, no light before the camera runs) and dims the shutter, so
-/// the row never shifts while the camera starts.
+/// the bolus flow, no light before the camera runs) and dims the shutter; an
+/// empty slot keeps its height, so the row never shifts. With [onRetake] the shutter
+/// turns into [MealRetakeButton], a short scale and fade between the two.
 class MealCameraDeck extends StatelessWidget {
   const MealCameraDeck({
     super.key,
@@ -18,12 +20,14 @@ class MealCameraDeck extends StatelessWidget {
     required this.onShutter,
     required this.onTorch,
     required this.torch,
+    this.onRetake,
   });
 
   final VoidCallback? onManual;
   final VoidCallback? onShutter;
   final VoidCallback? onTorch;
   final bool torch;
+  final VoidCallback? onRetake;
 
   @override
   Widget build(BuildContext context) {
@@ -31,16 +35,53 @@ class MealCameraDeck extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(child: _manual()),
-        _ShutterButton(onPressed: onShutter),
+        AnimatedSwitcher(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 220),
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween(begin: 0.85, end: 1.0).animate(animation),
+              child: child,
+            ),
+          ),
+          child: _centre(),
+        ),
         Expanded(child: _light(context)),
       ],
     );
   }
 
+  /// An empty side slot that still takes a side button's height, so the row,
+  /// and the shutter in it, stays put while the light appears at camera start
+  /// and while both sides go during an analysis.
+  Widget _emptySlot() {
+    return Visibility(
+      visible: false,
+      maintainSize: true,
+      maintainAnimation: true,
+      maintainState: true,
+      child: _DeckButton(
+        icon: PhosphorIconsBold.lightning,
+        labelKey: 'injection.photo.light',
+        onPressed: () {},
+      ),
+    );
+  }
+
+  Widget _centre() {
+    final retake = onRetake;
+    if (retake != null) {
+      return MealRetakeButton(key: const ValueKey('retake'), onPressed: retake);
+    }
+    return _ShutterButton(key: const ValueKey('shutter'), onPressed: onShutter);
+  }
+
   Widget _manual() {
     final manual = onManual;
     if (manual == null) {
-      return const SizedBox.shrink();
+      return _emptySlot();
     }
     return _DeckButton(
       icon: PhosphorIconsBold.keyboard,
@@ -52,7 +93,7 @@ class MealCameraDeck extends StatelessWidget {
   Widget _light(BuildContext context) {
     final toggle = onTorch;
     if (toggle == null) {
-      return const SizedBox.shrink();
+      return _emptySlot();
     }
     return _DeckButton(
       icon: torch ? PhosphorIconsFill.lightning : PhosphorIconsBold.lightning,
@@ -132,7 +173,7 @@ class _DeckButton extends StatelessWidget {
 /// A white ring around a white disc, the camera apps' shutter. Dimmed while
 /// [onPressed] is null.
 class _ShutterButton extends StatelessWidget {
-  const _ShutterButton({required this.onPressed});
+  const _ShutterButton({super.key, required this.onPressed});
 
   final VoidCallback? onPressed;
 
