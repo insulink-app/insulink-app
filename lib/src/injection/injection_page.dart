@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/activity_mode/recovery_bolus.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/injection/carbs_on_board.dart';
 import 'package:insulink/src/injection/photo_carbs.dart';
@@ -79,6 +80,9 @@ class _InjectionPageState extends State<InjectionPage> {
   bool _bolusEdited = false;
   bool _settingBolus = false;
 
+  /// The cut after a long endurance bout, read once when the sheet opens.
+  RecoveryBolus _recoveryBolus = const RecoveryBolus.none();
+
   @override
   void initState() {
     super.initState();
@@ -96,6 +100,17 @@ class _InjectionPageState extends State<InjectionPage> {
     // the initial text); after the first frame so setState is legal.
     WidgetsBinding.instance.addPostFrameCallback((_) => _recompute());
     _refreshPumpInsulin();
+    _loadRecoveryBolus();
+  }
+
+  /// Reads the recovery cut, which is kept in storage by the service isolate's
+  /// activity mode, and recomputes the suggestion with it.
+  Future<void> _loadRecoveryBolus() async {
+    final recovery = await RecoveryBolus.load(DateTime.now());
+    if (mounted) {
+      _recoveryBolus = recovery;
+      _recompute();
+    }
   }
 
   /// Re-reads the pod store before anything is suggested from it.
@@ -171,7 +186,8 @@ class _InjectionPageState extends State<InjectionPage> {
       .store
       .bolusUnitsWithin(const Duration(hours: 1));
 
-  /// Suggested bolus in units, or null while glucose is empty/invalid.
+  /// Suggested bolus in units, or null while glucose is empty/invalid. Cut by
+  /// [_recoveryBolus] after a long endurance bout.
   double? get _suggested {
     final glucose = _glucose;
     if (glucose == null) {
@@ -179,12 +195,14 @@ class _InjectionPageState extends State<InjectionPage> {
     }
     final bolus = context.read<ProfileBolusState>();
     final glucoseState = context.read<ProfileGlucoseState>();
-    return bolus.suggestedBolus(
-      carbs: _carbs,
-      glucoseMgdl: glucose,
-      targetMgdl: glucoseState.targetMid,
-      iobUnits: _activeInsulin,
-      cobGrams: const CarbsOnBoard().grams(context.read<MealState>().meals),
+    return _recoveryBolus.reduce(
+      bolus.suggestedBolus(
+        carbs: _carbs,
+        glucoseMgdl: glucose,
+        targetMgdl: glucoseState.targetMid,
+        iobUnits: _activeInsulin,
+        cobGrams: const CarbsOnBoard().grams(context.read<MealState>().meals),
+      ),
     );
   }
 
@@ -424,6 +442,14 @@ class _InjectionPageState extends State<InjectionPage> {
               : null,
         ),
         _activeInsulinNote(),
+        if (_recoveryBolus.applies)
+          _bolusNote(
+            Locales.string(
+              context,
+              'injection.recovery_bolus',
+              params: ['${_recoveryBolus.percent}'],
+            ),
+          ),
       ],
     );
   }
@@ -444,6 +470,17 @@ class _InjectionPageState extends State<InjectionPage> {
     if (units <= 0) {
       return const SizedBox.shrink();
     }
+    return _bolusNote(
+      Locales.string(
+        context,
+        'injection.active_insulin',
+        params: [sportDecimal(units, 1)],
+      ),
+    );
+  }
+
+  /// One muted line under the bolus field that explains its number.
+  Widget _bolusNote(String text) {
     final muted = context.ink.muted;
     return Padding(
       padding: const EdgeInsets.only(top: 12, left: 4),
@@ -452,14 +489,7 @@ class _InjectionPageState extends State<InjectionPage> {
         children: [
           Icon(PhosphorIconsRegular.info, size: 16, color: muted),
           Expanded(
-            child: Text(
-              Locales.string(
-                context,
-                'injection.active_insulin',
-                params: [sportDecimal(units, 1)],
-              ),
-              style: InkText.label.copyWith(color: muted),
-            ),
+            child: Text(text, style: InkText.label.copyWith(color: muted)),
           ),
         ],
       ),

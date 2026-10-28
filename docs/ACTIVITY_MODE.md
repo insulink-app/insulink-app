@@ -65,8 +65,12 @@ the UI agree without a message:
 6. **An endurance bout of at least 20 minutes ended less than 6 hours ago**
    (a setting, 0 switches it off) → recovery (`ActivityBout`). Every endurance
    reading, whatever its source, is booked into a bout; readings under 15
-   minutes apart belong to the same one. Not offered as a manual choice (the
-   toggle stays at four segments); Normal by hand ends it early.
+   minutes apart belong to the same one. The recovery runs from the end of the
+   latest bout that **reached** 20 minutes, not from the latest bout: it used
+   to follow only the last one, so a 9-minute walk at 18:44 wiped out the
+   recovery of a 53-minute walk that afternoon, and dinner was dosed as on a
+   quiet day. Not offered as a manual choice (the toggle stays at four
+   segments); Normal by hand ends it early.
 7. Otherwise normal.
 
 ### "Ongoing" from the training detection
@@ -82,6 +86,38 @@ A sighting counts for 10 minutes (`detectedFor`). That bridges two runs and
 ends the mode by itself when detection stops running: battery saver, a dead
 service. So endurance starts about **8 minutes into** a walk or ride, and ends
 5 to 7 minutes after the last movement.
+
+## The smaller meal bolus in the recovery
+
+The recovery's lower basal has almost nothing to take away in the evening and
+at night, where a schedule is often close to zero. The insulin behind the lows
+after an active day is the dinner bolus, and the loop cannot take that back.
+So the bolus calculator (`InjectionPage`) cuts its suggestion by a percentage
+(`RecoveryBolus`, setting `activity_recovery_bolus_percent`):
+
+- **Off by default (0 %).** It changes a dose the user gives by hand, so it is
+  never switched on for them.
+- **Only after a long bout**: at least 30 minutes (setting
+  `activity_recovery_bolus_minutes`, 20 to 120), against the 20 of the loop's
+  recovery. A ride to work or a walk to the shop leaves the next meal alone. A
+  bout is continuous endurance with gaps under 15 minutes; detection starts
+  about 8 minutes in and ends 5 to 7 after, so the measured length is close to
+  the real one. Several short walks do not add up to a long one.
+- **For the recovery hours** after that bout ends (`activity_recovery_hours`).
+- **Said on the sheet**: a line under the bolus field names the cut, and the
+  field stays editable.
+- The whole suggestion is cut, meal and correction alike. The high alarm's
+  correction button is not: it is a correction alone, and the loop's own
+  recovery already holds back there.
+
+## The settings page
+
+The numbers sit under four headings, by when they apply (`ActivityModeSection.groups`):
+**Ausdauer** (target, basal, the pulse that counts as endurance), **Kraftsport**
+(basal), **Erholung nach Ausdauer** (duration, target, basal) and **Bolusrechner
+in der Erholung** (bout length, reduction). Each heading carries its explanation
+behind an ⓘ, and the labels under it are short ("Zielwert", "Basal") because the
+heading already names the mode. A test keeps every setting in exactly one group.
 
 ## The selector
 

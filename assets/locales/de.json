@@ -1526,34 +1526,52 @@
       "_": "Sportmodus",
       "description": "So passt die Automatik die Abgabe an, solange ein Sportmodus läuft. Ausgeschaltet bleibt sie immer bei deinen normalen Werten. Alle Grenzen der automatischen Abgabe gelten weiter.",
       "endurance_target": {
-        "_": "Zielwert bei Ausdauer",
+        "_": "Zielwert",
         "value": "# mg/dL"
       },
       "endurance_basal": {
-        "_": "Basal bei Ausdauer",
+        "_": "Basal",
         "value": "# %"
       },
       "strength_basal": {
-        "_": "Basal bei Kraftsport",
+        "_": "Basal",
         "value": "# %"
       },
       "enabled": "Sportmodus verwenden",
       "on_overview": "Auswahl auf der Übersicht zeigen",
       "pulse_threshold": {
-        "_": "Puls für Ausdauer",
+        "_": "Erkannt ab Puls",
         "value": "ab # bpm"
       },
       "recovery_target": {
-        "_": "Zielwert in der Erholung",
+        "_": "Zielwert",
         "value": "# mg/dL"
       },
       "recovery_basal": {
-        "_": "Basal in der Erholung",
+        "_": "Basal",
         "value": "# %"
       },
       "recovery_hours": {
-        "_": "Erholung nach Ausdauer",
+        "_": "Dauer",
         "value": "# Std."
+      },
+      "recovery_bolus": {
+        "_": "Vorschlag senken um",
+        "value": "# %"
+      },
+      "recovery_bolus_minutes": {
+        "_": "Ab einer Einheit von",
+        "value": "# Min."
+      },
+      "group": {
+        "endurance": "Ausdauer",
+        "endurance_info": "Läuft, solange du gehst, läufst oder Rad fährst. Die App erkennt das an deiner Bewegung oder an einem Puls über der Grenze. Die Automatik zielt dann höher und gibt weniger Basal.",
+        "strength": "Kraftsport",
+        "strength_info": "Läuft während eines Trainings aus deinen Routinen. Beim Heben steigt der Zucker oft, deshalb kann die Automatik hier mehr Basal geben. Jede Grenze der Automatik gilt weiter.",
+        "recovery": "Erholung nach Ausdauer",
+        "recovery_info": "Nach mindestens 20 Minuten Ausdauer bleibt dein Körper stundenlang empfindlicher für Insulin. So lange zielt die Automatik etwas höher und gibt etwas weniger Basal. Eine Dauer von 0 schaltet die Erholung aus.",
+        "recovery_bolus": "Bolusrechner in der Erholung",
+        "recovery_bolus_info": "Senkt in der Erholung den Vorschlag des Bolusrechners, aber nur nach einer zusammenhängenden Einheit von mindestens dieser Länge. Mehrere kurze Wege zählen nicht zusammen. 0 % schaltet es aus. Der Bolusrechner zeigt die Senkung an, und du kannst den Wert ändern."
       }
     },
     "trash": "Papierkorb",
@@ -1603,6 +1621,7 @@
     "carbs": "Kohlenhydrate",
     "glucose": "Aktueller Glukosewert",
     "active_insulin": "Aktives Insulin: # E bereits abgezogen",
+    "recovery_bolus": "Erholung nach langer Ausdauer: Vorschlag um # % gesenkt",
     "carbs_tab": "Kohlenhydrate",
     "products_tab": "Produkte",
     "bolus": {
