@@ -1526,42 +1526,52 @@
       "_": "Activity mode",
       "description": "How the automation adjusts delivery while an activity mode runs. Switched off, it always keeps to your normal values. Every limit of automated delivery still applies.",
       "endurance_target": {
-        "_": "Target during endurance",
+        "_": "Target",
         "value": "# mg/dL"
       },
       "endurance_basal": {
-        "_": "Basal during endurance",
+        "_": "Basal",
         "value": "# %"
       },
       "strength_basal": {
-        "_": "Basal during strength",
+        "_": "Basal",
         "value": "# %"
       },
       "enabled": "Use activity mode",
       "on_overview": "Show the choice on the overview",
       "pulse_threshold": {
-        "_": "Pulse for endurance",
+        "_": "Detected from pulse",
         "value": "from # bpm"
       },
       "recovery_target": {
-        "_": "Target during recovery",
+        "_": "Target",
         "value": "# mg/dL"
       },
       "recovery_basal": {
-        "_": "Basal during recovery",
+        "_": "Basal",
         "value": "# %"
       },
       "recovery_hours": {
-        "_": "Recovery after endurance",
+        "_": "Duration",
         "value": "# h"
       },
       "recovery_bolus": {
-        "_": "Bolus during recovery",
-        "value": "# % less"
+        "_": "Lower suggestion by",
+        "value": "# %"
       },
       "recovery_bolus_minutes": {
-        "_": "Smaller bolus after endurance of",
+        "_": "After a bout of",
         "value": "# min"
+      },
+      "group": {
+        "endurance": "Endurance",
+        "endurance_info": "Runs while you walk, run or cycle. The app notices it from your movement or a pulse above the threshold. The automation then aims higher and gives less basal.",
+        "strength": "Strength",
+        "strength_info": "Runs during a workout from your routines. Lifting often pushes glucose up, so the automation may give more basal here. Every limit of the automation still applies.",
+        "recovery": "Recovery after endurance",
+        "recovery_info": "After at least 20 minutes of endurance your body stays more sensitive to insulin for hours. Until then the automation aims a little higher and gives a little less basal. A duration of 0 switches recovery off.",
+        "recovery_bolus": "Bolus calculator during recovery",
+        "recovery_bolus_info": "Lowers the bolus calculator's suggestion during recovery, but only after one continuous bout of at least this length. Several short walks do not add up. 0 % switches it off. The calculator shows the reduction, and you can change the value."
       }
     },
     "trash": "Trash",

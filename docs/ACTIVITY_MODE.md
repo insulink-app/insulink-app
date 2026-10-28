@@ -110,6 +110,15 @@ So the bolus calculator (`InjectionPage`) cuts its suggestion by a percentage
   correction button is not: it is a correction alone, and the loop's own
   recovery already holds back there.
 
+## The settings page
+
+The numbers sit under four headings, by when they apply (`ActivityModeSection.groups`):
+**Ausdauer** (target, basal, the pulse that counts as endurance), **Kraftsport**
+(basal), **Erholung nach Ausdauer** (duration, target, basal) and **Bolusrechner
+in der Erholung** (bout length, reduction). Each heading carries its explanation
+behind an ⓘ, and the labels under it are short ("Zielwert", "Basal") because the
+heading already names the mode. A test keeps every setting in exactly one group.
+
 ## The selector
 
 `ActivityModeSelector`: Auto / Normal / Ausdauer / Kraft, with one line under it
