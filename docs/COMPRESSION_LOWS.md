@@ -54,10 +54,10 @@ glucose page (`CompressionFilterToggle`), with a line on what it does.
 
 On, time in range (overview and analysis), patterns, averages and the history
 compute without those readings. The charts do not just drop them
-(`CompressionChartView`): the glucose line breaks around the dip, a muted band
-lies behind the left-out stretch, and the raw readings run through it as a
-faint dotted line. A gap of its own would read as a sensor outage; this way it
-reads as filtered. Off, everything shows the raw readings. The forecast check
+(`CompressionChartView`): a dashed line in the glucose line's colour bridges
+the reading before the fall and the one after the rise. A gap would read as a
+sensor outage and a solid line as measured; the dashes read as filled in. The
+background stays as it is. Off, everything shows the raw readings. The forecast check
 always reads the raw archive, since it measures the forecast against what the
 sensor said.
 

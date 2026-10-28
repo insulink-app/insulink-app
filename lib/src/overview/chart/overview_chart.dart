@@ -50,8 +50,9 @@ class OverviewChart extends StatefulWidget {
   final SplayTreeMap<int, int> byTime;
 
   /// Compression lows left out of [byTime] (`CompressionChartView.hidden`),
-  /// each its raw readings keyed like [byTime]. Drawn as a faint dotted line
-  /// on a shaded stretch, so what was left out stays visible as left out.
+  /// each its raw readings keyed like [byTime]. Bridged by a dashed line from
+  /// its first to its last reading, so what was left out reads as left out
+  /// rather than as a sensor gap.
   final List<List<MapEntry<int, int>>> hiddenDips;
 
   /// Overlay logged [meals] on the chart (dashed marker + tappable dot that opens
@@ -713,7 +714,7 @@ class _OverviewChartState extends State<OverviewChart> {
           )
         : null;
     final bars = slope == null
-        ? [...glucoseBars, ..._hiddenDipBars(latestSecs, shift, glucose)]
+        ? [...glucoseBars, ..._bridgeBars(latestSecs, shift, glucose, colors)]
         : [slope.bar()];
     // Dashed forecast line past the latest reading. Always built (anchored at the
     // latest reading, not the scroll position) and clipped by fl_chart once
@@ -773,13 +774,6 @@ class _OverviewChartState extends State<OverviewChart> {
     final chart = GlucoseLineChart(
       key: key,
       bars: bars,
-      hiddenRanges: [
-        for (final dip in widget.hiddenDips)
-          (
-            from: (dip.first.key - latestSecs) / 3600.0 + shift,
-            to: (dip.last.key - latestSecs) / 3600.0 + shift,
-          ),
-      ],
       betweenBars: [if (prediction.band != null) prediction.band!],
       touchBarIndex: _touchBarIndex,
       axis: axis,
@@ -1042,27 +1036,29 @@ class _OverviewChartState extends State<OverviewChart> {
   /// history draws only a handful of lines. x maps a meal's wall-clock time the
   /// same way readings map: `(time - anchor)` hours, phase-shifted. Empty when
   /// the overlay is off or the session clock is unknown (no [anchor]).
-  /// One faint dotted line per left-out compression low, through its raw
-  /// readings, under the shaded stretch [GlucoseLineChart] lays behind it.
-  List<LineChartBarData> _hiddenDipBars(
+  /// One dashed line per left-out compression low, straight from the reading
+  /// before the fall to the one after the rise, in the zone colour of the
+  /// lower end, so the glucose line reads as one with its bridged stretch.
+  List<LineChartBarData> _bridgeBars(
     int latestSecs,
     double shift,
     ProfileGlucoseState glucose,
+    GlucoseColors colors,
   ) {
-    final color = context.ink.muted;
+    FlSpot spot(MapEntry<int, int> reading) => FlSpot(
+      (reading.key - latestSecs) / 3600.0 + shift,
+      glucose.toDisplay(reading.value),
+    );
     return [
       for (final dip in widget.hiddenDips)
         LineChartBarData(
-          spots: [
-            for (final reading in dip)
-              FlSpot(
-                (reading.key - latestSecs) / 3600.0 + shift,
-                glucose.toDisplay(reading.value),
-              ),
-          ],
-          color: color.withValues(alpha: 0.6),
-          barWidth: 1.5,
-          dashArray: const [2, 3],
+          spots: [spot(dip.first), spot(dip.last)],
+          color: colors.forValue(
+            math.min(dip.first.value, dip.last.value),
+            glucose,
+          ),
+          barWidth: widget.preview ? 2.5 : 3,
+          dashArray: const [4, 4],
           dotData: const FlDotData(show: false),
         ),
     ];
