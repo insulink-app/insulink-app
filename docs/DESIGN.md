@@ -309,7 +309,8 @@ Where the ⓘ goes:
 - **A group or section**: at the end of its heading (`SectionHeader.actions`,
   or `InfoHeading` where there is no section header).
 - **One control**: right beside it (the suggestion cards' generate button, the
-  night mode's status line).
+  night mode's status line). A switch row takes it as
+  `ProfileToggleRow.infoKey`, between label and switch.
 
 What stays on the page: **warnings** ("not encrypted" on the backup, the silent
 mode warning), **state** ("not enough data", "currently asleep"), and a one-line
