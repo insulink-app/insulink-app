@@ -49,6 +49,9 @@ class DaySectionHeader extends StatelessWidget {
     return locale.formatShortDate(day);
   }
 
+  /// The calendar day as a UTC midnight. Local midnights are 23 or 25 hours
+  /// apart across a clock change, so a day before the change was "8 days" ago
+  /// a week later and lost its weekday, and "Gestern" fell back to a date.
   DateTime _midnight(DateTime time) =>
-      DateTime(time.year, time.month, time.day);
+      DateTime.utc(time.year, time.month, time.day);
 }
