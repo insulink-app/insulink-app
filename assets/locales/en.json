@@ -34,6 +34,7 @@
     "continue": "Continue",
     "cancel": "Cancel",
     "close": "Close",
+    "explain": "Explanation",
     "done": "Done",
     "delete": "Delete"
   },
@@ -1641,6 +1642,7 @@
       "no_food": "No food was recognised in the photo.",
       "shutter": "Take photo",
       "analysing": "Analysing",
+      "retake": "New photo",
       "no_camera": "The camera could not be opened.",
       "other": "Other",
       "manual": "Manual",

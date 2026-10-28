@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/info_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
@@ -17,6 +18,7 @@ class ProfileToggleRow extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.activeColor,
+    this.infoKey,
   });
 
   final String labelKey;
@@ -25,6 +27,10 @@ class ProfileToggleRow extends StatelessWidget {
 
   /// Thumb colour when on (defaults to the theme primary).
   final Color? activeColor;
+
+  /// The setting's explanation, behind an [InfoButton] between label and
+  /// switch.
+  final String? infoKey;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +43,10 @@ class ProfileToggleRow extends StatelessWidget {
           Expanded(
             child: LocaleText(labelKey, style: const TextStyle(fontSize: 15)),
           ),
-          const SizedBox(width: 16),
+          if (infoKey case final infoKey?)
+            InfoButton(titleKey: labelKey, bodyKey: infoKey)
+          else
+            const SizedBox(width: 16),
           Switch(
             value: value,
             onChanged: onChanged,

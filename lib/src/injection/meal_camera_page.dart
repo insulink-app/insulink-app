@@ -3,10 +3,12 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/ink_dialog.dart';
+import 'package:insulink/src/injection/meal_analysing_label.dart';
 import 'package:insulink/src/injection/meal_analysing_overlay.dart';
 import 'package:insulink/src/injection/meal_camera_parts.dart';
 import 'package:insulink/src/injection/meal_camera_zoom.dart';
 import 'package:insulink/src/injection/photo_estimate.dart';
+import 'package:insulink/src/injection/photo_estimate_run.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// Opens the meal camera and returns the estimate of the photo taken there, or
@@ -27,7 +29,11 @@ Future<PhotoEstimate?> photographMeal(BuildContext context) {
 /// After the shutter the photo stays on screen under [MealAnalysingOverlay]
 /// while the server estimates it, instead of a spinner popup over a page the
 /// user no longer looks at. A failed estimate, or one that saw no food, says so
-/// and hands back the live picture for another try.
+/// and hands back the live picture for another try. The shutter turns into
+/// "New photo" meanwhile, which calls the estimate off and hands the live
+/// picture back at once; leaving the page,
+/// by the close button or the back gesture, calls it off too
+/// ([PhotoEstimateRun]), so the server stops the model.
 ///
 /// The capture runs at [ResolutionPreset.veryHigh] (1080p): at 720p the crust
 /// edges of stacked toast blurred into one and the model counted too few
@@ -53,6 +59,9 @@ class _MealCameraPageState extends State<MealCameraPage> {
   Uint8List? _photo;
   bool _torch = false;
 
+  /// The estimate of [_photo] while it runs.
+  PhotoEstimateRun? _run;
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +70,7 @@ class _MealCameraPageState extends State<MealCameraPage> {
 
   @override
   void dispose() {
+    _run?.cancel();
     _camera?.dispose();
     super.dispose();
   }
@@ -142,8 +152,9 @@ class _MealCameraPageState extends State<MealCameraPage> {
       _torch = false;
     });
     camera.setFlashMode(FlashMode.off).ignore();
-    final estimate = await PhotoEstimate.request(context, photo);
-    if (!mounted) {
+    final run = _run = PhotoEstimateRun();
+    final estimate = await run.result(context, photo);
+    if (!mounted || run.cancelled) {
       return;
     }
     if (estimate == null || !estimate.hasFood) {
@@ -152,6 +163,15 @@ class _MealCameraPageState extends State<MealCameraPage> {
       );
     }
     _finish(estimate);
+  }
+
+  /// Calls the running estimate off and goes back to the live picture.
+  void _retake() {
+    _run?.cancel();
+    setState(() {
+      _photo = null;
+      _run = null;
+    });
   }
 
   /// Hands [estimate] on: to the [MealCameraPage.next] page in place of the
@@ -198,6 +218,8 @@ class _MealCameraPageState extends State<MealCameraPage> {
       onManual: widget.next == null || photo != null
           ? null
           : () => _finish(null),
+      onRetake: photo != null ? _retake : null,
+      status: photo != null ? const MealAnalysingLabel() : null,
       picture: photo != null
           ? MealAnalysingOverlay(photo: photo)
           : _camera == null

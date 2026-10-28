@@ -3,7 +3,6 @@ import 'package:insulink/src/analysis/compression/compression_filter_toggle.dart
 import 'package:insulink/src/activity_mode/activity_mode_section.dart';
 import 'package:insulink/src/google_health/heart_rate_zones_editor.dart';
 import 'package:insulink/src/google_health/profile_sleep_targets_editor.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_goals_editor.dart';
 import 'package:insulink/src/profile/backup/profile_backup_export.dart';
 import 'package:insulink/src/profile/basal/profile_basal_selection.dart';
@@ -59,6 +58,19 @@ class ProfileTopicCatalog {
 
   List<ProfileTopic> get all => [for (final group in groups) ...group.topics];
 
+  /// The explanation of each page that has one, opened from the ⓘ in its app
+  /// bar ([ProfileTopicPage.infoKey]).
+  static const _infoKeys = {
+    'profile.loop': 'profile.loop.description',
+    'profile.activity_mode': 'profile.activity_mode.description',
+    'profile.night': 'profile.night.description',
+    'profile.body': 'profile.body.note',
+    'profile.battery': 'profile.battery.description',
+    'profile.security': 'profile.security.description',
+  };
+
+  String? infoFor(String titleKey) => _infoKeys[titleKey];
+
   List<ProfileTopic> get _therapy => [
     (
       titleKey: 'profile.glucose',
@@ -95,8 +107,6 @@ class ProfileTopicCatalog {
       icon: PhosphorIconsBold.repeat,
       searchKey: 'profile.search.loop',
       children: () => const [
-        LocaleText('profile.loop.description', style: TextStyle(fontSize: 15)),
-        SizedBox(height: 12),
         NotificationThresholdCard(LoopSettings.suspendBelow),
         SizedBox(height: 10),
         NotificationThresholdCard(LoopSettings.maxRate),

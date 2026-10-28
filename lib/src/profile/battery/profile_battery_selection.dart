@@ -25,11 +25,6 @@ class ProfileBatterySelection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LocaleText(
-          'profile.battery.description',
-          style: TextStyle(fontSize: 15),
-        ),
-        const SizedBox(height: 10),
         ProfileSegments(_levels(context, state)),
         const SizedBox(height: 14),
         ProfileDurationRow(

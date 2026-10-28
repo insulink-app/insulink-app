@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/info_button.dart';
 import 'package:insulink/src/base/action_buttons.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The generate button, shared by both suggestions.
@@ -15,6 +15,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 class TuningControls extends StatelessWidget {
   const TuningControls({
     super.key,
+    required this.titleKey,
     required this.descriptionKey,
     required this.onGenerate,
   });
@@ -22,27 +23,27 @@ class TuningControls extends StatelessWidget {
   /// The period every suggestion is computed over.
   static const int windowDays = 30;
 
+  /// What the suggestion is called, the title of its explanation sheet.
+  final String titleKey;
+
+  /// How the suggestion is worked out, behind the [InfoButton] beside the
+  /// button rather than above it.
   final String descriptionKey;
   final VoidCallback onGenerate;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
+      spacing: 4,
       children: [
-        LocaleText(
-          descriptionKey,
-          style: TextStyle(
-            fontSize: 13,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        Expanded(
+          child: SecondaryActionButton(
+            labelKey: 'profile.tuning.generate',
+            icon: PhosphorIconsBold.trendUp,
+            onPressed: onGenerate,
           ),
         ),
-        const SizedBox(height: 12),
-        SecondaryActionButton(
-          labelKey: 'profile.tuning.generate',
-          icon: PhosphorIconsBold.trendUp,
-          onPressed: onGenerate,
-        ),
+        InfoButton(titleKey: titleKey, bodyKey: descriptionKey),
       ],
     );
   }

@@ -23,6 +23,10 @@ class Request {
   /// How long one attempt may take. Most requests keep the default; a meal
   /// photo estimate waits on the model and gets longer.
   final Duration timeout;
+
+  /// Completing it drops the request on the spot, whatever stage it is at,
+  /// and nothing is retried after that. Only a POST takes one.
+  final Future<void>? abortTrigger;
   static final RequestRefresh _refresh = RequestRefresh();
   // 10s, not 5: a backgrounded device's radio is asleep, so a cold DNS+TLS
   // handshake on the first request after idle often needs more than 5s.
@@ -34,6 +38,9 @@ class Request {
   /// clears the session and sends the user back to the sign-in page.
   static const _publicPaths = {"/signin/", "/signup/", "/refresh/"};
   int _retries = 0;
+
+  /// Whether [abortTrigger] dropped the last attempt, which is never retried.
+  bool _aborted = false;
 
   /// The last transport-level exception (no HTTP response), so a caller logging
   /// a null status can show WHY instead of just "status null". Cleared on a
@@ -47,13 +54,15 @@ class Request {
     this.timeout = const Duration(seconds: _timeout),
   }) : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
        path = url,
-       method = "GET";
+       method = "GET",
+       abortTrigger = null;
 
   Request.post({
     required String url,
     this.headers = const {},
     this.body = const {},
     this.timeout = const Duration(seconds: _timeout),
+    this.abortTrigger,
   }) : url = "https://${EnvironmentOptions.environment.endpoint}/v1$url",
        path = url,
        method = "POST";
@@ -79,7 +88,7 @@ class Request {
     Response? response,
     Map<String, String> headers,
   ) async {
-    if (response == null && _retries < _maxRetries) {
+    if (response == null && !_aborted && _retries < _maxRetries) {
       _retries += 1;
       await Future.delayed(Duration(milliseconds: 500 * _retries));
       var retried = await generateResponse(headers);
@@ -117,10 +126,9 @@ class Request {
     } else if (method == "POST") {
       try {
         Map<String, Object> body = Map.from(this.body);
-        final response = await post(
-          Uri.parse(url),
-          headers: headers,
-          body: jsonEncode(body),
+        final response = await _post(
+          headers,
+          jsonEncode(body),
         ).timeout(timeout);
         _logRequest(
           method: method,
@@ -131,6 +139,7 @@ class Request {
         lastError = null;
         return response;
       } catch (exception) {
+        _aborted = exception is RequestAbortedException;
         _logRequest(
           method: method,
           headers: headers,
@@ -142,6 +151,24 @@ class Request {
       }
     } else {
       throw UnsupportedError("Unsupported HTTP method: $method");
+    }
+  }
+
+  /// The POST, sent so that [abortTrigger] can drop it when there is one.
+  Future<Response> _post(Map<String, String> headers, String body) async {
+    final trigger = abortTrigger;
+    if (trigger == null) {
+      return post(Uri.parse(url), headers: headers, body: body);
+    }
+    final request =
+        AbortableRequest('POST', Uri.parse(url), abortTrigger: trigger)
+          ..headers.addAll(headers)
+          ..body = body;
+    final client = Client();
+    try {
+      return await Response.fromStream(await client.send(request));
+    } finally {
+      client.close();
     }
   }
 

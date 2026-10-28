@@ -163,8 +163,11 @@ class _ProfilePageState extends State<ProfilePage> {
   void _open(String titleKey, List<Widget> Function() children) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            ProfileTopicPage(titleKey: titleKey, children: children()),
+        builder: (_) => ProfileTopicPage(
+          titleKey: titleKey,
+          infoKey: const ProfileTopicCatalog().infoFor(titleKey),
+          children: children(),
+        ),
       ),
     );
   }

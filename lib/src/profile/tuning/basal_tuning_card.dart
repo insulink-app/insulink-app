@@ -43,6 +43,7 @@ class _BasalTuningCardState extends State<BasalTuningCard> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TuningControls(
+          titleKey: 'profile.tuning',
           descriptionKey: 'profile.tuning.description',
           onGenerate: _generate,
         ),
