@@ -84,6 +84,32 @@ class ActivityModeSettings {
     max: 12,
   );
 
+  /// How much smaller the calculator's meal bolus is during the recovery after
+  /// a long endurance bout; 0, the default, switches it off. A dose the user
+  /// gives by hand is theirs to change, so it is never cut unasked.
+  static const recoveryBolus = NotificationThreshold(
+    storageKey: 'activity_recovery_bolus_percent',
+    labelKey: 'profile.activity_mode.recovery_bolus',
+    valueKey: 'profile.activity_mode.recovery_bolus.value',
+    defaultValue: 0,
+    min: 0,
+    max: 50,
+    step: 5,
+  );
+
+  /// How long an endurance bout must last before the meal bolus is cut after
+  /// it. Longer than the recovery's own 20 minutes, so a ride to work or a walk
+  /// to the shop leaves the next meal's dose alone.
+  static const recoveryBolusMinutes = NotificationThreshold(
+    storageKey: 'activity_recovery_bolus_minutes',
+    labelKey: 'profile.activity_mode.recovery_bolus_minutes',
+    valueKey: 'profile.activity_mode.recovery_bolus_minutes.value',
+    defaultValue: 30,
+    min: 20,
+    max: 120,
+    step: 5,
+  );
+
   /// The pulse that, held for [ActivityPulseDetector.sustain], counts as
   /// endurance even when no walk or ride is detected (housework, a gym, a
   /// dance floor).
@@ -124,5 +150,7 @@ class ActivityModeSettings {
     recoveryTarget,
     recoveryBasal,
     recoveryHours,
+    recoveryBolus,
+    recoveryBolusMinutes,
   ];
 }

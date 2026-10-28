@@ -2,7 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/activity_mode/activity_mode.dart';
 import 'package:insulink/src/activity_mode/activity_mode_adjustment.dart';
 import 'package:insulink/src/activity_mode/activity_mode_store.dart';
+import 'package:insulink/src/activity_mode/activity_mode_settings.dart';
 import 'package:insulink/src/activity_mode/activity_pulse_detector.dart';
+import 'package:insulink/src/activity_mode/recovery_bolus.dart';
 
 import '../support/secure_storage_mock.dart';
 
@@ -21,15 +23,18 @@ void main() {
     return (reading.mode, reading.source);
   }
 
-  /// Walks for [length], with the loop reading the mode every five minutes.
-  Future<DateTime> walk(Duration length) async {
-    var at = start;
-    while (!at.isAfter(start.add(length))) {
+  /// Walks for [length] from [from], with the loop reading the mode every
+  /// five minutes.
+  Future<DateTime> walk(Duration length, {DateTime? from}) async {
+    final begin = from ?? start;
+    var at = begin;
+    while (!at.isAfter(begin.add(length))) {
       await store.markDetected(true, at);
       await store.current(at);
       at = at.add(const Duration(minutes: 5));
     }
-    return start.add(length);
+    await store.markDetected(false, at);
+    return begin.add(length);
   }
 
   test('a long walk is followed by six hours of recovery', () async {
@@ -58,6 +63,53 @@ void main() {
       ActivityMode.normal,
       ActivityModeSource.none,
     ));
+  });
+
+  test('a short walk after a long one keeps the recovery', () async {
+    final longEnd = await walk(const Duration(minutes: 50));
+    final shortEnd = await walk(
+      const Duration(minutes: 10),
+      from: longEnd.add(const Duration(hours: 2)),
+    );
+
+    expect(await modeAt(shortEnd.add(const Duration(minutes: 30))), (
+      ActivityMode.recovery,
+      ActivityModeSource.recovery,
+    ));
+  });
+
+  group('recovery bolus', () {
+    setUp(() => ActivityModeSettings.recoveryBolus.save(20));
+
+    test('a ride to work leaves the bolus alone', () async {
+      final end = await walk(const Duration(minutes: 20));
+
+      final cut = await RecoveryBolus.load(end.add(const Duration(hours: 1)));
+
+      expect(cut.applies, isFalse);
+      expect(cut.reduce(5), 5);
+    });
+
+    test('a long walk lowers the bolus for the recovery hours', () async {
+      final end = await walk(const Duration(minutes: 50));
+
+      final cut = await RecoveryBolus.load(end.add(const Duration(hours: 3)));
+      final lapsed = await RecoveryBolus.load(
+        end.add(const Duration(hours: 6, minutes: 1)),
+      );
+
+      expect(cut.reduce(5), closeTo(4, 1e-9));
+      expect(lapsed.applies, isFalse);
+    });
+
+    test('the bolus is never cut while the setting is 0', () async {
+      await ActivityModeSettings.recoveryBolus.save(0);
+      final end = await walk(const Duration(minutes: 50));
+
+      final cut = await RecoveryBolus.load(end.add(const Duration(hours: 1)));
+
+      expect(cut.applies, isFalse);
+    });
   });
 
   test('a pulse held above the threshold is endurance', () async {

@@ -1551,6 +1551,14 @@
       "recovery_hours": {
         "_": "Erholung nach Ausdauer",
         "value": "# Std."
+      },
+      "recovery_bolus": {
+        "_": "Bolus in der Erholung",
+        "value": "# % weniger"
+      },
+      "recovery_bolus_minutes": {
+        "_": "Bolus kleiner ab Ausdauer von",
+        "value": "# Min."
       }
     },
     "trash": "Papierkorb",
@@ -1600,6 +1608,7 @@
     "carbs": "Kohlenhydrate",
     "glucose": "Aktueller Glukosewert",
     "active_insulin": "Aktives Insulin: # E bereits abgezogen",
+    "recovery_bolus": "Erholung nach langer Ausdauer: Vorschlag um # % gesenkt",
     "carbs_tab": "Kohlenhydrate",
     "products_tab": "Produkte",
     "bolus": {

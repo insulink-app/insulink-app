@@ -1551,6 +1551,14 @@
       "recovery_hours": {
         "_": "Recovery after endurance",
         "value": "# h"
+      },
+      "recovery_bolus": {
+        "_": "Bolus during recovery",
+        "value": "# % less"
+      },
+      "recovery_bolus_minutes": {
+        "_": "Smaller bolus after endurance of",
+        "value": "# min"
       }
     },
     "trash": "Trash",
@@ -1600,6 +1608,7 @@
     "carbs": "Carbohydrates",
     "glucose": "Current glucose",
     "active_insulin": "Active insulin: # U already subtracted",
+    "recovery_bolus": "Recovery after a long endurance bout: suggestion lowered by # %",
     "carbs_tab": "Carbs",
     "products_tab": "Products",
     "bolus": {
