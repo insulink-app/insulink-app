@@ -116,6 +116,7 @@
       "axis_now": "jetzt",
       "show_meals": "Mahlzeiten anzeigen",
       "show_slope": "Steigung statt Glukose zeigen",
+      "hide_compression": "Kompressions-Lows im Schlaf ausblenden",
       "insulin": {
         "_": "Insulin",
         "basal": "Basal",
@@ -217,11 +218,6 @@
     }
   },
   "analysis": {
-    "compression": {
-      "hide": "Kompressions-Lows im Schlaf ausblenden",
-      "hidden": "Kompressions-Lows im Schlaf ausgeblendet: #",
-      "shown": "Vermutliche Kompressions-Lows im Schlaf: #, Rohdaten angezeigt"
-    },
     "label": "Analyse",
     "tab": {
       "ranges": "Bereiche",

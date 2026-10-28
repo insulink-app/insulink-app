@@ -116,6 +116,7 @@
       "axis_now": "now",
       "show_meals": "Show meals",
       "show_slope": "Show rate of change instead",
+      "hide_compression": "Hide compression lows during sleep",
       "insulin": {
         "_": "Insulin",
         "basal": "Basal",
@@ -217,11 +218,6 @@
     }
   },
   "analysis": {
-    "compression": {
-      "hide": "Hide compression lows during sleep",
-      "hidden": "Compression lows during sleep hidden: #",
-      "shown": "Likely compression lows during sleep: #, raw data shown"
-    },
     "label": "Analysis",
     "tab": {
       "ranges": "Ranges",

@@ -280,7 +280,10 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.food),
         ChangeNotifierProvider(create: (_) => prefs.meals),
         ChangeNotifierProvider(
-          create: (_) => NightCompressionState(meals: prefs.meals)..load(),
+          create: (context) => NightCompressionState(
+            meals: prefs.meals,
+            glucose: context.read<CgmController>(),
+          )..load(),
         ),
         ChangeNotifierProvider(create: (_) => prefs.nutritionLayout),
         ChangeNotifierProvider(create: (_) => prefs.inventory),
