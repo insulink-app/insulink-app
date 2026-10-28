@@ -1639,6 +1639,7 @@
       "no_food": "Auf dem Foto wurde kein Essen erkannt.",
       "shutter": "Foto aufnehmen",
       "analysing": "Wird analysiert",
+      "retake": "Neues Foto",
       "no_camera": "Die Kamera konnte nicht geöffnet werden.",
       "other": "Sonstiges",
       "manual": "Manuell",

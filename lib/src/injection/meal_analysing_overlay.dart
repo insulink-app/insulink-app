@@ -5,14 +5,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/food_contour_painter.dart';
 import 'package:insulink/src/injection/food_contours.dart';
-import 'package:insulink/src/injection/meal_analysing_label.dart';
 import 'package:insulink/src/injection/meal_camera_parts.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The photo just taken, held still where the live picture was while the server
 /// looks at it: darkened, a soft accent line sweeping over it like a scanner,
 /// the food's own outlines ([FoodContours]) lighting up wherever the line
-/// passes, and [MealAnalysingLabel] at the foot. The line eases
+/// passes. What it is doing is said under it, by `MealAnalysingLabel` in the
+/// camera's foot. The line eases
 /// into each turn, and both it and the glow fade just before the top and
 /// bottom, so the turns stay quiet while the rest of the plate lights fully. Reduced motion
 /// stops the line and keeps the outlines softly lit.
@@ -75,32 +75,26 @@ class _MealAnalysingOverlayState extends State<MealAnalysingOverlay>
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        MealTopPicture(
-          child: Stack(
-            children: [
-              Image.memory(
-                widget.photo,
-                width: double.infinity,
-                fit: BoxFit.fitWidth,
-                gaplessPlayback: true,
-              ),
-              const Positioned.fill(child: ColoredBox(color: Colors.black38)),
-              Positioned.fill(
-                child: RepaintBoundary(
-                  child: AnimatedBuilder(
-                    animation: _sweep,
-                    builder: (context, _) => _scan(context),
-                  ),
-                ),
-              ),
-            ],
+    return MealTopPicture(
+      child: Stack(
+        children: [
+          Image.memory(
+            widget.photo,
+            width: double.infinity,
+            fit: BoxFit.fitWidth,
+            gaplessPlayback: true,
           ),
-        ),
-        const MealAnalysingLabel(),
-      ],
+          const Positioned.fill(child: ColoredBox(color: Colors.black38)),
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: _sweep,
+                builder: (context, _) => _scan(context),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

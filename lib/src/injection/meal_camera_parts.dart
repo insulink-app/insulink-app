@@ -7,8 +7,8 @@ import 'package:insulink/src/injection/meal_camera_zoom.dart';
 /// The meal camera's chrome around [picture], black and white like the barcode
 /// scanner: close at the top, the zoom and [MealCameraDeck] at the foot. A null
 /// [onTorch] or [onManual] hides that control and a null [onShutter] dims it
-/// (camera starting, or the camera opened just for a photo); with neither
-/// shutter nor manual entry, while a photo is analysed, the foot goes.
+/// (camera starting, or the camera opened just for a photo). While a photo is
+/// analysed, [status] takes the zoom's place and [onRetake] the shutter's.
 class MealCameraFrame extends StatelessWidget {
   const MealCameraFrame({
     super.key,
@@ -18,6 +18,8 @@ class MealCameraFrame extends StatelessWidget {
     required this.onTorch,
     required this.onShutter,
     this.onManual,
+    this.onRetake,
+    this.status,
   });
 
   final Widget picture;
@@ -28,6 +30,13 @@ class MealCameraFrame extends StatelessWidget {
   final VoidCallback? onTorch;
   final VoidCallback? onShutter;
   final VoidCallback? onManual;
+  final VoidCallback? onRetake;
+
+  /// What the analysis is doing, shown above the deck instead of the zoom.
+  final Widget? status;
+
+  bool get _hasFoot =>
+      onShutter != null || onManual != null || onRetake != null;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +51,7 @@ class MealCameraFrame extends StatelessWidget {
       ),
       body: Stack(
         fit: StackFit.expand,
-        children: [picture, if (onShutter != null || onManual != null) _foot()],
+        children: [picture, if (_hasFoot) _foot()],
       ),
     );
   }
@@ -70,10 +79,14 @@ class MealCameraFrame extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               spacing: 20,
               children: [
-                if (zoomLabel case final label?) CameraZoomPill(label: label),
+                if (status case final status?)
+                  SizedBox(height: 32, child: Center(child: status))
+                else if (zoomLabel case final label?)
+                  CameraZoomPill(label: label),
                 MealCameraDeck(
                   onManual: onManual,
                   onShutter: onShutter,
+                  onRetake: onRetake,
                   onTorch: onTorch,
                   torch: torch,
                 ),
