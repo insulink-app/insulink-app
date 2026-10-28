@@ -10,6 +10,9 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 /// estimate is at ([PhotoEstimateStep]), asked for every [_interval]. Until the
 /// first step arrives it says "Analysing"; after that the step says it better,
 /// so the two never stack. A new step fades in over the old one.
+///
+/// It sits on the zoom's dark pill, in full white: the photo can reach behind
+/// the foot, and a bright plate there swallowed the dimmed type.
 class MealAnalysingLabel extends StatefulWidget {
   const MealAnalysingLabel({super.key});
 
@@ -52,24 +55,33 @@ class _MealAnalysingLabelState extends State<MealAnalysingLabel> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      spacing: 10,
-      children: [
-        const SizedBox.square(
-          dimension: 14,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: Colors.white70,
-          ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(InkRadius.field),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 10,
+          children: [
+            const SizedBox.square(
+              dimension: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            Flexible(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: _line(),
+              ),
+            ),
+          ],
         ),
-        Flexible(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child: _line(),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -83,7 +95,7 @@ class _MealAnalysingLabelState extends State<MealAnalysingLabel> {
       params: [step?.detail ?? ''],
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: InkText.label.copyWith(color: Colors.white70),
+      style: InkText.label.copyWith(color: Colors.white),
     );
   }
 }
