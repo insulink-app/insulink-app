@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/info_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/night/night_mode.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold_card.dart';
@@ -49,8 +50,6 @@ class _NightModeSectionState extends State<NightModeSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const LocaleText('profile.night.description', style: TextStyle(fontSize: 15)),
-        const SizedBox(height: 10),
         ProfileSegments([
           for (final choice in NightModeChoice.values)
             (
@@ -63,10 +62,23 @@ class _NightModeSectionState extends State<NightModeSection> {
         if (_choice == NightModeChoice.auto) ...[
           const SizedBox(height: 14),
           const NotificationThresholdCard(NightMode.pulseThreshold),
-          const SizedBox(height: 10),
-          LocaleText('profile.night.auto_hint', style: muted),
-          const SizedBox(height: 6),
-          LocaleText(_detected ? 'profile.night.status.asleep' : 'profile.night.status.awake', style: muted),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: LocaleText(
+                  _detected
+                      ? 'profile.night.status.asleep'
+                      : 'profile.night.status.awake',
+                  style: muted,
+                ),
+              ),
+              const InfoButton(
+                titleKey: 'profile.night.mode.auto',
+                bodyKey: 'profile.night.auto_hint',
+              ),
+            ],
+          ),
         ],
       ],
     );

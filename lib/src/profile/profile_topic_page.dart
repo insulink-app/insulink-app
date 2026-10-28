@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/info_button.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 
@@ -13,10 +14,15 @@ class ProfileTopicPage extends StatelessWidget {
     super.key,
     required this.titleKey,
     required this.children,
+    this.infoKey,
   });
 
   final String titleKey;
   final List<Widget> children;
+
+  /// What the whole page is about, behind an [InfoButton] in the app bar
+  /// rather than as a paragraph above the first setting.
+  final String? infoKey;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +30,10 @@ class ProfileTopicPage extends StatelessWidget {
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
         title: LocaleText(titleKey),
+        actions: [
+          if (infoKey case final infoKey?)
+            InfoButton(titleKey: titleKey, bodyKey: infoKey),
+        ],
       ),
       body: CustomScrollView(
         slivers: [

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/google_health/band/band_test_button.dart';
 import 'package:insulink/src/google_health/band/band_vibration_pattern.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/notifications/alarm_tone.dart';
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
 import 'package:insulink/src/profile/notifications/notification_toggle.dart';
-import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The Fitbit Air group of the notification settings: how the patterns are
 /// coded, then one switch per alarm with a button that plays its pattern on
@@ -30,13 +28,6 @@ class BandVibrationSettings extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 10,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: LocaleText(
-            'profile.band_vibration.legend',
-            style: InkText.label.copyWith(color: context.ink.muted),
-          ),
-        ),
         for (final slot in _order) _BandSlotRow(slot),
         const NotificationToggle(NotificationSetting.bandBatteryLow),
       ],

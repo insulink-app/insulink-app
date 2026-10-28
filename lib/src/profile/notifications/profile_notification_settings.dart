@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/base/info_button.dart';
 import 'package:insulink/src/google_health/band/band_vibration_settings.dart';
 import 'package:insulink/src/base/section_header.dart';
 import 'package:insulink/src/profile/notifications/notification_setting.dart';
@@ -45,7 +46,7 @@ class ProfileNotificationSettings extends StatelessWidget {
         ]),
         _NotificationGroup('profile.notification_group.band', [
           BandVibrationSettings(),
-        ]),
+        ], infoKey: 'profile.band_vibration.legend'),
         _NotificationGroup('profile.notification_group.training', [
           NotificationToggle(NotificationSetting.training),
         ]),
@@ -56,10 +57,18 @@ class ProfileNotificationSettings extends StatelessWidget {
 
 /// A section header over its switches, 10 px apart.
 class _NotificationGroup extends StatelessWidget {
-  const _NotificationGroup(this.titleKey, this.children, {this.first = false});
+  const _NotificationGroup(
+    this.titleKey,
+    this.children, {
+    this.first = false,
+    this.infoKey,
+  });
 
   final String titleKey;
   final List<Widget> children;
+
+  /// The group's explanation, behind an [InfoButton] in its header.
+  final String? infoKey;
 
   /// The first group sits right under the app bar, without the section gap.
   final bool first;
@@ -72,7 +81,14 @@ class _NotificationGroup extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: SectionHeader(titleKey: titleKey, topGap: first ? 0 : InkSpace.sectionGap),
+          child: SectionHeader(
+            titleKey: titleKey,
+            topGap: first ? 0 : InkSpace.sectionGap,
+            actions: [
+              if (infoKey case final infoKey?)
+                InfoButton(titleKey: titleKey, bodyKey: infoKey),
+            ],
+          ),
         ),
         ...children,
       ],
