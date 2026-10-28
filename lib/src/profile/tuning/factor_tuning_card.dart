@@ -47,6 +47,7 @@ class _FactorTuningCardState extends State<FactorTuningCard> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TuningControls(
+          titleKey: 'profile.tuning.factors',
           descriptionKey: 'profile.tuning.factors.description',
           onGenerate: _generate,
         ),

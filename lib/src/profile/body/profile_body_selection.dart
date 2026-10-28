@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/glucose/glucose_stepper_row.dart';
 import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:insulink/src/sport/sport_state.dart';
@@ -48,14 +47,6 @@ class ProfileBodySelection extends StatelessWidget {
             max: 250,
             onSubmit: (value) =>
                 context.read<SportState>().setHeightCm(value.round()),
-          ),
-        ),
-        const SizedBox(height: 16),
-        LocaleText(
-          'profile.body.note',
-          style: TextStyle(
-            fontSize: 12,
-            color: scheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ],

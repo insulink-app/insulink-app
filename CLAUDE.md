@@ -724,6 +724,9 @@ the widget cannot drift away from the app on what is in range.
   setting behind them, the app lock, and why a prompt the system cancels is not a
   refusal.
 - `docs/ALARMS.md` — alarm/notification design (audio stream, DnD ordering, ids).
+- `docs/COMPRESSION_LOWS.md` — the analysis filter for compression lows at night:
+  sleep from the pulse, the fast rise that gives them away, and why it never
+  reaches an alarm.
 - `docs/LOGGING.md` — where log lines go, why a release build writes nothing
   to logcat, and what may never be logged.
 - `docs/FITBIT_AIR.md` — the Fitbit Air: one vibration pattern per alarm, its

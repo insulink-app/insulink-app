@@ -5,9 +5,14 @@ import 'package:insulink/src/injection/photo_estimate_step.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
-/// "Analysing" with a small spinner at the foot of the photo, and under it the
-/// step the server's estimate is at ([PhotoEstimateStep]), asked for every
-/// [_interval] while the label is up. A new step fades in over the old one.
+/// One quiet line above the deck while a photo is analysed, in the slot the
+/// zoom takes in the live picture: a small spinner and the step the server's
+/// estimate is at ([PhotoEstimateStep]), asked for every [_interval]. Until the
+/// first step arrives it says "Analysing"; after that the step says it better,
+/// so the two never stack. A new step fades in over the old one.
+///
+/// It sits on the zoom's dark pill, in full white: the photo can reach behind
+/// the foot, and a bright plate there swallowed the dimmed type.
 class MealAnalysingLabel extends StatefulWidget {
   const MealAnalysingLabel({super.key});
 
@@ -50,56 +55,47 @@ class _MealAnalysingLabelState extends State<MealAnalysingLabel> {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(32, 0, 32, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 8,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 12,
-                children: [
-                  const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  ),
-                  LocaleText(
-                    'injection.photo.analysing',
-                    style: InkText.rowTitle.copyWith(color: Colors.white),
-                  ),
-                ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(InkRadius.field),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 10,
+          children: [
+            const SizedBox.square(
+              dimension: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
               ),
-              SizedBox(height: 40, child: _stepText()),
-            ],
-          ),
+            ),
+            Flexible(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: _line(),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  /// Two lines at most: a search query can run long.
-  Widget _stepText() {
+  /// The step, or "Analysing" before there is one. One line: a long search
+  /// query is cut, the foot must not grow while the user decides.
+  Widget _line() {
     final step = _step;
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      child: step == null
-          ? const SizedBox.shrink()
-          : LocaleText(
-              step.localeKey,
-              key: ValueKey('${step.step}${step.detail}'),
-              params: [step.detail],
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: InkText.body.copyWith(color: Colors.white70),
-            ),
+    return LocaleText(
+      step?.localeKey ?? 'injection.photo.analysing',
+      key: ValueKey('${step?.step}${step?.detail}'),
+      params: [step?.detail ?? ''],
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: InkText.label.copyWith(color: Colors.white),
     );
   }
 }

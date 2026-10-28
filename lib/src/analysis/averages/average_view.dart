@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/analysis/compression/night_compression_state.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -18,7 +19,11 @@ class AverageView extends StatelessWidget {
     final glucose = context.watch<ProfileGlucoseState>();
 
     // Long-term archive (spans sensor swaps), not the current-session cache.
-    final values = controller.statsArchive.values.toList();
+    final values = context
+        .watch<NightCompressionState>()
+        .apply(controller.statsArchive)
+        .values
+        .toList();
     if (values.isEmpty) {
       return const EmptyState(
         icon: PhosphorIconsBold.chartLineUp,

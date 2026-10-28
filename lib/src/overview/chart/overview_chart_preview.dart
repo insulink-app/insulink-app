@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:insulink/src/analysis/compression/night_compression_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/overview/chart/glucose_chart_bounds.dart';
@@ -9,10 +10,12 @@ import 'package:insulink/src/overview/chart/overview_chart.dart';
 import 'package:insulink/src/overview/chart/overview_chart_page.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:provider/provider.dart';
 
 /// The overview's 24 h glucose chart: a tappable "Glucose · 24 h ›" row over a
 /// non-interactive chart as wide as the panels below it; the title row keeps
 /// the glucose area's inset. Tapping either opens the full-screen chart page.
+/// Follows the same compression filter as that page ([NightCompressionState]).
 class OverviewChartPreview extends StatelessWidget {
   const OverviewChartPreview({
     super.key,
@@ -28,7 +31,11 @@ class OverviewChartPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bounds = GlucoseChartBounds(byTime.values);
+    final view = context.watch<NightCompressionState>().chartView(
+      byTime,
+      controller.sensorStart,
+    );
+    final bounds = GlucoseChartBounds(view.series.values);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => Navigator.of(context).push(
@@ -41,7 +48,8 @@ class OverviewChartPreview extends StatelessWidget {
           SizedBox(
             height: math.max(200.0, (bounds.maxMgdl - bounds.minMgdl) * 0.9),
             child: OverviewChart(
-              byTime: byTime,
+              byTime: view.series,
+              hiddenDips: view.hidden,
               sensorStart: controller.sensorStart,
               preview: true,
               minYmgdl: bounds.minMgdl,

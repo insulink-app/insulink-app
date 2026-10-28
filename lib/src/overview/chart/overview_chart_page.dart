@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:insulink/src/analysis/compression/night_compression_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -22,6 +23,10 @@ import 'package:insulink/src/overview/chart/chart_range_switcher.dart';
 /// an optional meal overlay (marker + tappable details) toggled from the app bar
 /// and persisted like the range. Reads the live data straight from the
 /// [CgmController] so a new reading shows without reopening the page.
+///
+/// A third switch there hides the compression lows of the night
+/// ([NightCompressionState]); it is the same switch the analysis views follow,
+/// so the chart and the numbers never tell two stories.
 ///
 /// Underneath it, the insulin that went in over the SAME stretch of time, basal
 /// and bolus told apart by colour. The window is handed down from the glucose
@@ -232,7 +237,12 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
   Widget build(BuildContext context) {
     final meals = context.watch<MealState>().meals;
     final controller = context.watch<CgmController>();
-    final bounds = GlucoseChartBounds(controller.chartHistory.values);
+    final compression = context.watch<NightCompressionState>();
+    final view = compression.chartView(
+      controller.chartHistory,
+      controller.sensorStart,
+    );
+    final bounds = GlucoseChartBounds(view.series.values);
     return Scaffold(
       appBar: AppBar(
         title: LocaleText('overview.glucose'),
@@ -250,6 +260,16 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
             icon: const Icon(PhosphorIconsRegular.forkKnife),
             selectedIcon: const Icon(PhosphorIconsFill.forkKnife),
             onPressed: _toggleMeals,
+          ),
+          IconButton(
+            isSelected: compression.hidden,
+            tooltip: Locales.string(
+              context,
+              NightCompressionState.hideSetting.labelKey,
+            ),
+            icon: const Icon(PhosphorIconsRegular.bed),
+            selectedIcon: const Icon(PhosphorIconsFill.bed),
+            onPressed: compression.toggle,
           ),
         ],
       ),
@@ -274,7 +294,8 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
               Expanded(
                 flex: 46,
                 child: OverviewChart(
-                  byTime: controller.chartHistory,
+                  byTime: view.series,
+                  hiddenDips: view.hidden,
                   sensorStart: controller.sensorStart,
                   navigable: true,
                   showMeals: _showMeals,

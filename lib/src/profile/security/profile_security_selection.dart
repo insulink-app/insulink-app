@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/profile_toggle_row.dart';
 import 'package:insulink/src/profile/security/profile_security_state.dart';
 
@@ -51,11 +50,6 @@ class _ProfileSecuritySelectionState extends State<ProfileSecuritySelection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LocaleText(
-          'profile.security.description',
-          style: TextStyle(fontSize: 15),
-        ),
-        const SizedBox(height: 12),
         for (final action in GuardedAction.values)
           ProfileToggleRow(
             labelKey: action.labelKey,
