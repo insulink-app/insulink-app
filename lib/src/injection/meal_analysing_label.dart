@@ -4,12 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/injection/photo_estimate_step.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// "Analysing" with a small spinner at the foot of the photo, and under it the
 /// step the server's estimate is at ([PhotoEstimateStep]), asked for every
 /// [_interval] while the label is up. A new step fades in over the old one.
+/// Below it, "New photo" ([onRetake]) calls the estimate off for another shot.
 class MealAnalysingLabel extends StatefulWidget {
-  const MealAnalysingLabel({super.key});
+  const MealAnalysingLabel({super.key, required this.onRetake});
+
+  final VoidCallback onRetake;
 
   @override
   State<MealAnalysingLabel> createState() => _MealAnalysingLabelState();
@@ -77,9 +81,24 @@ class _MealAnalysingLabelState extends State<MealAnalysingLabel> {
                 ],
               ),
               SizedBox(height: 40, child: _stepText()),
+              _retakeButton(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// White on the darkened photo like the rest of the label, at least 44 px.
+  Widget _retakeButton() {
+    return OutlinedButton.icon(
+      onPressed: widget.onRetake,
+      icon: const Icon(PhosphorIconsBold.arrowCounterClockwise, size: 18),
+      label: const LocaleText('injection.photo.retake'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white,
+        side: const BorderSide(color: Colors.white38),
+        minimumSize: const Size(0, 44),
       ),
     );
   }

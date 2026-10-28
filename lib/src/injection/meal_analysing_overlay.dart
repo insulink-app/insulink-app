@@ -12,14 +12,19 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 /// The photo just taken, held still where the live picture was while the server
 /// looks at it: darkened, a soft accent line sweeping over it like a scanner,
 /// the food's own outlines ([FoodContours]) lighting up wherever the line
-/// passes, and [MealAnalysingLabel] at the foot. The line eases
+/// passes, and [MealAnalysingLabel] at the foot with [onRetake] under it. The line eases
 /// into each turn, and both it and the glow fade just before the top and
 /// bottom, so the turns stay quiet while the rest of the plate lights fully. Reduced motion
 /// stops the line and keeps the outlines softly lit.
 class MealAnalysingOverlay extends StatefulWidget {
-  const MealAnalysingOverlay({super.key, required this.photo});
+  const MealAnalysingOverlay({
+    super.key,
+    required this.photo,
+    required this.onRetake,
+  });
 
   final Uint8List photo;
+  final VoidCallback onRetake;
 
   @override
   State<MealAnalysingOverlay> createState() => _MealAnalysingOverlayState();
@@ -99,7 +104,7 @@ class _MealAnalysingOverlayState extends State<MealAnalysingOverlay>
             ],
           ),
         ),
-        const MealAnalysingLabel(),
+        MealAnalysingLabel(onRetake: widget.onRetake),
       ],
     );
   }

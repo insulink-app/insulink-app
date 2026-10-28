@@ -51,14 +51,23 @@ class PhotoEstimate {
 
   /// Sends the [jpeg] to the server and reads its estimate. Null when the
   /// request failed or the server had none (no token, usage limit, timeout).
+  /// [runId] names the run for a cancel, and [abortTrigger] drops the request
+  /// (see `PhotoEstimateRun`).
   static Future<PhotoEstimate?> request(
     BuildContext context,
-    Uint8List jpeg,
-  ) async {
+    Uint8List jpeg, {
+    required String runId,
+    required Future<void> abortTrigger,
+  }) async {
     final response = await Request.post(
       url: '/nutrition/estimate/',
-      body: {'image': base64Encode(jpeg), 'language': Locales.lang},
+      body: {
+        'image': base64Encode(jpeg),
+        'language': Locales.lang,
+        'run_id': runId,
+      },
       timeout: _timeout,
+      abortTrigger: abortTrigger,
     ).send(context);
     final json = response?.jsonObject;
     if (json == null || !response!.isApiSuccess) {
