@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:fitbit_air/fitbit_air.dart';
+import 'package:insulink/src/analysis/compression/night_compression_state.dart';
 import 'package:insulink/src/google_health/band/band_battery_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -278,6 +279,12 @@ class _InsulinkAppState extends State<InsulinkApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => prefs.nutrition),
         ChangeNotifierProvider(create: (_) => prefs.food),
         ChangeNotifierProvider(create: (_) => prefs.meals),
+        ChangeNotifierProvider(
+          create: (context) => NightCompressionState(
+            meals: prefs.meals,
+            glucose: context.read<CgmController>(),
+          )..load(),
+        ),
         ChangeNotifierProvider(create: (_) => prefs.nutritionLayout),
         ChangeNotifierProvider(create: (_) => prefs.inventory),
         // The pod delivery lock and the paired pod's state, observed by the

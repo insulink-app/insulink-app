@@ -293,6 +293,31 @@ Where the five went: `injection_confirm_page` (sticky inline error),
 `health_import_button` (checkmark on success / `Alert` on failure),
 `developer_log_panel` (self-confirming button).
 
+## Explanations: behind an ⓘ, not between the controls
+
+A settings page shows what can be set. Why and how sits one tap away behind an
+`InfoButton` (`base/info_button.dart`), a bare ⓘ that opens the text in an
+`InkSheet` titled after what it explains. Paragraphs between the controls made
+every page read long and pushed the settings down, and the same few lines were
+read once and skipped ever after.
+
+Where the ⓘ goes:
+
+- **A whole page** (the loop, the activity mode, night mode, battery, security,
+  body): in the app bar, via `ProfileTopicCatalog.infoFor` and
+  `ProfileTopicPage.infoKey`.
+- **A group or section**: at the end of its heading (`SectionHeader.actions`,
+  or `InfoHeading` where there is no section header).
+- **One control**: right beside it (the suggestion cards' generate button, the
+  night mode's status line). A switch row takes it as
+  `ProfileToggleRow.infoKey`, between label and switch.
+
+What stays on the page: **warnings** ("not encrypted" on the backup, the silent
+mode warning), **state** ("not enough data", "currently asleep"), and a one-line
+instruction that is needed to use the control at all (the alarm tone picker's
+"tap a style to hear it"). Those are not explanations; hiding them would hide
+something the user must see.
+
 ## Reference contrast values
 
 Measured for calibrating future changes (WCAG; text ≥4.5:1, graphics ≥3:1):

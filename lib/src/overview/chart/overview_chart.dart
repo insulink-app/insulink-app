@@ -44,9 +44,16 @@ class OverviewChart extends StatefulWidget {
     this.showSlope = false,
     this.meals = const [],
     this.sync,
+    this.hiddenDips = const [],
   });
 
   final SplayTreeMap<int, int> byTime;
+
+  /// Compression lows left out of [byTime] (`CompressionChartView.hidden`),
+  /// each its raw readings keyed like [byTime]. Bridged by a dashed line from
+  /// its first to its last reading, so what was left out reads as left out
+  /// rather than as a sensor gap.
+  final List<List<MapEntry<int, int>>> hiddenDips;
 
   /// Overlay logged [meals] on the chart (dashed marker + tappable dot that opens
   /// the meal's details). Off by default; the detail page's toggle turns it on.
@@ -706,7 +713,9 @@ class _OverviewChartState extends State<OverviewChart> {
             color: context.ink.accent,
           )
         : null;
-    final bars = slope == null ? glucoseBars : [slope.bar()];
+    final bars = slope == null
+        ? [...glucoseBars, ..._bridgeBars(latestSecs, shift, glucose, colors)]
+        : [slope.bar()];
     // Dashed forecast line past the latest reading. Always built (anchored at the
     // latest reading, not the scroll position) and clipped by fl_chart once
     // scrolled out — the window width is constant, so nothing jumps.
@@ -760,7 +769,7 @@ class _OverviewChartState extends State<OverviewChart> {
     final key = ValueKey(
       '$latestSecs-${entries.length}-$effectiveRange-$panSecs'
       '-$predictionCount-${prediction.band != null}-${mealMarkers.length}'
-      '-${widget.showSlope}',
+      '-${widget.showSlope}-${widget.hiddenDips.length}',
     );
     final chart = GlucoseLineChart(
       key: key,
@@ -1027,6 +1036,34 @@ class _OverviewChartState extends State<OverviewChart> {
   /// history draws only a handful of lines. x maps a meal's wall-clock time the
   /// same way readings map: `(time - anchor)` hours, phase-shifted. Empty when
   /// the overlay is off or the session clock is unknown (no [anchor]).
+  /// One dashed line per left-out compression low, straight from the reading
+  /// before the fall to the one after the rise, in the zone colour of the
+  /// lower end, so the glucose line reads as one with its bridged stretch.
+  List<LineChartBarData> _bridgeBars(
+    int latestSecs,
+    double shift,
+    ProfileGlucoseState glucose,
+    GlucoseColors colors,
+  ) {
+    FlSpot spot(MapEntry<int, int> reading) => FlSpot(
+      (reading.key - latestSecs) / 3600.0 + shift,
+      glucose.toDisplay(reading.value),
+    );
+    return [
+      for (final dip in widget.hiddenDips)
+        LineChartBarData(
+          spots: [spot(dip.first), spot(dip.last)],
+          color: colors.forValue(
+            math.min(dip.first.value, dip.last.value),
+            glucose,
+          ),
+          barWidth: widget.preview ? 2.5 : 3,
+          dashArray: const [4, 4],
+          dotData: const FlDotData(show: false),
+        ),
+    ];
+  }
+
   List<({double x, Meal meal})> _buildMealMarkers(
     DateTime? anchor,
     double shift,

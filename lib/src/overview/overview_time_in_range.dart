@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/analysis/compression/night_compression_state.dart';
 import 'package:insulink/src/analysis/ranges/glucose_band.dart';
 import 'package:insulink/src/base/segment_bar.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
@@ -10,14 +11,18 @@ import 'package:provider/provider.dart';
 
 /// Time in range over the last 24 h: the in-range share large, low and high as
 /// two small values beside it, and a low / in range / high bar underneath.
-/// Reuses the analysis band logic.
+/// Reuses the analysis band logic, and the chart's compression filter
+/// ([NightCompressionState]), so the share matches the line drawn above it.
 class OverviewTimeInRange extends StatelessWidget {
   const OverviewTimeInRange({super.key});
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<CgmController>();
-    final values = controller.archiveSince(const Duration(hours: 24)).values;
+    final values = context
+        .watch<NightCompressionState>()
+        .apply(controller.archiveSince(const Duration(hours: 24)))
+        .values;
     if (values.isEmpty) {
       return const SizedBox.shrink();
     }

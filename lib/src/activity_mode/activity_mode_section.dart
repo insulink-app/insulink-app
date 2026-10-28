@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/activity_mode/activity_mode_selector.dart';
 import 'package:insulink/src/activity_mode/activity_mode_settings.dart';
 import 'package:insulink/src/activity_mode/activity_mode_switch_state.dart';
-import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold_card.dart';
 import 'package:insulink/src/profile/profile_toggle_row.dart';
 import 'package:provider/provider.dart';
@@ -22,11 +21,6 @@ class ActivityModeSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const LocaleText(
-          'profile.activity_mode.description',
-          style: TextStyle(fontSize: 15),
-        ),
-        const SizedBox(height: 12),
         ProfileToggleRow(
           labelKey: ActivityModeSettings.enabled.labelKey,
           value: switches.enabled,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:insulink/src/localization/locale_text.dart';
+import 'package:insulink/src/base/info_button.dart';
 import 'package:insulink/src/profile/notifications/notification_threshold_card.dart';
 import 'package:insulink/src/profile/notifications/notification_toggle.dart';
 import 'package:insulink/src/pump/loop/loop_micro_bolus_settings.dart';
@@ -16,16 +16,12 @@ class LoopMicroBolusSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const LocaleText(
-          'profile.loop.micro_bolus',
+        const InfoHeading(
+          labelKey: 'profile.loop.micro_bolus',
+          bodyKey: 'profile.loop.micro_bolus.description',
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 6),
-        const LocaleText(
-          'profile.loop.micro_bolus.description',
-          style: TextStyle(fontSize: 15),
-        ),
-        const SizedBox(height: 12),
         for (final toggle in LoopMicroBolusSettings.toggles)
           NotificationToggle(toggle),
         for (final threshold in LoopMicroBolusSettings.thresholds) ...[

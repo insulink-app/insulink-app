@@ -34,6 +34,7 @@
     "continue": "Continue",
     "cancel": "Cancel",
     "close": "Close",
+    "explain": "Explanation",
     "done": "Done",
     "delete": "Delete"
   },
@@ -116,6 +117,7 @@
       "axis_now": "now",
       "show_meals": "Show meals",
       "show_slope": "Show rate of change instead",
+      "hide_compression": "Hide compression lows during sleep",
       "insulin": {
         "_": "Insulin",
         "basal": "Basal",
@@ -1217,6 +1219,7 @@
       "dark": "Dark"
     },
     "glucose": {
+      "compression_hint": "Lying on the sensor at night makes it read too low until you turn over. The app spots these dips afterwards from your pulse and the quick recovery. They are marked in the chart and left out of time in range and the analysis. Alarms and the loop always see the real readings.",
       "_": "Glucose",
       "target": "Target range",
       "alarms_low": "Low alarms",
@@ -1384,7 +1387,7 @@
     "search": {
       "_": "Search settings",
       "empty": "No setting found",
-      "glucose": "glucose sugar unit target thresholds alarm mmol mgdl",
+      "glucose": "glucose sugar unit target thresholds alarm mmol mgdl compression sleep night filter",
       "bolus": "bolus insulin correction carbs factor maximum limit cap duration active on board iob",
       "basal": "basal rate profile curve omnipod pod insulin hour",
       "body": "body metrics stride length height bmi weight steps distance",

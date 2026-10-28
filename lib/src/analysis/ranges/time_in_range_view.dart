@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:insulink/src/analysis/compression/night_compression_state.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/localization/locale_text.dart';
@@ -23,7 +24,10 @@ class TimeInRangeView extends StatelessWidget {
     final colors = Theme.of(context).extension<GlucoseColors>()!;
 
     // Long-term archive (spans sensor swaps), not the current-session cache.
-    final values = controller.statsArchive.values;
+    final values = context
+        .watch<NightCompressionState>()
+        .apply(controller.statsArchive)
+        .values;
     if (values.isEmpty) {
       return const EmptyState(
         icon: PhosphorIconsBold.chartLineUp,
