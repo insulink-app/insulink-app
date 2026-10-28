@@ -1218,6 +1218,7 @@
       "dark": "Dunkel"
     },
     "glucose": {
+      "compression_hint": "Liegst du nachts auf dem Sensor, misst er zu tief, bis du dich umdrehst. Solche Einbrüche erkennt die App im Nachhinein am Puls und an der schnellen Erholung. Sie werden im Graphen markiert und in Zeit im Zielbereich und Analyse nicht mitgezählt. Alarme und Loop sehen immer die echten Werte.",
       "_": "Glukose",
       "target": "Zielbereich",
       "alarms_low": "Niedrige Alarme",
@@ -1385,7 +1386,7 @@
     "search": {
       "_": "Einstellungen suchen",
       "empty": "Keine Einstellung gefunden",
-      "glucose": "glukose zucker einheit zielbereich grenzwerte alarm mmol mgdl",
+      "glucose": "glukose zucker einheit zielbereich grenzwerte alarm mmol mgdl kompression schlaf nacht filter",
       "bolus": "bolus insulin korrektur kohlenhydrate faktor maximum maximaler grenze dauer wirkdauer aktives",
       "basal": "basalrate basal profil kurve omnipod pod insulin stunde",
       "body": "körpermaße schrittlänge körpergröße größe bmi gewicht schritte distanz",

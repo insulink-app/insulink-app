@@ -5,10 +5,11 @@ below 70 mg/dL, and comes back as soon as the sleeper turns over. These lows are
 not in the blood, but they count in time below range, pull down the nightly
 pattern and alarm at night.
 
-The full-screen chart and the analysis page filter them out afterwards
+Both glucose charts (the overview's and the full-screen one), the time in
+range under the overview chart and the analysis page filter them out afterwards
 (`lib/src/analysis/compression/`). **Live it cannot work**: what gives a
 compression away is the fast rise *after* the low. So the filter never touches
-an alarm, the overview's own small chart, the loop or the event log.
+an alarm, the loop or the event log.
 
 ## What counts
 
@@ -45,15 +46,20 @@ nothing is ever filtered.
 
 ## The switch
 
-One switch, in the full-screen chart's app bar beside the slope and the meals
-(a bed: filled while the lows are hidden). It is stored
-(`analysis_hide_night_compression`, on by default) and held by one
-`NightCompressionState` above the page tree, so the chart and the analysis page
-always agree. On, the chart draws without those readings (a dip shorter than
-the chart's 20-minute gap is bridged, a longer one leaves a gap), and time in
-range, patterns, averages and the history compute without them. Off, both show
-the raw readings. The forecast check always reads the raw archive, since it
-measures the forecast against what the sensor said.
+One stored switch (`analysis_hide_night_compression`, on by default), held by
+one `NightCompressionState` above the page tree, so every place that filters
+agrees. It is in two places: the bed in the full-screen chart's app bar, beside
+the slope and the meals (filled while the lows are hidden), and the profile's
+glucose page (`CompressionFilterToggle`), with a line on what it does.
+
+On, time in range (overview and analysis), patterns, averages and the history
+compute without those readings. The charts do not just drop them
+(`CompressionChartView`): the glucose line breaks around the dip, a muted band
+lies behind the left-out stretch, and the raw readings run through it as a
+faint dotted line. A gap of its own would read as a sensor outage; this way it
+reads as filtered. Off, everything shows the raw readings. The forecast check
+always reads the raw archive, since it measures the forecast against what the
+sensor said.
 
 The state works per night, not per window. The chart asks for seven days and
 the analysis for whatever its picker says; a result kept per window had each
@@ -66,7 +72,5 @@ arriving.
 
 ## Not built
 
-- Marking the left-out stretch in the chart. Switched off, the raw dip is
-  there to see; switched on, it is simply not drawn.
 - Leaving compression lows out of the basal and factor suggestions
   (`docs/TUNING.md`, `docs/FACTOR_TUNING.md`). They read the raw archive.

@@ -238,11 +238,11 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
     final meals = context.watch<MealState>().meals;
     final controller = context.watch<CgmController>();
     final compression = context.watch<NightCompressionState>();
-    final history = compression.applyToChart(
+    final view = compression.chartView(
       controller.chartHistory,
       controller.sensorStart,
     );
-    final bounds = GlucoseChartBounds(history.values);
+    final bounds = GlucoseChartBounds(view.series.values);
     return Scaffold(
       appBar: AppBar(
         title: LocaleText('overview.glucose'),
@@ -294,7 +294,8 @@ class _OverviewChartPageState extends State<OverviewChartPage> {
               Expanded(
                 flex: 46,
                 child: OverviewChart(
-                  byTime: history,
+                  byTime: view.series,
+                  hiddenDips: view.hidden,
                   sensorStart: controller.sensorStart,
                   navigable: true,
                   showMeals: _showMeals,

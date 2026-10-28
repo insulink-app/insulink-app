@@ -30,8 +30,14 @@ class GlucoseLineChart extends StatelessWidget {
     this.showBottomTitles = true,
     this.betweenBars = const [],
     this.mealMarkers = const [],
+    this.hiddenRanges = const [],
     this.slope,
   });
+
+  /// Stretches whose readings were left out as compression lows, in chart x,
+  /// laid lightly behind the plot so a bridged or missing stretch reads as
+  /// filtered rather than measured.
+  final List<({double from, double to})> hiddenRanges;
 
   /// When set, [bars] hold the glucose rate of change instead of glucose, and
   /// the y scale, labels, guide line and readout follow it: no target band, a
@@ -151,7 +157,7 @@ class GlucoseLineChart extends StatelessWidget {
               )
             : const FlClipData.all(),
         gridData: const FlGridData(show: false),
-        rangeAnnotations: _targetBand(),
+        rangeAnnotations: _ranges(context),
         borderData: FlBorderData(show: false),
         titlesData: _titles(context),
         extraLinesData: _extraLines(context),
@@ -264,9 +270,19 @@ class GlucoseLineChart extends StatelessWidget {
   }
 
   /// The target range lightly behind the detail chart (range colour at 5 %),
-  /// the open preview keeps only its two dashed bounds.
-  RangeAnnotations _targetBand() {
+  /// the open preview keeps only its two dashed bounds; and the left-out
+  /// compression stretches in the muted tone, on both.
+  RangeAnnotations _ranges(BuildContext context) {
+    final muted = context.ink.muted;
     return RangeAnnotations(
+      verticalRangeAnnotations: [
+        for (final range in hiddenRanges)
+          VerticalRangeAnnotation(
+            x1: range.from,
+            x2: range.to,
+            color: muted.withValues(alpha: 0.14),
+          ),
+      ],
       horizontalRangeAnnotations: [
         if (!minimal && slope == null)
           HorizontalRangeAnnotation(

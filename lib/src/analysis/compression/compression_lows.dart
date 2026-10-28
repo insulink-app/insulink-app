@@ -3,9 +3,15 @@ import 'dart:collection';
 import 'package:insulink/src/analysis/compression/night_sleep.dart';
 
 /// A dip the filter takes for a compression low: the readings strictly
-/// between [fromMinute] and [toMinute] (epoch minutes), the slope into it and
-/// the peak out of it, with [nadirMgdl] at the bottom.
+/// between [fromMinute] and [toMinute] (epoch minutes), the top before the
+/// fall and the top after the rise, with [nadirMgdl] at the bottom.
 typedef CompressionDip = ({int fromMinute, int toMinute, int nadirMgdl});
+
+extension CompressionDipSpan on CompressionDip {
+  /// Whether the reading at [epochMinute] is one the dip leaves out.
+  bool hides(int epochMinute) =>
+      epochMinute > fromMinute && epochMinute < toMinute;
+}
 
 /// Finds compression lows in the glucose archive afterwards: a low while
 /// asleep that glucose climbs out of faster than a body does without food.

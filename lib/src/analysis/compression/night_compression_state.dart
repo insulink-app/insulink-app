@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
+import 'package:insulink/src/analysis/compression/compression_chart_view.dart';
 import 'package:insulink/src/analysis/compression/compression_lows.dart';
 import 'package:insulink/src/analysis/compression/night_sleep.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
@@ -41,7 +42,8 @@ class NightCompressionState extends ChangeNotifier {
   final MealState _meals;
   final CgmController _glucose;
   final IntradayPulseStore _pulse;
-  final Map<DateTime, ({Set<int> flagged, DateTime searchedAt})> _nights = {};
+  final Map<DateTime, ({List<CompressionDip> dips, DateTime searchedAt})>
+  _nights = {};
   final Set<DateTime> _searching = {};
   bool _hidden = true;
 
@@ -52,10 +54,12 @@ class NightCompressionState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggle() async {
-    _hidden = !_hidden;
+  Future<void> toggle() => setHidden(!_hidden);
+
+  Future<void> setHidden(bool hidden) async {
+    _hidden = hidden;
     notifyListeners();
-    await hideSetting.save(_hidden);
+    await hideSetting.save(hidden);
   }
 
   /// [archive] (epoch minute to mg/dL) without its compression lows while
@@ -68,36 +72,45 @@ class NightCompressionState extends ChangeNotifier {
     return _without(archive, (epochMinute) => epochMinute);
   }
 
-  /// The same for the chart's series, keyed by seconds since [sensorStart].
-  /// Without a session clock its keys name no time, so it stays as it is.
-  SplayTreeMap<int, int> applyToChart(
+  /// The chart's series, keyed by seconds since [sensorStart], split into what
+  /// is drawn and the compression lows left out of it. Without a session clock
+  /// its keys name no time, so nothing is left out.
+  CompressionChartView chartView(
     SplayTreeMap<int, int> bySeconds,
     DateTime? sensorStart,
   ) {
-    if (bySeconds.isEmpty || sensorStart == null) {
-      return bySeconds;
-    }
-    final startSeconds = sensorStart.millisecondsSinceEpoch ~/ 1000;
-    int epochMinute(int seconds) => (seconds + startSeconds) ~/ 60;
-    _follow(
-      epochMinute(bySeconds.firstKey()!),
-      epochMinute(bySeconds.lastKey()!),
+    final view = CompressionChartView.of(
+      bySeconds,
+      sensorStart: sensorStart,
+      dips: _hidden ? _dips : const [],
     );
-    return _without(bySeconds, epochMinute);
+    if (view.startSeconds != null && bySeconds.isNotEmpty) {
+      _follow(
+        view.epochMinute(bySeconds.firstKey()!),
+        view.epochMinute(bySeconds.lastKey()!),
+      );
+    }
+    return view;
   }
 
-  /// [series] without the flagged minutes, [toMinute] turning its key into one.
+  List<CompressionDip> get _dips => [
+    for (final night in _nights.values) ...night.dips,
+  ];
+
+  /// [series] without the readings inside a dip, [toMinute] turning its key
+  /// into an epoch minute.
   SplayTreeMap<int, int> _without(
     SplayTreeMap<int, int> series,
     int Function(int key) toMinute,
   ) {
-    final flagged = {for (final night in _nights.values) ...night.flagged};
-    if (!_hidden || flagged.isEmpty) {
+    final dips = _dips;
+    if (!_hidden || dips.isEmpty) {
       return series;
     }
     return SplayTreeMap.of({
       for (final entry in series.entries)
-        if (!flagged.contains(toMinute(entry.key))) entry.key: entry.value,
+        if (!dips.any((dip) => dip.hides(toMinute(entry.key))))
+          entry.key: entry.value,
     });
   }
 
@@ -134,7 +147,7 @@ class NightCompressionState extends ChangeNotifier {
     _searching.add(evening);
     try {
       _nights[evening] = (
-        flagged: await _flaggedIn(evening),
+        dips: await _dipsIn(evening),
         searchedAt: DateTime.now(),
       );
       notifyListeners();
@@ -143,9 +156,8 @@ class NightCompressionState extends ChangeNotifier {
     }
   }
 
-  /// The reading minutes of the night's compression lows, none without a sleep
-  /// to find them in.
-  Future<Set<int>> _flaggedIn(DateTime evening) async {
+  /// The night's compression lows, none without a sleep to find them in.
+  Future<List<CompressionDip>> _dipsIn(DateTime evening) async {
     final from = evening.add(const Duration(hours: 20));
     final to = from.add(const Duration(hours: 15));
     final samples = await _pulse.rangeCurve(from, to);
@@ -154,31 +166,17 @@ class NightCompressionState extends ChangeNotifier {
         sample.at.millisecondsSinceEpoch ~/ 60000: sample.bpm,
     });
     if (sleep == null) {
-      return const {};
+      return const [];
     }
-    final readings = _glucose.archiveBetween(from, to);
-    final dips = CompressionLows(
+    return CompressionLows(
       sleeps: [sleep],
       mealMinutes: _mealMinutes,
-    ).find(readings);
-    return _flaggedMinutes(readings, dips);
+    ).find(_glucose.archiveBetween(from, to));
   }
 
   List<int> get _mealMinutes => [
     for (final meal in _meals.meals) meal.time.millisecondsSinceEpoch ~/ 60000,
   ];
-
-  /// The reading minutes inside any of [dips].
-  Set<int> _flaggedMinutes(
-    SplayTreeMap<int, int> readings,
-    List<CompressionDip> dips,
-  ) {
-    return {
-      for (final minute in readings.keys)
-        if (dips.any((dip) => minute > dip.fromMinute && minute < dip.toMinute))
-          minute,
-    };
-  }
 
   DateTime _time(int epochMinute) =>
       DateTime.fromMillisecondsSinceEpoch(epochMinute * 60000);
