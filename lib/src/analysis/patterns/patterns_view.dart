@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:insulink/src/analysis/compression/night_compression_state.dart';
 import 'package:insulink/src/base/empty_state.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
 import 'package:insulink/src/profile/glucose/profile_glucose_state.dart';
@@ -25,7 +26,9 @@ class PatternsView extends StatelessWidget {
 
     // Long-term archive (spans sensor swaps): keyed by absolute epoch-minute, so
     // hour-of-day comes straight from the timestamp — no session start needed.
-    final pattern = HourlyGlucosePattern(controller.statsArchive).build();
+    final pattern = HourlyGlucosePattern(
+      context.watch<NightCompressionState>().apply(controller.statsArchive),
+    ).build();
     if (pattern.isEmpty) {
       return const EmptyState(
         icon: PhosphorIconsBold.chartLineUp,

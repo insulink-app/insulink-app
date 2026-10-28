@@ -217,6 +217,11 @@
     }
   },
   "analysis": {
+    "compression": {
+      "hide": "Hide compression lows during sleep",
+      "hidden": "Compression lows during sleep hidden: #",
+      "shown": "Likely compression lows during sleep: #, raw data shown"
+    },
     "label": "Analysis",
     "tab": {
       "ranges": "Ranges",

@@ -7,6 +7,7 @@ import 'package:insulink/src/analysis/events/event_log_view.dart';
 import 'package:insulink/src/analysis/forecast/forecast_accuracy_view.dart';
 import 'package:insulink/src/analysis/history/glucose_history_view.dart';
 import 'package:insulink/src/analysis/patterns/patterns_view.dart';
+import 'package:insulink/src/analysis/compression/night_compression_note.dart';
 import 'package:insulink/src/analysis/range_selector.dart';
 import 'package:insulink/src/analysis/ranges/time_in_range_view.dart';
 import 'package:insulink/src/base/pill_scroll_row.dart';
@@ -73,6 +74,7 @@ class AnalysisBodyContent extends StatelessWidget {
           const _AnalysisPills(tabs: _tabs),
           const SizedBox(height: 12),
           const AnalysisRangeSelector(),
+          const NightCompressionNote(),
           const SizedBox(height: 4),
           Expanded(
             child: TabBarView(children: [for (final tab in _tabs) tab.view]),
