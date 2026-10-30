@@ -22,6 +22,7 @@ import '../../sport/sport_sync.dart';
 import '../../sport/training/activity_recognition_sampler.dart';
 import '../../sport/training/background_location_sampler.dart';
 import '../../sport/training/cardio_detection_runner.dart';
+import '../../profile/silent/profile_silent_state.dart';
 import '../../profile/prediction/profile_prediction_state.dart';
 import 'advisory_action_runner.dart';
 import 'alarms.dart';
@@ -45,6 +46,7 @@ import '../../pump/loop/loop_runner.dart';
 import '../../nutrition/meal/meal_store.dart';
 import '../../injection/active_insulin.dart';
 import '../../injection/carbs_on_board.dart';
+import '../../injection/pending_meal_bolus.dart';
 import '../../profile/bolus/profile_bolus_state.dart';
 import '../../libre3/libre3_connection.dart';
 import '../../libre3/libre3_crypto.dart';
@@ -455,7 +457,9 @@ class CgmTaskHandler extends TaskHandler {
     // Apply Confirm/Reject taps buffered by the notification-action isolate,
     // which can't reach secure storage itself (see SportStore.recordTrainingDecision).
     unawaited(_applyTrainingDecisions());
-    unawaited(_applyAdvisoryActions());
+    // Chained, so a tap carried out on this tick clears the meal it was for
+    // before the warning for that meal is looked at.
+    unawaited(_applyAdvisoryActions().then((_) => _remindMealBolus()));
     unawaited(_watchBandBattery());
     unawaited(_nightDetector.refresh(DateTime.now()));
     unawaited(_activityPulse.refresh());
@@ -488,6 +492,29 @@ class CgmTaskHandler extends TaskHandler {
       FlutterForegroundTask.sendDataToMain({'t': 'update'});
       FlutterForegroundTask.sendDataToMain({'t': 'meals'});
     }
+  }
+
+  /// Warn about a photographed meal that is still waiting for its bolus, and
+  /// withdraw that warning once it is not. Silent mode holds it back without
+  /// marking it, so it still fires if the meal is still waiting when that ends.
+  Future<void> _remindMealBolus() async {
+    final alarms = _alarms;
+    if (alarms == null) {
+      return;
+    }
+    const store = PendingMealBolusStore();
+    final pending = await store.load();
+    if (pending == null) {
+      return alarms.clearMealBolusWarning();
+    }
+    if (pending.isLapsed) {
+      return store.clear();
+    }
+    if (!pending.isDue || (await ProfileSilentState.load()).mutesNotifications) {
+      return;
+    }
+    await store.save(pending.markedWarned());
+    await alarms.notifyMealBolusMissing(pending);
   }
 
   /// Drain the buffered Confirm/Reject taps and push the confirmed trainings to

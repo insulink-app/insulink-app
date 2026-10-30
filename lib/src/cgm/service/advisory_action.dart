@@ -5,6 +5,9 @@ import 'dart:io';
 const String advisoryCarbsAction = 'advisory_carbs';
 const String advisoryBolusAction = 'advisory_bolus';
 
+/// Notification-action id for the missed-meal warning's "deliver it" button.
+const String mealBolusAction = 'meal_bolus';
+
 /// A countermeasure the user accepted from a pre-warning notification, buffered
 /// until the service isolate can carry it out.
 class AdvisoryRequest {
@@ -13,6 +16,7 @@ class AdvisoryRequest {
     required this.amount,
     required this.glucoseMgdl,
     required this.at,
+    this.isMealBolus = false,
   });
 
   /// Insulin units when [isBolus], otherwise grams of fast carbohydrate. Already
@@ -20,6 +24,10 @@ class AdvisoryRequest {
   /// composed, so the number the button showed is the number that goes out.
   final bool isBolus;
   final double amount;
+
+  /// A [isBolus] that covers a photographed meal rather than correcting glucose:
+  /// honoured only while that meal is still waiting ([PendingMealBolus]).
+  final bool isMealBolus;
 
   /// The reading the suggestion was computed from, logged with the meal.
   final int glucoseMgdl;
@@ -59,7 +67,8 @@ class AdvisoryRequest {
       return null;
     }
     return AdvisoryRequest(
-      isBolus: parts[0] == 'bolus',
+      isBolus: parts[0] == 'bolus' || parts[0] == mealBolusAction,
+      isMealBolus: parts[0] == mealBolusAction,
       amount: amount,
       glucoseMgdl: glucoseMgdl,
       at: DateTime.fromMillisecondsSinceEpoch(millis),

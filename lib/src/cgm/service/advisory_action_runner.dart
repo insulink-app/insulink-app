@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../injection/bolus_delivery.dart';
+import '../../injection/pending_meal_bolus.dart';
 import '../../nutrition/meal/meal.dart';
 import '../../nutrition/meal/meal_store.dart';
 import '../../nutrition/nutrition_sync.dart';
@@ -53,7 +54,9 @@ class AdvisoryActionRunner {
   /// unhandled error in an unawaited future.
   Future<void> _apply(AdvisoryRequest request) async {
     try {
-      if (request.isBolus) {
+      if (request.isMealBolus) {
+        await _deliverMealBolus(request);
+      } else if (request.isBolus) {
         await _deliverBolus(request);
       } else {
         await _logCarbs(request);
@@ -73,14 +76,30 @@ class AdvisoryActionRunner {
     ]);
   }
 
-  /// Send the suggested correction to the pod and log what the pod confirmed.
+  /// Deliver the dose of a photographed meal, unless it has been dealt with
+  /// since: a bolus confirmed in the app clears the record, so a button still
+  /// standing in the shade must not deliver that meal a second time. The record
+  /// goes first, so a delivery that throws cannot be tapped into a second dose.
+  Future<void> _deliverMealBolus(AdvisoryRequest request) async {
+    const store = PendingMealBolusStore();
+    final pending = await store.load();
+    if (pending == null) {
+      await _alarms.notifyAdvisoryOutcome('alarm.meal_bolus.handled', const []);
+      return;
+    }
+    await store.clear();
+    await _deliverBolus(request, meal: pending.meal);
+  }
+
+  /// Send the suggested dose to the pod and log what the pod confirmed, on
+  /// [meal] when it covers one.
   ///
   /// Only ever a PUMP dose. With no pod paired [BolusDelivery] reports
   /// `loggedOnly`, which would write insulin nobody injected into the log and
   /// suppress the next correction through insulin on board, so that case is
   /// refused outright instead. The notification offers this action only while a
   /// pod is paired; this guard covers a pod deactivated in between.
-  Future<void> _deliverBolus(AdvisoryRequest request) async {
+  Future<void> _deliverBolus(AdvisoryRequest request, {Meal? meal}) async {
     final store = await PodStore.open();
     if (!store.hasPod) {
       await _alarms.notifyAdvisoryOutcome(
@@ -103,9 +122,10 @@ class AdvisoryActionRunner {
     }
     await _logMeal(
       request,
-      carbs: 0,
+      carbs: meal?.carbs ?? 0,
       bolus: outcome.recordedUnits,
       byPump: true,
+      entries: meal?.entries ?? const [],
     );
     await const AdvisoryDeliveryStore().record(outcome.recordedUnits);
     await _alarms.notifyAdvisoryOutcome('alarm.advisory.bolus_done', [
@@ -138,6 +158,7 @@ class AdvisoryActionRunner {
     required double carbs,
     required double bolus,
     required bool byPump,
+    List<MealEntry> entries = const [],
   }) async {
     const store = MealStore();
     final meals = await store.loadMeals();
@@ -147,7 +168,7 @@ class AdvisoryActionRunner {
         carbs: carbs,
         glucoseMgdl: request.glucoseMgdl,
         bolus: bolus,
-        entries: const [],
+        entries: entries,
         deliveredByPump: byPump,
       ),
     );

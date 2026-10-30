@@ -299,9 +299,34 @@ the home-screen widget and declares `widgetCategory="home_screen"` only.
 - Training-detected id `102`, halftime id `103`.
 - Advisory pre-warning id `104`, channel `insulink_alarm_advisory` (silent,
   DnD-bypassing like the glucose alarms, own tone `alarm_advisory.wav`).
+- Missing-meal-bolus warning id `107`, plain warning channel (below).
 - Advisory outcome id `105`, same channel, no action of its own. Its own id so
   the report on an accepted countermeasure does not replace an advisory that is
   still relevant.
+
+## No bolus after a meal photo
+
+A photo estimate means somebody is about to eat. Two minutes
+(`PendingMealBolus.remindAfter`) after one without a confirmed bolus, a warning
+goes up, with the app closed too. Its button delivers the calculator's dose.
+
+- **The injection page writes, the service reads.** The page saves its state to
+  secure storage (`PendingMealBolusStore`) on every change, so the warning offers
+  what the page shows now, a corrected carb count included. The watchdog tick
+  (`_remindMealBolus`) decides, so the warning arrives on a 30 s grid and only
+  while a service runs.
+- **The record is what makes the button valid.** Confirming in the app clears it
+  first, and the runner refuses a meal tap with no record behind it, reporting
+  `alarm.meal_bolus.handled`. The next tick also takes the notification away.
+- **A page left open must not deliver the meal again.** It watches the meal log
+  and removes itself once a dose with carbs lands after its photo.
+- **The carbs are in the body** because this is the one dose that goes out
+  without the user having seen the calculator's foods list. The meal is logged
+  with its foods, so its photo stays reachable.
+- **Everything ages from the photo**: the offer and the notification both end
+  `AdvisoryRequest.validFor` after it. Silent mode holds the warning back without
+  marking it. Without a pod, or with a dose the page would not confirm (no glucose,
+  above the maximum), the warning goes up with no button.
 
 ## Predictive advisory pre-warning (`checkAdvisory`)
 
