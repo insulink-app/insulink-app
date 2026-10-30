@@ -10,6 +10,7 @@ import '../../google_health/band/band_haptics.dart';
 import '../../google_health/band/band_vibration_pattern.dart';
 import '../../profile/night/night_mode.dart';
 import '../../injection/insulin_on_board.dart';
+import '../../injection/pending_meal_bolus.dart';
 import '../../localization/service_strings.dart';
 import '../../nutrition/meal/meal_store.dart';
 import '../../pump/pod_store.dart';
@@ -73,7 +74,9 @@ void trainingNotificationAction(NotificationResponse response) {
 void serviceNotificationAction(NotificationResponse response) {
   const ReleaseLogGate().apply();
   final actionId = response.actionId;
-  if (actionId == advisoryCarbsAction || actionId == advisoryBolusAction) {
+  if (actionId == advisoryCarbsAction ||
+      actionId == advisoryBolusAction ||
+      actionId == mealBolusAction) {
     _advisoryNotificationAction(actionId!, response.payload);
     return;
   }
@@ -106,7 +109,11 @@ void _advisoryNotificationAction(String actionId, String? payload) {
     return;
   }
   const AdvisoryActionStore().record(
-    actionId == advisoryBolusAction ? 'bolus' : 'carbs',
+    switch (actionId) {
+      advisoryBolusAction => 'bolus',
+      mealBolusAction => mealBolusAction,
+      _ => 'carbs',
+    },
     amount,
     glucoseMgdl,
     filePath: parts[2],
@@ -222,6 +229,9 @@ class G7AlarmManager {
 
   /// Notification id for the "Fitbit Air battery low" warning.
   static const _bandBatteryId = 106;
+
+  /// Notification id for the "no bolus after the meal photo" warning.
+  static const _mealBolusId = 107;
 
   /// How often the shade is checked while a tone plays, to notice the alarm
   /// notification being swiped away ([_silenceWhenDismissed]). Short enough that
@@ -781,12 +791,15 @@ class G7AlarmManager {
   /// on board, or under one 0.05 U pulse). Shared by the high alarm and the
   /// high pre-warning, so both ride the one delivery path that
   /// [AdvisoryActionRunner] already bounds by the bolus ceilings.
-  Future<AndroidNotificationAction?> _correctionAction(double units) async {
+  Future<AndroidNotificationAction?> _correctionAction(
+    double units, {
+    String actionId = advisoryBolusAction,
+  }) async {
     if (units <= 0 || !(await PodStore.open()).hasPod) {
       return null;
     }
     return AndroidNotificationAction(
-      advisoryBolusAction,
+      actionId,
       await _strings.format(
         'alarm.advisory.bolus_action',
         // Two decimals: this button DELIVERS the number it shows, and the pod's
@@ -806,9 +819,9 @@ class G7AlarmManager {
   /// high alarm stands until glucose comes back down, which can be hours: its
   /// button would otherwise still deliver a dose sized for a reading, and an
   /// insulin-on-board figure, from the middle of the night.
-  String _actionPayload(double amount, int mgdl) =>
+  String _actionPayload(double amount, int mgdl, {DateTime? offeredAt}) =>
       '$amount\n$mgdl\n${const AdvisoryActionStore().requestFilePath}\n'
-      '${DateTime.now().millisecondsSinceEpoch}';
+      '${(offeredAt ?? DateTime.now()).millisecondsSinceEpoch}';
 
   /// Report what became of a countermeasure the user accepted from the
   /// pre-warning. Same silent channel, no action of its own.
@@ -825,6 +838,39 @@ class G7AlarmManager {
       ),
     );
   }
+
+  /// Warn that a photographed meal has no bolus yet, with the button that
+  /// delivers the calculator's dose when a pod can. The body names the carbs,
+  /// because they are a photo estimate and the button acts on them unseen. The
+  /// offer ages from the photo, and Android withdraws it at the same moment.
+  Future<void> notifyMealBolusMissing(PendingMealBolus pending) async {
+    final action = await _correctionAction(
+      pending.units,
+      actionId: mealBolusAction,
+    );
+    await _plugin.show(
+      id: _mealBolusId,
+      title: await _strings.get('alarm.meal_bolus.title'),
+      body: await _strings.format(
+        'alarm.meal_bolus.body',
+        pending.meal.carbs.round(),
+      ),
+      notificationDetails: NotificationDetails(
+        android: await _warningChannel(
+          action: action,
+          clearAfter: AdvisoryRequest.validFor - pending.age,
+        ),
+      ),
+      payload: _actionPayload(
+        pending.units,
+        pending.meal.glucoseMgdl,
+        offeredAt: pending.takenAt,
+      ),
+    );
+  }
+
+  /// Withdraw the warning once its meal has been dealt with.
+  Future<void> clearMealBolusWarning() => _plugin.cancel(id: _mealBolusId);
 
   /// Fire a test alarm on demand from the settings UI: the low/high glucose
   /// notification plus its tone and the band buzz, with a sample value. Bypasses the edge-trigger
@@ -1130,7 +1176,10 @@ class G7AlarmManager {
   /// While the user mutes tones there is a SECOND, muted channel instead of a
   /// `playSound: false` on this one — Android freezes a channel's sound at
   /// creation time, so the same id could never be switched back and forth.
-  Future<AndroidNotificationDetails> _warningChannel() async {
+  Future<AndroidNotificationDetails> _warningChannel({
+    AndroidNotificationAction? action,
+    Duration? clearAfter,
+  }) async {
     final quiet = (await ProfileSilentState.load()).mutesSound;
     final slug = quiet ? 'warning_silent' : 'warning';
     return AndroidNotificationDetails(
@@ -1142,6 +1191,8 @@ class G7AlarmManager {
       priority: Priority.high,
       vibrationPattern: Int64List.fromList(_vibrationPattern),
       enableVibration: true,
+      timeoutAfter: clearAfter?.inMilliseconds,
+      actions: action == null ? null : [action],
     );
   }
 

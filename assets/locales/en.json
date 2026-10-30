@@ -1738,6 +1738,11 @@
       "expired": "That suggestion was out of date. Nothing was applied.",
       "failed": "The action failed. Please check in the app."
     },
+    "meal_bolus": {
+      "title": "No bolus for your meal yet",
+      "body": "You photographed # g of carbs and no insulin followed.",
+      "handled": "This meal already has its bolus. Nothing was delivered."
+    },
     "low": {
       "title": "Glucose low"
     },

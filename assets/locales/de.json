@@ -1738,6 +1738,11 @@
       "expired": "Der Vorschlag war nicht mehr aktuell. Es wurde nichts übernommen.",
       "failed": "Aktion fehlgeschlagen. Bitte in der App prüfen."
     },
+    "meal_bolus": {
+      "title": "Noch kein Bolus zum Essen",
+      "body": "Du hast # g KH fotografiert, aber kein Insulin abgegeben.",
+      "handled": "Dieses Essen hat seinen Bolus schon. Es wurde nichts abgegeben."
+    },
     "low": {
       "title": "Zucker niedrig"
     },

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:insulink/src/activity_mode/recovery_bolus.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
@@ -11,6 +13,7 @@ import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
 import 'package:insulink/src/injection/injection_confirm_button.dart';
 import 'package:insulink/src/injection/meal_camera_page.dart';
+import 'package:insulink/src/injection/pending_meal_bolus.dart';
 import 'package:insulink/src/injection/injection_products_tab.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
@@ -68,6 +71,12 @@ class _InjectionPageState extends State<InjectionPage> {
   /// stay on the meal. Only another photo replaces it.
   PhotoEstimate? _photoEstimate;
 
+  /// When that photo came in, while its meal still waits for a bolus. Null
+  /// without a photo and from the moment a bolus is confirmed here.
+  DateTime? _photoTakenAt;
+
+  late final MealState _mealLog;
+
   /// What the meal is logged with: the photo's foods and the picked products,
   /// so protein reaches the day's totals either way.
   List<MealEntry> get _mealEntries => [
@@ -96,6 +105,8 @@ class _InjectionPageState extends State<InjectionPage> {
     _carbsController.addListener(_recompute);
     _glucoseController.addListener(_recompute);
     _bolusController.addListener(_onBolusEdited);
+    _mealLog = context.read<MealState>()
+      ..addListener(_leaveIfDeliveredElsewhere);
     // Prefill the suggestion from the prefilled glucose (listeners don't fire for
     // the initial text); after the first frame so setState is legal.
     WidgetsBinding.instance.addPostFrameCallback((_) => _recompute());
@@ -128,10 +139,29 @@ class _InjectionPageState extends State<InjectionPage> {
 
   @override
   void dispose() {
+    _mealLog.removeListener(_leaveIfDeliveredElsewhere);
     _carbsController.dispose();
     _glucoseController.dispose();
     _bolusController.dispose();
     super.dispose();
+  }
+
+  /// Closes the page once the notification's button delivered this meal. The
+  /// page can outlive that in the background, and its button would then deliver
+  /// the same dose again. Removes this route rather than popping, because the
+  /// camera may be open on top of it.
+  void _leaveIfDeliveredElsewhere() {
+    final takenAt = _photoTakenAt;
+    if (takenAt == null || !mounted) {
+      return;
+    }
+    final delivered = _mealLog.meals.any(
+      (meal) => meal.time.isAfter(takenAt) && meal.carbs > 0 && meal.bolus > 0,
+    );
+    if (delivered) {
+      _photoTakenAt = null;
+      Navigator.of(context).removeRoute(ModalRoute.of(context)!);
+    }
   }
 
   void _onBolusEdited() {
@@ -227,7 +257,29 @@ class _InjectionPageState extends State<InjectionPage> {
           : sportDecimal(_suggested!, 1);
       _settingBolus = false;
     }
+    _rememberPhotoMeal();
     setState(() {});
+  }
+
+  /// Hands the calculator's current state to the service, which warns if no
+  /// bolus follows. Rewritten on every change, so the warning offers what the
+  /// page shows now rather than what the photo first estimated.
+  void _rememberPhotoMeal() {
+    final takenAt = _photoTakenAt;
+    if (takenAt == null) {
+      return;
+    }
+    final pending = PendingMealBolus(
+      takenAt: takenAt,
+      meal: Meal(
+        time: takenAt,
+        carbs: _carbs,
+        glucoseMgdl: _glucose ?? 0,
+        bolus: _confirmableBolus ?? 0,
+        entries: _mealEntries,
+      ),
+    );
+    unawaited(const PendingMealBolusStore().save(pending));
   }
 
   void _onProductItems(List<MealEntry> items) {
@@ -265,6 +317,11 @@ class _InjectionPageState extends State<InjectionPage> {
       return;
     }
     final navigator = Navigator.of(context);
+    _photoTakenAt = null;
+    await const PendingMealBolusStore().clear();
+    if (!mounted) {
+      return;
+    }
     final meal = await _record(context.read<MealState>(), glucose, outcome);
     if (outcome.isPending && mounted) {
       context.read<BolusDispatcher>().submit(
@@ -351,7 +408,10 @@ class _InjectionPageState extends State<InjectionPage> {
       icon: PhosphorIconsBold.forkKnife,
       titleKey: 'injection.carbs',
       trailing: PhotoCarbsButton(
-        onEstimate: (estimate) => setState(() => _takeEstimate(estimate)),
+        onEstimate: (estimate) {
+          _takeEstimate(estimate);
+          _recompute();
+        },
       ),
       children: [
         InjectionNumberField(
@@ -390,6 +450,7 @@ class _InjectionPageState extends State<InjectionPage> {
   /// picked before are dropped rather than counted on out of sight.
   void _takeEstimate(PhotoEstimate estimate) {
     _photoEstimate = estimate;
+    _photoTakenAt = DateTime.now();
     _productEntries = const [];
     _carbsController.text = estimate.carbs.round().toString();
   }

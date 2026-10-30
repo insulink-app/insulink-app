@@ -13,9 +13,11 @@ import 'package:insulink/src/request/response_json.dart';
 /// weight and carbohydrates as totals (`insulink-api`
 /// `docs/MEAL_PHOTO_ESTIMATE.md`).
 ///
-/// A guess, never a dose input on its own: the bolus calculator puts the
-/// carbohydrates into the editable carbs field and lists the foods under it, so
-/// an oversized portion shows at a glance.
+/// A guess: the bolus calculator puts the carbohydrates into the editable carbs
+/// field and lists the foods under it, so an oversized portion shows at a
+/// glance. The one dose that can go out without that page is the missed-meal
+/// warning's button, whose notification names the carbs instead
+/// ([PendingMealBolus]).
 class PhotoEstimate {
   const PhotoEstimate({
     required this.name,
