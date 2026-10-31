@@ -5,6 +5,7 @@ import android.util.Log
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskLifecycleListener
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskPlugin
 import com.pravera.flutter_foreground_task.FlutterForegroundTaskStarter
+import im.nfc.flutter_nfc_kit.FlutterNfcKitPlugin
 import io.flutter.embedding.engine.FlutterEngine
 import io.reactivex.exceptions.UndeliverableException
 import io.reactivex.plugins.RxJavaPlugins
@@ -21,11 +22,17 @@ import io.reactivex.plugins.RxJavaPlugins
  * starts, so that is where we register the plugin. Doing it from
  * [Application.onCreate] means it also covers a system/sticky service restart,
  * when [MainActivity] never runs.
+ *
+ * flutter_nfc_kit is taken off that engine again: it keeps its channels in
+ * statics, so the service engine shutting down can clear the handler of the UI
+ * engine, and every later NFC scan throws MissingPluginException. The NFC scan
+ * only ever runs on the UI engine.
  */
 class InsulinkApplication : Application() {
     private val libre3ServiceListener = object : FlutterForegroundTaskLifecycleListener {
         override fun onEngineCreate(flutterEngine: FlutterEngine?) {
             flutterEngine?.let {
+                it.plugins.remove(FlutterNfcKitPlugin::class.java)
                 Libre3SecurityPlugin().register(it)
                 AudioOutputPlugin(applicationContext).register(it)
                 GlucoseWidgetPlugin(applicationContext).register(it)
