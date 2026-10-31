@@ -341,10 +341,10 @@ packages:
     dependency: "direct main"
     description:
       name: fitbit_air
-      sha256: "9f94683b44bd09612761b3be88f99b700926f379b3b7a812862cd9728ead59fa"
+      sha256: "7fee5fa2ec5cf77e6c6503672dc868a480b9428e24dcddda4845d4933410cf17"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.2.1"
   fixnum:
     dependency: transitive
     description:
