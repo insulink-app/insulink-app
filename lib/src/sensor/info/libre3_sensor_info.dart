@@ -54,8 +54,7 @@ class Libre3Attributes {
   final CgmReading? latest;
   final String Function(String key) localize;
 
-  /// Libre 3 warm-up before the first reading (60 min, fixed).
-  static const int _warmupSec = 3600;
+  int get _warmupSec => SensorType.abbottLibre3.warmupSec;
   int get _sessionLengthSec => SensorType.abbottLibre3.sessionLengthSec;
 
   List<SensorSection> build() {

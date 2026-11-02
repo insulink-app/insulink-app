@@ -65,8 +65,17 @@ class SensorStatusBox extends StatelessWidget {
         : 'sensor.status.disconnected';
   }
 
-  /// Connection state, with the live value once there is one.
+  /// Connection state, with the live value once there is one; while a fresh
+  /// sensor warms up, the minutes left in its warm-up instead.
   String _status(BuildContext context) {
+    if (controller.warmingUp) {
+      final left = controller.warmupEndsAt!.difference(DateTime.now());
+      return Locales.string(
+        context,
+        'sensor.status.warmup',
+        params: ['${(left.inSeconds / 60).ceil()}'],
+      );
+    }
     final status = Locales.string(context, _statusKey);
     if (_connected && controller.currentMgdl != null) {
       final glucose = context.watch<ProfileGlucoseState>();

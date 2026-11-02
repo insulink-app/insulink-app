@@ -4,14 +4,15 @@ import 'dart:typed_data';
 /// isolate knows which [CgmConnection] strategy to build and the pairing UI
 /// knows which flow to show.
 enum SensorType {
-  dexcomG7('dexcom_g7', 'DEXCOM_G7', 300, 907200),
-  abbottLibre3('abbott_libre3', 'ABBOTT_LIBRE3', 60, 1209600);
+  dexcomG7('dexcom_g7', 'DEXCOM_G7', 300, 907200, 1800),
+  abbottLibre3('abbott_libre3', 'ABBOTT_LIBRE3', 60, 1209600, 3600);
 
   const SensorType(
     this.wireKey,
     this.backendType,
     this.readingIntervalSec,
     this.sessionLengthSec,
+    this.warmupSec,
   );
 
   /// Stable string stored in [CgmStore].
@@ -28,6 +29,10 @@ enum SensorType {
   /// fallback for the expiry/halftime reminders when the sensor hasn't reported
   /// its own length. Halftime fires at half of this.
   final int sessionLengthSec;
+
+  /// Nominal warm-up before the first reading: the fallback while the sensor
+  /// has not reported its own (G7 30 min, Libre 3 60 min).
+  final int warmupSec;
 
   /// Resolve a persisted [wireKey] back to a type, defaulting to the Dexcom G7
   /// (the original, only sensor — so existing installs keep working).
