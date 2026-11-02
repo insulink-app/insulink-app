@@ -6,21 +6,25 @@ import 'package:insulink/src/sport/sport_editable_number.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/sport/training/cardio_type_ui.dart';
 import 'package:insulink/src/sport/workout/workout_last_time.dart';
+import 'package:insulink/src/sport/workout/workout_plan_row.dart';
 import 'package:insulink/src/sport/workout/workout_runner.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 /// The exercising phase: header (tap to jump), stopwatch, rep/weight inputs, the
-/// "last time" comparison and the complete/finish buttons.
+/// "last time" comparison, the sets/queue planning and the complete/finish
+/// buttons.
 class WorkoutExerciseView extends StatelessWidget {
   const WorkoutExerciseView({
     super.key,
     required this.runner,
     required this.onJump,
+    required this.onAdd,
     required this.onFinish,
   });
 
   final WorkoutRunner runner;
   final VoidCallback onJump;
+  final VoidCallback onAdd;
   final VoidCallback onFinish;
 
   @override
@@ -64,6 +68,8 @@ class WorkoutExerciseView extends StatelessWidget {
                   else
                     _repWeightControls(context, scheme),
                   WorkoutLastTime(runner: runner),
+                  const SizedBox(height: 16),
+                  WorkoutPlanRow(runner: runner, onAdd: onAdd),
                   const Spacer(),
                   FilledButton(
                     onPressed: runner.completeSet,

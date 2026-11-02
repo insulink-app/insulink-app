@@ -1056,7 +1056,11 @@
       "next_exercise": "Next exercise",
       "pick_next": "What comes next?",
       "skip_exercise": "Skip exercise",
-      "swap_exercise": "Swap exercise"
+      "swap_exercise": "Swap exercise",
+      "planned_sets": "# sets",
+      "sets_up": "More sets",
+      "sets_down": "Fewer sets",
+      "queue_exercise": "Queue exercise"
     },
     "summary": {
       "_": "Summary",

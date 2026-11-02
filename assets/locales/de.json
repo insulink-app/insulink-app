@@ -1056,7 +1056,11 @@
       "next_exercise": "Nächste Übung",
       "pick_next": "Was kommt als nächstes?",
       "skip_exercise": "Übung überspringen",
-      "swap_exercise": "Übung tauschen"
+      "swap_exercise": "Übung tauschen",
+      "planned_sets": "# Sätze",
+      "sets_up": "Mehr Sätze",
+      "sets_down": "Weniger Sätze",
+      "queue_exercise": "Übung vormerken"
     },
     "summary": {
       "_": "Zusammenfassung",

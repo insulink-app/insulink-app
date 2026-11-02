@@ -351,6 +351,22 @@ class WorkoutRunner extends ChangeNotifier {
     _persist();
   }
 
+  /// Plan [delta] sets more or fewer for the exercise being done, in THIS
+  /// session only and never below the set in progress. A free workout plans one
+  /// set per exercise, so this is how it runs several.
+  void changeTargetSets(int delta) {
+    if (_phase != WorkoutPhase.exercising) {
+      return;
+    }
+    final items = [..._routine.items];
+    items[_exerciseIndex] = currentItem.copyWith(
+      targetSets: (currentItem.targetSets + delta).clamp(setNumber, 99),
+    );
+    _routine = _routine.copyWith(items: items);
+    notifyListeners();
+    _persist();
+  }
+
   /// Skip what is left of the current exercise (while resting: the one coming
   /// up) and start the next. The skipped sets are simply not logged.
   void skipExercise() {
