@@ -6,7 +6,8 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 
 /// The meal's other nutrients under the carbs / glucose / bolus strip:
 /// protein, and fat and energy when the entries know them (products and photo
-/// estimates logged since they are kept). Read only; they follow the entries.
+/// estimates logged since they are kept). Read only here; they follow the
+/// entries, which a photo meal corrects one by one (`MealEntryNutrientsSheet`).
 class MealNutrientsStrip extends StatelessWidget {
   const MealNutrientsStrip({super.key, required this.meal});
 

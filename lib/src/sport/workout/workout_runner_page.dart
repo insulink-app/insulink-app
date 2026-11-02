@@ -214,6 +214,7 @@ class _WorkoutRunnerPageState extends State<WorkoutRunnerPage> {
     return WorkoutExerciseView(
       runner: _runner,
       onJump: _showJump,
+      onAdd: _addExercise,
       onFinish: () => _confirmFinish(context),
     );
   }

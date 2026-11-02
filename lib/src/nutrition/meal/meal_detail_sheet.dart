@@ -13,6 +13,7 @@ import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/nutrition/meal/meal_nutrients_strip.dart';
+import 'package:insulink/src/nutrition/meal/meal_entry_nutrients_sheet.dart';
 import 'package:insulink/src/nutrition/meal/meal_photo_header.dart';
 import 'package:insulink/src/nutrition/meal/meal_photo_page.dart';
 import 'package:insulink/src/nutrition/meal/meal_state.dart';
@@ -64,6 +65,15 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
   void _update(Meal updated) {
     context.read<MealState>().updateMeal(meal, updated);
     setState(() => meal = updated);
+  }
+
+  /// Puts a corrected entry at [index]. The meal's carbs move by the
+  /// difference it makes, so a total typed over at dosing keeps its own
+  /// correction. Never below zero.
+  void _updateEntry(int index, MealEntry changed) {
+    final carbs = meal.carbs + changed.carbs - meal.entries[index].carbs;
+    final entries = [...meal.entries]..[index] = changed;
+    _update(meal.copyWith(carbs: carbs < 0 ? 0 : carbs, entries: entries));
   }
 
   /// Opens the native date + time pickers to correct when the meal was logged.
@@ -396,7 +406,8 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
   }
 
   /// Name over brand and portion, "33 g KH" on the right. An entry estimated
-  /// from a photo opens that photo (a camera icon says so); a saved product
+  /// from a photo opens its nutrients for correction (a pencil says so; the
+  /// photo itself sits in the header); a saved product
   /// opens its editor.
   Widget _entryRow(InsulinkColors colors, MealEntry entry) {
     final product = _findProduct(context, entry);
@@ -441,7 +452,11 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
               ),
             ),
             if (entry.photoId != null)
-              Icon(PhosphorIconsRegular.camera, size: 18, color: colors.muted)
+              Icon(
+                PhosphorIconsRegular.pencilSimple,
+                size: 18,
+                color: colors.muted,
+              )
             else if (product != null)
               Icon(PhosphorIconsBold.caretRight, size: 18, color: colors.muted),
           ],
@@ -479,9 +494,13 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
   }
 
   VoidCallback? _entryTap(MealEntry entry, FoodProduct? product) {
-    final photoId = entry.photoId;
-    if (photoId != null) {
-      return () => openMealPhoto(context, fetchMealPhoto(context, photoId));
+    if (entry.photoId != null && widget.onRestore == null) {
+      final index = meal.entries.indexOf(entry);
+      return () => showMealEntryNutrients(
+        context,
+        entry,
+        (changed) => _updateEntry(index, changed),
+      );
     }
     if (product != null) {
       return () => showFoodEditor(context, product: product);

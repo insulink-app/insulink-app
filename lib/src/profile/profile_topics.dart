@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/analysis/compression/compression_filter_toggle.dart';
 import 'package:insulink/src/activity_mode/activity_mode_section.dart';
+import 'package:insulink/src/glucose_share/glucose_share_section.dart';
 import 'package:insulink/src/google_health/heart_rate_zones_editor.dart';
 import 'package:insulink/src/google_health/profile_sleep_targets_editor.dart';
 import 'package:insulink/src/nutrition/stats/nutrition_goals_editor.dart';
@@ -221,6 +222,12 @@ class ProfileTopicCatalog {
       icon: PhosphorIconsBold.fingerprint,
       searchKey: 'profile.search.security',
       children: () => const [ProfileSecuritySelection()],
+    ),
+    (
+      titleKey: 'profile.share',
+      icon: PhosphorIconsBold.shareNetwork,
+      searchKey: 'profile.search.share',
+      children: () => const [GlucoseShareSection()],
     ),
     (
       titleKey: 'profile.backup',

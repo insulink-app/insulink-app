@@ -140,6 +140,11 @@
       "_": "Searching for sensor…",
       "hint": "Establishing the connection. Keep the sensor nearby."
     },
+    "warmup": {
+      "title": "Sensor is warming up",
+      "hint": "The first value is due around #.",
+      "minutes": "# min"
+    },
     "empty": {
       "title": "No sensor connected",
       "body": "Set up your Dexcom G7 on the sensor page to see your glucose readings.",
@@ -319,7 +324,8 @@
       "disconnected": "Disconnected",
       "paired": "Paired",
       "unpaired": "Not paired",
-      "searching": "Searching for sensor…"
+      "searching": "Searching for sensor…",
+      "warmup": "Warming up, # min left"
     },
     "searching": {
       "hint": "Keep the sensor nearby."
@@ -1056,7 +1062,11 @@
       "next_exercise": "Next exercise",
       "pick_next": "What comes next?",
       "skip_exercise": "Skip exercise",
-      "swap_exercise": "Swap exercise"
+      "swap_exercise": "Swap exercise",
+      "planned_sets": "# sets",
+      "sets_up": "More sets",
+      "sets_down": "Fewer sets",
+      "queue_exercise": "Queue exercise"
     },
     "summary": {
       "_": "Summary",
@@ -1404,6 +1414,7 @@
       "loop": "automated delivery automation loop closed loop insulin",
       "security": "fingerprint biometric biometrics lock locked pin security unlock guarded app start",
       "backup": "backup export save data file download restore archive copy",
+      "share": "share link family parents partner access follower glucose show",
       "activity_mode": "sport activity mode training endurance strength weights running cycling walking routine workout basal target",
       "appearance": "language german english flag theme appearance light dark color mode display",
       "night": "night night mode sleep pulse band vibration partner"
@@ -1506,6 +1517,18 @@
         "samples_inferred": "inferred across # meals, not measured directly"
       },
       "since_change": "Your basal schedule changed recently. The suggestion only uses hours the running schedule actually ran, so it needs a few days under it before it can say anything."
+    },
+    "share": {
+      "_": "Share glucose",
+      "intro": "Whoever holds a link sees your current glucose and the last 24 hours, nothing else. No sign-in, and it can be added to the home screen. Delete a link to revoke it.",
+      "name_hint": "Who is it for, e.g. Mum",
+      "create": "Create",
+      "none": "No links yet.",
+      "unavailable": "Links need an account and a connection.",
+      "created": "Created #",
+      "copy": "Copy link",
+      "delete": "Delete link",
+      "delete_confirm": "Delete this link? It stops working at once."
     },
     "backup": {
       "_": "Data backup",

@@ -12,6 +12,7 @@ import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_data_view.dart';
 import 'package:insulink/src/overview/overview_header_glucose.dart';
 import 'package:insulink/src/overview/overview_states.dart';
+import 'package:insulink/src/overview/overview_warmup_view.dart';
 import 'package:insulink/src/overview/sensor_restore_offer.dart';
 import 'package:insulink/src/pump/pod_restore_card.dart';
 import 'package:insulink/src/profile/remote_review/remote_settings_card.dart';
@@ -153,6 +154,12 @@ class OverviewBodyContent extends StatelessWidget {
     }
     final loading =
         controller.hasSensor || controller.connected || controller.busy;
+    if (loading && controller.warmingUp) {
+      return OverviewWarmupView(
+        start: controller.sensorStart!,
+        endsAt: controller.warmupEndsAt!,
+      );
+    }
     if (loading) {
       return const SearchingView();
     }

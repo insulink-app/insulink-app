@@ -127,4 +127,23 @@ void main() {
     expect(runner.setNumber, 1);
     runner.dispose();
   });
+
+  test('a free workout runs as many sets as planned while exercising', () {
+    final runner = WorkoutRunner(free, const [exercise]);
+
+    runner.addExercise('bench');
+    runner.changeTargetSets(2);
+    runner.changeTargetSets(-1);
+    runner.completeSet();
+
+    expect(runner.totalSets, 2);
+    expect(runner.awaitingNextExercise, isFalse);
+    runner.skipRest();
+    runner.changeTargetSets(-5);
+    expect(runner.totalSets, 2);
+    runner.completeSet();
+    expect(runner.awaitingNextExercise, isTrue);
+    expect(free.items, isEmpty);
+    runner.dispose();
+  });
 }

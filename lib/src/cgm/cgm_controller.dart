@@ -396,6 +396,21 @@ class CgmController extends ChangeNotifier with WidgetsBindingObserver {
     return sensorType.sessionLengthSec;
   }
 
+  /// When the running sensor's warm-up ends, or null while its start is not
+  /// known: the sensor's reported warm-up, else the nominal one.
+  DateTime? get warmupEndsAt => _sensorStart?.add(
+    Duration(seconds: _info.warmupSec ?? sensorType.warmupSec),
+  );
+
+  /// Whether the sensor is still warming up: started, no value yet, and its
+  /// warm-up not over. Before this, a warming sensor read as "searching".
+  bool get warmingUp {
+    final endsAt = warmupEndsAt;
+    return currentMgdl == null &&
+        endsAt != null &&
+        DateTime.now().isBefore(endsAt);
+  }
+
   bool _forgettingExpired = false;
 
   /// Forgets the sensor once its session, grace included, is over: it delivers
