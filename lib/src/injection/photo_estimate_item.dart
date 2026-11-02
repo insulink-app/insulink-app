@@ -1,3 +1,5 @@
+import 'package:insulink/src/nutrition/meal/meal.dart';
+
 /// One food on the photographed plate: how many pieces the model counted (0
 /// for food without pieces, such as rice or a drink), its edible weight, the
 /// carbohydrates, protein and fat of that weight in grams, and its energy in
@@ -46,6 +48,31 @@ class PhotoEstimateItem {
         fat: (json['fat'] as num?)?.toDouble() ?? 0,
         kcal: (json['kcal'] as num?)?.toDouble() ?? 0,
       );
+
+  /// The food as the meal entry it is logged as, carrying the meal's
+  /// [photoId] so the entry opens the photo again.
+  MealEntry entry({String? photoId}) => MealEntry(
+    name: name,
+    unit: 'g',
+    amount: grams,
+    carbs: carbs,
+    protein: protein,
+    fat: fat,
+    kcal: kcal,
+    photoId: photoId,
+  );
+
+  /// The same food with the weight and nutrients of an [edited] entry, still
+  /// counted in [count] pieces.
+  PhotoEstimateItem corrected(MealEntry edited) => PhotoEstimateItem(
+    name: name,
+    count: count,
+    grams: edited.amount,
+    carbs: edited.carbs,
+    protein: edited.protein,
+    fat: edited.fat ?? 0,
+    kcal: edited.kcal ?? 0,
+  );
 
   /// Whether the user can correct the count: only food the model counted.
   bool get countable => count > 0;
