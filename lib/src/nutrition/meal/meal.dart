@@ -63,12 +63,13 @@ class Meal {
     double? carbs,
     int? glucoseMgdl,
     double? bolus,
+    List<MealEntry>? entries,
   }) => Meal(
     time: time ?? this.time,
     carbs: carbs ?? this.carbs,
     glucoseMgdl: glucoseMgdl ?? this.glucoseMgdl,
     bolus: bolus ?? this.bolus,
-    entries: entries,
+    entries: entries ?? this.entries,
     deliveredByPump: deliveredByPump,
   );
 
@@ -135,6 +136,26 @@ class MealEntry {
   /// Number of servings this portion represents, or null when the product has
   /// no declared serving size.
   double? get servings => (servingSize ?? 0) > 0 ? amount / servingSize! : null;
+
+  /// The same portion with corrected nutrients, for an estimate the user fixes
+  /// by hand.
+  MealEntry withNutrients({
+    double? carbs,
+    double? protein,
+    double? fat,
+    double? kcal,
+  }) => MealEntry(
+    barcode: barcode,
+    name: name,
+    unit: unit,
+    amount: amount,
+    carbs: carbs ?? this.carbs,
+    protein: protein ?? this.protein,
+    fat: fat ?? this.fat,
+    kcal: kcal ?? this.kcal,
+    servingSize: servingSize,
+    photoId: photoId,
+  );
 
   factory MealEntry.fromJson(Map<String, dynamic> json) => MealEntry(
     barcode: json['barcode'] as String? ?? '',
