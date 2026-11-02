@@ -120,11 +120,17 @@ void main() {
     });
 
     test('a dense window is thinned but keeps its extremes and endpoints', () {
-      // 1440 points = the Libre's 24 h at 1-min cadence, with a single spike and
-      // a single dip buried in an otherwise flat line. Both must survive the thin.
+      // 1440 points = the Libre's 24 h at 1-min cadence, with a 15 min spike
+      // and a 15 min dip in an otherwise flat line. Both must survive the
+      // smoothing and the thin at their full height.
       final entries = [
         for (var index = 0; index < 1440; index++)
-          MapEntry(index * 60, index == 700 ? 260 : (index == 900 ? 45 : 100)),
+          MapEntry(
+            index * 60,
+            (index - 700).abs() <= 7
+                ? 260
+                : ((index - 900).abs() <= 7 ? 45 : 100),
+          ),
       ];
       final series = seriesFor(entries);
       series.buildBars();
@@ -151,6 +157,33 @@ void main() {
       ]);
       dense.buildBars();
       expect(dense.showDots, isFalse);
+    });
+  });
+
+  group('GlucoseChartSeries smoothing', () {
+    List<MapEntry<int, int>> zigzag(int count, int stepSecs) => [
+      for (var index = 0; index < count; index++)
+        MapEntry(index * stepSecs, index.isEven ? 100 : 110),
+    ];
+
+    test('a zoomed-out minute window is smoothed, its newest value raw', () {
+      final series = seriesFor(zigzag(300, 60))..buildBars();
+      final values = series.realSpots.map((spot) => spot.y).toList();
+
+      expect(values.sublist(10, 280).every((y) => y > 102 && y < 108), isTrue);
+      expect(values.last, 110);
+    });
+
+    test('a zoomed-in minute window shows every raw reading', () {
+      final series = seriesFor(zigzag(120, 60))..buildBars();
+
+      expect(series.realSpots.map((spot) => spot.y).toSet(), {100, 110});
+    });
+
+    test('five-minute readings come out unchanged', () {
+      final series = seriesFor(zigzag(288, 300))..buildBars();
+
+      expect(series.realSpots.map((spot) => spot.y).toSet(), {100, 110});
     });
   });
 }

@@ -79,7 +79,7 @@ class GlucoseChartSeries {
     int? prevValue;
     double? prevX;
     int? prevSecs;
-    for (final entry in _downsample(_windowSlice())) {
+    for (final entry in _downsample(_smooth(_windowSlice()))) {
       final x = (entry.key - latestSecs) / 3600.0 + shift;
       final value = entry.value;
       if (prevSecs != null && entry.key - prevSecs > _maxGapSecs) {
@@ -123,6 +123,49 @@ class GlucoseChartSeries {
       slice.insert(0, beforeLeft);
     }
     return slice;
+  }
+
+  /// Above this many readings in the window the line is smoothed. At or below
+  /// it (zoomed in to about three hours of Libre 3 minutes) every raw reading is
+  /// drawn as it came.
+  static const _rawPoints = 180;
+
+  /// Half-width of the smoothing window. Under the G7's 5 min cadence, so a G7
+  /// reading only averages with itself and comes out unchanged; a Libre 3 minute
+  /// reading averages with its neighbours up to 4 min either side.
+  static const _smoothHalfSecs = 4 * 60;
+
+  /// Smooths the Libre 3's noisy minute readings in a zoomed-out window: each
+  /// becomes the mean of the readings within [_smoothHalfSecs] of it. The newest
+  /// stays raw, so the line still ends on the headline value. Display only:
+  /// alarms, statistics and storage keep the raw readings.
+  List<MapEntry<int, int>> _smooth(List<MapEntry<int, int>> slice) {
+    if (slice.length <= _rawPoints) {
+      return slice;
+    }
+    final averaged = _movingAverage(slice);
+    averaged[averaged.length - 1] = slice.last;
+    return averaged;
+  }
+
+  /// A centred moving average over time, kept as a running sum between two
+  /// pointers, so the whole window costs one pass.
+  List<MapEntry<int, int>> _movingAverage(List<MapEntry<int, int>> slice) {
+    final averaged = <MapEntry<int, int>>[];
+    var oldest = 0;
+    var newest = 0;
+    var sum = 0;
+    for (final entry in slice) {
+      while (newest < slice.length &&
+          slice[newest].key <= entry.key + _smoothHalfSecs) {
+        sum += slice[newest++].value;
+      }
+      while (slice[oldest].key < entry.key - _smoothHalfSecs) {
+        sum -= slice[oldest++].value;
+      }
+      averaged.add(MapEntry(entry.key, (sum / (newest - oldest)).round()));
+    }
+    return averaged;
   }
 
   /// Thins a dense window down to at most [_maxPoints] while KEEPING the shape:
