@@ -1414,6 +1414,7 @@
       "loop": "automatische abgabe automatik loop closed loop insulin",
       "security": "fingerabdruck biometrie biometrisch sperre sperren pin sicherheit entsperren gesichert app start",
       "backup": "backup sicherung datensicherung export speichern daten datei herunterladen wiederherstellen archiv kopie",
+      "share": "teilen link freigabe familie eltern partner zugriff follower blutzucker zeigen",
       "activity_mode": "sport sportmodus training ausdauer kraft kraftsport laufen radfahren gehen routine workout basal zielwert",
       "appearance": "sprache deutsch englisch flagge design darstellung hell dunkel farbe modus erscheinungsbild",
       "night": "nacht nachtmodus schlaf puls armband vibration partner"
@@ -1516,6 +1517,18 @@
         "samples_inferred": "aus # Mahlzeiten erschlossen, nicht direkt gemessen"
       },
       "since_change": "Dein Basalprofil wurde kürzlich geändert. Der Vorschlag rechnet nur mit Stunden, in denen das laufende Profil auch lief, er braucht also erst ein paar Tage damit."
+    },
+    "share": {
+      "_": "Blutzucker teilen",
+      "intro": "Wer einen Link hat, sieht deinen aktuellen Blutzucker und die letzten 24 Stunden, sonst nichts. Ohne Anmeldung, auch als App auf dem Startbildschirm. Lösche einen Link, um ihn zu widerrufen.",
+      "name_hint": "Für wen, z. B. Mama",
+      "create": "Erstellen",
+      "none": "Noch keine Links.",
+      "unavailable": "Links brauchen ein Konto und eine Verbindung.",
+      "created": "Erstellt am #",
+      "copy": "Link kopieren",
+      "delete": "Link löschen",
+      "delete_confirm": "Diesen Link löschen? Er funktioniert sofort nicht mehr."
     },
     "backup": {
       "_": "Datensicherung",
