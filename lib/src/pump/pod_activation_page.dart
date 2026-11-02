@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:insulink/src/profile/security/profile_security_state.dart';
@@ -165,9 +167,10 @@ class _PodActivationPageState extends State<PodActivationPage> {
 /// one, so no path can reach the insertion unasked — and the answer is SINGLE
 /// USE, so a confirmation given for one attempt cannot carry a later one.
 ///
-/// A given answer is followed by a countdown of [countdownSeconds], one buzz a
-/// second and a strong one as the command goes out, so the wearer knows the
-/// exact moment the needle fires instead of bracing for an unknown few seconds.
+/// A given answer starts a countdown of [countdownSeconds] together with the
+/// insertion command, one buzz a second and a strong one at zero, when the pod
+/// fires the needle, so the wearer knows the exact moment instead of bracing for
+/// an unknown few seconds after the count.
 class CannulaConfirmation extends ChangeNotifier {
   CannulaConfirmation({required this.reason, ProfileSecurityState? security})
     : _security = security ?? ProfileSecurityState();
@@ -179,9 +182,14 @@ class CannulaConfirmation extends ChangeNotifier {
 
   bool _armed = false;
 
+  /// How long the pod takes from the insertion command to the needle going in.
+  /// The countdown runs alongside the command, so zero is the moment it fires.
+  ///
+  /// ponytail: one figure measured by hand on a DASH pod; tune it here if the
+  /// needle lands before or after zero.
   static const countdownSeconds = 5;
 
-  /// Seconds until the insertion command is sent, null outside the countdown.
+  /// Seconds until the cannula goes in, null outside the countdown.
   int? secondsLeft;
 
   /// Prompts now. Biometric only, no PIN fallback: driving a needle into the body
@@ -192,12 +200,13 @@ class CannulaConfirmation extends ChangeNotifier {
   }
 
   /// Hands the answer to the one command that needs it, and forgets it. A yes
-  /// returns only once the countdown has run out.
+  /// starts the countdown and returns at once, so the command goes out while it
+  /// runs and the count reaches zero as the pod drives the needle in.
   Future<bool> consume() async {
     final armed = _armed;
     _armed = false;
     if (armed) {
-      await _countDown();
+      unawaited(_countDown());
     }
     return armed;
   }
