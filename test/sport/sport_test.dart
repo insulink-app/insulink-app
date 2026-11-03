@@ -541,7 +541,7 @@ void main() {
     TrainingState state(List<WorkoutSession> sessions) =>
         TrainingState(const SportStore(), const [], const [], sessions, null);
 
-    test('returns the newest matching set, falling back to older sessions', () {
+    test('reads the newest run only, never borrowing from an older one', () {
       const older = WorkoutSession(
         id: 's1',
         routineId: 'r1',
@@ -559,7 +559,7 @@ void main() {
       );
       final training = state([older, newer]);
       expect(training.lastSetFor('r1', 'e1', 0)?.reps, 12);
-      expect(training.lastSetFor('r1', 'e1', 1)?.reps, 9);
+      expect(training.lastSetFor('r1', 'e1', 1), isNull);
       expect(training.lastSetFor('r1', 'e1', 2), isNull);
     });
 

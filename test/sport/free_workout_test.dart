@@ -146,4 +146,19 @@ void main() {
     expect(free.items, isEmpty);
     runner.dispose();
   });
+
+  test('only an added exercise of a routine can change its sets', () {
+    final runner = WorkoutRunner(routine, const [exercise, squat]);
+
+    runner.changeTargetSets(2);
+    expect(runner.canChangeSets, isFalse);
+    expect(runner.totalSets, 1);
+
+    runner.addExercise('squat');
+    runner.jumpTo(1);
+    runner.changeTargetSets(1);
+    expect(runner.canChangeSets, isTrue);
+    expect(runner.totalSets, 4);
+    runner.dispose();
+  });
 }
