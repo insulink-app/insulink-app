@@ -10,15 +10,18 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 /// carbohydrates first ([PhotoEstimate.major]). The small ones sit folded in a
 /// "Sonstiges" row ([PhotoEstimate.minor]) that opens on a tap, so butter or a
 /// garnish is there to check without crowding the foods that set the dose.
+/// A tap on a food opens its weight and nutrients for correction ([onEdit]).
 class PhotoCarbsNotice extends StatefulWidget {
   const PhotoCarbsNotice({
     super.key,
     required this.estimate,
     required this.onRecount,
+    required this.onEdit,
   });
 
   final PhotoEstimate estimate;
   final void Function(PhotoEstimateItem item, int count) onRecount;
+  final void Function(PhotoEstimateItem item) onEdit;
 
   @override
   State<PhotoCarbsNotice> createState() => _PhotoCarbsNoticeState();
@@ -32,8 +35,7 @@ class _PhotoCarbsNoticeState extends State<PhotoCarbsNotice> {
     final colors = context.ink;
     final minor = widget.estimate.minor;
     final rows = [
-      for (final item in widget.estimate.major)
-        PhotoFoodRow(item: item, onRecount: widget.onRecount),
+      for (final item in widget.estimate.major) _food(context, item),
       if (minor.isNotEmpty) _other(context, minor),
     ];
     return Padding(
@@ -92,9 +94,27 @@ class _PhotoCarbsNoticeState extends State<PhotoCarbsNotice> {
             for (final item in minor)
               Padding(
                 padding: const EdgeInsets.only(left: 14),
-                child: PhotoFoodRow(item: item, onRecount: widget.onRecount),
+                child: _food(context, item),
               ),
         ],
+      ),
+    );
+  }
+
+  /// One food, tappable to edit; a pencil says so where no counter sits.
+  Widget _food(BuildContext context, PhotoEstimateItem item) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(InkRadius.field),
+      onTap: () => widget.onEdit(item),
+      child: PhotoFoodRow(
+        item: item,
+        onRecount: widget.onRecount,
+        trailing: Icon(
+          PhosphorIconsBold.pencilSimple,
+          size: 18,
+          color: context.ink.muted,
+          semanticLabel: Locales.string(context, 'injection.photo.edit'),
+        ),
       ),
     );
   }

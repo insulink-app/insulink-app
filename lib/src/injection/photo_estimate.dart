@@ -78,22 +78,28 @@ class PhotoEstimate {
     return PhotoEstimate.fromJson(json);
   }
 
-  /// The estimate with [item] counted as [count] pieces instead, the totals
-  /// following, so the carbs field and the logged entries match the corrected
-  /// plate.
-  PhotoEstimate recounted(PhotoEstimateItem item, int count) {
-    final recountedItems = [
-      for (final each in items)
-        identical(each, item) ? each.recounted(count) : each,
+  /// The estimate with [item] swapped for [replacement] (recounted or edited
+  /// by hand), the totals following, so the carbs field and the logged entries
+  /// match the corrected plate.
+  PhotoEstimate replaced(
+    PhotoEstimateItem item,
+    PhotoEstimateItem replacement,
+  ) {
+    final replacedItems = [
+      for (final each in items) identical(each, item) ? replacement : each,
     ];
     return PhotoEstimate(
       name: name,
-      grams: recountedItems.fold(0, (sum, each) => sum + each.grams),
-      carbs: recountedItems.fold(0, (sum, each) => sum + each.carbs),
-      items: recountedItems,
+      grams: replacedItems.fold(0, (sum, each) => sum + each.grams),
+      carbs: replacedItems.fold(0, (sum, each) => sum + each.carbs),
+      items: replacedItems,
       photoId: photoId,
     );
   }
+
+  /// The estimate with [item] counted as [count] pieces instead.
+  PhotoEstimate recounted(PhotoEstimateItem item, int count) =>
+      replaced(item, item.recounted(count));
 
   /// A model that saw no food answers with no items and a zero portion.
   bool get hasFood => grams > 0;
@@ -127,16 +133,6 @@ class PhotoEstimate {
   /// protein reaches the day's nutrition totals and the meal log lists them.
   /// Each carries [photoId], so any of them opens the photo again.
   List<MealEntry> entries() => [
-    for (final item in items)
-      MealEntry(
-        name: item.name,
-        unit: 'g',
-        amount: item.grams,
-        carbs: item.carbs,
-        protein: item.protein,
-        fat: item.fat,
-        kcal: item.kcal,
-        photoId: photoId,
-      ),
+    for (final item in items) item.entry(photoId: photoId),
   ];
 }

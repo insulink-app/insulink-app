@@ -8,6 +8,7 @@ import 'package:insulink/src/injection/photo_carbs.dart';
 import 'package:insulink/src/injection/photo_carbs_notice.dart';
 import 'package:insulink/src/injection/photo_estimate.dart';
 import 'package:insulink/src/injection/photo_estimate_item.dart';
+import 'package:insulink/src/nutrition/meal/meal_entry_nutrients_sheet.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/injection/bolus_delivery.dart';
 import 'package:insulink/src/injection/bolus_dispatcher.dart';
@@ -420,7 +421,11 @@ class _InjectionPageState extends State<InjectionPage> {
           autofocus: widget.estimate == null,
         ),
         if (_photoEstimate case final estimate?)
-          PhotoCarbsNotice(estimate: estimate, onRecount: _recount),
+          PhotoCarbsNotice(
+            estimate: estimate,
+            onRecount: _recount,
+            onEdit: _editFood,
+          ),
         if (_photoEstimate == null) ...[
           const SizedBox(height: 10),
           InjectionProductsTab(
@@ -455,14 +460,30 @@ class _InjectionPageState extends State<InjectionPage> {
     _carbsController.text = estimate.carbs.round().toString();
   }
 
-  /// A corrected piece count moves the carbs field by the difference it makes,
-  /// so a total the user typed over keeps its own correction: 70 typed, one
-  /// macaroon of 12 g fewer, 58. Never below zero.
+  /// A corrected piece count moves the carbs field like any other correction.
   void _recount(PhotoEstimateItem item, int count) {
-    final recounted = _photoEstimate!.recounted(item, count);
-    final corrected = _manualCarbs + recounted.carbs - _photoEstimate!.carbs;
+    _replaceFood(item, item.recounted(count));
+  }
+
+  /// Opens a photographed food's nutrients for correction. Every edit lands
+  /// at once, so [current] tracks the food the estimate now holds.
+  void _editFood(PhotoEstimateItem item) {
+    var current = item;
+    showMealEntryNutrients(context, item.entry(), (changed) {
+      final corrected = current.corrected(changed);
+      _replaceFood(current, corrected);
+      current = corrected;
+    });
+  }
+
+  /// A corrected food moves the carbs field by the difference it makes, so a
+  /// total the user typed over keeps its own correction: 70 typed, one
+  /// macaroon of 12 g fewer, 58. Never below zero.
+  void _replaceFood(PhotoEstimateItem item, PhotoEstimateItem replacement) {
+    final replaced = _photoEstimate!.replaced(item, replacement);
+    final corrected = _manualCarbs + replaced.carbs - _photoEstimate!.carbs;
     setState(() {
-      _photoEstimate = recounted;
+      _photoEstimate = replaced;
       _carbsController.text = corrected
           .clamp(0, double.infinity)
           .round()

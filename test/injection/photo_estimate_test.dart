@@ -126,4 +126,13 @@ void main() {
       isFalse,
     );
   });
+
+  test('an edited food moves the totals and keeps its piece count', () {
+    final bread = estimate.items.first;
+    final edited = bread.entry().withNutrients(carbs: 30);
+    final corrected = estimate.replaced(bread, bread.corrected(edited));
+    expect(corrected.carbs, 55);
+    expect(corrected.items.first.count, bread.count);
+    expect(corrected.entries().first.photoId, 'abc');
+  });
 }
