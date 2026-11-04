@@ -5,6 +5,7 @@ import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/base/button_loader.dart';
+import 'package:insulink/src/theme/status_colors.dart';
 
 /// The bolus page's confirm button, gated by the device biometric. Reports how
 /// the confirmed dose leaves through [onConfirmed]; a null [bolus] (invalid or
@@ -45,6 +46,10 @@ class _InjectionConfirmButtonState extends State<InjectionConfirmButton> {
   /// logging) is confirmed with a plain tap, and so is any bolus once the user
   /// has turned the gate off in the settings.
   bool get _needsAuth => (widget.bolus ?? 0) > 0 && _gated;
+
+  /// A dose with no pod to deliver it is only written down: the user has to
+  /// inject it themselves, and the page must say so before they confirm.
+  bool get _logsOnly => (widget.bolus ?? 0) > 0 && !widget.usesPump;
 
   @override
   void initState() {
@@ -105,7 +110,8 @@ class _InjectionConfirmButtonState extends State<InjectionConfirmButton> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 14,
       children: [
-        if (_failed) _failure(context),
+        if (_logsOnly) _notice('injection.confirm.no_pump', context.warning),
+        if (_failed) _notice('injection.confirm.failed', context.danger),
         FilledButton.icon(
           onPressed: _authenticating || widget.bolus == null ? null : _confirm,
           icon: _authenticating
@@ -116,33 +122,37 @@ class _InjectionConfirmButtonState extends State<InjectionConfirmButton> {
                       : PhosphorIconsBold.check,
                 ),
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(58)),
-          label: LocaleText(
-            widget.usesPump
-                ? 'injection.confirm.button_pump'
-                : 'injection.confirm.button',
-          ),
+          label: LocaleText(_buttonKey),
         ),
       ],
     );
   }
 
-  /// Shown above the button once the biometric check fails, in the error
-  /// colour, so the reason the bolus did not go through is impossible to miss.
-  Widget _failure(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+  String get _buttonKey {
+    if (widget.usesPump) {
+      return 'injection.confirm.button_pump';
+    }
+    return _logsOnly
+        ? 'injection.confirm.button_log_only'
+        : 'injection.confirm.button';
+  }
+
+  /// A line above the button in [color]: the missing pump, or a failed
+  /// biometric check. Both are sticky, so the reason is impossible to miss.
+  Widget _notice(String key, Color color) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(PhosphorIconsBold.warning, size: 16, color: scheme.error),
+        Icon(PhosphorIconsBold.warning, size: 16, color: color),
         const SizedBox(width: 6),
         Flexible(
           child: LocaleText(
-            'injection.confirm.failed',
+            key,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: scheme.error,
+              color: color,
             ),
           ),
         ),

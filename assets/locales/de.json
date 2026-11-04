@@ -1675,7 +1675,9 @@
       "button": "Bestätigen",
       "reason": "Bolus mit Fingerabdruck bestätigen",
       "failed": "Authentifizierung fehlgeschlagen",
-      "button_pump": "Bolus an Pumpe senden"
+      "button_pump": "Bolus an Pumpe senden",
+      "no_pump": "Keine Pumpe verbunden. Die Dosis wird nur eingetragen, nicht abgegeben. Spritze sie selbst.",
+      "button_log_only": "Nur eintragen"
     },
     "active_insulin_pump": "davon # E aus der Pumpe, nicht selbst gespritzt",
     "photo": {

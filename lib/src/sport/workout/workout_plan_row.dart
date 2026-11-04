@@ -6,8 +6,9 @@ import 'package:insulink/src/sport/workout/workout_runner.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-/// Plans ahead while a set runs: how many sets the current exercise gets, and
-/// an exercise queued up behind it. Both change this session only.
+/// Plans ahead while a set runs: how many sets the current exercise gets (only
+/// where no routine fixed it, [WorkoutRunner.canChangeSets]), and an exercise
+/// queued up behind it. Both change this session only.
 class WorkoutPlanRow extends StatelessWidget {
   const WorkoutPlanRow({super.key, required this.runner, required this.onAdd});
 
@@ -18,7 +19,7 @@ class WorkoutPlanRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _setsStepper(context),
+        if (runner.canChangeSets) _setsStepper(context),
         TextButton.icon(
           onPressed: onAdd,
           icon: const Icon(PhosphorIconsBold.plus),

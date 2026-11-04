@@ -1675,7 +1675,9 @@
       "button": "Confirm",
       "reason": "Confirm your bolus",
       "failed": "Authentication failed",
-      "button_pump": "Send bolus to pump"
+      "button_pump": "Send bolus to pump",
+      "no_pump": "No pump connected. The dose is only logged, not delivered. Inject it yourself.",
+      "button_log_only": "Log only"
     },
     "active_insulin_pump": "of which # U from the pump, not injected by you",
     "photo": {

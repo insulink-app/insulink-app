@@ -552,24 +552,33 @@ class TrainingState extends ChangeNotifier {
   }
 
   /// The [setIndex]-th (0-based) set of [exerciseId] from the most recent run of
-  /// routine [routineId] that has it: the "last time" comparison in the runner.
-  /// Scoped to the routine on purpose, because the same exercise in another
-  /// routine sits elsewhere in the plan and is no fair yardstick. Sessions are
-  /// appended in order, so iterating in reverse yields newest first.
+  /// routine [routineId] that did this exercise: the "last time" comparison in
+  /// the runner. Scoped to the routine on purpose, because the same exercise in
+  /// another routine sits elsewhere in the plan and is no fair yardstick.
+  ///
+  /// Newest by start time, not by list position: a sync merge appends the
+  /// account's sessions behind the local ones. And only that one run: a set the
+  /// last run did not reach has no "last time", rather than one borrowed from
+  /// an older run.
   SetLog? lastSetFor(String routineId, String exerciseId, int setIndex) {
-    for (final session in _sessions.reversed) {
-      if (session.routineId != routineId) {
-        continue;
-      }
-      final matching = [
-        for (final set in session.sets)
-          if (set.exerciseId == exerciseId) set,
-      ];
-      if (setIndex < matching.length) {
-        return matching[setIndex];
+    final matching = [
+      for (final set in _newestRunOf(routineId, exerciseId)?.sets ?? [])
+        if (set.exerciseId == exerciseId) set,
+    ];
+    return setIndex < matching.length ? matching[setIndex] : null;
+  }
+
+  /// The latest session of [routineId] that logged at least one [exerciseId] set.
+  WorkoutSession? _newestRunOf(String routineId, String exerciseId) {
+    WorkoutSession? newest;
+    for (final session in _sessions) {
+      if (session.routineId == routineId &&
+          session.sets.any((set) => set.exerciseId == exerciseId) &&
+          (newest == null || session.startedAtMs > newest.startedAtMs)) {
+        newest = session;
       }
     }
-    return null;
+    return newest;
   }
 
   // ---- Persistence (each save also queues a backend sync) ----

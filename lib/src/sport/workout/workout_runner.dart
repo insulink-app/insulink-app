@@ -203,6 +203,14 @@ class WorkoutRunner extends ChangeNotifier {
       ? findLastSet?.call(_routine.id, currentItem.exerciseId, _setIndex)
       : null;
 
+  /// Whether the set count of the current exercise is still open: in a free
+  /// workout, or for an exercise added during this session. A planned exercise
+  /// keeps the sets its routine gave it.
+  bool get canChangeSets =>
+      _isFree || currentItem.id.startsWith(_addedItemPrefix);
+
+  static const _addedItemPrefix = 'added-';
+
   /// Whether another exercise follows the current one, so it can be skipped.
   bool get canSkipExercise =>
       !awaitingNextExercise && _exerciseIndex + 1 < _routine.items.length;
@@ -216,20 +224,27 @@ class WorkoutRunner extends ChangeNotifier {
     return null;
   }
 
+  /// Reps and weight are persisted like every other change: a value only held
+  /// in memory falls back to the plan's when the workout is resumed or rebuilt
+  /// from its snapshot.
   void adjustReps(int delta) {
     _currentReps = (_currentReps + delta).clamp(0, 999);
     notifyListeners();
+    _persist();
   }
 
   /// Set the reps actually achieved (from the inline field) before [completeSet]
   /// logs the set.
   void recordReps(int reps) {
     _currentReps = reps.clamp(0, 999);
+    notifyListeners();
+    _persist();
   }
 
   void adjustWeight(double delta) {
     _currentWeight = (_currentWeight + delta).clamp(0, 999);
     notifyListeners();
+    _persist();
   }
 
   /// Correct the just-logged set's reps/weight while resting.
@@ -312,7 +327,7 @@ class WorkoutRunner extends ChangeNotifier {
   void addExercise(String exerciseId) {
     final startNow = _routine.items.isEmpty || awaitingNextExercise;
     final item = RoutineItem(
-      id: _sessionItemId(),
+      id: _sessionItemId(_addedItemPrefix),
       exerciseId: exerciseId,
       targetSets: _isFree ? 1 : 3,
       restSeconds: _isFree ? 120 : 60,
@@ -338,7 +353,7 @@ class WorkoutRunner extends ChangeNotifier {
     }
     final items = [..._routine.items];
     items[_exerciseIndex] = currentItem.copyWith(
-      id: _sessionItemId(),
+      id: _sessionItemId('swapped-'),
       exerciseId: exerciseId,
     );
     _routine = _routine.copyWith(items: items);
@@ -355,7 +370,7 @@ class WorkoutRunner extends ChangeNotifier {
   /// session only and never below the set in progress. A free workout plans one
   /// set per exercise, so this is how it runs several.
   void changeTargetSets(int delta) {
-    if (_phase != WorkoutPhase.exercising) {
+    if (_phase != WorkoutPhase.exercising || !canChangeSets) {
       return;
     }
     final items = [..._routine.items];
@@ -376,8 +391,9 @@ class WorkoutRunner extends ChangeNotifier {
   }
 
   /// An id for an item this session added or swapped in, unique per session.
-  String _sessionItemId() =>
-      'adhoc-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
+  /// [prefix] tells the two apart ([canChangeSets]).
+  String _sessionItemId(String prefix) =>
+      '$prefix${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
 
   /// Log the current set and advance to the next set/exercise (with rest), or
   /// finish the session. A free workout is never finished by running out of

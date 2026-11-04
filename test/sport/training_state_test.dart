@@ -232,16 +232,8 @@ void main() {
       expect(state.previousSessionOf(older), isNull);
     });
 
-    test('lastSetFor reads the newest session that has that set index', () async {
+    test('lastSetFor reads only the newest run, whatever the list order', () async {
       final state = await TrainingState.load();
-      await state.addSession(
-        WorkoutSession(
-          id: 'a',
-          routineId: 'r1',
-          startedAtMs: 100,
-          sets: [setLog('bench', reps: 8), setLog('bench', reps: 7)],
-        ),
-      );
       await state.addSession(
         WorkoutSession(
           id: 'b',
@@ -250,10 +242,17 @@ void main() {
           sets: [setLog('bench', reps: 10)],
         ),
       );
+      await state.addSession(
+        WorkoutSession(
+          id: 'a',
+          routineId: 'r1',
+          startedAtMs: 100,
+          sets: [setLog('bench', reps: 8), setLog('bench', reps: 7)],
+        ),
+      );
 
       expect(state.lastSetFor('r1', 'bench', 0)!.reps, 10);
-      expect(state.lastSetFor('r1', 'bench', 1)!.reps, 7);
-      expect(state.lastSetFor('r1', 'bench', 5), isNull);
+      expect(state.lastSetFor('r1', 'bench', 1), isNull);
       expect(state.lastSetFor('r1', 'squat', 0), isNull);
     });
   });
