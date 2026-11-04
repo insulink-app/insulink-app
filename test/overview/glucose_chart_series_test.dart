@@ -185,5 +185,17 @@ void main() {
 
       expect(series.realSpots.map((spot) => spot.y).toSet(), {100, 110});
     });
+
+    test('jittered five-minute readings come out unchanged', () {
+      final series = seriesFor([
+        for (var index = 0; index < 288; index++)
+          MapEntry(
+            index * 300 + (index.isEven ? 0 : -70),
+            index.isEven ? 100 : 110,
+          ),
+      ])..buildBars();
+
+      expect(series.realSpots.map((spot) => spot.y).toSet(), {100, 110});
+    });
   });
 }

@@ -130,22 +130,43 @@ class GlucoseChartSeries {
   /// drawn as it came.
   static const _rawPoints = 180;
 
-  /// Half-width of the smoothing window. Under the G7's 5 min cadence, so a G7
-  /// reading only averages with itself and comes out unchanged; a Libre 3 minute
-  /// reading averages with its neighbours up to 4 min either side.
+  /// Half-width of the smoothing window: a Libre 3 minute reading averages with
+  /// its neighbours up to 4 min either side.
   static const _smoothHalfSecs = 4 * 60;
 
+  /// A reading with a neighbour at most this far away is part of a minute
+  /// cadence (Libre 3). The G7's 5 min readings never are, even when their
+  /// timestamps jitter closer together than [_smoothHalfSecs].
+  static const _minuteCadenceSecs = 90;
+
   /// Smooths the Libre 3's noisy minute readings in a zoomed-out window: each
-  /// becomes the mean of the readings within [_smoothHalfSecs] of it. The newest
-  /// stays raw, so the line still ends on the headline value. Display only:
-  /// alarms, statistics and storage keep the raw readings.
+  /// becomes the mean of the readings within [_smoothHalfSecs] of it. G7
+  /// readings and the newest reading stay raw, so the line still ends on the
+  /// headline value. Display only: alarms, statistics and storage keep the raw
+  /// readings.
   List<MapEntry<int, int>> _smooth(List<MapEntry<int, int>> slice) {
     if (slice.length <= _rawPoints) {
       return slice;
     }
     final averaged = _movingAverage(slice);
+    for (var index = 0; index < slice.length; index++) {
+      if (!_isMinuteReading(slice, index)) {
+        averaged[index] = slice[index];
+      }
+    }
     averaged[averaged.length - 1] = slice.last;
     return averaged;
+  }
+
+  /// Whether the reading at [index] has a neighbour within [_minuteCadenceSecs].
+  bool _isMinuteReading(List<MapEntry<int, int>> slice, int index) {
+    final key = slice[index].key;
+    final closeBefore =
+        index > 0 && key - slice[index - 1].key <= _minuteCadenceSecs;
+    final closeAfter =
+        index < slice.length - 1 &&
+        slice[index + 1].key - key <= _minuteCadenceSecs;
+    return closeBefore || closeAfter;
   }
 
   /// A centred moving average over time, kept as a running sum between two
