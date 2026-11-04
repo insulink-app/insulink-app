@@ -25,6 +25,7 @@ class SportStore {
   static const _kPendingTrainings = 'sport.pending_trainings';
   static const _kLocationLog = 'sport.location_log';
   static const _kActivityLog = 'sport.activity_log';
+
   /// How long an auto-detected training waits for a decision before it lapses.
   /// The detection notification carries the same span as its own Android
   /// timeout, so the prompt and the entry behind it go away together.
@@ -137,8 +138,18 @@ class SportStore {
     return _saveList(_kSessions, capped.map((s) => s.toJson()).toList());
   }
 
-  Future<List<CardioTraining>> loadTrainings() async =>
-      (await _loadList(_kTrainings)).map(CardioTraining.fromJson).toList();
+  /// The confirmed trainings, one per id. An older pull merged by content, so
+  /// a training edited while its push was pending came back twice under one
+  /// id (the edit first, the account's old copy after it); the first one wins.
+  Future<List<CardioTraining>> loadTrainings() async {
+    final seen = <String>{};
+    return [
+      for (final training in (await _loadList(
+        _kTrainings,
+      )).map(CardioTraining.fromJson))
+        if (seen.add(training.id)) training,
+    ];
+  }
 
   Future<void> saveTrainings(List<CardioTraining> trainings) {
     final capped = trainings.length > _trainingCap

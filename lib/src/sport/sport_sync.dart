@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' show Response;
@@ -442,7 +441,7 @@ class SportSync {
       remote: _decode(list, SportExercise.fromJson),
       local: _store.loadExercises,
       save: _store.saveExercises,
-      keyOf: (item) => jsonEncode(item.toJson()),
+      keyOf: (item) => item.id,
     );
     if (merged) {
       pushExercises();
@@ -464,7 +463,7 @@ class SportSync {
       remote: _decode(list, SportRoutine.fromJson),
       local: _store.loadRoutines,
       save: _store.saveRoutines,
-      keyOf: (item) => jsonEncode(item.toJson()),
+      keyOf: (item) => item.id,
     );
     if (merged) {
       pushRoutines();
@@ -486,7 +485,7 @@ class SportSync {
       remote: _decode(list, WorkoutSession.fromJson),
       local: _store.loadSessions,
       save: _store.saveSessions,
-      keyOf: (item) => jsonEncode(item.toJson()),
+      keyOf: (item) => item.id,
     );
     if (merged) {
       pushWorkouts();
@@ -508,7 +507,7 @@ class SportSync {
       remote: _decode(list, CardioTraining.fromJson),
       local: _store.loadTrainings,
       save: _store.saveTrainings,
-      keyOf: (item) => jsonEncode(item.toJson()),
+      keyOf: (item) => item.id,
     );
     if (merged) {
       pushTrainings();
