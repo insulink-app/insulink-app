@@ -16,9 +16,8 @@ import 'heart_effort.dart';
 ///
 /// The heart rate, when the band recorded it, settles what speed cannot: a
 /// bike-speed segment with the pulse at rest is a passive ride (bus, tram, car)
-/// and is discarded unless the recognition saw cycling, and a walk-speed
-/// segment at jogging pace with a hard-working heart is a jog. Without pulse
-/// data it emits only [CardioType.walk] and [CardioType.bike] (see [_bySpeed]).
+/// and is discarded unless the recognition saw cycling. Detection only ever
+/// emits [CardioType.walk] and [CardioType.bike]; a jog is set by hand.
 class CardioActivityClassifier {
   const CardioActivityClassifier();
 
@@ -33,10 +32,6 @@ class CardioActivityClassifier {
   /// averages bike speed between stops but reaches 45 to 50 on the way; a
   /// commuter on a bike or pedelec doesn't sustain this (real rides: 22 to 26).
   static const _vehicleTopKmh = 35.0;
-
-  /// The slowest average (km/h) a hard-effort segment is called a jog at;
-  /// below it a hard-working heart is an uphill or brisk walk.
-  static const _jogMinKmh = 7.0;
 
   /// The training type for a segment, or null to DISCARD it (a vehicle — either
   /// recognised as one and reaching vehicle speed, too fast to be
@@ -58,11 +53,6 @@ class CardioActivityClassifier {
         effort == HeartEffort.resting &&
         dominant != ActivityKind.bike) {
       return null;
-    }
-    if (type == CardioType.walk &&
-        effort == HeartEffort.hard &&
-        avgKmh >= _jogMinKmh) {
-      return CardioType.jog;
     }
     return type;
   }
@@ -89,8 +79,7 @@ class CardioActivityClassifier {
   /// gives no usable signal (still/unknown/none) so speed decides. A vehicle
   /// label reaching here moved at human speed, so it is a misread bike ride.
   ///
-  /// A recognised RUN maps to [CardioType.walk], not [CardioType.jog] — see
-  /// [_bySpeed] for why only the heart rate makes a jog.
+  /// A recognised RUN maps to [CardioType.walk]: jogging is never detected.
   CardioType? _onFootType(ActivityKind? kind) => switch (kind) {
     ActivityKind.bike || ActivityKind.vehicle => CardioType.bike,
     ActivityKind.run || ActivityKind.walk => CardioType.walk,
@@ -100,8 +89,7 @@ class CardioActivityClassifier {
   /// Speed alone only ever gives walk or bike: a GPS track can't tell a jog
   /// from a brisk walk or a slow ride reliably enough to label it unasked, and
   /// a wrong label is worse than a coarse one (the user confirms the training
-  /// either way). So everything below the bike threshold is a walk; only the
-  /// heart rate upgrades one to a jog (see [classify]).
+  /// either way). So everything below the bike threshold is a walk.
   CardioType _bySpeed(double avgKmh) {
     return avgKmh > 15 ? CardioType.bike : CardioType.walk;
   }

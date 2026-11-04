@@ -58,9 +58,9 @@ void main() {
     expect(classify(20, pulse(55, 120)), CardioType.bike);
   });
 
-  test('jogging pace with a hard-working heart is a jog', () {
-    expect(classify(9, pulse(55, 145)), CardioType.jog);
-    expect(classify(9, pulse(55, 145), ActivityKind.run), CardioType.jog);
+  test('jogging is never detected, a hard run at jog pace stays a walk', () {
+    expect(classify(9, pulse(55, 145)), CardioType.walk);
+    expect(classify(9, pulse(55, 145), ActivityKind.run), CardioType.walk);
   });
 
   test('a slow hard walk stays a walk, as does a light jog pace', () {
