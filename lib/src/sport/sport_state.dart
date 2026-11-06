@@ -12,6 +12,9 @@ import 'sport_sync.dart';
 class SportState extends ChangeNotifier {
   final SportStore _store;
   final List<WeightEntry> _weights;
+
+  /// Counts local weight changes, so [reload] can tell one happened meanwhile.
+  int _weightEdits = 0;
   int _strideCm;
   int _heightCm;
   int _stepsGoal;
@@ -50,11 +53,18 @@ class SportState extends ChangeNotifier {
   /// weights/goals reaches the UI. Reuses [load] and adopts its values rather
   /// than reading the store twice; the provider keeps this instance, so listeners
   /// just rebuild.
+  ///
+  /// A weight added or edited while the store was being read wins: its write
+  /// may not have reached the store yet, so adopting the read would drop it
+  /// from the screen ([_weightEdits] tells).
   Future<void> reload() async {
+    final editsBefore = _weightEdits;
     final fresh = await SportState.load();
-    _weights
-      ..clear()
-      ..addAll(fresh._weights);
+    if (editsBefore == _weightEdits) {
+      _weights
+        ..clear()
+        ..addAll(fresh._weights);
+    }
     _strideCm = fresh._strideCm;
     _heightCm = fresh._heightCm;
     _stepsGoal = fresh._stepsGoal;
@@ -96,6 +106,7 @@ class SportState extends ChangeNotifier {
   }
 
   Future<void> addWeight(double kg, {DateTime? at}) async {
+    _weightEdits++;
     final entry = WeightEntry(
       atEpochMs: (at ?? DateTime.now()).millisecondsSinceEpoch,
       kg: kg,
@@ -115,6 +126,7 @@ class SportState extends ChangeNotifier {
     required double kg,
     required DateTime at,
   }) async {
+    _weightEdits++;
     _weights.remove(original);
     final updated = WeightEntry(atEpochMs: at.millisecondsSinceEpoch, kg: kg);
     _weights
@@ -142,6 +154,7 @@ class SportState extends ChangeNotifier {
     if (!added) {
       return;
     }
+    _weightEdits++;
     _weights.sort(
       (first, second) => first.atEpochMs.compareTo(second.atEpochMs),
     );
@@ -150,6 +163,7 @@ class SportState extends ChangeNotifier {
   }
 
   Future<void> removeWeight(WeightEntry entry) async {
+    _weightEdits++;
     _weights.remove(entry);
     await const TrashStore().keep(TrashKind.weight, entry.toJson());
     notifyListeners();

@@ -386,13 +386,7 @@ class SportSync {
           calories[_dateKey(time)] = value;
       }
     }
-    final mergedWeights = await _ledger.adopt(
-      collection: _ledgerKey('measurements'),
-      remote: weights,
-      local: _store.loadWeights,
-      save: _store.saveWeights,
-      keyOf: (weight) => weight.atEpochMs,
-    );
+    final mergedWeights = await _adoptWeights(weights);
     final mergedDays = await _ledger.adopt(
       collection: _ledgerKey('measurements'),
       remote: _activityDays(steps, distance, calories),
@@ -403,6 +397,24 @@ class SportSync {
     if (mergedWeights || mergedDays) {
       pushMeasurements();
     }
+  }
+
+  /// Writes the account's [remote] weights over the stored ones, but never
+  /// drops a stored weight the account lacks: the measurements sync only
+  /// merges and deletes go through [deleteWeight], so a missing weight is one
+  /// whose push has not landed yet (a GET that overtook it). Replacing used to
+  /// drop a just-saved weight, so it had to be typed again. True when local
+  /// weights were added, so the caller pushes them up.
+  Future<bool> _adoptWeights(List<WeightEntry> remote) async {
+    int keyOf(WeightEntry weight) => weight.atEpochMs;
+    final local = await _store.loadWeights();
+    if (await _ledger.isDirty(_ledgerKey('measurements'))) {
+      await _store.saveWeights(_ledger.merge(local, remote, keyOf));
+      return true;
+    }
+    final merged = _ledger.merge(remote, local, keyOf);
+    await _store.saveWeights(merged);
+    return merged.length > remote.length;
   }
 
   List<DailyActivity> _activityDays(
