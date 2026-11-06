@@ -8,7 +8,6 @@ import 'package:insulink/src/base/ink_sheet.dart';
 import 'package:insulink/src/base/confirm_delete.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
-import 'package:insulink/src/nutrition/food/food_editor_sheet.dart';
 import 'package:insulink/src/nutrition/food/food_product.dart';
 import 'package:insulink/src/nutrition/food/food_state.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
@@ -405,17 +404,15 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     );
   }
 
-  /// Name over brand and portion, "33 g KH" on the right. An entry estimated
-  /// from a photo opens its nutrients for correction (a pencil says so; the
-  /// photo itself sits in the header); a saved product
-  /// opens its editor.
+  /// Name over brand and portion, "33 g KH" on the right. Every entry opens
+  /// its nutrients for correction (a pencil says so).
   Widget _entryRow(InsulinkColors colors, MealEntry entry) {
     final product = _findProduct(context, entry);
     final brand = product?.brand ?? '';
     final subtitle = _entrySubtitle(context, entry);
     final carbsUnit = Locales.string(context, 'nutrition.food.carbs');
     return InkWell(
-      onTap: _entryTap(entry, product),
+      onTap: _entryTap(entry),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
         child: Row(
@@ -451,14 +448,12 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
                 ],
               ),
             ),
-            if (entry.photoId != null)
+            if (widget.onRestore == null)
               Icon(
                 PhosphorIconsRegular.pencilSimple,
                 size: 18,
                 color: colors.muted,
-              )
-            else if (product != null)
-              Icon(PhosphorIconsBold.caretRight, size: 18, color: colors.muted),
+              ),
           ],
         ),
       ),
@@ -493,19 +488,18 @@ class _MealDetailSheetState extends State<MealDetailSheet> {
     );
   }
 
-  VoidCallback? _entryTap(MealEntry entry, FoodProduct? product) {
-    if (entry.photoId != null && widget.onRestore == null) {
-      final index = meal.entries.indexOf(entry);
-      return () => showMealEntryNutrients(
-        context,
-        entry,
-        (changed) => _updateEntry(index, changed),
-      );
+  /// Every logged entry opens its nutrients for correction, whatever it came
+  /// from (photo, product, manual); a trashed meal is read only.
+  VoidCallback? _entryTap(MealEntry entry) {
+    if (widget.onRestore != null) {
+      return null;
     }
-    if (product != null) {
-      return () => showFoodEditor(context, product: product);
-    }
-    return null;
+    final index = meal.entries.indexOf(entry);
+    return () => showMealEntryNutrients(
+      context,
+      entry,
+      (changed) => _updateEntry(index, changed),
+    );
   }
 
   /// The still-saved product an [entry] came from (matched by barcode), or null
