@@ -122,7 +122,7 @@ jobs:
       # build overruns it ("No space left on device"). Reclaim ~25 GB of
       # preinstalled toolchains we don't use before building.
       - name: Free disk space
-        uses: jlumbroso/free-disk-space@36e9a5af4eddb91fc11aec4c6f6f79b3cc0cb523 # main
+        uses: jlumbroso/free-disk-space@cf1e78c50ca91e757bab3edc229027eebfc07871 # main
         with:
           tool-cache: false
           android: false
