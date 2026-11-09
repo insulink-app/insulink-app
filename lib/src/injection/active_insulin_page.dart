@@ -149,7 +149,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
   /// above it. It is not a dose card: nobody chose it and there is nothing to
   /// tap through to.
   List<Widget> _pumpCard(BuildContext context, InsulinOnBoardParts parts) {
-    if (parts.beyondBoluses <= 0.05) {
+    if (parts.pumpGiven <= 0.05) {
       return const [];
     }
     final scheme = Theme.of(context).colorScheme;
@@ -178,7 +178,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
               Locales.string(
                 context,
                 'injection.bolus.value',
-                params: [sportDecimal(parts.beyondBoluses, 2)],
+                params: [sportDecimal(parts.pumpGiven, 2)],
               ),
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
@@ -217,13 +217,24 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
         ),
         // The dose list below is the meal log, so a total larger than it needs
         // saying where the rest came from.
-        if (parts.beyondBoluses > 0.05) ...[
+        if (parts.pumpGiven > 0.05) ...[
           const SizedBox(height: 2),
           Text(
             Locales.string(
               context,
               'injection.active_insulin_pump',
-              params: [sportDecimal(parts.beyondBoluses, 1)],
+              params: [sportDecimal(parts.pumpGiven, 1)],
+            ),
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+          ),
+        ],
+        if (parts.planned > 0.05) ...[
+          const SizedBox(height: 2),
+          Text(
+            Locales.string(
+              context,
+              'injection.active_insulin_planned',
+              params: [sportDecimal(parts.planned, 1)],
             ),
             style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
           ),

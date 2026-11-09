@@ -704,6 +704,10 @@ the widget cannot drift away from the app on what is in range.
 - `docs/ACTIVITY_MODE.md` — the **activity mode**: endurance and strength move
   only the loop's target and basal anchor, never a ceiling; where the mode comes
   from (manual, routine, recording, the detection's ongoing segment).
+- `docs/SPLIT_BOLUS.md` — the **split bolus**: why the pod's own extended bolus
+  is not used, the rest as boluses every 15 min from the pod chain, the send mark,
+  the low guard, and how the planned rest and `split_of` reach insulin on board
+  and the loop's carb cover.
 - `docs/TUNING.md` — the weekly **basal suggestion**: how food and bolus insulin
   are measured out of an hour instead of disqualifying it (`TuningModel`), what
   that linear model costs, which hours are still thrown away, and why there is no

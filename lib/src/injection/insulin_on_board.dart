@@ -78,4 +78,8 @@ class InsulinOnBoardParts {
   /// Insulin from anywhere other than the user's own logged doses. Worth naming
   /// because it is the part nobody typed in and would otherwise go unnoticed.
   double get beyondBoluses => automation + unconfirmed + planned;
+
+  /// What the pump put in beyond the user's logged doses, without the planned
+  /// rest: the part a screen may call delivered.
+  double get pumpGiven => automation + unconfirmed;
 }

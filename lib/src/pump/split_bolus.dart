@@ -37,7 +37,6 @@ class SplitBolusPart {
 class SplitBolusPlan {
   const SplitBolusPlan({
     required this.parts,
-    required this.glucoseMgdl,
     required this.mealKey,
     this.sendingSince,
   });
@@ -48,7 +47,6 @@ class SplitBolusPlan {
     int pulses, {
     required Duration over,
     required DateTime from,
-    required int glucoseMgdl,
     required int mealKey,
   }) {
     final count = math.max(1, over.inMinutes ~/ partEvery.inMinutes);
@@ -61,11 +59,7 @@ class SplitBolusPlan {
         );
       }
     }
-    return SplitBolusPlan(
-      parts: parts,
-      glucoseMgdl: glucoseMgdl,
-      mealKey: mealKey,
-    );
+    return SplitBolusPlan(parts: parts, mealKey: mealKey);
   }
 
   factory SplitBolusPlan.fromJson(Map<String, dynamic> json) => SplitBolusPlan(
@@ -73,7 +67,6 @@ class SplitBolusPlan {
       for (final part in json['parts'] as List<dynamic>)
         SplitBolusPart.fromJson(part as Map<String, dynamic>),
     ],
-    glucoseMgdl: json['glucose_mgdl'] as int,
     mealKey: json['meal_key'] as int,
     sendingSince: switch (json['sending_since']) {
       final int millis => DateTime.fromMillisecondsSinceEpoch(millis),
@@ -89,9 +82,6 @@ class SplitBolusPlan {
   static const lateAfter = Duration(minutes: 15);
 
   final List<SplitBolusPart> parts;
-
-  /// Glucose when the bolus was confirmed, written onto each part's log entry.
-  final int glucoseMgdl;
 
   /// The [Meal.logKey] of the meal this bolus was confirmed for. Each part is
   /// logged with it as `splitOf`, so the automation counts the parts and the
@@ -117,13 +107,18 @@ class SplitBolusPlan {
   /// This plan with its first part marked as being sent at [at].
   SplitBolusPlan sendingAt(DateTime at) => _copy(parts, sendingSince: at);
 
+  /// Whether this plan carries the send mark [mark]. Compared in milliseconds,
+  /// because that is all the stored copy keeps: [DateTime.now] carries
+  /// microseconds, so the mark read back would never equal the one written.
+  bool markedAt(DateTime mark) =>
+      sendingSince?.millisecondsSinceEpoch == mark.millisecondsSinceEpoch;
+
   /// This plan with the send mark taken off, the first part still to come.
   SplitBolusPlan get settled => _copy(parts);
 
   SplitBolusPlan _copy(List<SplitBolusPart> parts, {DateTime? sendingSince}) =>
       SplitBolusPlan(
         parts: parts,
-        glucoseMgdl: glucoseMgdl,
         mealKey: mealKey,
         sendingSince: sendingSince,
       );
@@ -136,7 +131,6 @@ class SplitBolusPlan {
 
   Map<String, dynamic> toJson() => {
     'parts': [for (final part in parts) part.toJson()],
-    'glucose_mgdl': glucoseMgdl,
     'meal_key': mealKey,
     'sending_since': ?sendingSince?.millisecondsSinceEpoch,
   };

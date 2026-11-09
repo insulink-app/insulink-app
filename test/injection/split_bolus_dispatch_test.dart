@@ -22,7 +22,6 @@ void main() {
     20,
     over: const Duration(minutes: 30),
     from: DateTime.now(),
-    glucoseMgdl: 120,
     mealKey: 1,
   );
 

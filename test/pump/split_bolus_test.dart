@@ -17,10 +17,7 @@ void main() {
     const choice = SplitBolusChoice();
 
     expect(choice.nowUnits(3.3), 3.3);
-    expect(
-      choice.plan(3.3, from: confirmedAt, glucoseMgdl: 120, mealKey: 1),
-      isNull,
-    );
+    expect(choice.plan(3.3, from: confirmedAt, mealKey: 1), isNull);
   });
 
   test('a split gives its share now and spreads every pulse of the rest', () {
@@ -30,12 +27,7 @@ void main() {
       overMinutes: 60,
     );
 
-    final plan = choice.plan(
-      3.3,
-      from: confirmedAt,
-      glucoseMgdl: 120,
-      mealKey: 1,
-    )!;
+    final plan = choice.plan(3.3, from: confirmedAt, mealKey: 1)!;
 
     expect(choice.nowUnits(3.3), closeTo(1.65, 1e-9));
     expect(plan.parts.map((part) => part.pulses), [8, 8, 8, 9]);
@@ -49,7 +41,6 @@ void main() {
       2,
       over: const Duration(minutes: 60),
       from: confirmedAt,
-      glucoseMgdl: 120,
       mealKey: 1,
     );
 
@@ -64,9 +55,7 @@ void main() {
       nowPercent: 0,
       overMinutes: 30,
     );
-    await store.saveSplitBolus(
-      choice.plan(1, from: confirmedAt, glucoseMgdl: 120, mealKey: 1)!,
-    );
+    await store.saveSplitBolus(choice.plan(1, from: confirmedAt, mealKey: 1)!);
 
     final stored = store.splitBolus!;
 
@@ -83,7 +72,6 @@ void main() {
         40,
         over: const Duration(minutes: 60),
         from: confirmedAt,
-        glucoseMgdl: 120,
         mealKey: 1,
       ),
     );
@@ -100,7 +88,6 @@ void main() {
       20,
       over: const Duration(minutes: 30),
       from: confirmedAt,
-      glucoseMgdl: 120,
       mealKey: 1,
     );
     final firstLapsed = confirmedAt.add(const Duration(minutes: 31));
@@ -121,14 +108,15 @@ void main() {
       20,
       over: const Duration(minutes: 30),
       from: confirmedAt,
-      glucoseMgdl: 120,
       mealKey: 1,
     );
-    await store.saveSplitBolus(plan.sendingAt(confirmedAt));
+    final mark = DateTime(2026, 11, 9, 18, 0, 0, 123, 456);
+    await store.saveSplitBolus(plan.sendingAt(mark));
 
     final marked = store.splitBolus!;
 
-    expect(marked.sendingSince, confirmedAt);
+    expect(marked.markedAt(mark), isTrue);
+    expect(marked.markedAt(mark.add(const Duration(milliseconds: 1))), isFalse);
     expect(marked.settled.sendingSince, isNull);
     expect(marked.afterFirst!.sendingSince, isNull);
     expect(marked.settled.parts.length, 2);

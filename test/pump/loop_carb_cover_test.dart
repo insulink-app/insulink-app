@@ -111,7 +111,6 @@ void main() {
           pulses,
           over: const Duration(minutes: 30),
           from: now,
-          glucoseMgdl: 100,
           mealKey: meal.logKey,
         );
 

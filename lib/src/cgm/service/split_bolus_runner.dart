@@ -12,8 +12,8 @@ import 'advisory_action_runner.dart';
 import 'alarms.dart';
 
 /// Gives the parts of a split bolus as they fall due. Runs in the service
-/// isolate on the watchdog tick, chained after the notification actions so the
-/// two never open a pod session side by side.
+/// isolate inside the pod chain (`CgmTaskHandler._tickPodChain`), so a part
+/// never opens a pod session beside the poll or an automation cycle.
 ///
 /// A part the pod is busy for (a micro bolus, the user's own bolus) waits for
 /// the next tick. Any other failure, and a part that missed its time by more
@@ -37,7 +37,7 @@ class SplitBolusRunner {
   /// Gives the part that is due, if any. Returns whether something changed, so
   /// the caller can tell the UI to re-read.
   ///
-  /// Must not run twice at once in one isolate (the caller guards it): a pod
+  /// Must not run twice at once in one isolate (the pod chain guards it): a pod
   /// session can outlast the 30 s tick, and a second run would read a part
   /// still marked as sending as a send that died.
   ///
@@ -68,15 +68,16 @@ class SplitBolusRunner {
     if (plan.missedAt(now)) {
       return _abandon(store, 'alarm.split_bolus.lapsed');
     }
-    if (await _lowAhead()) {
+    final glucose = await readGlucose();
+    if (await _lowAhead(glucose)) {
       return _abandon(store, 'alarm.split_bolus.low');
     }
-    return _give(store, plan);
+    return _give(store, plan, glucose);
   }
 
-  Future<bool> _lowAhead() async {
+  Future<bool> _lowAhead(LoopGlucose glucose) async {
     final low = (await ProfileGlucoseState.load()).low;
-    return SplitBolusLowGuard(low).stops(await readGlucose());
+    return SplitBolusLowGuard(low).stops(glucose);
   }
 
   /// A part a dead process was sending. It may have gone in, so it is never
@@ -91,15 +92,19 @@ class SplitBolusRunner {
   /// what the store holds NOW: the user may have cancelled meanwhile, or even
   /// started a new plan, and neither is touched. A dose that went in is logged
   /// either way.
-  Future<bool> _give(PodStore store, SplitBolusPlan plan) async {
+  Future<bool> _give(
+    PodStore store,
+    SplitBolusPlan plan,
+    LoopGlucose glucose,
+  ) async {
     final mark = DateTime.now();
     await store.saveSplitBolus(plan.sendingAt(mark));
     final outcome = await _send(store, plan.parts.first);
     await store.reload();
     final current = store.splitBolus;
-    final ours = current?.sendingSince == mark ? current : null;
+    final ours = current != null && current.markedAt(mark) ? current : null;
     if (outcome.recordedUnits > 0) {
-      await _logDose(outcome, plan);
+      await _logDose(outcome, plan, glucose);
       if (ours != null) {
         await _saveRest(store, ours);
       }
@@ -147,9 +152,16 @@ class SplitBolusRunner {
 
   /// Logs the part as its own insulin-only entry, then pushes it so the next
   /// pull does not replace it away.
+  ///
+  /// Carries the glucose read for THIS part, not the one the meal was dosed
+  /// at: the forecast model folds a logged dose's glucose into its glucose
+  /// channel as a reading at that time, so a stale value would be a false
+  /// one. With no usable reading it carries 0, which the model drops as a
+  /// placeholder (the chart then sets that dot on its floor).
   Future<void> _logDose(
     BolusDeliveryResult outcome,
     SplitBolusPlan plan,
+    LoopGlucose glucose,
   ) async {
     const store = MealStore();
     final meals = await store.loadMeals();
@@ -157,7 +169,7 @@ class SplitBolusRunner {
       Meal(
         time: DateTime.now(),
         carbs: 0,
-        glucoseMgdl: plan.glucoseMgdl,
+        glucoseMgdl: glucose.isUsable ? glucose.mgdl : 0,
         bolus: outcome.recordedUnits,
         entries: const [],
         deliveredByPump: true,

@@ -337,8 +337,6 @@ class _InjectionPageState extends State<InjectionPage> {
     }
   }
 
-  /// Whether a split bolus still has parts to give, so a second one cannot be
-  /// started over it. A plan whose parts all lapsed no longer counts.
   /// The split as it will be carried out: off whenever the controls are not
   /// on screen, so a switch flipped before a plan appeared (or before the
   /// service went away) cannot start one over it.
@@ -352,6 +350,8 @@ class _InjectionPageState extends State<InjectionPage> {
   /// would promise insulin nobody delivers.
   bool get _serviceRunning => context.read<CgmController>().connected;
 
+  /// Whether a split bolus still has parts to give, so a second one cannot be
+  /// started over it. A plan whose parts all lapsed no longer counts.
   bool get _splitRunning =>
       (context.read<PodController>().store.splitBolus?.remainingUnitsAt(
             DateTime.now(),
@@ -367,12 +367,7 @@ class _InjectionPageState extends State<InjectionPage> {
     final delivery = _delivery;
     final deliveredLastHour = _deliveredLastHour;
     final split = _effectiveSplit;
-    final plan = split.plan(
-      bolus,
-      from: DateTime.now(),
-      glucoseMgdl: glucose,
-      mealKey: meal.logKey,
-    );
+    final plan = split.plan(bolus, from: DateTime.now(), mealKey: meal.logKey);
     if (plan != null) {
       await delivery.controller.store.saveSplitBolus(plan);
       delivery.controller.notifyRunningBolusChanged();

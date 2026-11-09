@@ -1710,12 +1710,13 @@
     },
     "split": {
       "_": "Verzögert abgeben",
-      "info": "Für Getränke oder Mahlzeiten, die langsam ins Blut gehen. Ein Teil geht sofort an die Pumpe, der Rest alle 15 Minuten in kleinen Teilen. Die Teile laufen auch bei geschlossener App weiter und zählen schon vorher als aktives Insulin.",
+      "info": "Für Getränke oder Mahlzeiten, die langsam ins Blut gehen. Ein Teil geht sofort an die Pumpe, der Rest alle 15 Minuten in kleinen Teilen. Die Teile laufen auch bei geschlossener App weiter und zählen schon vorher als aktives Insulin. Ist die Glukose niedrig oder fällt sie in den Unterzucker, wird der Rest gestoppt.",
       "now": "Sofort",
       "over": "Rest verteilt über",
       "summary": "# E sofort, # E über # min verteilt",
       "needs_service": "Nur möglich, solange der Hintergrunddienst läuft: Er gibt die späteren Teile ab."
-    }
+    },
+    "active_insulin_planned": "davon # E noch geplant, verzögerter Bolus"
   },
   "service": {
     "connecting": "Verbinde…",
