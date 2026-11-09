@@ -1,3 +1,5 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import '../../injection/bolus_delivery.dart';
 import '../../nutrition/meal/meal.dart';
 import '../../nutrition/meal/meal_store.dart';
@@ -32,7 +34,16 @@ class SplitBolusRunner {
   /// Must not run twice at once in one isolate (the caller guards it): a pod
   /// session can outlast the 30 s tick, and a second run would read a part
   /// still marked as sending as a send that died.
+  ///
+  /// Checks for a plan with a single key read first: opening the store
+  /// decrypts the whole keystore, far too much for every 30 s tick when there
+  /// is nothing to give, which is almost always.
   Future<bool> run() async {
+    if (!await const FlutterSecureStorage().containsKey(
+      key: PodStore.splitBolusKey,
+    )) {
+      return false;
+    }
     final store = await PodStore.open();
     final plan = store.splitBolus;
     final now = DateTime.now();
@@ -45,7 +56,10 @@ class SplitBolusRunner {
     if (plan.parts.first.at.isAfter(now)) {
       return false;
     }
-    if (!store.hasPod || plan.missedAt(now)) {
+    if (!store.hasPod) {
+      return _abandon(store, 'alarm.split_bolus.failed');
+    }
+    if (plan.missedAt(now)) {
       return _abandon(store, 'alarm.split_bolus.lapsed');
     }
     return _give(store, plan);
@@ -107,7 +121,11 @@ class SplitBolusRunner {
 
   Future<bool> _abandon(PodStore store, String bodyKey) async {
     await store.clearSplitBolus();
-    await _alarms.notifyAdvisoryOutcome(bodyKey, const []);
+    await _alarms.notifyAdvisoryOutcome(
+      bodyKey,
+      const [],
+      titleKey: 'alarm.split_bolus.title',
+    );
     return true;
   }
 

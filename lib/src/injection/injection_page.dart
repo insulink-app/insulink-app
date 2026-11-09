@@ -337,6 +337,15 @@ class _InjectionPageState extends State<InjectionPage> {
     }
   }
 
+  /// Whether a split bolus still has parts to give, so a second one cannot be
+  /// started over it. A plan whose parts all lapsed no longer counts.
+  bool get _splitRunning =>
+      (context.read<PodController>().store.splitBolus?.remainingUnitsAt(
+            DateTime.now(),
+          ) ??
+          0) >
+      0;
+
   /// Plans the later parts of a split dose, then sends what goes out now. The
   /// plan goes first, so the insulin it promises is on board before anything
   /// else can be dosed against it.
@@ -548,7 +557,7 @@ class _InjectionPageState extends State<InjectionPage> {
               : null,
         ),
         _activeInsulinNote(),
-        if (usesPump && context.read<PodController>().store.splitBolus == null)
+        if (usesPump && !_splitRunning)
           InjectionSplitBolus(
             choice: _split,
             bolus: _bolus ?? 0,

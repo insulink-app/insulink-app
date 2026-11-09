@@ -73,7 +73,11 @@ class PodStore {
   static const _kLoopStop = 'pod.loop_stop';
   static const _kLoopCycles = 'pod.loop_cycles';
   static const _kUnconfirmedBoluses = 'pod.unconfirmed_boluses';
-  static const _kSplitBolus = 'pod.split_bolus';
+  static const _kSplitBolus = splitBolusKey;
+
+  /// Public so the service can check for a plan with one cheap read instead of
+  /// decrypting the whole keystore every tick (see `SplitBolusRunner`).
+  static const splitBolusKey = 'pod.split_bolus';
   static const _kLoopMicroBoluses = 'pod.loop_micro_boluses';
   static const _kLoopMicroBolusTotal = 'pod.loop_micro_bolus_total';
   static const _kLastStatus = 'pod.last_status';

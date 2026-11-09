@@ -827,11 +827,12 @@ class G7AlarmManager {
   /// pre-warning. Same silent channel, no action of its own.
   Future<void> notifyAdvisoryOutcome(
     String bodyKey,
-    List<Object> values,
-  ) async {
+    List<Object> values, {
+    String titleKey = 'alarm.advisory.outcome_title',
+  }) async {
     await _plugin.show(
       id: _advisoryOutcomeId,
-      title: await _strings.get('alarm.advisory.outcome_title'),
+      title: await _strings.get(titleKey),
       body: await _strings.formatAll(bodyKey, values),
       notificationDetails: NotificationDetails(
         android: await _advisoryChannel(null),

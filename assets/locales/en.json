@@ -1845,6 +1845,7 @@
       "body": "Your Fitbit Air is at #%. Charge it so alarms still reach your wrist."
     },
     "split_bolus": {
+      "title": "Delayed bolus",
       "lapsed": "Delayed bolus stopped: a part could not be delivered in time.",
       "failed": "Delayed bolus stopped: a part was not delivered. Please check in the app."
     }

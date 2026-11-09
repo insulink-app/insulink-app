@@ -1845,6 +1845,7 @@
       "body": "Deine Fitbit Air hat noch #%. Lade sie, damit Alarme weiter am Handgelenk ankommen."
     },
     "split_bolus": {
+      "title": "Verzögerter Bolus",
       "lapsed": "Verzögerter Bolus abgebrochen: Ein Teil konnte nicht rechtzeitig abgegeben werden.",
       "failed": "Verzögerter Bolus abgebrochen: Ein Teil wurde nicht abgegeben. Bitte in der App prüfen."
     }

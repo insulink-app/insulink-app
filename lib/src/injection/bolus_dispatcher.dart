@@ -136,6 +136,13 @@ class BolusDispatcher extends ChangeNotifier {
     );
   }
 
+  /// Whether the service is sending a split-bolus part right now. Its pending
+  /// record is the service's own and not stranded; resolving it would report a
+  /// live dose as lost. Should the service die mid-send, its next run clears
+  /// the mark and the following resume resolves the record as usual.
+  bool get _serviceSendingSplitPart =>
+      controller.store.splitBolus?.sendingSince != null;
+
   /// Resolves a dose the app was still sending when it was killed.
   ///
   /// Reads the pod: a bolus it reports running is adopted as exactly that, and
@@ -145,7 +152,7 @@ class BolusDispatcher extends ChangeNotifier {
   /// suppress a correction the user needs.
   Future<void> resolveStranded() async {
     final pending = controller.store.pendingBolus;
-    if (pending == null || _inFlight) {
+    if (pending == null || _inFlight || _serviceSendingSplitPart) {
       return;
     }
     await controller.store.clearPendingBolus();
