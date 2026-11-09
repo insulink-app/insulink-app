@@ -79,6 +79,8 @@ So the rest goes out as **ordinary boluses every 15 minutes**
 - The API stores `split_of` and `delivered_by_pump` and hands them back only
   when set (insulink-api#116). The app merges a pull by JSON content, so a field
   the API drops doubles the meal and its insulin.
+- A part opens no window of its own in the factor tuning (`TuningDoseFinder`):
+  carb-free, it would read as a correction while its meal's carbs come in.
 - A part logs the glucose read for it, or 0 without a reading: the forecast
   model folds a dose's glucose into its glucose channel, so the meal's own value
   an hour later would be a false reading.
