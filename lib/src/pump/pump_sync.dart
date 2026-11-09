@@ -104,10 +104,7 @@ class PumpSync {
   /// is a [DataKey], so an older app reading the blob finds no key rather than
   /// a sealed one it would take for plain.
   @visibleForTesting
-  static Map<String, String> longTermKeyField(
-    Uint8List longTermKey,
-    DataKey? key,
-  ) {
+  static Map<String, String> longTermKeyField(Uint8List longTermKey, DataKey? key) {
     if (key == null) {
       return {'long_term_key': base64Encode(longTermKey)};
     }

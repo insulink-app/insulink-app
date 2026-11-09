@@ -189,7 +189,9 @@ class _OverviewActiveInsulinState extends State<OverviewActiveInsulin> {
       now: now,
       step: const Duration(minutes: 10),
     );
-    return [for (final sample in samples) (at: sample.at, units: sample.total)];
+    return [
+      for (final sample in samples) (at: sample.at, units: sample.total),
+    ];
   }
 
   /// Zero across one insulin duration up to [now], drawn while nothing is on
