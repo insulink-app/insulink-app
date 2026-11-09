@@ -13,10 +13,15 @@ import 'package:insulink/src/theme/insulink_theme.dart';
 class InjectionSplitBolus extends StatelessWidget {
   const InjectionSplitBolus({
     super.key,
+    required this.available,
     required this.choice,
     required this.bolus,
     required this.onChanged,
   });
+
+  /// Whether the background service runs, which alone gives the later parts.
+  /// Without it the switch stays off and says why.
+  final bool available;
 
   final SplitBolusChoice choice;
 
@@ -36,11 +41,17 @@ class InjectionSplitBolus extends StatelessWidget {
           ProfileToggleRow(
             labelKey: 'injection.split._',
             infoKey: 'injection.split.info',
-            value: choice.enabled,
-            onChanged: (enabled) =>
-                onChanged(choice.copyWith(enabled: enabled)),
+            value: available && choice.enabled,
+            onChanged: available
+                ? (enabled) => onChanged(choice.copyWith(enabled: enabled))
+                : null,
           ),
-          if (choice.enabled) ..._details(context),
+          if (!available)
+            LocaleText(
+              'injection.split.needs_service',
+              style: InkText.label.copyWith(color: context.ink.muted),
+            ),
+          if (available && choice.enabled) ..._details(context),
         ],
       ),
     );

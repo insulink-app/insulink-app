@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:insulink/src/pump/loop/loop_glucose.dart';
 import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
 
 /// One later piece of a split bolus, in whole pod pulses so it is deliverable
@@ -121,4 +122,28 @@ class SplitBolusPlan {
     'glucose_mgdl': glucoseMgdl,
     'sending_since': ?sendingSince?.millisecondsSinceEpoch,
   };
+}
+
+/// Stops a split bolus whose rest would land on a low: the glucose is at the
+/// user's low line already, or its trend reaches it within [lookahead]. The
+/// automation lowers the basal then, but the planned parts are boluses and
+/// would keep coming regardless.
+///
+/// Without usable sensor data the part still goes, exactly as a pump's own
+/// extended bolus would: the user asked for it, and the guard only exists to
+/// overrule that request with evidence.
+class SplitBolusLowGuard {
+  const SplitBolusLowGuard(this.lowMgdl);
+
+  static const lookahead = Duration(minutes: 30);
+
+  final int lowMgdl;
+
+  bool stops(LoopGlucose glucose) {
+    if (!glucose.isUsable) {
+      return false;
+    }
+    final ahead = glucose.mgdl + glucose.trendPerMinute * lookahead.inMinutes;
+    return glucose.mgdl <= lowMgdl || ahead <= lowMgdl;
+  }
 }

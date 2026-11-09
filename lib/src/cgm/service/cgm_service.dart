@@ -82,9 +82,6 @@ class CgmTaskHandler extends TaskHandler {
   CgmStore? _store;
   FlutterLocalNotificationsPlugin? _notifications;
   PodMonitor? _podMonitor;
-
-  /// Whether a split-bolus part is on its way, see [_giveSplitBolus].
-  bool _givingSplitBolus = false;
   PodLoopRunner? _podLoop;
 
   /// The pod store, kept between ticks. Reloaded at the poll cadence rather than
@@ -463,11 +460,7 @@ class CgmTaskHandler extends TaskHandler {
     unawaited(_applyTrainingDecisions());
     // Chained, so a tap carried out on this tick clears the meal it was for
     // before the warning for that meal is looked at.
-    unawaited(
-      _applyAdvisoryActions()
-          .then((_) => _remindMealBolus())
-          .then((_) => _giveSplitBolus()),
-    );
+    unawaited(_applyAdvisoryActions().then((_) => _remindMealBolus()));
     unawaited(_watchBandBattery());
     unawaited(_nightDetector.refresh(DateTime.now()));
     unawaited(_activityPulse.refresh());
@@ -507,23 +500,21 @@ class CgmTaskHandler extends TaskHandler {
   /// The next due part of a split bolus. Pings the UI like a countermeasure
   /// does, because the meal log and the plan both changed underneath it.
   ///
-  /// One run at a time ([_givingSplitBolus]): a pod session can outlast the
-  /// tick, and a second run on top would send the same part again.
+  /// Runs inside [_tickPodChain], whose own guard keeps it to one run at a
+  /// time: a pod session can outlast the tick, and a second run on top would
+  /// send the same part again.
   Future<void> _giveSplitBolus() async {
     final alarms = _alarms;
-    if (alarms == null || _givingSplitBolus) {
+    if (alarms == null) {
       return;
     }
-    _givingSplitBolus = true;
     try {
-      if (await SplitBolusRunner(alarms).run()) {
+      if (await SplitBolusRunner(alarms, readGlucose: _readLoopGlucose).run()) {
         FlutterForegroundTask.sendDataToMain({'t': 'update'});
         FlutterForegroundTask.sendDataToMain({'t': 'meals'});
       }
     } catch (error) {
       _log('split bolus failed: $error');
-    } finally {
-      _givingSplitBolus = false;
     }
   }
 
@@ -828,7 +819,10 @@ class CgmTaskHandler extends TaskHandler {
   /// Whether the pod chain from a previous tick is still running.
   bool _podChainRunning = false;
 
-  /// The watch and then the automation, and never two of those at once.
+  /// The watch, a due split-bolus part, then the automation, and never two of
+  /// those at once. The part runs here and not beside the chain: it holds a
+  /// real session on the pod under the same lease owner, so only the chain
+  /// keeps it from overlapping the other two.
   ///
   /// The watchdog fires every thirty seconds; a poll or a cycle that has to
   /// connect, hand-shake, read and program takes longer than that whenever the
@@ -850,6 +844,7 @@ class CgmTaskHandler extends TaskHandler {
     _podChainRunning = true;
     try {
       await _tickPodMonitor();
+      await _giveSplitBolus();
       await _tickPodLoop();
     } finally {
       _podChainRunning = false;

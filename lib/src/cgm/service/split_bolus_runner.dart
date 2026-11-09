@@ -4,6 +4,8 @@ import '../../injection/bolus_delivery.dart';
 import '../../nutrition/meal/meal.dart';
 import '../../nutrition/meal/meal_store.dart';
 import '../../nutrition/nutrition_sync.dart';
+import '../../profile/glucose/profile_glucose_state.dart';
+import '../../pump/loop/loop_glucose.dart';
 import '../../pump/pod_store.dart';
 import '../../pump/split_bolus.dart';
 import 'advisory_action_runner.dart';
@@ -18,14 +20,18 @@ import 'alarms.dart';
 /// than [SplitBolusPlan.lateAfter], ends the whole plan and SAYS so: the user
 /// expects that insulin, and silence would read as if it went in.
 class SplitBolusRunner {
-  const SplitBolusRunner(this._alarms);
+  const SplitBolusRunner(this._alarms, {required this.readGlucose});
 
   final G7AlarmManager _alarms;
+
+  /// The sensor input the automation decides on, read the same way here.
+  final Future<LoopGlucose> Function() readGlucose;
 
   /// Refusals that only mean "not now".
   static const _busyKeys = {
     'pump.bolus.already_running',
     'pump.bolus.queue_too_long',
+    BolusDelivery.linkBusy,
   };
 
   /// Gives the part that is due, if any. Returns whether something changed, so
@@ -62,7 +68,15 @@ class SplitBolusRunner {
     if (plan.missedAt(now)) {
       return _abandon(store, 'alarm.split_bolus.lapsed');
     }
+    if (await _lowAhead()) {
+      return _abandon(store, 'alarm.split_bolus.low');
+    }
     return _give(store, plan);
+  }
+
+  Future<bool> _lowAhead() async {
+    final low = (await ProfileGlucoseState.load()).low;
+    return SplitBolusLowGuard(low).stops(await readGlucose());
   }
 
   /// A part a dead process was sending. It may have gone in, so it is never
@@ -102,7 +116,9 @@ class SplitBolusRunner {
   }
 
   Future<BolusDeliveryResult> _send(PodStore store, SplitBolusPart part) async {
-    final delivery = await AdvisoryActionRunner(_alarms).serviceDelivery(store);
+    final delivery = await AdvisoryActionRunner(
+      _alarms,
+    ).serviceDelivery(store, source: PodDeliverySource.app);
     return delivery.deliver(
       part.units,
       deliveredLastHour: store.bolusUnitsWithin(const Duration(hours: 1)),

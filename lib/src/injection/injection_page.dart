@@ -339,6 +339,19 @@ class _InjectionPageState extends State<InjectionPage> {
 
   /// Whether a split bolus still has parts to give, so a second one cannot be
   /// started over it. A plan whose parts all lapsed no longer counts.
+  /// The split as it will be carried out: off whenever the controls are not
+  /// on screen, so a switch flipped before a plan appeared (or before the
+  /// service went away) cannot start one over it.
+  SplitBolusChoice get _effectiveSplit =>
+      _splitOffered && _serviceRunning ? _split : const SplitBolusChoice();
+
+  /// Whether the split controls are shown: with a pod, and no plan running.
+  bool get _splitOffered => _delivery.usesPump && !_splitRunning;
+
+  /// Only the background service gives the later parts, so without it a split
+  /// would promise insulin nobody delivers.
+  bool get _serviceRunning => context.read<CgmController>().connected;
+
   bool get _splitRunning =>
       (context.read<PodController>().store.splitBolus?.remainingUnitsAt(
             DateTime.now(),
@@ -353,12 +366,13 @@ class _InjectionPageState extends State<InjectionPage> {
     final dispatcher = context.read<BolusDispatcher>();
     final delivery = _delivery;
     final deliveredLastHour = _deliveredLastHour;
-    final plan = _split.plan(bolus, from: DateTime.now(), glucoseMgdl: glucose);
+    final split = _effectiveSplit;
+    final plan = split.plan(bolus, from: DateTime.now(), glucoseMgdl: glucose);
     if (plan != null) {
       await delivery.controller.store.saveSplitBolus(plan);
       delivery.controller.notifyRunningBolusChanged();
     }
-    final nowUnits = _split.nowUnits(bolus);
+    final nowUnits = split.nowUnits(bolus);
     if (nowUnits > 0) {
       dispatcher.submit(
         delivery: delivery,
@@ -557,8 +571,9 @@ class _InjectionPageState extends State<InjectionPage> {
               : null,
         ),
         _activeInsulinNote(),
-        if (usesPump && !_splitRunning)
+        if (_splitOffered)
           InjectionSplitBolus(
+            available: _serviceRunning,
             choice: _split,
             bolus: _bolus ?? 0,
             onChanged: (choice) => setState(() => _split = choice),

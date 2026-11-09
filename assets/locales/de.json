@@ -622,7 +622,8 @@
       "running_micro": "Mini-Bolus der Automatik",
       "queued": "Dein Bolus folgt, sobald er fertig ist.",
       "queue_too_long": "Die Automatik gibt noch # Sekunden lang einen Mini-Bolus. Versuche es danach noch einmal.",
-      "already_running": "Es läuft noch ein Bolus. Warte, bis er fertig ist."
+      "already_running": "Es läuft noch ein Bolus. Warte, bis er fertig ist.",
+      "link_busy": "Die Pumpe ist gerade anderweitig verbunden. Versuche es gleich noch einmal."
     },
     "basal": {
       "out_of_date": "Dein Basalprofil wurde geändert. Der Pod läuft noch mit dem alten Zeitplan.",
@@ -1712,7 +1713,8 @@
       "info": "Für Getränke oder Mahlzeiten, die langsam ins Blut gehen. Ein Teil geht sofort an die Pumpe, der Rest alle 15 Minuten in kleinen Teilen. Die Teile laufen auch bei geschlossener App weiter und zählen schon vorher als aktives Insulin.",
       "now": "Sofort",
       "over": "Rest verteilt über",
-      "summary": "# E sofort, # E über # min verteilt"
+      "summary": "# E sofort, # E über # min verteilt",
+      "needs_service": "Nur möglich, solange der Hintergrunddienst läuft: Er gibt die späteren Teile ab."
     }
   },
   "service": {
@@ -1847,7 +1849,8 @@
     "split_bolus": {
       "title": "Verzögerter Bolus",
       "lapsed": "Verzögerter Bolus abgebrochen: Ein Teil konnte nicht rechtzeitig abgegeben werden.",
-      "failed": "Verzögerter Bolus abgebrochen: Ein Teil wurde nicht abgegeben. Bitte in der App prüfen."
+      "failed": "Verzögerter Bolus abgebrochen: Ein Teil wurde nicht abgegeben. Bitte in der App prüfen.",
+      "low": "Verzögerter Bolus abgebrochen: Die Glukose ist niedrig oder fällt in den Unterzucker. Der Rest wurde nicht abgegeben."
     }
   },
   "hba1c": {

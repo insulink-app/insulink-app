@@ -1,6 +1,9 @@
+import 'dart:collection';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/injection/split_bolus_choice.dart';
+import 'package:insulink/src/pump/loop/loop_glucose.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/split_bolus.dart';
 
@@ -116,5 +119,35 @@ void main() {
     expect(marked.settled.sendingSince, isNull);
     expect(marked.afterFirst!.sendingSince, isNull);
     expect(marked.settled.parts.length, 2);
+  });
+
+  /// Readings every five minutes up to [now], ending at [last] and moving by
+  /// [perFiveMinutes] each step.
+  LoopGlucose glucoseEnding(int last, int perFiveMinutes) {
+    final now = DateTime(2026, 11, 9, 18, 30);
+    final newest = now.millisecondsSinceEpoch ~/ 60000;
+    final archive = SplayTreeMap<int, int>();
+    for (var step = 0; step < 6; step++) {
+      archive[newest - step * 5] = last - step * perFiveMinutes;
+    }
+    return LoopGlucose.from(archive, now: now);
+  }
+
+  test('the low guard stops the rest at or heading below the low line', () {
+    const guard = SplitBolusLowGuard(70);
+
+    expect(guard.stops(glucoseEnding(150, 0)), isFalse);
+    expect(guard.stops(glucoseEnding(68, 0)), isTrue);
+    expect(guard.stops(glucoseEnding(100, -8)), isTrue);
+    expect(guard.stops(glucoseEnding(100, 2)), isFalse);
+  });
+
+  test('without usable sensor data the low guard lets the part go', () {
+    final none = LoopGlucose.from(
+      SplayTreeMap<int, int>(),
+      now: DateTime(2026, 11, 9),
+    );
+
+    expect(const SplitBolusLowGuard(70).stops(none), isFalse);
   });
 }
