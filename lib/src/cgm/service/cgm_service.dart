@@ -25,6 +25,7 @@ import '../../sport/training/cardio_detection_runner.dart';
 import '../../profile/silent/profile_silent_state.dart';
 import '../../profile/prediction/profile_prediction_state.dart';
 import 'advisory_action_runner.dart';
+import 'split_bolus_runner.dart';
 import 'alarms.dart';
 import '../cgm_connection.dart';
 import '../event_sync.dart';
@@ -494,6 +495,27 @@ class CgmTaskHandler extends TaskHandler {
     }
   }
 
+  /// The next due part of a split bolus. Pings the UI like a countermeasure
+  /// does, because the meal log and the plan both changed underneath it.
+  ///
+  /// Runs inside [_tickPodChain], whose own guard keeps it to one run at a
+  /// time: a pod session can outlast the tick, and a second run on top would
+  /// send the same part again.
+  Future<void> _giveSplitBolus() async {
+    final alarms = _alarms;
+    if (alarms == null) {
+      return;
+    }
+    try {
+      if (await SplitBolusRunner(alarms, readGlucose: _readLoopGlucose).run()) {
+        FlutterForegroundTask.sendDataToMain({'t': 'update'});
+        FlutterForegroundTask.sendDataToMain({'t': 'meals'});
+      }
+    } catch (error) {
+      _log('split bolus failed: $error');
+    }
+  }
+
   /// Warn about a photographed meal that is still waiting for its bolus, and
   /// withdraw that warning once it is not. Silent mode holds it back without
   /// marking it, so it still fires if the meal is still waiting when that ends.
@@ -794,7 +816,10 @@ class CgmTaskHandler extends TaskHandler {
   /// Whether the pod chain from a previous tick is still running.
   bool _podChainRunning = false;
 
-  /// The watch and then the automation, and never two of those at once.
+  /// The watch, a due split-bolus part, then the automation, and never two of
+  /// those at once. The part runs here and not beside the chain: it holds a
+  /// real session on the pod under the same lease owner, so only the chain
+  /// keeps it from overlapping the other two.
   ///
   /// The watchdog fires every thirty seconds; a poll or a cycle that has to
   /// connect, hand-shake, read and program takes longer than that whenever the
@@ -816,6 +841,7 @@ class CgmTaskHandler extends TaskHandler {
     _podChainRunning = true;
     try {
       await _tickPodMonitor();
+      await _giveSplitBolus();
       await _tickPodLoop();
     } finally {
       _podChainRunning = false;
@@ -891,6 +917,7 @@ class CgmTaskHandler extends TaskHandler {
       meals,
       carbFactor: bolus.carbFactor,
       insulin: ActiveInsulin(insulinDuration),
+      split: _podStore?.splitBolus,
     );
   }
 

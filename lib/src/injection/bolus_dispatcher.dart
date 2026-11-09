@@ -51,6 +51,10 @@ class BolusDispatcher extends ChangeNotifier {
 
   /// Sends [units] and, once the pod confirms, writes them onto [meal].
   ///
+  /// [opensSplit] marks the first part of a split bolus: should it fail, the
+  /// planned rest is dropped too, rather than delivered behind a meal dose the
+  /// user may not know went missing.
+  ///
   /// Deliberately not awaited by the caller: the page is free to close the moment
   /// this returns. The future is held only so the outcome can be applied.
   void submit({
@@ -58,6 +62,7 @@ class BolusDispatcher extends ChangeNotifier {
     required double units,
     required double deliveredLastHour,
     required Meal meal,
+    bool opensSplit = false,
   }) {
     if (_inFlight) {
       return;
@@ -65,7 +70,7 @@ class BolusDispatcher extends ChangeNotifier {
     _inFlight = true;
     _outcome = null;
     notifyListeners();
-    _run(delivery, units, deliveredLastHour, meal);
+    _run(delivery, units, deliveredLastHour, meal, opensSplit);
   }
 
   Future<void> _run(
@@ -73,6 +78,7 @@ class BolusDispatcher extends ChangeNotifier {
     double units,
     double deliveredLastHour,
     Meal meal,
+    bool opensSplit,
   ) async {
     try {
       final outcome = await delivery.deliver(
@@ -91,6 +97,9 @@ class BolusDispatcher extends ChangeNotifier {
       await _noteUnconfirmed(units);
       _outcome = BolusDeliveryResult.unknown('$error');
     } finally {
+      if (opensSplit && (_outcome?.needsAttention ?? false)) {
+        await controller.store.clearSplitBolus();
+      }
       _inFlight = false;
       notifyListeners();
     }
@@ -127,6 +136,13 @@ class BolusDispatcher extends ChangeNotifier {
     );
   }
 
+  /// Whether the service is sending a split-bolus part right now. Its pending
+  /// record is the service's own and not stranded; resolving it would report a
+  /// live dose as lost. Should the service die mid-send, its next run clears
+  /// the mark and the following resume resolves the record as usual.
+  bool get _serviceSendingSplitPart =>
+      controller.store.splitBolus?.sendingSince != null;
+
   /// Resolves a dose the app was still sending when it was killed.
   ///
   /// Reads the pod: a bolus it reports running is adopted as exactly that, and
@@ -136,7 +152,7 @@ class BolusDispatcher extends ChangeNotifier {
   /// suppress a correction the user needs.
   Future<void> resolveStranded() async {
     final pending = controller.store.pendingBolus;
-    if (pending == null || _inFlight) {
+    if (pending == null || _inFlight || _serviceSendingSplitPart) {
       return;
     }
     await controller.store.clearPendingBolus();

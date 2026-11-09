@@ -1,5 +1,6 @@
 import 'package:insulink/src/injection/micro_bolus_queue.dart';
 import 'package:insulink/src/pump/pod_controller.dart';
+import 'package:insulink/src/pump/pod_link_lease.dart';
 import 'package:insulink/src/pump/pod_running_bolus.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/protocol/pod_bolus_command.dart';
@@ -245,6 +246,10 @@ class BolusDelivery {
   /// started after the queue looked.
   static const String _alreadyRunning = 'pump.bolus.already_running';
 
+  /// The refusal for a link another part of the app holds: nothing was sent,
+  /// and trying again shortly is all it takes.
+  static const String linkBusy = 'pump.bolus.link_busy';
+
   /// Sends the programmed bolus and maps the pod's answer onto an outcome.
   Future<BolusDeliveryResult> _send(
     PodBolusAmount amount,
@@ -299,6 +304,8 @@ class BolusDelivery {
       return BolusDeliveryResult.refused(refusal.reason);
     } on PodCommandOutcomeUnknown catch (error) {
       return _unknown(error.message, amount);
+    } on PodLinkBusy {
+      return const BolusDeliveryResult.refusedBecause(linkBusy);
     } on Exception catch (error) {
       return BolusDeliveryResult.refused('$error');
     }

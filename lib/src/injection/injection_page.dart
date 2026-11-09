@@ -28,6 +28,8 @@ import 'package:insulink/src/pump/pod_store.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/injection/injection_sheet_parts.dart';
+import 'package:insulink/src/injection/injection_split_bolus.dart';
+import 'package:insulink/src/injection/split_bolus_choice.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
@@ -88,6 +90,9 @@ class _InjectionPageState extends State<InjectionPage> {
   /// Once the user types in the bolus field we stop overwriting it with the
   /// suggestion; [_settingBolus] guards our own programmatic writes.
   bool _bolusEdited = false;
+
+  /// Whether and how the dose is spread out; only offered with a pod.
+  SplitBolusChoice _split = const SplitBolusChoice();
   bool _settingBolus = false;
 
   /// The cut after a long endurance bout, read once when the sheet opens.
@@ -325,15 +330,65 @@ class _InjectionPageState extends State<InjectionPage> {
     }
     final meal = await _record(context.read<MealState>(), glucose, outcome);
     if (outcome.isPending && mounted) {
-      context.read<BolusDispatcher>().submit(
-        delivery: _delivery,
-        units: bolus,
-        deliveredLastHour: _deliveredLastHour,
-        meal: meal,
-      );
+      await _handOver(bolus, glucose, meal);
     }
     if (mounted) {
       navigator.pop();
+    }
+  }
+
+  /// Whether a pump dose is still on its way. The dispatcher takes one at a
+  /// time and drops a second without a word, so confirming now would log the
+  /// meal as pump-dosed while nothing goes to the pod (and, for a split, start
+  /// its later parts without the share meant for now). Watched, so the button
+  /// comes back the moment the dose is through.
+  bool _pumpBusy(bool usesPump) =>
+      usesPump && context.watch<BolusDispatcher>().isSending;
+
+  /// The split as it will be carried out: off whenever the controls are not
+  /// on screen, so a switch flipped before a plan appeared (or before the
+  /// service went away) cannot start one over it.
+  SplitBolusChoice get _effectiveSplit =>
+      _splitOffered && _serviceRunning ? _split : const SplitBolusChoice();
+
+  /// Whether the split controls are shown: with a pod, and no plan running.
+  bool get _splitOffered => _delivery.usesPump && !_splitRunning;
+
+  /// Only the background service gives the later parts, so without it a split
+  /// would promise insulin nobody delivers.
+  bool get _serviceRunning => context.read<CgmController>().connected;
+
+  /// Whether a split bolus still has parts to give, so a second one cannot be
+  /// started over it. A plan whose parts all lapsed no longer counts.
+  bool get _splitRunning =>
+      (context.read<PodController>().store.splitBolus?.remainingUnitsAt(
+            DateTime.now(),
+          ) ??
+          0) >
+      0;
+
+  /// Plans the later parts of a split dose, then sends what goes out now. The
+  /// plan goes first, so the insulin it promises is on board before anything
+  /// else can be dosed against it.
+  Future<void> _handOver(double bolus, int glucose, Meal meal) async {
+    final dispatcher = context.read<BolusDispatcher>();
+    final delivery = _delivery;
+    final deliveredLastHour = _deliveredLastHour;
+    final split = _effectiveSplit;
+    final plan = split.plan(bolus, from: DateTime.now(), mealKey: meal.logKey);
+    if (plan != null) {
+      await delivery.controller.store.saveSplitBolus(plan);
+      delivery.controller.notifyRunningBolusChanged();
+    }
+    final nowUnits = split.nowUnits(bolus);
+    if (nowUnits > 0) {
+      dispatcher.submit(
+        delivery: delivery,
+        units: nowUnits,
+        deliveredLastHour: deliveredLastHour,
+        meal: meal,
+        opensSplit: plan != null,
+      );
     }
   }
 
@@ -389,7 +444,7 @@ class _InjectionPageState extends State<InjectionPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
               child: InjectionConfirmButton(
-                bolus: _confirmableBolus,
+                bolus: _pumpBusy(usesPump) ? null : _confirmableBolus,
                 usesPump: usesPump,
                 onConfirmed: _confirmed,
               ),
@@ -524,6 +579,15 @@ class _InjectionPageState extends State<InjectionPage> {
               : null,
         ),
         _activeInsulinNote(),
+        if (_pumpBusy(usesPump))
+          _bolusNote(Locales.string(context, 'pump.bolus.already_running')),
+        if (_splitOffered)
+          InjectionSplitBolus(
+            available: _serviceRunning,
+            choice: _split,
+            bolus: _bolus ?? 0,
+            onChanged: (choice) => setState(() => _split = choice),
+          ),
         if (_recoveryBolus.applies)
           _bolusNote(
             Locales.string(

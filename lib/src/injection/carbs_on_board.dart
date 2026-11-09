@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:insulink/src/injection/active_insulin.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
+import 'package:insulink/src/pump/split_bolus.dart';
 
 /// Carbohydrate from logged meals that has not reached the blood yet — "carbs on
 /// board" (COB), the mirror of [ActiveInsulin].
@@ -35,17 +36,39 @@ class CarbsOnBoard {
   /// can never cancel insulin they were not dosed with, such as what the loop
   /// added itself. Carbs gone after [absorption] while the bolus still acts
   /// leave that rest counted as correction, the side that asks for less.
+  ///
+  /// A split bolus counts as the meal's own: the parts logged for it since
+  /// ([Meal.splitOf]) and the rest [split] still plans. Without that, a meal
+  /// bolused mostly later would read as a big correction, and the loop would
+  /// withhold basal while its carbs come in.
   double coverUnits(
     List<Meal> meals, {
     required int carbFactor,
     required ActiveInsulin insulin,
+    SplitBolusPlan? split,
     DateTime? now,
   }) {
     final at = now ?? DateTime.now();
     return meals.fold(0, (sum, meal) {
       final carbUnits = _remaining(meal, at) / carbFactor;
-      return sum + min(carbUnits, insulin.units([meal], now: at));
+      return sum + min(carbUnits, _dosedFor(meal, meals, insulin, split, at));
     });
+  }
+
+  /// The insulin still acting that was dosed for [meal]: its own bolus, its
+  /// split-bolus parts, and the planned rest when the running plan is its.
+  double _dosedFor(
+    Meal meal,
+    List<Meal> meals,
+    ActiveInsulin insulin,
+    SplitBolusPlan? split,
+    DateTime at,
+  ) {
+    final parts = meals.where((other) => other.splitOf == meal.logKey);
+    final planned = split?.mealKey == meal.logKey
+        ? split!.remainingUnitsAt(at)
+        : 0.0;
+    return insulin.units([meal, ...parts], now: at) + planned;
   }
 
   double _remaining(Meal meal, DateTime at) {

@@ -199,7 +199,8 @@
         "micro_boluses": "Micro boluses",
         "rate": "Temporary rate",
         "total": "Total"
-      }
+      },
+      "planned": "Delayed bolus, still planned"
     },
     "boxes": {
       "all": "All values",
@@ -622,7 +623,8 @@
       "running_micro": "Micro bolus from the automation",
       "queued": "Your bolus follows as soon as it has finished.",
       "queue_too_long": "The automation is still giving a micro bolus for # seconds. Try again then.",
-      "already_running": "A bolus is still running. Wait until it has finished."
+      "already_running": "A bolus is still running. Wait until it has finished.",
+      "link_busy": "The pump is busy with another connection. Try again in a moment."
     },
     "basal": {
       "out_of_date": "Your basal profile has changed. The pod is still running the old schedule.",
@@ -696,6 +698,11 @@
     "forget": {
       "_": "Forget this pod?",
       "body": "Only for a pod that is off your body or has already stopped. The app drops its key, and a pod can never be paired again, so if this one is still delivering nothing will be able to stop it."
+    },
+    "split_bolus": {
+      "title": "Delayed bolus",
+      "remaining": "# U left until #",
+      "cancel": "Cancel"
     }
   },
   "google_health": {
@@ -1705,7 +1712,18 @@
         "searching": "Searching online: #",
         "estimating": "Looking at #"
       }
-    }
+    },
+    "split": {
+      "_": "Deliver delayed",
+      "info": "For drinks or meals that take a while to reach the blood. One part goes to the pump at once, the rest in small parts every 15 minutes. The parts keep going with the app closed and count as active insulin from the start. If glucose is low or falling into a low, the rest is stopped.",
+      "now": "Now",
+      "over": "Spread the rest over",
+      "summary": "# U now, # U spread over # min",
+      "needs_service": "Only while the background service runs: it delivers the later parts.",
+      "percent": "# %",
+      "minutes": "# min"
+    },
+    "active_insulin_planned": "# U of it still planned, delayed bolus"
   },
   "service": {
     "connecting": "Connecting…",
@@ -1835,6 +1853,14 @@
     "band_battery": {
       "title": "Fitbit Air battery low",
       "body": "Your Fitbit Air is at #%. Charge it so alarms still reach your wrist."
+    },
+    "split_bolus": {
+      "title": "Delayed bolus",
+      "lapsed": "Delayed bolus stopped: a part could not be delivered in time.",
+      "failed": "Delayed bolus stopped: a part was not delivered. Please check in the app.",
+      "low": "Delayed bolus stopped: glucose is low or falling into a low. The rest was not delivered.",
+      "meal_gone": "Delayed bolus stopped: its meal is no longer logged. The rest was not delivered.",
+      "unknown": "Delayed bolus stopped: it is unclear whether a part was delivered. Please check the pod in the app before injecting again."
     }
   },
   "hba1c": {

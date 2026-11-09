@@ -91,7 +91,7 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
                 const SizedBox(height: 12),
                 if (doses.isEmpty) _noDosesNote(context),
                 for (final dose in doses) _doseCard(context, insulin, dose),
-                ..._pumpCard(context, parts),
+                ..._beyondDoseRows(context, parts),
               ],
             ),
     );
@@ -145,47 +145,66 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
     );
   }
 
-  /// The pump's own share as its own entry, so the list adds up to the total
-  /// above it. It is not a dose card: nobody chose it and there is nothing to
-  /// tap through to.
-  List<Widget> _pumpCard(BuildContext context, InsulinOnBoardParts parts) {
-    if (parts.beyondBoluses <= 0.05) {
-      return const [];
-    }
-    final scheme = Theme.of(context).colorScheme;
+  /// The pump's own share, and the rest of a split bolus still planned, each
+  /// as its own entry, so the list adds up to the total above it. Neither is a
+  /// dose card: there is nothing to tap through to.
+  List<Widget> _beyondDoseRows(
+    BuildContext context,
+    InsulinOnBoardParts parts,
+  ) {
     return [
-      Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: scheme.onSurface.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(14),
+      if (parts.pumpGiven > 0.05)
+        _extraRow(
+          context,
+          PhosphorIconsBold.repeat,
+          'overview.active_insulin.from_pump',
+          parts.pumpGiven,
         ),
-        child: Row(
-          children: [
-            Icon(
-              PhosphorIconsBold.repeat,
-              size: 18,
-              color: scheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: LocaleText(
-                'overview.active_insulin.from_pump',
-                style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
-              ),
-            ),
-            Text(
-              Locales.string(
-                context,
-                'injection.bolus.value',
-                params: [sportDecimal(parts.beyondBoluses, 2)],
-              ),
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
+      if (parts.planned > 0.05)
+        _extraRow(
+          context,
+          PhosphorIconsBold.timer,
+          'overview.active_insulin.planned',
+          parts.planned,
         ),
-      ),
     ];
+  }
+
+  Widget _extraRow(
+    BuildContext context,
+    IconData icon,
+    String labelKey,
+    double units,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: scheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: LocaleText(
+              labelKey,
+              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+            ),
+          ),
+          Text(
+            Locales.string(
+              context,
+              'injection.bolus.value',
+              params: [sportDecimal(units, 2)],
+            ),
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _totalHeader(
@@ -217,13 +236,24 @@ class _ActiveInsulinPageState extends State<ActiveInsulinPage> {
         ),
         // The dose list below is the meal log, so a total larger than it needs
         // saying where the rest came from.
-        if (parts.beyondBoluses > 0.05) ...[
+        if (parts.pumpGiven > 0.05) ...[
           const SizedBox(height: 2),
           Text(
             Locales.string(
               context,
               'injection.active_insulin_pump',
-              params: [sportDecimal(parts.beyondBoluses, 1)],
+              params: [sportDecimal(parts.pumpGiven, 1)],
+            ),
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+          ),
+        ],
+        if (parts.planned > 0.05) ...[
+          const SizedBox(height: 2),
+          Text(
+            Locales.string(
+              context,
+              'injection.active_insulin_planned',
+              params: [sportDecimal(parts.planned, 1)],
             ),
             style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
           ),

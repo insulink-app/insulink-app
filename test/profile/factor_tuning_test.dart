@@ -13,12 +13,12 @@ void main() {
   final monday = DateTime(2026, 5, 4, 3);
 
   Meal dose(DateTime time, {double carbs = 0, double bolus = 0}) => Meal(
-        time: time,
-        carbs: carbs,
-        glucoseMgdl: 0,
-        bolus: bolus,
-        entries: const [],
-      );
+    time: time,
+    carbs: carbs,
+    glucoseMgdl: 0,
+    bolus: bolus,
+    entries: const [],
+  );
 
   /// Glucose that falls by [perHour] from [start] and then stays there, which is
   /// what a correction looks like when it has finished working.
@@ -69,6 +69,28 @@ void main() {
       expect(doses.single.insulinActing, closeTo(2, 1e-9));
     });
 
+    /// A split-bolus part carries no carbs but is meal insulin: it must not be
+    /// learned from as a correction, only counted into its meal's window.
+    test('a split-bolus part opens no window of its own', () {
+      final meal = dose(monday, carbs: 60, bolus: 2);
+      final part = Meal(
+        time: monday.add(const Duration(minutes: 30)),
+        carbs: 0,
+        glucoseMgdl: 0,
+        bolus: 1,
+        entries: const [],
+        deliveredByPump: true,
+        splitOf: meal.logKey,
+      );
+
+      final doses = found(
+        meals: [meal, part],
+        glucose: fallingFrom(monday, 220, 20),
+      );
+
+      expect(doses.where((window) => window.at == part.time), isEmpty);
+    });
+
     /// The change the user asked for: insulin still working from an earlier dose
     /// used to disqualify the window. It is now part of what acted in it, so the
     /// fall is credited to all of the insulin rather than to this dose alone.
@@ -95,8 +117,7 @@ void main() {
           dose(monday, bolus: 2),
           dose(monday.add(const Duration(hours: 3)), carbs: 40, bolus: 3),
         ],
-        glucose:
-            fallingFrom(monday, 220, 40, over: const Duration(hours: 2)),
+        glucose: fallingFrom(monday, 220, 40, over: const Duration(hours: 2)),
       );
 
       expect(doses, hasLength(2), reason: 'the meal is its own window');
@@ -190,34 +211,32 @@ void main() {
       required int end,
       required double insulin,
       int minutes = 240,
-    }) =>
-        TuningDose(
-          at: monday,
-          carbsAbsorbed: 0,
-          insulinActing: insulin,
-          startMgdl: start,
-          endMgdl: end,
-          minutesToEnd: minutes,
-          minutesToLowest: minutes,
-          isCorrection: true,
-        );
+    }) => TuningDose(
+      at: monday,
+      carbsAbsorbed: 0,
+      insulinActing: insulin,
+      startMgdl: start,
+      endMgdl: end,
+      minutesToEnd: minutes,
+      minutesToLowest: minutes,
+      isCorrection: true,
+    );
 
     TuningDose mealWindow({
       required double carbs,
       required double insulin,
       int drift = 0,
       int? minutesToLowest,
-    }) =>
-        TuningDose(
-          at: monday,
-          carbsAbsorbed: carbs,
-          insulinActing: insulin,
-          startMgdl: 120,
-          endMgdl: 120 + drift,
-          minutesToEnd: 300,
-          minutesToLowest: minutesToLowest,
-          isCorrection: false,
-        );
+    }) => TuningDose(
+      at: monday,
+      carbsAbsorbed: carbs,
+      insulinActing: insulin,
+      startMgdl: 120,
+      endMgdl: 120 + drift,
+      minutesToEnd: 300,
+      minutesToLowest: minutesToLowest,
+      isCorrection: false,
+    );
 
     List<TuningDose> repeated(TuningDose dose, int times) =>
         List<TuningDose>.filled(times, dose);
@@ -226,7 +245,8 @@ void main() {
     test('too few windows say nothing', () {
       expect(
         settings.correction(
-            repeated(correction(start: 220, end: 140, insulin: 2), 4)),
+          repeated(correction(start: 220, end: 140, insulin: 2), 4),
+        ),
         isNull,
       );
     });
@@ -235,7 +255,8 @@ void main() {
     /// says 35.
     test('the correction factor follows the measured drop', () {
       final suggestion = settings.correction(
-          repeated(correction(start: 220, end: 140, insulin: 2), 6));
+        repeated(correction(start: 220, end: 140, insulin: 2), 6),
+      );
 
       expect(suggestion!.suggested, 40);
       expect(suggestion.samples, 6);
@@ -258,7 +279,8 @@ void main() {
     /// changing its mind.
     test('a far-off measurement is offered in full', () {
       final suggestion = settings.correction(
-          repeated(correction(start: 250, end: 100, insulin: 1), 6));
+        repeated(correction(start: 250, end: 100, insulin: 1), 6),
+      );
 
       expect(suggestion!.suggested, 100, reason: '150 mg/dL for one unit');
     });
@@ -266,8 +288,9 @@ void main() {
     /// A window that landed back where it started had its carbohydrates covered
     /// exactly by the insulin that acted: 60 g on 3 U is 20 g per unit.
     test('the carbohydrate factor comes from a window that landed flat', () {
-      final suggestion =
-          settings.carb(repeated(mealWindow(carbs: 60, insulin: 3), 6));
+      final suggestion = settings.carb(
+        repeated(mealWindow(carbs: 60, insulin: 3), 6),
+      );
 
       expect(suggestion!.suggested, 20, reason: '60 g on the 3 U that acted');
     });
@@ -275,9 +298,12 @@ void main() {
     /// A window that ended high needed more insulin than acted in it, so the
     /// ratio is measured against that larger dose and comes out smaller.
     test('a window that drifted up tightens the ratio', () {
-      final flat = settings.carb(repeated(mealWindow(carbs: 60, insulin: 3), 6))!;
-      final drifted = settings
-          .carb(repeated(mealWindow(carbs: 60, insulin: 3, drift: 70), 6))!;
+      final flat = settings.carb(
+        repeated(mealWindow(carbs: 60, insulin: 3), 6),
+      )!;
+      final drifted = settings.carb(
+        repeated(mealWindow(carbs: 60, insulin: 3, drift: 70), 6),
+      )!;
 
       expect(drifted.suggested, lessThan(flat.suggested));
     });
@@ -285,15 +311,18 @@ void main() {
     /// Below that the estimate of the food itself is the biggest term in the
     /// arithmetic.
     test('a window with barely any food says nothing about the ratio', () {
-      expect(settings.carb(repeated(mealWindow(carbs: 10, insulin: 1), 6)),
-          isNull);
+      expect(
+        settings.carb(repeated(mealWindow(carbs: 10, insulin: 1), 6)),
+        isNull,
+      );
     });
 
     /// The measured length of the action, not a guess: four hours to the lowest
     /// point, against a setting of three.
     test('the insulin duration follows the time to the lowest point', () {
-      final suggestion = settings
-          .duration(repeated(correction(start: 220, end: 140, insulin: 2), 6));
+      final suggestion = settings.duration(
+        repeated(correction(start: 220, end: 140, insulin: 2), 6),
+      );
 
       expect(suggestion!.suggested, 4);
     });
@@ -303,7 +332,8 @@ void main() {
     /// measurable without a single correction dose.
     test('meal windows measure the insulin duration too', () {
       final suggestion = settings.duration(
-          repeated(mealWindow(carbs: 60, insulin: 4, minutesToLowest: 250), 6));
+        repeated(mealWindow(carbs: 60, insulin: 4, minutesToLowest: 250), 6),
+      );
 
       expect(suggestion!.suggested, 4);
     });
@@ -311,15 +341,16 @@ void main() {
     /// A window whose fall could not be followed to its end says nothing about
     /// the duration.
     test('a window with no readable end says nothing about the duration', () {
-      expect(settings.duration(repeated(mealWindow(carbs: 60, insulin: 4), 6)),
-          isNull);
+      expect(
+        settings.duration(repeated(mealWindow(carbs: 60, insulin: 4), 6)),
+        isNull,
+      );
     });
 
     /// The reported symptom, gone: one press lands on the answer and the next
     /// press has nothing left to change.
     test('one press lands on the answer', () {
-      final windows =
-          repeated(correction(start: 220, end: 140, insulin: 2), 6);
+      final windows = repeated(correction(start: 220, end: 140, insulin: 2), 6);
 
       final first = const FactorSuggestions(
         correctionFactor: 30,
@@ -338,8 +369,9 @@ void main() {
 
     /// Nothing may leave the range the setting itself allows.
     test('a proposal stays inside the setting range', () {
-      final suggestion = settings.duration(repeated(
-          correction(start: 220, end: 140, insulin: 2, minutes: 60), 6));
+      final suggestion = settings.duration(
+        repeated(correction(start: 220, end: 140, insulin: 2, minutes: 60), 6),
+      );
 
       expect(suggestion!.suggested, greaterThanOrEqualTo(2));
     });

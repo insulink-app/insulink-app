@@ -9,6 +9,7 @@ import 'package:insulink/src/pump/loop/loop_mode_backup.dart';
 import 'package:insulink/src/pump/pod_running_bolus.dart';
 import 'package:insulink/src/pump/protocol/pod_activation_state.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
+import 'package:insulink/src/pump/split_bolus.dart';
 
 /// Everything about a paired pod that has to outlive the process.
 ///
@@ -27,6 +28,7 @@ part 'pod_contact_log.dart';
 part 'pod_delivery_log.dart';
 part 'loop/loop_journal.dart';
 part 'loop/loop_micro_bolus_ledger.dart';
+part 'pod_split_bolus.dart';
 part 'pod_status_cache.dart';
 part 'automation_record.dart';
 
@@ -71,6 +73,11 @@ class PodStore {
   static const _kLoopStop = 'pod.loop_stop';
   static const _kLoopCycles = 'pod.loop_cycles';
   static const _kUnconfirmedBoluses = 'pod.unconfirmed_boluses';
+  static const _kSplitBolus = splitBolusKey;
+
+  /// Public so the service can check for a plan with one cheap read instead of
+  /// decrypting the whole keystore every tick (see `SplitBolusRunner`).
+  static const splitBolusKey = 'pod.split_bolus';
   static const _kLoopMicroBoluses = 'pod.loop_micro_boluses';
   static const _kLoopMicroBolusTotal = 'pod.loop_micro_bolus_total';
   static const _kLastStatus = 'pod.last_status';
@@ -274,6 +281,7 @@ class PodStore {
       _kLoopStop,
       _kLoopCycles,
       _kUnconfirmedBoluses,
+      _kSplitBolus,
       _kLoopMicroBoluses,
       _kLoopMicroBolusTotal,
       _kLastStatus,

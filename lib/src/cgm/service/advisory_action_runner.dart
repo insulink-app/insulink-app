@@ -108,7 +108,7 @@ class AdvisoryActionRunner {
       );
       return;
     }
-    final delivery = await _deliveryFor(store);
+    final delivery = await serviceDelivery(store);
     final outcome = await delivery.deliver(
       request.amount,
       deliveredLastHour: store.bolusUnitsWithin(const Duration(hours: 1)),
@@ -135,8 +135,12 @@ class AdvisoryActionRunner {
 
   /// The delivery path, wired to the SERVICE lease so it cannot connect while
   /// the pod poll or the automation holds the link, and capped by the same
-  /// [ProfileBolusState] ceilings the injection sheet enforces.
-  Future<BolusDelivery> _deliveryFor(PodStore store) async {
+  /// [ProfileBolusState] ceilings the injection sheet enforces. [source] is
+  /// where the dose was asked for, stamped on its delivery log entry.
+  Future<BolusDelivery> serviceDelivery(
+    PodStore store, {
+    PodDeliverySource source = PodDeliverySource.notification,
+  }) async {
     final bolus = await ProfileBolusState.load();
     return BolusDelivery(
       controller: PodController(
@@ -145,7 +149,7 @@ class AdvisoryActionRunner {
       ),
       maxBolusUnits: bolus.maxBolus.toDouble(),
       maxUnitsPerHour: bolus.maxBolus.toDouble(),
-      source: PodDeliverySource.notification,
+      source: source,
     );
   }
 

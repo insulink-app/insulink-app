@@ -100,6 +100,11 @@ class TuningDoseFinder {
   /// The dose windows between [from] and [to]. See [TuningHourFinder] for what
   /// [glucoseAt] and [automationExcessAt] mean, and for why a window from before
   /// the automation record began is kept rather than dropped.
+  ///
+  /// A later part of a split bolus ([Meal.splitOf]) opens no window of its
+  /// own: it carries no carbs, so it would read as a correction while its
+  /// meal's carbs are still coming in. Its insulin still counts, in the
+  /// window of its meal and any other it reaches into.
   List<TuningDose> find({
     required DateTime from,
     required DateTime to,
@@ -110,6 +115,7 @@ class TuningDoseFinder {
     final doses = <TuningDose>[];
     for (final meal in meals) {
       if (meal.bolus <= 0 ||
+          meal.splitOf != null ||
           meal.time.isBefore(from) ||
           meal.time.isAfter(to)) {
         continue;
