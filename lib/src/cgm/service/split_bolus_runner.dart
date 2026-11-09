@@ -132,17 +132,41 @@ class SplitBolusRunner {
       await store.saveSplitBolus(ours.settled);
       return false;
     }
-    return _abandon(store, 'alarm.split_bolus.failed');
+    return _abandon(store, _failureKey(outcome));
   }
 
+  /// A refusal says no insulin went in; an unknown outcome must NOT say that.
+  /// The part may be in the body, and a user told otherwise could inject it a
+  /// second time.
+  String _failureKey(BolusDeliveryResult outcome) =>
+      outcome.status == BolusDeliveryStatus.unknown
+      ? 'alarm.split_bolus.unknown'
+      : 'alarm.split_bolus.failed';
+
+  /// Sends [part]. Anything escaping the delivery path (an `Error`, which it
+  /// does not catch) is turned into an unknown outcome and the part noted as
+  /// possibly given, as `BolusDispatcher` does: the command may have reached
+  /// the pod, and an escaping error would otherwise leave no trace of it.
   Future<BolusDeliveryResult> _send(PodStore store, SplitBolusPart part) async {
-    final delivery = await AdvisoryActionRunner(
-      _alarms,
-    ).serviceDelivery(store, source: PodDeliverySource.app);
-    return delivery.deliver(
-      part.units,
-      deliveredLastHour: store.bolusUnitsWithin(const Duration(hours: 1)),
-    );
+    try {
+      final delivery = await AdvisoryActionRunner(
+        _alarms,
+      ).serviceDelivery(store, source: PodDeliverySource.app);
+      return await delivery.deliver(
+        part.units,
+        deliveredLastHour: store.bolusUnitsWithin(const Duration(hours: 1)),
+      );
+    } catch (error) {
+      await store.recordUnconfirmedBolus(
+        PodDelivery(
+          at: DateTime.now(),
+          units: part.units,
+          kind: PodDeliveryKind.bolus,
+          source: PodDeliverySource.app,
+        ),
+      );
+      return BolusDeliveryResult.unknown('$error');
+    }
   }
 
   /// Drops the first part, or the whole plan when that was the last.

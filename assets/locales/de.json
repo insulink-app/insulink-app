@@ -1855,7 +1855,8 @@
       "lapsed": "Verzögerter Bolus abgebrochen: Ein Teil konnte nicht rechtzeitig abgegeben werden.",
       "failed": "Verzögerter Bolus abgebrochen: Ein Teil wurde nicht abgegeben. Bitte in der App prüfen.",
       "low": "Verzögerter Bolus abgebrochen: Die Glukose ist niedrig oder fällt in den Unterzucker. Der Rest wurde nicht abgegeben.",
-      "meal_gone": "Verzögerter Bolus abgebrochen: Die Mahlzeit dazu ist nicht mehr eingetragen. Der Rest wurde nicht abgegeben."
+      "meal_gone": "Verzögerter Bolus abgebrochen: Die Mahlzeit dazu ist nicht mehr eingetragen. Der Rest wurde nicht abgegeben.",
+      "unknown": "Verzögerter Bolus gestoppt: Ob ein Teil abgegeben wurde, ist unklar. Bitte den Pod in der App prüfen, bevor du nachspritzt."
     }
   },
   "hba1c": {

@@ -53,7 +53,10 @@ So the rest goes out as **ordinary boluses every 15 minutes**
   bolusing, a micro bolus queue that is too long, or the link held by the app
   (`pump.bolus.link_busy`) wait for the next tick. A refusal, an unknown
   outcome, no pod, or a part more than 15 min overdue drop the rest with a
-  notification. A failed first part (the "now" share) drops the rest too.
+  notification. A failed first part (the "now" share) drops the rest too. An unknown outcome gets its own message, never
+  "not delivered": the part may be in the body, and the user must not inject it
+  again. An error escaping the delivery path counts as unknown and notes the
+  part as possibly given, as the app's dispatcher does.
 - **The meal must still be logged.** Deleted (or its time edited), the plan
   stops with a notification: its rest would be insulin for food that did not
   happen.
@@ -90,6 +93,10 @@ So the rest goes out as **ordinary boluses every 15 minutes**
   an hour later would be a false reading.
 
 ## Known limits
+
+- The app killed while its "now" share is on the way leaves the plan running:
+  the dispatcher that would drop it on a failure is gone. The next launch
+  reports that share as unknown (`resolveStranded`); the rest still comes.
 
 - Moving a meal's time afterwards breaks the link; its parts then read as
   correction again (the loop gives less, never more).

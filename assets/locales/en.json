@@ -1855,7 +1855,8 @@
       "lapsed": "Delayed bolus stopped: a part could not be delivered in time.",
       "failed": "Delayed bolus stopped: a part was not delivered. Please check in the app.",
       "low": "Delayed bolus stopped: glucose is low or falling into a low. The rest was not delivered.",
-      "meal_gone": "Delayed bolus stopped: its meal is no longer logged. The rest was not delivered."
+      "meal_gone": "Delayed bolus stopped: its meal is no longer logged. The rest was not delivered.",
+      "unknown": "Delayed bolus stopped: it is unclear whether a part was delivered. Please check the pod in the app before injecting again."
     }
   },
   "hba1c": {
