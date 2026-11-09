@@ -1154,7 +1154,11 @@
       "title": "Training erkannt",
       "body": "# · # Min. Bestätigen?",
       "confirm": "Bestätigen",
-      "reject": "Verwerfen"
+      "reject": "Verwerfen",
+      "switch": {
+        "walk": "War Gehen",
+        "bike": "War Radfahren"
+      }
     },
     "goals": {
       "_": "Ziele",

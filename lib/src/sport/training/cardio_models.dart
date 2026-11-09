@@ -2,7 +2,16 @@
 library;
 
 /// Type of endurance training.
-enum CardioType { walk, jog, bike }
+enum CardioType {
+  walk,
+  jog,
+  bike;
+
+  /// The other type the auto-detector can emit: it only tells walking from
+  /// cycling, so a misread walk is a ride and vice versa.
+  CardioType get detectedAlternative =>
+      this == CardioType.bike ? CardioType.walk : CardioType.bike;
+}
 
 /// A recognised-activity kind from the OS activity-recognition API, logged so
 /// the auto-detector can tell a real bike ride from a bus/train (speed alone

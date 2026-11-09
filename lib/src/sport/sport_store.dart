@@ -182,14 +182,21 @@ class SportStore {
 
   /// Confirm a pending auto-detected training: move it from the pending list to
   /// the confirmed list. No-op if the id is gone. Shared by the UI and the
-  /// notification-action background handler.
-  Future<void> confirmPendingTraining(String id) async {
+  /// notification-action background handler. [switchType] confirms it as the
+  /// other detectable type instead (walk ↔ bike).
+  Future<void> confirmPendingTraining(
+    String id, {
+    bool switchType = false,
+  }) async {
     final pending = await loadPendingTrainings();
     final index = pending.indexWhere((training) => training.id == id);
     if (index < 0) {
       return;
     }
-    final confirmed = pending.removeAt(index);
+    final detected = pending.removeAt(index);
+    final confirmed = switchType
+        ? detected.withType(detected.type.detectedAlternative)
+        : detected;
     final trainings = await loadTrainings()
       ..add(confirmed);
     await saveTrainings(trainings);
@@ -223,7 +230,7 @@ class SportStore {
 
   /// Record a Confirm/Reject notification tap. Synchronous + plugin-free so it
   /// completes before the ephemeral action isolate is torn down. [action] is
-  /// `confirm` or `reject`; drained later by [applyTrainingDecisions]. [filePath]
+  /// `confirm`, `switch` (confirm as the other type) or `reject`; drained later by [applyTrainingDecisions]. [filePath]
   /// is the writable path from the payload (see [decisionFilePath]); falls back
   /// to this isolate's own [_decisionFile] only for a legacy payload without one.
   void recordTrainingDecision(String action, String id, {String? filePath}) {
@@ -260,8 +267,11 @@ class SportStore {
       if (parts.length != 2) {
         continue;
       }
-      if (parts[0] == 'confirm') {
-        await confirmPendingTraining(parts[1]);
+      if (parts[0] == 'confirm' || parts[0] == 'switch') {
+        await confirmPendingTraining(
+          parts[1],
+          switchType: parts[0] == 'switch',
+        );
         confirmedAny = true;
       } else if (parts[0] == 'reject') {
         await rejectPendingTraining(parts[1]);

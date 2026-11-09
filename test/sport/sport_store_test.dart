@@ -182,6 +182,16 @@ void main() {
       expect(await store.loadPendingTrainings(), isEmpty);
     });
 
+    test('a switch confirms as the other detectable type', () async {
+      await store.savePendingTrainings([training('a')]);
+      store.recordTrainingDecision('switch', 'a');
+
+      expect(await store.applyTrainingDecisions(), isTrue);
+      final confirmed = (await store.loadTrainings()).single;
+      expect(confirmed.type, CardioType.walk.detectedAlternative);
+      expect(confirmed.type.detectedAlternative, CardioType.walk);
+    });
+
     test('a malformed line is skipped instead of throwing', () async {
       File(store.decisionFilePath).writeAsStringSync('garbage\n');
 
