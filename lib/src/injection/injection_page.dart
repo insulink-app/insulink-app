@@ -337,6 +337,14 @@ class _InjectionPageState extends State<InjectionPage> {
     }
   }
 
+  /// Whether a pump dose is still on its way. The dispatcher takes one at a
+  /// time and drops a second without a word, so confirming now would log the
+  /// meal as pump-dosed while nothing goes to the pod (and, for a split, start
+  /// its later parts without the share meant for now). Watched, so the button
+  /// comes back the moment the dose is through.
+  bool _pumpBusy(bool usesPump) =>
+      usesPump && context.watch<BolusDispatcher>().isSending;
+
   /// The split as it will be carried out: off whenever the controls are not
   /// on screen, so a switch flipped before a plan appeared (or before the
   /// service went away) cannot start one over it.
@@ -436,7 +444,7 @@ class _InjectionPageState extends State<InjectionPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
               child: InjectionConfirmButton(
-                bolus: _confirmableBolus,
+                bolus: _pumpBusy(usesPump) ? null : _confirmableBolus,
                 usesPump: usesPump,
                 onConfirmed: _confirmed,
               ),
@@ -571,6 +579,8 @@ class _InjectionPageState extends State<InjectionPage> {
               : null,
         ),
         _activeInsulinNote(),
+        if (_pumpBusy(usesPump))
+          _bolusNote(Locales.string(context, 'pump.bolus.already_running')),
         if (_splitOffered)
           InjectionSplitBolus(
             available: _serviceRunning,
