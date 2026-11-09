@@ -90,6 +90,17 @@ void main() {
     expect(state.weights, isEmpty);
   });
 
+  test('a weight a pull wrote over survives the reload', () async {
+    final state = await SportState.load();
+    await state.addWeight(80, at: DateTime(2026, 7, 9));
+
+    await const SportStore().saveWeights([]);
+    await state.reload();
+
+    expect(state.weights.single.kg, 80);
+    expect((await const SportStore().loadWeights()).single.kg, 80);
+  });
+
   test('the setters clamp to their allowed range', () async {
     final state = await SportState.load();
 

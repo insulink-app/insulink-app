@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import 'package:insulink/src/trash/trash_entry.dart';
@@ -15,6 +17,9 @@ class SportState extends ChangeNotifier {
 
   /// Counts local weight changes, so [reload] can tell one happened meanwhile.
   int _weightEdits = 0;
+
+  /// Weights added here that no reload has found in the store yet, by time.
+  final Map<int, WeightEntry> _unconfirmedWeights = {};
   int _strideCm;
   int _heightCm;
   int _stepsGoal;
@@ -61,9 +66,7 @@ class SportState extends ChangeNotifier {
     final editsBefore = _weightEdits;
     final fresh = await SportState.load();
     if (editsBefore == _weightEdits) {
-      _weights
-        ..clear()
-        ..addAll(fresh._weights);
+      _adoptStoredWeights(fresh._weights);
     }
     _strideCm = fresh._strideCm;
     _heightCm = fresh._heightCm;
@@ -75,6 +78,23 @@ class SportState extends ChangeNotifier {
   }
 
   /// Weights ascending by time (for the history chart).
+  /// Takes the [stored] weights, but keeps a weight added here that the store
+  /// lost: a pull that read the store before the add was saved writes its older
+  /// list back over it, and the weight would vanish until the next pull brought
+  /// it back. Such a weight is saved and pushed again.
+  void _adoptStoredWeights(List<WeightEntry> stored) {
+    final storedTimes = stored.map((entry) => entry.atEpochMs).toSet();
+    _unconfirmedWeights.removeWhere((time, _) => storedTimes.contains(time));
+    _weights
+      ..clear()
+      ..addAll(stored)
+      ..addAll(_unconfirmedWeights.values)
+      ..sort((first, second) => first.atEpochMs.compareTo(second.atEpochMs));
+    if (_unconfirmedWeights.isNotEmpty) {
+      unawaited(_saveWeights());
+    }
+  }
+
   List<WeightEntry> get weights => List.unmodifiable(_weights);
 
   WeightEntry? get latestWeight => _weights.isEmpty ? null : _weights.last;
@@ -111,6 +131,7 @@ class SportState extends ChangeNotifier {
       atEpochMs: (at ?? DateTime.now()).millisecondsSinceEpoch,
       kg: kg,
     );
+    _unconfirmedWeights[entry.atEpochMs] = entry;
     _weights
       ..add(entry)
       ..sort((first, second) => first.atEpochMs.compareTo(second.atEpochMs));
@@ -128,7 +149,9 @@ class SportState extends ChangeNotifier {
   }) async {
     _weightEdits++;
     _weights.remove(original);
+    _unconfirmedWeights.remove(original.atEpochMs);
     final updated = WeightEntry(atEpochMs: at.millisecondsSinceEpoch, kg: kg);
+    _unconfirmedWeights[updated.atEpochMs] = updated;
     _weights
       ..add(updated)
       ..sort((first, second) => first.atEpochMs.compareTo(second.atEpochMs));
@@ -165,6 +188,7 @@ class SportState extends ChangeNotifier {
   Future<void> removeWeight(WeightEntry entry) async {
     _weightEdits++;
     _weights.remove(entry);
+    _unconfirmedWeights.remove(entry.atEpochMs);
     await const TrashStore().keep(TrashKind.weight, entry.toJson());
     notifyListeners();
     await _store.saveWeights(_weights);
