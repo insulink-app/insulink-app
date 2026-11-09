@@ -28,6 +28,8 @@ import 'package:insulink/src/pump/pod_store.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:insulink/src/injection/injection_sheet_parts.dart';
+import 'package:insulink/src/injection/injection_split_bolus.dart';
+import 'package:insulink/src/injection/split_bolus_choice.dart';
 import 'package:insulink/src/sport/sport_format.dart';
 import 'package:insulink/src/theme/insulink_theme.dart';
 
@@ -88,6 +90,9 @@ class _InjectionPageState extends State<InjectionPage> {
   /// Once the user types in the bolus field we stop overwriting it with the
   /// suggestion; [_settingBolus] guards our own programmatic writes.
   bool _bolusEdited = false;
+
+  /// Whether and how the dose is spread out; only offered with a pod.
+  SplitBolusChoice _split = const SplitBolusChoice();
   bool _settingBolus = false;
 
   /// The cut after a long endurance bout, read once when the sheet opens.
@@ -325,15 +330,33 @@ class _InjectionPageState extends State<InjectionPage> {
     }
     final meal = await _record(context.read<MealState>(), glucose, outcome);
     if (outcome.isPending && mounted) {
-      context.read<BolusDispatcher>().submit(
-        delivery: _delivery,
-        units: bolus,
-        deliveredLastHour: _deliveredLastHour,
-        meal: meal,
-      );
+      await _handOver(bolus, glucose, meal);
     }
     if (mounted) {
       navigator.pop();
+    }
+  }
+
+  /// Plans the later parts of a split dose, then sends what goes out now. The
+  /// plan goes first, so the insulin it promises is on board before anything
+  /// else can be dosed against it.
+  Future<void> _handOver(double bolus, int glucose, Meal meal) async {
+    final dispatcher = context.read<BolusDispatcher>();
+    final delivery = _delivery;
+    final deliveredLastHour = _deliveredLastHour;
+    final plan = _split.plan(bolus, from: DateTime.now(), glucoseMgdl: glucose);
+    if (plan != null) {
+      await delivery.controller.store.saveSplitBolus(plan);
+      delivery.controller.notifyRunningBolusChanged();
+    }
+    final nowUnits = _split.nowUnits(bolus);
+    if (nowUnits > 0) {
+      dispatcher.submit(
+        delivery: delivery,
+        units: nowUnits,
+        deliveredLastHour: deliveredLastHour,
+        meal: meal,
+      );
     }
   }
 
@@ -524,6 +547,12 @@ class _InjectionPageState extends State<InjectionPage> {
               : null,
         ),
         _activeInsulinNote(),
+        if (usesPump && context.read<PodController>().store.splitBolus == null)
+          InjectionSplitBolus(
+            choice: _split,
+            bolus: _bolus ?? 0,
+            onChanged: (choice) => setState(() => _split = choice),
+          ),
         if (_recoveryBolus.applies)
           _bolusNote(
             Locales.string(

@@ -24,21 +24,15 @@ class PodHistorySync {
   String? _pushedContacts;
 
   Future<void> push(PodStore store) async {
-    _pushedDeliveries = await _pushChanged(
-      '/insulin/delivery/sync/',
-      {
-        'deliveries': deliveryEntries(
-          [...store.deliveryLog, ...store.loopMicroBoluses],
-          store.unconfirmedBoluses,
-        ),
-      },
-      _pushedDeliveries,
-    );
-    _pushedContacts = await _pushChanged(
-      '/pump/contact/sync/',
-      {'contacts': contactTimes(store.contactMinutes)},
-      _pushedContacts,
-    );
+    _pushedDeliveries = await _pushChanged('/insulin/delivery/sync/', {
+      'deliveries': deliveryEntries([
+        ...store.deliveryLog,
+        ...store.loopMicroBoluses,
+      ], store.unconfirmedBoluses),
+    }, _pushedDeliveries);
+    _pushedContacts = await _pushChanged('/pump/contact/sync/', {
+      'contacts': contactTimes(store.contactMinutes),
+    }, _pushedContacts);
   }
 
   /// Sends [body] unless it is what the account last accepted, and returns what

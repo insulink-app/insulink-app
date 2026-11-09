@@ -39,6 +39,7 @@ class InsulinOnBoard {
       boluses: ActiveInsulin(duration).units(meals, now: at),
       automation: pod?.loopIobUnits(duration, now: at) ?? 0,
       unconfirmed: pod?.unconfirmedBolusUnits(duration, now: at) ?? 0,
+      planned: pod?.splitBolus?.remainingUnits ?? 0,
     );
   }
 
@@ -53,6 +54,7 @@ class InsulinOnBoardParts {
     required this.boluses,
     required this.automation,
     required this.unconfirmed,
+    this.planned = 0,
   });
 
   /// Doses the user chose, from the meal log. Includes pump boluses, which are
@@ -67,9 +69,13 @@ class InsulinOnBoardParts {
   /// user was told at the time to check the pod.
   final double unconfirmed;
 
-  double get total => boluses + automation + unconfirmed;
+  /// The rest of a split bolus not given yet, counted in full: it is promised,
+  /// and no correction should be stacked on top of it ([SplitBolusPlan]).
+  final double planned;
+
+  double get total => boluses + automation + unconfirmed + planned;
 
   /// Insulin from anywhere other than the user's own logged doses. Worth naming
   /// because it is the part nobody typed in and would otherwise go unnoticed.
-  double get beyondBoluses => automation + unconfirmed;
+  double get beyondBoluses => automation + unconfirmed + planned;
 }

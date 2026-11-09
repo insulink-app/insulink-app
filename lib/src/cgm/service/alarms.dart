@@ -529,7 +529,9 @@ class G7AlarmManager {
     );
     await _showAdvisory(level, mgdl, advisory);
     await _alert(
-      level == AdvisoryLevel.low ? AlarmSlot.advisoryLow : AlarmSlot.advisoryHigh,
+      level == AdvisoryLevel.low
+          ? AlarmSlot.advisoryLow
+          : AlarmSlot.advisoryHigh,
       () => _playAdvisorySound(level),
       mutesSound: silent.mutesSound,
     );

@@ -25,6 +25,7 @@ import '../../sport/training/cardio_detection_runner.dart';
 import '../../profile/silent/profile_silent_state.dart';
 import '../../profile/prediction/profile_prediction_state.dart';
 import 'advisory_action_runner.dart';
+import 'split_bolus_runner.dart';
 import 'alarms.dart';
 import '../cgm_connection.dart';
 import '../event_sync.dart';
@@ -459,7 +460,11 @@ class CgmTaskHandler extends TaskHandler {
     unawaited(_applyTrainingDecisions());
     // Chained, so a tap carried out on this tick clears the meal it was for
     // before the warning for that meal is looked at.
-    unawaited(_applyAdvisoryActions().then((_) => _remindMealBolus()));
+    unawaited(
+      _applyAdvisoryActions()
+          .then((_) => _remindMealBolus())
+          .then((_) => _giveSplitBolus()),
+    );
     unawaited(_watchBandBattery());
     unawaited(_nightDetector.refresh(DateTime.now()));
     unawaited(_activityPulse.refresh());
@@ -472,7 +477,9 @@ class CgmTaskHandler extends TaskHandler {
     if (alarms == null || _batteryMode.pausesBand) {
       return;
     }
-    final watch = _bandBattery ??= BandBatteryWatch(alarms.notifyBandBatteryLow);
+    final watch = _bandBattery ??= BandBatteryWatch(
+      alarms.notifyBandBatteryLow,
+    );
     await watch.tick();
   }
 
@@ -494,6 +501,19 @@ class CgmTaskHandler extends TaskHandler {
     }
   }
 
+  /// The next due part of a split bolus. Pings the UI like a countermeasure
+  /// does, because the meal log and the plan both changed underneath it.
+  Future<void> _giveSplitBolus() async {
+    final alarms = _alarms;
+    if (alarms == null) {
+      return;
+    }
+    if (await SplitBolusRunner(alarms).run()) {
+      FlutterForegroundTask.sendDataToMain({'t': 'update'});
+      FlutterForegroundTask.sendDataToMain({'t': 'meals'});
+    }
+  }
+
   /// Warn about a photographed meal that is still waiting for its bolus, and
   /// withdraw that warning once it is not. Silent mode holds it back without
   /// marking it, so it still fires if the meal is still waiting when that ends.
@@ -510,7 +530,8 @@ class CgmTaskHandler extends TaskHandler {
     if (pending.isLapsed) {
       return store.clear();
     }
-    if (!pending.isDue || (await ProfileSilentState.load()).mutesNotifications) {
+    if (!pending.isDue ||
+        (await ProfileSilentState.load()).mutesNotifications) {
       return;
     }
     await store.save(pending.markedWarned());

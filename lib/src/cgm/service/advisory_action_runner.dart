@@ -108,7 +108,7 @@ class AdvisoryActionRunner {
       );
       return;
     }
-    final delivery = await _deliveryFor(store);
+    final delivery = await serviceDelivery(store);
     final outcome = await delivery.deliver(
       request.amount,
       deliveredLastHour: store.bolusUnitsWithin(const Duration(hours: 1)),
@@ -136,7 +136,7 @@ class AdvisoryActionRunner {
   /// The delivery path, wired to the SERVICE lease so it cannot connect while
   /// the pod poll or the automation holds the link, and capped by the same
   /// [ProfileBolusState] ceilings the injection sheet enforces.
-  Future<BolusDelivery> _deliveryFor(PodStore store) async {
+  Future<BolusDelivery> serviceDelivery(PodStore store) async {
     final bolus = await ProfileBolusState.load();
     return BolusDelivery(
       controller: PodController(

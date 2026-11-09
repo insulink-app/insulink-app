@@ -37,7 +37,9 @@ class PodAccountHistory {
       basalSamples: [
         for (final entry in basal.where(sincePod))
           (
-            at: DateTime.fromMillisecondsSinceEpoch((entry['at'] as num).toInt()),
+            at: DateTime.fromMillisecondsSinceEpoch(
+              (entry['at'] as num).toInt(),
+            ),
             units: (entry['units'] as num).toDouble(),
           ),
       ],

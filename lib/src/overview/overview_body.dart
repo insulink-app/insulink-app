@@ -8,6 +8,7 @@ import 'package:insulink/src/overview/battery_saver_banner.dart';
 import 'package:insulink/src/overview/advisory_bolus_notice.dart';
 import 'package:insulink/src/overview/overview_pod_warnings.dart';
 import 'package:insulink/src/overview/overview_running_bolus.dart';
+import 'package:insulink/src/overview/split_bolus_card.dart';
 import 'package:insulink/src/overview/update/overview_update.dart';
 import 'package:insulink/src/overview/overview_data_view.dart';
 import 'package:insulink/src/overview/overview_header_glucose.dart';
@@ -104,6 +105,7 @@ class OverviewBodyContent extends StatelessWidget {
       child: Column(
         children: [
           const OverviewRunningBolus(),
+          const SplitBolusCard(),
           const AdvisoryBolusNotice(),
           const OverviewPodWarnings(),
           if (silent != SilentMode.off) ...[

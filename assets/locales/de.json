@@ -696,6 +696,11 @@
     "forget": {
       "_": "Diesen Pod vergessen?",
       "body": "Nur für einen Pod, der nicht mehr am Körper ist oder bereits gestoppt hat. Die App verwirft seinen Schlüssel, und ein Pod lässt sich nie erneut koppeln. Gibt dieser noch ab, kann ihn danach nichts mehr stoppen."
+    },
+    "split_bolus": {
+      "title": "Verzögerter Bolus",
+      "remaining": "Noch # E bis #",
+      "cancel": "Abbrechen"
     }
   },
   "google_health": {
@@ -1701,6 +1706,13 @@
         "searching": "Suche online: #",
         "estimating": "Schaue mir # an"
       }
+    },
+    "split": {
+      "_": "Verzögert abgeben",
+      "info": "Für Getränke oder Mahlzeiten, die langsam ins Blut gehen. Ein Teil geht sofort an die Pumpe, der Rest alle 15 Minuten in kleinen Teilen. Die Teile laufen auch bei geschlossener App weiter und zählen schon vorher als aktives Insulin.",
+      "now": "Sofort",
+      "over": "Rest verteilt über",
+      "summary": "# E sofort, # E über # min verteilt"
     }
   },
   "service": {
@@ -1831,6 +1843,10 @@
     "band_battery": {
       "title": "Akku der Fitbit Air schwach",
       "body": "Deine Fitbit Air hat noch #%. Lade sie, damit Alarme weiter am Handgelenk ankommen."
+    },
+    "split_bolus": {
+      "lapsed": "Verzögerter Bolus abgebrochen: Ein Teil konnte nicht rechtzeitig abgegeben werden.",
+      "failed": "Verzögerter Bolus abgebrochen: Ein Teil wurde nicht abgegeben. Bitte in der App prüfen."
     }
   },
   "hba1c": {
