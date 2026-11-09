@@ -1,15 +1,15 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../injection/bolus_delivery.dart';
-import '../../nutrition/meal/meal.dart';
 import '../../nutrition/meal/meal_store.dart';
-import '../../nutrition/nutrition_sync.dart';
 import '../../profile/glucose/profile_glucose_state.dart';
 import '../../pump/loop/loop_glucose.dart';
 import '../../pump/pod_store.dart';
 import '../../pump/split_bolus.dart';
+import '../../pump/split_bolus_stop.dart';
 import 'advisory_action_runner.dart';
 import 'alarms.dart';
+import 'split_bolus_part_log.dart';
 
 /// Gives the parts of a split bolus as they fall due. Runs in the service
 /// isolate inside the pod chain (`CgmTaskHandler._tickPodChain`), so a part
@@ -52,33 +52,39 @@ class SplitBolusRunner {
     }
     final store = await PodStore.open();
     final plan = store.splitBolus;
-    final now = DateTime.now();
     if (plan == null) {
       return false;
     }
     if (plan.sendingSince != null) {
       return _dropStranded(store, plan);
     }
-    if (plan.parts.first.at.isAfter(now)) {
+    if (plan.parts.first.at.isAfter(DateTime.now())) {
       return false;
     }
-    if (!store.hasPod) {
-      return _abandon(store, 'alarm.split_bolus.failed');
-    }
-    if (plan.missedAt(now)) {
-      return _abandon(store, 'alarm.split_bolus.lapsed');
-    }
+    return _due(store, plan);
+  }
+
+  /// Gives the due first part, unless something stops the plan.
+  Future<bool> _due(PodStore store, SplitBolusPlan plan) async {
     final glucose = await readGlucose();
-    if (await _lowAhead(glucose)) {
-      return _abandon(store, 'alarm.split_bolus.low');
+    final low = (await ProfileGlucoseState.load()).low;
+    final stop = SplitBolusStop(lowMgdl: low).reasonFor(
+      plan,
+      hasPod: store.hasPod,
+      mealLogged: await _mealLogged(plan),
+      glucose: glucose,
+      now: DateTime.now(),
+    );
+    if (stop != null) {
+      return _abandon(store, stop);
     }
     return _give(store, plan, glucose);
   }
 
-  Future<bool> _lowAhead(LoopGlucose glucose) async {
-    final low = (await ProfileGlucoseState.load()).low;
-    return SplitBolusLowGuard(low).stops(glucose);
-  }
+  Future<bool> _mealLogged(SplitBolusPlan plan) async =>
+      (await const MealStore().loadMeals()).any(
+        (meal) => meal.logKey == plan.mealKey,
+      );
 
   /// A part a dead process was sending. It may have gone in, so it is never
   /// sent again; the delivery path left its pending record for the app to
@@ -89,9 +95,7 @@ class SplitBolusRunner {
   }
 
   /// Marks the first part as sending, sends it, then settles the plan against
-  /// what the store holds NOW: the user may have cancelled meanwhile, or even
-  /// started a new plan, and neither is touched. A dose that went in is logged
-  /// either way.
+  /// what the store holds NOW ([_settle]).
   Future<bool> _give(
     PodStore store,
     SplitBolusPlan plan,
@@ -104,13 +108,24 @@ class SplitBolusRunner {
     final current = store.splitBolus;
     final ours = current != null && current.markedAt(mark) ? current : null;
     if (outcome.recordedUnits > 0) {
-      await _logDose(outcome, plan, glucose);
-      if (ours != null) {
-        await _saveRest(store, ours);
-      }
+      await const SplitBolusPartLog().record(outcome, plan, glucose);
+    }
+    return _settle(store, ours, outcome);
+  }
+
+  /// Moves the plan on after a send. [ours] is the plan as stored now if it is
+  /// still the one that was sent from, else null: the user cancelled meanwhile
+  /// or started a new plan, and neither is touched.
+  Future<bool> _settle(
+    PodStore store,
+    SplitBolusPlan? ours,
+    BolusDeliveryResult outcome,
+  ) async {
+    if (ours == null) {
       return true;
     }
-    if (ours == null) {
+    if (outcome.recordedUnits > 0) {
+      await _saveRest(store, ours);
       return true;
     }
     if (_busyKeys.contains(outcome.detailKey)) {
@@ -148,35 +163,5 @@ class SplitBolusRunner {
       titleKey: 'alarm.split_bolus.title',
     );
     return true;
-  }
-
-  /// Logs the part as its own insulin-only entry, then pushes it so the next
-  /// pull does not replace it away.
-  ///
-  /// Carries the glucose read for THIS part, not the one the meal was dosed
-  /// at: the forecast model folds a logged dose's glucose into its glucose
-  /// channel as a reading at that time, so a stale value would be a false
-  /// one. With no usable reading it carries 0, which the model drops as a
-  /// placeholder (the chart then sets that dot on its floor).
-  Future<void> _logDose(
-    BolusDeliveryResult outcome,
-    SplitBolusPlan plan,
-    LoopGlucose glucose,
-  ) async {
-    const store = MealStore();
-    final meals = await store.loadMeals();
-    meals.add(
-      Meal(
-        time: DateTime.now(),
-        carbs: 0,
-        glucoseMgdl: glucose.isUsable ? glucose.mgdl : 0,
-        bolus: outcome.recordedUnits,
-        entries: const [],
-        deliveredByPump: true,
-        splitOf: plan.mealKey,
-      ),
-    );
-    await store.saveMeals(meals);
-    NutritionSync().pushMeals();
   }
 }

@@ -7,6 +7,7 @@ import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/pump/loop/loop_glucose.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/split_bolus.dart';
+import 'package:insulink/src/pump/split_bolus_stop.dart';
 
 import 'fake_secure_storage.dart';
 
@@ -135,12 +136,12 @@ void main() {
   }
 
   test('the low guard stops the rest at or heading below the low line', () {
-    const guard = SplitBolusLowGuard(70);
+    const stop = SplitBolusStop(lowMgdl: 70);
 
-    expect(guard.stops(glucoseEnding(150, 0)), isFalse);
-    expect(guard.stops(glucoseEnding(68, 0)), isTrue);
-    expect(guard.stops(glucoseEnding(100, -8)), isTrue);
-    expect(guard.stops(glucoseEnding(100, 2)), isFalse);
+    expect(stop.lowAhead(glucoseEnding(150, 0)), isFalse);
+    expect(stop.lowAhead(glucoseEnding(68, 0)), isTrue);
+    expect(stop.lowAhead(glucoseEnding(100, -8)), isTrue);
+    expect(stop.lowAhead(glucoseEnding(100, 2)), isFalse);
   });
 
   test('without usable sensor data the low guard lets the part go', () {
@@ -149,7 +150,39 @@ void main() {
       now: DateTime(2026, 11, 9),
     );
 
-    expect(const SplitBolusLowGuard(70).stops(none), isFalse);
+    expect(const SplitBolusStop(lowMgdl: 70).lowAhead(none), isFalse);
+  });
+
+  test('a due part is stopped for a missing pod or meal, lateness, a low', () {
+    const stop = SplitBolusStop(lowMgdl: 70);
+    final plan = SplitBolusPlan.spread(
+      20,
+      over: const Duration(minutes: 30),
+      from: confirmedAt,
+      mealKey: 1,
+    );
+    final due = confirmedAt.add(const Duration(minutes: 16));
+    String? reason({
+      bool hasPod = true,
+      bool mealLogged = true,
+      LoopGlucose? glucose,
+      DateTime? now,
+    }) => stop.reasonFor(
+      plan,
+      hasPod: hasPod,
+      mealLogged: mealLogged,
+      glucose: glucose ?? glucoseEnding(150, 0),
+      now: now ?? due,
+    );
+
+    expect(reason(), isNull);
+    expect(reason(hasPod: false), 'alarm.split_bolus.failed');
+    expect(reason(mealLogged: false), 'alarm.split_bolus.meal_gone');
+    expect(
+      reason(now: confirmedAt.add(const Duration(minutes: 31))),
+      'alarm.split_bolus.lapsed',
+    );
+    expect(reason(glucose: glucoseEnding(65, 0)), 'alarm.split_bolus.low');
   });
 
   test('a part keeps its meal link through the JSON round trip', () {

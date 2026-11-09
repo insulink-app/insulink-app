@@ -25,10 +25,11 @@ So the rest goes out as **ordinary boluses every 15 minutes**
 
 | Piece | File |
 |---|---|
-| Plan + parts, low guard | `lib/src/pump/split_bolus.dart` |
+| Plan + parts | `lib/src/pump/split_bolus.dart` |
+| Stop reasons + low guard | `lib/src/pump/split_bolus_stop.dart` |
 | Stored in the pod store (`pod.split_bolus`, cleared on `forgetPod`) | `lib/src/pump/pod_split_bolus.dart` |
 | Controls + how a dose divides | `lib/src/injection/injection_split_bolus.dart`, `split_bolus_choice.dart` |
-| Gives the parts | `lib/src/cgm/service/split_bolus_runner.dart` |
+| Gives the parts, logs each | `lib/src/cgm/service/split_bolus_runner.dart`, `split_bolus_part_log.dart` |
 | Overview card with "Abbrechen" | `lib/src/overview/split_bolus_card.dart` |
 
 ## Load-bearing rules (each one was a bug first)
@@ -53,8 +54,11 @@ So the rest goes out as **ordinary boluses every 15 minutes**
   (`pump.bolus.link_busy`) wait for the next tick. A refusal, an unknown
   outcome, no pod, or a part more than 15 min overdue drop the rest with a
   notification. A failed first part (the "now" share) drops the rest too.
+- **The meal must still be logged.** Deleted (or its time edited), the plan
+  stops with a notification: its rest would be insulin for food that did not
+  happen.
 - **Low guard.** No part goes out when glucose is at the user's low line or its
-  trend reaches it within 30 min (`SplitBolusLowGuard`); the rest is dropped
+  trend reaches it within 30 min (`SplitBolusStop`); the rest is dropped
   with a notification. The loop lowers basal on a low, but these are boluses.
   Without usable sensor data the part still goes, as a pump's extended bolus
   would.

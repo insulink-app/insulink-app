@@ -199,7 +199,8 @@
         "micro_boluses": "Micro boluses",
         "rate": "Temporary rate",
         "total": "Total"
-      }
+      },
+      "planned": "Delayed bolus, still planned"
     },
     "boxes": {
       "all": "All values",
@@ -1714,7 +1715,9 @@
       "now": "Now",
       "over": "Spread the rest over",
       "summary": "# U now, # U spread over # min",
-      "needs_service": "Only while the background service runs: it delivers the later parts."
+      "needs_service": "Only while the background service runs: it delivers the later parts.",
+      "percent": "# %",
+      "minutes": "# min"
     },
     "active_insulin_planned": "# U of it still planned, delayed bolus"
   },
@@ -1851,7 +1854,8 @@
       "title": "Delayed bolus",
       "lapsed": "Delayed bolus stopped: a part could not be delivered in time.",
       "failed": "Delayed bolus stopped: a part was not delivered. Please check in the app.",
-      "low": "Delayed bolus stopped: glucose is low or falling into a low. The rest was not delivered."
+      "low": "Delayed bolus stopped: glucose is low or falling into a low. The rest was not delivered.",
+      "meal_gone": "Delayed bolus stopped: its meal is no longer logged. The rest was not delivered."
     }
   },
   "hba1c": {

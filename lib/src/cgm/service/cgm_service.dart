@@ -473,9 +473,7 @@ class CgmTaskHandler extends TaskHandler {
     if (alarms == null || _batteryMode.pausesBand) {
       return;
     }
-    final watch = _bandBattery ??= BandBatteryWatch(
-      alarms.notifyBandBatteryLow,
-    );
+    final watch = _bandBattery ??= BandBatteryWatch(alarms.notifyBandBatteryLow);
     await watch.tick();
   }
 
@@ -534,8 +532,7 @@ class CgmTaskHandler extends TaskHandler {
     if (pending.isLapsed) {
       return store.clear();
     }
-    if (!pending.isDue ||
-        (await ProfileSilentState.load()).mutesNotifications) {
+    if (!pending.isDue || (await ProfileSilentState.load()).mutesNotifications) {
       return;
     }
     await store.save(pending.markedWarned());

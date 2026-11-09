@@ -199,7 +199,8 @@
         "micro_boluses": "Mini-Boli",
         "rate": "Temporäre Rate",
         "total": "Gesamt"
-      }
+      },
+      "planned": "Verzögerter Bolus, noch geplant"
     },
     "boxes": {
       "all": "Alle Werte",
@@ -1714,7 +1715,9 @@
       "now": "Sofort",
       "over": "Rest verteilt über",
       "summary": "# E sofort, # E über # min verteilt",
-      "needs_service": "Nur möglich, solange der Hintergrunddienst läuft: Er gibt die späteren Teile ab."
+      "needs_service": "Nur möglich, solange der Hintergrunddienst läuft: Er gibt die späteren Teile ab.",
+      "percent": "# %",
+      "minutes": "# min"
     },
     "active_insulin_planned": "davon # E noch geplant, verzögerter Bolus"
   },
@@ -1851,7 +1854,8 @@
       "title": "Verzögerter Bolus",
       "lapsed": "Verzögerter Bolus abgebrochen: Ein Teil konnte nicht rechtzeitig abgegeben werden.",
       "failed": "Verzögerter Bolus abgebrochen: Ein Teil wurde nicht abgegeben. Bitte in der App prüfen.",
-      "low": "Verzögerter Bolus abgebrochen: Die Glukose ist niedrig oder fällt in den Unterzucker. Der Rest wurde nicht abgegeben."
+      "low": "Verzögerter Bolus abgebrochen: Die Glukose ist niedrig oder fällt in den Unterzucker. Der Rest wurde nicht abgegeben.",
+      "meal_gone": "Verzögerter Bolus abgebrochen: Die Mahlzeit dazu ist nicht mehr eingetragen. Der Rest wurde nicht abgegeben."
     }
   },
   "hba1c": {

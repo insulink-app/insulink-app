@@ -62,21 +62,37 @@ class InjectionSplitBolus extends StatelessWidget {
     return [
       LocaleText('injection.split.now', style: muted),
       SegmentedToggle<int>(
+        semanticsLabel: Locales.string(context, 'injection.split.now'),
         selected: choice.nowPercent,
         onChanged: (percent) => onChanged(choice.copyWith(nowPercent: percent)),
         options: [
           for (final percent in SplitBolusChoice.nowPercents)
-            (value: percent, label: '$percent %'),
+            (
+              value: percent,
+              label: Locales.string(
+                context,
+                'injection.split.percent',
+                params: ['$percent'],
+              ),
+            ),
         ],
       ),
       LocaleText('injection.split.over', style: muted),
       SegmentedToggle<int>(
+        semanticsLabel: Locales.string(context, 'injection.split.over'),
         selected: choice.overMinutes,
         onChanged: (minutes) =>
             onChanged(choice.copyWith(overMinutes: minutes)),
         options: [
           for (final minutes in SplitBolusChoice.overMinuteOptions)
-            (value: minutes, label: '$minutes min'),
+            (
+              value: minutes,
+              label: Locales.string(
+                context,
+                'injection.split.minutes',
+                params: ['$minutes'],
+              ),
+            ),
         ],
       ),
       Text(_summary(context), style: muted),
