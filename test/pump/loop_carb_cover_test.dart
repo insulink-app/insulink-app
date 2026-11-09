@@ -6,6 +6,7 @@ import 'package:insulink/src/pump/loop/loop_algorithm.dart';
 import 'package:insulink/src/pump/loop/loop_decision.dart';
 import 'package:insulink/src/pump/loop/loop_safety.dart';
 import 'package:insulink/src/pump/protocol/pod_responses.dart';
+import 'package:insulink/src/pump/split_bolus.dart';
 
 import 'loop_input.dart';
 
@@ -103,6 +104,63 @@ void main() {
 
       expect(cover([meal]), 0);
       expect(insulin.units([meal], now: now), greaterThan(0));
+    });
+
+    SplitBolusPlan restFor(Meal meal, {required int pulses}) =>
+        SplitBolusPlan.spread(
+          pulses,
+          over: const Duration(minutes: 30),
+          from: now,
+          glucoseMgdl: 100,
+          mealKey: meal.logKey,
+        );
+
+    double coverWith(List<Meal> meals, SplitBolusPlan split) =>
+        const CarbsOnBoard().coverUnits(
+          meals,
+          carbFactor: 20,
+          insulin: insulin,
+          split: split,
+          now: now,
+        );
+
+    test(
+      'a split bolus covers its meal with the parts and the planned rest',
+      () {
+        final meal = mealAt(const Duration(minutes: 30), carbs: 80, bolus: 1);
+        Meal partFor(int? splitOf) => Meal(
+          time: now.subtract(const Duration(minutes: 15)),
+          carbs: 0,
+          glucoseMgdl: 100,
+          bolus: 0.5,
+          entries: const [],
+          deliveredByPump: true,
+          splitOf: splitOf,
+        );
+        final part = partFor(meal.logKey);
+
+        final covered = coverWith([meal, part], restFor(meal, pulses: 30));
+
+        expect(covered, closeTo(0.875 + 0.46875 + 1.5, 1e-9));
+        expect(cover([meal, part]), closeTo(0.875 + 0.46875, 1e-9));
+        expect(cover([meal, partFor(null)]), closeTo(0.875, 1e-9));
+      },
+    );
+
+    test('a split bolus never covers more than its meal calls for', () {
+      final meal = mealAt(const Duration(minutes: 30), carbs: 80, bolus: 1);
+
+      expect(coverWith([meal], restFor(meal, pulses: 100)), closeTo(3, 1e-9));
+    });
+
+    test('the plan of another meal covers nothing here', () {
+      final meal = mealAt(const Duration(minutes: 30), carbs: 80, bolus: 1);
+      final other = mealAt(const Duration(hours: 3), carbs: 0, bolus: 0);
+
+      expect(
+        coverWith([meal], restFor(other, pulses: 30)),
+        closeTo(0.875, 1e-9),
+      );
     });
   });
 

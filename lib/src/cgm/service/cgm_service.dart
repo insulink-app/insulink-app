@@ -920,6 +920,7 @@ class CgmTaskHandler extends TaskHandler {
       meals,
       carbFactor: bolus.carbFactor,
       insulin: ActiveInsulin(insulinDuration),
+      split: _podStore?.splitBolus,
     );
   }
 

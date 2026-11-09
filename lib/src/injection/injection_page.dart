@@ -367,7 +367,12 @@ class _InjectionPageState extends State<InjectionPage> {
     final delivery = _delivery;
     final deliveredLastHour = _deliveredLastHour;
     final split = _effectiveSplit;
-    final plan = split.plan(bolus, from: DateTime.now(), glucoseMgdl: glucose);
+    final plan = split.plan(
+      bolus,
+      from: DateTime.now(),
+      glucoseMgdl: glucose,
+      mealKey: meal.logKey,
+    );
     if (plan != null) {
       await delivery.controller.store.saveSplitBolus(plan);
       delivery.controller.notifyRunningBolusChanged();

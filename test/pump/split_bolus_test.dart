@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:insulink/src/injection/insulin_on_board.dart';
 import 'package:insulink/src/injection/split_bolus_choice.dart';
+import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/pump/loop/loop_glucose.dart';
 import 'package:insulink/src/pump/pod_store.dart';
 import 'package:insulink/src/pump/split_bolus.dart';
@@ -16,7 +17,10 @@ void main() {
     const choice = SplitBolusChoice();
 
     expect(choice.nowUnits(3.3), 3.3);
-    expect(choice.plan(3.3, from: confirmedAt, glucoseMgdl: 120), isNull);
+    expect(
+      choice.plan(3.3, from: confirmedAt, glucoseMgdl: 120, mealKey: 1),
+      isNull,
+    );
   });
 
   test('a split gives its share now and spreads every pulse of the rest', () {
@@ -26,7 +30,12 @@ void main() {
       overMinutes: 60,
     );
 
-    final plan = choice.plan(3.3, from: confirmedAt, glucoseMgdl: 120)!;
+    final plan = choice.plan(
+      3.3,
+      from: confirmedAt,
+      glucoseMgdl: 120,
+      mealKey: 1,
+    )!;
 
     expect(choice.nowUnits(3.3), closeTo(1.65, 1e-9));
     expect(plan.parts.map((part) => part.pulses), [8, 8, 8, 9]);
@@ -41,6 +50,7 @@ void main() {
       over: const Duration(minutes: 60),
       from: confirmedAt,
       glucoseMgdl: 120,
+      mealKey: 1,
     );
 
     expect(plan.parts.map((part) => part.pulses), [1, 1]);
@@ -55,7 +65,7 @@ void main() {
       overMinutes: 30,
     );
     await store.saveSplitBolus(
-      choice.plan(1, from: confirmedAt, glucoseMgdl: 120)!,
+      choice.plan(1, from: confirmedAt, glucoseMgdl: 120, mealKey: 1)!,
     );
 
     final stored = store.splitBolus!;
@@ -74,6 +84,7 @@ void main() {
         over: const Duration(minutes: 60),
         from: confirmedAt,
         glucoseMgdl: 120,
+        mealKey: 1,
       ),
     );
 
@@ -90,6 +101,7 @@ void main() {
       over: const Duration(minutes: 30),
       from: confirmedAt,
       glucoseMgdl: 120,
+      mealKey: 1,
     );
     final firstLapsed = confirmedAt.add(const Duration(minutes: 31));
 
@@ -110,6 +122,7 @@ void main() {
       over: const Duration(minutes: 30),
       from: confirmedAt,
       glucoseMgdl: 120,
+      mealKey: 1,
     );
     await store.saveSplitBolus(plan.sendingAt(confirmedAt));
 
@@ -149,5 +162,28 @@ void main() {
     );
 
     expect(const SplitBolusLowGuard(70).stops(none), isFalse);
+  });
+
+  test('a part keeps its meal link through the JSON round trip', () {
+    final part = Meal(
+      time: confirmedAt,
+      carbs: 0,
+      glucoseMgdl: 120,
+      bolus: 0.5,
+      entries: const [],
+      deliveredByPump: true,
+      splitOf: 1700000000000,
+    );
+    final plain = Meal(
+      time: confirmedAt,
+      carbs: 20,
+      glucoseMgdl: 120,
+      bolus: 1,
+      entries: const [],
+    );
+
+    expect(Meal.fromJson(part.toJson()).splitOf, 1700000000000);
+    expect(Meal.fromJson(part.toJson()).toJson(), part.toJson());
+    expect(plain.toJson().containsKey('split_of'), isFalse);
   });
 }

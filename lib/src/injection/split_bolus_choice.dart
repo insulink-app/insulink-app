@@ -53,6 +53,7 @@ class SplitBolusChoice {
     double units, {
     required DateTime from,
     required int glucoseMgdl,
+    required int mealKey,
   }) {
     final later = _pulses(units) - _nowPulses(units);
     if (!enabled || later <= 0) {
@@ -63,6 +64,7 @@ class SplitBolusChoice {
       over: Duration(minutes: overMinutes),
       from: from,
       glucoseMgdl: glucoseMgdl,
+      mealKey: mealKey,
     );
   }
 }

@@ -23,6 +23,7 @@ void main() {
     over: const Duration(minutes: 30),
     from: DateTime.now(),
     glucoseMgdl: 120,
+    mealKey: 1,
   );
 
   setUp(() async {

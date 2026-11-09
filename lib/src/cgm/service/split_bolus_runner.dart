@@ -99,7 +99,7 @@ class SplitBolusRunner {
     final current = store.splitBolus;
     final ours = current?.sendingSince == mark ? current : null;
     if (outcome.recordedUnits > 0) {
-      await _logDose(outcome, plan.glucoseMgdl);
+      await _logDose(outcome, plan);
       if (ours != null) {
         await _saveRest(store, ours);
       }
@@ -147,17 +147,21 @@ class SplitBolusRunner {
 
   /// Logs the part as its own insulin-only entry, then pushes it so the next
   /// pull does not replace it away.
-  Future<void> _logDose(BolusDeliveryResult outcome, int glucoseMgdl) async {
+  Future<void> _logDose(
+    BolusDeliveryResult outcome,
+    SplitBolusPlan plan,
+  ) async {
     const store = MealStore();
     final meals = await store.loadMeals();
     meals.add(
       Meal(
         time: DateTime.now(),
         carbs: 0,
-        glucoseMgdl: glucoseMgdl,
+        glucoseMgdl: plan.glucoseMgdl,
         bolus: outcome.recordedUnits,
         entries: const [],
         deliveredByPump: true,
+        splitOf: plan.mealKey,
       ),
     );
     await store.saveMeals(meals);

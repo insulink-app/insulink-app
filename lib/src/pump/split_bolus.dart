@@ -38,6 +38,7 @@ class SplitBolusPlan {
   const SplitBolusPlan({
     required this.parts,
     required this.glucoseMgdl,
+    required this.mealKey,
     this.sendingSince,
   });
 
@@ -48,6 +49,7 @@ class SplitBolusPlan {
     required Duration over,
     required DateTime from,
     required int glucoseMgdl,
+    required int mealKey,
   }) {
     final count = math.max(1, over.inMinutes ~/ partEvery.inMinutes);
     final parts = <SplitBolusPart>[];
@@ -59,7 +61,11 @@ class SplitBolusPlan {
         );
       }
     }
-    return SplitBolusPlan(parts: parts, glucoseMgdl: glucoseMgdl);
+    return SplitBolusPlan(
+      parts: parts,
+      glucoseMgdl: glucoseMgdl,
+      mealKey: mealKey,
+    );
   }
 
   factory SplitBolusPlan.fromJson(Map<String, dynamic> json) => SplitBolusPlan(
@@ -68,6 +74,7 @@ class SplitBolusPlan {
         SplitBolusPart.fromJson(part as Map<String, dynamic>),
     ],
     glucoseMgdl: json['glucose_mgdl'] as int,
+    mealKey: json['meal_key'] as int,
     sendingSince: switch (json['sending_since']) {
       final int millis => DateTime.fromMillisecondsSinceEpoch(millis),
       _ => null,
@@ -86,6 +93,11 @@ class SplitBolusPlan {
   /// Glucose when the bolus was confirmed, written onto each part's log entry.
   final int glucoseMgdl;
 
+  /// The [Meal.logKey] of the meal this bolus was confirmed for. Each part is
+  /// logged with it as `splitOf`, so the automation counts the parts and the
+  /// planned rest as covering that meal's carbs rather than as a correction.
+  final int mealKey;
+
   /// Set while the first part is on its way to the pod. Found set by a fresh
   /// process, it means the one before died mid-send: that part may have gone
   /// in and is never sent again. Also tells the sender whether the plan it
@@ -103,23 +115,29 @@ class SplitBolusPlan {
   bool missedAt(DateTime now) => now.isAfter(parts.first.at.add(lateAfter));
 
   /// This plan with its first part marked as being sent at [at].
-  SplitBolusPlan sendingAt(DateTime at) =>
-      SplitBolusPlan(parts: parts, glucoseMgdl: glucoseMgdl, sendingSince: at);
+  SplitBolusPlan sendingAt(DateTime at) => _copy(parts, sendingSince: at);
 
   /// This plan with the send mark taken off, the first part still to come.
-  SplitBolusPlan get settled =>
-      SplitBolusPlan(parts: parts, glucoseMgdl: glucoseMgdl);
+  SplitBolusPlan get settled => _copy(parts);
+
+  SplitBolusPlan _copy(List<SplitBolusPart> parts, {DateTime? sendingSince}) =>
+      SplitBolusPlan(
+        parts: parts,
+        glucoseMgdl: glucoseMgdl,
+        mealKey: mealKey,
+        sendingSince: sendingSince,
+      );
 
   DateTime get endsAt => parts.last.at;
 
   /// The plan once its first part is given, or null when that was the last.
-  SplitBolusPlan? get afterFirst => parts.length <= 1
-      ? null
-      : SplitBolusPlan(parts: parts.sublist(1), glucoseMgdl: glucoseMgdl);
+  SplitBolusPlan? get afterFirst =>
+      parts.length <= 1 ? null : _copy(parts.sublist(1));
 
   Map<String, dynamic> toJson() => {
     'parts': [for (final part in parts) part.toJson()],
     'glucose_mgdl': glucoseMgdl,
+    'meal_key': mealKey,
     'sending_since': ?sendingSince?.millisecondsSinceEpoch,
   };
 }

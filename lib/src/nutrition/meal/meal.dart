@@ -9,6 +9,7 @@ class Meal {
     required this.bolus,
     required this.entries,
     this.deliveredByPump = false,
+    this.splitOf,
   });
 
   final DateTime time;
@@ -23,6 +24,11 @@ class Meal {
   /// the pump-given doses are the ones whose recorded amount is worth doubting.
   /// Defaults to false, so every meal logged before pump support reads correctly.
   final bool deliveredByPump;
+
+  /// The [logKey] of the meal this entry is a later part of, for the parts a
+  /// split bolus gives after the meal itself; null for every other entry. It
+  /// lets the automation count a part's insulin as covering that meal's carbs.
+  final int? splitOf;
 
   /// Total protein across the logged products (0 for a manual carb entry, which
   /// carries no product breakdown).
@@ -71,6 +77,7 @@ class Meal {
     bolus: bolus ?? this.bolus,
     entries: entries ?? this.entries,
     deliveredByPump: deliveredByPump,
+    splitOf: splitOf,
   );
 
   factory Meal.fromJson(Map<String, dynamic> json) => Meal(
@@ -83,6 +90,7 @@ class Meal {
         .map(MealEntry.fromJson)
         .toList(),
     deliveredByPump: json['delivered_by_pump'] as bool? ?? false,
+    splitOf: json['split_of'] as int?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -92,6 +100,7 @@ class Meal {
     'bolus': bolus,
     'entries': entries.map((entry) => entry.toJson()).toList(),
     if (deliveredByPump) 'delivered_by_pump': true,
+    'split_of': ?splitOf,
   };
 }
 
