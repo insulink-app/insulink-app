@@ -1154,7 +1154,11 @@
       "title": "Training detected",
       "body": "# · # min. Confirm?",
       "confirm": "Confirm",
-      "reject": "Reject"
+      "reject": "Reject",
+      "switch": {
+        "walk": "Was walking",
+        "bike": "Was cycling"
+      }
     },
     "goals": {
       "_": "Goals",

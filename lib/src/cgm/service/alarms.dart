@@ -35,6 +35,7 @@ import 'package:insulink/src/base/release_log_gate.dart';
 /// Notification-action ids for the "training detected" confirm prompt.
 const String _trainingConfirmAction = 'training_confirm';
 const String _trainingRejectAction = 'training_reject';
+const String _trainingSwitchAction = 'training_switch';
 
 /// Records a Confirm/Reject tap on the "training detected" notification. This
 /// runs in the bare background isolate `flutter_local_notifications` spawns for
@@ -65,6 +66,8 @@ void trainingNotificationAction(NotificationResponse response) {
     store.recordTrainingDecision('confirm', id, filePath: filePath);
   } else if (response.actionId == _trainingRejectAction) {
     store.recordTrainingDecision('reject', id, filePath: filePath);
+  } else if (response.actionId == _trainingSwitchAction) {
+    store.recordTrainingDecision('switch', id, filePath: filePath);
   }
 }
 
@@ -529,7 +532,9 @@ class G7AlarmManager {
     );
     await _showAdvisory(level, mgdl, advisory);
     await _alert(
-      level == AdvisoryLevel.low ? AlarmSlot.advisoryLow : AlarmSlot.advisoryHigh,
+      level == AdvisoryLevel.low
+          ? AlarmSlot.advisoryLow
+          : AlarmSlot.advisoryHigh,
       () => _playAdvisorySound(level),
       mutesSound: silent.mutesSound,
     );
@@ -1244,7 +1249,7 @@ class G7AlarmManager {
       title: await _strings.get('sport.detect_notification.title'),
       body: body,
       notificationDetails: NotificationDetails(
-        android: await _trainingChannel(),
+        android: await _trainingChannel(training.type),
       ),
       // Carry the writable hand-off path so the action-tap isolate writes where
       // the drain reads (see trainingNotificationAction / SportStore).
@@ -1252,7 +1257,9 @@ class G7AlarmManager {
     );
   }
 
-  Future<AndroidNotificationDetails> _trainingChannel() async {
+  /// The training channel with Confirm, "was the other type" and Reject; the
+  /// middle label names the alternative to the detected [type].
+  Future<AndroidNotificationDetails> _trainingChannel(CardioType type) async {
     return AndroidNotificationDetails(
       'insulink_training_detected',
       await _strings.get('alarm.channel.training_detected.name'),
@@ -1269,6 +1276,13 @@ class G7AlarmManager {
         AndroidNotificationAction(
           _trainingConfirmAction,
           await _strings.get('sport.detect_notification.confirm'),
+          cancelNotification: true,
+        ),
+        AndroidNotificationAction(
+          _trainingSwitchAction,
+          await _strings.get(
+            'sport.detect_notification.switch.${type.detectedAlternative.name}',
+          ),
           cancelNotification: true,
         ),
         AndroidNotificationAction(
