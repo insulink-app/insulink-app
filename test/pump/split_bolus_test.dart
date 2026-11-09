@@ -27,7 +27,7 @@ void main() {
 
     expect(choice.nowUnits(3.3), closeTo(1.65, 1e-9));
     expect(plan.parts.map((part) => part.pulses), [8, 8, 8, 9]);
-    expect(plan.remainingUnits, closeTo(1.65, 1e-9));
+    expect(plan.remainingUnitsAt(confirmedAt), closeTo(1.65, 1e-9));
     expect(plan.parts.first.at, confirmedAt.add(const Duration(minutes: 15)));
     expect(plan.endsAt, confirmedAt.add(const Duration(minutes: 60)));
   });
@@ -79,5 +79,42 @@ void main() {
     ).total(const [], pod: store, now: confirmedAt);
 
     expect(onBoard, closeTo(2, 1e-9));
+  });
+
+  test('a lapsed part stops counting and marks the plan as missed', () {
+    final plan = SplitBolusPlan.spread(
+      20,
+      over: const Duration(minutes: 30),
+      from: confirmedAt,
+      glucoseMgdl: 120,
+    );
+    final firstLapsed = confirmedAt.add(const Duration(minutes: 31));
+
+    expect(plan.remainingUnitsAt(firstLapsed), closeTo(0.5, 1e-9));
+    expect(plan.missedAt(firstLapsed), isTrue);
+    expect(
+      plan.missedAt(confirmedAt.add(const Duration(minutes: 29))),
+      isFalse,
+    );
+    expect(plan.remainingUnitsAt(confirmedAt.add(const Duration(hours: 1))), 0);
+  });
+
+  test('the send mark survives the store and settles off again', () async {
+    final backing = <String, String>{};
+    final store = PodStore(FakeSecureStorage(backing), backing);
+    final plan = SplitBolusPlan.spread(
+      20,
+      over: const Duration(minutes: 30),
+      from: confirmedAt,
+      glucoseMgdl: 120,
+    );
+    await store.saveSplitBolus(plan.sendingAt(confirmedAt));
+
+    final marked = store.splitBolus!;
+
+    expect(marked.sendingSince, confirmedAt);
+    expect(marked.settled.sendingSince, isNull);
+    expect(marked.afterFirst!.sendingSince, isNull);
+    expect(marked.settled.parts.length, 2);
   });
 }

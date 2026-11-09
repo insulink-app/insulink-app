@@ -39,7 +39,7 @@ class InsulinOnBoard {
       boluses: ActiveInsulin(duration).units(meals, now: at),
       automation: pod?.loopIobUnits(duration, now: at) ?? 0,
       unconfirmed: pod?.unconfirmedBolusUnits(duration, now: at) ?? 0,
-      planned: pod?.splitBolus?.remainingUnits ?? 0,
+      planned: pod?.splitBolus?.remainingUnitsAt(at) ?? 0,
     );
   }
 

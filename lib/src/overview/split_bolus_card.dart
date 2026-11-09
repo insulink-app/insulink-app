@@ -24,7 +24,8 @@ class SplitBolusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<PodController>();
     final plan = controller.store.splitBolus;
-    if (plan == null) {
+    final remaining = plan?.remainingUnitsAt(DateTime.now()) ?? 0;
+    if (plan == null || remaining <= 0) {
       return const SizedBox.shrink();
     }
     final scheme = Theme.of(context).colorScheme;
@@ -53,7 +54,7 @@ class SplitBolusCard extends StatelessWidget {
                     context,
                     'pump.split_bolus.remaining',
                     params: [
-                      sportDecimal(plan.remainingUnits, 2),
+                      sportDecimal(remaining, 2),
                       DateFormat('HH:mm').format(plan.endsAt),
                     ],
                   ),

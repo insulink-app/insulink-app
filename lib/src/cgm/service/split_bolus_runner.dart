@@ -28,45 +28,77 @@ class SplitBolusRunner {
 
   /// Gives the part that is due, if any. Returns whether something changed, so
   /// the caller can tell the UI to re-read.
+  ///
+  /// Must not run twice at once in one isolate (the caller guards it): a pod
+  /// session can outlast the 30 s tick, and a second run would read a part
+  /// still marked as sending as a send that died.
   Future<bool> run() async {
     final store = await PodStore.open();
     final plan = store.splitBolus;
     final now = DateTime.now();
-    if (plan == null || plan.parts.first.at.isAfter(now)) {
+    if (plan == null) {
       return false;
     }
-    final late = now.difference(plan.parts.first.at) > SplitBolusPlan.lateAfter;
-    if (!store.hasPod || late) {
+    if (plan.sendingSince != null) {
+      return _dropStranded(store, plan);
+    }
+    if (plan.parts.first.at.isAfter(now)) {
+      return false;
+    }
+    if (!store.hasPod || plan.missedAt(now)) {
       return _abandon(store, 'alarm.split_bolus.lapsed');
     }
     return _give(store, plan);
   }
 
-  /// Sends the first part, then books it and moves the plan on.
-  Future<bool> _give(PodStore store, SplitBolusPlan plan) async {
-    final part = plan.parts.first;
-    final delivery = await AdvisoryActionRunner(_alarms).serviceDelivery(store);
-    final outcome = await delivery.deliver(
-      part.units,
-      deliveredLastHour: store.bolusUnitsWithin(const Duration(hours: 1)),
-    );
-    if (_busyKeys.contains(outcome.detailKey)) {
-      return false;
-    }
-    if (outcome.recordedUnits <= 0) {
-      return _abandon(store, 'alarm.split_bolus.failed');
-    }
-    await _advance(store, plan);
-    await _logDose(outcome, plan.glucoseMgdl);
+  /// A part a dead process was sending. It may have gone in, so it is never
+  /// sent again; the delivery path left its pending record for the app to
+  /// resolve, and the rest of the plan carries on.
+  Future<bool> _dropStranded(PodStore store, SplitBolusPlan plan) async {
+    await _saveRest(store, plan);
     return true;
   }
 
-  /// Drops the given part. Re-read first: a plan the user cancelled while the
-  /// part was on its way stays cancelled.
-  Future<void> _advance(PodStore store, SplitBolusPlan plan) async {
+  /// Marks the first part as sending, sends it, then settles the plan against
+  /// what the store holds NOW: the user may have cancelled meanwhile, or even
+  /// started a new plan, and neither is touched. A dose that went in is logged
+  /// either way.
+  Future<bool> _give(PodStore store, SplitBolusPlan plan) async {
+    final mark = DateTime.now();
+    await store.saveSplitBolus(plan.sendingAt(mark));
+    final outcome = await _send(store, plan.parts.first);
     await store.reload();
+    final current = store.splitBolus;
+    final ours = current?.sendingSince == mark ? current : null;
+    if (outcome.recordedUnits > 0) {
+      await _logDose(outcome, plan.glucoseMgdl);
+      if (ours != null) {
+        await _saveRest(store, ours);
+      }
+      return true;
+    }
+    if (ours == null) {
+      return true;
+    }
+    if (_busyKeys.contains(outcome.detailKey)) {
+      await store.saveSplitBolus(ours.settled);
+      return false;
+    }
+    return _abandon(store, 'alarm.split_bolus.failed');
+  }
+
+  Future<BolusDeliveryResult> _send(PodStore store, SplitBolusPart part) async {
+    final delivery = await AdvisoryActionRunner(_alarms).serviceDelivery(store);
+    return delivery.deliver(
+      part.units,
+      deliveredLastHour: store.bolusUnitsWithin(const Duration(hours: 1)),
+    );
+  }
+
+  /// Drops the first part, or the whole plan when that was the last.
+  Future<void> _saveRest(PodStore store, SplitBolusPlan plan) async {
     final rest = plan.afterFirst;
-    if (store.splitBolus == null || rest == null) {
+    if (rest == null) {
       await store.clearSplitBolus();
       return;
     }

@@ -356,6 +356,7 @@ class _InjectionPageState extends State<InjectionPage> {
         units: nowUnits,
         deliveredLastHour: deliveredLastHour,
         meal: meal,
+        opensSplit: plan != null,
       );
     }
   }

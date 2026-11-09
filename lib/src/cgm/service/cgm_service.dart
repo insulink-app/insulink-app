@@ -82,6 +82,9 @@ class CgmTaskHandler extends TaskHandler {
   CgmStore? _store;
   FlutterLocalNotificationsPlugin? _notifications;
   PodMonitor? _podMonitor;
+
+  /// Whether a split-bolus part is on its way, see [_giveSplitBolus].
+  bool _givingSplitBolus = false;
   PodLoopRunner? _podLoop;
 
   /// The pod store, kept between ticks. Reloaded at the poll cadence rather than
@@ -503,14 +506,24 @@ class CgmTaskHandler extends TaskHandler {
 
   /// The next due part of a split bolus. Pings the UI like a countermeasure
   /// does, because the meal log and the plan both changed underneath it.
+  ///
+  /// One run at a time ([_givingSplitBolus]): a pod session can outlast the
+  /// tick, and a second run on top would send the same part again.
   Future<void> _giveSplitBolus() async {
     final alarms = _alarms;
-    if (alarms == null) {
+    if (alarms == null || _givingSplitBolus) {
       return;
     }
-    if (await SplitBolusRunner(alarms).run()) {
-      FlutterForegroundTask.sendDataToMain({'t': 'update'});
-      FlutterForegroundTask.sendDataToMain({'t': 'meals'});
+    _givingSplitBolus = true;
+    try {
+      if (await SplitBolusRunner(alarms).run()) {
+        FlutterForegroundTask.sendDataToMain({'t': 'update'});
+        FlutterForegroundTask.sendDataToMain({'t': 'meals'});
+      }
+    } catch (error) {
+      _log('split bolus failed: $error');
+    } finally {
+      _givingSplitBolus = false;
     }
   }
 
