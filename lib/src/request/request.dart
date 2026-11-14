@@ -12,6 +12,7 @@ import 'package:http/http.dart';
 import 'package:insulink/src/config/environment_options.dart';
 import 'package:insulink/src/request/request_refresh.dart';
 import 'package:insulink/src/request/request_reset.dart';
+import 'package:insulink/src/request/server_reachability.dart';
 
 class Request {
   final String url;
@@ -116,11 +117,11 @@ class Request {
           headers: headers,
         ).timeout(timeout);
         _logRequest(method: method, headers: headers, response: response);
-        lastError = null;
+        _reached(response.statusCode);
         return response;
       } catch (exception) {
         _logRequest(method: method, headers: headers, exception: exception);
-        lastError = exception.toString();
+        _failed(exception);
         return null;
       }
     } else if (method == "POST") {
@@ -136,7 +137,7 @@ class Request {
           body: body,
           response: response,
         );
-        lastError = null;
+        _reached(response.statusCode);
         return response;
       } catch (exception) {
         _aborted = exception is RequestAbortedException;
@@ -146,11 +147,24 @@ class Request {
           body: body,
           exception: exception,
         );
-        lastError = exception.toString();
+        _failed(exception);
         return null;
       }
     } else {
       throw UnsupportedError("Unsupported HTTP method: $method");
+    }
+  }
+
+  void _reached(int statusCode) {
+    lastError = null;
+    ServerReachability.shared.record(statusCode);
+  }
+
+  /// A dropped [abortTrigger] attempt says nothing about the server.
+  void _failed(Object exception) {
+    lastError = exception.toString();
+    if (!_aborted) {
+      ServerReachability.shared.record(null);
     }
   }
 

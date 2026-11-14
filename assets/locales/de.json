@@ -1202,6 +1202,10 @@
     }
   },
   "profile": {
+    "server": {
+      "online": "mit dem Server verbunden",
+      "offline": "keine Verbindung zum Server"
+    },
     "label": "Profil",
     "sport_goals": "Sportziele",
     "nutrition_goals": "Ernährungsziele",
