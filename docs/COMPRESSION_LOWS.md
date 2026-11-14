@@ -15,8 +15,8 @@ an alarm, the loop or the event log.
 
 A run of readings under 70 whose lowest reading
 
-1. lies in the night's **sleep**, read off the stored minute pulse
-   (`NightSleepDetector`), and
+1. lies in the night's **sleep** or a long **rest** by day, read off the
+   stored minute pulse (`NightSleepDetector`), and
 2. is followed within **20 minutes** by a rise of at least **20 mg/dL** at
    **1.5 mg/dL a minute** or faster, and
 3. has **no meal logged** from 30 minutes before the fall to the top of the
@@ -43,6 +43,16 @@ of that level. The sleep is the longest such stretch from 20:00 to 11:00,
 bridging up to 20 minutes awake, and must last at least 3 hours. A night with
 fewer than 120 minutes of pulse after midnight has no sleep, so without a band
 nothing is ever filtered.
+
+## Rests by day
+
+Lying on the sensor on the couch or during a nap squeezes it just as much. So
+the search covers 20:00 to 20:00, and besides the night's sleep every stretch
+from 11:00 to 20:00 of at least **45 minutes** at the night's resting level
+(same median and margin) counts as sleep for rule 1. It is measured against the
+night before, so a day after a night without pulse has no rests. Sitting
+quietly can come close to the sleeping pulse; the fast rise and the meal rule
+still have to hold, which is what keeps that from filtering a real low.
 
 ## The switch
 

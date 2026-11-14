@@ -1245,7 +1245,7 @@
       "dark": "Dark"
     },
     "glucose": {
-      "compression_hint": "Lying on the sensor at night makes it read too low until you turn over. The app spots these dips afterwards from your pulse and the quick recovery. They are marked in the chart and left out of time in range and the analysis. Alarms and the loop always see the real readings.",
+      "compression_hint": "Lying on the sensor, at night or on the couch, makes it read too low until you turn over. The app spots these dips afterwards from your pulse and the quick recovery. They are marked in the chart and left out of time in range and the analysis. Alarms and the loop always see the real readings.",
       "_": "Glucose",
       "target": "Target range",
       "alarms_low": "Low alarms",

@@ -83,4 +83,48 @@ void main() {
       isEmpty,
     );
   });
+
+  /// The night of [pulse], then awake at 80 with an hour on the couch at 60
+  /// from 14:00 to 15:00 and ten minutes at 60 from 17:00.
+  Map<int, int> dayPulse() {
+    final base = DateTime(2026, 10, 28).millisecondsSinceEpoch ~/ 60000;
+    bool resting(int at) =>
+        (at >= base + 14 * 60 && at < base + 15 * 60) ||
+        (at >= base + 17 * 60 && at < base + 17 * 60 + 10);
+    return {
+      ...pulse(),
+      for (var at = base + 11 * 60; at < base + 20 * 60; at++)
+        at: resting(at) ? 60 : 80,
+    };
+  }
+
+  test('a long rest by day counts, a short one does not', () {
+    final found = const NightSleepDetector().detectAll(evening, dayPulse());
+
+    expect(found, hasLength(2));
+    final rest = found.last;
+    expect(rest.contains(DateTime(2026, 10, 28, 14, 30)), isTrue);
+    expect(rest.contains(DateTime(2026, 10, 28, 17, 5)), isFalse);
+  });
+
+  test('a compression on the couch is filtered', () {
+    final base = DateTime(2026, 10, 28).millisecondsSinceEpoch ~/ 60000;
+    final couch = readings(base + 14 * 60 + 17, [
+      90,
+      94,
+      94,
+      66,
+      50,
+      59,
+      75,
+      95,
+    ]);
+
+    final dips = CompressionLows(
+      sleeps: const NightSleepDetector().detectAll(evening, dayPulse()),
+      mealMinutes: const [],
+    ).find(couch);
+
+    expect(dips, hasLength(1));
+  });
 }

@@ -1245,7 +1245,7 @@
       "dark": "Dunkel"
     },
     "glucose": {
-      "compression_hint": "Liegst du nachts auf dem Sensor, misst er zu tief, bis du dich umdrehst. Solche Einbrüche erkennt die App im Nachhinein am Puls und an der schnellen Erholung. Sie werden im Graphen markiert und in Zeit im Zielbereich und Analyse nicht mitgezählt. Alarme und Loop sehen immer die echten Werte.",
+      "compression_hint": "Liegst du nachts oder tagsüber im Liegen auf dem Sensor, misst er zu tief, bis du dich umdrehst. Solche Einbrüche erkennt die App im Nachhinein am Puls und an der schnellen Erholung. Sie werden im Graphen markiert und in Zeit im Zielbereich und Analyse nicht mitgezählt. Alarme und Loop sehen immer die echten Werte.",
       "_": "Glukose",
       "target": "Zielbereich",
       "alarms_low": "Niedrige Alarme",
