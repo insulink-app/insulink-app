@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/base/restore_offer_card.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
-import 'package:insulink/src/cgm/sensor_sync.dart';
+import 'package:insulink/src/cgm/sensor_restore.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sensor/info/sensor_format.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';

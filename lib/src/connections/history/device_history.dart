@@ -36,7 +36,9 @@ class DeviceHistoryEntry {
 ///
 /// **One row per physical device.** A reinstall restores the running device and
 /// registers it a second time, so the earliest registration of each device wins
-/// and the rest are dropped.
+/// and the rest are dropped, except for whether the device is discarded: that is
+/// the newest registration's say, since pairing a stopped sensor again registers
+/// it afresh.
 ///
 /// **When it came off.** No record says so. A device swapped out early keeps its
 /// future expiry, so expiry alone would call two of them active at once. It
@@ -61,15 +63,23 @@ class DeviceHistory {
     return entries;
   }
 
+  /// The earliest registration of each device, with the discard state and
+  /// identity of its newest one: a sensor stopped and paired again is running.
   List<DeviceRecord> _oneRowPerDevice() {
-    final byDevice = <String, DeviceRecord>{};
-    for (final record in records) {
-      final seen = byDevice[record.deviceKey];
-      if (seen == null || record.registeredAt.isBefore(seen.registeredAt)) {
-        byDevice[record.deviceKey] = record;
-      }
+    final sorted = [...records]
+      ..sort(
+        (first, second) => first.registeredAt.compareTo(second.registeredAt),
+      );
+    final earliest = <String, DeviceRecord>{};
+    final newest = <String, DeviceRecord>{};
+    for (final record in sorted) {
+      earliest.putIfAbsent(record.deviceKey, () => record);
+      newest[record.deviceKey] = record;
     }
-    return byDevice.values.toList();
+    return [
+      for (final entry in earliest.entries)
+        entry.value.withLaterState(newest[entry.key]!),
+    ];
   }
 
   /// The starts of every device that began after [record].

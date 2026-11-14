@@ -815,7 +815,8 @@
       "worn_label": "getragen",
       "early": "früh entfernt",
       "earlier_sensors": "Frühere Sensoren",
-      "earlier_pumps": "Frühere Pods"
+      "earlier_pumps": "Frühere Pods",
+      "pair_again": "Erneut koppeln"
     },
     "status": {
       "title": "Empfang",

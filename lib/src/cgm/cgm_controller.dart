@@ -18,6 +18,7 @@ import 'package:insulink/src/libre3/libre3_activation.dart';
 import 'package:insulink/src/cgm/protocol/device_info.dart';
 import 'package:insulink/src/cgm/event_sync.dart';
 import 'package:insulink/src/cgm/glucose_prediction.dart';
+import 'package:insulink/src/cgm/sensor_restore.dart';
 import 'package:insulink/src/cgm/sensor_sync.dart';
 import 'package:insulink/src/cgm/cgm_store.dart';
 import 'package:insulink/src/demo/demo_live_sensor.dart';
