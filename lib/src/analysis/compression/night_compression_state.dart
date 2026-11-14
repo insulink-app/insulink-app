@@ -15,7 +15,8 @@ import 'package:insulink/src/profile/notifications/notification_setting.dart';
 /// [hidden], the readings of every compression low ([CompressionLows]) are
 /// taken out of what they draw; switched off, both show the raw readings.
 ///
-/// Worked out per NIGHT, not per window, from the archive itself: the chart and
+/// Worked out per NIGHT (20:00 to 20:00, so the day's rests ride along with
+/// the night before them), not per window, from the archive itself: the chart and
 /// the analysis ask for different windows, and a result per window would have
 /// each one's request undo the other's. Sleep comes from the stored pulse,
 /// which is slow to load, so a night is searched in the background and the
@@ -156,20 +157,21 @@ class NightCompressionState extends ChangeNotifier {
     }
   }
 
-  /// The night's compression lows, none without a sleep to find them in.
+  /// The compression lows of the night and the day after it, none without a
+  /// sleep or rest to find them in.
   Future<List<CompressionDip>> _dipsIn(DateTime evening) async {
     final from = evening.add(const Duration(hours: 20));
-    final to = from.add(const Duration(hours: 15));
+    final to = from.add(const Duration(hours: 24));
     final samples = await _pulse.rangeCurve(from, to);
-    final sleep = const NightSleepDetector().detect(evening, {
+    final sleeps = const NightSleepDetector().detectAll(evening, {
       for (final sample in samples)
         sample.at.millisecondsSinceEpoch ~/ 60000: sample.bpm,
     });
-    if (sleep == null) {
+    if (sleeps.isEmpty) {
       return const [];
     }
     return CompressionLows(
-      sleeps: [sleep],
+      sleeps: sleeps,
       mealMinutes: _mealMinutes,
     ).find(_glucose.archiveBetween(from, to));
   }
