@@ -72,4 +72,18 @@ void main() {
     expect(entries, hasLength(1));
     expect(entries.single.record.registeredAt, _at(1));
   });
+
+  test('a sensor stopped and paired again runs again', () {
+    final history = DeviceHistory(
+      [
+        _sensor('a', 1, discardedAt: _at(3)),
+        _sensor('a', 1, registeredAt: _at(3, hour: 1)),
+      ],
+      now: _at(5),
+    );
+    final entry = history.resolve().single;
+    expect(entry.wasDiscarded, isFalse);
+    expect(entry.isActive, isTrue);
+    expect(entry.record.registeredAt, _at(1));
+  });
 }

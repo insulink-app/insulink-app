@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/cgm/cgm_controller.dart';
-import 'package:insulink/src/cgm/sensor_sync.dart';
+import 'package:insulink/src/cgm/sensor_restore.dart';
 import 'package:insulink/src/overview/sensor_restore_card.dart';
 import 'package:insulink/src/sensor/control/libre3_scan_flow.dart';
 import 'package:provider/provider.dart';

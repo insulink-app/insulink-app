@@ -44,6 +44,19 @@ its **activation moment** — a pod's `unique_id` is derived from the controller
 and is therefore identical for every pod this app has ever activated, so it
 identifies nothing.
 
+The earliest row gives the start, but whether the device is discarded is the
+**newest** row's say. Stopping a sensor stamps its row; pairing the same sensor
+again registers a fresh, unstamped row, and the sensor is running again.
+
+## Pairing again from the history
+
+A sensor entry that has not run out offers "Pair again" while no sensor is set
+up on the phone (`SensorRepairButton`). It adopts the row's blob exactly like the
+overview's restore offer (`SensorRestore.decode`): a G7 reconnects, a Libre 3
+goes on to its NFC scan. That keeps the OLD row's id, and the account clears
+`discarded_at` on the first `/sensor/update/` the app sends for it: only the app
+holding a sensor updates it, so an update means it is in use.
+
 ## Kept in step with the panel
 
 `insulink-panel/src/lib/sensor.ts` and `src/lib/pump.ts` implement the same three

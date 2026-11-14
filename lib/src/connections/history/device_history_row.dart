@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:insulink/src/connections/history/device_history.dart';
 import 'package:insulink/src/connections/history/device_wear_bar.dart';
+import 'package:insulink/src/connections/history/sensor_repair_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sensor/info/sensor_format.dart';
@@ -29,7 +30,6 @@ class DeviceHistoryRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 12,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +38,9 @@ class DeviceHistoryRow extends StatelessWidget {
               _howLong(context, colors, wear),
             ],
           ),
+          const SizedBox(height: 12),
           DeviceWearBar(fraction: wear.fraction, early: wear.early, height: 4),
+          SensorRepairButton(entry: entry),
         ],
       ),
     );

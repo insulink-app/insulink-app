@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
+import 'package:insulink/src/auth/data_key/data_key.dart';
 import 'package:insulink/src/cgm/cgm_connection.dart';
+import 'package:insulink/src/cgm/sensor_restore.dart';
 import 'package:insulink/src/request/request.dart';
 import 'package:insulink/src/request/response_json.dart';
 
@@ -42,15 +44,20 @@ class DeviceHistorySync {
     if (rows is! List) {
       return null;
     }
+    final dataKey = await const DataKeyStore().load();
     return [
       for (final row in rows.whereType<Map<String, dynamic>>())
-        ?_record(kind, row),
+        ?_record(kind, row, dataKey),
     ];
   }
 
   /// One row decoded, or null when it carries no usable timestamps — a record
   /// the history cannot place is left out rather than drawn at the epoch.
-  DeviceRecord? _record(DeviceHistoryKind kind, Map<String, dynamic> row) {
+  DeviceRecord? _record(
+    DeviceHistoryKind kind,
+    Map<String, dynamic> row,
+    DataKey? dataKey,
+  ) {
     final registeredAt = _time(row['registered_at']);
     final expiresAt = _time(row['expires_at']);
     if (registeredAt == null || expiresAt == null) {
@@ -68,7 +75,18 @@ class DeviceHistorySync {
       registeredAt: registeredAt,
       discardedAt: _time(row['discarded_at']),
       sensorCode: isSensor ? _sensorCode(blob['pairing_code']) : null,
+      restore: isSensor ? _restore(row, dataKey) : null,
     );
+  }
+
+  /// The identity pairing this sensor again adopts, decoded the way the
+  /// `/sensor/current/` offer is.
+  SensorRestore? _restore(Map<String, dynamic> row, DataKey? dataKey) {
+    final data = row['data'];
+    if (data is! String) {
+      return null;
+    }
+    return SensorRestore.decode('${row['id']}', data, dataKey);
   }
 
   /// The G7's pairing code as the sensor registration carries it, or null when

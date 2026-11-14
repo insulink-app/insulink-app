@@ -822,7 +822,8 @@
       "worn_label": "worn",
       "early": "removed early",
       "earlier_sensors": "Earlier sensors",
-      "earlier_pumps": "Earlier pods"
+      "earlier_pumps": "Earlier pods",
+      "pair_again": "Pair again"
     },
     "status": {
       "title": "Reception",

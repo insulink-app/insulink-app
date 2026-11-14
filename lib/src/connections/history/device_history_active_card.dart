@@ -3,6 +3,7 @@ import 'package:insulink/src/base/ink_panel.dart';
 import 'package:insulink/src/base/key_value_row.dart';
 import 'package:insulink/src/connections/history/device_history.dart';
 import 'package:insulink/src/connections/history/device_wear_bar.dart';
+import 'package:insulink/src/connections/history/sensor_repair_button.dart';
 import 'package:insulink/src/localization/locale_text.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/sensor/info/sensor_format.dart';
@@ -42,6 +43,7 @@ class DeviceHistoryActiveCard extends StatelessWidget {
                 early: false,
                 height: 8,
               ),
+              SensorRepairButton(entry: entry),
             ],
           ),
         ),

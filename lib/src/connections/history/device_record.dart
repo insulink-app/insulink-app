@@ -1,3 +1,5 @@
+import 'package:insulink/src/cgm/sensor_restore.dart';
+
 /// One device registration as the account holds it, before the list works out
 /// when the device came off.
 ///
@@ -14,6 +16,7 @@ class DeviceRecord {
     required this.registeredAt,
     this.discardedAt,
     this.sensorCode,
+    this.restore,
   });
 
   /// What identifies the PHYSICAL device across registrations: a sensor's
@@ -39,4 +42,25 @@ class DeviceRecord {
   /// The four-digit code printed on a Dexcom G7 applicator, the one typed in to
   /// pair it. Null for a Libre 3, a pod, or a record that never carried one.
   final String? sensorCode;
+
+  /// What pairing this sensor again from the history adopts. Null for a pod or
+  /// a blob that does not decode.
+  final SensorRestore? restore;
+
+  /// This registration as the first of its device, carrying what a LATER
+  /// registration [newer] of the same device knows better: whether it is still
+  /// discarded (a sensor stopped and paired again registers a fresh row that is
+  /// not) and its newest identity.
+  DeviceRecord withLaterState(DeviceRecord newer) {
+    return DeviceRecord(
+      deviceKey: deviceKey,
+      typeKey: typeKey,
+      start: start,
+      expiresAt: expiresAt,
+      registeredAt: registeredAt,
+      discardedAt: newer.discardedAt,
+      sensorCode: sensorCode,
+      restore: newer.restore,
+    );
+  }
 }
