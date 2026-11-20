@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:insulink/src/base/header.dart';
 import 'package:insulink/src/base/navigator.dart';
 import 'package:insulink/src/base/page_body.dart';
+import 'package:insulink/src/base/tab_swipe.dart';
 import 'package:insulink/src/base/tab_transition.dart';
 import 'package:insulink/src/nutrition/nutrition_body.dart';
 import 'package:insulink/src/overview/overview_body.dart';
@@ -182,9 +183,14 @@ class AppPageState extends State<AppPage> with WidgetsBindingObserver {
           updateIndex: _onItemTapped,
           pageBodies: pageBodies,
         ),
-        body: TabTransition(
+        body: TabSwipe(
           index: _selectedIndex,
-          child: pageBodies[_selectedIndex].content(context),
+          count: pageBodies.length,
+          onSelect: _onItemTapped,
+          child: TabTransition(
+            index: _selectedIndex,
+            child: pageBodies[_selectedIndex].content(context),
+          ),
         ),
       ),
     );

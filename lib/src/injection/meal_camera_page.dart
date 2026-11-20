@@ -8,6 +8,7 @@ import 'package:insulink/src/injection/meal_analysing_overlay.dart';
 import 'package:insulink/src/injection/meal_camera_parts.dart';
 import 'package:insulink/src/injection/meal_camera_zoom.dart';
 import 'package:insulink/src/injection/photo_estimate.dart';
+import 'package:insulink/src/injection/photo_estimate_limit.dart';
 import 'package:insulink/src/injection/photo_estimate_run.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
@@ -153,14 +154,25 @@ class _MealCameraPageState extends State<MealCameraPage> {
     });
     camera.setFlashMode(FlashMode.off).ignore();
     final run = _run = PhotoEstimateRun();
-    final estimate = await run.result(context, photo);
+    try {
+      _answer(run, await run.result(context, photo));
+    } on PhotoEstimateLimit catch (limit) {
+      if (mounted && !run.cancelled) {
+        await _fail('injection.photo.limit', message: limit.resetText(context));
+      }
+    }
+  }
+
+  /// Hands a found meal on, or says why there is none.
+  void _answer(PhotoEstimateRun run, PhotoEstimate? estimate) {
     if (!mounted || run.cancelled) {
       return;
     }
     if (estimate == null || !estimate.hasFood) {
-      return _fail(
+      _fail(
         estimate == null ? 'injection.photo.failed' : 'injection.photo.no_food',
       );
+      return;
     }
     _finish(estimate);
   }
@@ -187,9 +199,13 @@ class _MealCameraPageState extends State<MealCameraPage> {
     ).pushReplacement(MaterialPageRoute(builder: (_) => next(estimate)));
   }
 
-  /// Says what went wrong, then either leaves or goes back to the live picture
-  /// once the dialog is closed.
-  Future<void> _fail(String messageKey, {bool leave = false}) async {
+  /// Says what went wrong, with an optional resolved [message] under it, then
+  /// either leaves or goes back to the live picture once the dialog is closed.
+  Future<void> _fail(
+    String messageKey, {
+    bool leave = false,
+    String? message,
+  }) async {
     if (!mounted) {
       return;
     }
@@ -197,6 +213,9 @@ class _MealCameraPageState extends State<MealCameraPage> {
       icon: PhosphorIconsBold.warningCircle,
       tone: InkDialogTone.danger,
       titleKey: messageKey,
+      content: message == null
+          ? null
+          : Text(message, textAlign: TextAlign.center),
     ).show(context);
     if (!mounted) {
       return;

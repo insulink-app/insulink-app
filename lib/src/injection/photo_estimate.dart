@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:insulink/src/injection/photo_estimate_item.dart';
+import 'package:insulink/src/injection/photo_estimate_limit.dart';
 import 'package:insulink/src/localization/locales.dart';
 import 'package:insulink/src/nutrition/meal/meal.dart';
 import 'package:insulink/src/request/request.dart';
@@ -52,7 +53,8 @@ class PhotoEstimate {
   );
 
   /// Sends the [jpeg] to the server and reads its estimate. Null when the
-  /// request failed or the server had none (no token, usage limit, timeout).
+  /// request failed or the server had none (no token, timeout). Throws
+  /// [PhotoEstimateLimit] when the server's usage limit refused the photo.
   /// [runId] names the run for a cancel, and [abortTrigger] drops the request
   /// (see `PhotoEstimateRun`).
   static Future<PhotoEstimate?> request(
@@ -72,6 +74,9 @@ class PhotoEstimate {
       abortTrigger: abortTrigger,
     ).send(context);
     final json = response?.jsonObject;
+    if (response.apiErrorCode == PhotoEstimateLimit.code) {
+      throw PhotoEstimateLimit.fromJson(json);
+    }
     if (json == null || !response!.isApiSuccess) {
       return null;
     }
