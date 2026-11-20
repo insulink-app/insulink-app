@@ -20,16 +20,20 @@ class PhotoEstimateRun {
 
   bool get cancelled => _abort.isCompleted;
 
-  /// The estimate of [jpeg], or null when it failed or was called off.
+  /// The estimate of [jpeg], or null when it failed or was called off. Throws
+  /// [PhotoEstimate.request]'s usage limit.
   Future<PhotoEstimate?> result(BuildContext context, Uint8List jpeg) async {
-    final estimate = await PhotoEstimate.request(
-      context,
-      jpeg,
-      runId: id,
-      abortTrigger: _abort.future,
-    );
-    _answered = true;
-    return cancelled ? null : estimate;
+    try {
+      final estimate = await PhotoEstimate.request(
+        context,
+        jpeg,
+        runId: id,
+        abortTrigger: _abort.future,
+      );
+      return cancelled ? null : estimate;
+    } finally {
+      _answered = true;
+    }
   }
 
   /// Drops the upload or the wait and stops the server's run. Does nothing once
