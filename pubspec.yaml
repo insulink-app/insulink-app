@@ -59,7 +59,7 @@ dependencies:
   flutter_nfc_kit: ^3.7.0
   pedometer: ^4.2.0
   flutter_activity_recognition: ^4.0.0
-  health: ^13.3.2
+  health: ^14.0.0
   geolocator: ^14.1.2
   flutter_map: ^8.3.2
   latlong2: ^0.10.1
